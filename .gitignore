@@ -10,3 +10,4 @@ tmp/
 .expo/
 android/
 ios/
+.env.local
