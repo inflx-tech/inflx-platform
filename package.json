@@ -1,0 +1,16 @@
+{
+  "name": "inflx",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:admin": "cd packages/admin-web && npm run dev -- --port 3003",
+    "dev:brand": "cd packages/brand-web && npm run dev -- --port 3002",
+    "dev:mobile": "cd packages/mobile && npx react-native start",
+    "dev:android": "cd packages/mobile && npx react-native run-android",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:brand\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

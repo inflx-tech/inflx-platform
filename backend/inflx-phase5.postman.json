@@ -1,0 +1,217 @@
+{
+  "info": {
+    "name": "INFLX Phase 5 — Crons, Analytics & Payouts",
+    "description": "Phase 5 endpoints: Cron job triggers, Engagement Analytics, Admin Escrow Management, Influencer Withdrawal, Updated Earnings",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3001/v1", "type": "string" },
+    { "key": "influencer_token", "value": "", "type": "string" },
+    { "key": "brand_token", "value": "", "type": "string" },
+    { "key": "finance_admin_token", "value": "", "type": "string" },
+    { "key": "campaign_id", "value": "", "type": "string" },
+    { "key": "escrow_entry_id", "value": "", "type": "string" },
+    { "key": "withdrawal_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Cron Jobs (Manual Test Triggers)",
+      "description": "These are server-side cron jobs. In production they run on schedule. For manual testing, use the curl commands below or call run() directly in tests.",
+      "item": [
+        {
+          "name": "[INFO] commission-confirm — Schedule: 00:01 IST daily",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/stats",
+            "description": "This cron runs at 00:01 IST.\n\nWhat it does:\n- Finds follower_transactions where return_window_ends_at <= NOW() AND commission_confirmed_at IS NULL AND status = 'completed'\n- Moves influencer_commission from pending_balance → wallet_balance\n- Fires in-app notification: '₹X commission confirmed — available to withdraw'\n\nManual trigger (test env):\n  const { run } = require('./src/jobs/commission-confirm.job');\n  await run();\n\ncurl test:\n  No HTTP endpoint — run via Jest test: npm test -- --testPathPattern=cron-commission-confirm",
+            "header": []
+          }
+        },
+        {
+          "name": "[INFO] tranche-3-release — Schedule: 06:00 UTC daily",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/escrow?status=queued",
+            "description": "This cron runs at 06:00 UTC.\n\nWhat it does:\n- Finds escrow_entries with trigger_event='day_30_post_live', status='queued', triggered_at <= NOW() - 30 days\n- Calls processTrancheReleaseStandalone(escrowEntryId)\n- Marks campaign_influencer and campaign as completed if all tranches released\n- Notifies influencer (push + SMS) and brand (push)\n\ncurl test: npm test -- --testPathPattern=cron-tranche3",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{finance_admin_token}}" }
+            ]
+          }
+        },
+        {
+          "name": "[INFO] apify-engagement — Schedule: 06:00 UTC daily",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/stats",
+            "description": "This cron runs at 06:00 UTC (alongside tranche-3).\n\nWhat it does:\n- Finds all live deliverables with a live_url\n- Calls apifyService.scrapePostEngagement(live_url) for each\n- Upserts deliverable_stats row with reach, impressions, likes, comments, saves, shares, engagement_rate\n\ncurl test: npm test -- --testPathPattern=engagement",
+            "header": []
+          }
+        },
+        {
+          "name": "[INFO] campaign-status — Schedule: 00:05 UTC daily",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/stats",
+            "description": "This cron runs at 00:05 UTC.\n\nWhat it does:\n- Finds campaigns with end_date < TODAY AND status IN ('live','active','published')\n- If all campaign_influencers are completed AND all escrow released → marks campaign completed\n- Logs warning for stale campaigns with pending tranches\n\ncurl test: npm test -- --testPathPattern=cron-campaign-status",
+            "header": []
+          }
+        },
+        {
+          "name": "[INFO] booking-reminder — Schedule: 01:00 UTC daily",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/stats",
+            "description": "This cron runs at 01:00 UTC (≈ 06:30 IST).\n\nWhat it does:\n- Finds follower_bookings with booking_date = TODAY AND status = 'confirmed'\n- Sends push + SMS to follower: 'Reminder: Your booking at [brand] is today. Ref: [code]'\n\ncurl test: Direct DB insert + run() call in test",
+            "header": []
+          }
+        },
+        {
+          "name": "[INFO] low-wallet-alert — Schedule: 09:00 UTC daily",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/stats",
+            "description": "This cron runs at 09:00 UTC.\n\nWhat it does:\n- For brands with active campaigns, finds highest queued escrow tranche\n- If brand.wallet_balance < highest_tranche → fires push + SMS + in-app alert\n\ncurl test: npm test -- --testPathPattern=cron-low-wallet",
+            "header": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Engagement Analytics",
+      "item": [
+        {
+          "name": "GET Campaign Engagement — /brands/me/campaigns/:id/engagement",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/brands/me/campaigns/{{campaign_id}}/engagement",
+              "host": ["{{base_url}}"],
+              "path": ["brands", "me", "campaigns", "{{campaign_id}}", "engagement"]
+            },
+            "description": "Returns full engagement analytics for a brand's campaign.\n\nAuth: Brand JWT required\n\nResponse includes:\n- campaign_id, campaign_name, date_range\n- totals: total_reach, total_impressions, blended_er, category_benchmark_er (hardcoded 3.8)\n- daily_reach: array of { date, reach } (from deliverable_stats.scraped_at)\n- by_influencer: array with per-influencer reach, likes, comments, saves, shares, engagement_rate, deliverables[]\n\nNote: daily_reach generates 12 mock days when APIFY_MOCK=true and no real data exists",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{brand_token}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Escrow Management",
+      "item": [
+        {
+          "name": "GET Escrow Overview — /admin/escrow",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/admin/escrow?status=all",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "escrow"],
+              "query": [
+                { "key": "status", "value": "all", "description": "queued | locked | released | all" }
+              ]
+            },
+            "description": "Returns all escrow_entries across all campaigns.\n\nAuth: Admin JWT required (finance or superadmin)\nQuery params: ?status=queued|locked|released|all (default: all)\n\nEach entry includes: campaign_name, influencer_name, brand_name, tranche_number, amount, net_to_influencer, platform_fee_amount, status, trigger_event, triggered_at, released_at, razorpay_payout_id",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{finance_admin_token}}" }
+            ]
+          }
+        },
+        {
+          "name": "POST Manual Release — /admin/escrow/:id/release",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/admin/escrow/{{escrow_entry_id}}/release",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "escrow", "{{escrow_entry_id}}", "release"]
+            },
+            "description": "Manually releases a queued or locked escrow tranche.\n\nAuth: Admin JWT required (finance or superadmin ONLY — reviewer gets 403)\n\nBody: { override_reason: string (required) }\n\nUse case: brand dispute resolved, manual T3 trigger, admin override\nAction: calls processTrancheReleaseStandalone(), credits influencer wallet, logs override reason",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{finance_admin_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"override_reason\": \"Brand dispute resolved — manually releasing T3 per agreement\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Platform Stats — /admin/stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/admin/stats",
+            "description": "Returns platform-wide statistics.\n\nAuth: Any admin JWT (reviewer, finance, or superadmin)\n\nResponse:\n- pending_approvals: { brands, influencers }\n- active_brands, active_influencers, active_campaigns\n- platform_revenue_this_month (follower platform fees + released escrow fees for current month)\n- total_follower_transactions, total_commission_paid\n- escrow_locked, escrow_queued\n- stats: { ... } (Phase 1 backward-compatible wrapper)",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{finance_admin_token}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Influencer Withdrawal",
+      "item": [
+        {
+          "name": "POST Initiate Withdrawal — /influencers/me/withdraw",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/influencers/me/withdraw",
+            "description": "Initiates a withdrawal for the authenticated influencer.\n\nAuth: Influencer JWT required\n\nValidations:\n- amount_requested >= 10000 paise (₹100 minimum) — WITHDRAWAL_TOO_SMALL\n- amount_requested <= wallet_balance — INSUFFICIENT_BALANCE\n- Influencer must have UPI or bank account — PAYMENT_METHOD_MISSING\n\nTDS calculation:\n  tds_deducted = floor(amount_requested × 0.10)\n  net_paid = amount_requested - tds_deducted\n\nWhen RAZORPAY_MOCK=true: status='completed' immediately\nWhen RAZORPAY_MOCK=false: status='processing', webhook updates to completed/failed\n\nSide effects:\n- Deducts amount_requested from wallet_balance immediately\n- Creates influencer_withdrawals row\n- Fires push + SMS notification",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{influencer_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_requested\": 2084000,\n  \"method\": \"upi\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET Withdrawal History — /influencers/me/withdrawals",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/influencers/me/withdrawals",
+            "description": "Returns all past withdrawals for the authenticated influencer.\n\nAuth: Influencer JWT required\n\nEach row: withdrawal_id, amount_requested, tds_deducted, net_paid, method, status, created_at, completed_at\n\nSorted by created_at DESC",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{influencer_token}}" }
+            ]
+          }
+        },
+        {
+          "name": "POST Retry Failed Withdrawal — /influencers/me/withdrawals/:id/retry",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/influencers/me/withdrawals/{{withdrawal_id}}/retry",
+              "host": ["{{base_url}}"],
+              "path": ["influencers", "me", "withdrawals", "{{withdrawal_id}}", "retry"]
+            },
+            "description": "Retries a failed withdrawal.\n\nAuth: Influencer JWT required\n\nOnly works when withdrawal.status = 'failed'.\nAction:\n- Refunds amount_requested back to wallet_balance\n- Resets withdrawal to 'initiated'\n- Re-initiates payout (RAZORPAY_MOCK=true → always succeeds)",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{influencer_token}}" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Updated Earnings",
+      "item": [
+        {
+          "name": "GET Influencer Earnings — /influencers/me/earnings",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/influencers/me/earnings",
+            "description": "Returns full earnings picture for the authenticated influencer.\n\nAuth: Influencer JWT required\n\nPhase 5 additions:\n- available_to_withdraw: same as wallet_balance (UI clarity)\n- recent_withdrawals: last 5 withdrawals with tds breakdown\n- tds_this_financial_year: sum of tds_deducted from April 1 of current Indian FY (April 1 – March 31)\n\nFull response shape:\n{\n  wallet_balance, pending_balance, total_earned,\n  available_to_withdraw,\n  pending_amount, locked_entries,\n  commission_summary: { pending, confirmed, total },\n  recent_withdrawals: [ { withdrawal_id, amount_requested, net_paid, tds_deducted, method, status, created_at } ],\n  tds_this_financial_year\n}",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{influencer_token}}" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

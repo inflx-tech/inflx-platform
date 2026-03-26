@@ -1,0 +1,10 @@
+{
+  "name": "@inflx/shared",
+  "version": "1.0.0",
+  "main": "index.js",
+  "exports": {
+    "./api/*": "./api/*",
+    "./theme/*": "./theme/*",
+    "./components/*": "./components/*"
+  }
+}

@@ -1,0 +1,120 @@
+'use client';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+const NAV = [
+  { section: 'OVERVIEW' },
+  { href: '/dashboard', label: 'Platform Stats', icon: '📊' },
+  { section: 'MANAGEMENT' },
+  { href: '/dashboard/approvals', label: 'Approvals', icon: '✅', badge: 'pending' },
+  { href: '/dashboard/brands', label: 'Brands', icon: '🏢' },
+  { href: '/dashboard/influencers', label: 'Influencers', icon: '⭐' },
+  { section: 'FINANCE' },
+  { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒' },
+  { section: 'SETTINGS' },
+  { href: '/dashboard/settings/payments', label: 'Payment Config', icon: '⚙️' },
+];
+
+export default function DashboardLayout({ children }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [user, setUser] = useState(null);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const u = JSON.parse(localStorage.getItem('inflx_user') || 'null');
+        if (!u || u.role !== 'admin') { router.push('/login'); return; }
+        setUser(u);
+      } catch { router.push('/login'); }
+    }
+  }, []);
+
+  useEffect(() => {
+    async function fetchPending() {
+      try {
+        const { api } = await import('../../lib/api');
+        const res = await api.get('/admin/stats');
+        if (res.success) {
+          const p = res.data;
+          setPendingCount((p.pending_approvals?.brands || 0) + (p.pending_approvals?.influencers || 0));
+        }
+      } catch {}
+    }
+    fetchPending();
+  }, []);
+
+  function logout() {
+    localStorage.clear();
+    document.cookie = 'inflx_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    router.push('/login');
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-bg font-body">
+      {/* Sidebar */}
+      <div className="w-48 bg-navy-deep flex flex-col flex-shrink-0 overflow-y-auto">
+        {/* Logo */}
+        <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+          <div className="font-display text-base font-extrabold text-white">
+            INFL<span className="bg-gradient-to-r from-red to-orange bg-clip-text text-transparent">X</span>
+          </div>
+          {user && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">
+              {user.admin_role || 'ADMIN'}
+            </span>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-2">
+          {NAV.map((item, i) => {
+            if (item.section) return (
+              <div key={i} className="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">{item.section}</div>
+            );
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            return (
+              <Link key={item.href} href={item.href} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all mb-0.5 ${isActive ? 'bg-gold/15 text-gold font-semibold' : 'text-white/55 hover:bg-white/7 hover:text-white/85'}`}>
+                <span className="text-xs w-4 text-center flex-shrink-0">{item.icon}</span>
+                <span className="flex-1">{item.label}</span>
+                {item.badge === 'pending' && pendingCount > 0 && (
+                  <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{pendingCount}</span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* User */}
+        {user && (
+          <div className="px-3 py-3 border-t border-white/5">
+            <div className="text-[10px] text-white/40 mb-1 truncate">{user.phone}</div>
+            <button onClick={logout} className="text-[10px] text-white/30 hover:text-white/60">Sign out →</button>
+          </div>
+        )}
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="h-11 bg-white border-b border-border flex items-center justify-between px-4 flex-shrink-0">
+          <div className="font-display text-sm font-bold text-t1">
+            {NAV.find(n => n.href && (pathname === n.href || (n.href !== '/dashboard' && pathname.startsWith(n.href))))?.label || 'Dashboard'}
+          </div>
+          <div className="flex items-center gap-2">
+            {user && (
+              <div className="w-7 h-7 rounded-full bg-gold-pale flex items-center justify-center text-[9px] font-bold text-yellow-700 border border-gold/30 font-display">
+                {(user.phone || '').slice(-2)}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 bg-bg">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}

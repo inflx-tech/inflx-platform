@@ -1,0 +1,454 @@
+{
+  "info": {
+    "name": "INFLX Phase 4 — Follower App",
+    "description": "Complete follower app API — Pay-at-store, Pre-booking, Online Orders, Enquiry, Commissions. All amounts in paise (₹1 = 100 paise). Set {{base_url}} = http://localhost:3001/v1 and {{follower_token}}, {{brand_token}}, {{influencer_token}} from auth flow.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3001/v1" },
+    { "key": "follower_token", "value": "PASTE_FOLLOWER_JWT_HERE" },
+    { "key": "brand_token", "value": "PASTE_BRAND_JWT_HERE" },
+    { "key": "influencer_token", "value": "PASTE_INFLUENCER_JWT_HERE" },
+    { "key": "influencer_handle", "value": "priyacooks" },
+    { "key": "campaign_id", "value": "PASTE_CAMPAIGN_ID" },
+    { "key": "set_id", "value": "PASTE_SET_ID" },
+    { "key": "offer_id", "value": "PASTE_OFFER_ID" },
+    { "key": "campaign_influencer_id", "value": "PASTE_CI_ID" },
+    { "key": "brand_id", "value": "PASTE_BRAND_ID" },
+    { "key": "razorpay_order_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Follower Identity",
+      "item": [
+        {
+          "name": "Register follower profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/followers/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ravi Kumar\",\n  \"city\": \"Vijayawada\",\n  \"state\": \"Andhra Pradesh\"\n}"
+            },
+            "description": "Creates follower profile. Auth required (follower role). Call once after OTP login."
+          }
+        },
+        {
+          "name": "Get follower profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{follower_token}}" }],
+            "url": "{{base_url}}/followers/me",
+            "description": "Returns follower profile + address list."
+          }
+        },
+        {
+          "name": "Follow influencer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/follows",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"influencer_id\": \"PASTE_INFLUENCER_ID\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Unfollow influencer",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{follower_token}}" }],
+            "url": "{{base_url}}/follower/follows/PASTE_INFLUENCER_ID"
+          }
+        },
+        {
+          "name": "Add address",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Home\",\n  \"line1\": \"10 MG Road, Labbipeta\",\n  \"city\": \"Vijayawada\",\n  \"pincode\": \"520010\",\n  \"is_default\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "List addresses",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{follower_token}}" }],
+            "url": "{{base_url}}/follower/addresses"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Follower Store",
+      "item": [
+        {
+          "name": "Influencer Store (no auth)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/store/{{influencer_handle}}",
+            "description": "No auth required. Returns influencer profile + active offers + tracking IDs."
+          }
+        },
+        {
+          "name": "Influencer Store with tracking params",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/store/{{influencer_handle}}?cid={{campaign_id}}&sid={{set_id}}&oid={{offer_id}}&iid={{campaign_influencer_id}}",
+              "query": [
+                { "key": "cid", "value": "{{campaign_id}}" },
+                { "key": "sid", "value": "{{set_id}}" },
+                { "key": "oid", "value": "{{offer_id}}" },
+                { "key": "iid", "value": "{{campaign_influencer_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Store products",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/store/{{influencer_handle}}/products?offer_id={{offer_id}}",
+              "query": [{ "key": "offer_id", "value": "{{offer_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Business Store (brand)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/business/{{brand_id}}"
+          }
+        },
+        {
+          "name": "Category Listing",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/category/restaurant?city=Vijayawada",
+              "query": [{ "key": "city", "value": "Vijayawada" }]
+            }
+          }
+        },
+        {
+          "name": "Follower Feed",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{follower_token}}" }],
+            "url": "{{base_url}}/follower/feed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pay at Store",
+      "item": [
+        {
+          "name": "1. Initiate Pay-at-store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.razorpay_order_id) {",
+                  "  pm.collectionVariables.set('razorpay_order_id', json.data.razorpay_order_id);",
+                  "  console.log('Order ID saved:', json.data.razorpay_order_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/pay-at-store",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offer_id\": \"{{offer_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"bill_amount\": 100000\n}"
+            },
+            "description": "bill_amount = 100000 paise = ₹1000. Returns Razorpay order. Net = bill - 30% discount = ₹700 = 70000 paise."
+          }
+        },
+        {
+          "name": "2. Verify Pay-at-store Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/pay-at-store/verify",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{razorpay_order_id}}\",\n  \"razorpay_payment_id\": \"pay_test_001\",\n  \"razorpay_signature\": \"mock_sig\",\n  \"offer_id\": \"{{offer_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"bill_amount\": 100000\n}"
+            },
+            "description": "RAZORPAY_MOCK=true skips HMAC check. Creates follower_transaction + credits influencer pending_balance with 8% of 70000 = 5600 paise."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pre-booking",
+      "item": [
+        {
+          "name": "Get Available Slots",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/follower/slots?offer_id={{offer_id}}&date=2026-08-01",
+              "query": [
+                { "key": "offer_id", "value": "{{offer_id}}" },
+                { "key": "date", "value": "2026-08-01" }
+              ]
+            },
+            "description": "No auth. Returns 6 fixed slots (12:00,13:00,14:00,19:00,20:00,21:00) with availability."
+          }
+        },
+        {
+          "name": "1. Initiate Pre-booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.razorpay_order_id) {",
+                  "  pm.collectionVariables.set('razorpay_order_id', json.data.razorpay_order_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/prebook",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offer_id\": \"{{offer_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"booking_date\": \"2026-08-01\",\n  \"booking_time\": \"20:00\",\n  \"guest_count\": 2\n}"
+            },
+            "description": "Returns Razorpay order for advance amount (default ₹200 = 20000 paise)."
+          }
+        },
+        {
+          "name": "2. Confirm Pre-booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/prebook/verify",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{razorpay_order_id}}\",\n  \"razorpay_payment_id\": \"pay_book_001\",\n  \"razorpay_signature\": \"mock_sig\",\n  \"offer_id\": \"{{offer_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"booking_date\": \"2026-08-01\",\n  \"booking_time\": \"20:00\",\n  \"guest_count\": 2\n}"
+            },
+            "description": "Creates follower_bookings row with BK reference code. SMS to follower."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Online Orders",
+      "item": [
+        {
+          "name": "1. Place Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.razorpay_order_id) {",
+                  "  pm.collectionVariables.set('razorpay_order_id', json.data.razorpay_order_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offer_id\": \"{{offer_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"items\": [\n    { \"product_id\": \"PASTE_PRODUCT_ID\", \"quantity\": 2 }\n  ],\n  \"address_id\": \"PASTE_ADDRESS_ID\",\n  \"delivery_fee\": 5000\n}"
+            },
+            "description": "Items prices from brand_products (rupees → paise internally). delivery_fee in paise."
+          }
+        },
+        {
+          "name": "2. Verify Order Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/orders/verify",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_order_id\": \"{{razorpay_order_id}}\",\n  \"razorpay_payment_id\": \"pay_order_001\",\n  \"razorpay_signature\": \"mock_sig\",\n  \"offer_id\": \"{{offer_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"items\": [\n    { \"product_id\": \"PASTE_PRODUCT_ID\", \"quantity\": 2 }\n  ],\n  \"address_id\": \"PASTE_ADDRESS_ID\",\n  \"delivery_fee\": 5000\n}"
+            }
+          }
+        },
+        {
+          "name": "My Orders",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{follower_token}}" }],
+            "url": "{{base_url}}/follower/orders"
+          }
+        },
+        {
+          "name": "Get Single Order",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{follower_token}}" }],
+            "url": "{{base_url}}/follower/orders/PASTE_ORDER_ID"
+          }
+        },
+        {
+          "name": "Update Order Status (Brand)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{brand_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/orders/PASTE_ORDER_ID/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_status\": \"dispatched\"\n}"
+            },
+            "description": "Brand role required. Valid statuses: confirmed, dispatched, delivered."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enquiry",
+      "item": [
+        {
+          "name": "Submit Enquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{follower_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follower/enquiry",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_id\": \"{{brand_id}}\",\n  \"campaign_id\": \"{{campaign_id}}\",\n  \"set_id\": \"{{set_id}}\",\n  \"campaign_influencer_id\": \"{{campaign_influencer_id}}\",\n  \"form_data\": {\n    \"event_date\": \"2026-12-12\",\n    \"guest_count\": \"100-300\",\n    \"budget_range\": \"₹1L-₹3L\",\n    \"notes\": \"Garden wedding preferred\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Brand — List Enquiries",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{brand_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/brands/me/enquiries?status=submitted",
+              "query": [{ "key": "status", "value": "submitted" }]
+            }
+          }
+        },
+        {
+          "name": "Brand — Update Enquiry (respond)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{brand_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/brands/me/enquiries/PASTE_ENQUIRY_ID",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"responded\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Brand — Convert Enquiry (triggers commission)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{brand_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/brands/me/enquiries/PASTE_ENQUIRY_ID",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"converted\",\n  \"deal_value\": 500000\n}"
+            },
+            "description": "deal_value in paise. 5% commission = 25000 paise goes to influencer.pending_balance."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Commissions",
+      "item": [
+        {
+          "name": "Influencer — Commission Tracker",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{influencer_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/influencers/me/commissions?status=pending",
+              "query": [{ "key": "status", "value": "pending", "description": "pending | confirmed | all" }]
+            },
+            "description": "Returns all follower transactions for this influencer with commission breakdown and summary."
+          }
+        },
+        {
+          "name": "Influencer — Earnings (updated with commissions)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{influencer_token}}" }],
+            "url": "{{base_url}}/influencers/me/earnings",
+            "description": "Now returns wallet_balance (released tranches), pending_balance (follower commissions in return window), commission_summary."
+          }
+        },
+        {
+          "name": "Brand — Campaign Conversion Analytics",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{brand_token}}" }],
+            "url": "{{base_url}}/brands/me/campaigns/{{campaign_id}}/conversions",
+            "description": "Returns totals (sales, revenue, commission, ROI), by_channel breakdown, by_influencer breakdown."
+          }
+        }
+      ]
+    }
+  ]
+}

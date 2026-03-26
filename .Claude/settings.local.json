@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm test:*)",
+      "Bash(dir \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\backend\\\\src\\\\db\")",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(sed -i 's/\\(brand_id, name, status, budget\\)/\\(brand_id, name, status, total_budget\\)/g' \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\backend\\\\tests$f\")",
+      "Bash(sed -i 's/\\(brand_id, name, status, budget, end_date\\)/\\(brand_id, name, status, total_budget, end_date\\)/g' \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\backend\\\\tests$f\")",
+      "Bash(done)",
+      "Bash(powershell -Command \":*)",
+      "Bash(dir \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\packages\\\\Admin Web\")",
+      "Bash(dir \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\packages\\\\Api\")",
+      "Bash(dir \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\packages\\\\Brand Web\")",
+      "Bash(dir \"C:\\\\Users\\\\aveen\\\\OneDrive\\\\Desktop\\\\INFLX\\\\packages\\\\Mobile\")",
+      "Bash(npm --version)",
+      "Bash(npx --version)",
+      "Bash(mkdir -p \"C:/Users/aveen/OneDrive/Desktop/INFLX/packages/admin-web/app/dashboard/brands/[id]\")",
+      "Bash(mkdir -p \"C:/Users/aveen/OneDrive/Desktop/INFLX/packages/admin-web/app/dashboard/influencers/[id]\")",
+      "Bash(node -e \"require\\(''./src/routes/notification.routes.js''\\); console.log\\(''notification routes OK''\\)\")"
+    ]
+  }
+}

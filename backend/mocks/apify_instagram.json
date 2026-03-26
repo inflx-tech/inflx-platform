@@ -1,0 +1,119 @@
+{
+  "priya_sharma": {
+    "username": "priya_sharma",
+    "fullName": "Priya Sharma",
+    "biography": "Food & Lifestyle creator | Hyderabad | Collabs: DM me",
+    "followersCount": 45200,
+    "followingCount": 612,
+    "postsCount": 287,
+    "engagementRate": 4.72,
+    "isVerified": false,
+    "profilePicUrl": "https://example.com/priya.jpg",
+    "niche": ["food", "lifestyle", "travel"],
+    "recentPosts": [
+      {
+        "url": "https://www.instagram.com/p/priya1/",
+        "type": "Reel",
+        "likesCount": 2140,
+        "commentsCount": 87,
+        "savesCount": 312,
+        "playsCount": 18400,
+        "timestamp": "2025-05-10T14:32:00Z"
+      },
+      {
+        "url": "https://www.instagram.com/p/priya2/",
+        "type": "Image",
+        "likesCount": 1820,
+        "commentsCount": 63,
+        "savesCount": 201,
+        "playsCount": null,
+        "timestamp": "2025-05-06T09:15:00Z"
+      }
+    ],
+    "avgLikes": 1980,
+    "avgComments": 75,
+    "city": "Hyderabad",
+    "country": "India"
+  },
+  "arun_kumar": {
+    "username": "arun_kumar",
+    "fullName": "Arun Kumar",
+    "biography": "Fitness & Tech enthusiast | Mumbai | Gym tips daily",
+    "followersCount": 120000,
+    "followingCount": 420,
+    "postsCount": 512,
+    "engagementRate": 3.15,
+    "isVerified": false,
+    "profilePicUrl": "https://example.com/arun.jpg",
+    "niche": ["fitness", "technology"],
+    "recentPosts": [
+      {
+        "url": "https://www.instagram.com/p/arun1/",
+        "type": "Reel",
+        "likesCount": 4200,
+        "commentsCount": 180,
+        "savesCount": 640,
+        "playsCount": 52000,
+        "timestamp": "2025-05-12T08:00:00Z"
+      },
+      {
+        "url": "https://www.instagram.com/p/arun2/",
+        "type": "Image",
+        "likesCount": 3100,
+        "commentsCount": 95,
+        "savesCount": 320,
+        "playsCount": null,
+        "timestamp": "2025-05-08T10:30:00Z"
+      }
+    ],
+    "avgLikes": 3650,
+    "avgComments": 137,
+    "city": "Mumbai",
+    "country": "India"
+  },
+  "_default": {
+    "username": "mock_influencer",
+    "fullName": "Mock Influencer",
+    "biography": "Food & Lifestyle creator | Hyderabad | Collabs: DM me",
+    "followersCount": 45200,
+    "followingCount": 612,
+    "postsCount": 287,
+    "engagementRate": 4.72,
+    "isVerified": false,
+    "profilePicUrl": "https://example.com/profile.jpg",
+    "niche": ["food", "lifestyle", "travel"],
+    "recentPosts": [
+      {
+        "url": "https://www.instagram.com/p/mock1/",
+        "type": "Reel",
+        "likesCount": 2140,
+        "commentsCount": 87,
+        "savesCount": 312,
+        "playsCount": 18400,
+        "timestamp": "2025-05-10T14:32:00Z"
+      },
+      {
+        "url": "https://www.instagram.com/p/mock2/",
+        "type": "Image",
+        "likesCount": 1820,
+        "commentsCount": 63,
+        "savesCount": 201,
+        "playsCount": null,
+        "timestamp": "2025-05-06T09:15:00Z"
+      },
+      {
+        "url": "https://www.instagram.com/p/mock3/",
+        "type": "Reel",
+        "likesCount": 3100,
+        "commentsCount": 142,
+        "savesCount": 480,
+        "playsCount": 27300,
+        "timestamp": "2025-04-28T11:00:00Z"
+      }
+    ],
+    "avgLikes": 2353,
+    "avgComments": 97,
+    "city": "Hyderabad",
+    "country": "India"
+  }
+}
