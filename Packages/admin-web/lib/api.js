@@ -31,7 +31,7 @@ async function request(method, path, body) {
     return { success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
   }
 
-  if (res.status === 401) { clearSession(); return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired.' } }; }
+  if (res.status === 401 && token) { clearSession(); return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired.' } }; }
 
   try { return await res.json(); } catch { return { success: false, error: { code: 'PARSE_ERROR', message: 'Invalid server response.' } }; }
 }
@@ -46,7 +46,7 @@ export const api = {
 // Auth
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
-  verifyOtp: (phone, otp) => api.post('/auth/verify-otp', { phone, otp }),
+  verifyOtp: (phone, otp) => api.post('/auth/verify-otp', { phone, otp, role: 'admin' }),
 };
 
 // Admin
@@ -61,6 +61,28 @@ export const adminApi = {
   getEscrow: (status) => api.get(`/admin/escrow?status=${status || 'all'}`),
   releaseEscrow: (id, reason) => api.post(`/admin/escrow/${id}/release`, { override_reason: reason }),
   getAdminUsers: () => api.get('/admin/users'),
+  createAdminUser: (data) => api.post('/admin/users', data),
+  getPaymentConfig: () => api.get('/admin/config/payments'),
+  updatePaymentConfig: (data) => api.patch('/admin/config/payments', data),
+  setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
+  rescrapeInfluencer: (id) => api.post(`/influencers/${id}/rescrape`),
+  bulkUploadInfluencers: async (file) => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/admin/influencers/bulk-upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch {
+      return { success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
+    }
+    if (res.status === 401 && token) { clearSession(); return { success: false, error: { code: 'UNAUTHORIZED' } }; }
+    try { return await res.json(); } catch { return { success: false, error: { code: 'PARSE_ERROR' } }; }
+  },
 };
 
 export function getStoredUser() {

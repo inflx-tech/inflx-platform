@@ -24,7 +24,7 @@ async function request(method, path, body) {
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (res.status === 401) {
+    if (res.status === 401 && token) {
       await clearSession();
       return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
     }
@@ -44,7 +44,8 @@ export const api = {
 // API endpoint groups
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
-  verifyOtp: (phone, otp) => api.post('/auth/verify-otp', { phone, otp }),
+  verifyOtp: (phone, otp, role, name) =>
+    api.post('/auth/verify-otp', { phone, otp, role, ...(name && { name }) }),
   logout: () => api.post('/auth/logout'),
 };
 
@@ -52,9 +53,11 @@ export const brandApi = {
   getMe: () => api.get('/brands/me'),
   getWallet: () => api.get('/brands/me/wallet'),
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
+  getWalletTransactions: () => api.get('/brands/me/wallet/transactions'),
   getCampaigns: () => api.get('/campaigns'),
   getCampaign: (id) => api.get(`/campaigns/${id}`),
   getCampaignLive: (id) => api.get(`/campaigns/${id}/live`),
+  cancelCampaign: (id) => api.post(`/campaigns/${id}/cancel`),
   reviewDeliverable: (id, data) => api.post(`/deliverables/${id}/review`, data),
   confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
   getNegotiation: (id) => api.get(`/negotiations/${id}`),
@@ -64,7 +67,9 @@ export const brandApi = {
 };
 
 export const influencerApi = {
+  register: (data) => api.post('/influencers/register', data),
   getMe: () => api.get('/influencers/me'),
+  updateMe: (data) => api.patch('/influencers/me', data),
   getEarnings: () => api.get('/influencers/me/earnings'),
   getOffers: () => api.get('/offers/inbox'),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),
@@ -80,10 +85,12 @@ export const influencerApi = {
   withdraw: (data) => api.post('/influencers/me/withdraw', data),
   getWithdrawals: () => api.get('/influencers/me/withdrawals'),
   retryWithdrawal: (id) => api.post(`/influencers/me/withdrawals/${id}/retry`),
+  getTdsCertificateUrl: (fy) => `${API_BASE_URL}/influencers/me/tds-certificate${fy ? `?fy=${fy}` : ''}`,
 };
 
 export const followerApi = {
   getMe: () => api.get('/followers/me'),
+  updateMe: (data) => api.patch('/followers/me', data),
   getFeed: () => api.get('/followers/me/feed'),
   getStore: (handle) => api.get(`/store/${handle}`),
   getStoreProducts: (handle) => api.get(`/store/${handle}/products`),
@@ -93,5 +100,7 @@ export const followerApi = {
   prebook: (data) => api.post('/follower/prebook', data),
   createOrder: (data) => api.post('/follower/orders', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),
+  getAddresses: () => api.get('/followers/me/addresses'),
+  addAddress: (data) => api.post('/followers/me/addresses', data),
   submitEnquiry: (data) => api.post('/follower/enquiry', data),
 };

@@ -107,4 +107,109 @@ async function generateContractPDF(contract) {
   });
 }
 
-module.exports = { generateContractPDF };
+/**
+ * Generate a Form 16A-style TDS certificate PDF for an influencer.
+ *
+ * @param {object} opts
+ * @param {object} opts.influencer   — influencer row with user join fields
+ * @param {string} opts.fy           — e.g. '2024-25'
+ * @param {Date}   opts.fyStart      — FY start date
+ * @param {Date}   opts.fyEnd        — FY end date
+ * @param {number} opts.grossEarnings  — total withdrawn (rupees)
+ * @param {number} opts.tdsDeducted    — total TDS deducted (rupees)
+ * @param {number} opts.netPaid        — grossEarnings - tdsDeducted (rupees)
+ * @returns {Promise<Buffer>}
+ */
+async function generateTdsCertificate({ influencer, fy, fyStart, fyEnd, grossEarnings, tdsDeducted, netPaid }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ margin: 50 });
+    const chunks = [];
+
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const fmt = (n) => `₹${parseFloat(n || 0).toFixed(2)}`;
+    const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-IN') : 'N/A';
+
+    // ── Header ──────────────────────────────────────────────────────────────
+    doc.fontSize(18).font('Helvetica-Bold').text('CERTIFICATE OF TAX DEDUCTED AT SOURCE', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fontSize(11).font('Helvetica').text('(Under Section 194-JB of the Income Tax Act, 1961)', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fontSize(10).text(`Financial Year: ${fy}  (${fmtDate(fyStart)} to ${fmtDate(fyEnd)})`, { align: 'center' });
+    doc.moveDown(1.5);
+
+    // ── Deductor (Platform) ─────────────────────────────────────────────────
+    doc.fontSize(13).font('Helvetica-Bold').text('DEDUCTOR DETAILS');
+    doc.moveDown(0.4);
+    doc.fontSize(10).font('Helvetica');
+    doc.text('Name:             INFLX Technologies Pvt. Ltd.');
+    doc.text('Address:          inflx.in (Online Platform, India)');
+    doc.text('TAN:              As registered with Income Tax Department');
+    doc.moveDown(1.5);
+
+    // ── Deductee (Influencer) ───────────────────────────────────────────────
+    doc.fontSize(13).font('Helvetica-Bold').text('DEDUCTEE DETAILS');
+    doc.moveDown(0.4);
+    doc.fontSize(10).font('Helvetica');
+    doc.text(`Name:             ${influencer.full_name || influencer.name || 'N/A'}`);
+    doc.text(`Instagram Handle: @${influencer.instagram_handle || 'N/A'}`);
+    doc.text(`PAN:              ${influencer.pan_number || 'NOT PROVIDED — submit PAN to claim TDS credit'}`);
+    doc.text(`Phone:            ${influencer.phone || 'N/A'}`);
+    doc.moveDown(1.5);
+
+    // ── Earnings Summary ────────────────────────────────────────────────────
+    doc.fontSize(13).font('Helvetica-Bold').text('EARNINGS & TDS SUMMARY');
+    doc.moveDown(0.4);
+    doc.fontSize(10).font('Helvetica');
+
+    // Simple table
+    const col1 = 55, col2 = 320;
+    const drawRow = (label, value, bold = false) => {
+      const y = doc.y;
+      doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').text(label, col1, y, { continued: false });
+      doc.font(bold ? 'Helvetica-Bold' : 'Helvetica').text(value, col2, y);
+      doc.moveDown(0.3);
+    };
+
+    drawRow('Gross Earnings (Total Withdrawals):', fmt(grossEarnings));
+    drawRow('TDS Rate Applied:',                  '10% (u/s 194-JB)');
+    drawRow('TDS Deducted:',                      fmt(tdsDeducted), true);
+    drawRow('Net Amount Paid:',                   fmt(netPaid));
+    doc.moveDown(1);
+
+    // ── Declaration ─────────────────────────────────────────────────────────
+    doc.fontSize(13).font('Helvetica-Bold').text('DECLARATION');
+    doc.moveDown(0.4);
+    doc.fontSize(9).font('Helvetica');
+    doc.text(
+      'I certify that a sum of ' + fmt(tdsDeducted) + ' has been deducted at source from the payments ' +
+      'made to the above-named deductee during the financial year ' + fy + ', in accordance with the ' +
+      'provisions of the Income Tax Act, 1961. The deducted amount has been / will be deposited to the ' +
+      'Central Government account.',
+      { align: 'justify' }
+    );
+    doc.moveDown(1.5);
+
+    doc.fontSize(9).fillColor('#888888');
+    doc.text(
+      'Note: This certificate is system-generated. For official purposes, please cross-verify with ' +
+      'Form 26AS on the Income Tax e-Filing portal (incometax.gov.in). TDS credit will reflect in ' +
+      'Form 26AS after the deductor files the quarterly TDS return.',
+      { align: 'justify' }
+    );
+    doc.moveDown(1.5);
+
+    // ── Footer ──────────────────────────────────────────────────────────────
+    doc.fontSize(8).fillColor('#333333');
+    doc.text(
+      `Generated on: ${new Date().toLocaleDateString('en-IN')} | INFLX Platform — inflx.in`,
+      { align: 'center' }
+    );
+
+    doc.end();
+  });
+}
+
+module.exports = { generateContractPDF, generateTdsCertificate };

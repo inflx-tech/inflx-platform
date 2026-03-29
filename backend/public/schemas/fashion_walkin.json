@@ -1,0 +1,34 @@
+{
+  "category_key": "fashion_walkin",
+  "label": "Fashion (Walk-in)",
+  "icon": "👗",
+  "product_noun": "Product",
+  "product_noun_plural": "Products",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": false,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Kurtas", "Sarees", "Suits", "Western Wear", "Kids Wear", "Accessories", "Footwear"],
+  "booking_type": null,
+  "availing_modes": ["pay_at_store"],
+  "fields": [
+    { "key": "name", "label": "Product Name", "type": "text", "required": true, "placeholder": "e.g. Floral Kurta" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Kurtas", "Sarees", "Suits", "Western Wear", "Kids Wear", "Accessories", "Footwear"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "999" },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants_json", "label": "Sizes & Colors", "type": "variant_builder", "required": false, "placeholder": "e.g. S / M / L / XL, Red / Blue / Green" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Visit Store"
+  }
+}

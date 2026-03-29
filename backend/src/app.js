@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 
 const routes = require('./routes/index');
+const trackingCtrl = require('./controllers/tracking.controller');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -16,9 +17,25 @@ const app = express();
 app.use(helmet());
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:3002',      // brand web
+  'http://localhost:3003',      // admin web
+  'http://10.0.2.2:3002',      // Android emulator → brand web
+  'http://10.0.2.2:3003',      // Android emulator → admin web
+  process.env.BRAND_WEB_URL,   // production brand URL
+  process.env.ADMIN_WEB_URL,   // production admin URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-  credentials: true, // Allow cookies (refresh token)
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // ─── Request parsing ─────────────────────────────────────────────────────────
@@ -61,6 +78,11 @@ if (process.env.NODE_ENV !== 'test') {
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'inflx-api', version: '1.0.0' });
 });
+
+// ─── Influencer share-link click tracking ─────────────────────────────────────
+// Pattern: /s/:influencer_handle?cid=&sid=&oid=&iid=
+// Logs the click then redirects to the follower store.
+app.get('/s/:influencer_handle', trackingCtrl.trackClick);
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 app.use('/v1', routes);

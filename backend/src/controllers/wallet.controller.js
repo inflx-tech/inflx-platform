@@ -1,14 +1,29 @@
 'use strict';
 
-const crypto = require('crypto');
-const db = require('../config/db');
-const env = require('../config/env');
+const crypto   = require('crypto');
+const Razorpay = require('razorpay');
+const db       = require('../config/db');
+const env      = require('../config/env');
 const { success } = require('../utils/response');
-const AppError = require('../utils/AppError');
+const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// In-memory store for pending Razorpay orders (mock mode only).
+// Razorpay client (lazy — only initialised when RAZORPAY_MOCK=false)
+// ─────────────────────────────────────────────────────────────────────────────
+let _rzp = null;
+function getRzp() {
+  if (!_rzp) {
+    if (!env.RAZORPAY_KEY_ID || !env.RAZORPAY_KEY_SECRET) {
+      throw new AppError('INTERNAL_ERROR', 'Razorpay keys not configured in .env', 500);
+    }
+    _rzp = new Razorpay({ key_id: env.RAZORPAY_KEY_ID, key_secret: env.RAZORPAY_KEY_SECRET });
+  }
+  return _rzp;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// In-memory store for pending orders (mock mode only)
 // Maps order_id → { amount, brandId }
 // ─────────────────────────────────────────────────────────────────────────────
 const pendingOrders = new Map();
@@ -35,51 +50,84 @@ async function getBrandOrThrow(userId) {
 const getWallet = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
 
+  // Also fetch total deposited and escrow locked
+  const { rows: txRows } = await db.query(
+    `SELECT COALESCE(SUM(amount),0) AS total_deposited
+     FROM wallet_transactions
+     WHERE brand_id = $1 AND type = 'topup' AND direction = 'credit'`,
+    [brand.id]
+  );
+  const { rows: escrowRows } = await db.query(
+    `SELECT COALESCE(SUM(amount),0) AS escrow_locked
+     FROM wallet_transactions
+     WHERE brand_id = $1 AND type = 'escrow_lock' AND direction = 'debit'`,
+    [brand.id]
+  );
+
   return success(res, {
-    wallet_balance: brand.wallet_balance,
-    brand_id: brand.id,
+    wallet: {
+      wallet_balance:  parseFloat(brand.wallet_balance),
+      escrow_locked:   parseFloat(escrowRows[0].escrow_locked),
+      total_deposited: parseFloat(txRows[0].total_deposited),
+      brand_id:        brand.id,
+    },
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /brands/me/wallet/topup
-// Creates a Razorpay order (or mock order) for the given amount.
+// Creates a Razorpay order (or mock order) for the given amount (paise).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const createTopup = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
-  const { amount } = req.body;
+  const { amount } = req.body; // amount in PAISE
 
-  if (!amount || parseFloat(amount) <= 0) {
-    throw new AppError('VALIDATION_ERROR', 'amount must be greater than 0', 422, 'amount');
+  if (!amount || parseInt(amount, 10) < 100) {
+    throw new AppError('VALIDATION_ERROR', 'amount must be at least ₹1 (100 paise)', 422, 'amount');
   }
 
-  const amountNum = parseFloat(amount);
+  const amountPaise = parseInt(amount, 10);
 
   if (env.RAZORPAY_MOCK) {
-    // Generate a mock order ID and store the amount in memory
     const orderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
-    pendingOrders.set(orderId, { amount: amountNum, brandId: brand.id });
-    console.log(`[RAZORPAY MOCK] Created order ${orderId} for ₹${amountNum}`);
+    pendingOrders.set(orderId, { amount: amountPaise, brandId: brand.id });
+    console.log(`[RAZORPAY MOCK] Created order ${orderId} for ₹${amountPaise / 100}`);
 
     return success(res, {
-      order_id: orderId,
-      amount: amountNum,
+      razorpay_order_id: orderId,
+      amount: amountPaise,
       currency: 'INR',
       key_id: env.RAZORPAY_KEY_ID,
     }, 201);
   }
 
-  // Production: call Razorpay Orders API
-  // POST https://api.razorpay.com/v1/orders
-  // { amount: amountNum * 100, currency: 'INR', receipt: 'brand_topup_...' }
-  throw new AppError('INTERNAL_ERROR', 'Set RAZORPAY_MOCK=false to enable live payments', 500);
+  // ── Live mode: call Razorpay Orders API ──────────────────────────────────
+  const receipt = `brand_${brand.id.slice(0, 8)}_${Date.now()}`;
+  let order;
+  try {
+    order = await getRzp().orders.create({
+      amount:   amountPaise,
+      currency: 'INR',
+      receipt,
+      notes:    { brand_id: brand.id, type: 'wallet_topup' },
+    });
+  } catch (err) {
+    console.error('[RAZORPAY] orders.create failed:', err?.error || err.message);
+    throw new AppError('INTERNAL_ERROR', `Razorpay order creation failed: ${err?.error?.description || err.message}`, 500);
+  }
+
+  return success(res, {
+    razorpay_order_id: order.id,
+    amount:            order.amount,
+    currency:          order.currency,
+    key_id:            env.RAZORPAY_KEY_ID,
+  }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /brands/me/wallet/topup/verify
-// Verifies payment and credits the brand wallet.
-// When RAZORPAY_MOCK=true, skips HMAC check and auto-credits.
+// Verifies Razorpay payment signature and credits the brand wallet.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const verifyTopup = asyncHandler(async (req, res) => {
@@ -87,70 +135,74 @@ const verifyTopup = asyncHandler(async (req, res) => {
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
   if (!razorpay_order_id || !razorpay_payment_id) {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      'razorpay_order_id and razorpay_payment_id are required',
-      422
-    );
+    throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  let amount;
+  let amountPaise;
 
   if (env.RAZORPAY_MOCK) {
-    // In mock mode, look up the pending order to get the amount
     const pending = pendingOrders.get(razorpay_order_id);
     if (!pending) {
       throw new AppError('NOT_FOUND', 'Order not found or already processed', 404);
     }
-    amount = pending.amount;
+    amountPaise = pending.amount;
     pendingOrders.delete(razorpay_order_id);
-    console.log(`[RAZORPAY MOCK] Verified payment ${razorpay_payment_id} for order ${razorpay_order_id} ₹${amount}`);
+    console.log(`[RAZORPAY MOCK] Verified payment ${razorpay_payment_id} — ₹${amountPaise / 100}`);
   } else {
-    // Production: verify HMAC signature
+    // ── Verify HMAC signature ──────────────────────────────────────────────
     if (!razorpay_signature) {
       throw new AppError('VALIDATION_ERROR', 'razorpay_signature is required', 422);
     }
-    const body = razorpay_order_id + '|' + razorpay_payment_id;
+
+    const body        = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSig = crypto
       .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
       .update(body)
       .digest('hex');
 
     if (expectedSig !== razorpay_signature) {
-      throw new AppError('UNAUTHORIZED', 'Invalid payment signature', 401);
+      throw new AppError('UNAUTHORIZED', 'Payment signature verification failed', 401);
     }
 
-    // In production, fetch order amount from Razorpay API
-    // For now, throw — implement when going live
-    throw new AppError('INTERNAL_ERROR', 'Set RAZORPAY_MOCK=false to enable live payments', 500);
+    // ── Fetch order amount from Razorpay (source of truth) ────────────────
+    let rzpOrder;
+    try {
+      rzpOrder = await getRzp().orders.fetch(razorpay_order_id);
+    } catch (err) {
+      console.error('[RAZORPAY] orders.fetch failed:', err?.error || err.message);
+      throw new AppError('INTERNAL_ERROR', `Could not verify order with Razorpay: ${err?.error?.description || err.message}`, 500);
+    }
+
+    if (rzpOrder.status !== 'paid') {
+      throw new AppError('VALIDATION_ERROR', `Order status is "${rzpOrder.status}", expected "paid"`, 422);
+    }
+
+    amountPaise = rzpOrder.amount;
   }
 
-  // Credit wallet atomically
+  // ── Credit wallet atomically ───────────────────────────────────────────────
   let newBalance;
   let transaction;
 
   await db.withTransaction(async (client) => {
-    // Get current balance (row-lock for concurrency safety)
     const { rows: brandRows } = await client.query(
       `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
       [brand.id]
     );
     const currentBalance = parseFloat(brandRows[0].wallet_balance);
-    newBalance = currentBalance + amount;
+    newBalance = currentBalance + amountPaise;
 
-    // Update wallet balance
     await client.query(
       `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
       [newBalance, brand.id]
     );
 
-    // Record wallet transaction
     const { rows: txRows } = await client.query(
       `INSERT INTO wallet_transactions
          (brand_id, type, amount, direction, balance_after, razorpay_payment_id, notes)
        VALUES ($1, 'topup', $2, 'credit', $3, $4, $5)
        RETURNING *`,
-      [brand.id, amount, newBalance, razorpay_payment_id, 'Wallet top-up via Razorpay']
+      [brand.id, amountPaise, newBalance, razorpay_payment_id, 'Wallet top-up via Razorpay']
     );
     transaction = txRows[0];
   });
@@ -187,11 +239,7 @@ const getTransactions = asyncHandler(async (req, res) => {
   );
   const total = parseInt(countRows[0].count, 10);
 
-  return success(res, { transactions: rows }, 200, {
-    page: pageNum,
-    limit: limitNum,
-    total,
-  });
+  return success(res, { transactions: rows }, 200, { page: pageNum, limit: limitNum, total });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

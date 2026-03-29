@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, ActivityIndicator } from 'react-native';
@@ -8,6 +8,8 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import InfluencerNavigator from './src/navigation/InfluencerNavigator';
 import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
+
+export const AuthContext = createContext({ setRole: () => {} });
 
 export default function App() {
   const [role, setRole] = useState(null); // null = loading, '' = unauthenticated
@@ -20,8 +22,6 @@ export default function App() {
         if (!token || !userStr) { setRole(''); return; }
         const user = JSON.parse(userStr);
         setRole(user.role || '');
-        // For brand/influencer, check if approved
-        // We'll let the navigator handle status checks
       } catch {
         setRole('');
       }
@@ -38,11 +38,13 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      {role === 'brand' ? <BrandNavigator /> :
-       role === 'influencer' ? <InfluencerNavigator /> :
-       role === 'follower' ? <FollowerNavigator /> :
-       <AuthNavigator />}
-    </NavigationContainer>
+    <AuthContext.Provider value={{ setRole }}>
+      <NavigationContainer>
+        {role === 'brand' ? <BrandNavigator /> :
+         role === 'influencer' ? <InfluencerNavigator /> :
+         role === 'follower' ? <FollowerNavigator /> :
+         <AuthNavigator />}
+      </NavigationContainer>
+    </AuthContext.Provider>
   );
 }

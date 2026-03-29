@@ -3,6 +3,7 @@
 const db = require('../config/db');
 const apifyService = require('../services/apify.service');
 const notificationService = require('../services/notification.service');
+const pdfService = require('../services/pdf.service');
 const { encrypt } = require('../utils/encrypt');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
@@ -160,10 +161,15 @@ const updateMe = asyncHandler(async (req, res) => {
 
 const search = asyncHandler(async (req, res) => {
   const {
+    q,
     niche,
     city,
+    tier,
+    gender,
+    platform,
     min_followers,
     max_followers,
+    min_er,
     page  = '1',
     limit = '20',
   } = req.query;
@@ -171,13 +177,29 @@ const search = asyncHandler(async (req, res) => {
   const conditions = [`u.status = 'approved'`];
   const params = [];
 
+  if (q) {
+    params.push(`%${q}%`);
+    conditions.push(`(u.name ILIKE $${params.length} OR i.instagram_handle ILIKE $${params.length} OR i.full_name ILIKE $${params.length})`);
+  }
   if (niche) {
     params.push(niche);
-    conditions.push(`i.niche @> ARRAY[$${params.length}]::varchar[]`);
+    conditions.push(`$${params.length} = ANY(i.niche)`);
   }
   if (city) {
-    params.push(city.toLowerCase());
-    conditions.push(`LOWER(i.scrape_data->>'city') = $${params.length}`);
+    params.push(`%${city}%`);
+    conditions.push(`i.city ILIKE $${params.length}`);
+  }
+  if (tier) {
+    params.push(tier);
+    conditions.push(`i.tier = $${params.length}`);
+  }
+  if (gender) {
+    params.push(gender);
+    conditions.push(`i.gender = $${params.length}`);
+  }
+  if (platform) {
+    params.push(platform);
+    conditions.push(`i.platform = $${params.length}`);
   }
   if (min_followers) {
     params.push(parseInt(min_followers, 10));
@@ -187,38 +209,37 @@ const search = asyncHandler(async (req, res) => {
     params.push(parseInt(max_followers, 10));
     conditions.push(`i.followers_count <= $${params.length}`);
   }
+  if (min_er) {
+    params.push(parseFloat(min_er));
+    conditions.push(`i.engagement_rate >= $${params.length}`);
+  }
 
   const where = conditions.join(' AND ');
 
-  // Total count (using same filter params)
   const countFilterParams = [...params];
   const { rows: countRows } = await db.query(
-    `SELECT COUNT(*) FROM influencers i
-     JOIN users u ON u.id = i.user_id
-     WHERE ${where}`,
+    `SELECT COUNT(*) FROM influencers i JOIN users u ON u.id = i.user_id WHERE ${where}`,
     countFilterParams
   );
   const total = parseInt(countRows[0].count, 10);
 
-  // Paginated results
-  const pageNum   = Math.max(1, parseInt(page, 10));
-  const limitNum  = Math.min(100, Math.max(1, parseInt(limit, 10)));
-  const offset    = (pageNum - 1) * limitNum;
-
+  const pageNum  = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+  const offset   = (pageNum - 1) * limitNum;
   params.push(limitNum, offset);
 
   const { rows } = await db.query(
     `SELECT
-       i.id,
-       i.instagram_handle,
-       i.youtube_handle,
-       i.followers_count,
-       i.engagement_rate,
-       i.niche,
-       i.language,
-       i.content_style,
-       i.scrape_data->>'city' AS city,
-       u.name
+       i.id, i.instagram_handle, i.youtube_handle, i.full_name,
+       i.followers_count, i.engagement_rate, i.niche, i.secondary_niche,
+       i.language, i.tier, i.city, i.state, i.gender, i.platform,
+       i.avg_views, i.avg_likes, i.avg_comments, i.avg_shares, i.avg_saves,
+       i.total_posts, i.verified,
+       i.bio, i.website,
+       i.price_per_post_min, i.price_per_post_max,
+       i.past_brands_json, i.collaboration_types_json,
+       i.profile_image_url, i.age,
+       u.name, u.id AS user_id
      FROM influencers i
      JOIN users u ON u.id = i.user_id
      WHERE ${where}
@@ -227,11 +248,7 @@ const search = asyncHandler(async (req, res) => {
     params
   );
 
-  return success(res, { influencers: rows }, 200, {
-    page: pageNum,
-    limit: limitNum,
-    total,
-  });
+  return success(res, { influencers: rows }, 200, { page: pageNum, limit: limitNum, total });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,10 +256,26 @@ const search = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const getPublicById = asyncHandler(async (req, res) => {
-  const inf = await getInfluencerById(req.params.id);
-  if (!inf) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
-
-  return success(res, { influencer: sanitiseInfluencer(inf) });
+  const { rows } = await db.query(
+    `SELECT
+       i.id, i.instagram_handle, i.youtube_handle, i.full_name,
+       i.followers_count, i.engagement_rate, i.niche, i.secondary_niche,
+       i.language, i.tier, i.city, i.state, i.gender, i.platform,
+       i.avg_views, i.avg_likes, i.avg_comments, i.avg_shares, i.avg_saves,
+       i.total_posts, i.verified,
+       i.bio, i.website,
+       i.price_per_post_min, i.price_per_post_max,
+       i.past_brands_json, i.collaboration_types_json,
+       i.profile_image_url, i.age,
+       i.wallet_balance, i.pending_balance,
+       u.name, u.id AS user_id, u.status AS user_status
+     FROM influencers i
+     JOIN users u ON u.id = i.user_id
+     WHERE i.id = $1`,
+    [req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
+  return success(res, { influencer: rows[0] });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -332,7 +365,106 @@ const getEarnings = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /influencers/me/tds-certificate?fy=2024-25
+// Returns a Form 16A-style PDF for the requested financial year
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getTdsCertificate = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  // Parse requested FY — default to current FY
+  const fyParam = (req.query.fy || '').trim();
+  let fyStart, fyEnd, fyLabel;
+
+  if (fyParam && /^\d{4}-\d{2}$/.test(fyParam)) {
+    const startYear = parseInt(fyParam.slice(0, 4));
+    fyStart = new Date(startYear, 3, 1);       // April 1 of start year
+    fyEnd   = new Date(startYear + 1, 2, 31);  // March 31 of end year
+    fyLabel = fyParam;
+  } else {
+    // Default: current Indian financial year
+    const now = new Date();
+    const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    fyStart = new Date(startYear, 3, 1);
+    fyEnd   = new Date(startYear + 1, 2, 31);
+    fyLabel = `${startYear}-${String(startYear + 1).slice(-2)}`;
+  }
+
+  // Query completed withdrawals within the FY
+  const { rows: withdrawalRows } = await db.query(
+    `SELECT COALESCE(SUM(amount_requested), 0) AS gross_earnings,
+            COALESCE(SUM(tds_deducted), 0)     AS tds_deducted,
+            COALESCE(SUM(net_paid), 0)          AS net_paid
+     FROM influencer_withdrawals
+     WHERE influencer_id = $1
+       AND status IN ('completed', 'processing')
+       AND created_at >= $2
+       AND created_at <= $3`,
+    [inf.id, fyStart.toISOString(), fyEnd.toISOString()]
+  );
+
+  const grossEarnings = parseFloat(withdrawalRows[0].gross_earnings);
+  const tdsDeducted   = parseFloat(withdrawalRows[0].tds_deducted);
+  const netPaid       = parseFloat(withdrawalRows[0].net_paid);
+
+  // Fetch name and phone from users table for the cert
+  const { rows: userRows } = await db.query(
+    `SELECT u.name AS full_name, u.phone, i.instagram_handle, i.pan_number
+     FROM users u
+     JOIN influencers i ON i.user_id = u.id
+     WHERE u.id = $1`,
+    [req.user.sub]
+  );
+  const influencerDetails = userRows[0] || {};
+
+  const pdfBuffer = await pdfService.generateTdsCertificate({
+    influencer: influencerDetails,
+    fy:         fyLabel,
+    fyStart,
+    fyEnd,
+    grossEarnings,
+    tdsDeducted,
+    netPaid,
+  });
+
+  const filename = `inflx_tds_certificate_${fyLabel.replace('-', '_')}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', pdfBuffer.length);
+  return res.end(pdfBuffer);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /influencers/:id/rescrape  (admin only — refresh Instagram stats)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const rescrape = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerById(req.params.id);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
+
+  const scraped = await apifyService.scrapeProfile(influencer.instagram_handle);
+
+  await db.query(
+    `UPDATE influencers
+     SET followers_count = $1, engagement_rate = $2, niche = $3,
+         scrape_data = $4, scrape_last_run = now()
+     WHERE id = $5`,
+    [
+      scraped.followers_count,
+      scraped.engagement_rate,
+      scraped.niche,
+      JSON.stringify(scraped.scrape_data),
+      influencer.id,
+    ]
+  );
+
+  const updated = await getInfluencerById(influencer.id);
+  return success(res, { influencer: sanitiseInfluencer(updated), scraped_at: new Date().toISOString() });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exported for admin controller re-use
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings };
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape };

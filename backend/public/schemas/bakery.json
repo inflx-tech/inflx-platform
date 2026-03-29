@@ -1,0 +1,35 @@
+{
+  "category_key": "bakery",
+  "label": "Bakery",
+  "icon": "🎂",
+  "product_noun": "Baked Item",
+  "product_noun_plural": "Baked Items",
+  "features": {
+    "sections": true,
+    "veg_flag": true,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Cakes", "Cookies", "Breads", "Pastries", "Seasonal"],
+  "booking_type": "prebook",
+  "availing_modes": ["pay_at_store", "online_order", "prebook"],
+  "fields": [
+    { "key": "name", "label": "Item Name", "type": "text", "required": true, "placeholder": "e.g. Chocolate Truffle Cake" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Cakes", "Cookies", "Breads", "Pastries", "Seasonal"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "499" },
+    { "key": "veg_flag", "label": "Type", "type": "veg_toggle", "required": false },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Daily Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants", "label": "Custom Sizes Available", "type": "checkbox", "required": false, "placeholder": "e.g. 500g, 1kg, 2kg" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": true,
+    "show_sections": true,
+    "cta_label": "Order Now"
+  }
+}

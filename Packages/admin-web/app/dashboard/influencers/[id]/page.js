@@ -17,6 +17,22 @@ export default function InfluencerProfilePage() {
   const [influencer, setInfluencer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [rescraping, setRescraping] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
+
+  async function rescrape() {
+    setRescraping(true);
+    const res = await adminApi.rescrapeInfluencer(id);
+    setRescraping(false);
+    if (res.success) {
+      setInfluencer(res.data?.influencer || influencer);
+      showToast('Instagram stats refreshed!');
+    } else {
+      showToast(res.error?.message || 'Rescrape failed');
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -46,14 +62,20 @@ export default function InfluencerProfilePage() {
       </div>
 
       <div className="bg-white rounded-xl border border-border p-5 mb-4">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-pale flex items-center justify-center text-sm font-bold text-orange-deep font-display">
-            {(influencer.instagram_handle || '').slice(0, 2).toUpperCase()}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-orange-pale flex items-center justify-center text-sm font-bold text-orange-deep font-display">
+              {(influencer.instagram_handle || '').slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <div className="font-display text-base font-bold text-t1">@{influencer.instagram_handle}</div>
+              <div className="text-xs text-t3">{influencer.phone} · {influencer.city}</div>
+            </div>
           </div>
-          <div>
-            <div className="font-display text-base font-bold text-t1">@{influencer.instagram_handle}</div>
-            <div className="text-xs text-t3">{influencer.phone} · {influencer.city}</div>
-          </div>
+          <button onClick={rescrape} disabled={rescraping}
+            className="px-4 py-2 bg-orange-50 border border-orange-200 text-orange-700 font-bold text-xs rounded-xl hover:bg-orange-100 disabled:opacity-50 transition-colors">
+            {rescraping ? 'Scraping…' : '↻ Rescrape'}
+          </button>
         </div>
 
         <div className="grid grid-cols-4 gap-2 mb-4">
@@ -69,9 +91,12 @@ export default function InfluencerProfilePage() {
           <Field label="Niche" value={(influencer.niche || []).join(', ')} />
           <Field label="Language" value={(influencer.language || []).join(', ')} />
           <Field label="Registered" value={influencer.created_at ? new Date(influencer.created_at).toLocaleDateString('en-IN') : '—'} />
+          <Field label="Last Scraped" value={influencer.scrape_last_run ? new Date(influencer.scrape_last_run).toLocaleString('en-IN') : '—'} />
           <Field label="Pending Balance" value={new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((influencer.pending_balance || 0) / 100)} />
         </div>
       </div>
+
+      {toast && <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">{toast}</div>}
     </div>
   );
 }

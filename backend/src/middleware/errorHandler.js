@@ -32,7 +32,10 @@ module.exports = function errorHandler(err, req, res, next) {
 
   // Unexpected error — log full details server-side, return generic message to client
   console.error('[INFLX] Unhandled error:', err);
-  return error(res, 'INTERNAL_ERROR', 'An unexpected error occurred', 500);
+  const message = process.env.NODE_ENV === 'development'
+    ? `${err.message} (${err.code || err.name})`
+    : 'An unexpected error occurred';
+  return error(res, 'INTERNAL_ERROR', message, 500);
 };
 
 function _extractFieldFromPgError(err) {

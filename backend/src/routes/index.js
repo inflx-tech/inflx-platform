@@ -22,11 +22,17 @@ const commissionRoutes  = require('./commission.routes');
 const engagementRoutes      = require('./engagement.routes');
 const notificationRoutes    = require('./notification.routes');
 
+// Webhooks
+const webhookRoutes = require('./webhook.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional } = require('../middleware/auth');
 
 const router = Router();
+
+// ── Webhooks (no auth — verified by signature) ───────────────────────────────
+router.use('/webhooks', webhookRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

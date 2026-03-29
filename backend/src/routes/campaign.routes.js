@@ -5,36 +5,43 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/campaign.controller');
 
 const router = Router();
-
-// All campaign endpoints require brand role
 const brandAuth = [authenticate, requireRole('brand')];
 
-// ── Campaign CRUD (Block A2) ─────────────────────────────────────────────────
-router.post('/',    ...brandAuth, ctrl.create);
-router.get('/',     ...brandAuth, ctrl.list);
-router.get('/:id',  ...brandAuth, ctrl.getById);
-router.patch('/:id',...brandAuth, ctrl.update);
-router.delete('/:id', ...brandAuth, ctrl.remove);
+// ── Campaign CRUD ────────────────────────────────────────────────────────────
+router.post('/',       ...brandAuth, ctrl.create);
+router.get('/',        ...brandAuth, ctrl.list);
+router.get('/:id',     ...brandAuth, ctrl.getById);
+router.patch('/:id',   ...brandAuth, ctrl.update);
+router.delete('/:id',  ...brandAuth, ctrl.remove);
 
-// ── Campaign Publish (Block A6) ──────────────────────────────────────────────
+// ── Campaign Publish / Cancel ─────────────────────────────────────────────────
 router.post('/:id/publish', ...brandAuth, ctrl.publish);
+router.post('/:id/cancel',  ...brandAuth, ctrl.cancel);
 
-// ── Campaign Sets CRUD (Block A3) ───────────────────────────────────────────
-router.post('/:id/sets',             ...brandAuth, ctrl.createSet);
-router.patch('/:id/sets/:sid',       ...brandAuth, ctrl.updateSet);
-router.delete('/:id/sets/:sid',      ...brandAuth, ctrl.deleteSet);
+// ── Campaign Sets CRUD ───────────────────────────────────────────────────────
+router.get('/:id/sets',                     ...brandAuth, ctrl.getSets);
+router.post('/:id/sets',                    ...brandAuth, ctrl.createSet);
+router.patch('/:id/sets/:sid',              ...brandAuth, ctrl.updateSet);
+router.delete('/:id/sets/:sid',             ...brandAuth, ctrl.deleteSet);
+router.post('/:id/sets/:sid/duplicate',     ...brandAuth, ctrl.duplicateSet);
 
-// ── Invite influencer to set (Block A — handpick) ───────────────────────────
+// ── Invite influencer to set (handpick) ─────────────────────────────────────
 router.post('/:id/sets/:sid/invite', ...brandAuth, ctrl.invite);
 
-// ── Create offer for set (Block A4) ─────────────────────────────────────────
+// ── Create offer for set (legacy) ───────────────────────────────────────────
 router.post('/:id/sets/:sid/offers', ...brandAuth, ctrl.createOffer);
 
-// ── Publish open-group set (Block D) ─────────────────────────────────────────
+// ── Open-group set ───────────────────────────────────────────────────────────
 const offerCtrl = require('../controllers/offer.controller');
 router.post('/:id/sets/:sid/publish-open', ...brandAuth, offerCtrl.publishOpenGroup);
 
-// ── Live hierarchy (Phase 3 — Block E) ───────────────────────────────────────
+// ── Influencer search (for handpick modal) ───────────────────────────────────
+router.get('/:id/influencer-search', ...brandAuth, ctrl.searchInfluencers);
+
+// ── Open-group match count ───────────────────────────────────────────────────
+router.get('/:id/sets/:sid/open-group-matches', ...brandAuth, ctrl.openGroupMatches);
+
+// ── Live hierarchy ───────────────────────────────────────────────────────────
 router.get('/:id/live', ...brandAuth, ctrl.getLiveHierarchy);
 
 module.exports = router;

@@ -2,12 +2,23 @@
 import { useEffect, useState } from 'react';
 import { walletApi, brandApi, fmtMoney } from '../../../lib/api';
 
+const TX_TYPE_LABELS = {
+  topup:            { label: 'Top-up',          icon: '⬆️', color: 'text-teal' },
+  escrow_lock:      { label: 'Escrow Lock',      icon: '🔒', color: 'text-navy' },
+  escrow_release:   { label: 'Escrow Release',   icon: '🔓', color: 'text-teal' },
+  payout:           { label: 'Payout',           icon: '💸', color: 'text-red' },
+  refund:           { label: 'Refund',           icon: '↩️', color: 'text-teal' },
+  platform_fee:     { label: 'Platform Fee',     icon: '📊', color: 'text-orange' },
+};
+
 export default function WalletPage() {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [topupAmount, setTopupAmount] = useState('');
   const [toppingUp, setToppingUp] = useState(false);
   const [toast, setToast] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [txLoading, setTxLoading] = useState(false);
 
   async function load() {
     const res = await walletApi.getBalance();
@@ -15,7 +26,17 @@ export default function WalletPage() {
     if (res.success) setWallet(res.data?.wallet || res.data);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    loadTransactions();
+  }, []);
+
+  async function loadTransactions() {
+    setTxLoading(true);
+    const res = await walletApi.getTransactions({ limit: 20 });
+    setTxLoading(false);
+    if (res.success) setTransactions(res.data?.transactions || []);
+  }
 
   async function handleTopup(e) {
     e.preventDefault();
@@ -84,8 +105,8 @@ export default function WalletPage() {
         ))}
       </div>
 
-      {/* Low balance warning */}
-      {balance < 10000 && (
+      {/* Low balance warning — balance is in paise; 10000 paise = ₹100 */}
+      {balance < 1000000 && (
         <div className="mb-4 p-3 bg-red-pale border border-red/20 rounded-xl text-xs text-red font-medium">
           ⚠️ Low wallet balance. Top up to publish campaigns.
         </div>
@@ -110,6 +131,41 @@ export default function WalletPage() {
             <button key={amt} onClick={() => setTopupAmount(String(amt))} className="flex-1 py-1.5 bg-surface2 text-t2 text-xs font-semibold rounded-lg hover:bg-navy-pale hover:text-navy transition-colors">₹{(amt/1).toLocaleString('en-IN')}</button>
           ))}
         </div>
+      </div>
+
+      {/* Transaction history */}
+      <div className="bg-white rounded-xl border border-border overflow-hidden mb-5">
+        <div className="px-5 py-3 border-b border-border bg-surface2 flex items-center justify-between">
+          <h2 className="font-display text-sm font-bold text-t1">Transaction History</h2>
+          <span className="text-xs text-t3">{transactions.length} transactions</span>
+        </div>
+        {txLoading ? (
+          <div className="py-8 text-center text-xs text-t3">Loading…</div>
+        ) : transactions.length === 0 ? (
+          <div className="py-8 text-center text-xs text-t3">No transactions yet</div>
+        ) : (
+          <div>
+            {transactions.map((tx, i) => {
+              const cfg = TX_TYPE_LABELS[tx.type] || { label: tx.type, icon: '•', color: 'text-t1' };
+              const isCredit = ['topup', 'escrow_release', 'refund'].includes(tx.type);
+              return (
+                <div key={tx.id || i} className="flex items-center justify-between px-5 py-3 border-b border-gray-50 last:border-0 hover:bg-surface2 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{cfg.icon}</span>
+                    <div>
+                      <div className="font-semibold text-sm text-t1">{cfg.label}</div>
+                      {tx.description && <div className="text-xs text-t3 mt-0.5 truncate max-w-xs">{tx.description}</div>}
+                      <div className="text-[10px] text-t3 mt-0.5">{tx.created_at ? new Date(tx.created_at).toLocaleString('en-IN') : ''}</div>
+                    </div>
+                  </div>
+                  <div className={`font-bold text-sm ${isCredit ? 'text-teal' : 'text-red'}`}>
+                    {isCredit ? '+' : '-'}{fmtMoney(Math.abs(tx.amount || 0))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {toast && <div className="fixed bottom-6 right-6 bg-t1 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">{toast}</div>}

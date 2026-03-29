@@ -193,6 +193,27 @@ const decline = asyncHandler(async (req, res) => {
     [ci.id]
   );
 
+  // Notify brand that influencer declined
+  const { rows: brandUserRows } = await db.query(
+    `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name
+     FROM campaigns c
+     JOIN brands b ON b.id = c.brand_id
+     JOIN users u ON u.id = b.user_id
+     WHERE c.id = $1`,
+    [ci.campaign_id]
+  );
+  if (brandUserRows[0]) {
+    await notificationService.send({
+      userId: brandUserRows[0].user_id,
+      type:   'offer.declined',
+      title:  'Offer Declined',
+      body:   `An influencer declined your offer for campaign "${brandUserRows[0].campaign_name}".`,
+      data:   { screen: 'campaign_detail', campaign_id: ci.campaign_id },
+      fcmToken: brandUserRows[0].fcm_token,
+      sendSms:  false,
+    }).catch(err => console.error('[NOTIFICATION] offer.declined send failed:', err.message));
+  }
+
   return success(res, { campaign_influencer: rows[0] });
 });
 
@@ -258,6 +279,27 @@ const negotiate = asyncHandler(async (req, res) => {
       [ci.id]
     );
   });
+
+  // Notify brand that influencer started negotiation (their turn to respond)
+  const { rows: brandNotifRows } = await db.query(
+    `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name
+     FROM campaigns c
+     JOIN brands b ON b.id = c.brand_id
+     JOIN users u ON u.id = b.user_id
+     WHERE c.id = $1`,
+    [ci.campaign_id]
+  );
+  if (brandNotifRows[0]) {
+    await notificationService.send({
+      userId: brandNotifRows[0].user_id,
+      type:   'negotiation.turn',
+      title:  'Negotiation Round',
+      body:   `An influencer has countered your offer on "${brandNotifRows[0].campaign_name}". Your turn to respond.`,
+      data:   { screen: 'negotiation', negotiation_id: negotiation.id },
+      fcmToken: brandNotifRows[0].fcm_token,
+      sendSms:  false,
+    }).catch(err => console.error('[NOTIFICATION] negotiation.turn send failed:', err.message));
+  }
 
   return success(res, { negotiation, turn }, 201);
 });
@@ -402,6 +444,40 @@ const respond = asyncHandler(async (req, res) => {
       await contractService.autoCreate(updatedCi.id);
     } catch (contractErr) {
       console.error('[CONTRACT] Auto-create failed on negotiate accept:', contractErr.message);
+    }
+  }
+
+  // Notify the OTHER party when counter is sent
+  if (action === 'counter' && updatedNeg) {
+    const nextTurn = updatedNeg.current_turn; // 'brand' or 'influencer'
+    let notifyUserId, notifyFcmToken, notifyName;
+
+    if (nextTurn === 'brand') {
+      const { rows: br } = await db.query(
+        `SELECT u.id, u.fcm_token FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+        [neg.brand_id]
+      );
+      if (br[0]) { notifyUserId = br[0].id; notifyFcmToken = br[0].fcm_token; }
+      notifyName = 'Brand';
+    } else {
+      const { rows: ir } = await db.query(
+        `SELECT u.id, u.fcm_token FROM influencers i JOIN users u ON u.id = i.user_id WHERE i.id = $1`,
+        [neg.influencer_id]
+      );
+      if (ir[0]) { notifyUserId = ir[0].id; notifyFcmToken = ir[0].fcm_token; }
+      notifyName = 'Influencer';
+    }
+
+    if (notifyUserId) {
+      await notificationService.send({
+        userId: notifyUserId,
+        type:   'negotiation.turn',
+        title:  'Counter Offer Received',
+        body:   `A counter offer has been made. Your turn to respond.`,
+        data:   { screen: 'negotiation', negotiation_id: neg.id },
+        fcmToken: notifyFcmToken,
+        sendSms: false,
+      }).catch(err => console.error('[NOTIFICATION] negotiation.turn counter failed:', err.message));
     }
   }
 

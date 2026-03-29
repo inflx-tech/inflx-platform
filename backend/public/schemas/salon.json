@@ -1,0 +1,34 @@
+{
+  "category_key": "salon",
+  "label": "Salon",
+  "icon": "💇",
+  "product_noun": "Service",
+  "product_noun_plural": "Services",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": true,
+    "variants": false,
+    "stock": false,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": false,
+    "master_catalogue": true
+  },
+  "sections": ["Hair Men", "Hair Women", "Skin", "Nails", "Makeup", "Spa"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Service Name", "type": "text", "required": true, "placeholder": "e.g. Hair Spa" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Hair", "Skin", "Nails", "Makeup", "Spa"], "required": false },
+    { "key": "price", "label": "Starting Price (₹)", "type": "number", "required": true, "placeholder": "499" },
+    { "key": "duration_mins", "label": "Duration", "type": "duration_select", "options": [15, 30, 45, 60, 90, 120, 180], "required": true },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Book Appointment"
+  }
+}

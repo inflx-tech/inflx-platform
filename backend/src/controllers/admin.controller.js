@@ -1,10 +1,28 @@
 'use strict';
 
-const db = require('../config/db');
+const db                  = require('../config/db');
+const multer              = require('multer');
+const { parse }           = require('csv-parse/sync');
 const notificationService = require('../services/notification.service');
-const { success } = require('../utils/response');
-const AppError = require('../utils/AppError');
-const asyncHandler = require('../utils/asyncHandler');
+const paymentConfigSvc    = require('../services/paymentConfig.service');
+const { success }         = require('../utils/response');
+const AppError            = require('../utils/AppError');
+const asyncHandler        = require('../utils/asyncHandler');
+
+// Multer: memory storage, CSV/Excel only, max 5MB
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.toLowerCase().endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new AppError('VALIDATION_ERROR', 'Only CSV files are supported', 422, 'file'));
+    }
+  },
+});
+// Export multer middleware for use in route
+const uploadMiddleware = upload.single('file');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/queue/brands
@@ -402,6 +420,211 @@ const createAdminUser = asyncHandler(async (req, res) => {
   }, 201);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/influencers/bulk-upload  (reviewer+)
+// Accepts a CSV file with columns:
+//   full_name*, phone*, instagram_handle*, tier, city, state, gender,
+//   niche, secondary_niche, followers_count, engagement_rate, platform,
+//   avg_views, avg_likes, avg_comments, verified, language
+// Returns { created, updated, failed, errors[] }
+// ─────────────────────────────────────────────────────────────────────────────
+
+const bulkUploadInfluencers = [
+  uploadMiddleware,
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new AppError('VALIDATION_ERROR', 'CSV file is required (field name: file)', 422, 'file');
+    }
+
+    let records;
+    try {
+      records = parse(req.file.buffer.toString('utf8'), {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      });
+    } catch (e) {
+      throw new AppError('VALIDATION_ERROR', `CSV parse error: ${e.message}`, 422, 'file');
+    }
+
+    if (!records.length) {
+      throw new AppError('VALIDATION_ERROR', 'CSV file is empty', 422, 'file');
+    }
+
+    const VALID_TIERS    = ['nano', 'micro', 'macro', 'mega'];
+    const VALID_GENDERS  = ['male', 'female', 'other', ''];
+    const VALID_PLATFORMS = ['Instagram', 'YouTube', 'Both', ''];
+
+    let created = 0;
+    let updated = 0;
+    const errors = [];
+
+    for (let rowIdx = 0; rowIdx < records.length; rowIdx++) {
+      const row = records[rowIdx];
+      const rowNum = rowIdx + 2; // 1-indexed + header
+
+      // Required field validation
+      const full_name = (row.full_name || '').trim();
+      const phone     = (row.phone || '').trim();
+      const handle    = (row.instagram_handle || '').trim();
+
+      if (!full_name) { errors.push({ row: rowNum, error: 'full_name is required' }); continue; }
+      if (!phone)     { errors.push({ row: rowNum, error: 'phone is required' });     continue; }
+      if (!handle)    { errors.push({ row: rowNum, error: 'instagram_handle is required' }); continue; }
+
+      const tier = (row.tier || 'micro').toLowerCase();
+      if (!VALID_TIERS.includes(tier)) {
+        errors.push({ row: rowNum, error: `Invalid tier "${tier}". Must be nano/micro/macro/mega` });
+        continue;
+      }
+
+      const gender = (row.gender || '').toLowerCase();
+      if (!VALID_GENDERS.includes(gender)) {
+        errors.push({ row: rowNum, error: `Invalid gender "${gender}"` });
+        continue;
+      }
+
+      const platform = (row.platform || 'Instagram');
+      if (!VALID_PLATFORMS.includes(platform)) {
+        errors.push({ row: rowNum, error: `Invalid platform "${platform}"` });
+        continue;
+      }
+
+      // Parse array fields (comma-separated)
+      const parseArr = (v) => (v || '').split(',').map(s => s.trim()).filter(Boolean);
+      const niche           = parseArr(row.niche);
+      const secondary_niche = parseArr(row.secondary_niche);
+      const language        = parseArr(row.language);
+
+      const followers_count  = parseInt(row.followers_count, 10)  || 0;
+      const engagement_rate  = parseFloat(row.engagement_rate)    || 0;
+      const avg_views        = parseInt(row.avg_views, 10)        || 0;
+      const avg_likes        = parseInt(row.avg_likes, 10)        || 0;
+      const avg_comments     = parseInt(row.avg_comments, 10)     || 0;
+      const verified         = ['true', '1', 'yes'].includes((row.verified || '').toLowerCase());
+
+      try {
+        // Upsert user row
+        const { rows: userRows } = await db.query(
+          `INSERT INTO users (phone, role, status, name)
+           VALUES ($1, 'influencer', 'approved', $2)
+           ON CONFLICT (phone) DO UPDATE
+             SET name = EXCLUDED.name, status = EXCLUDED.status
+           RETURNING id, xmax`,
+          [phone, full_name]
+        );
+        const user = userRows[0];
+        const isNewUser = parseInt(user.xmax, 10) === 0;
+
+        // Upsert influencer row
+        const { rows: infRows } = await db.query(
+          `INSERT INTO influencers (
+             user_id, instagram_handle, full_name, tier,
+             followers_count, engagement_rate, niche, secondary_niche,
+             city, state, gender, platform,
+             avg_views, avg_likes, avg_comments, verified, language
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+           ON CONFLICT (user_id) DO UPDATE SET
+             instagram_handle  = EXCLUDED.instagram_handle,
+             full_name         = EXCLUDED.full_name,
+             tier              = EXCLUDED.tier,
+             followers_count   = EXCLUDED.followers_count,
+             engagement_rate   = EXCLUDED.engagement_rate,
+             niche             = EXCLUDED.niche,
+             secondary_niche   = EXCLUDED.secondary_niche,
+             city              = EXCLUDED.city,
+             state             = EXCLUDED.state,
+             gender            = EXCLUDED.gender,
+             platform          = EXCLUDED.platform,
+             avg_views         = EXCLUDED.avg_views,
+             avg_likes         = EXCLUDED.avg_likes,
+             avg_comments      = EXCLUDED.avg_comments,
+             verified          = EXCLUDED.verified,
+             language          = EXCLUDED.language
+           RETURNING xmax`,
+          [
+            user.id, handle, full_name, tier,
+            followers_count, engagement_rate, niche, secondary_niche,
+            (row.city || '').trim() || null, (row.state || '').trim() || null,
+            gender || null, platform,
+            avg_views, avg_likes, avg_comments, verified, language,
+          ]
+        );
+
+        const isNewInfluencer = parseInt(infRows[0].xmax, 10) === 0 && isNewUser;
+        if (isNewInfluencer) created++; else updated++;
+
+      } catch (e) {
+        errors.push({ row: rowNum, phone, error: e.message });
+      }
+    }
+
+    return success(res, {
+      total: records.length,
+      created,
+      updated,
+      failed: errors.length,
+      errors,
+    }, 200);
+  }),
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET  /admin/config/payments  — return current payment config (superadmin)
+// PATCH /admin/config/payments  — update payment config (superadmin)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getPaymentConfig = asyncHandler(async (req, res) => {
+  const cfg = await paymentConfigSvc.getConfig();
+  // Also return raw DB row so UI can show updated_at / updated_by
+  const { rows } = await db.query(
+    `SELECT pc.*, u.name AS updated_by_name
+     FROM payment_config pc
+     LEFT JOIN users u ON u.id = pc.updated_by
+     WHERE pc.id = 1`
+  );
+  return success(res, { config: cfg, raw: rows[0] || null });
+});
+
+const updatePaymentConfig = asyncHandler(async (req, res) => {
+  const {
+    platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
+    tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr,
+  } = req.body;
+
+  try {
+    await paymentConfigSvc.updateConfig({
+      platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
+      tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr,
+    }, req.user.sub);
+  } catch (err) {
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+
+  const cfg = await paymentConfigSvc.getConfig();
+  return success(res, { config: cfg, message: 'Payment config updated successfully' });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/brands/:id/platform-fee  (finance+ override per-brand fee %)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const setBrandPlatformFee = asyncHandler(async (req, res) => {
+  const { platform_fee_pct } = req.body;
+  const fee = parseFloat(platform_fee_pct);
+  if (isNaN(fee) || fee < 0 || fee > 50) {
+    throw new AppError('VALIDATION_ERROR', 'platform_fee_pct must be 0–50', 422, 'platform_fee_pct');
+  }
+
+  const { rows } = await db.query(
+    `UPDATE brands SET platform_fee_pct = $1 WHERE id = $2 RETURNING id, platform_fee_pct`,
+    [fee.toFixed(2), req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
+
+  return success(res, { brand_id: rows[0].id, platform_fee_pct: rows[0].platform_fee_pct });
+});
+
 module.exports = {
   getBrandQueue,
   getInfluencerQueue,
@@ -412,4 +635,8 @@ module.exports = {
   adminReleaseEscrow,
   getAdminUsers,
   createAdminUser,
+  bulkUploadInfluencers,
+  getPaymentConfig,
+  updatePaymentConfig,
+  setBrandPlatformFee,
 };

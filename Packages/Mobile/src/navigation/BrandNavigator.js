@@ -1,39 +1,64 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, View } from 'react-native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Text } from 'react-native';
 import { colors } from '../theme/tokens';
 
-function PlaceholderScreen({ title }) {
+import BrandHomeScreen from '../screens/brand/BrandHomeScreen';
+import BrandCampaignListScreen from '../screens/brand/BrandCampaignListScreen';
+import BrandWalletScreen from '../screens/brand/BrandWalletScreen';
+import BrandNotificationsScreen from '../screens/brand/BrandNotificationsScreen';
+import BrandProfileScreen from '../screens/brand/BrandProfileScreen';
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function HomeStack() {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-      <Text style={{ fontSize: 16, color: colors.t2 }}>{title}</Text>
-      <Text style={{ fontSize: 12, color: colors.t3, marginTop: 8 }}>Use brand web at localhost:3002</Text>
-    </View>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="BrandHome" component={BrandHomeScreen} />
+    </Stack.Navigator>
   );
 }
 
-const Tab = createBottomTabNavigator();
+function CampaignsStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CampaignList" component={BrandCampaignListScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function ProfileStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
+      <Stack.Screen name="Notifications" component={BrandNotificationsScreen} />
+    </Stack.Navigator>
+  );
+}
+
+const tabIcon = (icon, label) => ({
+  tabBarLabel: label,
+  tabBarIcon: () => <Text style={{ fontSize: 20 }}>{icon}</Text>,
+});
 
 export default function BrandNavigator() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.navy,
+        tabBarActiveTintColor: colors.orange,
         tabBarInactiveTintColor: colors.t3,
         tabBarStyle: { borderTopColor: colors.border, backgroundColor: colors.white },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
-      <Tab.Screen name="Home" options={{ tabBarLabel: 'Home', tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text> }}>
-        {() => <PlaceholderScreen title="Brand Home" />}
-      </Tab.Screen>
-      <Tab.Screen name="Campaigns" options={{ tabBarLabel: 'Campaigns', tabBarIcon: () => <Text style={{ fontSize: 20 }}>📣</Text> }}>
-        {() => <PlaceholderScreen title="Campaigns" />}
-      </Tab.Screen>
-      <Tab.Screen name="Wallet" options={{ tabBarLabel: 'Wallet', tabBarIcon: () => <Text style={{ fontSize: 20 }}>💰</Text> }}>
-        {() => <PlaceholderScreen title="Wallet" />}
-      </Tab.Screen>
+      <Tab.Screen name="Home" component={HomeStack} options={tabIcon('🏠', 'Home')} />
+      <Tab.Screen name="Campaigns" component={CampaignsStack} options={tabIcon('📣', 'Campaigns')} />
+      <Tab.Screen name="Wallet" component={BrandWalletScreen} options={tabIcon('💰', 'Wallet')} />
+      <Tab.Screen name="Alerts" component={BrandNotificationsScreen} options={tabIcon('🔔', 'Alerts')} />
+      <Tab.Screen name="Profile" component={ProfileStack} options={tabIcon('👤', 'Profile')} />
     </Tab.Navigator>
   );
 }

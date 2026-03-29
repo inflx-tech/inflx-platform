@@ -31,12 +31,19 @@ export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 };
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, full: 9999 };
 
 export function fmtMoney(paise) {
-  const rupees = (paise || 0) / 100;
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', maximumFractionDigits: 0,
-  }).format(rupees);
+  const rupees = Math.round((paise || 0) / 100);
+  const s = rupees.toString();
+  // Indian number formatting: last 3 digits, then groups of 2
+  const lastThree = s.length > 3 ? s.slice(-3) : s;
+  const rest = s.length > 3 ? s.slice(0, s.length - 3) : '';
+  const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (rest ? ',' : '') + lastThree;
+  return `\u20B9${formatted}`;
 }
 
 export function fmtNum(n) {
-  return new Intl.NumberFormat('en-IN').format(n || 0);
+  const num = Math.round(n || 0);
+  const s = num.toString();
+  const lastThree = s.length > 3 ? s.slice(-3) : s;
+  const rest = s.length > 3 ? s.slice(0, s.length - 3) : '';
+  return rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (rest ? ',' : '') + lastThree;
 }

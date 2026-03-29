@@ -1,0 +1,34 @@
+{
+  "category_key": "restaurant",
+  "label": "Restaurant",
+  "icon": "🍽️",
+  "product_noun": "Menu Item",
+  "product_noun_plural": "Menu Items",
+  "features": {
+    "sections": true,
+    "veg_flag": true,
+    "duration_mins": false,
+    "variants": false,
+    "stock": true,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"],
+  "booking_type": "table",
+  "availing_modes": ["pay_at_store", "online_order", "prebook"],
+  "fields": [
+    { "key": "name", "label": "Item Name", "type": "text", "required": true, "placeholder": "e.g. Butter Chicken" },
+    { "key": "section", "label": "Menu Section", "type": "select", "options": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "299" },
+    { "key": "veg_flag", "label": "Type", "type": "veg_toggle", "required": true },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Daily Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": true,
+    "show_sections": true,
+    "cta_label": "Order Now"
+  }
+}

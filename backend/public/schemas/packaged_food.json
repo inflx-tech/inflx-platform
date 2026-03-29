@@ -1,0 +1,35 @@
+{
+  "category_key": "packaged_food",
+  "label": "Packaged Food",
+  "icon": "🛒",
+  "product_noun": "Product",
+  "product_noun_plural": "Products",
+  "features": {
+    "sections": true,
+    "veg_flag": true,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": false,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Snacks", "Sweets", "Pickles", "Spices", "Health Foods", "Beverages"],
+  "booking_type": null,
+  "availing_modes": ["pay_at_store", "online_order"],
+  "fields": [
+    { "key": "name", "label": "Product Name", "type": "text", "required": true, "placeholder": "e.g. Mango Pickle" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Snacks", "Sweets", "Pickles", "Spices", "Health Foods", "Beverages"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "199" },
+    { "key": "veg_flag", "label": "Type", "type": "veg_toggle", "required": true },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants_json", "label": "Weight / Size Options", "type": "variant_builder", "required": false, "placeholder": "e.g. 250g / 500g / 1kg" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": true,
+    "show_sections": true,
+    "cta_label": "Buy Now"
+  }
+}

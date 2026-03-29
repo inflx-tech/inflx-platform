@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { colors } from '../../theme/tokens';
 import { authApi } from '../../services/api';
+import APP_ROLE from '../../config/appRole';
 
 export default function PhoneScreen({ navigation }) {
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone]   = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
 
   async function handleSend() {
     setError('');
@@ -15,7 +16,7 @@ export default function PhoneScreen({ navigation }) {
     const res = await authApi.sendOtp(formatted);
     setLoading(false);
     if (res.success) {
-      navigation.navigate('OTP', { phone: formatted });
+      navigation.navigate('OTP', { phone: formatted, role: APP_ROLE });
     } else {
       setError(res.error?.message || 'Failed to send OTP');
     }
@@ -24,16 +25,16 @@ export default function PhoneScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        {/* Logo */}
         <View style={styles.logoWrap}>
           <Text style={styles.logo}>INFL<Text style={styles.logoX}>X</Text></Text>
           <Text style={styles.logoSub}>India's Micro-Influencer Platform</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.sub}>Enter your mobile number to continue</Text>
+          <Text style={styles.title}>Welcome</Text>
+          <Text style={styles.sub}>Enter your mobile number</Text>
 
+          <Text style={styles.label}>Phone Number</Text>
           <View style={styles.phoneRow}>
             <View style={styles.countryCode}>
               <Text style={styles.countryText}>🇮🇳 +91</Text>
@@ -75,6 +76,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: colors.white, borderRadius: 20, padding: 24, width: '100%', maxWidth: 360 },
   title: { fontSize: 20, fontWeight: '700', color: colors.t1, marginBottom: 6 },
   sub: { fontSize: 13, color: colors.t3, marginBottom: 20, lineHeight: 20 },
+  label: { fontSize: 11, fontWeight: '700', color: colors.t2, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
   phoneRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   countryCode: { backgroundColor: colors.surface2, borderRadius: 12, borderWidth: 1.5, borderColor: colors.border2, paddingHorizontal: 12, paddingVertical: 14, justifyContent: 'center' },
   countryText: { fontSize: 14, color: colors.t1, fontWeight: '600' },

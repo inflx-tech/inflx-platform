@@ -1,7 +1,5 @@
 'use strict';
 
-'use strict';
-
 // Load and validate env vars before anything else
 const env = require('./config/env');
 const app = require('./app');

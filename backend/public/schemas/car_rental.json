@@ -1,0 +1,35 @@
+{
+  "category_key": "car_rental",
+  "label": "Car Rental",
+  "icon": "🚗",
+  "product_noun": "Vehicle",
+  "product_noun_plural": "Fleet",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": false,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": true,
+    "master_catalogue": true
+  },
+  "sections": ["Hatchback", "Sedan", "SUV", "MUV", "Luxury", "Mini Bus"],
+  "booking_type": "vehicle",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Vehicle Model", "type": "text", "required": true, "placeholder": "e.g. Toyota Innova" },
+    { "key": "section", "label": "Vehicle Type", "type": "select", "options": ["Sedan", "SUV", "Hatchback", "Luxury", "Mini Bus", "Truck"], "required": false },
+    { "key": "price", "label": "Price per day (₹)", "type": "number", "required": true, "placeholder": "2500" },
+    { "key": "description", "label": "Features", "type": "textarea", "required": false, "placeholder": "AC, GPS, Fuel type..." },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "availability_json", "label": "Available Days", "type": "availability_picker", "required": false },
+    { "key": "variants_json", "label": "Duration Packages", "type": "variant_builder", "required": false, "placeholder": "e.g. Half day / Full day / Weekly" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Book Now"
+  }
+}

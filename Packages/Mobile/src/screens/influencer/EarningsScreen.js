@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, TextInput, Alert, Linking } from 'react-native';
 import { colors, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
@@ -110,6 +110,25 @@ export default function EarningsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* TDS Certificate download */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Tax Certificate</Text>
+        <TouchableOpacity
+          style={styles.tdsCertBtn}
+          onPress={() => {
+            const url = influencerApi.getTdsCertificateUrl();
+            Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open TDS certificate link'));
+          }}
+        >
+          <Text style={styles.tdsCertIcon}>📄</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.tdsCertTitle}>Download TDS Certificate</Text>
+            <Text style={styles.tdsCertSub}>Form 16A · Current Financial Year</Text>
+          </View>
+          <Text style={{ fontSize: 16, color: colors.t3 }}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Withdrawal history */}
       {withdrawals.length > 0 && (
         <View style={styles.section}>
@@ -152,6 +171,10 @@ const styles = StyleSheet.create({
   tdsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   tdsLabel: { fontSize: 13, color: colors.t2 },
   tdsVal: { fontSize: 13, fontWeight: '600', color: colors.t1 },
+  tdsCertBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 14, padding: 14, gap: 12, borderWidth: 1, borderColor: colors.border },
+  tdsCertIcon: { fontSize: 24 },
+  tdsCertTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  tdsCertSub: { fontSize: 11, color: colors.t3, marginTop: 2 },
   withdrawBtn: { backgroundColor: colors.orange, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
   withdrawBtnDisabled: { opacity: 0.5 },
   withdrawBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },

@@ -5,6 +5,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const ctrl = require('../controllers/influencer.controller');
 const offerCtrl = require('../controllers/offer.controller');
 const withdrawalCtrl = require('../controllers/withdrawal.controller');
+const { requireAnyAdminRole } = require('../middleware/auth');
 
 const router = Router();
 
@@ -27,7 +28,13 @@ router.post('/me/withdraw',              authenticate, requireRole('influencer')
 router.get('/me/withdrawals',            authenticate, requireRole('influencer'), withdrawalCtrl.listWithdrawals);
 router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer'), withdrawalCtrl.retryWithdrawal);
 
+// ── TDS Certificate (Phase F) ─────────────────────────────────────────────────
+router.get('/me/tds-certificate', authenticate, requireRole('influencer'), ctrl.getTdsCertificate);
+
 // ── Public profile view (brand + admin) ──────────────────────────────────────
-router.get('/:id', authenticate, requireRole('brand', 'admin'), ctrl.getPublicById);
+router.get('/:id',            authenticate, requireRole('brand', 'admin'), ctrl.getPublicById);
+
+// ── Admin: trigger Instagram rescrape ────────────────────────────────────────
+router.post('/:id/rescrape',  authenticate, requireAnyAdminRole,           ctrl.rescrape);
 
 module.exports = router;

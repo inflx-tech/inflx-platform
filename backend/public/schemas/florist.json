@@ -1,0 +1,34 @@
+{
+  "category_key": "florist",
+  "label": "Florist",
+  "icon": "💐",
+  "product_noun": "Arrangement",
+  "product_noun_plural": "Arrangements",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Bouquets", "Wreaths", "Table Arrangements", "Wedding", "Seasonal", "Plants"],
+  "booking_type": "prebook",
+  "availing_modes": ["pay_at_store", "online_order", "prebook"],
+  "fields": [
+    { "key": "name", "label": "Arrangement Name", "type": "text", "required": true, "placeholder": "e.g. Red Rose Bouquet" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Bouquets", "Wreaths", "Table Arrangements", "Wedding", "Seasonal", "Plants"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "599" },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Daily Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants_json", "label": "Colors & Sizes", "type": "variant_builder", "required": false, "placeholder": "e.g. Small / Medium / Large, Red / White / Mixed" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Order Now"
+  }
+}

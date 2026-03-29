@@ -1,0 +1,33 @@
+{
+  "category_key": "function_hall",
+  "label": "Function Hall",
+  "icon": "🏛️",
+  "product_noun": "Package",
+  "product_noun_plural": "Packages",
+  "features": {
+    "sections": false,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": false,
+    "booking": true,
+    "enquiry_only": true,
+    "availability": false
+  },
+  "sections": [],
+  "booking_type": "event",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Package Name", "type": "text", "required": true, "placeholder": "e.g. Full Day Package" },
+    { "key": "price", "label": "Starting Price (₹)", "type": "number", "required": true, "placeholder": "25000" },
+    { "key": "description", "label": "Package Includes", "type": "textarea", "required": true, "placeholder": "Seating capacity, catering, decor..." },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "variants_json", "label": "Add-on Services", "type": "variant_builder", "required": false }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": false,
+    "show_enquiry_form": true,
+    "cta_label": "Enquire Now"
+  }
+}

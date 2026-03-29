@@ -5,10 +5,12 @@ import { useEffect, useState } from 'react';
 import { notificationApi } from '../../lib/api';
 
 const NAV = [
-  { href: '/dashboard/campaigns', label: 'Campaigns', icon: '📣' },
+  { href: '/dashboard/campaigns',  label: 'Campaigns',  icon: '📣' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '⭐' },
-  { href: '/dashboard/wallet', label: 'Wallet', icon: '💰' },
-  { href: '/dashboard/enquiries', label: 'Enquiries', icon: '💬' },
+  { href: '/dashboard/products',   label: 'Listings',   icon: '🏪' },
+  { href: '/dashboard/orders',     label: 'Orders',     icon: '📦' },
+  { href: '/dashboard/wallet',     label: 'Wallet',     icon: '💰' },
+  { href: '/dashboard/enquiries',  label: 'Enquiries',  icon: '💬' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -21,7 +23,10 @@ export default function DashboardLayout({ children }) {
     if (typeof window !== 'undefined') {
       try {
         const u = JSON.parse(localStorage.getItem('inflx_user') || 'null');
-        if (!u || u.role !== 'brand') { router.push('/login'); return; }
+        const token = localStorage.getItem('inflx_token');
+        if (!u || u.role !== 'brand' || !token) { router.push('/login'); return; }
+        // Re-sync cookie so middleware doesn't expire it before localStorage does
+        document.cookie = `inflx_token=${token}; path=/; max-age=2592000`;
         setUser(u);
       } catch { router.push('/login'); }
     }

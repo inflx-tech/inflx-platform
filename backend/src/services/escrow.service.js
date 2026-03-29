@@ -8,14 +8,17 @@
  * processTrancheRelease — releases a tranche: credits influencer wallet + audit tx
  */
 
-const env = require('../config/env');
+const env               = require('../config/env');
+const paymentConfigSvc  = require('./paymentConfig.service');
 
-// Tranche schedule (admin-configurable in spec; hard-coded defaults here)
-const TRANCHES = [
-  { tranche_number: 1, pct: 0.25, trigger_event: 'contract_signed' },
-  { tranche_number: 2, pct: 0.25, trigger_event: 'content_live' },
-  { tranche_number: 3, pct: 0.50, trigger_event: 'day_30_post_live' },
-];
+// Tranche schedule — percents loaded from payment_config table at runtime
+function buildTranches(cfg) {
+  return [
+    { tranche_number: 1, pct: cfg.tranche1Pct / 100, trigger_event: 'contract_signed'  },
+    { tranche_number: 2, pct: cfg.tranche2Pct / 100, trigger_event: 'content_live'     },
+    { tranche_number: 3, pct: cfg.tranche3Pct / 100, trigger_event: 'day_30_post_live' },
+  ];
+}
 
 /**
  * Create 3 escrow_entries for a campaign_influencer inside an open transaction.
@@ -28,7 +31,10 @@ const TRANCHES = [
  */
 async function createEscrowEntries(client, campaignInfluencerId, influencerFee, platformFeePct) {
   const fee    = parseFloat(influencerFee);
-  const feePct = parseFloat(platformFeePct) / 100;
+  // Use per-brand fee if supplied, otherwise read from payment_config
+  const cfg    = await paymentConfigSvc.getConfig();
+  const feePct = (platformFeePct != null ? parseFloat(platformFeePct) : cfg.platformFeePct) / 100;
+  const TRANCHES = buildTranches(cfg);
 
   const entries = [];
   for (const t of TRANCHES) {

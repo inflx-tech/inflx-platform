@@ -22,6 +22,26 @@ export default function BrandProfilePage() {
   const [brand, setBrand] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [feeInput, setFeeInput] = useState('');
+  const [savingFee, setSavingFee] = useState(false);
+  const [toast, setToast] = useState('');
+
+  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
+
+  async function saveFee() {
+    const pct = parseFloat(feeInput);
+    if (isNaN(pct) || pct < 0 || pct > 50) { showToast('Enter a valid fee 0–50%'); return; }
+    setSavingFee(true);
+    const res = await adminApi.setBrandPlatformFee(id, pct);
+    setSavingFee(false);
+    if (res.success) {
+      setBrand(prev => ({ ...prev, platform_fee_pct: res.data.platform_fee_pct }));
+      setFeeInput('');
+      showToast(`Platform fee updated to ${res.data.platform_fee_pct}%`);
+    } else {
+      showToast(res.error?.message || 'Failed');
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -79,6 +99,39 @@ export default function BrandProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Per-brand platform fee override */}
+      <div className="bg-white rounded-xl border border-border p-5 mb-4">
+        <h3 className="font-display text-sm font-bold text-t1 mb-1">Override Platform Fee</h3>
+        <p className="text-xs text-t3 mb-4">
+          Current: <strong>{brand.platform_fee_pct ?? 8}%</strong> (global default is 8%).
+          Override this brand's fee here.
+        </p>
+        <div className="flex gap-2">
+          <div className="flex items-center border-2 border-border2 rounded-xl overflow-hidden flex-1">
+            <input
+              type="number"
+              value={feeInput}
+              onChange={e => setFeeInput(e.target.value)}
+              placeholder={String(brand.platform_fee_pct ?? 8)}
+              min="0"
+              max="50"
+              step="0.5"
+              className="flex-1 px-3 py-2.5 text-sm outline-none"
+            />
+            <span className="px-3 py-2.5 bg-surface2 text-t3 text-sm font-bold border-l border-border2">%</span>
+          </div>
+          <button
+            onClick={saveFee}
+            disabled={savingFee || !feeInput}
+            className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap"
+          >
+            {savingFee ? 'Saving…' : 'Save Override'}
+          </button>
+        </div>
+      </div>
+
+      {toast && <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">{toast}</div>}
     </div>
   );
 }

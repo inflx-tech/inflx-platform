@@ -24,8 +24,21 @@ router.get('/stats', authenticate, requireAnyAdminRole, ctrl.getStats);
 router.get('/escrow',          authenticate, requireAdminRole('finance'), ctrl.getEscrowOverview);
 router.post('/escrow/:id/release', authenticate, requireAdminRole('finance'), ctrl.adminReleaseEscrow);
 
+// Influencer bulk upload — reviewer+
+// ctrl.bulkUploadInfluencers is [multerMiddleware, asyncHandler] — spread into route
+router.post('/influencers/bulk-upload', authenticate, requireAdminRole('reviewer'), ...ctrl.bulkUploadInfluencers);
+
 // Admin user management — superadmin only
 router.get('/users',  authenticate, requireAdminRole('superadmin'), ctrl.getAdminUsers);
 router.post('/users', authenticate, requireAdminRole('superadmin'), ctrl.createAdminUser);
+
+// Payment config — superadmin only (GET readable by all admins)
+router.get('/config/payments',   authenticate, requireAnyAdminRole,           ctrl.getPaymentConfig);
+router.patch('/config/payments', authenticate, requireAdminRole('superadmin'), ctrl.updatePaymentConfig);
+
+// Per-brand platform fee override — finance+
+router.patch('/brands/:id/platform-fee', authenticate, requireAdminRole('finance'), ctrl.setBrandPlatformFee);
+
+// Influencer Instagram rescrape — already in influencer.routes.js (/influencers/:id/rescrape)
 
 module.exports = router;

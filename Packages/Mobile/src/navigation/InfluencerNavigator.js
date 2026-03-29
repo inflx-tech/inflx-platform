@@ -7,6 +7,10 @@ import { colors } from '../theme/tokens';
 import HomeScreen from '../screens/influencer/HomeScreen';
 import OfferListScreen from '../screens/influencer/OfferListScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
+import ProfileScreen from '../screens/influencer/ProfileScreen';
+import NegotiationScreen from '../screens/influencer/NegotiationScreen';
+import ContractScreen from '../screens/influencer/ContractScreen';
+import DeliverableScreen from '../screens/influencer/DeliverableScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -17,6 +21,9 @@ function OffersStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="OfferList" component={OfferListScreen} />
       <Stack.Screen name="OfferDetail" component={OfferDetailScreen} />
+      <Stack.Screen name="Negotiation" component={NegotiationScreen} />
+      <Stack.Screen name="Contract" component={ContractScreen} />
+      <Stack.Screen name="Deliverable" component={DeliverableScreen} />
     </Stack.Navigator>
   );
 }
@@ -37,6 +44,7 @@ export default function InfluencerNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} options={tabIcon('🏠', 'Home')} />
       <Tab.Screen name="Offers" component={OffersStack} options={tabIcon('📩', 'Offers')} />
       <Tab.Screen name="Earnings" component={EarningsScreen} options={tabIcon('💰', 'Earnings')} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={tabIcon('👤', 'Profile')} />
     </Tab.Navigator>
   );
 }
