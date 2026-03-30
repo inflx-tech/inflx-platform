@@ -159,7 +159,8 @@
       "Bash(\"C:/Users/aveen/OneDrive/Desktop/inflx-platform/screenshots/mobile_check8.png\")",
       "Bash(ls -la screenshots/admin*)",
       "Bash(ls -la screenshots/brand*)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(pnpm install:*)"
     ]
   }
 }
