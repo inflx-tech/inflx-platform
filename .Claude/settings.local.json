@@ -166,7 +166,9 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/v1)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3002)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3003)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(curl -s -X POST http://localhost:3001/v1/auth/send-otp -H \"Content-Type: application/json\" -d '{\"\"phone\"\": \"\"+919876543210\"\"}')",
+      "Bash(__NEW_LINE_7ac6a18a95189722__ node -e \":*)"
     ]
   }
 }
