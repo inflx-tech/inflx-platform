@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { campaignApi, brandApi } from '../../../../lib/api';
 
@@ -303,7 +303,7 @@ const CSS = `
 .cat-chip.sel{background:var(--orange);border-color:var(--orange);color:#fff}
 `;
 
-export default function NewCampaignPage() {
+function NewCampaignPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
@@ -1320,5 +1320,13 @@ export default function NewCampaignPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NewCampaignPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>Loading...</div>}>
+      <NewCampaignPageInner />
+    </Suspense>
   );
 }
