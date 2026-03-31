@@ -18,8 +18,8 @@ app.use(helmet());
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
 const allowedOrigins = [
-  'http://localhost:3002',      // brand web
-  'http://localhost:3003',      // admin web
+  'http://localhost:3002',      // brand web (local)
+  'http://localhost:3003',      // admin web (local)
   'http://10.0.2.2:3002',      // Android emulator → brand web
   'http://10.0.2.2:3003',      // Android emulator → admin web
   process.env.BRAND_WEB_URL,   // production brand URL
@@ -31,6 +31,10 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Allow any *.inflx.in subdomain and inflx.in itself
+    if (/^https?:\/\/(.*\.)?inflx\.in$/.test(origin)) return callback(null, true);
+    // Allow Vercel preview deployments
+    if (/^https?:\/\/.*\.vercel\.app$/.test(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
