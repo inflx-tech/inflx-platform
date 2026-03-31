@@ -27,7 +27,12 @@ export default function PhoneScreen({ navigation }) {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.logoWrap}>
           <Text style={styles.logo}>INFL<Text style={styles.logoX}>X</Text></Text>
-          <Text style={styles.logoSub}>India's Micro-Influencer Platform</Text>
+          <Text style={styles.logoSub}>
+            {APP_ROLE === 'brand' ? 'Brand Dashboard' :
+             APP_ROLE === 'influencer' ? 'Influencer App' :
+             APP_ROLE === 'follower' ? 'Discover Deals' :
+             "India's Micro-Influencer Platform"}
+          </Text>
         </View>
 
         <View style={styles.card}>

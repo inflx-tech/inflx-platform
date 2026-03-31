@@ -180,7 +180,12 @@
       "Bash(rm -rf \"$HOME/.gradle/caches/transforms-3/e1231b5b187cb579b629117f9511a862\")",
       "Bash(rm -rf \"$HOME/.gradle/caches/transforms-3/\")",
       "Bash(find /c/Users/aveen/.gradle/caches/transforms-3 -maxdepth 1 -type d ! -name transforms-3 -exec rm -rf {} +)",
-      "Bash(./gradlew --stop)"
+      "Bash(./gradlew --stop)",
+      "Bash(DEST=\"/c/Users/aveen/OneDrive/Desktop/inflx-apks\")",
+      "Bash(cp app/build/outputs/apk/brand/debug/app-brand-debug.apk \"$DEST/app-brand-debug.apk\")",
+      "Bash(cp app/build/outputs/apk/influencer/debug/app-influencer-debug.apk \"$DEST/app-influencer-debug.apk\")",
+      "Bash(cp app/build/outputs/apk/follower/debug/app-follower-debug.apk \"$DEST/app-follower-debug.apk\")",
+      "Read(//c/WORK/inflx-platform/Packages/Mobile/android/**)"
     ]
   }
 }
