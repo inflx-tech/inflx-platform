@@ -3,11 +3,15 @@
 const { Pool } = require('pg');
 const env = require('./env');
 
+const requireSSL = env.NODE_ENV === 'production' ||
+  (env.DATABASE_URL && env.DATABASE_URL.includes('supabase.com'));
+
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
+  ...(requireSSL && { ssl: { rejectUnauthorized: false } }),
 });
 
 pool.on('error', (err) => {

@@ -160,7 +160,12 @@
       "Bash(ls -la screenshots/admin*)",
       "Bash(ls -la screenshots/brand*)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(pnpm install:*)"
+      "Bash(pnpm install:*)",
+      "Bash(find C:WORKinflx-platform -type f -name *.env*)",
+      "Bash(npx next:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/v1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3002)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3003)"
     ]
   }
 }
