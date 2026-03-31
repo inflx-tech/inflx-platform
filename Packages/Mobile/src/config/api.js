@@ -5,11 +5,19 @@ import { Platform } from 'react-native';
 // Physical device: use ngrok URL
 const DEV_LAN_IP = '192.168.0.108';
 
+const PRODUCTION_API_URL = 'https://inflx-platform.onrender.com/v1';
+
+// Set to true to force all builds (including debug APKs) to use production API
+const USE_PRODUCTION = true;
+
 const getBaseUrl = () => {
+  if (USE_PRODUCTION) {
+    return PRODUCTION_API_URL;
+  }
   if (__DEV__) {
     return `http://${DEV_LAN_IP}:3001/v1`;
   }
-  return 'https://api.inflx.in/v1';
+  return PRODUCTION_API_URL;
 };
 
 export const API_BASE_URL = getBaseUrl();
