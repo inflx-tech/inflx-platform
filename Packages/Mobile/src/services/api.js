@@ -16,7 +16,9 @@ export async function clearSession() {
 async function request(method, path, body) {
   const token = await getToken();
   const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token && token.length > 0) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
 
   try {
     const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -24,8 +26,8 @@ async function request(method, path, body) {
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (res.status === 401 && token) {
-      await clearSession();
+    if (res.status === 401) {
+      if (token) await clearSession();
       return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
     }
     return await res.json();
@@ -47,6 +49,7 @@ export const authApi = {
   verifyOtp: (phone, otp, role, name) =>
     api.post('/auth/verify-otp', { phone, otp, role, ...(name && { name }) }),
   logout: () => api.post('/auth/logout'),
+  registerFcmToken: (token) => api.post('/auth/fcm-token', { token }),
 };
 
 export const brandApi = {
@@ -95,6 +98,7 @@ export const influencerApi = {
   getTdsCertificateUrl: (fy) => `${API_BASE_URL}/influencers/me/tds-certificate${fy ? `?fy=${fy}` : ''}`,
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
+  getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
 };
 
 export const followerApi = {

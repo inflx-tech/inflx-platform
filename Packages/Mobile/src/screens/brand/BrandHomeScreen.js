@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { useFocusEffect } from '@react-navigation/native';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 
@@ -23,7 +24,11 @@ export default function BrandHomeScreen({ navigation }) {
     if (campRes.success) setCampaigns(campRes.data?.campaigns || []);
   }
 
-  useEffect(() => { load(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -60,7 +65,7 @@ export default function BrandHomeScreen({ navigation }) {
       {/* Wallet card */}
       <View style={styles.walletCard}>
         <Text style={styles.walletLabel}>Wallet Balance</Text>
-        <Text style={styles.walletAmount}>{fmtMoney(brand?.wallet_balance || 0)}</Text>
+        <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
         <View style={styles.walletRow}>
           <View style={styles.walletStat}>
             <Text style={styles.walletStatLabel}>Active Campaigns</Text>
@@ -86,7 +91,7 @@ export default function BrandHomeScreen({ navigation }) {
       )}
 
       {/* Open Web Dashboard */}
-      <TouchableOpacity style={styles.webDashBtn} onPress={() => openWebDashboard()}>
+      <TouchableOpacity style={styles.webDashBtn} onPress={() => openWebDashboard('/dashboard')}>
         <Text style={styles.webDashIcon}>🌐</Text>
         <View style={{ flex: 1 }}>
           <Text style={styles.webDashTitle}>Open Web Dashboard</Text>
@@ -99,19 +104,19 @@ export default function BrandHomeScreen({ navigation }) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickGrid}>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/campaigns/new')}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/campaigns/new')}>
             <Text style={styles.quickActionIcon}>📣</Text>
             <Text style={styles.quickActionLabel}>Create Campaign</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/products')}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/products')}>
             <Text style={styles.quickActionIcon}>📦</Text>
             <Text style={styles.quickActionLabel}>Manage Products</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/analytics')}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/campaigns')}>
             <Text style={styles.quickActionIcon}>📊</Text>
-            <Text style={styles.quickActionLabel}>View Analytics</Text>
+            <Text style={styles.quickActionLabel}>View Campaigns</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/wallet')}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/wallet')}>
             <Text style={styles.quickActionIcon}>💳</Text>
             <Text style={styles.quickActionLabel}>Wallet & Payments</Text>
           </TouchableOpacity>
@@ -135,7 +140,12 @@ export default function BrandHomeScreen({ navigation }) {
           </View>
         ) : (
           campaigns.slice(0, 5).map(c => (
-            <View key={c.id} style={styles.campaignCard}>
+            <TouchableOpacity
+              key={c.id}
+              style={styles.campaignCard}
+              activeOpacity={0.7}
+              onPress={() => openWebDashboard(`/dashboard/campaigns/${c.id}`)}
+            >
               <View style={styles.campaignHeader}>
                 <Text style={styles.campaignName} numberOfLines={1}>{c.name}</Text>
                 <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[c.status] || colors.t3 }]} />
@@ -144,7 +154,7 @@ export default function BrandHomeScreen({ navigation }) {
               {(c.total_budget > 0) && (
                 <Text style={styles.campaignBudget}>Budget: ₹{Number(c.total_budget).toLocaleString('en-IN')}</Text>
               )}
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </View>

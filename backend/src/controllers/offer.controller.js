@@ -145,6 +145,34 @@ const accept = asyncHandler(async (req, res) => {
     [ci.id]
   );
 
+  // Notify brand that influencer accepted the offer
+  try {
+    const { rows: brandNotifRows } = await db.query(
+      `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name,
+              inf.instagram_handle
+       FROM campaigns c
+       JOIN brands b ON b.id = c.brand_id
+       JOIN users u ON u.id = b.user_id
+       JOIN influencers inf ON inf.id = $2
+       WHERE c.id = $1`,
+      [ci.campaign_id, ci.influencer_id]
+    );
+    if (brandNotifRows[0]) {
+      const handle = brandNotifRows[0].instagram_handle || 'An influencer';
+      await notificationService.send({
+        userId:   brandNotifRows[0].user_id,
+        type:     'offer.accepted',
+        title:    'Offer Accepted!',
+        body:     `@${handle} accepted your offer for ${brandNotifRows[0].campaign_name}`,
+        data:     { screen: 'campaign_detail', campaign_id: ci.campaign_id },
+        fcmToken: brandNotifRows[0].fcm_token,
+        sendSms:  false,
+      });
+    }
+  } catch (notifErr) {
+    console.error('[NOTIFICATION] offer.accepted send failed:', notifErr.message);
+  }
+
   // Auto-create contract (Phase 3) — non-fatal if it fails
   try {
     const contractService = require('../services/contract.service');
@@ -628,7 +656,11 @@ const getOfferDetail = asyncHandler(async (req, res) => {
             c.start_date     AS campaign_start_date,
             c.end_date       AS campaign_end_date,
             c.status         AS campaign_status,
-            b.business_name  AS brand_name
+            b.id             AS brand_id,
+            b.business_name  AS brand_name,
+            b.logo_url       AS brand_logo_url,
+            b.category       AS brand_category,
+            b.address_line   AS brand_city
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id

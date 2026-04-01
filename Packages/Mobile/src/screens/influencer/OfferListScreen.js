@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, ActivityIndicator } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -89,7 +89,7 @@ export default function OfferListScreen({ navigation }) {
         <View style={styles.offerRow}>
           <View style={styles.offerStat}>
             <Text style={styles.offerStatLabel}>Fee</Text>
-            <Text style={styles.offerStatVal}>{fmtMoney(offer.agreed_fee || offer.proposed_fee || offer.influencer_budget)}</Text>
+            <Text style={styles.offerStatVal}>{fmtRupees(offer.agreed_fee || offer.proposed_fee || offer.influencer_budget)}</Text>
           </View>
           <View style={styles.offerStat}>
             <Text style={styles.offerStatLabel}>Deliverable</Text>

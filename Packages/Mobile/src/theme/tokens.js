@@ -40,6 +40,19 @@ export function fmtMoney(paise) {
   return `\u20B9${formatted}`;
 }
 
+/**
+ * Format a rupee amount (numeric(10,2) from DB) for display.
+ * Unlike fmtMoney which expects paise, this takes rupees directly.
+ */
+export function fmtRupees(rupees) {
+  const rounded = Math.round(rupees || 0);
+  const s = rounded.toString();
+  const lastThree = s.length > 3 ? s.slice(-3) : s;
+  const rest = s.length > 3 ? s.slice(0, s.length - 3) : '';
+  const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (rest ? ',' : '') + lastThree;
+  return `\u20B9${formatted}`;
+}
+
 export function fmtNum(n) {
   const num = Math.round(n || 0);
   const s = num.toString();

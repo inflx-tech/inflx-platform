@@ -182,4 +182,23 @@ const logout = asyncHandler(async (req, res) => {
   return success(res, { message: 'Logged out successfully' });
 });
 
-module.exports = { sendOtp, verifyOtp, refresh, logout };
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /auth/fcm-token — register or update FCM device token
+// ─────────────────────────────────────────────────────────────────────────────
+
+const registerFcmToken = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'token is required', 422, 'token');
+  }
+
+  await db.query(
+    `UPDATE users SET fcm_token = $1 WHERE id = $2`,
+    [token.trim(), req.user.sub]
+  );
+
+  return success(res, { message: 'FCM token registered' });
+});
+
+module.exports = { sendOtp, verifyOtp, refresh, logout, registerFcmToken };

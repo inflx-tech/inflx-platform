@@ -74,7 +74,7 @@ export default function BrandProfileScreen({ navigation }) {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Quick Links</Text>
-        <TouchableOpacity style={styles.linkRow} onPress={() => openWebDashboard()}>
+        <TouchableOpacity style={styles.linkRow} onPress={() => openWebDashboard('/dashboard')}>
           <Text style={styles.linkIcon}>🌐</Text>
           <Text style={styles.linkLabel}>Open Full Dashboard</Text>
           <Text style={styles.linkArrow}>›</Text>

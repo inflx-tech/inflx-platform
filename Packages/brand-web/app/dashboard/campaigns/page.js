@@ -168,7 +168,7 @@ function SummaryStats({ campaigns }) {
     return c;
   }, [campaigns]);
 
-  const totalBudget = useMemo(() => campaigns.reduce((sum, c) => sum + (c.total_budget || 0), 0), [campaigns]);
+  const totalBudget = useMemo(() => campaigns.reduce((sum, c) => sum + (Number(c.total_budget) || 0), 0), [campaigns]);
 
   const stats = [
     { label: 'Total', value: counts.total, color: 'text-t1' },

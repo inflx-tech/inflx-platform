@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'dispatched', 'delivered'];
@@ -102,12 +102,12 @@ export default function OrderDetailScreen({ navigation, route }) {
         {items.map((item, i) => (
           <View key={i} style={styles.itemRow}>
             <Text style={styles.itemName}>{item.name || item.product_name || `Item ${i + 1}`}</Text>
-            <Text style={styles.itemDetail}>{item.qty || 1}× {fmtMoney((item.price || 0) * 100)}</Text>
+            <Text style={styles.itemDetail}>{item.qty || 1}× {fmtRupees(item.price || 0)}</Text>
           </View>
         ))}
         <View style={[styles.itemRow, styles.totalRow]}>
           <Text style={styles.totalLabel}>Total</Text>
-          <Text style={styles.totalVal}>{fmtMoney(order.net_amount || 0)}</Text>
+          <Text style={styles.totalVal}>{fmtRupees(order.net_amount || 0)}</Text>
         </View>
       </View>
 

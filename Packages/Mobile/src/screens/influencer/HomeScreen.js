@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, fmtMoney, fmtNum } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees, fmtNum } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -71,15 +71,15 @@ export default function HomeScreen({ navigation }) {
       {/* Wallet balance hero */}
       <View style={styles.walletCard}>
         <Text style={styles.walletLabel}>Available to Withdraw</Text>
-        <Text style={styles.walletAmount}>{fmtMoney(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
+        <Text style={styles.walletAmount}>{fmtRupees(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
         <View style={styles.walletRow}>
           <View style={styles.walletStat}>
             <Text style={styles.walletStatLabel}>Pending</Text>
-            <Text style={styles.walletStatVal}>{fmtMoney(earnings?.pending_balance)}</Text>
+            <Text style={styles.walletStatVal}>{fmtRupees(earnings?.pending_balance)}</Text>
           </View>
           <View style={[styles.walletStat, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.15)', paddingLeft: 16 }]}>
             <Text style={styles.walletStatLabel}>Total Earned</Text>
-            <Text style={styles.walletStatVal}>{fmtMoney(earnings?.total_earned)}</Text>
+            <Text style={styles.walletStatVal}>{fmtRupees(earnings?.total_earned)}</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.withdrawBtn} onPress={() => navigation.navigate('Earnings')}>
@@ -95,6 +95,7 @@ export default function HomeScreen({ navigation }) {
         </View>
         <View style={styles.statCard}>
           <Text style={styles.statVal}>{fmtMoney(earnings?.tds_this_financial_year)}</Text>
+
           <Text style={styles.statLabel}>TDS This FY</Text>
         </View>
       </View>

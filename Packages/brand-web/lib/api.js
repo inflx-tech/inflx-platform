@@ -105,6 +105,7 @@ export const brandApi = {
   updateMe: (data) => api.patch('/brands/me', data),
   resubmit: (data) => api.post('/brands/resubmit', data),
   getEscrow: () => api.get('/brands/me/escrow'),
+  getCampaignEscrow: (campaignId) => api.get(`/brands/me/campaigns/${campaignId}/escrow`),
   getEnquiries: (params) => api.get(`/brands/me/enquiries${params ? '?' + new URLSearchParams(params) : ''}`),
   updateEnquiry: (id, data) => api.patch(`/brands/me/enquiries/${id}`, data),
   // Category schema
@@ -133,6 +134,7 @@ export const campaignApi = {
   delete: (id) => api.delete(`/campaigns/${id}`),
   publish: (id) => api.post(`/campaigns/${id}/publish`),
   cancel: (id) => api.post(`/campaigns/${id}/cancel`),
+  cancelInfluencer: (cid, ciid) => api.post(`/campaigns/${cid}/influencers/${ciid}/cancel`),
   getLive: (id) => api.get(`/campaigns/${id}/live`),
   // Sets
   getSets: (cid) => api.get(`/campaigns/${cid}/sets`),
@@ -142,8 +144,9 @@ export const campaignApi = {
   duplicateSet: (cid, sid) => api.post(`/campaigns/${cid}/sets/${sid}/duplicate`),
   // Offers (legacy)
   createOffer: (cid, sid, data) => api.post(`/campaigns/${cid}/sets/${sid}/offers`, data),
-  // Invite
+  // Invite / update influencer assignment
   inviteInfluencer: (cid, sid, data) => api.post(`/campaigns/${cid}/sets/${sid}/invite`, data),
+  updateInfluencer: (cid, sid, ciId, data) => api.patch(`/campaigns/${cid}/sets/${sid}/influencers/${ciId}`, data),
   // Search
   searchInfluencers: (cid, params) => api.get(`/campaigns/${cid}/influencer-search${params ? '?' + new URLSearchParams(params) : ''}`),
   getOpenGroupMatches: (cid, si, params) => api.get(`/campaigns/${cid}/sets/${si}/open-group-matches${params ? '?' + params : ''}`),

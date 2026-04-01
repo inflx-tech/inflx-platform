@@ -550,9 +550,28 @@ const listBrandOrders = asyncHandler(async (req, res) => {
   return success(res, { orders: rows }, 200, { page: pageNum, limit: limitNum, total });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /brands/:id/public — Public brand profile (for influencers viewing brand info)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getPublicProfile = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT b.id, b.business_name, b.category, b.logo_url, b.address_line,
+            b.created_at,
+            (SELECT COUNT(*) FROM campaigns c
+             WHERE c.brand_id = b.id AND c.status IN ('active', 'live', 'published'))::int AS active_campaigns_count
+     FROM brands b
+     WHERE b.id = $1`,
+    [req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
+
+  return success(res, { brand: rows[0] });
+});
+
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue,
   listProducts, createProduct, updateProduct, deleteProduct,
-  listBrandOrders,
+  listBrandOrders, getPublicProfile,
 };

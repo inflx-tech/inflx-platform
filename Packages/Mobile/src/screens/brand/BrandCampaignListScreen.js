@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   RefreshControl, ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
@@ -29,7 +30,11 @@ export default function BrandCampaignListScreen({ navigation }) {
     if (res.success) setCampaigns(res.data?.campaigns || []);
   }
 
-  useEffect(() => { load(); }, []);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -84,7 +89,12 @@ export default function BrandCampaignListScreen({ navigation }) {
             const sets = c.sets || [];
             const influencerCount = sets.reduce((n, s) => n + (s.influencers?.length || 0), 0);
             return (
-              <View key={c.id} style={styles.card}>
+              <TouchableOpacity
+                key={c.id}
+                style={styles.card}
+                activeOpacity={0.7}
+                onPress={() => openWebDashboard(`/dashboard/campaigns/${c.id}`)}
+              >
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardName} numberOfLines={2}>{c.name}</Text>
                   <View style={[styles.statusBadge, { backgroundColor: sCfg.bg }]}>
@@ -104,14 +114,14 @@ export default function BrandCampaignListScreen({ navigation }) {
                     <Text style={styles.metaItem}>💰 ₹{Number(c.total_budget).toLocaleString('en-IN')}</Text>
                   )}
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })
         )}
       </View>
 
       {/* Manage on web link */}
-      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/campaigns')}>
+      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/dashboard/campaigns')}>
         <Text style={styles.webLinkIcon}>🌐</Text>
         <Text style={styles.webLinkText}>Manage campaigns on web</Text>
         <Text style={styles.webLinkArrow}>›</Text>

@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 const STATUS_CONFIG = {
@@ -54,7 +54,7 @@ function OrderCard({ order, onPress }) {
         </View>
         <View style={styles.metaItem}>
           <Text style={styles.metaLabel}>Amount</Text>
-          <Text style={styles.metaValAmount}>{fmtMoney(order.net_amount || 0)}</Text>
+          <Text style={styles.metaValAmount}>{fmtRupees(order.net_amount || 0)}</Text>
         </View>
         <View style={styles.metaItem}>
           <Text style={styles.metaLabel}>Date</Text>

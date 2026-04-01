@@ -204,7 +204,14 @@
       "Bash(grep -h \"request\\\\|\\\\.post\\\\|\\\\.get\\\\|\\\\.patch\\\\|\\\\.delete\\\\|\\\\.put\" /c/WORK/inflx-platform/backend/tests/*.test.js)",
       "Bash(grep -h \"\\\\.post\\\\|\\\\.get\\\\|\\\\.patch\\\\|\\\\.delete\\\\|\\\\.put\" /c/WORK/inflx-platform/backend/tests/*.test.js)",
       "Bash(grep -E \"router\\\\.\\(get|post|patch|put|delete\\)\\\\\\(\" /c/WORK/inflx-platform/backend/src/routes/*.js)",
-      "Bash(grep -A 10 \"exports.respond\\\\|exports.accept\\\\|exports.decline\\\\|exports.submit\\\\|exports.review\\\\|exports.submitLive\\\\|exports.confirmLive\" /c/WORK/inflx-platform/backend/src/controllers/*.controller.js)"
+      "Bash(grep -A 10 \"exports.respond\\\\|exports.accept\\\\|exports.decline\\\\|exports.submit\\\\|exports.review\\\\|exports.submitLive\\\\|exports.confirmLive\" /c/WORK/inflx-platform/backend/src/controllers/*.controller.js)",
+      "Bash(find /c/WORK/inflx-platform/Packages/Mobile/src -type f -name *.js)",
+      "Bash(grep -n \"CREATE TABLE campaign_influencers\" \"C:/WORK/inflx-platform/backend/migrations/\"*.sql)",
+      "Bash(grep -n \"getMyCampaignDetail\\\\|getMyCampaigns\\\\|getOfferDetail\" \"C:/WORK/inflx-platform/backend/src/controllers/\"*.js)",
+      "Bash(grep -n \"fcm_token\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
+      "Bash(node -e \"require\\(''''./backend/src/controllers/campaign.controller.js''''\\)\")",
+      "Bash(node -c \"C:/WORK/inflx-platform/backend/src/routes/campaign.routes.js\")",
+      "Bash(node -e \"try { require\\(''fs''\\).readFileSync\\(''app/dashboard/campaigns/new/page.js'',''utf8''\\); console.log\\(''File readable''\\); } catch\\(e\\) { console.error\\(e\\); }\")"
     ]
   }
 }

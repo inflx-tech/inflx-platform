@@ -20,8 +20,9 @@ export function createCampaignApi(client) {
     createOffer: (campaignId, setId, data) => client.post(`/campaigns/${campaignId}/sets/${setId}/offers`, data),
     getOffers: (campaignId, setId) => client.get(`/campaigns/${campaignId}/sets/${setId}/offers`),
 
-    // Invite influencer
+    // Invite / update influencer
     inviteInfluencer: (campaignId, setId, data) => client.post(`/campaigns/${campaignId}/sets/${setId}/invite`, data),
+    updateInfluencer: (campaignId, setId, ciId, data) => client.patch(`/campaigns/${campaignId}/sets/${setId}/influencers/${ciId}`, data),
 
     // Analytics
     getEngagement: (campaignId) => client.get(`/brands/me/campaigns/${campaignId}/engagement`),

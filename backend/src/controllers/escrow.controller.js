@@ -65,4 +65,91 @@ const getBrandEscrow = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getBrandEscrow };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/brands/me/campaigns/:campaign_id/escrow
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getCampaignEscrow = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  const { campaign_id } = req.params;
+
+  // Verify campaign belongs to this brand
+  const { rows: campRows } = await db.query(
+    `SELECT id, name, status FROM campaigns WHERE id = $1 AND brand_id = $2`,
+    [campaign_id, brand.id]
+  );
+  if (!campRows[0]) throw new AppError('NOT_FOUND', 'Campaign not found', 404);
+  const campaign = campRows[0];
+
+  // Fetch escrow entries for this specific campaign (brand ownership verified above)
+  const { rows: escrowEntries } = await db.query(
+    `SELECT
+       ee.id,
+       ee.amount,
+       ee.status,
+       ee.tranche_number,
+       ee.trigger_event,
+       ee.released_at,
+       ee.created_at,
+       ci.id   AS campaign_influencer_id,
+       inf.instagram_handle,
+       u.name  AS influencer_name
+     FROM escrow_entries ee
+     JOIN campaign_influencers ci ON ci.id  = ee.campaign_influencer_id
+     JOIN campaign_sets        cs ON cs.id  = ci.set_id
+     JOIN influencers          inf ON inf.id = ci.influencer_id
+     JOIN users                u   ON u.id  = inf.user_id
+     WHERE cs.campaign_id = $1
+     ORDER BY inf.instagram_handle ASC, ee.tranche_number ASC`,
+    [campaign_id]
+  );
+
+  // Compute summary totals
+  let totalLocked   = 0;
+  let totalReleased = 0;
+  let totalQueued   = 0;
+
+  for (const e of escrowEntries) {
+    const amt = parseFloat(e.amount);
+    if (e.status === 'released') totalReleased += amt;
+    else if (e.status === 'locked') totalLocked += amt;
+    else if (e.status === 'queued') totalQueued += amt;
+  }
+
+  // Group entries by influencer for per-influencer breakdown
+  const byInfluencer = {};
+  for (const e of escrowEntries) {
+    const key = e.campaign_influencer_id;
+    if (!byInfluencer[key]) {
+      byInfluencer[key] = {
+        campaign_influencer_id: key,
+        instagram_handle: e.instagram_handle,
+        influencer_name: e.influencer_name,
+        tranches: [],
+      };
+    }
+    byInfluencer[key].tranches.push({
+      id: e.id,
+      tranche_number: e.tranche_number,
+      trigger_event: e.trigger_event,
+      amount: e.amount,
+      status: e.status,
+      released_at: e.released_at,
+      created_at: e.created_at,
+    });
+  }
+
+  return success(res, {
+    campaign: { id: campaign.id, name: campaign.name, status: campaign.status },
+    entries: escrowEntries,
+    influencer_breakdown: Object.values(byInfluencer),
+    summary: {
+      total_locked:   totalLocked,
+      total_released: totalReleased,
+      total_queued:   totalQueued,
+      total:          totalLocked + totalReleased + totalQueued,
+    },
+  });
+});
+
+module.exports = { getBrandEscrow, getCampaignEscrow };

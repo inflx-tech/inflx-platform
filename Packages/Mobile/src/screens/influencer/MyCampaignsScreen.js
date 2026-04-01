@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { useFocusEffect } from '@react-navigation/native';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -29,14 +31,31 @@ export default function MyCampaignsScreen({ navigation }) {
   const [tab, setTab] = useState('active');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   async function load(filter) {
-    const res = await influencerApi.getMyCampaigns(filter || tab);
-    setLoading(false);
-    if (res.success) setCampaigns(res.data?.campaigns || []);
+    try {
+      setError(null);
+      const res = await influencerApi.getMyCampaigns(filter || tab);
+      setLoading(false);
+      if (res.success) {
+        setCampaigns(res.data?.campaigns || []);
+      } else {
+        setError(res.error?.message || 'Failed to load campaigns');
+        Alert.alert('Error', res.error?.message || 'Failed to load campaigns');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Something went wrong');
+      Alert.alert('Error', 'Failed to load campaigns. Please try again.');
+    }
   }
 
-  useEffect(() => { load(tab); }, [tab]);
+  useFocusEffect(
+    useCallback(() => {
+      load(tab);
+    }, [tab])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -79,6 +98,18 @@ export default function MyCampaignsScreen({ navigation }) {
             <ActivityIndicator size="small" color={colors.navy} />
             <Text style={styles.loadingText}>Loading campaigns...</Text>
           </View>
+        ) : error ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>!</Text>
+            <Text style={styles.emptyTitle}>Something went wrong</Text>
+            <Text style={styles.emptySubtext}>{error}</Text>
+            <TouchableOpacity
+              style={styles.retryBtn}
+              onPress={() => { setLoading(true); setError(null); load(tab); }}
+            >
+              <Text style={styles.retryBtnText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
         ) : campaigns.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>{'[  ]'}</Text>
@@ -117,7 +148,7 @@ export default function MyCampaignsScreen({ navigation }) {
               <View style={styles.cardStats}>
                 <View style={styles.cardStat}>
                   <Text style={styles.cardStatLabel}>Fee</Text>
-                  <Text style={styles.cardStatVal}>{fmtMoney(c.agreed_fee)}</Text>
+                  <Text style={styles.cardStatVal}>{fmtRupees(c.agreed_fee)}</Text>
                 </View>
                 <View style={styles.cardStat}>
                   <Text style={styles.cardStatLabel}>Goal</Text>
@@ -187,6 +218,14 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 36, marginBottom: 12, color: colors.t3 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.t1, marginBottom: 4 },
   emptySubtext: { fontSize: 13, color: colors.t3, textAlign: 'center' },
+  retryBtn: {
+    marginTop: 16,
+    backgroundColor: colors.navy,
+    borderRadius: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+  },
+  retryBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
 
   // Campaign card
   campaignCard: {

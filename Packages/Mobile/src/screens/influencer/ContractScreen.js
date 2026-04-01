@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, TextInput,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -208,7 +208,7 @@ export default function ContractScreen({ navigation, route }) {
           <Text style={styles.cardTitle}>Agreed Fee</Text>
           <View style={styles.feeHighlight}>
             <Text style={styles.feeLabel}>Total Influencer Fee</Text>
-            <Text style={styles.feeValue}>{fmtMoney(fee)}</Text>
+            <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
           </View>
         </View>
 
@@ -249,7 +249,7 @@ export default function ContractScreen({ navigation, route }) {
               <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
               <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
             </View>
-            <Text style={styles.trancheAmount}>{fmtMoney(Math.round(fee * t1Pct / 100))}</Text>
+            <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t1Pct / 100))}</Text>
           </View>
 
           <View style={styles.trancheRow}>
@@ -258,7 +258,7 @@ export default function ContractScreen({ navigation, route }) {
               <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
               <Text style={styles.trancheDesc}>Released when content goes live</Text>
             </View>
-            <Text style={styles.trancheAmount}>{fmtMoney(Math.round(fee * t2Pct / 100))}</Text>
+            <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t2Pct / 100))}</Text>
           </View>
 
           <View style={styles.trancheRow}>
@@ -267,12 +267,12 @@ export default function ContractScreen({ navigation, route }) {
               <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
               <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
             </View>
-            <Text style={styles.trancheAmount}>{fmtMoney(Math.round(fee * t3Pct / 100))}</Text>
+            <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t3Pct / 100))}</Text>
           </View>
 
           <View style={styles.trancheTotalRow}>
             <Text style={styles.trancheTotalLabel}>Total Fee</Text>
-            <Text style={styles.trancheTotalValue}>{fmtMoney(fee)}</Text>
+            <Text style={styles.trancheTotalValue}>{fmtRupees(fee)}</Text>
           </View>
 
           <View style={styles.tdsNote}>

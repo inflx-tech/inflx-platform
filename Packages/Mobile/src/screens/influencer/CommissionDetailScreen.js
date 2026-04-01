@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
 const TRANCHE_LABELS = {
@@ -77,17 +77,17 @@ export default function CommissionDetailScreen({ route, navigation }) {
         <View style={styles.headerStatsRow}>
           <View style={styles.headerStat}>
             <Text style={styles.headerStatLabel}>Earned</Text>
-            <Text style={[styles.headerStatVal, { color: '#7DEFA0' }]}>{fmtMoney(Math.round(summary.total_earned))}</Text>
+            <Text style={[styles.headerStatVal, { color: '#7DEFA0' }]}>{fmtRupees(Math.round(summary.total_earned))}</Text>
           </View>
           <View style={styles.headerStatDivider} />
           <View style={styles.headerStat}>
             <Text style={styles.headerStatLabel}>Pending</Text>
-            <Text style={[styles.headerStatVal, { color: '#FFD080' }]}>{fmtMoney(Math.round(summary.total_pending))}</Text>
+            <Text style={[styles.headerStatVal, { color: '#FFD080' }]}>{fmtRupees(Math.round(summary.total_pending))}</Text>
           </View>
           <View style={styles.headerStatDivider} />
           <View style={styles.headerStat}>
             <Text style={styles.headerStatLabel}>Total</Text>
-            <Text style={styles.headerStatVal}>{fmtMoney(Math.round(summary.total_earned + summary.total_pending))}</Text>
+            <Text style={styles.headerStatVal}>{fmtRupees(Math.round(summary.total_earned + summary.total_pending))}</Text>
           </View>
         </View>
       </View>
@@ -106,7 +106,7 @@ export default function CommissionDetailScreen({ route, navigation }) {
           {data.agreed_fee && (
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Agreed Fee</Text>
-              <Text style={styles.infoVal}>{fmtMoney(Math.round(data.agreed_fee))}</Text>
+              <Text style={styles.infoVal}>{fmtRupees(Math.round(data.agreed_fee))}</Text>
             </View>
           )}
         </View>
@@ -137,7 +137,7 @@ export default function CommissionDetailScreen({ route, navigation }) {
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.trancheAmount}>{fmtMoney(Math.round(t.amount))}</Text>
+                  <Text style={styles.trancheAmount}>{fmtRupees(Math.round(t.amount))}</Text>
                   <Text style={styles.trancheDate}>
                     {isReleased ? `Released ${formatDate(t.released_at)}` : `Locked since ${formatDate(t.created_at)}`}
                   </Text>
@@ -167,11 +167,11 @@ export default function CommissionDetailScreen({ route, navigation }) {
               <View style={styles.commSummaryRow}>
                 <View style={[styles.commSummaryCard, { borderLeftColor: colors.teal }]}>
                   <Text style={styles.commSummaryLabel}>Confirmed</Text>
-                  <Text style={[styles.commSummaryVal, { color: colors.teal }]}>{fmtMoney(Math.round(summary.commission_confirmed))}</Text>
+                  <Text style={[styles.commSummaryVal, { color: colors.teal }]}>{fmtRupees(Math.round(summary.commission_confirmed))}</Text>
                 </View>
                 <View style={[styles.commSummaryCard, { borderLeftColor: colors.orange }]}>
                   <Text style={styles.commSummaryLabel}>Pending (30d)</Text>
-                  <Text style={[styles.commSummaryVal, { color: colors.orange }]}>{fmtMoney(Math.round(summary.commission_pending))}</Text>
+                  <Text style={[styles.commSummaryVal, { color: colors.orange }]}>{fmtRupees(Math.round(summary.commission_pending))}</Text>
                 </View>
               </View>
 
@@ -185,7 +185,7 @@ export default function CommissionDetailScreen({ route, navigation }) {
                     <View style={styles.txHeader}>
                       <Text style={styles.txType}>{formatTxType(c.transaction_type)}</Text>
                       <Text style={[styles.txAmount, { color: c.status === 'confirmed' ? colors.teal : colors.t1 }]}>
-                        {fmtMoney(Math.round(c.commission_amount))}
+                        {fmtRupees(Math.round(c.commission_amount))}
                       </Text>
                     </View>
                     <View style={styles.txFooter}>

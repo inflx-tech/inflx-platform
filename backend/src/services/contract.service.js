@@ -8,6 +8,7 @@
  */
 
 const db = require('../config/db');
+const notificationService = require('./notification.service');
 
 /**
  * Auto-create a contract for an accepted campaign_influencer.
@@ -74,6 +75,30 @@ async function autoCreate(campaignInfluencerId) {
 
   if (contractRows[0]) {
     console.log(`[CONTRACT] Created contract ${contractRows[0].id} for CI ${campaignInfluencerId}`);
+
+    // Notify the influencer that their contract is ready to sign
+    try {
+      const { rows: infUserRows } = await db.query(
+        `SELECT u.id AS user_id, u.fcm_token
+         FROM influencers inf JOIN users u ON u.id = inf.user_id
+         WHERE inf.id = $1`,
+        [ci.influencer_id]
+      );
+      if (infUserRows[0]) {
+        await notificationService.send({
+          userId:   infUserRows[0].user_id,
+          type:     'contract.ready',
+          title:    'Contract Ready to Sign',
+          body:     `Your contract for ${ci.campaign_name} is ready. Please review and sign.`,
+          data:     { screen: 'contract_detail', campaign_influencer_id: campaignInfluencerId },
+          fcmToken: infUserRows[0].fcm_token,
+          sendSms:  false,
+        });
+      }
+    } catch (notifErr) {
+      console.error('[NOTIFICATION] contract.ready send failed:', notifErr.message);
+    }
+
     return contractRows[0];
   }
 

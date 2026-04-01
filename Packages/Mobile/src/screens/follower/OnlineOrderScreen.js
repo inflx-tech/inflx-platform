@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 export default function OnlineOrderScreen({ navigation, route }) {
@@ -87,7 +87,7 @@ export default function OnlineOrderScreen({ navigation, route }) {
               <View key={item.id} style={styles.itemRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>{fmtMoney((item.price || 0) * 100)}</Text>
+                  <Text style={styles.itemPrice}>{fmtRupees(item.price || 0)}</Text>
                 </View>
                 <View style={styles.qtyControls}>
                   <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQty(item.id, -1)}>
@@ -138,11 +138,11 @@ export default function OnlineOrderScreen({ navigation, route }) {
         <View style={styles.card}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalVal}>{fmtMoney(subtotal * 100)}</Text>
+            <Text style={styles.totalVal}>{fmtRupees(subtotal)}</Text>
           </View>
           <View style={[styles.totalRow, styles.grandTotal]}>
             <Text style={[styles.totalLabel, { fontWeight: '800', color: colors.t1 }]}>Total</Text>
-            <Text style={[styles.totalVal, { color: colors.navy }]}>{fmtMoney(subtotal * 100)}</Text>
+            <Text style={[styles.totalVal, { color: colors.navy }]}>{fmtRupees(subtotal)}</Text>
           </View>
         </View>
 
@@ -153,7 +153,7 @@ export default function OnlineOrderScreen({ navigation, route }) {
       <View style={styles.footer}>
         <View style={styles.footerRow}>
           <View>
-            <Text style={styles.footerTotal}>{fmtMoney(subtotal * 100)}</Text>
+            <Text style={styles.footerTotal}>{fmtRupees(subtotal)}</Text>
             <Text style={styles.footerItems}>{cart.reduce((s, i) => s + i.qty, 0)} item(s)</Text>
           </View>
           <TouchableOpacity

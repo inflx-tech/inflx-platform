@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
 export default function NegotiationScreen({ navigation, route }) {
@@ -27,8 +27,8 @@ export default function NegotiationScreen({ navigation, route }) {
   }
 
   async function respond(action) {
-    const feePaise = action === 'counter'
-      ? Math.round(parseFloat(counterFee || '0') * 100)
+    const feeRupees = action === 'counter'
+      ? parseFloat(counterFee || '0')
       : (negotiation?.turns?.slice(-1)[0]?.proposed_fee || 0);
 
     if (action === 'counter' && !counterFee) {
@@ -39,7 +39,7 @@ export default function NegotiationScreen({ navigation, route }) {
     setSubmitting(true);
     const res = await influencerApi.submitNegotiationTurn(negotiationId, {
       action,
-      proposed_fee: feePaise,
+      proposed_fee: feeRupees,
       note,
     });
     setSubmitting(false);
@@ -92,7 +92,7 @@ export default function NegotiationScreen({ navigation, route }) {
                   {isMe ? 'You' : 'Brand'}
                 </Text>
                 <Text style={[styles.bubbleFee, isMe && { color: colors.white }]}>
-                  {fmtMoney(turn.proposed_fee || 0)}
+                  {fmtRupees(turn.proposed_fee || 0)}
                 </Text>
                 {turn.note ? (
                   <Text style={[styles.bubbleNote, isMe && { color: colors.white + 'cc' }]}>{turn.note}</Text>
@@ -114,7 +114,7 @@ export default function NegotiationScreen({ navigation, route }) {
           {lastTurn && (
             <View style={styles.proposalBox}>
               <Text style={styles.proposalLabel}>Brand proposes</Text>
-              <Text style={styles.proposalFee}>{fmtMoney(lastTurn.proposed_fee || 0)}</Text>
+              <Text style={styles.proposalFee}>{fmtRupees(lastTurn.proposed_fee || 0)}</Text>
             </View>
           )}
 

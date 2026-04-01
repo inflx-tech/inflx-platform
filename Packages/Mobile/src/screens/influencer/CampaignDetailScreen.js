@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -86,7 +86,6 @@ export default function CampaignDetailScreen({ navigation, route }) {
 
   const { campaign, deliverables, contract, tranches } = data;
   const fee = campaign.agreed_fee || 0;
-  const feePaise = fee > 100 ? fee : fee * 100;
   const currentStep = getStepIndex(campaign.influencer_status);
 
   return (
@@ -224,7 +223,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
 
         <View style={styles.feeHighlight}>
           <Text style={styles.feeLabel}>Agreed Fee</Text>
-          <Text style={styles.feeValue}>{fmtMoney(feePaise)}</Text>
+          <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
         </View>
 
         {/* Tranche progress */}
@@ -254,7 +253,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
                     )}
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.trancheAmount}>{fmtMoney(t.net_to_influencer)}</Text>
+                    <Text style={styles.trancheAmount}>{fmtRupees(t.net_to_influencer)}</Text>
                     <StatusBadge status={t.status} size={9} />
                   </View>
                 </View>
@@ -279,7 +278,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
                   <Text style={styles.trancheDesc}>{t.desc}</Text>
                 </View>
                 <Text style={styles.trancheAmount}>
-                  {fmtMoney(Math.round(feePaise * t.pct / 100))}
+                  {fmtRupees(Math.round(fee * t.pct / 100))}
                 </Text>
               </View>
             ))}

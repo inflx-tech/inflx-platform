@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { colors, fmtMoney, fmtNum } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees, fmtNum } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -85,7 +85,6 @@ export default function CampaignCompletionScreen({ navigation, route }) {
 
   const { campaign, deliverables, contract, tranches } = data;
   const fee = campaign.agreed_fee || 0;
-  const feePaise = fee > 100 ? fee : fee * 100;
 
   // Compute tranche totals
   const releasedTranches = (tranches || []).filter(t => t.status === 'released');
@@ -142,7 +141,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
 
         <View style={styles.totalEarnedBox}>
           <Text style={styles.totalEarnedLabel}>Total Earned</Text>
-          <Text style={styles.totalEarnedValue}>{fmtMoney(totalEarned)}</Text>
+          <Text style={styles.totalEarnedValue}>{fmtRupees(totalEarned)}</Text>
         </View>
 
         {/* Tranche breakdown */}
@@ -165,7 +164,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
                   )}
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.trancheAmount}>{fmtMoney(t.net_to_influencer)}</Text>
+                  <Text style={styles.trancheAmount}>{fmtRupees(t.net_to_influencer)}</Text>
                   <StatusBadge status={t.status} size={9} />
                 </View>
               </View>
@@ -182,13 +181,13 @@ export default function CampaignCompletionScreen({ navigation, route }) {
             <View style={styles.commRow}>
               <Text style={styles.commLabel}>Confirmed</Text>
               <Text style={[styles.commValue, { color: colors.teal }]}>
-                {fmtMoney(confirmedCommissions)}
+                {fmtRupees(confirmedCommissions)}
               </Text>
             </View>
             <View style={styles.commRow}>
               <Text style={styles.commLabel}>Pending (30-day window)</Text>
               <Text style={[styles.commValue, { color: colors.orange }]}>
-                {fmtMoney(pendingCommissions)}
+                {fmtRupees(pendingCommissions)}
               </Text>
             </View>
           </View>
@@ -200,7 +199,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
             <View style={[styles.summaryDot, { backgroundColor: colors.teal }]} />
             <Text style={styles.summaryLabel}>Released / Confirmed</Text>
             <Text style={[styles.summaryValue, { color: colors.tealDeep }]}>
-              {fmtMoney(totalTrancheReleased + confirmedCommissions)}
+              {fmtRupees(totalTrancheReleased + confirmedCommissions)}
             </Text>
           </View>
           {(totalTranchePending + pendingCommissions > 0) && (
@@ -208,7 +207,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
               <View style={[styles.summaryDot, { backgroundColor: colors.orange }]} />
               <Text style={styles.summaryLabel}>Pending</Text>
               <Text style={[styles.summaryValue, { color: colors.orangeDeep }]}>
-                {fmtMoney(totalTranchePending + pendingCommissions)}
+                {fmtRupees(totalTranchePending + pendingCommissions)}
               </Text>
             </View>
           )}

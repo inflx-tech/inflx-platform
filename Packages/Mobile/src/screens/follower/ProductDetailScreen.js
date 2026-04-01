@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Image,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 export default function ProductDetailScreen({ navigation, route }) {
@@ -90,7 +90,7 @@ export default function ProductDetailScreen({ navigation, route }) {
             {offer.offer_type === 'percentage' && offer.discount_value ? (
               <Text style={styles.offerBannerDiscount}>{offer.discount_value}% OFF</Text>
             ) : offer.offer_type === 'flat' && offer.discount_value ? (
-              <Text style={styles.offerBannerDiscount}>{fmtMoney(offer.discount_value)} OFF</Text>
+              <Text style={styles.offerBannerDiscount}>{fmtRupees(offer.discount_value)} OFF</Text>
             ) : null}
           </View>
         )}
@@ -122,10 +122,10 @@ export default function ProductDetailScreen({ navigation, route }) {
                   <Text style={styles.productDesc} numberOfLines={2}>{product.description}</Text>
                 ) : null}
                 <View style={styles.priceRow}>
-                  <Text style={styles.productPrice}>{fmtMoney(product.price || 0)}</Text>
+                  <Text style={styles.productPrice}>{fmtRupees(product.price || 0)}</Text>
                   {pDiscount > 0 && (
                     <Text style={styles.discountedPrice}>
-                      {fmtMoney((product.price || 0) - pDiscount)}
+                      {fmtRupees((product.price || 0) - pDiscount)}
                     </Text>
                   )}
                 </View>
@@ -145,7 +145,7 @@ export default function ProductDetailScreen({ navigation, route }) {
             <Text style={styles.detailCardTitle}>Order Summary</Text>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{selected.name}</Text>
-              <Text style={styles.summaryVal}>{fmtMoney(selected.price || 0)}</Text>
+              <Text style={styles.summaryVal}>{fmtRupees(selected.price || 0)}</Text>
             </View>
             {discountPaise > 0 && (
               <View style={styles.summaryRow}>
@@ -153,13 +153,13 @@ export default function ProductDetailScreen({ navigation, route }) {
                   Discount ({offer?.offer_type === 'percentage' ? `${offer.discount_value}%` : 'Flat'})
                 </Text>
                 <Text style={[styles.summaryVal, { color: colors.teal }]}>
-                  - {fmtMoney(discountPaise)}
+                  - {fmtRupees(discountPaise)}
                 </Text>
               </View>
             )}
             <View style={[styles.summaryRow, styles.summaryTotal]}>
               <Text style={styles.totalLabel}>You Pay</Text>
-              <Text style={styles.totalVal}>{fmtMoney(finalPrice)}</Text>
+              <Text style={styles.totalVal}>{fmtRupees(finalPrice)}</Text>
             </View>
           </View>
         )}
@@ -172,7 +172,7 @@ export default function ProductDetailScreen({ navigation, route }) {
         <View style={styles.footer}>
           <View style={styles.footerRow}>
             <View>
-              <Text style={styles.footerPrice}>{fmtMoney(finalPrice)}</Text>
+              <Text style={styles.footerPrice}>{fmtRupees(finalPrice)}</Text>
               <Text style={styles.footerProduct}>{selected.name}</Text>
             </View>
             <TouchableOpacity style={styles.buyBtn} onPress={handleBuyNow}>

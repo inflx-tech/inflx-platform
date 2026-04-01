@@ -5,7 +5,7 @@ const { authenticate, requireRole, requireAdminRole } = require('../middleware/a
 const ctrl = require('../controllers/brand.controller');
 
 const walletRoutes = require('./wallet.routes');
-const { getBrandEscrow } = require('../controllers/escrow.controller');
+const { getBrandEscrow, getCampaignEscrow } = require('../controllers/escrow.controller');
 const enquiryCtrl = require('../controllers/enquiry.controller');
 const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
@@ -20,6 +20,9 @@ router.post('/resubmit',  authenticate, requireRole('brand'), ctrl.resubmit);
 
 // Escrow overview (Phase 3 — Block E)
 router.get('/me/escrow', authenticate, requireRole('brand'), getBrandEscrow);
+
+// Campaign-specific escrow breakdown
+router.get('/me/campaigns/:campaign_id/escrow', authenticate, requireRole('brand'), getCampaignEscrow);
 
 // Phase 4 — Enquiry leads
 router.get('/me/enquiries',         authenticate, requireRole('brand'), enquiryCtrl.listEnquiries);
@@ -47,6 +50,9 @@ router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.delet
 // Wallet sub-router — all routes under /brands/me/wallet/*
 // Auth is applied here so wallet routes don't need to repeat it
 router.use('/me/wallet', authenticate, requireRole('brand'), walletRoutes);
+
+// Public brand profile (any authenticated user — influencers viewing brand info from offers)
+router.get('/:id/public', authenticate, ctrl.getPublicProfile);
 
 // Admin routes (reviewer+ can view, approve, reject)
 router.get('/:id',         authenticate, requireAdminRole('reviewer'), ctrl.getById);

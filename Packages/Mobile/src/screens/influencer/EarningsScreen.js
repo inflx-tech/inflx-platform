@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, TextInput, Alert, Linking, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -66,11 +66,11 @@ export default function EarningsScreen() {
       {/* Header */}
       <View style={styles.headerCard}>
         <Text style={styles.headerLabel}>Available to Withdraw</Text>
-        <Text style={styles.headerAmount}>{fmtMoney(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
+        <Text style={styles.headerAmount}>{fmtRupees(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
         <View style={{ flexDirection: 'row', gap: 20, marginTop: 12 }}>
           <View>
             <Text style={styles.miniLabel}>Pending</Text>
-            <Text style={styles.miniVal}>{fmtMoney(earnings?.pending_balance)}</Text>
+            <Text style={styles.miniVal}>{fmtRupees(earnings?.pending_balance)}</Text>
           </View>
           <View>
             <Text style={styles.miniLabel}>TDS This FY</Text>
@@ -78,7 +78,7 @@ export default function EarningsScreen() {
           </View>
           <View>
             <Text style={styles.miniLabel}>Total Earned</Text>
-            <Text style={styles.miniVal}>{fmtMoney(earnings?.total_earned)}</Text>
+            <Text style={styles.miniVal}>{fmtRupees(earnings?.total_earned)}</Text>
           </View>
         </View>
       </View>
@@ -114,15 +114,15 @@ export default function EarningsScreen() {
               <View style={styles.campaignStatsRow}>
                 <View style={styles.campaignStat}>
                   <Text style={styles.campaignStatLabel}>Earned</Text>
-                  <Text style={[styles.campaignStatVal, { color: colors.teal }]}>{fmtMoney(Math.round(c.total_earned))}</Text>
+                  <Text style={[styles.campaignStatVal, { color: colors.teal }]}>{fmtRupees(Math.round(c.total_earned))}</Text>
                 </View>
                 <View style={styles.campaignStat}>
                   <Text style={styles.campaignStatLabel}>Pending</Text>
-                  <Text style={[styles.campaignStatVal, { color: colors.orange }]}>{fmtMoney(Math.round(c.total_pending))}</Text>
+                  <Text style={[styles.campaignStatVal, { color: colors.orange }]}>{fmtRupees(Math.round(c.total_pending))}</Text>
                 </View>
                 <View style={styles.campaignStat}>
                   <Text style={styles.campaignStatLabel}>Total</Text>
-                  <Text style={[styles.campaignStatVal, { color: colors.t1 }]}>{fmtMoney(Math.round(c.total_earned + c.total_pending))}</Text>
+                  <Text style={[styles.campaignStatVal, { color: colors.t1 }]}>{fmtRupees(Math.round(c.total_earned + c.total_pending))}</Text>
                 </View>
               </View>
 

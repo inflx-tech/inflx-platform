@@ -8,8 +8,9 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
@@ -180,7 +181,6 @@ export default function OfferDetailScreen({ navigation, route }) {
   }
 
   const fee = offer.agreed_fee || offer.proposed_fee || 0;
-  const feePaise = fee > 100 ? fee : fee * 100; // handle both paise and rupee values
   const isActionable = offer.status === 'invited';
   const isNegotiating = offer.status === 'negotiating';
   const deliverables = offer.deliverables || [];
@@ -197,13 +197,38 @@ export default function OfferDetailScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <View style={styles.headerRow}>
+
+        {/* Brand logo + name (tappable → BrandProfile) */}
+        <TouchableOpacity
+          style={styles.brandRow}
+          onPress={() => {
+            if (offer.brand_id) {
+              navigation.navigate('BrandProfile', { brand_id: offer.brand_id });
+            }
+          }}
+          activeOpacity={offer.brand_id ? 0.7 : 1}
+        >
+          {offer.brand_logo_url ? (
+            <Image source={{ uri: offer.brand_logo_url }} style={styles.brandLogo} />
+          ) : (
+            <View style={styles.brandLogoFallback}>
+              <Text style={styles.brandLogoInitial}>
+                {(offer.brand_name || offer.business_name || 'B').charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={{ flex: 1 }}>
             <Text style={styles.brandName}>{offer.brand_name || offer.business_name || 'Brand'}</Text>
+            {(offer.brand_category || offer.brand_city) && (
+              <Text style={styles.brandMeta}>
+                {[offer.brand_category, offer.brand_city].filter(Boolean).join(' · ')}
+              </Text>
+            )}
             <Text style={styles.campaignName}>{offer.campaign_name || 'Campaign'}</Text>
           </View>
           <StatusBadge status={offer.status} size={11} />
-        </View>
+          {offer.brand_id && <Text style={styles.brandArrow}>›</Text>}
+        </TouchableOpacity>
 
         {/* Expiry countdown for pending offers */}
         {isActionable && countdown && (
@@ -237,6 +262,23 @@ export default function OfferDetailScreen({ navigation, route }) {
             <Text style={styles.infoValue}>{offer.brand_name || offer.business_name || '--'}</Text>
           </View>
         </View>
+
+        {(offer.brand_category || offer.brand_city) && (
+          <View style={styles.infoGrid}>
+            {offer.brand_category && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Category</Text>
+                <Text style={styles.infoValue}>{offer.brand_category}</Text>
+              </View>
+            )}
+            {offer.brand_city && (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Location</Text>
+                <Text style={styles.infoValue}>{offer.brand_city}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={styles.infoGrid}>
           <View style={styles.infoItem}>
@@ -278,7 +320,7 @@ export default function OfferDetailScreen({ navigation, route }) {
 
         <View style={styles.feeHighlight}>
           <Text style={styles.feeLabel}>Offered Fee</Text>
-          <Text style={styles.feeValue}>{fmtMoney(feePaise)}</Text>
+          <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
         </View>
 
         {/* Deliverables list */}
@@ -357,7 +399,7 @@ export default function OfferDetailScreen({ navigation, route }) {
             <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
             <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
           </View>
-          <Text style={styles.trancheAmount}>{fmtMoney(Math.round(feePaise * t1Pct / 100))}</Text>
+          <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t1Pct / 100))}</Text>
         </View>
 
         <View style={styles.trancheRow}>
@@ -366,7 +408,7 @@ export default function OfferDetailScreen({ navigation, route }) {
             <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
             <Text style={styles.trancheDesc}>Released when content goes live</Text>
           </View>
-          <Text style={styles.trancheAmount}>{fmtMoney(Math.round(feePaise * t2Pct / 100))}</Text>
+          <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t2Pct / 100))}</Text>
         </View>
 
         <View style={styles.trancheRow}>
@@ -375,12 +417,12 @@ export default function OfferDetailScreen({ navigation, route }) {
             <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
             <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
           </View>
-          <Text style={styles.trancheAmount}>{fmtMoney(Math.round(feePaise * t3Pct / 100))}</Text>
+          <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t3Pct / 100))}</Text>
         </View>
 
         <View style={styles.trancheTotalRow}>
           <Text style={styles.trancheTotalLabel}>Total Fee</Text>
-          <Text style={styles.trancheTotalValue}>{fmtMoney(feePaise)}</Text>
+          <Text style={styles.trancheTotalValue}>{fmtRupees(fee)}</Text>
         </View>
 
         <View style={styles.tdsNote}>
@@ -553,9 +595,18 @@ const styles = StyleSheet.create({
   header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
   backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  brandName: { fontSize: 20, fontWeight: '800', color: colors.white },
-  campaignName: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  brandLogo: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)' },
+  brandLogoFallback: {
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  brandLogoInitial: { fontSize: 20, fontWeight: '800', color: colors.white },
+  brandName: { fontSize: 18, fontWeight: '800', color: colors.white },
+  brandMeta: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
+  brandArrow: { fontSize: 22, color: 'rgba(255,255,255,0.4)', marginLeft: 4 },
+  campaignName: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
 
   // Timer
   timerBar: {

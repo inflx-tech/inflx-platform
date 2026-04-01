@@ -544,6 +544,81 @@ const invite = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Update an existing campaign_influencer (draft editing)
+// PATCH /campaigns/:id/sets/:sid/influencers/:ciId
+// ─────────────────────────────────────────────────────────────────────────────
+
+const updateInfluencer = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  const campaign = await getCampaignOrThrow(req.params.id, brand.id);
+
+  if (campaign.status !== 'draft') {
+    throw new AppError('VALIDATION_ERROR', 'Can only update influencer assignments on draft campaigns', 422);
+  }
+
+  await getSetOrThrow(req.params.sid, req.params.id);
+
+  const ciId = req.params.ciId;
+  const { rows: existing } = await db.query(
+    `SELECT * FROM campaign_influencers WHERE id = $1 AND set_id = $2`,
+    [ciId, req.params.sid]
+  );
+  if (!existing[0]) {
+    throw new AppError('NOT_FOUND', 'Campaign influencer assignment not found', 404);
+  }
+
+  const {
+    posting_date,
+    offer_type,
+    offer_config_json,
+    commission_pct,
+    physical_delivery,
+    delivery_address,
+    influencer_budget,
+    coupon_code,
+  } = req.body;
+
+  // Recalculate submission deadline
+  let submissionDeadline = existing[0].submission_deadline;
+  if (posting_date !== undefined) {
+    if (posting_date) {
+      const pd = new Date(posting_date);
+      pd.setHours(pd.getHours() - 24);
+      submissionDeadline = pd.toISOString();
+    } else {
+      submissionDeadline = null;
+    }
+  }
+
+  const { rows } = await db.query(
+    `UPDATE campaign_influencers SET
+       posting_date = $2,
+       offer_type = $3,
+       offer_config_json = $4,
+       commission_pct = $5,
+       physical_delivery = $6,
+       delivery_address = $7,
+       influencer_budget = $8,
+       submission_deadline = $9
+     WHERE id = $1
+     RETURNING *`,
+    [
+      ciId,
+      posting_date || null,
+      offer_type || null,
+      offer_config_json ? JSON.stringify(offer_config_json) : null,
+      commission_pct != null ? commission_pct : null,
+      physical_delivery != null ? physical_delivery : false,
+      delivery_address || null,
+      influencer_budget != null ? influencer_budget : null,
+      submissionDeadline,
+    ]
+  );
+
+  return success(res, { campaign_influencer: rows[0] });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Offer creation (legacy — kept for backward compat)
 // POST /campaigns/:id/sets/:sid/offers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -691,6 +766,29 @@ const publish = asyncHandler(async (req, res) => {
 
   const { rows: updatedCampaign } = await db.query(`SELECT * FROM campaigns WHERE id = $1`, [campaign.id]);
 
+  // Notify the brand that their campaign is now published/active
+  try {
+    const { rows: brandUserRows } = await db.query(
+      `SELECT u.id AS user_id, u.fcm_token
+       FROM brands b JOIN users u ON u.id = b.user_id
+       WHERE b.id = $1`,
+      [brand.id]
+    );
+    if (brandUserRows[0]) {
+      await notificationService.send({
+        userId:   brandUserRows[0].user_id,
+        type:     'campaign.published',
+        title:    'Campaign Published',
+        body:     `Your campaign '${campaign.name}' is now live`,
+        data:     { screen: 'campaign_detail', campaign_id: campaign.id },
+        fcmToken: brandUserRows[0].fcm_token,
+        sendSms:  false,
+      });
+    }
+  } catch (notifErr) {
+    console.error('[NOTIFICATION] campaign.published send failed:', notifErr.message);
+  }
+
   return success(res, { campaign: updatedCampaign[0] });
 });
 
@@ -834,6 +932,107 @@ const cancel = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Cancel a single influencer assignment
+// POST /campaigns/:id/influencers/:ciid/cancel
+// ─────────────────────────────────────────────────────────────────────────────
+
+const cancelInfluencer = asyncHandler(async (req, res) => {
+  const brand    = await getBrandOrThrow(req.user.sub);
+  const campaign = await getCampaignOrThrow(req.params.id, brand.id);
+
+  const ciid = req.params.ciid;
+
+  // Fetch the campaign_influencer row
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.*, cs.campaign_id, i.user_id AS influencer_user_id, u.name AS influencer_name, i.instagram_handle
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN influencers i ON i.id = ci.influencer_id
+     JOIN users u ON u.id = i.user_id
+     WHERE ci.id = $1 AND cs.campaign_id = $2`,
+    [ciid, campaign.id]
+  );
+
+  if (!ciRows[0]) {
+    throw new AppError('NOT_FOUND', 'Campaign influencer assignment not found', 404);
+  }
+
+  const ci = ciRows[0];
+
+  // Only allow cancel for pre-contract statuses
+  const CANCELLABLE = ['invited', 'accepted', 'negotiating'];
+  if (!CANCELLABLE.includes(ci.status)) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot cancel influencer with status "${ci.status}". Only invited, accepted, or negotiating assignments can be cancelled.`,
+      422
+    );
+  }
+
+  // Calculate escrow to refund for this influencer
+  const { rows: escrowRows } = await db.query(
+    `SELECT COALESCE(SUM(amount), 0) AS locked_amount
+     FROM escrow_entries
+     WHERE campaign_influencer_id = $1 AND status = 'locked'`,
+    [ci.id]
+  );
+  const refundPaise = Math.round(parseFloat(escrowRows[0].locked_amount) * 100);
+
+  await db.withTransaction(async (client) => {
+    // Mark the assignment as cancelled
+    await client.query(
+      `UPDATE campaign_influencers SET status = 'cancelled' WHERE id = $1`,
+      [ci.id]
+    );
+
+    // Cancel any locked escrow entries for this influencer
+    if (refundPaise > 0) {
+      await client.query(
+        `UPDATE escrow_entries SET status = 'cancelled' WHERE campaign_influencer_id = $1 AND status = 'locked'`,
+        [ci.id]
+      );
+
+      // Refund to brand wallet
+      const { rows: balRows } = await client.query(
+        `UPDATE brands SET wallet_balance = wallet_balance + $1 WHERE id = $2 RETURNING wallet_balance`,
+        [refundPaise / 100, brand.id]
+      );
+      const newBalance = Math.round(parseFloat(balRows[0].wallet_balance) * 100);
+
+      await client.query(
+        `INSERT INTO wallet_transactions (brand_id, type, amount_paise, balance_after_paise, reference_id, description)
+         VALUES ($1, 'refund', $2, $3, $4, $5)`,
+        [
+          brand.id,
+          refundPaise,
+          newBalance,
+          ci.id,
+          `Influencer assignment cancelled — escrow refund for @${ci.instagram_handle} in: ${campaign.name}`,
+        ]
+      );
+    }
+  });
+
+  // Notify the influencer
+  try {
+    await notificationService.send({
+      user_id: ci.influencer_user_id,
+      type:    'assignment_cancelled',
+      title:   'Assignment Cancelled',
+      body:    `Your assignment for campaign "${campaign.name}" has been cancelled by the brand.`,
+      data:    { campaign_id: campaign.id, campaign_influencer_id: ci.id },
+    });
+  } catch (_) { /* notification failure is non-fatal */ }
+
+  return success(res, {
+    campaign_influencer_id: ci.id,
+    status:       'cancelled',
+    refund_paise: refundPaise,
+    refund_rupees: (refundPaise / 100).toFixed(2),
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Influencer search for handpick
 // GET /campaigns/:id/influencer-search
 // ─────────────────────────────────────────────────────────────────────────────
@@ -965,12 +1164,14 @@ module.exports = {
   update,
   remove,
   cancel,
+  cancelInfluencer,
   getSets,
   createSet,
   updateSet,
   deleteSet,
   duplicateSet,
   invite,
+  updateInfluencer,
   createOffer,
   publish,
   getLiveHierarchy,

@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { campaignApi, brandApi } from '../../../../lib/api';
+import { campaignApi, brandApi, influencerApi, fmtNum } from '../../../../lib/api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const FORMATS = ['Instagram reel', 'Instagram stories', 'Instagram post', 'YouTube short', 'YouTube video'];
@@ -9,6 +9,18 @@ const NICHES   = ['Food','Fashion','Fitness','Travel','Lifestyle','Beauty','Tech
 const CITIES   = ['Mumbai','Delhi','Bengaluru','Hyderabad','Chennai','Vijayawada','Pune','Kolkata','Jaipur','Ahmedabad'];
 const TIERS    = [{key:'nano',label:'Nano',sub:'1K–10K'},{key:'micro',label:'Micro',sub:'10K–100K'},{key:'macro',label:'Macro',sub:'100K–1M'},{key:'mega',label:'Mega',sub:'1M+'}];
 const OFFER_TYPES = ['Discount','Volume discount','BOGO','Bundle','Free gift'];
+const LANGUAGES = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Urdu'];
+const GENDERS = [{key:'male',label:'Male'},{key:'female',label:'Female'},{key:'non_binary',label:'Non-binary'}];
+
+// ─── Influencer Groups (localStorage) ────────────────────────────────────────
+const GROUPS_KEY = 'inflx_influencer_groups';
+function loadGroups() {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); } catch { return []; }
+}
+function saveGroups(groups) {
+  if (typeof window !== 'undefined') localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const needsBudget = g => g === 'engagement' || g === 'hybrid';
@@ -301,6 +313,75 @@ const CSS = `
 .cat-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .cat-chip{padding:4px 11px;border:1px solid var(--border2);border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;color:var(--t2);background:var(--s3);transition:all .15s}
 .cat-chip.sel{background:var(--orange);border-color:var(--orange);color:#fff}
+.browse-panel{background:var(--s3);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:10px}
+.browse-head{padding:12px 15px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.browse-head-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.browse-title{font-size:12px;font-weight:700;color:var(--orange);font-family:'Outfit',sans-serif;white-space:nowrap}
+.browse-search{flex:1;min-width:120px;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;padding:7px 11px;border:1px solid var(--border2);border-radius:10px;background:var(--s3);color:var(--t1);outline:none}
+.browse-search:focus{border-color:var(--orange)}
+.browse-search::placeholder{color:var(--t3)}
+.browse-sel-count{font-size:11px;font-weight:700;color:var(--orange);white-space:nowrap}
+.browse-filters{padding:12px 15px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.browse-ff{min-width:100px}
+.browse-ff label{display:block;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.browse-ff select,.browse-ff input{width:100%;font-size:11px;font-family:'Plus Jakarta Sans',sans-serif;padding:6px 8px;border:1px solid var(--border2);border-radius:8px;background:var(--s2);color:var(--t1);outline:none}
+.browse-ff select:focus,.browse-ff input:focus{border-color:var(--orange)}
+.browse-clear{font-size:10px;font-weight:700;color:var(--t3);background:none;border:1px solid var(--border2);border-radius:20px;padding:5px 10px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap;align-self:end}
+.browse-clear:hover{color:var(--red);border-color:var(--red)}
+.browse-toggle-filters{font-size:10px;font-weight:700;color:var(--orange);background:none;border:1px solid rgba(244,121,32,.25);border-radius:20px;padding:5px 11px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;white-space:nowrap}
+.browse-toggle-filters:hover{background:var(--orange-l)}
+.browse-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 15px;max-height:380px;overflow-y:auto}
+.browse-grid::-webkit-scrollbar{width:4px}
+.browse-grid::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.browse-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:12px;background:var(--s2);cursor:pointer;transition:all .15s;position:relative}
+.browse-card:hover{border-color:var(--border2);background:var(--s3)}
+.browse-card.sel{border-color:var(--orange);background:var(--orange-l)}
+.browse-card.already{border-color:var(--teal);background:var(--teal-l);opacity:.6;cursor:default}
+.browse-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);background:var(--s3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:all .15s}
+.browse-card.sel .browse-check{background:var(--orange);border-color:var(--orange);color:#fff}
+.browse-card.already .browse-check{background:var(--teal);border-color:var(--teal);color:#fff}
+.browse-av{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--s4),var(--s3));border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--t2);flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.browse-info{flex:1;min-width:0}
+.browse-name{font-size:11px;font-weight:700;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.browse-meta{font-size:9px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.browse-stats{display:flex;gap:6px;margin-top:3px;flex-wrap:wrap}
+.browse-stat{font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--s4);color:var(--t2)}
+.browse-stat.er-high{background:rgba(0,184,148,.12);color:var(--teal)}
+.browse-foot{padding:10px 15px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.browse-page-info{font-size:10px;color:var(--t3)}
+.browse-page-btns{display:flex;gap:4px}
+.browse-page-btn{font-size:10px;font-weight:700;color:var(--t2);background:none;border:1px solid var(--border2);border-radius:8px;padding:4px 10px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
+.browse-page-btn:hover:not(:disabled){border-color:var(--orange);color:var(--orange)}
+.browse-page-btn:disabled{opacity:.35;cursor:default}
+.browse-add-btn{font-size:11px;font-weight:700;color:#fff;background:var(--orange);border:none;border-radius:10px;padding:7px 16px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:all .15s}
+.browse-add-btn:hover{background:var(--orange-d)}
+.browse-add-btn:disabled{opacity:.4;cursor:not-allowed}
+.browse-empty{padding:30px 15px;text-align:center}
+.browse-empty-icon{font-size:28px;margin-bottom:6px}
+.browse-empty-text{font-size:12px;color:var(--t3)}
+.browse-loading{padding:30px 15px;text-align:center;font-size:12px;color:var(--t3)}
+.grp-section{margin-top:10px;background:var(--s3);border:1px solid var(--border);border-radius:12px;padding:10px 13px}
+.grp-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.grp-section-title{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px}
+.grp-create-btn{font-size:10px;font-weight:700;color:var(--orange);background:none;border:1px solid rgba(244,121,32,.25);border-radius:20px;padding:4px 10px;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif}
+.grp-create-btn:hover{background:var(--orange-l)}
+.grp-list{display:flex;flex-wrap:wrap;gap:5px}
+.grp-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--border2);border-radius:20px;font-size:11px;font-weight:600;color:var(--t2);cursor:pointer;background:var(--s4);transition:all .15s}
+.grp-chip:hover{border-color:var(--orange);color:var(--orange)}
+.grp-chip .grp-count{font-size:9px;font-weight:700;color:var(--t3);background:var(--s2);padding:1px 5px;border-radius:10px}
+.grp-chip .grp-del{font-size:10px;color:var(--t3);cursor:pointer;margin-left:2px}
+.grp-chip .grp-del:hover{color:var(--red)}
+.grp-modal{background:var(--s1);border:1px solid var(--border2);border-radius:24px;width:100%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;margin:auto}
+.grp-modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.grp-modal-title{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700}
+.grp-modal-body{flex:1;overflow-y:auto;padding:16px 20px}
+.grp-modal-body::-webkit-scrollbar{width:4px}
+.grp-modal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.grp-modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.grp-inf-list{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto;margin-top:8px}
+.grp-inf-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--s3);cursor:pointer;transition:all .15s}
+.grp-inf-item:hover{border-color:var(--border2)}
+.grp-inf-item.sel{border-color:var(--orange);background:var(--orange-l)}
 `;
 
 function NewCampaignPageInner() {
@@ -336,6 +417,33 @@ function NewCampaignPageInner() {
   // Influencer search
   const [infResults, setInfResults] = useState([]);
   const infSearchTimer = useRef(null);
+
+  // Browse panel state
+  const [browseResults, setBrowseResults] = useState([]);
+  const [browseTotal, setBrowseTotal] = useState(0);
+  const [browsePage, setBrowsePage] = useState(1);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseQuery, setBrowseQuery] = useState('');
+  const [browseNiche, setBrowseNiche] = useState('');
+  const [browseCity, setBrowseCity] = useState('');
+  const [browseTier, setBrowseTier] = useState('');
+  const [browseGender, setBrowseGender] = useState('');
+  const [browseMinFollowers, setBrowseMinFollowers] = useState('');
+  const [browseMaxFollowers, setBrowseMaxFollowers] = useState('');
+  const [browseMinEr, setBrowseMinEr] = useState('');
+  const [browseFiltersOpen, setBrowseFiltersOpen] = useState(false);
+  const [browseSelected, setBrowseSelected] = useState([]); // [{id, full_name, instagram_handle, ...}]
+  const browseTimer = useRef(null);
+
+  // Influencer groups
+  const [infGroups, setInfGroups] = useState(() => loadGroups());
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [groupSearchQ, setGroupSearchQ] = useState('');
+  const [groupSearchResults, setGroupSearchResults] = useState([]);
+  const [groupSelectedIds, setGroupSelectedIds] = useState([]);
+  const [groupSearchLoading, setGroupSearchLoading] = useState(false);
+  const groupSearchTimer = useRef(null);
 
   // Open group matches
   const [matchResult, setMatchResult] = useState({ count: 0, influencers: [] });
@@ -456,7 +564,7 @@ function NewCampaignPageInner() {
     formats: sets[si].formats.map(f => f.name === fmtName ? { ...f, count: Math.max(1, f.count + delta) } : f)
   });
 
-  // ── Influencer search ─────────────────────────────────────────────────────────
+  // ── Influencer search (legacy — kept for compatibility) ────────────────────────
   const handleInfSearch = (si, q) => {
     updateSet(si, { inf_query: q });
     clearTimeout(infSearchTimer.current);
@@ -484,6 +592,122 @@ function NewCampaignPageInner() {
     setInfResults([]);
   };
   const removeInfluencer = (si, ii) => updateSet(si, { influencers: sets[si].influencers.filter((_, j) => j !== ii) });
+
+  // ── Browse panel search ──────────────────────────────────────────────────────
+  const doBrowseSearch = useCallback(async (page = 1) => {
+    setBrowseLoading(true);
+    setBrowsePage(page);
+    const params = { page: String(page), limit: '20' };
+    if (browseQuery.trim()) params.q = browseQuery.trim();
+    if (browseNiche) params.niche = browseNiche;
+    if (browseCity.trim()) params.city = browseCity.trim();
+    if (browseTier) params.tier = browseTier;
+    if (browseGender) params.gender = browseGender;
+    if (browseMinFollowers) params.min_followers = browseMinFollowers;
+    if (browseMaxFollowers) params.max_followers = browseMaxFollowers;
+    if (browseMinEr) params.min_er = browseMinEr;
+    try {
+      const res = await influencerApi.search(params);
+      if (res.success || res.ok) {
+        setBrowseResults(res.data?.influencers || res.data || []);
+        setBrowseTotal(res.meta?.total || res.data?.length || 0);
+      }
+    } catch {}
+    setBrowseLoading(false);
+  }, [browseQuery, browseNiche, browseCity, browseTier, browseGender, browseMinFollowers, browseMaxFollowers, browseMinEr]);
+
+  // Auto-search on filter change with debounce
+  useEffect(() => {
+    clearTimeout(browseTimer.current);
+    browseTimer.current = setTimeout(() => doBrowseSearch(1), 350);
+    return () => clearTimeout(browseTimer.current);
+  }, [doBrowseSearch]);
+
+  const clearBrowseFilters = () => {
+    setBrowseQuery(''); setBrowseNiche(''); setBrowseCity(''); setBrowseTier('');
+    setBrowseGender(''); setBrowseMinFollowers(''); setBrowseMaxFollowers(''); setBrowseMinEr('');
+  };
+
+  const toggleBrowseSelect = (inf) => {
+    setBrowseSelected(prev => {
+      const exists = prev.find(s => s.id === inf.id);
+      if (exists) return prev.filter(s => s.id !== inf.id);
+      return [...prev, inf];
+    });
+  };
+
+  const addBrowseSelectedToSet = (si) => {
+    const usedIds = allUsedIds();
+    const newInfs = browseSelected.filter(inf => !usedIds.includes(inf.id)).map(inf => ({
+      ...mkInf(),
+      influencer_id: inf.id,
+      name: inf.full_name || '',
+      handle: inf.instagram_handle ? `@${inf.instagram_handle}` : '',
+      init: (inf.full_name || 'X').slice(0, 2).toUpperCase(),
+    }));
+    if (newInfs.length > 0) {
+      updateSet(si, { influencers: [...sets[si].influencers, ...newInfs] });
+    }
+    setBrowseSelected([]);
+  };
+
+  // ── Influencer groups ────────────────────────────────────────────────────────
+  const updateGroupsState = (newGroups) => { setInfGroups(newGroups); saveGroups(newGroups); };
+
+  const openGroupModal = () => {
+    setGroupName(''); setGroupSearchQ(''); setGroupSearchResults([]); setGroupSelectedIds([]);
+    setGroupModalOpen(true);
+  };
+
+  const doGroupSearch = (q) => {
+    setGroupSearchQ(q);
+    clearTimeout(groupSearchTimer.current);
+    if (!q.trim()) { setGroupSearchResults([]); return; }
+    setGroupSearchLoading(true);
+    groupSearchTimer.current = setTimeout(async () => {
+      try {
+        const res = await influencerApi.search({ q, limit: '30' });
+        if (res.success || res.ok) setGroupSearchResults(res.data?.influencers || res.data || []);
+      } catch {}
+      setGroupSearchLoading(false);
+    }, 300);
+  };
+
+  const toggleGroupSelect = (id) => {
+    setGroupSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const saveNewGroup = () => {
+    if (!groupName.trim() || groupSelectedIds.length === 0) return;
+    const newGroup = {
+      id: Date.now().toString(),
+      name: groupName.trim(),
+      influencer_ids: groupSelectedIds,
+      influencers: groupSearchResults.filter(r => groupSelectedIds.includes(r.id)).map(r => ({
+        id: r.id, full_name: r.full_name, instagram_handle: r.instagram_handle,
+      })),
+    };
+    updateGroupsState([...infGroups, newGroup]);
+    setGroupModalOpen(false);
+  };
+
+  const deleteGroup = (groupId) => { updateGroupsState(infGroups.filter(g => g.id !== groupId)); };
+
+  const addGroupToSet = (si, groupId) => {
+    const group = infGroups.find(g => g.id === groupId);
+    if (!group) return;
+    const usedIds = allUsedIds();
+    const newInfs = group.influencers.filter(inf => !usedIds.includes(inf.id)).map(inf => ({
+      ...mkInf(),
+      influencer_id: inf.id,
+      name: inf.full_name || '',
+      handle: inf.instagram_handle ? `@${inf.instagram_handle}` : '',
+      init: (inf.full_name || 'X').slice(0, 2).toUpperCase(),
+    }));
+    if (newInfs.length > 0) {
+      updateSet(si, { influencers: [...sets[si].influencers, ...newInfs] });
+    }
+  };
 
   // ── Open group matches ────────────────────────────────────────────────────────
   const fetchMatches = (si) => {
@@ -612,20 +836,26 @@ function NewCampaignPageInner() {
       if (s.influencer_mode === 'handpick') {
         for (let ii = 0; ii < updatedSets[si].influencers.length; ii++) {
           const inf = updatedSets[si].influencers[ii];
-          if (inf.backendId || !inf.influencer_id) continue;
-          const res = await campaignApi.inviteInfluencer(cid, setBackendId, {
+          if (!inf.influencer_id) continue;
+          const infPayload = {
             influencer_id: inf.influencer_id,
-            post_date: inf.post_date || null,
+            posting_date: inf.post_date || null,
             offer_type: needsOffer(s.goal) ? (inf.offer_type || null) : null,
-            offer_config: inf.offer_type ? buildOfferConfig(inf) : null,
+            offer_config_json: inf.offer_type ? buildOfferConfig(inf) : null,
             influencer_budget: needsBudget(s.goal) ? (Number(inf.influencer_budget) || null) : null,
             commission_pct: needsCoupon(s.goal) ? (Number(inf.commission_pct) || null) : null,
             physical_delivery: inf.physical_delivery || false,
             delivery_address: inf.delivery_address || null,
             coupon_code: inf.custom_code || null,
-          });
-          if (res.success || res.ok) {
-            updatedSets[si].influencers[ii] = { ...inf, backendId: res.data?.campaign_influencer?.id || true };
+          };
+          if (inf.backendId) {
+            // Update existing influencer assignment (e.g. post date changed on re-edit)
+            await campaignApi.updateInfluencer(cid, setBackendId, inf.backendId, infPayload);
+          } else {
+            const res = await campaignApi.inviteInfluencer(cid, setBackendId, infPayload);
+            if (res.success || res.ok) {
+              updatedSets[si].influencers[ii] = { ...inf, backendId: res.data?.campaign_influencer?.id || true };
+            }
           }
         }
       }
@@ -949,6 +1179,11 @@ function NewCampaignPageInner() {
     return (
       <>
         <div className="set-body">
+          {/* Set name */}
+          <div className="sec">
+            <div className="sec-lbl">Set name</div>
+            <input className="inp" type="text" value={set.name} placeholder="e.g. Set A" onChange={e => updateSet(si, { name: e.target.value })} />
+          </div>
           {/* Goal */}
           <div className="sec">
             <div className="sec-lbl">Goal — defines payout model for all influencers in this set</div>
@@ -1065,21 +1300,152 @@ function NewCampaignPageInner() {
               </div>
               {set.influencer_mode === 'handpick' && (
                 <>
-                  <input className="inf-search" placeholder="Search influencers by name or handle…" value={set.inf_query || ''} onChange={e => handleInfSearch(si, e.target.value)} />
-                  {infResults.length > 0 && set.inf_query && (
-                    <div className="inf-list">
-                      {infResults.map(inf => {
-                        const already = allUsedIds().includes(inf.id);
-                        return (
-                          <div key={inf.id} className={`inf-item${already ? ' added' : ''}`}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                              <div className="iav">{(inf.full_name || 'X').slice(0, 2).toUpperCase()}</div>
-                              <div><div className="iname">{inf.full_name}</div><div className="imeta">@{inf.instagram_handle} · {inf.tier} · {inf.city}</div></div>
-                            </div>
-                            <button className={`iadd-btn${already ? ' added' : ''}`} onClick={() => !already && addInfluencer(si, inf)}>{already ? 'Added ✓' : '+ Add'}</button>
+                  {/* ── Groups section ── */}
+                  {infGroups.length > 0 && (
+                    <div className="grp-section" style={{ marginBottom: 10 }}>
+                      <div className="grp-section-head">
+                        <div className="grp-section-title">Add from saved group</div>
+                        <button className="grp-create-btn" onClick={openGroupModal}>+ New group</button>
+                      </div>
+                      <div className="grp-list">
+                        {infGroups.map(g => (
+                          <div key={g.id} className="grp-chip" onClick={() => addGroupToSet(si, g.id)}>
+                            {g.name} <span className="grp-count">{g.influencer_ids.length}</span>
+                            <span className="grp-del" onClick={e => { e.stopPropagation(); deleteGroup(g.id); }}>x</span>
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {infGroups.length === 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <button className="grp-create-btn" onClick={openGroupModal}>+ Create influencer group</button>
+                    </div>
+                  )}
+
+                  {/* ── Browse panel ── */}
+                  <div className="browse-panel">
+                    <div className="browse-head">
+                      <div className="browse-head-left">
+                        <span className="browse-title">Browse Influencers</span>
+                        <input className="browse-search" placeholder="Search by name or @handle..." value={browseQuery} onChange={e => setBrowseQuery(e.target.value)} />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {browseSelected.length > 0 && <span className="browse-sel-count">{browseSelected.length} selected</span>}
+                        <button className="browse-toggle-filters" onClick={() => setBrowseFiltersOpen(p => !p)}>
+                          {browseFiltersOpen ? 'Hide filters' : 'Filters'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {browseFiltersOpen && (
+                      <div className="browse-filters">
+                        <div className="browse-ff">
+                          <label>Niche</label>
+                          <select value={browseNiche} onChange={e => setBrowseNiche(e.target.value)}>
+                            <option value="">All</option>
+                            {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
+                          </select>
+                        </div>
+                        <div className="browse-ff">
+                          <label>Tier</label>
+                          <select value={browseTier} onChange={e => setBrowseTier(e.target.value)}>
+                            <option value="">All</option>
+                            {TIERS.map(t => <option key={t.key} value={t.key}>{t.label} ({t.sub})</option>)}
+                          </select>
+                        </div>
+                        <div className="browse-ff">
+                          <label>Gender</label>
+                          <select value={browseGender} onChange={e => setBrowseGender(e.target.value)}>
+                            <option value="">All</option>
+                            {GENDERS.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
+                          </select>
+                        </div>
+                        <div className="browse-ff">
+                          <label>City</label>
+                          <input placeholder="e.g. Mumbai" value={browseCity} onChange={e => setBrowseCity(e.target.value)} />
+                        </div>
+                        <div className="browse-ff" style={{ minWidth: 80 }}>
+                          <label>Min Followers</label>
+                          <input type="number" placeholder="e.g. 5000" value={browseMinFollowers} onChange={e => setBrowseMinFollowers(e.target.value)} />
+                        </div>
+                        <div className="browse-ff" style={{ minWidth: 80 }}>
+                          <label>Max Followers</label>
+                          <input type="number" placeholder="e.g. 100000" value={browseMaxFollowers} onChange={e => setBrowseMaxFollowers(e.target.value)} />
+                        </div>
+                        <div className="browse-ff" style={{ minWidth: 70 }}>
+                          <label>Min ER %</label>
+                          <input type="number" step="0.1" placeholder="e.g. 3" value={browseMinEr} onChange={e => setBrowseMinEr(e.target.value)} />
+                        </div>
+                        {(browseNiche || browseTier || browseGender || browseCity || browseMinFollowers || browseMaxFollowers || browseMinEr) && (
+                          <button className="browse-clear" onClick={clearBrowseFilters}>Clear all</button>
+                        )}
+                      </div>
+                    )}
+
+                    {browseLoading ? (
+                      <div className="browse-loading">Searching influencers...</div>
+                    ) : browseResults.length === 0 ? (
+                      <div className="browse-empty">
+                        <div className="browse-empty-icon">🔍</div>
+                        <div className="browse-empty-text">No influencers found. Try different filters.</div>
+                      </div>
+                    ) : (
+                      <div className="browse-grid">
+                        {browseResults.map(inf => {
+                          const usedIds = allUsedIds();
+                          const alreadyInSet = usedIds.includes(inf.id);
+                          const isSelected = browseSelected.some(s => s.id === inf.id);
+                          const niches = [...(inf.niche || []), ...(inf.secondary_niche || [])].slice(0, 2);
+                          const initials = (inf.full_name || inf.instagram_handle || 'XX').slice(0, 2).toUpperCase();
+                          const er = inf.engagement_rate || 0;
+                          return (
+                            <div
+                              key={inf.id}
+                              className={`browse-card${isSelected ? ' sel' : ''}${alreadyInSet ? ' already' : ''}`}
+                              onClick={() => !alreadyInSet && toggleBrowseSelect(inf)}
+                            >
+                              <div className={`browse-check`}>{alreadyInSet ? '✓' : isSelected ? '✓' : ''}</div>
+                              <div className="browse-av">{initials}</div>
+                              <div className="browse-info">
+                                <div className="browse-name">{inf.full_name || inf.instagram_handle}</div>
+                                <div className="browse-meta">@{inf.instagram_handle}{inf.city ? ` · ${inf.city}` : ''}{inf.tier ? ` · ${inf.tier}` : ''}</div>
+                                <div className="browse-stats">
+                                  <span className="browse-stat">{fmtNum(inf.followers_count)}</span>
+                                  <span className={`browse-stat${er >= 5 ? ' er-high' : ''}`}>{er}% ER</span>
+                                  {niches.map(n => <span key={n} className="browse-stat">{n}</span>)}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div className="browse-foot">
+                      <div className="browse-page-info">
+                        Page {browsePage} of {Math.max(1, Math.ceil(browseTotal / 20))} ({browseTotal} total)
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="browse-page-btns">
+                          <button className="browse-page-btn" disabled={browsePage <= 1} onClick={() => doBrowseSearch(browsePage - 1)}>Prev</button>
+                          <button className="browse-page-btn" disabled={browsePage >= Math.ceil(browseTotal / 20)} onClick={() => doBrowseSearch(browsePage + 1)}>Next</button>
+                        </div>
+                        <button
+                          className="browse-add-btn"
+                          disabled={browseSelected.length === 0}
+                          onClick={() => addBrowseSelectedToSet(si)}
+                        >
+                          Add {browseSelected.length > 0 ? `${browseSelected.length} selected` : 'selected'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Added influencers config cards ── */}
+                  {set.influencers.length > 0 && (
+                    <div style={{ marginTop: 12, fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.4px' }}>
+                      {set.influencers.length} influencer{set.influencers.length !== 1 ? 's' : ''} added
                     </div>
                   )}
                   {set.influencers.map((_, ii) => renderInfluencerConfig(si, ii))}
@@ -1115,6 +1481,40 @@ function NewCampaignPageInner() {
               <div className="bstrip-note">{rem < 0 ? <span style={{ color: 'var(--red)' }}>Over budget by ₹{fmtN(Math.abs(rem))}</span> : `₹${fmtN(used)} allocated`}</div>
             </div>
           )}
+          {/* Per-influencer budget breakdown */}
+          {(() => {
+            const allInfs = [];
+            sets.forEach(s => {
+              if (needsBudget(s.goal) && s.influencer_mode === 'handpick') {
+                s.influencers.forEach(inf => {
+                  if (inf.name && inf.influencer_budget) {
+                    allInfs.push({ name: inf.name, handle: inf.handle, budget: Number(inf.influencer_budget || 0), set: s.name });
+                  }
+                });
+              }
+              if (needsBudget(s.goal) && s.influencer_mode === 'open_group' && s.group.per_influencer_budget && s.group.max_cap) {
+                allInfs.push({ name: `Open group (${s.name})`, handle: `up to ${s.group.max_cap} influencers`, budget: Number(s.group.per_influencer_budget || 0) * Number(s.group.max_cap || 0), set: s.name });
+              }
+            });
+            if (allInfs.length === 0) return null;
+            const totalAllocated = allInfs.reduce((t, i) => t + i.budget, 0);
+            return (
+              <div style={{ background: 'var(--s2)', border: '1px solid var(--border)', borderRadius: 12, padding: 14, marginTop: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--t2)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                  ₹{fmtN(totalAllocated)} allocated for {allInfs.length} influencer{allInfs.length !== 1 ? 's' : ''}
+                </div>
+                {allInfs.map((inf, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderTop: i > 0 ? '1px solid var(--border)' : 'none' }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t1)' }}>{inf.name}</div>
+                      <div style={{ fontSize: 10, color: 'var(--t3)' }}>{inf.handle}{inf.set ? ` · ${inf.set}` : ''}</div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'JetBrains Mono', color: 'var(--orange)' }}>₹{fmtN(inf.budget)}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
         {sets.map((set, si) => (
           <div key={si} className="rv-set">
@@ -1208,7 +1608,11 @@ function NewCampaignPageInner() {
               <div className="cc-cs">Set the top-level details. Budget covers engagement and hybrid sets only. Conversion sets run on commission — no budget needed.</div>
               <div className="f"><label className="flbl">Campaign name</label><input className="inp" type="text" placeholder="e.g. Summer Collection 2025" value={name} onChange={e => setName(e.target.value)} /></div>
               <div className="g2">
-                <div className="f"><label className="flbl">Start date</label><input className="inp" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+                <div className="f">
+                  <label className="flbl">Start date</label>
+                  <input className="inp" type="date" value={startDate} min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })()} onChange={e => setStartDate(e.target.value)} />
+                  <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>Campaign must start at least 7 days from today</div>
+                </div>
                 <div className="f"><label className="flbl">End date</label><input className="inp" type="date" value={endDate} min={startDate || undefined} onChange={e => setEndDate(e.target.value)} /></div>
               </div>
               <div className="f">
@@ -1315,6 +1719,69 @@ function NewCampaignPageInner() {
                 <button className="prod-cancel-btn" onClick={closeModal}>Cancel</button>
                 <button className="prod-confirm-btn" onClick={confirmModal} disabled={modalTempSel.length === 0}>Confirm selection</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Group creation modal ── */}
+      {groupModalOpen && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setGroupModalOpen(false)}>
+          <div className="grp-modal">
+            <div className="grp-modal-head">
+              <div className="grp-modal-title">Create Influencer Group</div>
+              <button className="modal-close" onClick={() => setGroupModalOpen(false)}>x</button>
+            </div>
+            <div className="grp-modal-body">
+              <div className="f">
+                <label className="flbl">Group name</label>
+                <input className="inp" placeholder="e.g. Food bloggers Hyderabad" value={groupName} onChange={e => setGroupName(e.target.value)} />
+              </div>
+              <div className="f">
+                <label className="flbl">Search and select influencers</label>
+                <input
+                  className="inp"
+                  placeholder="Search by name or @handle..."
+                  value={groupSearchQ}
+                  onChange={e => doGroupSearch(e.target.value)}
+                />
+              </div>
+              {groupSearchLoading && <div style={{ fontSize: 11, color: 'var(--t3)', padding: '8px 0' }}>Searching...</div>}
+              {groupSearchResults.length > 0 && (
+                <div className="grp-inf-list">
+                  {groupSearchResults.map(inf => {
+                    const selected = groupSelectedIds.includes(inf.id);
+                    return (
+                      <div key={inf.id} className={`grp-inf-item${selected ? ' sel' : ''}`} onClick={() => toggleGroupSelect(inf.id)}>
+                        <div className="browse-check" style={{ width: 16, height: 16, borderRadius: 4, fontSize: 10 }}>
+                          {selected ? '✓' : ''}
+                        </div>
+                        <div className="browse-av" style={{ width: 28, height: 28, fontSize: 9 }}>
+                          {(inf.full_name || 'X').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700 }}>{inf.full_name || inf.instagram_handle}</div>
+                          <div style={{ fontSize: 10, color: 'var(--t3)' }}>
+                            @{inf.instagram_handle}{inf.city ? ` · ${inf.city}` : ''}{inf.tier ? ` · ${inf.tier}` : ''}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--t3)' }}>{fmtNum(inf.followers_count)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {groupSelectedIds.length > 0 && (
+                <div style={{ marginTop: 10, fontSize: 11, fontWeight: 700, color: 'var(--orange)' }}>
+                  {groupSelectedIds.length} influencer{groupSelectedIds.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
+            </div>
+            <div className="grp-modal-foot">
+              <button className="prod-cancel-btn" onClick={() => setGroupModalOpen(false)}>Cancel</button>
+              <button className="prod-confirm-btn" onClick={saveNewGroup} disabled={!groupName.trim() || groupSelectedIds.length === 0}>
+                Save group
+              </button>
             </div>
           </div>
         </div>

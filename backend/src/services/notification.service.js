@@ -2,6 +2,7 @@
 
 const db = require('../config/db');
 const env = require('../config/env');
+const firebaseAdmin = require('../config/firebase');
 
 /**
  * Send a notification to a user.
@@ -54,8 +55,27 @@ async function _sendPush(fcmToken, title, body, data) {
     console.log(`[FCM MOCK] Push → ${fcmToken.slice(0, 12)}... | "${title}"`);
     return;
   }
-  // Production: use firebase-admin SDK
-  // admin.messaging().send({ token: fcmToken, notification: { title, body }, data })
+
+  if (!firebaseAdmin) {
+    console.warn('[FCM] Firebase Admin not initialized — skipping push');
+    return;
+  }
+
+  try {
+    // Convert all data values to strings (FCM requirement)
+    const stringData = data
+      ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)]))
+      : undefined;
+
+    await firebaseAdmin.messaging().send({
+      token: fcmToken,
+      notification: { title, body },
+      data: stringData,
+    });
+  } catch (err) {
+    // Log but don't throw — push failure should not break the caller
+    console.error(`[FCM] Push send failed for token ${fcmToken.slice(0, 12)}...:`, err.message);
+  }
 }
 
 async function _sendSms(phone, message) {

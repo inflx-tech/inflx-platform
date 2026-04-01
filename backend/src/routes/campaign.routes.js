@@ -18,6 +18,9 @@ router.delete('/:id',  ...brandAuth, ctrl.remove);
 router.post('/:id/publish', ...brandAuth, ctrl.publish);
 router.post('/:id/cancel',  ...brandAuth, ctrl.cancel);
 
+// ── Cancel individual influencer assignment ──────────────────────────────────
+router.post('/:id/influencers/:ciid/cancel', ...brandAuth, ctrl.cancelInfluencer);
+
 // ── Campaign Sets CRUD ───────────────────────────────────────────────────────
 router.get('/:id/sets',                     ...brandAuth, ctrl.getSets);
 router.post('/:id/sets',                    ...brandAuth, ctrl.createSet);
@@ -27,6 +30,9 @@ router.post('/:id/sets/:sid/duplicate',     ...brandAuth, ctrl.duplicateSet);
 
 // ── Invite influencer to set (handpick) ─────────────────────────────────────
 router.post('/:id/sets/:sid/invite', ...brandAuth, ctrl.invite);
+
+// ── Update existing influencer assignment (draft editing) ───────────────────
+router.patch('/:id/sets/:sid/influencers/:ciId', ...brandAuth, ctrl.updateInfluencer);
 
 // ── Create offer for set (legacy) ───────────────────────────────────────────
 router.post('/:id/sets/:sid/offers', ...brandAuth, ctrl.createOffer);

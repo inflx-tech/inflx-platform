@@ -3,7 +3,8 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 
@@ -21,12 +22,33 @@ export default function BrandWalletScreen({ navigation }) {
   const [toppingUp, setToppingUp]   = useState(false);
 
   async function load() {
+    // Check token before loading — prevents "Missing or invalid authorization header" error
+    const token = await AsyncStorage.getItem('inflx_token');
+    if (!token) {
+      setLoading(false);
+      Alert.alert(
+        'Session Expired',
+        'Please log in again to view your wallet.',
+        [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]
+      );
+      return;
+    }
+
     const [walletRes, txRes] = await Promise.all([
       brandApi.getWallet(),
       brandApi.getWalletTransactions?.() || Promise.resolve({ success: false }),
     ]);
     setLoading(false);
-    if (walletRes.success) setWallet(walletRes.data?.wallet || walletRes.data);
+    if (walletRes.success) {
+      setWallet(walletRes.data?.wallet || walletRes.data);
+    } else if (walletRes.error?.code === 'UNAUTHORIZED') {
+      Alert.alert(
+        'Session Expired',
+        'Your session has expired. Please log in again.',
+        [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]
+      );
+      return;
+    }
     if (txRes.success) setTxns(txRes.data?.transactions || []);
   }
 
@@ -41,6 +63,18 @@ export default function BrandWalletScreen({ navigation }) {
   async function topup() {
     const amountPaise = Math.round(parseFloat(topupAmt) * 100);
     if (!amountPaise || amountPaise < 100) { Alert.alert('Minimum ₹1'); return; }
+
+    // Verify auth token exists before attempting the API call
+    const token = await AsyncStorage.getItem('inflx_token');
+    if (!token) {
+      Alert.alert(
+        'Session Expired',
+        'Please log in again to top up your wallet.',
+        [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]
+      );
+      return;
+    }
+
     setToppingUp(true);
     const res = await brandApi.createTopup(amountPaise);
     setToppingUp(false);
@@ -49,6 +83,12 @@ export default function BrandWalletScreen({ navigation }) {
         'Top-up Order Created',
         'Complete payment via Razorpay. Open the brand web app to finish payment.',
         [{ text: 'OK' }]
+      );
+    } else if (res.error?.code === 'UNAUTHORIZED') {
+      Alert.alert(
+        'Session Expired',
+        'Your session has expired. Please log in again.',
+        [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]
       );
     } else {
       Alert.alert('Failed', res.error?.message || 'Top-up failed');
@@ -74,11 +114,11 @@ export default function BrandWalletScreen({ navigation }) {
       {/* Balance */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>Available Balance</Text>
-        <Text style={styles.balanceAmt}>{fmtMoney(balance)}</Text>
+        <Text style={styles.balanceAmt}>{fmtRupees(balance)}</Text>
         <View style={styles.balanceRow}>
           <View style={styles.balanceStat}>
             <Text style={styles.balanceStatLabel}>Locked in Escrow</Text>
-            <Text style={styles.balanceStatVal}>{fmtMoney(escrowLocked)}</Text>
+            <Text style={styles.balanceStatVal}>{fmtRupees(escrowLocked)}</Text>
           </View>
         </View>
       </View>
@@ -138,7 +178,7 @@ export default function BrandWalletScreen({ navigation }) {
                   <Text style={styles.txDate}>{tx.created_at ? new Date(tx.created_at).toLocaleString('en-IN') : ''}</Text>
                 </View>
                 <Text style={[styles.txAmount, { color: isCredit ? colors.teal : colors.red }]}>
-                  {isCredit ? '+' : '-'}{fmtMoney(Math.abs(tx.amount || 0))}
+                  {isCredit ? '+' : '-'}{fmtRupees(Math.abs(tx.amount || 0))}
                 </Text>
               </View>
             );
@@ -147,7 +187,7 @@ export default function BrandWalletScreen({ navigation }) {
       )}
 
       {/* View full history on web */}
-      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/wallet')}>
+      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/dashboard/wallet')}>
         <Text style={styles.webLinkIcon}>🌐</Text>
         <Text style={styles.webLinkText}>View full transaction history on web</Text>
         <Text style={styles.webLinkArrow}>›</Text>

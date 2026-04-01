@@ -235,6 +235,7 @@ export default function CampaignDetailPage() {
   const [contractModal, setContractModal] = useState(null); // { inf, contract }
   const [contractLoading, setContractLoading] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [cancellingInf, setCancellingInf] = useState(null); // campaign_influencer id being cancelled
 
   // ── Load campaign (sets + influencers included) ──────────────────────────
   useEffect(() => {
@@ -326,6 +327,17 @@ export default function CampaignDetailPage() {
     } else showToast(res.error?.message || 'Failed to cancel');
   }
 
+  async function handleCancelInfluencer(inf) {
+    if (!window.confirm(`Cancel assignment for @${inf.instagram_handle}? They will be notified.`)) return;
+    setCancellingInf(inf.id);
+    const res = await campaignApi.cancelInfluencer(id, inf.id);
+    setCancellingInf(null);
+    if (res.success) {
+      showToast(`Assignment cancelled for @${inf.instagram_handle}. Refund: ₹${res.data?.refund_rupees || '0.00'}`);
+      campaignApi.get(id).then(r => { if (r.success) setCampaign(r.data?.campaign || r.data); });
+    } else showToast(res.error?.message || 'Failed to cancel assignment');
+  }
+
   if (loading) return <div className="text-center py-16 text-gray-400 text-sm">Loading campaign…</div>;
   if (!campaign) return <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm">Campaign not found</div>;
 
@@ -368,7 +380,7 @@ export default function CampaignDetailPage() {
                 ✏️ Continue Editing
               </a>
             )}
-            {!['cancelled', 'completed'].includes(campaign.status) && (
+            {['draft', 'pending_wallet'].includes(campaign.status) && (
               <button onClick={handleCancel} disabled={cancelling}
                 className="px-4 py-2 bg-red-50 border border-red-200 text-red-600 font-bold text-xs rounded-xl hover:bg-red-100 transition-colors disabled:opacity-50">
                 {cancelling ? 'Cancelling…' : '✕ Cancel Campaign'}
@@ -516,6 +528,13 @@ export default function CampaignDetailPage() {
                               <button onClick={() => openContractModal(inf)}
                                 className="px-3 py-1.5 bg-teal-50 border border-teal-200 text-teal-700 font-bold text-[10px] rounded-lg hover:bg-teal-100 transition-colors">
                                 Sign Contract
+                              </button>
+                            )}
+                            {['invited', 'accepted', 'negotiating'].includes(inf.status) && (
+                              <button onClick={() => handleCancelInfluencer(inf)}
+                                disabled={cancellingInf === inf.id}
+                                className="px-3 py-1.5 bg-red-50 border border-red-200 text-red-600 font-bold text-[10px] rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50">
+                                {cancellingInf === inf.id ? 'Cancelling…' : 'Cancel'}
                               </button>
                             )}
                             <div className="flex items-center gap-2 text-xs text-gray-400">
