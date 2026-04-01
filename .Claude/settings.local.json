@@ -185,7 +185,12 @@
       "Bash(cp app/build/outputs/apk/brand/debug/app-brand-debug.apk \"$DEST/app-brand-debug.apk\")",
       "Bash(cp app/build/outputs/apk/influencer/debug/app-influencer-debug.apk \"$DEST/app-influencer-debug.apk\")",
       "Bash(cp app/build/outputs/apk/follower/debug/app-follower-debug.apk \"$DEST/app-follower-debug.apk\")",
-      "Read(//c/WORK/inflx-platform/Packages/Mobile/android/**)"
+      "Read(//c/WORK/inflx-platform/Packages/Mobile/android/**)",
+      "Bash(./gradlew assembleBrandRelease assembleInfluencerRelease assembleFollowerRelease --no-daemon)",
+      "Bash(cp app/build/outputs/apk/brand/release/app-brand-release.apk \"$DEST/app-brand-release.apk\")",
+      "Bash(cp app/build/outputs/apk/influencer/release/app-influencer-release.apk \"$DEST/app-influencer-release.apk\")",
+      "Bash(cp app/build/outputs/apk/follower/release/app-follower-release.apk \"$DEST/app-follower-release.apk\")",
+      "Read(//c/WORK/inflx-platform/Packages/Mobile/android/$DEST/**)"
     ]
   }
 }
