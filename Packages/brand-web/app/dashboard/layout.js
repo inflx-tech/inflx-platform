@@ -11,6 +11,7 @@ const NAV = [
   { href: '/dashboard/orders',     label: 'Orders',     icon: '📦' },
   { href: '/dashboard/wallet',     label: 'Wallet',     icon: '💰' },
   { href: '/dashboard/enquiries',  label: 'Enquiries',  icon: '💬' },
+  { href: '/dashboard/profile',    label: 'Profile',    icon: '👤' },
 ];
 
 export default function DashboardLayout({ children }) {

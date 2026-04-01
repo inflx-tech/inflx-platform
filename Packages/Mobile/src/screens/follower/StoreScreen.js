@@ -77,7 +77,7 @@ export default function StoreScreen({ navigation, route }) {
                     const trackingParams = { cid: offer.campaign_id, sid: offer.set_id, oid: offer.id, iid: store.influencer_id };
                     if (mode === 'pay_at_store') navigation.navigate('PayAtStore', { offer, store, trackingParams });
                     else if (mode === 'prebook') navigation.navigate('PreBook', { offer, store, trackingParams });
-                    else if (mode === 'online_order') navigation.navigate('ProductDetail', { offer, store, trackingParams });
+                    else if (mode === 'online_order') navigation.navigate('OnlineOrder', { offer, store, trackingParams });
                     else if (mode === 'enquiry') navigation.navigate('Enquiry', { offer, store, trackingParams });
                   }}
                 >

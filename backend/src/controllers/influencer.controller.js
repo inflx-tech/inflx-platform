@@ -48,6 +48,11 @@ function sanitiseInfluencer(row) {
     phone: _phone,
     ...safe
   } = row;
+  // Indicate whether the influencer has configured a payout method (without revealing the values)
+  safe.has_payout_method = !!(bank_account_no || upi_id);
+  safe.has_pan = !!pan_number;
+  safe.has_bank_account = !!bank_account_no;
+  safe.has_upi = !!upi_id;
   return safe;
 }
 
@@ -101,8 +106,12 @@ const getMe = asyncHandler(async (req, res) => {
   const influencer = await getInfluencerByUserId(req.user.sub);
   if (!influencer) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
 
+  const sanitised = sanitiseInfluencer(influencer);
+  // Include phone as read-only for profile display
+  sanitised.phone = influencer.phone;
+
   return success(res, {
-    influencer: sanitiseInfluencer(influencer),
+    influencer: sanitised,
     user_status: influencer.user_status,
   });
 });
@@ -124,6 +133,10 @@ const updateMe = asyncHandler(async (req, res) => {
     bank_account_no,
     bank_ifsc,
     pan_number,
+    bio,
+    city,
+    full_name,
+    name: userName,
   } = req.body;
 
   const updates = {};
@@ -133,23 +146,35 @@ const updateMe = asyncHandler(async (req, res) => {
   if (niche !== undefined) updates.niche = niche;
   if (youtube_handle !== undefined) updates.youtube_handle = youtube_handle;
   if (bank_ifsc !== undefined) updates.bank_ifsc = bank_ifsc;
+  if (bio !== undefined) updates.bio = bio;
+  if (city !== undefined) updates.city = city;
+  if (full_name !== undefined) updates.full_name = full_name;
 
   // Encrypt sensitive fields before storing
   if (upi_id !== undefined) updates.upi_id = encrypt(upi_id);
   if (bank_account_no !== undefined) updates.bank_account_no = encrypt(bank_account_no);
   if (pan_number !== undefined) updates.pan_number = encrypt(pan_number);
 
-  if (Object.keys(updates).length === 0) {
+  // Update name on users table if provided
+  const nameUpdate = userName !== undefined ? userName : full_name;
+
+  if (Object.keys(updates).length === 0 && nameUpdate === undefined) {
     throw new AppError('VALIDATION_ERROR', 'No valid fields provided to update', 422);
   }
 
-  const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`);
-  const values = [influencer.id, ...Object.values(updates)];
+  if (Object.keys(updates).length > 0) {
+    const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`);
+    const values = [influencer.id, ...Object.values(updates)];
 
-  await db.query(
-    `UPDATE influencers SET ${setClauses.join(', ')} WHERE id = $1`,
-    values
-  );
+    await db.query(
+      `UPDATE influencers SET ${setClauses.join(', ')} WHERE id = $1`,
+      values
+    );
+  }
+
+  if (nameUpdate !== undefined) {
+    await db.query(`UPDATE users SET name = $1 WHERE id = $2`, [nameUpdate, req.user.sub]);
+  }
 
   const updated = await getInfluencerById(influencer.id);
   return success(res, { influencer: sanitiseInfluencer(updated) });
@@ -466,4 +491,147 @@ const rescrape = asyncHandler(async (req, res) => {
 // Exported for admin controller re-use
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /influencers/me/campaigns
+// Returns all campaigns the influencer is part of (via campaign_influencers)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getMyCampaigns = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const { status } = req.query;
+  const conditions = [`ci.influencer_id = $1`];
+  const params = [inf.id];
+
+  // Filter by campaign_influencer status group
+  if (status === 'active') {
+    conditions.push(`ci.status IN ('accepted', 'contracted', 'active')`);
+  } else if (status === 'completed') {
+    conditions.push(`ci.status = 'completed'`);
+  }
+  // 'all' or no filter returns everything except declined/expired
+  if (!status || status === 'all') {
+    conditions.push(`ci.status NOT IN ('declined', 'expired')`);
+  }
+
+  const { rows } = await db.query(
+    `SELECT
+       ci.id AS campaign_influencer_id,
+       ci.status AS influencer_status,
+       ci.agreed_fee,
+       ci.posting_date,
+       ci.contract_signed_at,
+       ci.brand_signed_at,
+       ci.created_at AS invited_at,
+       c.id AS campaign_id,
+       c.name AS campaign_name,
+       c.brief,
+       c.status AS campaign_status,
+       c.start_date,
+       c.end_date,
+       cs.name AS set_name,
+       cs.goal,
+       b.business_name AS brand_name,
+       (SELECT COUNT(*) FROM deliverables d WHERE d.campaign_influencer_id = ci.id) AS deliverable_count,
+       (SELECT COUNT(*) FROM deliverables d WHERE d.campaign_influencer_id = ci.id AND d.status = 'approved') AS approved_count
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY ci.created_at DESC`,
+    params
+  );
+
+  return success(res, { campaigns: rows });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /influencers/me/campaigns/:campaign_influencer_id
+// Full campaign detail from the influencer's perspective
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getMyCampaignDetail = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const ciId = req.params.campaign_influencer_id;
+
+  // Main campaign + influencer assignment
+  const { rows: ciRows } = await db.query(
+    `SELECT
+       ci.id AS campaign_influencer_id,
+       ci.status AS influencer_status,
+       ci.agreed_fee,
+       ci.posting_date,
+       ci.coupon_code,
+       ci.commission_pct,
+       ci.contract_signed_at,
+       ci.brand_signed_at,
+       ci.created_at AS invited_at,
+       c.id AS campaign_id,
+       c.name AS campaign_name,
+       c.brief,
+       c.status AS campaign_status,
+       c.start_date,
+       c.end_date,
+       c.total_budget,
+       cs.id AS set_id,
+       cs.name AS set_name,
+       cs.goal,
+       cs.content_start_date,
+       cs.content_end_date,
+       b.id AS brand_id,
+       b.business_name AS brand_name,
+       u.name AS brand_contact_name
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
+     JOIN users u ON u.id = b.user_id
+     WHERE ci.id = $1 AND ci.influencer_id = $2`,
+    [ciId, inf.id]
+  );
+
+  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
+  const campaign = ciRows[0];
+
+  // Deliverables
+  const { rows: deliverables } = await db.query(
+    `SELECT d.id, d.type, d.quantity, d.status, d.submission_deadline,
+            d.submitted_at, d.live_url, d.live_confirmed_at,
+            d.revision_count, d.revision_limit, d.brand_feedback
+     FROM deliverables d
+     WHERE d.campaign_influencer_id = $1
+     ORDER BY d.created_at ASC`,
+    [ciId]
+  );
+
+  // Contract
+  const { rows: contractRows } = await db.query(
+    `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at
+     FROM contracts
+     WHERE campaign_influencer_id = $1`,
+    [ciId]
+  );
+  const contract = contractRows[0] || null;
+
+  // Escrow / tranche entries
+  const { rows: tranches } = await db.query(
+    `SELECT tranche_number, amount, net_to_influencer, status, trigger_event, triggered_at, released_at
+     FROM escrow_entries
+     WHERE campaign_influencer_id = $1
+     ORDER BY tranche_number ASC`,
+    [ciId]
+  );
+
+  return success(res, {
+    campaign,
+    deliverables,
+    contract,
+    tranches,
+  });
+});
+
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail };

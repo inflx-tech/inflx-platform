@@ -36,8 +36,18 @@ router.post('/users', authenticate, requireAdminRole('superadmin'), ctrl.createA
 router.get('/config/payments',   authenticate, requireAnyAdminRole,           ctrl.getPaymentConfig);
 router.patch('/config/payments', authenticate, requireAdminRole('superadmin'), ctrl.updatePaymentConfig);
 
+// Brand directory — reviewer+
+router.get('/brands', authenticate, requireAdminRole('reviewer'), ctrl.getBrands);
+
 // Per-brand platform fee override — finance+
 router.patch('/brands/:id/platform-fee', authenticate, requireAdminRole('finance'), ctrl.setBrandPlatformFee);
+
+// Withdrawal / payout management — finance+
+router.get('/withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getWithdrawals);
+router.post('/withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processWithdrawal);
+
+// Analytics — any admin role
+router.get('/analytics', authenticate, requireAnyAdminRole, ctrl.getAnalytics);
 
 // Influencer Instagram rescrape — already in influencer.routes.js (/influencers/:id/rescrape)
 

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { colors, fmtMoney } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import { openWebDashboard } from '../../utils/openWebDashboard';
 
 const TX_ICONS = {
   topup: '⬆️', escrow_lock: '🔒', escrow_release: '🔓',
@@ -145,6 +146,13 @@ export default function BrandWalletScreen({ navigation }) {
         </View>
       )}
 
+      {/* View full history on web */}
+      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/wallet')}>
+        <Text style={styles.webLinkIcon}>🌐</Text>
+        <Text style={styles.webLinkText}>View full transaction history on web</Text>
+        <Text style={styles.webLinkArrow}>›</Text>
+      </TouchableOpacity>
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -181,4 +189,8 @@ const styles = StyleSheet.create({
   txType: { fontSize: 13, color: colors.t1, fontWeight: '500', textTransform: 'capitalize' },
   txDate: { fontSize: 10, color: colors.t3, marginTop: 1 },
   txAmount: { fontSize: 13, fontWeight: '700' },
+  webLink: { margin: 16, backgroundColor: colors.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border },
+  webLinkIcon: { fontSize: 18 },
+  webLinkText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy },
+  webLinkArrow: { fontSize: 18, color: colors.t3 },
 });

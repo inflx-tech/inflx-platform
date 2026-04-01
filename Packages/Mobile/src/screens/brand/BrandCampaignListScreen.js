@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { colors } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import { openWebDashboard } from '../../utils/openWebDashboard';
 
 const STATUS_CFG = {
   draft:           { label: 'Draft',           color: colors.t3,    bg: colors.surface2 },
@@ -109,6 +110,13 @@ export default function BrandCampaignListScreen({ navigation }) {
         )}
       </View>
 
+      {/* Manage on web link */}
+      <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/campaigns')}>
+        <Text style={styles.webLinkIcon}>🌐</Text>
+        <Text style={styles.webLinkText}>Manage campaigns on web</Text>
+        <Text style={styles.webLinkArrow}>›</Text>
+      </TouchableOpacity>
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -135,4 +143,8 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 10, fontWeight: '700' },
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   metaItem: { fontSize: 11, color: colors.t3 },
+  webLink: { margin: 16, backgroundColor: colors.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border },
+  webLinkIcon: { fontSize: 18 },
+  webLinkText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy },
+  webLinkArrow: { fontSize: 18, color: colors.t3 },
 });

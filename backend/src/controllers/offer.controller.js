@@ -84,8 +84,16 @@ const getMyOffers = asyncHandler(async (req, res) => {
   const params = [influencer.id];
 
   if (status) {
-    params.push(status);
-    conditions.push(`ci.status = $${params.length}`);
+    // Support comma-separated statuses: ?status=invited,negotiating
+    const statuses = status.split(',').map(s => s.trim()).filter(Boolean);
+    if (statuses.length === 1) {
+      params.push(statuses[0]);
+      conditions.push(`ci.status = $${params.length}`);
+    } else if (statuses.length > 1) {
+      const placeholders = statuses.map((s, i) => `$${params.length + i + 1}`);
+      params.push(...statuses);
+      conditions.push(`ci.status IN (${placeholders.join(', ')})`);
+    }
   }
 
   const { rows } = await db.query(
@@ -94,7 +102,7 @@ const getMyOffers = asyncHandler(async (req, res) => {
             cs.goal,
             cs.budget AS set_budget,
             c.name AS campaign_name,
-            b.business_name
+            b.business_name AS brand_name
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id
@@ -601,11 +609,70 @@ const publishOpenGroup = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /offers/:id — Influencer offer detail (full campaign + deliverable info)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getOfferDetail = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerOrThrow(req.user.sub);
+
+  const { rows } = await db.query(
+    `SELECT ci.*,
+            cs.name          AS set_name,
+            cs.goal,
+            cs.budget        AS set_budget,
+            cs.content_start_date,
+            cs.content_end_date,
+            c.name           AS campaign_name,
+            c.brief          AS campaign_brief,
+            c.total_budget,
+            c.start_date     AS campaign_start_date,
+            c.end_date       AS campaign_end_date,
+            c.status         AS campaign_status,
+            b.business_name  AS brand_name
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
+     WHERE ci.id = $1 AND ci.influencer_id = $2`,
+    [req.params.id, influencer.id]
+  );
+
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+  const offer = rows[0];
+
+  // Fetch deliverables for this campaign_influencer
+  const { rows: deliverables } = await db.query(
+    `SELECT id, type, quantity, status, submission_deadline, revision_limit
+     FROM deliverables
+     WHERE campaign_influencer_id = $1
+     ORDER BY type ASC`,
+    [offer.id]
+  );
+
+  // Fetch negotiation thread if exists
+  const { rows: negRows } = await db.query(
+    `SELECT id, status, current_turn, created_at
+     FROM negotiations
+     WHERE campaign_influencer_id = $1`,
+    [offer.id]
+  );
+
+  return success(res, {
+    offer: {
+      ...offer,
+      deliverables,
+      negotiation: negRows[0] || null,
+    },
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
   getMyOffers,
+  getOfferDetail,
   accept,
   decline,
   negotiate,

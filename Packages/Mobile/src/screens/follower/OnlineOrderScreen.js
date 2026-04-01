@@ -7,7 +7,7 @@ import { colors, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 export default function OnlineOrderScreen({ navigation, route }) {
-  const { products = [], offer, influencer } = route.params || {};
+  const { products = [], offer, store, trackingParams } = route.params || {};
   const [cart, setCart]         = useState(
     products.map(p => ({ ...p, qty: 1 }))
   );
@@ -43,9 +43,9 @@ export default function OnlineOrderScreen({ navigation, route }) {
       items: cart.map(i => ({ product_id: i.id, qty: i.qty, name: i.name, price: i.price })),
       delivery_address_id: selectedAddr,
       offer_id: offer?.id,
-      influencer_id: influencer?.id,
-      campaign_id: offer?.campaign_id,
-      campaign_set_id: offer?.campaign_set_id,
+      influencer_id: store?.influencer_id,
+      campaign_id: trackingParams?.cid || offer?.campaign_id,
+      campaign_set_id: trackingParams?.sid || offer?.campaign_set_id,
     });
     setLoading(false);
 

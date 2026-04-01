@@ -44,4 +44,35 @@ const getConversions = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
-module.exports = { getCommissions, getConversions };
+// ── GET /influencers/me/commissions/by-campaign ──────────────────────────────
+
+const getCampaignEarnings = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT id FROM influencers WHERE user_id = $1`,
+    [req.user.sub]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  const influencerId = rows[0].id;
+
+  const data = await commissionService.getInfluencerCampaignEarnings(influencerId);
+  return success(res, data);
+});
+
+// ── GET /influencers/me/commissions/campaign/:campaignInfluencerId ────────────
+
+const getCampaignCommissionDetail = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT id FROM influencers WHERE user_id = $1`,
+    [req.user.sub]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  const influencerId = rows[0].id;
+
+  const data = await commissionService.getCampaignCommissionDetail(
+    req.params.campaignInfluencerId,
+    influencerId
+  );
+  return success(res, data);
+});
+
+module.exports = { getCommissions, getConversions, getCampaignEarnings, getCampaignCommissionDetail };

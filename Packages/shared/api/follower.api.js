@@ -17,6 +17,7 @@ export function createFollowerApi(client) {
     prebook: (data) => client.post('/follower/prebook', data),
     createOrder: (data) => client.post('/follower/orders', data),
     getOrder: (id) => client.get(`/follower/orders/${id}`),
+    getOrders: () => client.get('/follower/orders'),
     submitEnquiry: (data) => client.post('/follower/enquiry', data),
   };
 }

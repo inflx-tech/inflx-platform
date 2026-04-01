@@ -198,7 +198,13 @@
       "Bash(grep -r decrypt --include=*.js C:/WORK/inflx-platform/backend/src/)",
       "Bash(grep -E \"avg_shares|avg_saves\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
       "Bash(node -e \"const { pool } = require\\(''./src/config/db''\\); pool.query\\(\"\"ALTER TABLE influencers ADD COLUMN IF NOT EXISTS razorpay_contact_id VARCHAR\\(255\\)\"\"\\).then\\(\\(\\) => { console.log\\(''done''\\); pool.end\\(\\); }\\).catch\\(e => { console.error\\(e.message\\); pool.end\\(\\); }\\)\")",
-      "Bash(ls backend/migrations/003a*)"
+      "Bash(ls backend/migrations/003a*)",
+      "Bash(ls -la /c/WORK/inflx-platform/*.md)",
+      "Bash(find /c/WORK/inflx-platform -name *Spec* -o -name *spec*)",
+      "Bash(grep -h \"request\\\\|\\\\.post\\\\|\\\\.get\\\\|\\\\.patch\\\\|\\\\.delete\\\\|\\\\.put\" /c/WORK/inflx-platform/backend/tests/*.test.js)",
+      "Bash(grep -h \"\\\\.post\\\\|\\\\.get\\\\|\\\\.patch\\\\|\\\\.delete\\\\|\\\\.put\" /c/WORK/inflx-platform/backend/tests/*.test.js)",
+      "Bash(grep -E \"router\\\\.\\(get|post|patch|put|delete\\)\\\\\\(\" /c/WORK/inflx-platform/backend/src/routes/*.js)",
+      "Bash(grep -A 10 \"exports.respond\\\\|exports.accept\\\\|exports.decline\\\\|exports.submit\\\\|exports.review\\\\|exports.submitLive\\\\|exports.confirmLive\" /c/WORK/inflx-platform/backend/src/controllers/*.controller.js)"
     ]
   }
 }

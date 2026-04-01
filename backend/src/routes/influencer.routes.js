@@ -23,6 +23,10 @@ router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.ge
 // ── Earnings overview (Phase 3 — Block E) ─────────────────────────────────────
 router.get('/me/earnings', authenticate, requireRole('influencer'), ctrl.getEarnings);
 
+// ── My Campaigns (HIGH #6) ───────────────────────────────────────────────────
+router.get('/me/campaigns',                          authenticate, requireRole('influencer'), ctrl.getMyCampaigns);
+router.get('/me/campaigns/:campaign_influencer_id',  authenticate, requireRole('influencer'), ctrl.getMyCampaignDetail);
+
 // ── Withdrawals (Phase 5) ─────────────────────────────────────────────────────
 router.post('/me/withdraw',              authenticate, requireRole('influencer'), withdrawalCtrl.initiateWithdrawal);
 router.get('/me/withdrawals',            authenticate, requireRole('influencer'), withdrawalCtrl.listWithdrawals);

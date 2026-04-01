@@ -1,12 +1,16 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, TextInput, Alert, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, TextInput, Alert, Linking, ActivityIndicator } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { colors, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
 export default function EarningsScreen() {
+  const navigation = useNavigation();
   const [earnings, setEarnings] = useState(null);
   const [withdrawals, setWithdrawals] = useState([]);
+  const [campaignEarnings, setCampaignEarnings] = useState([]);
+  const [campaignLoading, setCampaignLoading] = useState(true);
   const [tab, setTab] = useState('earnings');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -17,10 +21,16 @@ export default function EarningsScreen() {
   const [withdrawing, setWithdrawing] = useState(false);
 
   async function load() {
-    const [er, wr] = await Promise.all([influencerApi.getEarnings(), influencerApi.getWithdrawals()]);
+    const [er, wr, cr] = await Promise.all([
+      influencerApi.getEarnings(),
+      influencerApi.getWithdrawals(),
+      influencerApi.getCampaignEarnings(),
+    ]);
     setLoading(false);
+    setCampaignLoading(false);
     if (er.success) setEarnings(er.data);
     if (wr.success) setWithdrawals(wr.data?.withdrawals || wr.data || []);
+    if (cr.success) setCampaignEarnings(cr.data?.campaigns || []);
   }
 
   useEffect(() => { load(); }, []);
@@ -44,6 +54,13 @@ export default function EarningsScreen() {
   const tds = amount ? Math.floor(parseFloat(amount || '0') * 100 * 0.1) : 0;
   const net = amount ? Math.round(parseFloat(amount || '0') * 100) - tds : 0;
 
+  function getGoalLabel(goal) {
+    if (goal === 'engagement') return 'Engagement';
+    if (goal === 'conversion') return 'Conversion';
+    if (goal === 'hybrid') return 'Hybrid';
+    return goal || '-';
+  }
+
   return (
     <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       {/* Header */}
@@ -64,6 +81,68 @@ export default function EarningsScreen() {
             <Text style={styles.miniVal}>{fmtMoney(earnings?.total_earned)}</Text>
           </View>
         </View>
+      </View>
+
+      {/* Campaign Earnings Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Campaign Earnings</Text>
+        {campaignLoading ? (
+          <ActivityIndicator size="small" color={colors.navy} style={{ marginVertical: 20 }} />
+        ) : campaignEarnings.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyText}>No campaign earnings yet</Text>
+            <Text style={styles.emptySub}>Earnings from your campaigns will appear here</Text>
+          </View>
+        ) : (
+          campaignEarnings.map(c => (
+            <TouchableOpacity
+              key={c.campaign_influencer_id}
+              style={styles.campaignCard}
+              onPress={() => navigation.navigate('CommissionDetail', { campaignInfluencerId: c.campaign_influencer_id, campaignName: c.campaign_name })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.campaignCardHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.campaignName} numberOfLines={1}>{c.campaign_name}</Text>
+                  <Text style={styles.campaignBrand}>{c.brand_name}</Text>
+                </View>
+                <View style={styles.goalBadge}>
+                  <Text style={styles.goalBadgeText}>{getGoalLabel(c.goal)}</Text>
+                </View>
+              </View>
+
+              <View style={styles.campaignStatsRow}>
+                <View style={styles.campaignStat}>
+                  <Text style={styles.campaignStatLabel}>Earned</Text>
+                  <Text style={[styles.campaignStatVal, { color: colors.teal }]}>{fmtMoney(Math.round(c.total_earned))}</Text>
+                </View>
+                <View style={styles.campaignStat}>
+                  <Text style={styles.campaignStatLabel}>Pending</Text>
+                  <Text style={[styles.campaignStatVal, { color: colors.orange }]}>{fmtMoney(Math.round(c.total_pending))}</Text>
+                </View>
+                <View style={styles.campaignStat}>
+                  <Text style={styles.campaignStatLabel}>Total</Text>
+                  <Text style={[styles.campaignStatVal, { color: colors.t1 }]}>{fmtMoney(Math.round(c.total_earned + c.total_pending))}</Text>
+                </View>
+              </View>
+
+              {/* Progress bar */}
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { flex: c.total_earned || 0.001 }]} />
+                <View style={[styles.progressBarPending, { flex: c.total_pending || 0.001 }]} />
+              </View>
+
+              <View style={styles.campaignFooter}>
+                <Text style={styles.campaignFooterText}>
+                  {c.tranche_count > 0 ? `${c.tranche_count} tranches` : ''}
+                  {c.tranche_count > 0 && c.commission_count > 0 ? ' + ' : ''}
+                  {c.commission_count > 0 ? `${c.commission_count} commissions` : ''}
+                </Text>
+                <Text style={styles.campaignChevron}>View details ›</Text>
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
       </View>
 
       {/* Withdrawal form */}
@@ -181,4 +260,25 @@ const styles = StyleSheet.create({
   historyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   historyAmt: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 2 },
   historySub: { fontSize: 11, color: colors.t3, marginBottom: 1 },
+
+  // Campaign earnings styles
+  emptyCard: { backgroundColor: colors.white, borderRadius: 14, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  emptyText: { fontSize: 14, fontWeight: '600', color: colors.t2, marginBottom: 4 },
+  emptySub: { fontSize: 12, color: colors.t3 },
+  campaignCard: { backgroundColor: colors.white, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  campaignCardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+  campaignName: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 2 },
+  campaignBrand: { fontSize: 12, color: colors.t3 },
+  goalBadge: { backgroundColor: colors.navyPale, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 },
+  goalBadgeText: { fontSize: 10, fontWeight: '700', color: colors.navy, textTransform: 'uppercase' },
+  campaignStatsRow: { flexDirection: 'row', marginBottom: 10 },
+  campaignStat: { flex: 1 },
+  campaignStatLabel: { fontSize: 10, color: colors.t3, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  campaignStatVal: { fontSize: 14, fontWeight: '700' },
+  progressBarBg: { flexDirection: 'row', height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden', marginBottom: 10 },
+  progressBarFill: { backgroundColor: colors.teal, borderRadius: 2 },
+  progressBarPending: { backgroundColor: colors.orange, borderRadius: 2 },
+  campaignFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  campaignFooterText: { fontSize: 11, color: colors.t3 },
+  campaignChevron: { fontSize: 12, fontWeight: '600', color: colors.navy },
 });

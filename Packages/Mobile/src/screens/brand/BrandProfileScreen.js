@@ -6,6 +6,7 @@ import {
 import { colors } from '../../theme/tokens';
 import { brandApi, clearSession } from '../../services/api';
 import { AuthContext } from '../../../App';
+import { openWebDashboard } from '../../utils/openWebDashboard';
 
 export default function BrandProfileScreen({ navigation }) {
   const { setRole: setAppRole } = useContext(AuthContext);
@@ -73,9 +74,9 @@ export default function BrandProfileScreen({ navigation }) {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Quick Links</Text>
-        <TouchableOpacity style={styles.linkRow} onPress={() => Alert.alert('Web Dashboard', 'Visit inflx.in/dashboard for full brand management')}>
+        <TouchableOpacity style={styles.linkRow} onPress={() => openWebDashboard()}>
           <Text style={styles.linkIcon}>🌐</Text>
-          <Text style={styles.linkLabel}>Open Web Dashboard</Text>
+          <Text style={styles.linkLabel}>Open Full Dashboard</Text>
           <Text style={styles.linkArrow}>›</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('Notifications')}>

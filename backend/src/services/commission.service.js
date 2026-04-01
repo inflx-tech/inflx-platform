@@ -170,4 +170,259 @@ async function getBrandConversions(campaignId, brandId) {
   };
 }
 
-module.exports = { getInfluencerCommissions, getBrandConversions };
+/**
+ * Per-campaign earnings breakdown for influencer.
+ * Groups escrow tranches + follower commissions by campaign.
+ */
+async function getInfluencerCampaignEarnings(influencerId) {
+  // 1. Get all campaign_influencer records with campaign info
+  const { rows: ciRows } = await db.query(
+    `SELECT
+       ci.id AS campaign_influencer_id,
+       ci.agreed_fee,
+       ci.status AS ci_status,
+       c.id AS campaign_id,
+       c.name AS campaign_name,
+       cs.goal,
+       b.business_name AS brand_name
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c      ON c.id = cs.campaign_id
+     JOIN brands b         ON b.id = c.brand_id
+     WHERE ci.influencer_id = $1
+       AND ci.status NOT IN ('invited', 'declined', 'expired')
+     ORDER BY c.created_at DESC`,
+    [influencerId]
+  );
+
+  if (!ciRows.length) return { campaigns: [] };
+
+  const ciIds = ciRows.map(r => r.campaign_influencer_id);
+
+  // 2. Get escrow entries for all campaign_influencer IDs
+  const { rows: escrowRows } = await db.query(
+    `SELECT
+       ee.campaign_influencer_id,
+       ee.tranche_number,
+       ee.net_to_influencer,
+       ee.status,
+       ee.released_at,
+       ee.trigger_event,
+       ee.created_at
+     FROM escrow_entries ee
+     WHERE ee.campaign_influencer_id = ANY($1)
+     ORDER BY ee.tranche_number ASC`,
+    [ciIds]
+  );
+
+  // 3. Get follower commissions grouped by campaign_influencer_id
+  const { rows: commRows } = await db.query(
+    `SELECT
+       ft.campaign_influencer_id,
+       ft.influencer_commission AS commission_amount,
+       ft.commission_confirmed_at,
+       ft.return_window_ends_at,
+       ft.transaction_type,
+       ft.created_at
+     FROM follower_transactions ft
+     WHERE ft.campaign_influencer_id = ANY($1)
+       AND ft.status = 'completed'
+     ORDER BY ft.created_at DESC`,
+    [ciIds]
+  );
+
+  // Group escrow and commissions by campaign_influencer_id
+  const escrowMap = {};
+  for (const e of escrowRows) {
+    if (!escrowMap[e.campaign_influencer_id]) escrowMap[e.campaign_influencer_id] = [];
+    escrowMap[e.campaign_influencer_id].push(e);
+  }
+
+  const commMap = {};
+  for (const c of commRows) {
+    if (!commMap[c.campaign_influencer_id]) commMap[c.campaign_influencer_id] = [];
+    commMap[c.campaign_influencer_id].push(c);
+  }
+
+  const campaigns = ciRows.map(ci => {
+    const tranches = (escrowMap[ci.campaign_influencer_id] || []).map(e => ({
+      tranche_number: e.tranche_number,
+      amount: parseFloat(e.net_to_influencer),
+      status: e.status,
+      released_at: e.released_at,
+      trigger_event: e.trigger_event,
+      created_at: e.created_at,
+    }));
+
+    const commissions = (commMap[ci.campaign_influencer_id] || []).map(c => ({
+      commission_amount: parseFloat(c.commission_amount),
+      status: c.commission_confirmed_at ? 'confirmed' : 'pending',
+      transaction_type: c.transaction_type,
+      return_window_ends_at: c.return_window_ends_at,
+      created_at: c.created_at,
+    }));
+
+    const trancheEarned = tranches
+      .filter(t => t.status === 'released')
+      .reduce((s, t) => s + t.amount, 0);
+    const tranchePending = tranches
+      .filter(t => t.status === 'locked')
+      .reduce((s, t) => s + t.amount, 0);
+
+    const commConfirmed = commissions
+      .filter(c => c.status === 'confirmed')
+      .reduce((s, c) => s + c.commission_amount, 0);
+    const commPending = commissions
+      .filter(c => c.status === 'pending')
+      .reduce((s, c) => s + c.commission_amount, 0);
+
+    const totalEarned = trancheEarned + commConfirmed;
+    const totalPending = tranchePending + commPending;
+
+    return {
+      campaign_influencer_id: ci.campaign_influencer_id,
+      campaign_id: ci.campaign_id,
+      campaign_name: ci.campaign_name,
+      brand_name: ci.brand_name,
+      goal: ci.goal,
+      ci_status: ci.ci_status,
+      agreed_fee: ci.agreed_fee ? parseFloat(ci.agreed_fee) : null,
+      total_earned: totalEarned,
+      total_pending: totalPending,
+      tranche_earned: trancheEarned,
+      tranche_pending: tranchePending,
+      commission_confirmed: commConfirmed,
+      commission_pending: commPending,
+      tranche_count: tranches.length,
+      commission_count: commissions.length,
+    };
+  });
+
+  return { campaigns };
+}
+
+/**
+ * Detailed commission/escrow data for a single campaign_influencer record.
+ */
+async function getCampaignCommissionDetail(campaignInfluencerId, influencerId) {
+  // Verify ownership
+  const { rows: ciRows } = await db.query(
+    `SELECT
+       ci.id AS campaign_influencer_id,
+       ci.agreed_fee,
+       ci.status AS ci_status,
+       ci.commission_pct,
+       c.id AS campaign_id,
+       c.name AS campaign_name,
+       c.status AS campaign_status,
+       cs.goal,
+       b.business_name AS brand_name
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c      ON c.id = cs.campaign_id
+     JOIN brands b         ON b.id = c.brand_id
+     WHERE ci.id = $1 AND ci.influencer_id = $2`,
+    [campaignInfluencerId, influencerId]
+  );
+  if (!ciRows[0]) {
+    const AppError = require('../utils/AppError');
+    throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
+  }
+  const ci = ciRows[0];
+
+  // Escrow tranches
+  const { rows: tranches } = await db.query(
+    `SELECT
+       ee.tranche_number,
+       ee.net_to_influencer,
+       ee.status,
+       ee.released_at,
+       ee.trigger_event,
+       ee.created_at
+     FROM escrow_entries ee
+     WHERE ee.campaign_influencer_id = $1
+     ORDER BY ee.tranche_number ASC`,
+    [campaignInfluencerId]
+  );
+
+  // Follower commissions
+  const { rows: commissions } = await db.query(
+    `SELECT
+       ft.id AS transaction_id,
+       ft.gross_amount,
+       ft.net_amount,
+       ft.influencer_commission AS commission_amount,
+       ft.transaction_type,
+       ft.commission_confirmed_at,
+       ft.return_window_ends_at,
+       ft.coupon_code_used AS coupon_code,
+       ft.created_at
+     FROM follower_transactions ft
+     WHERE ft.campaign_influencer_id = $1
+       AND ft.status = 'completed'
+     ORDER BY ft.created_at DESC`,
+    [campaignInfluencerId]
+  );
+
+  const now = new Date();
+
+  const trancheData = tranches.map(t => ({
+    tranche_number: t.tranche_number,
+    amount: parseFloat(t.net_to_influencer),
+    status: t.status,
+    released_at: t.released_at,
+    trigger_event: t.trigger_event,
+    created_at: t.created_at,
+    label: t.tranche_number === 1 ? 'Contract Signed'
+         : t.tranche_number === 2 ? 'Content Live'
+         : 'Day 30 Post-Live',
+  }));
+
+  const commissionData = commissions.map(c => {
+    const isPending = !c.commission_confirmed_at;
+    const daysLeft = isPending && c.return_window_ends_at
+      ? Math.max(0, Math.ceil((new Date(c.return_window_ends_at) - now) / (1000 * 60 * 60 * 24)))
+      : 0;
+
+    return {
+      transaction_id: c.transaction_id,
+      gross_amount: parseFloat(c.gross_amount),
+      net_amount: parseFloat(c.net_amount),
+      commission_amount: parseFloat(c.commission_amount),
+      transaction_type: c.transaction_type,
+      status: isPending ? 'pending' : 'confirmed',
+      days_until_confirmed: daysLeft,
+      coupon_code: c.coupon_code,
+      created_at: c.created_at,
+    };
+  });
+
+  const trancheEarned = trancheData.filter(t => t.status === 'released').reduce((s, t) => s + t.amount, 0);
+  const tranchePending = trancheData.filter(t => t.status === 'locked').reduce((s, t) => s + t.amount, 0);
+  const commConfirmed = commissionData.filter(c => c.status === 'confirmed').reduce((s, c) => s + c.commission_amount, 0);
+  const commPending = commissionData.filter(c => c.status === 'pending').reduce((s, c) => s + c.commission_amount, 0);
+
+  return {
+    campaign_influencer_id: ci.campaign_influencer_id,
+    campaign_id: ci.campaign_id,
+    campaign_name: ci.campaign_name,
+    brand_name: ci.brand_name,
+    goal: ci.goal,
+    ci_status: ci.ci_status,
+    campaign_status: ci.campaign_status,
+    agreed_fee: ci.agreed_fee ? parseFloat(ci.agreed_fee) : null,
+    commission_pct: ci.commission_pct ? parseFloat(ci.commission_pct) : null,
+    tranches: trancheData,
+    commissions: commissionData,
+    summary: {
+      tranche_earned: trancheEarned,
+      tranche_pending: tranchePending,
+      commission_confirmed: commConfirmed,
+      commission_pending: commPending,
+      total_earned: trancheEarned + commConfirmed,
+      total_pending: tranchePending + commPending,
+    },
+  };
+}
+
+module.exports = { getInfluencerCommissions, getBrandConversions, getInfluencerCampaignEarnings, getCampaignCommissionDetail };

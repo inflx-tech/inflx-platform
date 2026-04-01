@@ -7,13 +7,38 @@ import { colors } from '../theme/tokens';
 import HomeScreen from '../screens/influencer/HomeScreen';
 import OfferListScreen from '../screens/influencer/OfferListScreen';
 import EarningsScreen from '../screens/influencer/EarningsScreen';
+import CommissionDetailScreen from '../screens/influencer/CommissionDetailScreen';
 import ProfileScreen from '../screens/influencer/ProfileScreen';
 import NegotiationScreen from '../screens/influencer/NegotiationScreen';
 import ContractScreen from '../screens/influencer/ContractScreen';
 import DeliverableScreen from '../screens/influencer/DeliverableScreen';
+import DeliverableListScreen from '../screens/influencer/DeliverableListScreen';
+import DeliverableDetailScreen from '../screens/influencer/DeliverableDetailScreen';
+import NotificationsScreen from '../screens/influencer/NotificationsScreen';
+import MyCampaignsScreen from '../screens/influencer/MyCampaignsScreen';
+import CampaignDetailScreen from '../screens/influencer/CampaignDetailScreen';
+import CampaignCompletionScreen from '../screens/influencer/CampaignCompletionScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const HomeStack = createNativeStackNavigator();
+const CampaignsStack = createNativeStackNavigator();
+const EarningsStack = createNativeStackNavigator();
+
+function HomeStackNav() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
+      <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
+      <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
+      <HomeStack.Screen name="Contract" component={ContractScreen} />
+      <HomeStack.Screen name="Deliverable" component={DeliverableScreen} />
+      <HomeStack.Screen name="DeliverableList" component={DeliverableListScreen} />
+      <HomeStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
+    </HomeStack.Navigator>
+  );
+}
 
 function OffersStack() {
   const OfferDetailScreen = require('../screens/influencer/OfferDetailScreen').default;
@@ -24,7 +49,34 @@ function OffersStack() {
       <Stack.Screen name="Negotiation" component={NegotiationScreen} />
       <Stack.Screen name="Contract" component={ContractScreen} />
       <Stack.Screen name="Deliverable" component={DeliverableScreen} />
+      <Stack.Screen name="DeliverableList" component={DeliverableListScreen} />
+      <Stack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
+      <Stack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
+      <Stack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
     </Stack.Navigator>
+  );
+}
+
+function CampaignsStackNav() {
+  return (
+    <CampaignsStack.Navigator screenOptions={{ headerShown: false }}>
+      <CampaignsStack.Screen name="MyCampaignsList" component={MyCampaignsScreen} />
+      <CampaignsStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
+      <CampaignsStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
+      <CampaignsStack.Screen name="Contract" component={ContractScreen} />
+      <CampaignsStack.Screen name="Deliverable" component={DeliverableScreen} />
+      <CampaignsStack.Screen name="DeliverableList" component={DeliverableListScreen} />
+      <CampaignsStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
+    </CampaignsStack.Navigator>
+  );
+}
+
+function EarningsStackNav() {
+  return (
+    <EarningsStack.Navigator screenOptions={{ headerShown: false }}>
+      <EarningsStack.Screen name="EarningsMain" component={EarningsScreen} />
+      <EarningsStack.Screen name="CommissionDetail" component={CommissionDetailScreen} />
+    </EarningsStack.Navigator>
   );
 }
 
@@ -41,9 +93,10 @@ export default function InfluencerNavigator() {
         tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={tabIcon('🏠', 'Home')} />
+      <Tab.Screen name="Home" component={HomeStackNav} options={tabIcon('🏠', 'Home')} />
       <Tab.Screen name="Offers" component={OffersStack} options={tabIcon('📩', 'Offers')} />
-      <Tab.Screen name="Earnings" component={EarningsScreen} options={tabIcon('💰', 'Earnings')} />
+      <Tab.Screen name="Campaigns" component={CampaignsStackNav} options={tabIcon('📋', 'Campaigns')} />
+      <Tab.Screen name="Earnings" component={EarningsStackNav} options={tabIcon('💰', 'Earnings')} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={tabIcon('👤', 'Profile')} />
     </Tab.Navigator>
   );

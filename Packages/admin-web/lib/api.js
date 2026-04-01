@@ -96,6 +96,7 @@ export const authApi = {
 // Admin
 export const adminApi = {
   getStats: () => api.get('/admin/stats'),
+  getBrands: (status, search, page) => api.get(`/admin/brands?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   getBrandQueue: () => api.get('/admin/queue/brands'),
   getInfluencerQueue: () => api.get('/admin/queue/influencers'),
   updateBrandStatus: (id, data) => api.patch(`/admin/brands/${id}/status`, data),
@@ -110,6 +111,9 @@ export const adminApi = {
   updatePaymentConfig: (data) => api.patch('/admin/config/payments', data),
   setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
   rescrapeInfluencer: (id) => api.post(`/influencers/${id}/rescrape`),
+  getAnalytics: (days = 30) => api.get(`/admin/analytics?days=${days}`),
+  getWithdrawals: (status, search, page) => api.get(`/admin/withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
   bulkUploadInfluencers: async (file) => {
     const token = getToken();
     const formData = new FormData();

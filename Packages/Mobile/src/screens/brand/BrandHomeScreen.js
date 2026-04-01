@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { colors, fmtMoney } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import { openWebDashboard } from '../../utils/openWebDashboard';
 
 export default function BrandHomeScreen({ navigation }) {
   const [brand, setBrand]       = useState(null);
@@ -84,6 +85,39 @@ export default function BrandHomeScreen({ navigation }) {
         </View>
       )}
 
+      {/* Open Web Dashboard */}
+      <TouchableOpacity style={styles.webDashBtn} onPress={() => openWebDashboard()}>
+        <Text style={styles.webDashIcon}>🌐</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.webDashTitle}>Open Web Dashboard</Text>
+          <Text style={styles.webDashSub}>Full campaign management, analytics, and more</Text>
+        </View>
+        <Text style={styles.webDashArrow}>›</Text>
+      </TouchableOpacity>
+
+      {/* Quick Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.quickGrid}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/campaigns/new')}>
+            <Text style={styles.quickActionIcon}>📣</Text>
+            <Text style={styles.quickActionLabel}>Create Campaign</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/products')}>
+            <Text style={styles.quickActionIcon}>📦</Text>
+            <Text style={styles.quickActionLabel}>Manage Products</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/analytics')}>
+            <Text style={styles.quickActionIcon}>📊</Text>
+            <Text style={styles.quickActionLabel}>View Analytics</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/wallet')}>
+            <Text style={styles.quickActionIcon}>💳</Text>
+            <Text style={styles.quickActionLabel}>Wallet & Payments</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       {/* Active campaigns */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -150,4 +184,13 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   campaignStatus: { fontSize: 11, color: colors.t3, textTransform: 'capitalize', marginBottom: 2 },
   campaignBudget: { fontSize: 11, color: colors.t2 },
+  webDashBtn: { margin: 16, marginBottom: 0, backgroundColor: colors.navy, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  webDashIcon: { fontSize: 26 },
+  webDashTitle: { fontSize: 14, fontWeight: '700', color: colors.white },
+  webDashSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  webDashArrow: { fontSize: 22, color: 'rgba(255,255,255,0.4)' },
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  quickAction: { width: '47%', backgroundColor: colors.white, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  quickActionIcon: { fontSize: 24, marginBottom: 8 },
+  quickActionLabel: { fontSize: 11, fontWeight: '700', color: colors.t1, textAlign: 'center' },
 });

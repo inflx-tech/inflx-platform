@@ -1,21 +1,44 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, fmtMoney, fmtNum } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
+function formatDateShort(dateStr) {
+  if (!dateStr) return '--';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
 export default function HomeScreen({ navigation }) {
   const [earnings, setEarnings] = useState(null);
+  const [activeCampaigns, setActiveCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   async function load() {
-    const res = await influencerApi.getEarnings();
+    const [earningsRes, campaignsRes] = await Promise.all([
+      influencerApi.getEarnings(),
+      influencerApi.getMyCampaigns('active'),
+    ]);
     setLoading(false);
-    if (res.success) setEarnings(res.data);
+    if (earningsRes.success) setEarnings(earningsRes.data);
+    if (campaignsRes.success) setActiveCampaigns((campaignsRes.data?.campaigns || []).slice(0, 3));
   }
 
-  useEffect(() => { load(); }, []);
+  async function loadUnreadCount() {
+    const res = await influencerApi.getNotifications();
+    if (res.success && Array.isArray(res.data)) {
+      setUnreadCount(res.data.filter(n => !n.is_read).length);
+    }
+  }
+
+  useEffect(() => { load(); loadUnreadCount(); }, []);
+
+  // Refresh unread count when screen gains focus (e.g. coming back from Notifications)
+  useFocusEffect(useCallback(() => { loadUnreadCount(); }, []));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -29,8 +52,20 @@ export default function HomeScreen({ navigation }) {
     <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>INFL<Text style={{color: colors.orange}}>X</Text></Text>
-        <Text style={styles.headerSub}>Your earnings dashboard</Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.headerTitle}>INFL<Text style={{color: colors.orange}}>X</Text></Text>
+            <Text style={styles.headerSub}>Your earnings dashboard</Text>
+          </View>
+          <TouchableOpacity style={styles.bellBtn} onPress={() => navigation.navigate('Notifications')}>
+            <Text style={styles.bellIcon}>🔔</Text>
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Wallet balance hero */}
@@ -64,6 +99,35 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
+      {/* Active Campaigns */}
+      {activeCampaigns.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Active Campaigns</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Campaigns')}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </TouchableOpacity>
+          </View>
+          {activeCampaigns.map(c => (
+            <TouchableOpacity
+              key={c.campaign_influencer_id}
+              style={styles.campaignRow}
+              onPress={() => navigation.navigate('CampaignDetail', {
+                campaignInfluencerId: c.campaign_influencer_id,
+              })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.campaignRowName}>{c.campaign_name}</Text>
+                <Text style={styles.campaignRowBrand}>
+                  {c.brand_name} · {formatDateShort(c.start_date)} - {formatDateShort(c.end_date)}
+                </Text>
+              </View>
+              <StatusBadge status={c.influencer_status} size={9} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* Recent withdrawals */}
       {earnings?.recent_withdrawals?.length > 0 && (
         <View style={styles.section}>
@@ -88,8 +152,13 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   loadingText: { fontSize: 14, color: colors.t3 },
   header: { backgroundColor: colors.navyDeep, paddingTop: 52, paddingHorizontal: 20, paddingBottom: 0 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: colors.white, letterSpacing: -0.5 },
   headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
+  bellBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  bellIcon: { fontSize: 20 },
+  badge: { position: 'absolute', top: -2, right: -2, backgroundColor: colors.red, borderRadius: 10, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
+  badgeText: { fontSize: 9, fontWeight: '800', color: colors.white },
   walletCard: { backgroundColor: colors.navy, marginHorizontal: 16, marginTop: -1, borderRadius: 16, padding: 20 },
   walletLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
   walletAmount: { fontSize: 34, fontWeight: '800', color: colors.white, marginBottom: 16 },
@@ -104,7 +173,12 @@ const styles = StyleSheet.create({
   statVal: { fontSize: 18, fontWeight: '800', color: colors.t1, marginBottom: 4 },
   statLabel: { fontSize: 10, color: colors.t3, fontWeight: '600' },
   section: { margin: 16, marginTop: 0 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.t2, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.t2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  viewAllText: { fontSize: 12, fontWeight: '600', color: colors.orange },
+  campaignRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+  campaignRowName: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 2 },
+  campaignRowBrand: { fontSize: 11, color: colors.t3 },
   withdrawRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   withdrawAmt: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 2 },
   withdrawSub: { fontSize: 11, color: colors.t3 },

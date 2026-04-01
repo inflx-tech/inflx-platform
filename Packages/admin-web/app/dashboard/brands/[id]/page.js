@@ -64,7 +64,7 @@ export default function BrandProfilePage() {
   return (
     <div className="max-w-2xl">
       <div className="flex items-center gap-2 mb-4">
-        <a href="/dashboard/approvals" className="text-xs text-t3 hover:text-t2">← Approvals</a>
+        <a href="/dashboard/brands" className="text-xs text-t3 hover:text-t2">← Brands</a>
         <span className="text-t3">/</span>
         <span className="text-xs text-t2 font-medium">Brand Profile</span>
       </div>

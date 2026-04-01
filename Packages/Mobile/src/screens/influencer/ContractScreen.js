@@ -1,17 +1,58 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Animated,
+  ActivityIndicator, Alert, TextInput,
 } from 'react-native';
 import { colors, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
+import StatusBadge from '../../components/StatusBadge';
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDate(dateStr) {
+  if (!dateStr) return '--';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '--';
+  const d = new Date(dateStr);
+  return d.toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+}
+
+const DELIVERABLE_LABELS = {
+  reel: 'Instagram Reel',
+  post: 'Instagram Post',
+  story: 'Instagram Story',
+  youtube_video: 'YouTube Video',
+  youtube_short: 'YouTube Short',
+};
+
+function contractStatusLabel(status) {
+  switch (status) {
+    case 'pending_influencer': return 'Awaiting Your Signature';
+    case 'pending_brand': return 'Awaiting Brand Signature';
+    case 'active': return 'Contract Active';
+    case 'completed': return 'Completed';
+    case 'cancelled': return 'Cancelled';
+    default: return (status || '').replace(/_/g, ' ');
+  }
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function ContractScreen({ navigation, route }) {
   const { campaignInfluencerId } = route.params || {};
   const [contract, setContract] = useState(null);
+  const [deliverables, setDeliverables] = useState([]);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
-  const [unlocked, setUnlocked] = useState(false);
+  const [signed, setSigned] = useState(false);
+  const [typedName, setTypedName] = useState('');
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -23,26 +64,24 @@ export default function ContractScreen({ navigation, route }) {
     const res = await influencerApi.getContract(campaignInfluencerId);
     setLoading(false);
     if (res.success) {
-      setContract(res.data?.contract || res.data);
+      const data = res.data || {};
+      setContract(data.contract || data);
+      setDeliverables(data.deliverables || []);
     } else {
       Alert.alert('Error', res.error?.message || 'Failed to load contract');
     }
   }
 
-  function handleScroll(event) {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 40;
-    if (isAtBottom) setUnlocked(true);
-  }
-
-  async function sign() {
-    if (!unlocked) {
-      Alert.alert('Scroll to unlock', 'Please read the full contract before signing.');
+  async function handleSign() {
+    const name = typedName.trim();
+    if (!name) {
+      Alert.alert('Name Required', 'Please type your full name to sign the contract.');
       return;
     }
+
     Alert.alert(
       'Sign Contract',
-      'By signing, you agree to all terms stated above.',
+      'This is legally binding. By signing, you agree to all terms stated in this contract including deliverables, payment schedule, and content requirements. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -50,15 +89,20 @@ export default function ContractScreen({ navigation, route }) {
           onPress: async () => {
             setSigning(true);
             const res = await influencerApi.signContract(contract.id, {
-              influencer_name: contract.influencer_name,
+              typed_name: name,
             });
             setSigning(false);
             if (res.success) {
-              Alert.alert('Signed!', 'Your contract is signed. Waiting for brand countersignature.', [
-                { text: 'OK', onPress: () => navigation.goBack() },
-              ]);
+              setSigned(true);
+              // Update local contract state
+              setContract(prev => ({
+                ...prev,
+                status: 'pending_brand',
+                influencer_signed_at: new Date().toISOString(),
+                influencer_signed_name: name,
+              }));
             } else {
-              Alert.alert('Failed', res.error?.message || 'Signing failed');
+              Alert.alert('Failed', res.error?.message || 'Signing failed. Please try again.');
             }
           },
         },
@@ -66,110 +110,226 @@ export default function ContractScreen({ navigation, route }) {
     );
   }
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color={colors.navy} />
+        <Text style={styles.loadingText}>Loading contract...</Text>
+      </View>
+    );
   }
 
   if (!contract) {
     return (
       <View style={styles.center}>
         <Text style={styles.errorText}>Contract not found.</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>Go Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.goBackBtn}>
+          <Text style={styles.goBackBtnText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const alreadySigned = !!contract.influencer_signed_at;
+  // ── Derived values ────────────────────────────────────────────────────────
+
+  const influencerHasSigned = !!contract.influencer_signed_at;
+  const brandHasSigned = !!contract.brand_signed_at;
+  const fullyActive = contract.status === 'active' || (influencerHasSigned && brandHasSigned);
+  const needsInfluencerSignature = contract.status === 'pending_influencer' && !influencerHasSigned;
+
+  const fee = contract.influencer_fee || contract.agreed_fee || 0;
+  // Tranche defaults: 25/25/50
+  const t1Pct = 25;
+  const t2Pct = 25;
+  const t3Pct = 50;
 
   return (
     <View style={styles.outer}>
-      {/* Header */}
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>{"<-"} Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Contract</Text>
-        <Text style={styles.sub}>{contract.campaign_name}</Text>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Contract</Text>
+            <Text style={styles.sub}>{contract.campaign_name || 'Campaign'}</Text>
+          </View>
+          <StatusBadge status={contract.status} size={11} />
+        </View>
       </View>
 
-      {/* Scroll-to-read notice */}
-      {!unlocked && !alreadySigned && (
-        <View style={styles.readBanner}>
-          <Text style={styles.readBannerText}>📜 Scroll to the bottom to unlock signing</Text>
+      {/* ── Contract Active Banner ──────────────────────────────────────── */}
+      {fullyActive && (
+        <View style={styles.activeBanner}>
+          <Text style={styles.activeBannerText}>Contract Active -- Both parties have signed</Text>
         </View>
       )}
 
-      {/* Contract body */}
-      <ScrollView
-        ref={scrollRef}
-        style={styles.body}
-        onScroll={handleScroll}
-        scrollEventThrottle={100}
-      >
-        <View style={styles.contractDoc}>
-          <Text style={styles.contractTitle}>INFLUENCER MARKETING AGREEMENT</Text>
-          <Text style={styles.contractSub}>This agreement is entered between:</Text>
+      {/* ── Just-signed success banner ──────────────────────────────────── */}
+      {signed && !fullyActive && (
+        <View style={styles.successBanner}>
+          <Text style={styles.successBannerText}>Contract signed successfully. Waiting for brand to countersign.</Text>
+        </View>
+      )}
 
-          <ContractRow label="Brand" value={contract.brand_name} />
-          <ContractRow label="Influencer" value={contract.influencer_name} />
-          <ContractRow label="Campaign" value={contract.campaign_name} />
-          <ContractRow label="Agreed Fee" value={fmtMoney(contract.influencer_fee)} />
-          <ContractRow label="Posting Date" value={contract.posting_date ? new Date(contract.posting_date).toLocaleDateString('en-IN') : '—'} />
-          <ContractRow label="Revision Limit" value={`${contract.revision_limit ?? 2} rounds`} />
+      {/* ── Body ────────────────────────────────────────────────────────── */}
+      <ScrollView ref={scrollRef} style={styles.body}>
 
-          {contract.content_requirements ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Content Requirements</Text>
-              <Text style={styles.sectionBody}>{contract.content_requirements}</Text>
+        {/* Campaign & Brand Info */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Campaign Details</Text>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Campaign</Text>
+              <Text style={styles.infoValue}>{contract.campaign_name || '--'}</Text>
             </View>
-          ) : null}
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Brand</Text>
+              <Text style={styles.infoValue}>{contract.brand_name || '--'}</Text>
+            </View>
+          </View>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Contract Status</Text>
+              <Text style={styles.infoValue}>{contractStatusLabel(contract.status)}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Posting Date</Text>
+              <Text style={styles.infoValue}>{formatDate(contract.posting_date)}</Text>
+            </View>
+          </View>
+        </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Payment Terms</Text>
-            <Text style={styles.sectionBody}>
-              Payments will be made in three tranches:{'\n'}
-              • T1 (25%): Upon both parties signing this contract{'\n'}
-              • T2 (25%): Upon brand confirming content is live{'\n'}
-              • T3 (50%): 30 days after T2 trigger{'\n\n'}
-              TDS of 10% will be deducted at the time of withdrawal as per Indian tax law.
-            </Text>
+        {/* Agreed Fee */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Agreed Fee</Text>
+          <View style={styles.feeHighlight}>
+            <Text style={styles.feeLabel}>Total Influencer Fee</Text>
+            <Text style={styles.feeValue}>{fmtMoney(fee)}</Text>
+          </View>
+        </View>
+
+        {/* Deliverables */}
+        {deliverables.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Deliverables</Text>
+            {deliverables.map((d, i) => (
+              <View key={d.id || i} style={styles.deliverableRow}>
+                <View style={styles.deliverableDot} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.deliverableType}>
+                    {DELIVERABLE_LABELS[d.type] || d.type}
+                    {d.quantity > 1 ? ` x${d.quantity}` : ''}
+                  </Text>
+                  {d.submission_deadline && (
+                    <Text style={styles.deliverableDeadline}>
+                      Deadline: {formatDate(d.submission_deadline)}
+                    </Text>
+                  )}
+                </View>
+                <StatusBadge status={d.status} size={9} />
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Payment Terms / Tranche Schedule */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Payment Terms</Text>
+          <Text style={styles.paymentNote}>
+            Your fee is paid in 3 tranches. You receive the full agreed amount.
+          </Text>
+
+          <View style={styles.trancheRow}>
+            <View style={[styles.trancheDot, { backgroundColor: colors.teal }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
+              <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
+            </View>
+            <Text style={styles.trancheAmount}>{fmtMoney(Math.round(fee * t1Pct / 100))}</Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Intellectual Property</Text>
-            <Text style={styles.sectionBody}>
-              The brand is granted a non-exclusive license to use the created content for marketing purposes for 12 months from the posting date. The influencer retains ownership of the content.
-            </Text>
+          <View style={styles.trancheRow}>
+            <View style={[styles.trancheDot, { backgroundColor: colors.orange }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
+              <Text style={styles.trancheDesc}>Released when content goes live</Text>
+            </View>
+            <Text style={styles.trancheAmount}>{fmtMoney(Math.round(fee * t2Pct / 100))}</Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Confidentiality</Text>
-            <Text style={styles.sectionBody}>
-              Both parties agree to keep the terms of this agreement confidential.
-            </Text>
+          <View style={styles.trancheRow}>
+            <View style={[styles.trancheDot, { backgroundColor: colors.navy }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
+              <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
+            </View>
+            <Text style={styles.trancheAmount}>{fmtMoney(Math.round(fee * t3Pct / 100))}</Text>
           </View>
 
-          {/* Signatures */}
+          <View style={styles.trancheTotalRow}>
+            <Text style={styles.trancheTotalLabel}>Total Fee</Text>
+            <Text style={styles.trancheTotalValue}>{fmtMoney(fee)}</Text>
+          </View>
+
+          <View style={styles.tdsNote}>
+            <Text style={styles.tdsText}>
+              Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+            </Text>
+          </View>
+        </View>
+
+        {/* Content Guidelines / Brief */}
+        {(contract.content_requirements || contract.brief || contract.campaign_brief) && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Content Guidelines</Text>
+            <View style={styles.briefBox}>
+              <Text style={styles.briefText}>
+                {contract.content_requirements || contract.brief || contract.campaign_brief}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Revision Limits */}
+        {contract.revision_limit != null && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Revision Policy</Text>
+            <Text style={styles.revisionText}>
+              Maximum {contract.revision_limit} revision round{contract.revision_limit !== 1 ? 's' : ''} allowed per deliverable.
+              After revisions are exhausted, the content will be used as-is.
+            </Text>
+          </View>
+        )}
+
+        {/* Signature Status */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Signatures</Text>
+
           <View style={styles.sigSection}>
-            <View style={styles.sigBox}>
-              <Text style={styles.sigLabel}>Influencer Signature</Text>
-              {alreadySigned ? (
+            <View style={[styles.sigBox, influencerHasSigned && styles.sigBoxSigned]}>
+              <Text style={styles.sigLabel}>Influencer</Text>
+              {influencerHasSigned ? (
                 <>
-                  <Text style={styles.sigName}>{contract.influencer_name}</Text>
-                  <Text style={styles.sigDate}>{new Date(contract.influencer_signed_at).toLocaleString('en-IN')}</Text>
+                  <Text style={styles.sigCheck}>Signed</Text>
+                  <Text style={styles.sigName}>{contract.influencer_signed_name || contract.influencer_name}</Text>
+                  <Text style={styles.sigDate}>{formatDateTime(contract.influencer_signed_at)}</Text>
                 </>
               ) : (
                 <Text style={styles.sigPending}>Not yet signed</Text>
               )}
             </View>
-            <View style={styles.sigBox}>
-              <Text style={styles.sigLabel}>Brand Signature</Text>
-              {contract.brand_signed_at ? (
+
+            <View style={[styles.sigBox, brandHasSigned && styles.sigBoxSigned]}>
+              <Text style={styles.sigLabel}>Brand</Text>
+              {brandHasSigned ? (
                 <>
-                  <Text style={styles.sigName}>{contract.brand_signed_by}</Text>
-                  <Text style={styles.sigDate}>{new Date(contract.brand_signed_at).toLocaleString('en-IN')}</Text>
+                  <Text style={styles.sigCheck}>Signed</Text>
+                  <Text style={styles.sigName}>{contract.brand_signed_by || 'Brand Representative'}</Text>
+                  <Text style={styles.sigDate}>{formatDateTime(contract.brand_signed_at)}</Text>
                 </>
               ) : (
                 <Text style={styles.sigPending}>Awaiting brand</Text>
@@ -178,76 +338,251 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         </View>
 
+        {/* ── Sign Section ──────────────────────────────────────────────── */}
+        {needsInfluencerSignature && !signed && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Sign This Contract</Text>
+            <Text style={styles.signHint}>
+              Type your full legal name below to sign this contract. This is legally binding.
+            </Text>
+            <View style={styles.nameInputWrap}>
+              <TextInput
+                style={styles.nameInput}
+                value={typedName}
+                onChangeText={setTypedName}
+                placeholder="Your full name"
+                placeholderTextColor={colors.t3}
+                autoCapitalize="words"
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.signBtn, (signing || !typedName.trim()) && styles.signBtnDisabled]}
+              onPress={handleSign}
+              disabled={signing || !typedName.trim()}
+            >
+              {signing ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.signBtnText}>Sign Contract</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* ── Post-sign success state ───────────────────────────────────── */}
+        {signed && !fullyActive && (
+          <View style={styles.card}>
+            <View style={styles.successState}>
+              <Text style={styles.successCheck}>Signed</Text>
+              <Text style={styles.successTitle}>Contract Signed Successfully</Text>
+              <Text style={styles.successDesc}>
+                The brand will be notified to countersign. Once both parties have signed,
+                Tranche 1 will be released automatically.
+              </Text>
+            </View>
+          </View>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
-
-      {/* Sign button */}
-      {!alreadySigned ? (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.signBtn, (!unlocked || signing) && styles.signBtnLocked]}
-            onPress={sign}
-            disabled={signing}
-          >
-            {signing
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.signBtnText}>{unlocked ? 'Sign Contract' : 'Scroll to Unlock'}</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.footer}>
-          <View style={styles.signedBadge}>
-            <Text style={styles.signedText}>✓ You have signed this contract</Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 }
 
-function ContractRow({ label, value }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
-    </View>
-  );
-}
+// ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   outer: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
   errorText: { fontSize: 14, color: colors.t2, marginBottom: 16 },
-  backBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.surface2, borderRadius: 12 },
-  backBtnText: { fontSize: 14, fontWeight: '600', color: colors.navy },
+  goBackBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.surface2, borderRadius: 12 },
+  goBackBtnText: { fontSize: 14, fontWeight: '600', color: colors.navy },
+
+  // Header
   header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
   backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   title: { fontSize: 20, fontWeight: '800', color: colors.white },
   sub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  readBanner: { backgroundColor: colors.orange + '22', borderBottomWidth: 1, borderBottomColor: colors.orange + '44', paddingVertical: 10, paddingHorizontal: 16 },
-  readBannerText: { fontSize: 12, color: colors.orange, fontWeight: '600', textAlign: 'center' },
+
+  // Banners
+  activeBanner: {
+    backgroundColor: colors.teal,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  activeBannerText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  successBanner: {
+    backgroundColor: colors.tealPale,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.teal,
+  },
+  successBannerText: { fontSize: 12, fontWeight: '600', color: colors.tealDeep },
+
+  // Body
   body: { flex: 1 },
-  contractDoc: { margin: 16, backgroundColor: colors.white, borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border },
-  contractTitle: { fontSize: 16, fontWeight: '800', color: colors.t1, textAlign: 'center', marginBottom: 4 },
-  contractSub: { fontSize: 12, color: colors.t3, textAlign: 'center', marginBottom: 20 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
-  rowValue: { fontSize: 12, color: colors.t1, fontWeight: '700', flex: 1, textAlign: 'right', marginLeft: 12 },
-  section: { marginTop: 16 },
-  sectionTitle: { fontSize: 12, fontWeight: '800', color: colors.t1, textTransform: 'uppercase', marginBottom: 6 },
-  sectionBody: { fontSize: 12, color: colors.t2, lineHeight: 18 },
-  sigSection: { flexDirection: 'row', gap: 12, marginTop: 24 },
-  sigBox: { flex: 1, backgroundColor: colors.surface2, borderRadius: 10, padding: 12 },
-  sigLabel: { fontSize: 10, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', marginBottom: 6 },
-  sigName: { fontSize: 13, fontWeight: '800', color: colors.t1 },
+
+  // Card
+  card: {
+    margin: 16,
+    marginBottom: 0,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+
+  // Info grid
+  infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },
+  infoItem: { flex: 1 },
+  infoLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.t3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  infoValue: { fontSize: 13, fontWeight: '600', color: colors.t1, lineHeight: 18 },
+
+  // Fee highlight
+  feeHighlight: {
+    backgroundColor: colors.tealPale,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  feeLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.tealDeep,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  feeValue: { fontSize: 28, fontWeight: '800', color: colors.tealDeep },
+
+  // Deliverables
+  deliverableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 10,
+  },
+  deliverableDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.navy,
+  },
+  deliverableType: { fontSize: 13, fontWeight: '600', color: colors.t1 },
+  deliverableDeadline: { fontSize: 11, color: colors.t3, marginTop: 2 },
+
+  // Payment terms / Tranches
+  paymentNote: { fontSize: 12, color: colors.t3, marginBottom: 14, lineHeight: 18 },
+  trancheRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: 10,
+  },
+  trancheDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
+  trancheTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  trancheDesc: { fontSize: 11, color: colors.t3, marginTop: 2, lineHeight: 16 },
+  trancheAmount: { fontSize: 14, fontWeight: '800', color: colors.t1 },
+  trancheTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    marginTop: 4,
+  },
+  trancheTotalLabel: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  trancheTotalValue: { fontSize: 18, fontWeight: '800', color: colors.tealDeep },
+  tdsNote: {
+    backgroundColor: colors.goldPale,
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+  },
+  tdsText: { fontSize: 11, color: '#7A5500', lineHeight: 16 },
+
+  // Brief / Guidelines
+  briefBox: {
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    padding: 12,
+  },
+  briefText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
+
+  // Revision
+  revisionText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
+
+  // Signatures
+  sigSection: { flexDirection: 'row', gap: 12 },
+  sigBox: {
+    flex: 1,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sigBoxSigned: {
+    borderColor: colors.teal,
+    backgroundColor: colors.tealPale,
+  },
+  sigLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.t3,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  sigCheck: { fontSize: 13, fontWeight: '800', color: colors.teal, marginBottom: 4 },
+  sigName: { fontSize: 12, fontWeight: '700', color: colors.t1 },
   sigDate: { fontSize: 10, color: colors.t3, marginTop: 2 },
   sigPending: { fontSize: 12, color: colors.t3, fontStyle: 'italic' },
-  footer: { padding: 16, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border },
-  signBtn: { backgroundColor: colors.navy, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  signBtnLocked: { backgroundColor: colors.t3 },
+
+  // Sign section
+  signHint: { fontSize: 12, color: colors.t3, marginBottom: 12, lineHeight: 18 },
+  nameInputWrap: {
+    borderWidth: 2,
+    borderColor: colors.border2,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  nameInput: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.t1,
+  },
+  signBtn: {
+    backgroundColor: colors.navy,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  signBtnDisabled: { opacity: 0.5 },
   signBtnText: { fontSize: 15, fontWeight: '800', color: colors.white },
-  signedBadge: { backgroundColor: colors.teal + '22', borderRadius: 14, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.teal },
-  signedText: { fontSize: 14, fontWeight: '700', color: colors.teal },
+
+  // Success state
+  successState: { alignItems: 'center', paddingVertical: 8 },
+  successCheck: { fontSize: 18, fontWeight: '800', color: colors.teal, marginBottom: 8 },
+  successTitle: { fontSize: 16, fontWeight: '800', color: colors.t1, marginBottom: 8 },
+  successDesc: { fontSize: 13, color: colors.t3, textAlign: 'center', lineHeight: 20 },
 });
