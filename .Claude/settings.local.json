@@ -190,7 +190,15 @@
       "Bash(cp app/build/outputs/apk/brand/release/app-brand-release.apk \"$DEST/app-brand-release.apk\")",
       "Bash(cp app/build/outputs/apk/influencer/release/app-influencer-release.apk \"$DEST/app-influencer-release.apk\")",
       "Bash(cp app/build/outputs/apk/follower/release/app-follower-release.apk \"$DEST/app-follower-release.apk\")",
-      "Read(//c/WORK/inflx-platform/Packages/Mobile/android/$DEST/**)"
+      "Read(//c/WORK/inflx-platform/Packages/Mobile/android/$DEST/**)",
+      "Bash(grep -n \"razorpay_order_id\\\\|order_id\\\\|createTopup\\\\|verifyTopup\" /c/WORK/inflx-platform/backend/tests/*.test.js)",
+      "Bash(grep -A 20 \"createTopup\\\\|wallet/topup\" /c/WORK/inflx-platform/backend/tests/*.test.js)",
+      "Bash(pg_isready -h localhost -p 5432)",
+      "Bash(grep -n \"full_name\\\\|tier\\\\|avg_views\\\\|avg_likes\\\\|avg_comments\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
+      "Bash(grep -r decrypt --include=*.js C:/WORK/inflx-platform/backend/src/)",
+      "Bash(grep -E \"avg_shares|avg_saves\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
+      "Bash(node -e \"const { pool } = require\\(''./src/config/db''\\); pool.query\\(\"\"ALTER TABLE influencers ADD COLUMN IF NOT EXISTS razorpay_contact_id VARCHAR\\(255\\)\"\"\\).then\\(\\(\\) => { console.log\\(''done''\\); pool.end\\(\\); }\\).catch\\(e => { console.error\\(e.message\\); pool.end\\(\\); }\\)\")",
+      "Bash(ls backend/migrations/003a*)"
     ]
   }
 }

@@ -3,6 +3,7 @@
 const axios             = require('axios');
 const db                = require('../config/db');
 const env               = require('../config/env');
+const { decrypt }       = require('../utils/encrypt');
 const paymentConfigSvc  = require('./paymentConfig.service');
 const notificationService = require('./notification.service');
 
@@ -79,12 +80,13 @@ async function ensureFundAccount(influencer) {
   }
 
   // ── Step 2: Create Fund Account (UPI or Bank) ─────────────────────────────
+  // upi_id and bank_account_no are stored encrypted — decrypt before sending
   let faPayload;
   if (influencer.upi_id) {
     faPayload = {
       contact_id:   contactId,
       account_type: 'vpa',
-      vpa:          { address: influencer.upi_id },
+      vpa:          { address: decrypt(influencer.upi_id) },
     };
   } else {
     faPayload = {
@@ -93,7 +95,7 @@ async function ensureFundAccount(influencer) {
       bank_account: {
         name:           influencer.full_name || influencer.instagram_handle,
         ifsc:           influencer.bank_ifsc,
-        account_number: influencer.bank_account_no,
+        account_number: decrypt(influencer.bank_account_no),
       },
     };
   }

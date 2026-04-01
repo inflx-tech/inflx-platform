@@ -1,5 +1,21 @@
 -- Migration 003: Seed 20 mock influencers for local dev / search testing
 -- Safe to re-run: uses ON CONFLICT DO NOTHING
+--
+-- These ALTER TABLE statements (originally in 003a) MUST run before the seed
+-- block below, because the INSERT statements reference columns that don't exist
+-- in the initial schema (001). Uses IF NOT EXISTS so it's safe to re-run.
+
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS tier VARCHAR(20);
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS secondary_niche TEXT[];
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS state VARCHAR(100);
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS platform VARCHAR(50) DEFAULT 'Instagram';
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS avg_views INTEGER DEFAULT 0;
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS avg_likes INTEGER DEFAULT 0;
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS avg_comments INTEGER DEFAULT 0;
+ALTER TABLE influencers ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
 
 DO $$
 DECLARE v uuid;

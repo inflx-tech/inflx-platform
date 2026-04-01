@@ -21,17 +21,59 @@ export function clearSession() {
   }
 }
 
+let isRefreshing = false;
+let refreshPromise = null;
+
+async function tryRefreshToken() {
+  if (isRefreshing) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include', // sends httpOnly refresh_token cookie
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (data.success && data.data?.access_token) {
+        localStorage.setItem('inflx_token', data.data.access_token);
+        document.cookie = `inflx_token=${data.data.access_token}; path=/; max-age=900; SameSite=Strict`;
+        return true;
+      }
+      return false;
+    } catch { return false; }
+    finally { isRefreshing = false; refreshPromise = null; }
+  })();
+  return refreshPromise;
+}
+
 async function request(method, path, body) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
   let res;
   try {
-    res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    res = await fetch(`${API_BASE}${path}`, { method, headers, credentials: 'include', body: body ? JSON.stringify(body) : undefined });
   } catch {
     return { ok: false, success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
   }
-  if (res.status === 401 && token) { clearSession(); return { ok: false, success: false, error: { code: 'UNAUTHORIZED' } }; }
+  // On 401, try refreshing the token once before clearing session
+  if (res.status === 401 && token) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const newToken = getToken();
+      const retryHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${newToken}` };
+      try {
+        res = await fetch(`${API_BASE}${path}`, { method, headers: retryHeaders, credentials: 'include', body: body ? JSON.stringify(body) : undefined });
+      } catch {
+        return { ok: false, success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
+      }
+    } else {
+      clearSession();
+      return { ok: false, success: false, error: { code: 'UNAUTHORIZED' } };
+    }
+  }
   try {
     const json = await res.json();
     // Normalize: expose `.ok` as alias for `.success`

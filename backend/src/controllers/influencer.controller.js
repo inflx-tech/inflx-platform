@@ -267,7 +267,6 @@ const getPublicById = asyncHandler(async (req, res) => {
        i.price_per_post_min, i.price_per_post_max,
        i.past_brands_json, i.collaboration_types_json,
        i.profile_image_url, i.age,
-       i.wallet_balance, i.pending_balance,
        u.name, u.id AS user_id, u.status AS user_status
      FROM influencers i
      JOIN users u ON u.id = i.user_id

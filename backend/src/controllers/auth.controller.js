@@ -19,14 +19,18 @@ function setRefreshCookie(res, token) {
   res.cookie('refresh_token', token, {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict', // 'none' for cross-origin (Vercel → Render)
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in ms
     path: '/v1/auth',
   });
 }
 
 function clearRefreshCookie(res) {
-  res.clearCookie('refresh_token', { path: '/v1/auth' });
+  res.clearCookie('refresh_token', {
+    path: '/v1/auth',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'strict',
+    secure: env.NODE_ENV === 'production',
+  });
 }
 
 /**

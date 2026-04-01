@@ -37,6 +37,8 @@ async function run() {
   }
 
   let totalAmount = 0;
+  let successCount = 0;
+  let failCount = 0;
 
   for (const entry of due) {
     try {
@@ -44,6 +46,7 @@ async function run() {
 
       const netRupees = (parseFloat(entry.net_to_influencer) / 100).toFixed(2);
       totalAmount += parseFloat(entry.net_to_influencer);
+      successCount++;
 
       // Notify influencer
       await notificationService.send({
@@ -98,13 +101,17 @@ async function run() {
         }
       }
     } catch (err) {
+      failCount++;
       console.error(`[CRON tranche-3] Failed to release entry ${entry.id}:`, err.message);
     }
   }
 
   const totalRupees = (totalAmount / 100).toFixed(2);
-  console.log(`[CRON tranche-3] Released ${due.length} tranches totalling ₹${totalRupees}`);
-  return { released: due.length, total_amount: totalAmount };
+  if (failCount > 0) {
+    console.warn(`[CRON tranche-3] ${failCount} of ${due.length} tranches failed to release.`);
+  }
+  console.log(`[CRON tranche-3] Released ${successCount} tranches totalling ₹${totalRupees}`);
+  return { released: successCount, failed: failCount, total_due: due.length, total_amount: totalAmount };
 }
 
 module.exports = { run };

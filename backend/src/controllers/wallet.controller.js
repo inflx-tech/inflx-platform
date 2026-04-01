@@ -95,7 +95,7 @@ const createTopup = asyncHandler(async (req, res) => {
     console.log(`[RAZORPAY MOCK] Created order ${orderId} for ₹${amountPaise / 100}`);
 
     return success(res, {
-      razorpay_order_id: orderId,
+      order_id: orderId,
       amount: amountPaise,
       currency: 'INR',
       key_id: env.RAZORPAY_KEY_ID,
@@ -118,10 +118,10 @@ const createTopup = asyncHandler(async (req, res) => {
   }
 
   return success(res, {
-    razorpay_order_id: order.id,
-    amount:            order.amount,
-    currency:          order.currency,
-    key_id:            env.RAZORPAY_KEY_ID,
+    order_id: order.id,
+    amount:   order.amount,
+    currency: order.currency,
+    key_id:   env.RAZORPAY_KEY_ID,
   }, 201);
 });
 

@@ -1,5 +1,6 @@
-import React, { useState, useRef, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useRef, useContext, useEffect, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, AppState } from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../theme/tokens';
 import { authApi, influencerApi, brandApi } from '../../services/api';
@@ -14,10 +15,65 @@ export default function OTPScreen({ navigation, route }) {
   const [loading, setLoading]     = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError]         = useState('');
+  const [clipboardHint, setClipboardHint] = useState('');
   const inputRefs = useRef([]);
+  const autoVerifyTimer = useRef(null);
+  const hasAutoVerified = useRef(false);
+
+  // ── Clipboard OTP auto-read ──────────────────────────────────
+  const checkClipboardForOtp = useCallback(async () => {
+    try {
+      const text = await Clipboard.getString();
+      if (!text) return;
+      // Extract a 6-digit number from clipboard content
+      const match = text.match(/\b(\d{6})\b/);
+      if (match) {
+        const digits = match[1].split('');
+        setOtp(digits);
+        setClipboardHint('OTP pasted from clipboard');
+        // Clear hint after 3 seconds
+        setTimeout(() => setClipboardHint(''), 3000);
+      }
+    } catch (_) { /* clipboard not available */ }
+  }, []);
+
+  // Check clipboard when app returns to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        checkClipboardForOtp();
+      }
+    });
+    // Also check once on mount (user may have copied OTP before opening)
+    checkClipboardForOtp();
+    return () => subscription.remove();
+  }, [checkClipboardForOtp]);
+
+  // ── Auto-verify when all 6 digits filled ─────────────────────
+  useEffect(() => {
+    const otpStr = otp.join('');
+    if (otpStr.length === 6 && !hasAutoVerified.current && !needsName && !loading) {
+      // Short delay so user can see the filled OTP before submission
+      autoVerifyTimer.current = setTimeout(() => {
+        hasAutoVerified.current = true;
+        handleVerify();
+      }, 500);
+    }
+    return () => {
+      if (autoVerifyTimer.current) clearTimeout(autoVerifyTimer.current);
+    };
+  }, [otp, needsName, loading]);
 
   function handleChange(index, value) {
-    const char = value.replace(/\D/g, '').slice(-1);
+    // Support pasting a full OTP into any box
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length === 6) {
+      const digits = cleaned.split('');
+      setOtp(digits);
+      inputRefs.current[5]?.focus();
+      return;
+    }
+    const char = cleaned.slice(-1);
     const newOtp = [...otp];
     newOtp[index] = char;
     setOtp(newOtp);
@@ -34,6 +90,7 @@ export default function OTPScreen({ navigation, route }) {
     setError('');
     setOtp(['', '', '', '', '', '']);
     setNeedsName(false);
+    hasAutoVerified.current = false; // allow auto-verify again after resend
     setResending(true);
     const res = await authApi.sendOtp(phone);
     setResending(false);
@@ -116,6 +173,8 @@ export default function OTPScreen({ navigation, route }) {
           ))}
         </View>
 
+        {clipboardHint ? <Text style={styles.clipboardHint}>{clipboardHint}</Text> : null}
+
         {needsName && (
           <View style={styles.nameWrap}>
             <Text style={styles.nameLabel}>Full Name</Text>
@@ -158,6 +217,7 @@ const styles = StyleSheet.create({
   otpRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 28 },
   otpBox: { width: 48, height: 56, borderRadius: 12, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.07)', color: colors.white, fontSize: 22, fontWeight: '700', textAlign: 'center' },
   otpBoxFilled: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
+  clipboardHint: { fontSize: 12, color: colors.gold, textAlign: 'center', marginBottom: 12, opacity: 0.8 },
   nameWrap: { marginBottom: 20 },
   nameLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
   nameLabelHint: { fontSize: 10, fontWeight: '400', textTransform: 'none', letterSpacing: 0 },

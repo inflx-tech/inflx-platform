@@ -56,7 +56,7 @@ After login, brands with `pending` status see the waiting screen. Approve them u
 ## Resetting test data
 
 ```bash
-cd backend && node src/db/seed.js
+cd backend && node scripts/seed.js
 ```
 
 This drops all test data and recreates all 8 accounts with fresh state.

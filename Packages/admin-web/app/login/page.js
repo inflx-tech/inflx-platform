@@ -41,7 +41,7 @@ export default function LoginPage() {
       localStorage.setItem('inflx_token', access_token);
       localStorage.setItem('inflx_user', JSON.stringify(user));
       // Set cookie for middleware
-      document.cookie = `inflx_token=${access_token}; path=/; max-age=900`;
+      document.cookie = `inflx_token=${access_token}; path=/; max-age=900; Secure; SameSite=Strict`;
       router.push('/dashboard');
     } else {
       setError(res.error?.message || 'Invalid OTP');

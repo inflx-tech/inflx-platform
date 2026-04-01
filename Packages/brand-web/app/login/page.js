@@ -73,7 +73,7 @@ export default function LoginPage() {
 
     localStorage.setItem('inflx_token', access_token);
     localStorage.setItem('inflx_user', JSON.stringify(user));
-    document.cookie = `inflx_token=${access_token}; path=/; max-age=2592000`; // 30 days
+    document.cookie = `inflx_token=${access_token}; path=/; max-age=900; Secure; SameSite=Strict`;
 
     // Check if brand profile exists
     const brandRes = await brandApi.getMe();

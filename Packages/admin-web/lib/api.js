@@ -11,8 +11,36 @@ function clearSession() {
   if (typeof window !== 'undefined') {
     localStorage.removeItem('inflx_token');
     localStorage.removeItem('inflx_user');
+    document.cookie = 'inflx_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
     window.location.href = '/login';
   }
+}
+
+let isRefreshing = false;
+let refreshPromise = null;
+
+async function tryRefreshToken() {
+  if (isRefreshing) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (data.success && data.data?.access_token) {
+        localStorage.setItem('inflx_token', data.data.access_token);
+        document.cookie = `inflx_token=${data.data.access_token}; path=/; max-age=900; SameSite=Strict`;
+        return true;
+      }
+      return false;
+    } catch { return false; }
+    finally { isRefreshing = false; refreshPromise = null; }
+  })();
+  return refreshPromise;
 }
 
 async function request(method, path, body) {
@@ -25,13 +53,29 @@ async function request(method, path, body) {
     res = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
+      credentials: 'include',
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
     return { success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
   }
 
-  if (res.status === 401 && token) { clearSession(); return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired.' } }; }
+  // On 401, try refreshing the token once before clearing session
+  if (res.status === 401 && token) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const newToken = getToken();
+      const retryHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${newToken}` };
+      try {
+        res = await fetch(`${API_BASE}${path}`, { method, headers: retryHeaders, credentials: 'include', body: body ? JSON.stringify(body) : undefined });
+      } catch {
+        return { success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
+      }
+    } else {
+      clearSession();
+      return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired.' } };
+    }
+  }
 
   try { return await res.json(); } catch { return { success: false, error: { code: 'PARSE_ERROR', message: 'Invalid server response.' } }; }
 }

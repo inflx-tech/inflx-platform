@@ -1,18 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../theme/tokens';
 import { authApi } from '../../services/api';
 import APP_ROLE from '../../config/appRole';
 
+const LAST_PHONE_KEY = 'inflx_last_phone';
+
 export default function PhoneScreen({ navigation }) {
-  const [phone, setPhone]   = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]   = useState('');
+  const [phone, setPhone]             = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+  const [savedPhone, setSavedPhone]   = useState(null);
+
+  // Load last used phone number on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const last = await AsyncStorage.getItem(LAST_PHONE_KEY);
+        if (last && last.length === 10) {
+          setSavedPhone(last);
+        }
+      } catch (_) { /* ignore storage errors */ }
+    })();
+  }, []);
+
+  function applySavedPhone() {
+    if (savedPhone) {
+      setPhone(savedPhone);
+      setSavedPhone(null); // hide chip after use
+    }
+  }
 
   async function handleSend() {
     setError('');
     const formatted = phone.startsWith('+91') ? phone : `+91${phone}`;
     setLoading(true);
+
+    // Persist phone (digits only) for next session auto-fill
+    try { await AsyncStorage.setItem(LAST_PHONE_KEY, phone.replace(/\D/g, '')); } catch (_) {}
+
     const res = await authApi.sendOtp(formatted);
     setLoading(false);
     if (res.success) {
@@ -38,6 +65,15 @@ export default function PhoneScreen({ navigation }) {
         <View style={styles.card}>
           <Text style={styles.title}>Welcome</Text>
           <Text style={styles.sub}>Enter your mobile number</Text>
+
+          {/* Saved phone suggestion chip */}
+          {savedPhone && !phone ? (
+            <TouchableOpacity style={styles.suggestionChip} onPress={applySavedPhone}>
+              <Text style={styles.suggestionText}>
+                Use last number: {savedPhone.slice(0, 4)}••••{savedPhone.slice(8)}
+              </Text>
+            </TouchableOpacity>
+          ) : null}
 
           <Text style={styles.label}>Phone Number</Text>
           <View style={styles.phoneRow}>
@@ -91,4 +127,6 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 15, fontWeight: '700', color: colors.white },
   error: { backgroundColor: colors.redPale, borderRadius: 10, padding: 10, fontSize: 12, color: colors.red, marginBottom: 12 },
   hint: { fontSize: 11, color: colors.t3, textAlign: 'center' },
+  suggestionChip: { backgroundColor: 'rgba(255,184,0,0.1)', borderWidth: 1, borderColor: colors.gold, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14, alignItems: 'center' },
+  suggestionText: { fontSize: 13, fontWeight: '600', color: colors.gold },
 });

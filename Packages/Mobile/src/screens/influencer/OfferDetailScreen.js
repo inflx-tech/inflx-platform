@@ -26,9 +26,21 @@ export default function OfferDetailScreen({ navigation, route }) {
   }
 
   async function submitCounter() {
-    if (!offer.negotiation_id) { Alert.alert('No negotiation thread'); return; }
     const feePaise = Math.round(parseFloat(negotiatingFee) * 100);
     setLoading(true);
+
+    // If no negotiation thread exists yet, initiate one via the negotiate endpoint
+    if (!offer.negotiation_id) {
+      const negRes = await influencerApi.negotiateOffer(offer.id, {
+        proposed_fee: feePaise,
+        note,
+      });
+      setLoading(false);
+      if (negRes.success) { Alert.alert('Counter offer sent!'); navigation.goBack(); }
+      else Alert.alert('Failed', negRes.error?.message);
+      return;
+    }
+
     const res = await influencerApi.submitNegotiationTurn(offer.negotiation_id, {
       proposed_fee: feePaise,
       note,

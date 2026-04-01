@@ -47,7 +47,7 @@ export default function WalletPage() {
     const orderRes = await walletApi.createTopup(amountPaise);
     if (!orderRes.success) { showToast(orderRes.error?.message || 'Failed to create order'); setToppingUp(false); return; }
 
-    const { razorpay_order_id, amount, key_id } = orderRes.data;
+    const { order_id, amount, key_id } = orderRes.data;
 
     if (typeof window !== 'undefined' && window.Razorpay) {
       const options = {
@@ -56,7 +56,7 @@ export default function WalletPage() {
         currency: 'INR',
         name: 'INFLX',
         description: 'Wallet Top-up',
-        order_id: razorpay_order_id,
+        order_id: order_id,
         handler: async function(response) {
           const verifyRes = await walletApi.verifyTopup({
             razorpay_order_id: response.razorpay_order_id,
