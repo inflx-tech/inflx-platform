@@ -564,73 +564,97 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'Invalid campaign assignment ID', 400);
   }
 
-  // Main campaign + influencer assignment
-  const { rows: ciRows } = await db.query(
-    `SELECT
-       ci.id AS campaign_influencer_id,
-       ci.status AS influencer_status,
-       ci.agreed_fee,
-       ci.posting_date,
-       ci.coupon_code,
-       ci.commission_pct,
-       ci.contract_signed_at,
-       ci.brand_signed_at,
-       ci.created_at AS invited_at,
-       c.id AS campaign_id,
-       c.name AS campaign_name,
-       c.brief,
-       c.status AS campaign_status,
-       c.start_date,
-       c.end_date,
-       c.total_budget,
-       cs.id AS set_id,
-       cs.name AS set_name,
-       cs.goal,
-       cs.content_start_date,
-       cs.content_end_date,
-       b.id AS brand_id,
-       b.business_name AS brand_name,
-       u.name AS brand_contact_name
-     FROM campaign_influencers ci
-     JOIN campaign_sets cs ON cs.id = ci.set_id
-     JOIN campaigns c ON c.id = cs.campaign_id
-     JOIN brands b ON b.id = c.brand_id
-     JOIN users u ON u.id = b.user_id
-     WHERE ci.id = $1 AND ci.influencer_id = $2`,
-    [ciId, inf.id]
-  );
+  let campaign, deliverables = [], contract = null, tranches = [];
 
-  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
-  const campaign = ciRows[0];
+  // Step 1: Main campaign + influencer assignment
+  try {
+    const { rows: ciRows } = await db.query(
+      `SELECT
+         ci.id AS campaign_influencer_id,
+         ci.status AS influencer_status,
+         ci.agreed_fee,
+         ci.posting_date,
+         ci.coupon_code,
+         ci.commission_pct,
+         ci.contract_signed_at,
+         ci.brand_signed_at,
+         ci.created_at AS invited_at,
+         c.id AS campaign_id,
+         c.name AS campaign_name,
+         c.brief,
+         c.status AS campaign_status,
+         c.start_date,
+         c.end_date,
+         c.total_budget,
+         cs.id AS set_id,
+         cs.name AS set_name,
+         cs.goal,
+         cs.content_start_date,
+         cs.content_end_date,
+         b.id AS brand_id,
+         b.business_name AS brand_name,
+         u.name AS brand_contact_name
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c ON c.id = cs.campaign_id
+       JOIN brands b ON b.id = c.brand_id
+       JOIN users u ON u.id = b.user_id
+       WHERE ci.id = $1 AND ci.influencer_id = $2`,
+      [ciId, inf.id]
+    );
+    if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
+    campaign = ciRows[0];
+  } catch (e) {
+    if (e instanceof AppError) throw e;
+    console.error('[getMyCampaignDetail] Step 1 (main query) failed:', e.message);
+    throw new AppError('INTERNAL_ERROR', `Campaign query failed: ${e.message}`, 500);
+  }
 
-  // Deliverables
-  const { rows: deliverables } = await db.query(
-    `SELECT d.id, d.type, d.quantity, d.status, d.submission_deadline,
-            d.submitted_at, d.live_url, d.live_confirmed_at,
-            d.revision_count, d.revision_limit, d.brand_feedback
-     FROM deliverables d
-     WHERE d.campaign_influencer_id = $1
-     ORDER BY d.created_at ASC`,
-    [ciId]
-  );
+  // Step 2: Deliverables
+  try {
+    const { rows } = await db.query(
+      `SELECT d.id, d.type, d.quantity, d.status, d.submission_deadline,
+              d.submitted_at, d.live_url, d.live_confirmed_at,
+              d.revision_count, d.revision_limit, d.brand_feedback
+       FROM deliverables d
+       WHERE d.campaign_influencer_id = $1
+       ORDER BY d.created_at ASC`,
+      [ciId]
+    );
+    deliverables = rows;
+  } catch (e) {
+    console.error('[getMyCampaignDetail] Step 2 (deliverables) failed:', e.message);
+    // Non-critical: return empty deliverables
+  }
 
-  // Contract
-  const { rows: contractRows } = await db.query(
-    `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at
-     FROM contracts
-     WHERE campaign_influencer_id = $1`,
-    [ciId]
-  );
-  const contract = contractRows[0] || null;
+  // Step 3: Contract
+  try {
+    const { rows: contractRows } = await db.query(
+      `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at
+       FROM contracts
+       WHERE campaign_influencer_id = $1`,
+      [ciId]
+    );
+    contract = contractRows[0] || null;
+  } catch (e) {
+    console.error('[getMyCampaignDetail] Step 3 (contract) failed:', e.message);
+    // Non-critical: contract may not exist yet
+  }
 
-  // Escrow / tranche entries
-  const { rows: tranches } = await db.query(
-    `SELECT tranche_number, amount, net_to_influencer, status, trigger_event, triggered_at, released_at
-     FROM escrow_entries
-     WHERE campaign_influencer_id = $1
-     ORDER BY tranche_number ASC`,
-    [ciId]
-  );
+  // Step 4: Escrow / tranche entries
+  try {
+    const { rows } = await db.query(
+      `SELECT tranche_number, amount, net_to_influencer, status, trigger_event, triggered_at, released_at
+       FROM escrow_entries
+       WHERE campaign_influencer_id = $1
+       ORDER BY tranche_number ASC`,
+      [ciId]
+    );
+    tranches = rows;
+  } catch (e) {
+    console.error('[getMyCampaignDetail] Step 4 (escrow) failed:', e.message);
+    // Non-critical: tranches may not exist yet
+  }
 
   return success(res, {
     campaign,
