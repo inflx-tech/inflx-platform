@@ -124,11 +124,12 @@ const getById = asyncHandler(async (req, res) => {
   for (const set of sets) {
     const { rows: influencers } = await db.query(
       `SELECT ci.*, inf.instagram_handle, u.name AS influencer_name, u.phone AS influencer_phone,
-              n.id AS negotiation_id, n.status AS negotiation_status, n.next_turn
+              (SELECT n.id FROM negotiations n WHERE n.campaign_influencer_id = ci.id ORDER BY n.created_at DESC LIMIT 1) AS negotiation_id,
+              (SELECT n.status FROM negotiations n WHERE n.campaign_influencer_id = ci.id ORDER BY n.created_at DESC LIMIT 1) AS negotiation_status,
+              (SELECT n.next_turn FROM negotiations n WHERE n.campaign_influencer_id = ci.id ORDER BY n.created_at DESC LIMIT 1) AS next_turn
        FROM campaign_influencers ci
        JOIN influencers inf ON inf.id = ci.influencer_id
        JOIN users u ON u.id = inf.user_id
-       LEFT JOIN negotiations n ON n.campaign_influencer_id = ci.id
        WHERE ci.set_id = $1 ORDER BY ci.id ASC`,
       [set.id]
     );
@@ -194,11 +195,12 @@ const getSets = asyncHandler(async (req, res) => {
   for (const set of sets) {
     const { rows: influencers } = await db.query(
       `SELECT ci.*, inf.instagram_handle, u.name AS influencer_name, u.phone AS influencer_phone,
-              n.id AS negotiation_id, n.status AS negotiation_status, n.next_turn
+              (SELECT n.id FROM negotiations n WHERE n.campaign_influencer_id = ci.id ORDER BY n.created_at DESC LIMIT 1) AS negotiation_id,
+              (SELECT n.status FROM negotiations n WHERE n.campaign_influencer_id = ci.id ORDER BY n.created_at DESC LIMIT 1) AS negotiation_status,
+              (SELECT n.next_turn FROM negotiations n WHERE n.campaign_influencer_id = ci.id ORDER BY n.created_at DESC LIMIT 1) AS next_turn
        FROM campaign_influencers ci
        JOIN influencers inf ON inf.id = ci.influencer_id
        JOIN users u ON u.id = inf.user_id
-       LEFT JOIN negotiations n ON n.campaign_influencer_id = ci.id
        WHERE ci.set_id = $1 ORDER BY ci.id ASC`,
       [set.id]
     );
