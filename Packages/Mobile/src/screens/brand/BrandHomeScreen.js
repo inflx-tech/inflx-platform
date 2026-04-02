@@ -4,7 +4,7 @@ import {
   RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import { colors, fmtMoney } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 
@@ -65,7 +65,7 @@ export default function BrandHomeScreen({ navigation }) {
       {/* Wallet card */}
       <View style={styles.walletCard}>
         <Text style={styles.walletLabel}>Wallet Balance</Text>
-        <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
+        <Text style={styles.walletAmount}>{fmtMoney(brand?.wallet_balance || 0)}</Text>
         <View style={styles.walletRow}>
           <View style={styles.walletStat}>
             <Text style={styles.walletStatLabel}>Active Campaigns</Text>
@@ -104,21 +104,17 @@ export default function BrandHomeScreen({ navigation }) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickGrid}>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/campaigns/new')}>
-            <Text style={styles.quickActionIcon}>📣</Text>
-            <Text style={styles.quickActionLabel}>Create Campaign</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/products')}>
-            <Text style={styles.quickActionIcon}>📦</Text>
-            <Text style={styles.quickActionLabel}>Manage Products</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/campaigns')}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Campaigns')}>
             <Text style={styles.quickActionIcon}>📊</Text>
             <Text style={styles.quickActionLabel}>View Campaigns</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => openWebDashboard('/dashboard/wallet')}>
+          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Wallet')}>
             <Text style={styles.quickActionIcon}>💳</Text>
             <Text style={styles.quickActionLabel}>Wallet & Payments</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Campaigns')}>
+            <Text style={styles.quickActionIcon}>🤝</Text>
+            <Text style={styles.quickActionLabel}>Negotiations</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -144,7 +140,7 @@ export default function BrandHomeScreen({ navigation }) {
               key={c.id}
               style={styles.campaignCard}
               activeOpacity={0.7}
-              onPress={() => openWebDashboard(`/dashboard/campaigns/${c.id}`)}
+              onPress={() => navigation.navigate('Campaigns', { screen: 'CampaignDetail', params: { campaignId: c.id } })}
             >
               <View style={styles.campaignHeader}>
                 <Text style={styles.campaignName} numberOfLines={1}>{c.name}</Text>

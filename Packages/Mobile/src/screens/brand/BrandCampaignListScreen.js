@@ -93,7 +93,7 @@ export default function BrandCampaignListScreen({ navigation }) {
                 key={c.id}
                 style={styles.card}
                 activeOpacity={0.7}
-                onPress={() => openWebDashboard(`/dashboard/campaigns/${c.id}`)}
+                onPress={() => navigation.navigate('CampaignDetail', { campaignId: c.id })}
               >
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardName} numberOfLines={2}>{c.name}</Text>

@@ -569,6 +569,48 @@ const getNegotiation = asyncHandler(async (req, res) => {
   return success(res, { negotiation: neg, turns });
 });
 
+const getNegotiationByCampaignInfluencer = asyncHandler(async (req, res) => {
+  const ciId = req.params.ciId;
+  const { rows: negRows } = await db.query(
+    `SELECT n.*,
+            ci.influencer_id,
+            c.brand_id
+     FROM negotiations n
+     JOIN campaign_influencers ci ON ci.id = n.campaign_influencer_id
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     WHERE n.campaign_influencer_id = $1
+     ORDER BY n.created_at DESC
+     LIMIT 1`,
+    [ciId]
+  );
+
+  if (!negRows[0]) throw new AppError('NOT_FOUND', 'No negotiation found for this assignment', 404);
+  const neg = negRows[0];
+
+  const userRole = req.user.role;
+  if (userRole === 'brand') {
+    const brand = await getBrandOrThrow(req.user.sub);
+    if (brand.id !== neg.brand_id) {
+      throw new AppError('FORBIDDEN', 'You do not own this campaign', 403);
+    }
+  } else if (userRole === 'influencer') {
+    const influencer = await getInfluencerOrThrow(req.user.sub);
+    if (influencer.id !== neg.influencer_id) {
+      throw new AppError('FORBIDDEN', 'This negotiation does not belong to you', 403);
+    }
+  } else {
+    throw new AppError('FORBIDDEN', 'Access denied', 403);
+  }
+
+  const { rows: turns } = await db.query(
+    `SELECT * FROM negotiation_turns WHERE negotiation_id = $1 ORDER BY created_at ASC`,
+    [neg.id]
+  );
+
+  return success(res, { negotiation: neg, turns });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Block D — POST /campaigns/:id/sets/:sid/publish-open
 // Publish an open-group set; notify eligible approved influencers via push + in-app.
@@ -710,5 +752,6 @@ module.exports = {
   negotiate,
   respond,
   getNegotiation,
+  getNegotiationByCampaignInfluencer,
   publishOpenGroup,
 };

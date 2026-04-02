@@ -7,6 +7,7 @@ const ctrl = require('../controllers/offer.controller');
 const router = Router();
 
 // Both brand and influencer can view and respond to negotiations
+router.get('/by-ci/:ciId',  authenticate, requireRole('brand', 'influencer'), ctrl.getNegotiationByCampaignInfluencer);
 router.get('/:id',          authenticate, requireRole('brand', 'influencer'), ctrl.getNegotiation);
 router.post('/:id/respond', authenticate, requireRole('brand', 'influencer'), ctrl.respond);
 

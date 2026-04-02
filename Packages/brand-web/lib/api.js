@@ -166,6 +166,7 @@ export const deliverableApi = {
 
 export const negotiationApi = {
   get: (id) => api.get(`/negotiations/${id}`),
+  getByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
   respond: (id, data) => api.post(`/negotiations/${id}/respond`, data),
 };
 

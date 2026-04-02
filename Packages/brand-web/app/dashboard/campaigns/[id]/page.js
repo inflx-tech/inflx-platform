@@ -280,8 +280,16 @@ export default function CampaignDetailPage() {
   }
 
   async function openNegModal(inf) {
-    if (!inf.negotiation_id) { showToast('No negotiation thread found'); return; }
-    const res = await negotiationApi.get(inf.negotiation_id);
+    let res;
+    if (inf.negotiation_id) {
+      res = await negotiationApi.get(inf.negotiation_id);
+    } else if (inf.status === 'negotiating') {
+      // Fallback: look up negotiation by campaign_influencer_id
+      res = await negotiationApi.getByCampaignInfluencer(inf.id);
+    } else {
+      showToast('No negotiation thread found');
+      return;
+    }
     if (res.success) setNegModal({ inf, negotiation: res.data?.negotiation || res.data });
     else showToast(res.error?.message || 'Failed to load negotiation');
   }
@@ -289,7 +297,8 @@ export default function CampaignDetailPage() {
   async function handleNegRespond(action, proposedFee, note) {
     if (!negModal) return;
     setNegLoading(true);
-    const res = await negotiationApi.respond(negModal.inf.negotiation_id, { action, proposed_fee: proposedFee, note });
+    const negId = negModal.negotiation?.id || negModal.inf.negotiation_id;
+    const res = await negotiationApi.respond(negId, { action, proposed_fee: proposedFee, note });
     setNegLoading(false);
     if (res.success) {
       showToast(action === 'accept' ? 'Offer accepted!' : action === 'decline' ? 'Offer declined' : 'Counter sent');
