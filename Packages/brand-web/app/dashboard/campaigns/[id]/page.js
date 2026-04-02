@@ -237,11 +237,20 @@ export default function CampaignDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [cancellingInf, setCancellingInf] = useState(null); // campaign_influencer id being cancelled
 
+  const [loadError, setLoadError] = useState(null);
+
   // ── Load campaign (sets + influencers included) ──────────────────────────
   useEffect(() => {
     campaignApi.get(id).then(res => {
       setLoading(false);
-      if (res.success) setCampaign(res.data?.campaign || res.data);
+      if (res.success) {
+        setCampaign(res.data?.campaign || res.data);
+      } else {
+        setLoadError(res.error?.message || res.error?.code || 'Failed to load campaign');
+      }
+    }).catch(err => {
+      setLoading(false);
+      setLoadError(err.message || 'Network error');
     });
   }, [id]);
 
@@ -348,7 +357,7 @@ export default function CampaignDetailPage() {
   }
 
   if (loading) return <div className="text-center py-16 text-gray-400 text-sm">Loading campaign…</div>;
-  if (!campaign) return <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm">Campaign not found</div>;
+  if (!campaign) return <div className="p-4 bg-red-50 rounded-xl text-red-600 text-sm">Campaign not found{loadError ? `: ${loadError}` : ''} <button className="ml-2 underline" onClick={() => { setLoading(true); setLoadError(null); campaignApi.get(id).then(res => { setLoading(false); if (res.success) setCampaign(res.data?.campaign || res.data); else setLoadError(JSON.stringify(res)); }); }}>Retry</button></div>;
 
   // ── Derived data ─────────────────────────────────────────────────────────
   const sets         = campaign.sets || [];
