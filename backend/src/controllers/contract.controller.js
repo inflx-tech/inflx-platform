@@ -225,7 +225,14 @@ const brandSign = asyncHandler(async (req, res) => {
     throw new AppError('FORBIDDEN', 'Only brands can countersign contracts', 403);
   }
 
-  const contract = await getContractByIdOrThrow(req.params.id);
+  let contract;
+  try {
+    contract = await getContractByIdOrThrow(req.params.id);
+  } catch (e) {
+    if (e instanceof AppError) throw e;
+    console.error('[brandSign] getContract failed:', e.message);
+    throw new AppError('INTERNAL_ERROR', `Contract lookup failed: ${e.message}`, 500);
+  }
 
   // Verify requester owns the brand
   if (contract.brand_user_id !== req.user.sub) {
@@ -245,68 +252,73 @@ const brandSign = asyncHandler(async (req, res) => {
   let t1EntryId;
   let t1Result;
 
+  // Compute effective fee — fallback chain for when agreed_fee was never set
+  const effectiveFee = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
+  console.log('[brandSign] effectiveFee:', effectiveFee, '| influencer_fee:', contract.influencer_fee, '| agreed_fee:', contract.agreed_fee, '| influencer_budget:', contract.influencer_budget, '| per_influencer_budget:', contract.per_influencer_budget);
+
   // Everything in one transaction for atomicity
-  await db.withTransaction(async (client) => {
-    // 0. Compute effective fee — fallback chain for when agreed_fee was never set
-    const effectiveFee = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
+  try {
+    await db.withTransaction(async (client) => {
+      // 0. Backfill: update contract and CI if fee was NULL
+      if (!contract.influencer_fee && effectiveFee > 0) {
+        await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [effectiveFee, contract.id]);
+        await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [effectiveFee, contract.campaign_influencer_id]);
+      }
 
-    // 0b. Backfill: update contract and CI if fee was NULL
-    if (!contract.influencer_fee && effectiveFee > 0) {
-      await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [effectiveFee, contract.id]);
-      await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [effectiveFee, contract.campaign_influencer_id]);
-    }
+      // 1. Mark contract as active
+      const { rows: contractRows } = await client.query(
+        `UPDATE contracts
+         SET status = 'active', brand_signed_at = now(), brand_signed_by = $2
+         WHERE id = $1
+         RETURNING *`,
+        [contract.id, req.user.sub]
+      );
+      updatedContract = contractRows[0];
 
-    // 1. Mark contract as active
-    const { rows: contractRows } = await client.query(
-      `UPDATE contracts
-       SET status = 'active', brand_signed_at = now(), brand_signed_by = $2
-       WHERE id = $1
-       RETURNING *`,
-      [contract.id, req.user.sub]
-    );
-    updatedContract = contractRows[0];
+      // 2. Mark campaign_influencer as contracted
+      await client.query(
+        `UPDATE campaign_influencers SET status = 'contracted' WHERE id = $1`,
+        [contract.campaign_influencer_id]
+      );
 
-    // 2. Mark campaign_influencer as contracted
-    await client.query(
-      `UPDATE campaign_influencers SET status = 'contracted' WHERE id = $1`,
-      [contract.campaign_influencer_id]
-    );
-
-    // 3. Create 3 escrow entries
-    const entries = await escrowService.createEscrowEntries(
-      client,
-      contract.campaign_influencer_id,
-      effectiveFee,
-      contract.platform_fee_pct
-    );
-    t1EntryId = entries[0].id; // T1 is first
-
-    // 4. Release T1 immediately
-    t1Result = await escrowService.processTrancheRelease(
-      client,
-      t1EntryId,
-      contract.influencer_id,
-      contract.brand_id,
-      contract.campaign_id
-    );
-
-    // 5. Auto-create one reel deliverable
-    await client.query(
-      `INSERT INTO deliverables
-         (campaign_influencer_id, type, status, submission_deadline, revision_limit)
-       VALUES ($1, 'reel', 'pending', $2, $3)`,
-      [
+      // 3. Create 3 escrow entries
+      const entries = await escrowService.createEscrowEntries(
+        client,
         contract.campaign_influencer_id,
-        updatedContract.posting_date || null,
-        updatedContract.revision_limit,
-      ]
-    );
-  });
+        effectiveFee,
+        contract.platform_fee_pct
+      );
+      t1EntryId = entries[0].id; // T1 is first
+
+      // 4. Release T1 immediately
+      t1Result = await escrowService.processTrancheRelease(
+        client,
+        t1EntryId,
+        contract.influencer_id,
+        contract.brand_id,
+        contract.campaign_id
+      );
+
+      // 5. Auto-create one reel deliverable
+      await client.query(
+        `INSERT INTO deliverables
+           (campaign_influencer_id, type, status, submission_deadline, revision_limit)
+         VALUES ($1, 'reel', 'pending', $2, $3)`,
+        [
+          contract.campaign_influencer_id,
+          updatedContract.posting_date || null,
+          updatedContract.revision_limit,
+        ]
+      );
+    });
+  } catch (txErr) {
+    console.error('[brandSign] Transaction failed:', txErr.message, txErr.code || '');
+    throw new AppError('INTERNAL_ERROR', `Contract signing failed: ${txErr.message}`, 500);
+  }
 
   // 6. Generate PDF (outside transaction — non-critical for DB integrity)
   let pdfUrl = null;
   try {
-    // Re-fetch updated contract for PDF generation
     const { rows: freshRows } = await db.query(
       `SELECT * FROM contracts WHERE id = $1`,
       [contract.id]
@@ -317,7 +329,6 @@ const brandSign = asyncHandler(async (req, res) => {
     const filename  = `contract_${contract.id}.pdf`;
     pdfUrl = await storageService.uploadPDF(pdfBuffer, filename);
 
-    // Store PDF URL on contract
     await db.query(
       `UPDATE contracts SET pdf_url = $1 WHERE id = $2`,
       [pdfUrl, contract.id]
@@ -325,16 +336,16 @@ const brandSign = asyncHandler(async (req, res) => {
     updatedContract.pdf_url = pdfUrl;
   } catch (pdfErr) {
     console.error('[CONTRACT] PDF generation failed (non-fatal):', pdfErr.message);
-    // Non-fatal: contract is active, PDF can be regenerated
   }
 
   // 7. Notify influencer that contract is now active + T1 released
   try {
+    const netAmt = t1Result?.netAmount || 0;
     await notificationService.send({
       userId:   contract.influencer_user_id,
       type:     'contract.active',
       title:    'Contract Active — Payment Initiated',
-      body:     `Your contract for campaign "${contract.campaign_name}" is now active. Tranche 1 payment of ₹${t1Result.netAmount.toFixed(2)} has been initiated.`,
+      body:     `Your contract for campaign "${contract.campaign_name}" is now active. Tranche 1 payment of ₹${netAmt.toFixed(2)} has been initiated.`,
       data:     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id },
       fcmToken: contract.influencer_fcm_token,
       sendSms:  true,
@@ -353,7 +364,7 @@ const brandSign = asyncHandler(async (req, res) => {
   return success(res, {
     contract:    finalRows[0],
     t1_released: true,
-    t1_amount:   t1Result.netAmount,
+    t1_amount:   t1Result?.netAmount || 0,
   });
 });
 
