@@ -61,6 +61,11 @@ export default function CampaignDetailScreen({ navigation, route }) {
   const [negotiationLoading, setNegotiationLoading] = useState(false);
 
   useEffect(() => {
+    if (!campaignInfluencerId) {
+      setError('Missing campaign ID. Please go back and try again.');
+      setLoading(false);
+      return;
+    }
     loadDetail();
   }, []);
 
@@ -68,7 +73,9 @@ export default function CampaignDetailScreen({ navigation, route }) {
     setLoading(true);
     setError(null);
     try {
+      console.log('[CampaignDetail] Loading ciId:', campaignInfluencerId);
       const res = await influencerApi.getMyCampaignDetail(campaignInfluencerId);
+      console.log('[CampaignDetail] Response:', JSON.stringify(res).substring(0, 500));
       if (res.success) {
         setData(res.data);
         // If negotiating, fetch negotiation data
@@ -77,12 +84,14 @@ export default function CampaignDetailScreen({ navigation, route }) {
           loadNegotiation();
         }
       } else {
-        setError(res.error?.message || 'Failed to load campaign details');
-        Alert.alert('Error', res.error?.message || 'Failed to load campaign details');
+        const errMsg = res.error?.message || res.error?.code || 'Failed to load campaign details';
+        console.log('[CampaignDetail] API Error:', errMsg);
+        setError(errMsg);
       }
     } catch (e) {
-      setError('An unexpected error occurred');
-      Alert.alert('Error', 'An unexpected error occurred while loading campaign details');
+      const msg = e?.message || String(e);
+      console.log('[CampaignDetail] Exception:', msg);
+      setError('Error: ' + msg);
     }
     setLoading(false);
   }
@@ -113,6 +122,12 @@ export default function CampaignDetailScreen({ navigation, route }) {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.emptyText}>{error || 'Campaign not found'}</Text>
+        <Text style={{ fontSize: 11, color: '#999', marginBottom: 16, textAlign: 'center' }}>
+          ID: {campaignInfluencerId || 'none'}
+        </Text>
+        <TouchableOpacity onPress={loadDetail} style={[styles.backBtn, { marginBottom: 8 }]}>
+          <Text style={styles.backBtnText}>Retry</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>

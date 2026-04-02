@@ -21,18 +21,31 @@ async function request(method, path, body) {
   }
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout for Render cold starts
     const res = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (res.status === 401) {
       if (token) await clearSession();
       return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
     }
-    return await res.json();
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (parseErr) {
+      console.log('[API] Non-JSON response:', text.substring(0, 200));
+      return { success: false, error: { code: 'PARSE_ERROR', message: `Server returned invalid response (HTTP ${res.status})` } };
+    }
   } catch (e) {
-    return { success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server. Check your connection.' } };
+    const msg = e?.name === 'AbortError'
+      ? 'Request timed out. Server may be starting up — please retry in a moment.'
+      : 'Cannot connect to server. Check your connection.';
+    return { success: false, error: { code: 'NETWORK_ERROR', message: msg } };
   }
 }
 

@@ -30,11 +30,16 @@ module.exports = function errorHandler(err, req, res, next) {
     return error(res, 'VALIDATION_ERROR', 'Referenced resource does not exist', 422);
   }
 
+  // PostgreSQL invalid text representation (e.g. invalid UUID)
+  if (err.code === '22P02') {
+    return error(res, 'VALIDATION_ERROR', 'Invalid ID format', 400);
+  }
+
   // Unexpected error — log full details server-side, return generic message to client
   console.error('[INFLX] Unhandled error:', err);
   const message = process.env.NODE_ENV === 'development'
     ? `${err.message} (${err.code || err.name})`
-    : 'An unexpected error occurred';
+    : 'Internal server error. Please try again.';
   return error(res, 'INTERNAL_ERROR', message, 500);
 };
 

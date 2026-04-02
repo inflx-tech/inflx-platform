@@ -558,6 +558,12 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
 
   const ciId = req.params.campaign_influencer_id;
 
+  // Validate UUID format to avoid Postgres cast errors
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!ciId || !uuidRegex.test(ciId)) {
+    throw new AppError('VALIDATION_ERROR', 'Invalid campaign assignment ID', 400);
+  }
+
   // Main campaign + influencer assignment
   const { rows: ciRows } = await db.query(
     `SELECT
