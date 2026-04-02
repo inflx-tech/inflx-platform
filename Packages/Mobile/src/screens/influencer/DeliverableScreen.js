@@ -16,11 +16,34 @@ const STATUS_CONFIG = {
 };
 
 export default function DeliverableScreen({ navigation, route }) {
-  const { deliverable: initialDeliverable } = route.params || {};
+  const { deliverable: initialDeliverable, deliverableId } = route.params || {};
   const [deliverable, setDeliverable] = useState(initialDeliverable || null);
+  const [loading, setLoading] = useState(!initialDeliverable && !!deliverableId);
   const [submitUrl, setSubmitUrl] = useState('');
   const [liveUrl, setLiveUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Fetch deliverable by ID if not passed as full object
+  useEffect(() => {
+    if (!initialDeliverable && deliverableId) {
+      (async () => {
+        setLoading(true);
+        try {
+          const res = await influencerApi.getDeliverable(deliverableId);
+          if (res.success && res.data?.deliverable) {
+            setDeliverable(res.data.deliverable);
+          } else if (res.success && res.data) {
+            // Some endpoints return data directly
+            setDeliverable(res.data);
+          }
+        } catch (e) {
+          console.error('[DeliverableScreen] fetch failed:', e);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [deliverableId]);
 
   const statusCfg = STATUS_CONFIG[deliverable?.status] || STATUS_CONFIG.pending;
 
@@ -56,6 +79,10 @@ export default function DeliverableScreen({ navigation, route }) {
     } else {
       Alert.alert('Failed', res.error?.message || 'Failed');
     }
+  }
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color={colors.navy} /></View>;
   }
 
   if (!deliverable) {
