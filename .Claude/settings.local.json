@@ -211,7 +211,19 @@
       "Bash(grep -n \"fcm_token\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
       "Bash(node -e \"require\\(''''./backend/src/controllers/campaign.controller.js''''\\)\")",
       "Bash(node -c \"C:/WORK/inflx-platform/backend/src/routes/campaign.routes.js\")",
-      "Bash(node -e \"try { require\\(''fs''\\).readFileSync\\(''app/dashboard/campaigns/new/page.js'',''utf8''\\); console.log\\(''File readable''\\); } catch\\(e\\) { console.error\\(e\\); }\")"
+      "Bash(node -e \"try { require\\(''fs''\\).readFileSync\\(''app/dashboard/campaigns/new/page.js'',''utf8''\\); console.log\\(''File readable''\\); } catch\\(e\\) { console.error\\(e\\); }\")",
+      "Bash(grep -r content_guidelines C:WORKinflx-platformbackend --include=*.sql --include=*.js)",
+      "Bash(python3 -c \":*)",
+      "Bash(ls C:/WORK/inflx-platform/Packages/Mobile/src/components/StatusBadge*)",
+      "Bash(./gradlew assembleInfluencerRelease)",
+      "Bash(./gradlew assembleBrandRelease assembleInfluencerRelease assembleFollowerRelease)",
+      "Bash(./gradlew assembleInfluencerRelease assembleBrandRelease assembleFollowerRelease)",
+      "Bash(find /c/WORK/inflx-platform/Packages/brand-web/app -type f -name *[Dd]eliverable*)",
+      "Bash(find /c/WORK/inflx-platform/Packages/brand-web/app/dashboard -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.tsx -o -name *.ts \\\\\\))",
+      "Bash(find /c/WORK/inflx-platform/Packages/Mobile/src -name *Navigator* -o -name *navigation*)",
+      "Bash(grep -n \"content\\\\|Content\\\\|CONTENT\" /c/WORK/inflx-platform/Packages/brand-web/app/dashboard/campaigns/[id]/page.js)",
+      "Bash(grep -E \"\\\\.\\(js|ts\\)$\")",
+      "Bash(grep -i \"created_at\" /c/WORK/inflx-platform/backend/migrations/*.sql)"
     ]
   }
 }

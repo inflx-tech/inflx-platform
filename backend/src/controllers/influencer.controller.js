@@ -620,7 +620,7 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
               d.revision_count, d.revision_limit, d.brand_feedback
        FROM deliverables d
        WHERE d.campaign_influencer_id = $1
-       ORDER BY d.created_at ASC`,
+       ORDER BY d.id ASC`,
       [ciId]
     );
     deliverables = rows;
@@ -629,7 +629,7 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     // Non-critical: return empty deliverables
   }
 
-  // Step 3: Contract
+  // Step 3: Contract (moved before Step 2b which depends on contract status)
   try {
     const { rows: contractRows } = await db.query(
       `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at
@@ -641,6 +641,54 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
   } catch (e) {
     console.error('[getMyCampaignDetail] Step 3 (contract) failed:', e.message);
     // Non-critical: contract may not exist yet
+  }
+
+  // Step 2b: Auto-create deliverables if contract is active but none exist
+  // (handles contracts signed before deliverable-creation fix was deployed)
+  if (deliverables.length === 0 && contract && (contract.status === 'active' || contract.status === 'completed')) {
+    try {
+      // Fetch formats_json from the campaign set
+      const { rows: setRows } = await db.query(
+        `SELECT cs.formats_json FROM campaign_sets cs
+         JOIN campaign_influencers ci ON ci.set_id = cs.id
+         WHERE ci.id = $1`,
+        [ciId]
+      );
+      let formats = [];
+      if (setRows[0]?.formats_json) {
+        const raw = setRows[0].formats_json;
+        formats = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
+      }
+      if (formats.length === 0) formats = [{ type: 'reel', count: 1 }];
+
+      for (const fmt of formats) {
+        const delType = fmt.type || 'reel';
+        const count = parseInt(fmt.count, 10) || 1;
+        for (let i = 0; i < count; i++) {
+          await db.query(
+            `INSERT INTO deliverables
+               (campaign_influencer_id, type, quantity, status, submission_deadline, revision_limit)
+             VALUES ($1, $2, 1, 'pending', $3, 2)`,
+            [ciId, delType, campaign.posting_date || null]
+          );
+        }
+      }
+
+      // Re-fetch deliverables after creation
+      const { rows: newRows } = await db.query(
+        `SELECT d.id, d.type, d.quantity, d.status, d.submission_deadline,
+                d.submitted_at, d.live_url, d.live_confirmed_at,
+                d.revision_count, d.revision_limit, d.brand_feedback
+         FROM deliverables d
+         WHERE d.campaign_influencer_id = $1
+         ORDER BY d.id ASC`,
+        [ciId]
+      );
+      deliverables = newRows;
+      console.log(`[getMyCampaignDetail] Auto-created ${deliverables.length} deliverable(s) for CI ${ciId}`);
+    } catch (e) {
+      console.error('[getMyCampaignDetail] Step 2b (auto-create deliverables) failed:', e.message);
+    }
   }
 
   // Step 4: Escrow / tranche entries
