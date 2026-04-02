@@ -38,6 +38,7 @@ function HomeStackNav() {
       <HomeStack.Screen name="DeliverableList" component={DeliverableListScreen} />
       <HomeStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
       <HomeStack.Screen name="BrandProfile" component={BrandProfileScreen} />
+      <HomeStack.Screen name="Negotiation" component={NegotiationScreen} />
     </HomeStack.Navigator>
   );
 }
@@ -71,6 +72,7 @@ function CampaignsStackNav() {
       <CampaignsStack.Screen name="DeliverableList" component={DeliverableListScreen} />
       <CampaignsStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
       <CampaignsStack.Screen name="BrandProfile" component={BrandProfileScreen} />
+      <CampaignsStack.Screen name="Negotiation" component={NegotiationScreen} />
     </CampaignsStack.Navigator>
   );
 }

@@ -89,7 +89,7 @@ export default function OfferListScreen({ navigation }) {
         <View style={styles.offerRow}>
           <View style={styles.offerStat}>
             <Text style={styles.offerStatLabel}>Fee</Text>
-            <Text style={styles.offerStatVal}>{fmtRupees(offer.agreed_fee || offer.proposed_fee || offer.influencer_budget)}</Text>
+            <Text style={styles.offerStatVal}>{fmtRupees(offer.agreed_fee || offer.influencer_budget || offer.per_influencer_budget || offer.set_budget || 0)}</Text>
           </View>
           <View style={styles.offerStat}>
             <Text style={styles.offerStatLabel}>Deliverable</Text>

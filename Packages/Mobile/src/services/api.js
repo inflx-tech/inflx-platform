@@ -84,6 +84,7 @@ export const influencerApi = {
   declineOffer: (id, data) => api.post(`/offers/${id}/decline`, data),
   negotiateOffer: (id, data) => api.post(`/offers/${id}/negotiate`, data),
   getNegotiation: (id) => api.get(`/negotiations/${id}`),
+  getNegotiationByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
   getDeliverables: () => api.get('/campaigns'),  // via campaign list
   getContractWithDeliverables: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),

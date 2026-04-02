@@ -28,6 +28,14 @@ const DELIVERABLE_LABELS = {
   youtube_short: 'YouTube Short',
 };
 
+const DELIVERABLE_ICONS = {
+  reel: '[R]',
+  post: '[P]',
+  story: '[S]',
+  youtube_video: '[YV]',
+  youtube_short: '[YS]',
+};
+
 // Status flow for the progress indicator
 const STATUS_STEPS = [
   { key: 'invited', label: 'Invited' },
@@ -48,6 +56,9 @@ export default function CampaignDetailScreen({ navigation, route }) {
   const { campaignInfluencerId } = route.params || {};
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [negotiationData, setNegotiationData] = useState(null);
+  const [negotiationLoading, setNegotiationLoading] = useState(false);
 
   useEffect(() => {
     loadDetail();
@@ -55,13 +66,38 @@ export default function CampaignDetailScreen({ navigation, route }) {
 
   async function loadDetail() {
     setLoading(true);
-    const res = await influencerApi.getMyCampaignDetail(campaignInfluencerId);
-    setLoading(false);
-    if (res.success) {
-      setData(res.data);
-    } else {
-      Alert.alert('Error', res.error?.message || 'Failed to load campaign details');
+    setError(null);
+    try {
+      const res = await influencerApi.getMyCampaignDetail(campaignInfluencerId);
+      if (res.success) {
+        setData(res.data);
+        // If negotiating, fetch negotiation data
+        const status = res.data?.campaign?.influencer_status;
+        if (status === 'negotiating') {
+          loadNegotiation();
+        }
+      } else {
+        setError(res.error?.message || 'Failed to load campaign details');
+        Alert.alert('Error', res.error?.message || 'Failed to load campaign details');
+      }
+    } catch (e) {
+      setError('An unexpected error occurred');
+      Alert.alert('Error', 'An unexpected error occurred while loading campaign details');
     }
+    setLoading(false);
+  }
+
+  async function loadNegotiation() {
+    setNegotiationLoading(true);
+    try {
+      const res = await influencerApi.getNegotiationByCampaignInfluencer(campaignInfluencerId);
+      if (res.success) {
+        setNegotiationData(res.data?.negotiation || res.data);
+      }
+    } catch (e) {
+      // Non-critical: negotiation data is supplementary
+    }
+    setNegotiationLoading(false);
   }
 
   if (loading) {
@@ -73,10 +109,10 @@ export default function CampaignDetailScreen({ navigation, route }) {
     );
   }
 
-  if (!data || !data.campaign) {
+  if (error || !data || !data.campaign) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>Campaign not found</Text>
+        <Text style={styles.emptyText}>{error || 'Campaign not found'}</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backBtnText}>Go Back</Text>
         </TouchableOpacity>
@@ -84,398 +120,607 @@ export default function CampaignDetailScreen({ navigation, route }) {
     );
   }
 
-  const { campaign, deliverables, contract, tranches } = data;
+  const campaign = data.campaign || {};
+  const deliverables = data.deliverables || [];
+  const contract = data.contract || null;
+  const tranches = data.tranches || [];
   const fee = campaign.agreed_fee || 0;
   const currentStep = getStepIndex(campaign.influencer_status);
+  const influencerStatus = campaign.influencer_status || 'invited';
 
-  return (
-    <ScrollView style={styles.container}>
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<-'} Back</Text>
-        </TouchableOpacity>
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.brandNameHeader}>{campaign.brand_name || 'Brand'}</Text>
-            <Text style={styles.campaignNameHeader}>{campaign.campaign_name || 'Campaign'}</Text>
-          </View>
-          <StatusBadge status={campaign.influencer_status} size={11} />
-        </View>
-      </View>
+  // ── Render helpers ───────────────────────────────────────────────────────
 
-      {/* ── Completion Banner ─────────────────────────────────────────── */}
-      {campaign.influencer_status === 'completed' && (
-        <TouchableOpacity
-          style={styles.completionBanner}
-          onPress={() => navigation.navigate('CampaignCompletion', {
-            campaignInfluencerId: campaign.campaign_influencer_id,
-          })}
-        >
-          <Text style={styles.completionBannerIcon}>{'[OK]'}</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.completionBannerTitle}>Campaign Completed!</Text>
-            <Text style={styles.completionBannerSub}>View your earnings summary and stats</Text>
-          </View>
-          <Text style={styles.completionBannerArrow}>{'>'}</Text>
-        </TouchableOpacity>
-      )}
+  function renderContractSection() {
+    switch (influencerStatus) {
+      case 'invited':
+        return (
+          <Text style={styles.noDataText}>
+            Contract will be generated after you accept the offer.
+          </Text>
+        );
 
-      {/* ── Progress Indicator ─────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Campaign Progress</Text>
-        <View style={styles.progressRow}>
-          {STATUS_STEPS.map((step, i) => {
-            const isActive = i <= currentStep;
-            const isCurrent = i === currentStep;
-            return (
-              <View key={step.key} style={styles.stepContainer}>
-                <View style={styles.stepDotRow}>
-                  {i > 0 && (
-                    <View style={[styles.stepLine, isActive && styles.stepLineActive]} />
-                  )}
-                  <View style={[
-                    styles.stepDot,
-                    isActive && styles.stepDotActive,
-                    isCurrent && styles.stepDotCurrent,
-                  ]} />
-                </View>
-                <Text style={[
-                  styles.stepLabel,
-                  isActive && styles.stepLabelActive,
-                  isCurrent && styles.stepLabelCurrent,
-                ]}>
-                  {step.label}
+      case 'negotiating':
+        return (
+          <View>
+            <View style={styles.negotiationInfoBox}>
+              <Text style={styles.negotiationInfoIcon}>{'[N]'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.negotiationInfoTitle}>Negotiation in Progress</Text>
+                <Text style={styles.negotiationInfoSub}>
+                  You are currently negotiating terms for this campaign. The contract will be generated once both parties agree.
                 </Text>
+                {negotiationLoading && (
+                  <ActivityIndicator size="small" color={colors.orange} style={{ marginTop: 8 }} />
+                )}
+                {negotiationData && (
+                  <View style={styles.negotiationSummary}>
+                    <Text style={styles.negotiationSummaryText}>
+                      Current turn: {negotiationData.current_turn === 'influencer' ? 'Your turn' : "Brand's turn"}
+                    </Text>
+                    {negotiationData.turns && negotiationData.turns.length > 0 && (
+                      <Text style={styles.negotiationSummaryText}>
+                        Latest offer: {fmtRupees(negotiationData.turns[negotiationData.turns.length - 1]?.proposed_fee || 0)}
+                      </Text>
+                    )}
+                  </View>
+                )}
               </View>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* ── Campaign Info ──────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Campaign Info</Text>
-
-        <View style={styles.infoGrid}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Campaign</Text>
-            <Text style={styles.infoValue}>{campaign.campaign_name || '--'}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => {
+                const negId = negotiationData?.id || negotiationData?.negotiation_id;
+                navigation.navigate('Negotiation', {
+                  negotiation_id: negId || undefined,
+                  campaign_influencer_id: campaignInfluencerId,
+                });
+              }}
+            >
+              <Text style={styles.actionBtnText}>View Negotiation</Text>
+            </TouchableOpacity>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Campaign Status</Text>
-            <StatusBadge status={campaign.campaign_status} size={10} />
-          </View>
-        </View>
+        );
 
-        <View style={styles.infoGrid}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Start Date</Text>
-            <Text style={styles.infoValue}>{formatDate(campaign.start_date || campaign.content_start_date)}</Text>
-          </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>End Date</Text>
-            <Text style={styles.infoValue}>{formatDate(campaign.end_date || campaign.content_end_date)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.infoGrid}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Goal</Text>
-            <Text style={styles.infoValue}>
-              {(campaign.goal || '--').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}
+      case 'accepted':
+        return (
+          <View style={styles.preparingBox}>
+            <ActivityIndicator size="small" color={colors.navy} />
+            <Text style={styles.preparingText}>
+              Contract is being prepared. You will be notified once it is ready to sign.
             </Text>
           </View>
-          {campaign.set_name && (
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Set</Text>
-              <Text style={styles.infoValue}>{campaign.set_name}</Text>
-            </View>
-          )}
-        </View>
+        );
 
-        {campaign.brief && (
+      case 'contracted':
+      case 'active':
+      case 'completed':
+        if (contract) {
+          return (
+            <View>
+              <View style={styles.infoGrid}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Status</Text>
+                  <StatusBadge status={contract.status} size={10} />
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Created</Text>
+                  <Text style={styles.infoValue}>{formatDate(contract.created_at)}</Text>
+                </View>
+              </View>
+              <View style={styles.infoGrid}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Your Signature</Text>
+                  <Text style={styles.infoValue}>
+                    {contract.influencer_signed_at ? formatDate(contract.influencer_signed_at) : 'Not signed'}
+                  </Text>
+                </View>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Brand Signature</Text>
+                  <Text style={styles.infoValue}>
+                    {contract.brand_signed_at ? formatDate(contract.brand_signed_at) : 'Not signed'}
+                  </Text>
+                </View>
+              </View>
+              {contract.status === 'pending_influencer' && (
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => navigation.navigate('Contract', {
+                    campaignInfluencerId: campaign.campaign_influencer_id,
+                  })}
+                >
+                  <Text style={styles.actionBtnText}>Sign Contract</Text>
+                </TouchableOpacity>
+              )}
+              {contract.status !== 'pending_influencer' && (
+                <TouchableOpacity
+                  style={styles.secondaryBtn}
+                  onPress={() => navigation.navigate('Contract', {
+                    campaignInfluencerId: campaign.campaign_influencer_id,
+                  })}
+                >
+                  <Text style={styles.secondaryBtnText}>View Contract</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        }
+        return (
+          <Text style={styles.noDataText}>
+            Contract is being prepared...
+          </Text>
+        );
+
+      case 'declined':
+      case 'expired':
+        return (
+          <Text style={styles.noDataText}>
+            This campaign assignment has been {influencerStatus}.
+          </Text>
+        );
+
+      default:
+        return (
+          <Text style={styles.noDataText}>
+            Contract information is not available for this status.
+          </Text>
+        );
+    }
+  }
+
+  function renderRequirementsSection() {
+    const hasDeliverables = deliverables.length > 0;
+    const hasBrief = !!campaign.brief;
+    const hasPostingDate = !!campaign.posting_date;
+
+    if (!hasDeliverables && !hasBrief && !hasPostingDate) return null;
+
+    return (
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Requirements & Deliverables</Text>
+
+        {/* Campaign Brief */}
+        {hasBrief && (
           <View style={styles.briefBox}>
-            <Text style={styles.infoLabel}>Description</Text>
+            <Text style={styles.infoLabel}>Campaign Brief</Text>
             <Text style={styles.briefText}>{campaign.brief}</Text>
           </View>
         )}
-      </View>
 
-      {/* ── Brand Info ─────────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Brand Info</Text>
-        <View style={styles.infoGrid}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Business Name</Text>
-            <Text style={styles.infoValue}>{campaign.brand_name || '--'}</Text>
+        {/* Posting Date */}
+        {hasPostingDate && (
+          <View style={styles.requirementRow}>
+            <Text style={styles.infoLabel}>Posting Date</Text>
+            <Text style={styles.infoValue}>{formatDate(campaign.posting_date)}</Text>
           </View>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoLabel}>Contact</Text>
-            <Text style={styles.infoValue}>{campaign.brand_contact_name || '--'}</Text>
+        )}
+
+        {/* Content Requirements from contract */}
+        {contract && contract.content_requirements && (
+          <View style={styles.briefBox}>
+            <Text style={styles.infoLabel}>Content Requirements</Text>
+            <Text style={styles.briefText}>{contract.content_requirements}</Text>
           </View>
-        </View>
-      </View>
+        )}
 
-      {/* ── Fee & Payment ──────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Payment</Text>
-
-        <View style={styles.feeHighlight}>
-          <Text style={styles.feeLabel}>Agreed Fee</Text>
-          <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
-        </View>
-
-        {/* Tranche progress */}
-        {tranches && tranches.length > 0 ? (
-          <View>
-            <Text style={styles.sectionLabel}>Tranche Progress</Text>
-            {tranches.map(t => {
-              const dotColor = t.status === 'released'
-                ? colors.teal
-                : t.status === 'locked'
-                ? colors.navy
-                : colors.orange;
-              return (
-                <View key={t.tranche_number} style={styles.trancheRow}>
-                  <View style={[styles.trancheDot, { backgroundColor: dotColor }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.trancheTitle}>
-                      Tranche {t.tranche_number}
-                    </Text>
-                    <Text style={styles.trancheDesc}>
-                      {t.trigger_event
-                        ? t.trigger_event.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())
-                        : '--'}
-                    </Text>
-                    {t.released_at && (
-                      <Text style={styles.trancheDate}>Released: {formatDate(t.released_at)}</Text>
-                    )}
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.trancheAmount}>{fmtRupees(t.net_to_influencer)}</Text>
-                    <StatusBadge status={t.status} size={9} />
-                  </View>
+        {/* Deliverables Table */}
+        {hasDeliverables && (
+          <View style={styles.deliverablesTable}>
+            <Text style={styles.sectionLabel}>Deliverables Summary</Text>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderText, { flex: 2 }]}>Type</Text>
+              <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>Qty</Text>
+              <Text style={[styles.tableHeaderText, { flex: 2, textAlign: 'center' }]}>Deadline</Text>
+              <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>Rev.</Text>
+              <Text style={[styles.tableHeaderText, { flex: 1.5, textAlign: 'right' }]}>Status</Text>
+            </View>
+            {deliverables.map((d, i) => (
+              <View key={d.id || i} style={styles.tableRow}>
+                <View style={{ flex: 2, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={styles.deliverableIcon}>{DELIVERABLE_ICONS[d.type] || '[?]'}</Text>
+                  <Text style={styles.tableCell} numberOfLines={1}>
+                    {DELIVERABLE_LABELS[d.type] || d.type}
+                  </Text>
                 </View>
-              );
-            })}
-          </View>
-        ) : (
-          <View>
-            <Text style={styles.paymentNote}>
-              Payment terms will appear once the contract is signed.
-            </Text>
-            <Text style={styles.sectionLabel}>Expected Payment Schedule</Text>
-            {[
-              { pct: 25, label: 'Tranche 1 (25%)', desc: 'Both parties sign the contract', color: colors.teal },
-              { pct: 25, label: 'Tranche 2 (25%)', desc: 'Content goes live', color: colors.orange },
-              { pct: 50, label: 'Tranche 3 (50%)', desc: '30 days after content live', color: colors.navy },
-            ].map((t, i) => (
-              <View key={i} style={styles.trancheRow}>
-                <View style={[styles.trancheDot, { backgroundColor: t.color }]} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.trancheTitle}>{t.label}</Text>
-                  <Text style={styles.trancheDesc}>{t.desc}</Text>
-                </View>
-                <Text style={styles.trancheAmount}>
-                  {fmtRupees(Math.round(fee * t.pct / 100))}
+                <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>
+                  {d.quantity || 1}
                 </Text>
+                <Text style={[styles.tableCell, { flex: 2, textAlign: 'center', fontSize: 10 }]}>
+                  {formatDate(d.submission_deadline)}
+                </Text>
+                <Text style={[styles.tableCell, { flex: 1, textAlign: 'center' }]}>
+                  {d.revision_count || 0}/{d.revision_limit || 2}
+                </Text>
+                <View style={{ flex: 1.5, alignItems: 'flex-end' }}>
+                  <StatusBadge status={d.status} size={8} />
+                </View>
               </View>
             ))}
           </View>
         )}
 
-        <View style={styles.tdsNote}>
-          <Text style={styles.tdsText}>
-            Note: 10% TDS is deducted at the time of withdrawal, not at earning.
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Contract Status ────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Contract</Text>
-        {contract ? (
-          <View>
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Status</Text>
-                <StatusBadge status={contract.status} size={10} />
-              </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Created</Text>
-                <Text style={styles.infoValue}>{formatDate(contract.created_at)}</Text>
-              </View>
-            </View>
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Your Signature</Text>
-                <Text style={styles.infoValue}>
-                  {contract.influencer_signed_at ? formatDate(contract.influencer_signed_at) : 'Not signed'}
+        {/* Brand Feedback per deliverable */}
+        {deliverables.some(d => d.brand_feedback) && (
+          <View style={{ marginTop: 12 }}>
+            <Text style={styles.sectionLabel}>Brand Feedback</Text>
+            {deliverables.filter(d => d.brand_feedback).map((d, i) => (
+              <View key={d.id || i} style={styles.feedbackRow}>
+                <Text style={styles.feedbackLabel}>
+                  {DELIVERABLE_LABELS[d.type] || d.type}:
                 </Text>
+                <Text style={styles.feedbackText}>{d.brand_feedback}</Text>
               </View>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Brand Signature</Text>
-                <Text style={styles.infoValue}>
-                  {contract.brand_signed_at ? formatDate(contract.brand_signed_at) : 'Not signed'}
-                </Text>
-              </View>
-            </View>
-            {contract.status === 'pending_influencer' && (
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => navigation.navigate('Contract', {
-                  campaignInfluencerId: campaign.campaign_influencer_id,
-                })}
-              >
-                <Text style={styles.actionBtnText}>Sign Contract</Text>
-              </TouchableOpacity>
-            )}
-            {contract.status !== 'pending_influencer' && (
-              <TouchableOpacity
-                style={styles.secondaryBtn}
-                onPress={() => navigation.navigate('Contract', {
-                  campaignInfluencerId: campaign.campaign_influencer_id,
-                })}
-              >
-                <Text style={styles.secondaryBtnText}>View Contract</Text>
-              </TouchableOpacity>
-            )}
+            ))}
           </View>
-        ) : (
-          <Text style={styles.noDataText}>
-            {campaign.influencer_status === 'invited'
-              ? 'Contract will be generated after you accept the offer.'
-              : 'Contract is being prepared...'}
-          </Text>
         )}
       </View>
+    );
+  }
 
-      {/* ── Deliverables ───────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>
-          Deliverables ({deliverables?.length || 0})
-        </Text>
+  // ── Main Render (wrapped in try-catch via ErrorBoundary pattern) ────────
 
-        {deliverables && deliverables.length > 0 ? (
-          deliverables.map((d, i) => (
-            <TouchableOpacity
-              key={d.id || i}
-              style={styles.deliverableRow}
-              onPress={() => navigation.navigate('Deliverable', {
-                deliverableId: d.id,
-                campaignInfluencerId: campaign.campaign_influencer_id,
-              })}
-            >
-              <View style={styles.deliverableDot} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.deliverableType}>
-                  {DELIVERABLE_LABELS[d.type] || d.type}
-                  {d.quantity > 1 ? ` x${d.quantity}` : ''}
-                </Text>
-                {d.submission_deadline && (
-                  <Text style={styles.deliverableDeadline}>
-                    Deadline: {formatDate(d.submission_deadline)}
-                  </Text>
-                )}
-                {d.revision_count > 0 && (
-                  <Text style={styles.deliverableRevisions}>
-                    Revisions: {d.revision_count}/{d.revision_limit}
-                  </Text>
-                )}
-                {d.brand_feedback && d.status === 'revision_requested' && (
-                  <Text style={styles.feedbackText}>
-                    Feedback: {d.brand_feedback}
-                  </Text>
-                )}
-              </View>
-              <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                <StatusBadge status={d.status} size={9} />
-                {d.live_confirmed_at && (
-                  <Text style={styles.liveDate}>Live: {formatDate(d.live_confirmed_at)}</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noDataText}>
-            No deliverables assigned yet.
-          </Text>
-        )}
+  try {
+    return (
+      <ScrollView style={styles.container}>
+        {/* ── Header ─────────────────────────────────────────────────────── */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
+            <Text style={styles.backText}>{'<-'} Back</Text>
+          </TouchableOpacity>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.brandNameHeader}>{campaign.brand_name || 'Brand'}</Text>
+              <Text style={styles.campaignNameHeader}>{campaign.campaign_name || 'Campaign'}</Text>
+            </View>
+            <StatusBadge status={influencerStatus} size={11} />
+          </View>
+        </View>
 
-        {/* Submit content button if applicable */}
-        {deliverables && deliverables.some(d => d.status === 'pending' || d.status === 'revision_requested') && (
+        {/* ── Completion Banner ─────────────────────────────────────────── */}
+        {influencerStatus === 'completed' && (
           <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => {
-              const pendingDel = deliverables.find(d => d.status === 'pending' || d.status === 'revision_requested');
-              if (pendingDel) {
-                navigation.navigate('Deliverable', {
-                  deliverableId: pendingDel.id,
-                  campaignInfluencerId: campaign.campaign_influencer_id,
-                });
-              }
-            }}
+            style={styles.completionBanner}
+            onPress={() => navigation.navigate('CampaignCompletion', {
+              campaignInfluencerId: campaign.campaign_influencer_id,
+            })}
           >
-            <Text style={styles.actionBtnText}>Submit Content</Text>
+            <Text style={styles.completionBannerIcon}>{'[OK]'}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completionBannerTitle}>Campaign Completed!</Text>
+              <Text style={styles.completionBannerSub}>View your earnings summary and stats</Text>
+            </View>
+            <Text style={styles.completionBannerArrow}>{'>'}</Text>
           </TouchableOpacity>
         )}
-      </View>
 
-      {/* ── Action Buttons ─────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Quick Actions</Text>
-        <View style={styles.actionsGrid}>
-          {contract && (
+        {/* ── Progress Indicator ─────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Campaign Progress</Text>
+          <View style={styles.progressRow}>
+            {STATUS_STEPS.map((step, i) => {
+              const isActive = i <= currentStep;
+              const isCurrent = i === currentStep;
+              return (
+                <View key={step.key} style={styles.stepContainer}>
+                  <View style={styles.stepDotRow}>
+                    {i > 0 && (
+                      <View style={[styles.stepLine, isActive && styles.stepLineActive]} />
+                    )}
+                    <View style={[
+                      styles.stepDot,
+                      isActive && styles.stepDotActive,
+                      isCurrent && styles.stepDotCurrent,
+                    ]} />
+                  </View>
+                  <Text style={[
+                    styles.stepLabel,
+                    isActive && styles.stepLabelActive,
+                    isCurrent && styles.stepLabelCurrent,
+                  ]}>
+                    {step.label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Campaign Info ──────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Campaign Info</Text>
+
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Campaign</Text>
+              <Text style={styles.infoValue}>{campaign.campaign_name || '--'}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Campaign Status</Text>
+              <StatusBadge status={campaign.campaign_status} size={10} />
+            </View>
+          </View>
+
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Start Date</Text>
+              <Text style={styles.infoValue}>{formatDate(campaign.start_date || campaign.content_start_date)}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>End Date</Text>
+              <Text style={styles.infoValue}>{formatDate(campaign.end_date || campaign.content_end_date)}</Text>
+            </View>
+          </View>
+
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Goal</Text>
+              <Text style={styles.infoValue}>
+                {(campaign.goal || '--').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}
+              </Text>
+            </View>
+            {campaign.set_name ? (
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>Set</Text>
+                <Text style={styles.infoValue}>{campaign.set_name}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        {/* ── Requirements & Deliverables (BUG 2 fix) ────────────────────── */}
+        {renderRequirementsSection()}
+
+        {/* ── Brand Info ─────────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Brand Info</Text>
+          <View style={styles.infoGrid}>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Business Name</Text>
+              <Text style={styles.infoValue}>{campaign.brand_name || '--'}</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <Text style={styles.infoLabel}>Contact</Text>
+              <Text style={styles.infoValue}>{campaign.brand_contact_name || '--'}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Fee & Payment ──────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Payment</Text>
+
+          <View style={styles.feeHighlight}>
+            <Text style={styles.feeLabel}>Agreed Fee</Text>
+            <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
+          </View>
+
+          {/* Tranche progress */}
+          {tranches.length > 0 ? (
+            <View>
+              <Text style={styles.sectionLabel}>Tranche Progress</Text>
+              {tranches.map(t => {
+                const dotColor = t.status === 'released'
+                  ? colors.teal
+                  : t.status === 'locked'
+                  ? colors.navy
+                  : colors.orange;
+                return (
+                  <View key={t.tranche_number} style={styles.trancheRow}>
+                    <View style={[styles.trancheDot, { backgroundColor: dotColor }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.trancheTitle}>
+                        Tranche {t.tranche_number}
+                      </Text>
+                      <Text style={styles.trancheDesc}>
+                        {t.trigger_event
+                          ? t.trigger_event.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())
+                          : '--'}
+                      </Text>
+                      {t.released_at && (
+                        <Text style={styles.trancheDate}>Released: {formatDate(t.released_at)}</Text>
+                      )}
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.trancheAmount}>{fmtRupees(t.net_to_influencer)}</Text>
+                      <StatusBadge status={t.status} size={9} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.paymentNote}>
+                Payment terms will appear once the contract is signed.
+              </Text>
+              <Text style={styles.sectionLabel}>Expected Payment Schedule</Text>
+              {[
+                { pct: 25, label: 'Tranche 1 (25%)', desc: 'Both parties sign the contract', color: colors.teal },
+                { pct: 25, label: 'Tranche 2 (25%)', desc: 'Content goes live', color: colors.orange },
+                { pct: 50, label: 'Tranche 3 (50%)', desc: '30 days after content live', color: colors.navy },
+              ].map((t, i) => (
+                <View key={i} style={styles.trancheRow}>
+                  <View style={[styles.trancheDot, { backgroundColor: t.color }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.trancheTitle}>{t.label}</Text>
+                    <Text style={styles.trancheDesc}>{t.desc}</Text>
+                  </View>
+                  <Text style={styles.trancheAmount}>
+                    {fmtRupees(Math.round(fee * t.pct / 100))}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.tdsNote}>
+            <Text style={styles.tdsText}>
+              Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+            </Text>
+          </View>
+        </View>
+
+        {/* ── Contract Status (BUG 1 fix: status-based rendering) ────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Contract</Text>
+          {renderContractSection()}
+        </View>
+
+        {/* ── Deliverables ───────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+            Deliverables ({deliverables.length})
+          </Text>
+
+          {deliverables.length > 0 ? (
+            deliverables.map((d, i) => (
+              <TouchableOpacity
+                key={d.id || i}
+                style={styles.deliverableRow}
+                onPress={() => navigation.navigate('Deliverable', {
+                  deliverableId: d.id,
+                  campaignInfluencerId: campaign.campaign_influencer_id,
+                })}
+              >
+                <View style={styles.deliverableDot} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.deliverableType}>
+                    {DELIVERABLE_LABELS[d.type] || d.type}
+                    {d.quantity > 1 ? ` x${d.quantity}` : ''}
+                  </Text>
+                  {d.submission_deadline && (
+                    <Text style={styles.deliverableDeadline}>
+                      Deadline: {formatDate(d.submission_deadline)}
+                    </Text>
+                  )}
+                  {d.revision_count > 0 && (
+                    <Text style={styles.deliverableRevisions}>
+                      Revisions: {d.revision_count}/{d.revision_limit || 2}
+                    </Text>
+                  )}
+                  {d.brand_feedback && d.status === 'revision_requested' && (
+                    <Text style={styles.feedbackText}>
+                      Feedback: {d.brand_feedback}
+                    </Text>
+                  )}
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <StatusBadge status={d.status} size={9} />
+                  {d.live_confirmed_at && (
+                    <Text style={styles.liveDate}>Live: {formatDate(d.live_confirmed_at)}</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noDataText}>
+              No deliverables assigned yet.
+            </Text>
+          )}
+
+          {/* Submit content button if applicable */}
+          {deliverables.some(d => d.status === 'pending' || d.status === 'revision_requested') && (
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => {
+                const pendingDel = deliverables.find(d => d.status === 'pending' || d.status === 'revision_requested');
+                if (pendingDel) {
+                  navigation.navigate('Deliverable', {
+                    deliverableId: pendingDel.id,
+                    campaignInfluencerId: campaign.campaign_influencer_id,
+                  });
+                }
+              }}
+            >
+              <Text style={styles.actionBtnText}>Submit Content</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* ── Action Buttons ─────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Quick Actions</Text>
+          <View style={styles.actionsGrid}>
+            {contract && (
+              <TouchableOpacity
+                style={styles.gridBtn}
+                onPress={() => navigation.navigate('Contract', {
+                  campaignInfluencerId: campaign.campaign_influencer_id,
+                })}
+              >
+                <Text style={styles.gridBtnIcon}>{'[C]'}</Text>
+                <Text style={styles.gridBtnLabel}>Contract</Text>
+              </TouchableOpacity>
+            )}
+
+            {influencerStatus === 'negotiating' && (
+              <TouchableOpacity
+                style={styles.gridBtn}
+                onPress={() => {
+                  const negId = negotiationData?.id || negotiationData?.negotiation_id;
+                  navigation.navigate('Negotiation', {
+                    negotiation_id: negId || undefined,
+                    campaign_influencer_id: campaignInfluencerId,
+                  });
+                }}
+              >
+                <Text style={styles.gridBtnIcon}>{'[N]'}</Text>
+                <Text style={styles.gridBtnLabel}>Negotiation</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               style={styles.gridBtn}
-              onPress={() => navigation.navigate('Contract', {
-                campaignInfluencerId: campaign.campaign_influencer_id,
-              })}
+              onPress={() => navigation.navigate('Earnings')}
             >
-              <Text style={styles.gridBtnIcon}>{'[C]'}</Text>
-              <Text style={styles.gridBtnLabel}>Contract</Text>
+              <Text style={styles.gridBtnIcon}>{'[$]'}</Text>
+              <Text style={styles.gridBtnLabel}>Earnings</Text>
             </TouchableOpacity>
-          )}
 
-          <TouchableOpacity
-            style={styles.gridBtn}
-            onPress={() => navigation.navigate('Earnings')}
-          >
-            <Text style={styles.gridBtnIcon}>{'[$]'}</Text>
-            <Text style={styles.gridBtnLabel}>Earnings</Text>
-          </TouchableOpacity>
+            {campaign.coupon_code ? (
+              <View style={styles.gridBtn}>
+                <Text style={styles.gridBtnIcon}>{'[%]'}</Text>
+                <Text style={styles.gridBtnLabel}>Coupon</Text>
+                <Text style={styles.couponCode}>{campaign.coupon_code}</Text>
+              </View>
+            ) : null}
 
-          {campaign.coupon_code && (
-            <View style={styles.gridBtn}>
-              <Text style={styles.gridBtnIcon}>{'[%]'}</Text>
-              <Text style={styles.gridBtnLabel}>Coupon</Text>
-              <Text style={styles.couponCode}>{campaign.coupon_code}</Text>
-            </View>
-          )}
-
-          {campaign.commission_pct && (
-            <View style={styles.gridBtn}>
-              <Text style={styles.gridBtnIcon}>{'[*]'}</Text>
-              <Text style={styles.gridBtnLabel}>Commission</Text>
-              <Text style={styles.commissionRate}>{parseFloat(campaign.commission_pct)}%</Text>
-            </View>
-          )}
+            {campaign.commission_pct ? (
+              <View style={styles.gridBtn}>
+                <Text style={styles.gridBtnIcon}>{'[*]'}</Text>
+                <Text style={styles.gridBtnLabel}>Commission</Text>
+                <Text style={styles.commissionRate}>{parseFloat(campaign.commission_pct)}%</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-      </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
-  );
+        <View style={{ height: 40 }} />
+      </ScrollView>
+    );
+  } catch (renderError) {
+    // BUG 3 fix: catch render errors gracefully
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.emptyText}>Something went wrong displaying this campaign.</Text>
+        <Text style={styles.loadingText}>{String(renderError?.message || '')}</Text>
+        <TouchableOpacity onPress={loadDetail} style={[styles.backBtn, { marginTop: 12 }]}>
+          <Text style={styles.backBtnText}>Retry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.secondaryBtn, { marginTop: 8, paddingHorizontal: 24 }]}>
+          <Text style={styles.secondaryBtnText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 }
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  emptyText: { fontSize: 14, color: colors.t3, marginBottom: 16 },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: 24 },
+  emptyText: { fontSize: 14, color: colors.t3, marginBottom: 16, textAlign: 'center' },
+  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12, textAlign: 'center' },
 
   // Header
   header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
@@ -623,7 +868,6 @@ const styles = StyleSheet.create({
   deliverableType: { fontSize: 13, fontWeight: '600', color: colors.t1 },
   deliverableDeadline: { fontSize: 11, color: colors.t3, marginTop: 2 },
   deliverableRevisions: { fontSize: 11, color: colors.orange, marginTop: 2 },
-  feedbackText: { fontSize: 11, color: colors.red, marginTop: 2, fontStyle: 'italic' },
   liveDate: { fontSize: 9, color: colors.teal },
 
   noDataText: { fontSize: 13, color: colors.t3, lineHeight: 18 },
@@ -691,4 +935,68 @@ const styles = StyleSheet.create({
   completionBannerTitle: { fontSize: 14, fontWeight: '700', color: colors.tealDeep },
   completionBannerSub: { fontSize: 11, color: colors.tealDeep, marginTop: 2, opacity: 0.7 },
   completionBannerArrow: { fontSize: 16, fontWeight: '700', color: colors.tealDeep },
+
+  // Negotiation info box (BUG 1 fix)
+  negotiationInfoBox: {
+    backgroundColor: colors.orangePale,
+    borderRadius: 12,
+    padding: 14,
+    flexDirection: 'row',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.orange,
+  },
+  negotiationInfoIcon: { fontSize: 18, fontWeight: '800', color: colors.orangeDeep },
+  negotiationInfoTitle: { fontSize: 13, fontWeight: '700', color: colors.orangeDeep },
+  negotiationInfoSub: { fontSize: 12, color: colors.t2, marginTop: 4, lineHeight: 18 },
+  negotiationSummary: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.orange,
+  },
+  negotiationSummaryText: { fontSize: 12, fontWeight: '600', color: colors.t1, marginBottom: 2 },
+
+  // Preparing box (accepted status)
+  preparingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.navyPale,
+    borderRadius: 10,
+    padding: 14,
+  },
+  preparingText: { flex: 1, fontSize: 13, color: colors.t2, lineHeight: 18 },
+
+  // Requirements & Deliverables table (BUG 2 fix)
+  requirementRow: { marginBottom: 12 },
+  deliverablesTable: { marginTop: 12 },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.border2,
+    marginBottom: 4,
+  },
+  tableHeaderText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.t3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tableCell: { fontSize: 11, color: colors.t1, fontWeight: '500' },
+  deliverableIcon: { fontSize: 10, fontWeight: '700', color: colors.navy },
+
+  // Feedback
+  feedbackRow: { marginBottom: 8 },
+  feedbackLabel: { fontSize: 11, fontWeight: '700', color: colors.t2 },
+  feedbackText: { fontSize: 11, color: colors.red, marginTop: 2, fontStyle: 'italic' },
 });

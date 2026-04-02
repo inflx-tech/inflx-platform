@@ -180,7 +180,7 @@ export default function OfferDetailScreen({ navigation, route }) {
     );
   }
 
-  const fee = offer.agreed_fee || offer.proposed_fee || 0;
+  const fee = offer.agreed_fee || offer.influencer_budget || offer.per_influencer_budget || offer.set_budget || 0;
   const isActionable = offer.status === 'invited';
   const isNegotiating = offer.status === 'negotiating';
   const deliverables = offer.deliverables || [];

@@ -101,6 +101,7 @@ const getMyOffers = asyncHandler(async (req, res) => {
             cs.name AS set_name,
             cs.goal,
             cs.budget AS set_budget,
+            cs.per_influencer_budget,
             c.name AS campaign_name,
             b.business_name AS brand_name
      FROM campaign_influencers ci
@@ -690,6 +691,7 @@ const getOfferDetail = asyncHandler(async (req, res) => {
             cs.name          AS set_name,
             cs.goal,
             cs.budget        AS set_budget,
+            cs.per_influencer_budget,
             cs.content_start_date,
             cs.content_end_date,
             c.name           AS campaign_name,
