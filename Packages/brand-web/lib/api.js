@@ -160,6 +160,7 @@ export const influencerApi = {
 };
 
 export const deliverableApi = {
+  get: (id) => api.get(`/deliverables/${id}`),
   review: (id, data) => api.post(`/deliverables/${id}/review`, data),
   confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
 };

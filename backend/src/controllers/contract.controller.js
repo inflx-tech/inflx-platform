@@ -58,6 +58,7 @@ async function getContractByIdOrThrow(contractId) {
        ci.posting_date    AS ci_posting_date,
        cs.campaign_id,
        cs.per_influencer_budget,
+       cs.formats_json,
        c.brand_id,
        b.platform_fee_pct,
        b.wallet_balance   AS brand_wallet_balance,
@@ -299,17 +300,35 @@ const brandSign = asyncHandler(async (req, res) => {
         contract.campaign_id
       );
 
-      // 5. Auto-create one reel deliverable
-      await client.query(
-        `INSERT INTO deliverables
-           (campaign_influencer_id, type, status, submission_deadline, revision_limit)
-         VALUES ($1, 'reel', 'pending', $2, $3)`,
-        [
-          contract.campaign_influencer_id,
-          updatedContract.posting_date || null,
-          updatedContract.revision_limit,
-        ]
-      );
+      // 5. Auto-create deliverables from formats_json (or default 1 reel)
+      let formats = [];
+      try {
+        const raw = contract.formats_json;
+        formats = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
+      } catch { formats = []; }
+
+      if (formats.length === 0) {
+        // Default: 1 reel if no formats specified
+        formats = [{ type: 'reel', count: 1 }];
+      }
+
+      for (const fmt of formats) {
+        const delType = fmt.type || 'reel';
+        const count = parseInt(fmt.count, 10) || 1;
+        for (let i = 0; i < count; i++) {
+          await client.query(
+            `INSERT INTO deliverables
+               (campaign_influencer_id, type, quantity, status, submission_deadline, revision_limit)
+             VALUES ($1, $2, 1, 'pending', $3, $4)`,
+            [
+              contract.campaign_influencer_id,
+              delType,
+              updatedContract.posting_date || null,
+              updatedContract.revision_limit,
+            ]
+          );
+        }
+      }
     });
   } catch (txErr) {
     console.error('[brandSign] Transaction failed:', txErr.message, txErr.code || '');

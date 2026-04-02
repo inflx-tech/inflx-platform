@@ -31,7 +31,7 @@ export default function DeliverableScreen({ navigation, route }) {
     }
     setSubmitting(true);
     const res = await influencerApi.submitDeliverable(deliverable.id, {
-      submission_url: submitUrl.trim(),
+      submitted_url: submitUrl.trim(),
     });
     setSubmitting(false);
     if (res.success) {

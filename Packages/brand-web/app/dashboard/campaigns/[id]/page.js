@@ -608,10 +608,16 @@ export default function CampaignDetailPage() {
                     </div>
                   </div>
                 </div>
-                {d.submission_url && (
+                {(d.submitted_url || d.submission_url) && (
                   <div className="mb-3 bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-600">
                     <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">Submitted URL</div>
-                    <a href={d.submission_url} target="_blank" rel="noreferrer" className="text-navy underline break-all">{d.submission_url}</a>
+                    <a href={d.submitted_url || d.submission_url} target="_blank" rel="noreferrer" className="text-navy underline break-all">{d.submitted_url || d.submission_url}</a>
+                  </div>
+                )}
+                {d.live_url && (
+                  <div className="mb-3 bg-teal-50 rounded-lg px-3 py-2 text-xs text-teal-700">
+                    <div className="text-[9px] font-bold uppercase mb-1">Live URL</div>
+                    <a href={d.live_url} target="_blank" rel="noreferrer" className="text-teal-700 underline break-all">{d.live_url}</a>
                   </div>
                 )}
                 {d.brand_feedback && (
@@ -620,23 +626,28 @@ export default function CampaignDetailPage() {
                     {d.brand_feedback}
                   </div>
                 )}
-                {d.status === 'under_review' && (
+                {(d.status === 'submitted' || d.status === 'under_review') && (
                   <div className="flex gap-2">
                     <button onClick={() => handleReview(d.id, 'approve', '')}
                       className="px-4 py-2 bg-teal-500 text-white font-bold text-xs rounded-lg flex-1 hover:bg-teal-600 transition-colors">
                       ✓ Approve
                     </button>
-                    <button onClick={() => { const fb = prompt('Enter revision feedback:'); if (fb) handleReview(d.id, 'revision', fb); }}
+                    <button onClick={() => { const fb = prompt('Enter revision feedback:'); if (fb) handleReview(d.id, 'request_revision', fb); }}
                       className="px-4 py-2 bg-orange-50 text-orange-700 font-bold text-xs rounded-lg flex-1 hover:bg-orange-100 transition-colors">
                       ↩ Request Revision
                     </button>
                   </div>
                 )}
-                {d.status === 'approved' && (
+                {d.status === 'approved' && d.live_url && (
                   <button onClick={() => handleConfirmLive(d.id)}
                     className="w-full px-4 py-2 bg-navy text-white font-bold text-xs rounded-lg hover:opacity-90 transition-opacity">
                     Confirm Live
                   </button>
+                )}
+                {d.status === 'approved' && !d.live_url && (
+                  <div className="text-xs text-gray-400 text-center py-2">
+                    Waiting for influencer to submit live URL...
+                  </div>
                 )}
               </div>
             ));

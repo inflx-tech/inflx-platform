@@ -67,6 +67,37 @@ function stripInternal(d) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/deliverables/:id  (influencer or brand)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getById = asyncHandler(async (req, res) => {
+  const d = await getDeliverableOrThrow(req.params.id);
+
+  // Verify ownership (brand or influencer)
+  if (req.user.role === 'brand' && d.brand_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'You do not own this deliverable', 403);
+  }
+  if (req.user.role === 'influencer' && d.influencer_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'This deliverable does not belong to you', 403);
+  }
+
+  // Also fetch engagement stats if available
+  let stats = null;
+  try {
+    const { rows: statsRows } = await db.query(
+      `SELECT reach, impressions, likes, comments, saves, shares, engagement_rate, scraped_at
+       FROM deliverable_stats WHERE deliverable_id = $1`,
+      [d.id]
+    );
+    stats = statsRows[0] || null;
+  } catch (e) {
+    // Stats table may not exist yet — non-critical
+  }
+
+  return success(res, { deliverable: stripInternal(d), stats });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Block C — POST /v1/deliverables/:id/submit  (influencer)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -91,8 +122,8 @@ const submit = asyncHandler(async (req, res) => {
     );
   }
 
-  // Validate submitted_url
-  const submitted_url = (req.body.submitted_url || '').trim();
+  // Validate submitted_url (accept both field names for backward compat)
+  const submitted_url = (req.body.submitted_url || req.body.submission_url || '').trim();
   if (!submitted_url) {
     throw new AppError('VALIDATION_ERROR', 'submitted_url is required', 422, 'submitted_url');
   }
@@ -128,7 +159,7 @@ const submit = asyncHandler(async (req, res) => {
 // Block C — POST /v1/deliverables/:id/review  (brand)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VALID_REVIEW_ACTIONS = ['approve', 'request_revision'];
+const VALID_REVIEW_ACTIONS = ['approve', 'request_revision', 'revision'];
 
 const review = asyncHandler(async (req, res) => {
   if (req.user.role !== 'brand') {
@@ -142,11 +173,11 @@ const review = asyncHandler(async (req, res) => {
     throw new AppError('FORBIDDEN', 'You do not own this deliverable', 403);
   }
 
-  // Can only review from submitted status
-  if (d.status !== 'submitted') {
+  // Can only review from submitted or under_review status
+  if (!['submitted', 'under_review'].includes(d.status)) {
     throw new AppError(
       'VALIDATION_ERROR',
-      `Cannot review deliverable in '${d.status}' status. Must be submitted.`,
+      `Cannot review deliverable in '${d.status}' status. Must be submitted or under_review.`,
       422
     );
   }
@@ -156,7 +187,7 @@ const review = asyncHandler(async (req, res) => {
   if (!action || !VALID_REVIEW_ACTIONS.includes(action)) {
     throw new AppError(
       'VALIDATION_ERROR',
-      `action must be one of: ${VALID_REVIEW_ACTIONS.join(', ')}`,
+      `action must be one of: approve, request_revision`,
       422,
       'action'
     );
@@ -164,7 +195,10 @@ const review = asyncHandler(async (req, res) => {
 
   let updated;
 
-  if (action === 'approve') {
+  // Normalize action name
+  const normalizedAction = (action === 'revision') ? 'request_revision' : action;
+
+  if (normalizedAction === 'approve') {
     const { rows } = await db.query(
       `UPDATE deliverables SET status = 'approved' WHERE id = $1 RETURNING *`,
       [d.id]
@@ -183,7 +217,7 @@ const review = asyncHandler(async (req, res) => {
       phone:    d.influencer_phone,
     });
 
-  } else {
+  } else if (normalizedAction === 'request_revision') {
     // request_revision — check limit first
     if (d.revision_count >= d.revision_limit) {
       throw new AppError(
@@ -367,4 +401,4 @@ const confirmLive = asyncHandler(async (req, res) => {
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { submit, review, submitLive, confirmLive };
+module.exports = { getById, submit, review, submitLive, confirmLive };

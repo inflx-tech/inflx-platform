@@ -12,9 +12,12 @@
 
 const { Router } = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { submit, review, submitLive, confirmLive } = require('../controllers/deliverable.controller');
+const { getById, submit, review, submitLive, confirmLive } = require('../controllers/deliverable.controller');
 
 const router = Router();
+
+// Get single deliverable (brand or influencer)
+router.get('/:id', authenticate, getById);
 
 // Influencer submits content URL
 router.post(
