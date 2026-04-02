@@ -23,9 +23,12 @@ async function autoCreate(campaignInfluencerId) {
     `SELECT
        ci.id,
        ci.agreed_fee,
+       ci.influencer_budget,
        ci.posting_date,
        ci.influencer_id,
        cs.campaign_id,
+       cs.per_influencer_budget,
+       cs.set_budget,
        c.name                AS campaign_name,
        c.brief               AS content_requirements,
        c.brand_id,
@@ -49,6 +52,8 @@ async function autoCreate(campaignInfluencerId) {
   }
 
   const ci = rows[0];
+  // Fallback chain: agreed_fee → influencer_budget → per_influencer_budget → 0
+  const effectiveFee = ci.agreed_fee || ci.influencer_budget || ci.per_influencer_budget || 0;
 
   // Build influencer display name from phone (formatted) or handle
   const influencerName = ci.influencer_handle || ci.influencer_phone || 'Influencer';
@@ -63,7 +68,7 @@ async function autoCreate(campaignInfluencerId) {
      RETURNING *`,
     [
       campaignInfluencerId,
-      ci.agreed_fee,
+      effectiveFee,
       2,
       ci.posting_date || null,
       ci.content_requirements || null,

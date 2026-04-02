@@ -139,7 +139,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
   const deliverables = data.deliverables || [];
   const contract = data.contract || null;
   const tranches = data.tranches || [];
-  const fee = campaign.agreed_fee || 0;
+  const fee = campaign.agreed_fee || campaign.influencer_budget || campaign.per_influencer_budget || 0;
   const currentStep = getStepIndex(campaign.influencer_status);
   const influencerStatus = campaign.influencer_status || 'invited';
 

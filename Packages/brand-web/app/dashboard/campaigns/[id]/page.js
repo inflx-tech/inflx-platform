@@ -162,7 +162,7 @@ function ContractModal({ inf, contract, loading, onClose, onSign }) {
 
   const rows = [
     { label: 'Influencer', value: contract.influencer_name || `@${inf.instagram_handle}` },
-    { label: 'Agreed Fee', value: `₹${((contract.influencer_fee || 0) / 100).toFixed(0)}` },
+    { label: 'Agreed Fee', value: `₹${Number(contract.influencer_fee || 0).toLocaleString('en-IN')}` },
     { label: 'Posting Date', value: contract.posting_date ? new Date(contract.posting_date).toLocaleDateString('en-IN') : '—' },
     { label: 'Revision Limit', value: contract.revision_limit ?? 2 },
     { label: 'Influencer Signed', value: contract.influencer_signed_at ? new Date(contract.influencer_signed_at).toLocaleString('en-IN') : 'Not yet' },
@@ -203,7 +203,7 @@ function ContractModal({ inf, contract, loading, onClose, onSign }) {
 
         {contract.status === 'pending_brand' ? (
           <div className="p-5 border-t border-gray-100">
-            <p className="text-xs text-gray-500 mb-3">By signing, you confirm the above terms. Tranche 1 ({contract.influencer_fee ? `₹${((contract.influencer_fee * 0.25) / 100).toFixed(0)}` : '25%'}) will be queued for release.</p>
+            <p className="text-xs text-gray-500 mb-3">By signing, you confirm the above terms. Tranche 1 ({contract.influencer_fee ? `₹${(contract.influencer_fee * 0.25).toLocaleString('en-IN')}` : '25%'}) will be queued for release.</p>
             <button onClick={onSign} disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity">
               {loading ? 'Signing…' : 'Sign Contract'}
@@ -493,7 +493,7 @@ export default function CampaignDetailPage() {
                     {set.formats_json && (() => {
                       try {
                         const fmts = typeof set.formats_json === 'string' ? JSON.parse(set.formats_json) : set.formats_json;
-                        if (fmts?.length) return <span>🎬 {fmts.map(f => `${f.count || 1}× ${f.type || f}`).join(', ')}</span>;
+                        if (fmts?.length) return <span>🎬 {fmts.map(f => `${f.count || 1}× ${typeof f === 'string' ? f : (f.type || f.name || 'content')}`).join(', ')}</span>;
                       } catch { return null; }
                     })()}
                     {set.brief && <span className="truncate max-w-xs">📝 {set.brief}</span>}

@@ -136,8 +136,12 @@ const accept = asyncHandler(async (req, res) => {
     );
   }
 
+  // Set agreed_fee from influencer_budget if not already set
   await db.query(
-    `UPDATE campaign_influencers SET status = 'accepted' WHERE id = $1`,
+    `UPDATE campaign_influencers
+     SET status = 'accepted',
+         agreed_fee = COALESCE(agreed_fee, influencer_budget)
+     WHERE id = $1`,
     [ci.id]
   );
 
@@ -449,10 +453,14 @@ const respond = asyncHandler(async (req, res) => {
       );
       updatedNeg = rows[0];
 
-      // Mark offer as accepted
+      // Mark offer as accepted — use last proposed_fee as agreed_fee if available
+      const lastProposedFee = (req.body.proposed_fee || updatedNeg.proposed_fee) || null;
       const { rows: ciRows } = await client.query(
-        `UPDATE campaign_influencers SET status = 'accepted' WHERE id = $1 RETURNING *`,
-        [neg.ci_id]
+        `UPDATE campaign_influencers
+         SET status = 'accepted',
+             agreed_fee = COALESCE($2, agreed_fee, influencer_budget)
+         WHERE id = $1 RETURNING *`,
+        [neg.ci_id, lastProposedFee]
       );
       updatedCi = ciRows[0];
 

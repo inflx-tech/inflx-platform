@@ -54,8 +54,10 @@ async function getContractByIdOrThrow(contractId) {
        con.*,
        ci.influencer_id,
        ci.agreed_fee,
+       ci.influencer_budget,
        ci.posting_date    AS ci_posting_date,
        cs.campaign_id,
+       cs.per_influencer_budget,
        c.brand_id,
        b.platform_fee_pct,
        b.wallet_balance   AS brand_wallet_balance,
@@ -245,6 +247,15 @@ const brandSign = asyncHandler(async (req, res) => {
 
   // Everything in one transaction for atomicity
   await db.withTransaction(async (client) => {
+    // 0. Compute effective fee — fallback chain for when agreed_fee was never set
+    const effectiveFee = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
+
+    // 0b. Backfill: update contract and CI if fee was NULL
+    if (!contract.influencer_fee && effectiveFee > 0) {
+      await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [effectiveFee, contract.id]);
+      await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [effectiveFee, contract.campaign_influencer_id]);
+    }
+
     // 1. Mark contract as active
     const { rows: contractRows } = await client.query(
       `UPDATE contracts
@@ -265,7 +276,7 @@ const brandSign = asyncHandler(async (req, res) => {
     const entries = await escrowService.createEscrowEntries(
       client,
       contract.campaign_influencer_id,
-      contract.influencer_fee,
+      effectiveFee,
       contract.platform_fee_pct
     );
     t1EntryId = entries[0].id; // T1 is first

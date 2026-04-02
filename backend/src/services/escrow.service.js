@@ -30,7 +30,7 @@ function buildTranches(cfg) {
  * @returns {object[]} — 3 escrow_entry rows
  */
 async function createEscrowEntries(client, campaignInfluencerId, influencerFee, platformFeePct) {
-  const fee    = parseFloat(influencerFee);
+  const fee    = parseFloat(influencerFee) || 0;
   // Use per-brand fee if supplied, otherwise read from payment_config
   const cfg    = await paymentConfigSvc.getConfig();
   const feePct = (platformFeePct != null ? parseFloat(platformFeePct) : cfg.platformFeePct) / 100;
