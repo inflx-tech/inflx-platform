@@ -103,6 +103,7 @@ export const influencerApi = {
   getDeliverables: () => api.get('/campaigns'),  // via campaign list
   getUploadUrl: (id, data) => api.post(`/deliverables/${id}/upload-url`, data),
   getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
+  refreshStats: (id) => api.post(`/deliverables/${id}/refresh-stats`),
   getContractWithDeliverables: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
   submitDeliverable: (id, data) => api.post(`/deliverables/${id}/submit`, data),
   submitLive: (id, data) => api.post(`/deliverables/${id}/submit-live`, data),

@@ -7,43 +7,46 @@ const env = require('../config/env');
 const FIXTURE_PATH = path.join(__dirname, '../../mocks/apify_instagram.json');
 const ENGAGEMENT_FIXTURE_PATH = path.join(__dirname, '../../mocks/apify_engagement.json');
 
+// Apify API base
+const APIFY_BASE = 'https://api.apify.com/v2';
+
+// Actor IDs
+const POST_SCRAPER_ACTOR = 'apify/instagram-post-scraper';
+const PROFILE_SCRAPER_ACTOR = 'apify/instagram-scraper';
+
 /**
  * Scrape Instagram profile data for an influencer.
- *
- * Mock mode (APIFY_MOCK=true):
- *   Looks up the handle in the multi-handle fixture JSON.
- *   Falls back to the '_default' entry if the handle is not found.
- *   This allows tests to use specific handles (e.g. 'priya_sharma', 'arun_kumar')
- *   to get predictable follower counts, niches, and city values.
- *
- * Production (APIFY_MOCK=false):
- *   Calls Apify Actor API with APIFY_TOKEN and waits for the run to finish.
- *
- * @param {string} instagramHandle  e.g. 'priya_sharma'
- * @param {boolean} forceRefresh    force a fresh scrape even in mock mode
- * @returns {object} Normalised profile data
  */
 async function scrapeProfile(instagramHandle, forceRefresh = false) {
   if (env.APIFY_MOCK) {
     const all = JSON.parse(fs.readFileSync(FIXTURE_PATH, 'utf8'));
-    // Use the handle-specific entry, fall back to _default
     const raw = { ...(all[instagramHandle] || all['_default']) };
     raw.username = instagramHandle;
     console.log(`[APIFY MOCK] Scraped profile for @${instagramHandle}${forceRefresh ? ' (force refresh)' : ''}`);
     return normalise(raw);
   }
 
-  // Production implementation (set APIFY_MOCK=false)
-  const raw = await _callApifyActor(instagramHandle);
+  // Production: call Apify instagram-scraper for profile data
+  console.log(`[APIFY] Scraping profile for @${instagramHandle}...`);
+
+  const input = {
+    usernames: [instagramHandle],
+    resultsType: 'details',
+    resultsLimit: 1,
+  };
+
+  const items = await _runActorSync(PROFILE_SCRAPER_ACTOR, input);
+  if (!items || items.length === 0) {
+    throw new Error(`Apify returned no data for @${instagramHandle}`);
+  }
+
+  const raw = items[0];
+  console.log(`[APIFY] Profile scraped: @${instagramHandle} — ${raw.followersCount || 0} followers`);
   return normalise(raw);
 }
 
 /**
  * Scrape engagement stats for a specific Instagram post/reel URL.
- * Used by the apify-engagement cron job.
- *
- * @param {string} live_url  e.g. 'https://instagram.com/p/ABC123'
- * @returns {object} Normalised engagement stats
  */
 async function scrapePostEngagement(live_url) {
   if (env.APIFY_MOCK) {
@@ -53,14 +56,26 @@ async function scrapePostEngagement(live_url) {
     return normaliseEngagement(raw);
   }
 
-  // Production: call Apify Instagram Scraper actor
-  // Actor: apify/instagram-scraper
-  throw new Error('Set APIFY_MOCK=false and provide APIFY_TOKEN to enable live post scraping');
+  // Production: call apify/instagram-post-scraper
+  console.log(`[APIFY] Scraping post engagement for ${live_url}...`);
+
+  const input = {
+    directUrls: [live_url],
+    resultsLimit: 1,
+  };
+
+  const items = await _runActorSync(POST_SCRAPER_ACTOR, input);
+  if (!items || items.length === 0) {
+    throw new Error(`Apify returned no data for URL: ${live_url}`);
+  }
+
+  const raw = items[0];
+  console.log(`[APIFY] Post scraped: ${live_url} — ${raw.likesCount || raw.likes || 0} likes, ${raw.commentsCount || raw.comments || 0} comments`);
+  return normaliseEngagement(raw);
 }
 
-/**
- * Normalise raw Apify response to the fields INFLX stores.
- */
+// ─── Normalisation ──────────────────────────────────────────────────────────
+
 function normalise(raw) {
   return {
     followers_count: raw.followersCount || raw.followers_count || 0,
@@ -71,20 +86,110 @@ function normalise(raw) {
 }
 
 function normaliseEngagement(raw) {
+  // The apify/instagram-post-scraper returns different field names
+  // depending on the actor version. Handle all known variants.
   return {
-    reach:       raw.reach       || 0,
-    impressions: raw.impressions || 0,
-    likes:       raw.likes       || 0,
-    comments:    raw.comments    || 0,
-    saves:       raw.saves       || 0,
-    shares:      raw.shares      || 0,
+    reach:       raw.reach       || raw.reachCount       || 0,
+    impressions: raw.impressions || raw.impressionsCount  || raw.videoViewCount || raw.videoPlayCount || 0,
+    likes:       raw.likes       || raw.likesCount        || 0,
+    comments:    raw.comments    || raw.commentsCount     || 0,
+    saves:       raw.saves       || raw.savesCount        || 0,
+    shares:      raw.shares      || raw.sharesCount       || 0,
   };
 }
 
-async function _callApifyActor(handle) {
-  // Production: POST to Apify Actor run endpoint, poll until finished.
-  // https://docs.apify.com/api/v2
-  throw new Error('Set APIFY_MOCK=false and provide APIFY_TOKEN to enable live scraping');
+// ─── Apify API Helpers ──────────────────────────────────────────────────────
+
+/**
+ * Run an Apify actor synchronously (waits for completion).
+ * Uses the synchronous run endpoint which blocks until the actor finishes
+ * (up to 300 seconds by default).
+ *
+ * @param {string} actorId  e.g. 'apify/instagram-post-scraper'
+ * @param {object} input    Actor input JSON
+ * @returns {Array} Array of result items from the dataset
+ */
+async function _runActorSync(actorId, input) {
+  const token = env.APIFY_TOKEN;
+  if (!token) {
+    throw new Error('APIFY_TOKEN is not configured');
+  }
+
+  // URL-encode the actor ID (slash → ~)
+  const encodedActorId = actorId.replace('/', '~');
+
+  // Step 1: Start actor run
+  const runUrl = `${APIFY_BASE}/acts/${encodedActorId}/runs?token=${token}`;
+
+  console.log(`[APIFY] Starting actor ${actorId}...`);
+
+  const runRes = await fetch(runUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+
+  if (!runRes.ok) {
+    const errText = await runRes.text();
+    throw new Error(`Apify actor start failed (HTTP ${runRes.status}): ${errText.substring(0, 200)}`);
+  }
+
+  const runData = await runRes.json();
+  const runId = runData.data?.id;
+
+  if (!runId) {
+    throw new Error('Apify actor start returned no run ID');
+  }
+
+  console.log(`[APIFY] Run started: ${runId}, waiting for completion...`);
+
+  // Step 2: Poll for completion (max 5 minutes)
+  const maxWait = 300000; // 5 min
+  const pollInterval = 3000; // 3 sec
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < maxWait) {
+    await _sleep(pollInterval);
+
+    const statusUrl = `${APIFY_BASE}/actor-runs/${runId}?token=${token}`;
+    const statusRes = await fetch(statusUrl);
+
+    if (!statusRes.ok) continue;
+
+    const statusData = await statusRes.json();
+    const status = statusData.data?.status;
+
+    if (status === 'SUCCEEDED') {
+      // Step 3: Fetch dataset items
+      const datasetId = statusData.data?.defaultDatasetId;
+      if (!datasetId) {
+        throw new Error('Apify run succeeded but no dataset ID found');
+      }
+
+      const itemsUrl = `${APIFY_BASE}/datasets/${datasetId}/items?token=${token}`;
+      const itemsRes = await fetch(itemsUrl);
+
+      if (!itemsRes.ok) {
+        throw new Error(`Failed to fetch dataset items (HTTP ${itemsRes.status})`);
+      }
+
+      const items = await itemsRes.json();
+      console.log(`[APIFY] Run ${runId} completed. Got ${items.length} items.`);
+      return items;
+    }
+
+    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(status)) {
+      throw new Error(`Apify run ${runId} ended with status: ${status}`);
+    }
+
+    // Still RUNNING or READY — keep polling
+  }
+
+  throw new Error(`Apify run ${runId} timed out after ${maxWait / 1000}s`);
+}
+
+function _sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = { scrapeProfile, scrapePostEngagement };

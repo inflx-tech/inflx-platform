@@ -224,7 +224,11 @@
       "Bash(grep -n \"content\\\\|Content\\\\|CONTENT\" /c/WORK/inflx-platform/Packages/brand-web/app/dashboard/campaigns/[id]/page.js)",
       "Bash(grep -E \"\\\\.\\(js|ts\\)$\")",
       "Bash(grep -i \"created_at\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
-      "Bash(./gradlew assembleRelease)"
+      "Bash(./gradlew assembleRelease)",
+      "Bash(psql \"$DATABASE_URL\" -f migrations/009_deliverable_media.sql)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Bash(ls \"/c/Program Files \\(x86\\)/PostgreSQL/\"*/bin/psql.exe)",
+      "Bash(grep -n \"deliverable_stats\" /c/WORK/inflx-platform/backend/migrations/*.sql)"
     ]
   }
 }

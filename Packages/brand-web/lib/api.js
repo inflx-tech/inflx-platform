@@ -164,6 +164,7 @@ export const deliverableApi = {
   getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
   review: (id, data) => api.post(`/deliverables/${id}/review`, data),
   confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
+  refreshStats: (id) => api.post(`/deliverables/${id}/refresh-stats`),
 };
 
 export const negotiationApi = {

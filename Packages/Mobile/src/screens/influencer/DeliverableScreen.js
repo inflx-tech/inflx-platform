@@ -44,6 +44,10 @@ export default function DeliverableScreen({ navigation, route }) {
   const [mediaUrl, setMediaUrl] = useState(null);
   const [loadingMedia, setLoadingMedia] = useState(false);
 
+  // Stats
+  const [stats, setStats] = useState(null);
+  const [refreshingStats, setRefreshingStats] = useState(false);
+
   // Fetch deliverable by ID if not passed as full object
   useEffect(() => {
     if (!initialDeliverable && deliverableId) {
@@ -83,6 +87,40 @@ export default function DeliverableScreen({ navigation, route }) {
       })();
     }
   }, [deliverable?.media_key]);
+
+  // Fetch existing stats for live deliverables
+  useEffect(() => {
+    if (deliverable?.status === 'live' && deliverable?.id) {
+      (async () => {
+        try {
+          const res = await influencerApi.getDeliverable(deliverable.id);
+          if (res.success && res.data?.stats) {
+            setStats(res.data.stats);
+          }
+        } catch (e) {
+          // Non-critical
+        }
+      })();
+    }
+  }, [deliverable?.id, deliverable?.status]);
+
+  async function handleRefreshStats() {
+    if (!deliverable?.id) return;
+    setRefreshingStats(true);
+    try {
+      const res = await influencerApi.refreshStats(deliverable.id);
+      if (res.success && res.data?.stats) {
+        setStats(res.data.stats);
+        Alert.alert('Stats Updated', 'Latest engagement data has been fetched from Instagram.');
+      } else {
+        Alert.alert('Failed', res.error?.message || 'Could not refresh stats');
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Failed to refresh stats');
+    } finally {
+      setRefreshingStats(false);
+    }
+  }
 
   const statusCfg = STATUS_CONFIG[deliverable?.status] || STATUS_CONFIG.pending;
 
@@ -465,18 +503,81 @@ export default function DeliverableScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Live confirmation celebration */}
+      {/* Live — Stats Dashboard */}
       {deliverable.status === 'live' && (
-        <View style={[styles.card, { alignItems: 'center', paddingVertical: 24 }]}>
-          <Text style={{ fontSize: 32, marginBottom: 8 }}>🎉</Text>
-          <Text style={styles.cardTitle}>Content is Live!</Text>
-          <Text style={styles.hint}>Tranche 2 has been queued. Tranche 3 releases automatically in 30 days.</Text>
+        <View style={styles.card}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={styles.cardTitle}>Live Performance</Text>
+            <TouchableOpacity
+              style={styles.refreshBtn}
+              onPress={handleRefreshStats}
+              disabled={refreshingStats}
+            >
+              {refreshingStats
+                ? <ActivityIndicator size="small" color={colors.navy} />
+                : <Text style={styles.refreshBtnText}>Refresh Stats</Text>
+              }
+            </TouchableOpacity>
+          </View>
+
+          {stats ? (
+            <View>
+              <View style={styles.statsGrid}>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{_fmtNum(stats.likes)}</Text>
+                  <Text style={styles.statLabel}>Likes</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{_fmtNum(stats.comments)}</Text>
+                  <Text style={styles.statLabel}>Comments</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{_fmtNum(stats.saves)}</Text>
+                  <Text style={styles.statLabel}>Saves</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{_fmtNum(stats.shares)}</Text>
+                  <Text style={styles.statLabel}>Shares</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{_fmtNum(stats.reach)}</Text>
+                  <Text style={styles.statLabel}>Reach</Text>
+                </View>
+                <View style={styles.statBox}>
+                  <Text style={styles.statValue}>{_fmtNum(stats.impressions)}</Text>
+                  <Text style={styles.statLabel}>Impressions</Text>
+                </View>
+              </View>
+              {stats.engagement_rate != null && (
+                <View style={styles.erBox}>
+                  <Text style={styles.erValue}>{parseFloat(stats.engagement_rate).toFixed(2)}%</Text>
+                  <Text style={styles.erLabel}>Engagement Rate</Text>
+                </View>
+              )}
+              {stats.scraped_at && (
+                <Text style={[styles.hint, { marginTop: 8, marginBottom: 0 }]}>
+                  Last updated: {new Date(stats.scraped_at).toLocaleString('en-IN')}
+                </Text>
+              )}
+            </View>
+          ) : (
+            <View style={{ alignItems: 'center', paddingVertical: 16 }}>
+              <Text style={styles.hint}>No stats yet. Tap "Refresh Stats" to fetch live data from Instagram.</Text>
+            </View>
+          )}
         </View>
       )}
 
       <View style={{ height: 40 }} />
     </ScrollView>
   );
+}
+
+function _fmtNum(n) {
+  if (!n && n !== 0) return '--';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
 }
 
 const styles = StyleSheet.create({
@@ -561,4 +662,15 @@ const styles = StyleSheet.create({
   dividerText: { paddingHorizontal: 12, fontSize: 11, fontWeight: '700', color: colors.t3 },
 
   urlInput: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 13, color: colors.t1, marginBottom: 12 },
+
+  // Stats
+  refreshBtn: { backgroundColor: colors.surface2, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
+  refreshBtnText: { fontSize: 11, fontWeight: '700', color: colors.navy },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statBox: { width: '31%', backgroundColor: colors.surface2, borderRadius: 10, padding: 12, alignItems: 'center' },
+  statValue: { fontSize: 18, fontWeight: '800', color: colors.t1 },
+  statLabel: { fontSize: 10, fontWeight: '600', color: colors.t3, marginTop: 2, textTransform: 'uppercase' },
+  erBox: { backgroundColor: colors.navy + '11', borderRadius: 10, padding: 12, marginTop: 10, alignItems: 'center' },
+  erValue: { fontSize: 22, fontWeight: '800', color: colors.navy },
+  erLabel: { fontSize: 10, fontWeight: '600', color: colors.t3, marginTop: 2, textTransform: 'uppercase' },
 });

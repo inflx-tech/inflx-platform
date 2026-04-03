@@ -107,6 +107,88 @@ function MediaPreview({ deliverableId, mediaType }) {
   );
 }
 
+// ─── Deliverable Stats Card (live deliverable engagement) ────────────────────
+
+function DeliverableStatsCard({ deliverableId }) {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    // Fetch existing stats from getById endpoint
+    deliverableApi.get(deliverableId).then(res => {
+      if (res.success && res.data?.stats) setStats(res.data.stats);
+    });
+  }, [deliverableId]);
+
+  async function handleRefresh() {
+    setRefreshing(true);
+    const res = await deliverableApi.refreshStats(deliverableId);
+    if (res.success && res.data?.stats) {
+      setStats(res.data.stats);
+    } else {
+      alert(res.error?.message || 'Failed to refresh stats');
+    }
+    setRefreshing(false);
+  }
+
+  const fmt = (n) => {
+    if (!n && n !== 0) return '--';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  };
+
+  return (
+    <div className="mt-3 bg-gray-50 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] font-bold text-gray-500 uppercase">Live Performance</div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="text-[10px] font-bold text-navy bg-white border border-gray-200 rounded px-2 py-1 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {refreshing ? 'Fetching...' : 'Refresh Stats'}
+        </button>
+      </div>
+      {stats ? (
+        <>
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {[
+              { label: 'Likes', val: stats.likes },
+              { label: 'Comments', val: stats.comments },
+              { label: 'Saves', val: stats.saves },
+              { label: 'Shares', val: stats.shares },
+              { label: 'Reach', val: stats.reach },
+              { label: 'Impressions', val: stats.impressions },
+            ].map(s => (
+              <div key={s.label} className="bg-white rounded-lg p-2 text-center border border-gray-100">
+                <div className="text-sm font-bold text-gray-800">{fmt(s.val)}</div>
+                <div className="text-[9px] text-gray-400 uppercase font-semibold">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          {stats.engagement_rate != null && (
+            <div className="bg-navy/5 rounded-lg p-2 text-center">
+              <span className="text-lg font-bold text-navy">{parseFloat(stats.engagement_rate).toFixed(2)}%</span>
+              <span className="text-[9px] text-gray-400 uppercase font-semibold ml-2">Engagement Rate</span>
+            </div>
+          )}
+          {stats.scraped_at && (
+            <div className="text-[9px] text-gray-400 text-center mt-1">
+              Last updated: {new Date(stats.scraped_at).toLocaleString('en-IN')}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-[10px] text-gray-400 text-center py-2">
+          No stats yet. Click &quot;Refresh Stats&quot; to fetch live data from Instagram.
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Negotiation Modal ────────────────────────────────────────────────────────
 
 function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
@@ -692,6 +774,9 @@ export default function CampaignDetailPage() {
                   <div className="text-xs text-gray-400 text-center py-2">
                     Waiting for influencer to submit live URL...
                   </div>
+                )}
+                {d.status === 'live' && (
+                  <DeliverableStatsCard deliverableId={d.id} />
                 )}
               </div>
             ));

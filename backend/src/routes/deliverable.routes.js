@@ -16,6 +16,7 @@
 const { Router } = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { getById, submit, review, submitLive, confirmLive, getUploadUrl, getMediaUrl } = require('../controllers/deliverable.controller');
+const { refreshDeliverableStats } = require('../controllers/engagement.controller');
 
 const router = Router();
 
@@ -39,5 +40,8 @@ router.post('/:id/submit-live', authenticate, requireRole('influencer'), submitL
 
 // Brand confirms content is live → T2 release
 router.post('/:id/confirm-live', authenticate, requireRole('brand'), confirmLive);
+
+// On-demand stats refresh via Apify (brand or influencer)
+router.post('/:id/refresh-stats', authenticate, refreshDeliverableStats);
 
 module.exports = router;
