@@ -70,8 +70,14 @@ const refreshDeliverableStats = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'Deliverable has no live URL', 422);
   }
 
-  // Call Apify
-  const stats = await apifyService.scrapePostEngagement(d.live_url);
+  // Call Apify — wrap in try-catch for better error messages
+  let stats;
+  try {
+    stats = await apifyService.scrapePostEngagement(d.live_url);
+  } catch (apifyErr) {
+    console.error(`[REFRESH STATS] Apify scrape failed for ${d.live_url}:`, apifyErr.message);
+    throw new AppError('INTERNAL_ERROR', `Failed to fetch stats from Instagram: ${apifyErr.message}`, 500);
+  }
 
   // Calculate engagement rate
   const engagementRate = d.followers_count > 0

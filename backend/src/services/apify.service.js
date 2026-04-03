@@ -10,10 +10,6 @@ const ENGAGEMENT_FIXTURE_PATH = path.join(__dirname, '../../mocks/apify_engageme
 // Apify API base
 const APIFY_BASE = 'https://api.apify.com/v2';
 
-// Actor IDs
-const POST_SCRAPER_ACTOR = 'apify/instagram-post-scraper';
-const PROFILE_SCRAPER_ACTOR = 'apify/instagram-scraper';
-
 /**
  * Scrape Instagram profile data for an influencer.
  */
@@ -26,7 +22,6 @@ async function scrapeProfile(instagramHandle, forceRefresh = false) {
     return normalise(raw);
   }
 
-  // Production: call Apify instagram-scraper for profile data
   console.log(`[APIFY] Scraping profile for @${instagramHandle}...`);
 
   const input = {
@@ -35,7 +30,7 @@ async function scrapeProfile(instagramHandle, forceRefresh = false) {
     resultsLimit: 1,
   };
 
-  const items = await _runActorSync(PROFILE_SCRAPER_ACTOR, input);
+  const items = await _runActor('apify~instagram-scraper', input);
   if (!items || items.length === 0) {
     throw new Error(`Apify returned no data for @${instagramHandle}`);
   }
@@ -56,21 +51,29 @@ async function scrapePostEngagement(live_url) {
     return normaliseEngagement(raw);
   }
 
-  // Production: call apify/instagram-post-scraper
   console.log(`[APIFY] Scraping post engagement for ${live_url}...`);
 
+  // Use apify/instagram-post-scraper
+  // The actor accepts multiple input field names depending on version
   const input = {
     directUrls: [live_url],
+    shortcodes: [],
     resultsLimit: 1,
   };
 
-  const items = await _runActorSync(POST_SCRAPER_ACTOR, input);
+  // Extract shortcode from URL as fallback (e.g. /reel/DUd7Wy0EtCS/ → DUd7Wy0EtCS)
+  const shortcodeMatch = live_url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+  if (shortcodeMatch) {
+    input.shortcodes = [shortcodeMatch[2]];
+  }
+
+  const items = await _runActor('apify~instagram-post-scraper', input);
   if (!items || items.length === 0) {
     throw new Error(`Apify returned no data for URL: ${live_url}`);
   }
 
   const raw = items[0];
-  console.log(`[APIFY] Post scraped: ${live_url} — ${raw.likesCount || raw.likes || 0} likes, ${raw.commentsCount || raw.comments || 0} comments`);
+  console.log(`[APIFY] Post scraped:`, JSON.stringify(raw).substring(0, 300));
   return normaliseEngagement(raw);
 }
 
@@ -86,11 +89,10 @@ function normalise(raw) {
 }
 
 function normaliseEngagement(raw) {
-  // The apify/instagram-post-scraper returns different field names
-  // depending on the actor version. Handle all known variants.
+  // Handle all known field name variants from different Apify actors
   return {
     reach:       raw.reach       || raw.reachCount       || 0,
-    impressions: raw.impressions || raw.impressionsCount  || raw.videoViewCount || raw.videoPlayCount || 0,
+    impressions: raw.impressions || raw.impressionsCount  || raw.videoViewCount || raw.videoPlayCount || raw.viewCount || 0,
     likes:       raw.likes       || raw.likesCount        || 0,
     comments:    raw.comments    || raw.commentsCount     || 0,
     saves:       raw.saves       || raw.savesCount        || 0,
@@ -98,98 +100,68 @@ function normaliseEngagement(raw) {
   };
 }
 
-// ─── Apify API Helpers ──────────────────────────────────────────────────────
+// ─── Apify API Helper ───────────────────────────────────────────────────────
 
 /**
- * Run an Apify actor synchronously (waits for completion).
- * Uses the synchronous run endpoint which blocks until the actor finishes
- * (up to 300 seconds by default).
+ * Run an Apify actor and wait for results.
+ * Uses the synchronous run-sync-get-dataset-items endpoint which:
+ * - Starts the actor
+ * - Waits for it to finish (up to timeout)
+ * - Returns the dataset items directly
+ * All in one HTTP call — no polling needed.
  *
- * @param {string} actorId  e.g. 'apify/instagram-post-scraper'
+ * @param {string} actorId  e.g. 'apify~instagram-post-scraper' (use ~ not /)
  * @param {object} input    Actor input JSON
- * @returns {Array} Array of result items from the dataset
+ * @returns {Array} Array of result items
  */
-async function _runActorSync(actorId, input) {
+async function _runActor(actorId, input) {
   const token = env.APIFY_TOKEN;
   if (!token) {
-    throw new Error('APIFY_TOKEN is not configured');
+    throw new Error('APIFY_TOKEN is not configured. Set it in environment variables.');
   }
 
-  // URL-encode the actor ID (slash → ~)
-  const encodedActorId = actorId.replace('/', '~');
+  // Use the sync endpoint: starts actor, waits for finish, returns items
+  // Timeout: 120 seconds (Apify default max for sync is 300s)
+  const url = `${APIFY_BASE}/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=120`;
 
-  // Step 1: Start actor run
-  const runUrl = `${APIFY_BASE}/acts/${encodedActorId}/runs?token=${token}`;
+  console.log(`[APIFY] Calling sync endpoint for ${actorId}...`);
+  console.log(`[APIFY] Input:`, JSON.stringify(input));
 
-  console.log(`[APIFY] Starting actor ${actorId}...`);
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 180000); // 3 min client timeout
 
-  const runRes = await fetch(runUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
 
-  if (!runRes.ok) {
-    const errText = await runRes.text();
-    throw new Error(`Apify actor start failed (HTTP ${runRes.status}): ${errText.substring(0, 200)}`);
-  }
+    clearTimeout(fetchTimeout);
 
-  const runData = await runRes.json();
-  const runId = runData.data?.id;
-
-  if (!runId) {
-    throw new Error('Apify actor start returned no run ID');
-  }
-
-  console.log(`[APIFY] Run started: ${runId}, waiting for completion...`);
-
-  // Step 2: Poll for completion (max 5 minutes)
-  const maxWait = 300000; // 5 min
-  const pollInterval = 3000; // 3 sec
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < maxWait) {
-    await _sleep(pollInterval);
-
-    const statusUrl = `${APIFY_BASE}/actor-runs/${runId}?token=${token}`;
-    const statusRes = await fetch(statusUrl);
-
-    if (!statusRes.ok) continue;
-
-    const statusData = await statusRes.json();
-    const status = statusData.data?.status;
-
-    if (status === 'SUCCEEDED') {
-      // Step 3: Fetch dataset items
-      const datasetId = statusData.data?.defaultDatasetId;
-      if (!datasetId) {
-        throw new Error('Apify run succeeded but no dataset ID found');
-      }
-
-      const itemsUrl = `${APIFY_BASE}/datasets/${datasetId}/items?token=${token}`;
-      const itemsRes = await fetch(itemsUrl);
-
-      if (!itemsRes.ok) {
-        throw new Error(`Failed to fetch dataset items (HTTP ${itemsRes.status})`);
-      }
-
-      const items = await itemsRes.json();
-      console.log(`[APIFY] Run ${runId} completed. Got ${items.length} items.`);
-      return items;
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[APIFY] Actor call failed (HTTP ${res.status}):`, errText.substring(0, 500));
+      throw new Error(`Apify call failed (HTTP ${res.status}): ${errText.substring(0, 200)}`);
     }
 
-    if (['FAILED', 'ABORTED', 'TIMED-OUT'].includes(status)) {
-      throw new Error(`Apify run ${runId} ended with status: ${status}`);
+    const items = await res.json();
+
+    if (!Array.isArray(items)) {
+      console.error('[APIFY] Unexpected response format:', JSON.stringify(items).substring(0, 300));
+      throw new Error('Apify returned unexpected response format (expected array)');
     }
 
-    // Still RUNNING or READY — keep polling
+    console.log(`[APIFY] Got ${items.length} items from ${actorId}`);
+    return items;
+  } catch (e) {
+    clearTimeout(fetchTimeout);
+    if (e.name === 'AbortError') {
+      throw new Error('Apify request timed out after 3 minutes');
+    }
+    throw e;
   }
-
-  throw new Error(`Apify run ${runId} timed out after ${maxWait / 1000}s`);
-}
-
-function _sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = { scrapeProfile, scrapePostEngagement };

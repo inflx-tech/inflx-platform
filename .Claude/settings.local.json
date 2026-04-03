@@ -228,7 +228,11 @@
       "Bash(psql \"$DATABASE_URL\" -f migrations/009_deliverable_media.sql)",
       "Read(//c/Program Files/PostgreSQL/**)",
       "Bash(ls \"/c/Program Files \\(x86\\)/PostgreSQL/\"*/bin/psql.exe)",
-      "Bash(grep -n \"deliverable_stats\" /c/WORK/inflx-platform/backend/migrations/*.sql)"
+      "Bash(grep -n \"deliverable_stats\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
+      "WebSearch",
+      "WebFetch(domain:apify.com)",
+      "WebFetch(domain:docs.apify.com)",
+      "WebFetch(domain:use-apify.com)"
     ]
   }
 }
