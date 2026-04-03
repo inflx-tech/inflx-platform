@@ -10,6 +10,8 @@ const rateLimit = require('express-rate-limit');
 const routes = require('./routes/index');
 const trackingCtrl = require('./controllers/tracking.controller');
 const errorHandler = require('./middleware/errorHandler');
+const env = require('./config/env');
+const storageService = require('./services/storage.service');
 
 const app = express();
 
@@ -42,8 +44,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// ─── Static file serving for mock uploads ────────────────────────────────────
+if (env.R2_MOCK) {
+  app.use('/uploads', express.static(storageService.getUploadDir()));
+}
+
 // ─── Request parsing ─────────────────────────────────────────────────────────
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

@@ -19,6 +19,7 @@ const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
 const notificationService = require('../services/notification.service');
 const escrowService       = require('../services/escrow.service');
+const storageService      = require('../services/storage.service');
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
@@ -122,23 +123,28 @@ const submit = asyncHandler(async (req, res) => {
     );
   }
 
-  // Validate submitted_url (accept both field names for backward compat)
+  // Accept either URL or media upload
   const submitted_url = (req.body.submitted_url || req.body.submission_url || '').trim();
-  if (!submitted_url) {
-    throw new AppError('VALIDATION_ERROR', 'submitted_url is required', 422, 'submitted_url');
+  const media_key = (req.body.media_key || '').trim();
+  const media_type = (req.body.media_type || '').trim();
+
+  if (!submitted_url && !media_key) {
+    throw new AppError('VALIDATION_ERROR', 'Either submitted_url or media_key is required', 422, 'submitted_url');
   }
 
   const notes_to_brand = (req.body.notes_to_brand || '').trim() || null;
 
   const { rows } = await db.query(
     `UPDATE deliverables
-     SET status        = 'submitted',
-         submitted_url = $2,
-         submitted_at  = now(),
-         notes_to_brand = $3
+     SET status         = 'submitted',
+         submitted_url  = COALESCE($2, submitted_url),
+         submitted_at   = now(),
+         notes_to_brand = $3,
+         media_key      = COALESCE($4, media_key),
+         media_type     = COALESCE($5, media_type)
      WHERE id = $1
      RETURNING *`,
-    [d.id, submitted_url, notes_to_brand]
+    [d.id, submitted_url || null, notes_to_brand, media_key || null, media_type || null]
   );
 
   // Notify brand
@@ -398,7 +404,69 @@ const confirmLive = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /v1/deliverables/:id/upload-url  (influencer — get presigned upload URL)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getUploadUrl = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'influencer') {
+    throw new AppError('FORBIDDEN', 'Only influencers can upload content', 403);
+  }
+
+  const d = await getDeliverableOrThrow(req.params.id);
+  if (d.influencer_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'This deliverable does not belong to you', 403);
+  }
+
+  if (!['pending', 'revision_requested'].includes(d.status)) {
+    throw new AppError('VALIDATION_ERROR', `Cannot upload in '${d.status}' status`, 422);
+  }
+
+  const { filename, content_type } = req.body;
+  if (!filename || !content_type) {
+    throw new AppError('VALIDATION_ERROR', 'filename and content_type are required', 422);
+  }
+
+  // Validate content type
+  const allowed = ['video/mp4', 'video/quicktime', 'video/mov', 'image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+  if (!allowed.some(t => content_type.startsWith(t.split('/')[0]))) {
+    throw new AppError('VALIDATION_ERROR', 'Only video and image files are allowed', 422);
+  }
+
+  // Generate storage key
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const key = `content/deliverables/${d.id}/${Date.now()}_${safeName}`;
+
+  const result = await storageService.generateUploadUrl(key, content_type);
+
+  return success(res, result);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/deliverables/:id/media-url  (influencer or brand — get download URL)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getMediaUrl = asyncHandler(async (req, res) => {
+  const d = await getDeliverableOrThrow(req.params.id);
+
+  // Verify ownership
+  if (req.user.role === 'brand' && d.brand_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'You do not own this deliverable', 403);
+  }
+  if (req.user.role === 'influencer' && d.influencer_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'This deliverable does not belong to you', 403);
+  }
+
+  if (!d.media_key) {
+    throw new AppError('NOT_FOUND', 'No media file uploaded for this deliverable', 404);
+  }
+
+  const url = await storageService.generateDownloadUrl(d.media_key);
+
+  return success(res, { url, content_type: d.media_type, key: d.media_key });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { getById, submit, review, submitLive, confirmLive };
+module.exports = { getById, submit, review, submitLive, confirmLive, getUploadUrl, getMediaUrl };

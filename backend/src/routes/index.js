@@ -22,6 +22,9 @@ const commissionRoutes  = require('./commission.routes');
 const engagementRoutes      = require('./engagement.routes');
 const notificationRoutes    = require('./notification.routes');
 
+// Media uploads
+const uploadRoutes = require('./upload.routes');
+
 // Webhooks
 const webhookRoutes = require('./webhook.routes');
 
@@ -44,6 +47,7 @@ router.use('/offers',        offerRoutes);
 router.use('/negotiations',  negotiationRoutes);
 router.use('/contracts',     contractRoutes);
 router.use('/deliverables',  deliverableRoutes);
+router.use('/uploads',       uploadRoutes);
 
 // ── Phase 4 — Follower identity + follow + addresses + feed ──────────────────
 // Note: /followers/* uses 'followers' (plural) for register/me

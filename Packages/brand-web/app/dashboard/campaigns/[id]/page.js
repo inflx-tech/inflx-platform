@@ -66,6 +66,47 @@ function Avatar({ handle, size = 'sm' }) {
   );
 }
 
+// ─── Media Preview (for deliverable content) ────────────────────────────────
+
+function MediaPreview({ deliverableId, mediaType }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!deliverableId) return;
+    deliverableApi.getMediaUrl(deliverableId).then(res => {
+      if (res.success && res.data?.url) setUrl(res.data.url);
+      else setError(true);
+    }).catch(() => setError(true)).finally(() => setLoading(false));
+  }, [deliverableId]);
+
+  if (loading) return <div className="mb-3 bg-gray-50 rounded-lg p-4 text-center"><div className="text-xs text-gray-400">Loading media...</div></div>;
+  if (error || !url) return null;
+
+  const isVideo = (mediaType || '').startsWith('video');
+
+  return (
+    <div className="mb-3 bg-gray-900 rounded-lg overflow-hidden">
+      {isVideo ? (
+        <video
+          src={url}
+          controls
+          playsInline
+          className="w-full max-h-[400px]"
+          style={{ objectFit: 'contain' }}
+        />
+      ) : (
+        <img
+          src={url}
+          alt="Submitted content"
+          className="w-full max-h-[400px] object-contain"
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Negotiation Modal ────────────────────────────────────────────────────────
 
 function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
@@ -608,7 +649,10 @@ export default function CampaignDetailPage() {
                     </div>
                   </div>
                 </div>
-                {(d.submitted_url || d.submission_url) && (
+                {d.media_key && (
+                  <MediaPreview deliverableId={d.id} mediaType={d.media_type} />
+                )}
+                {(d.submitted_url || d.submission_url) && !d.media_key && (
                   <div className="mb-3 bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-600">
                     <div className="text-[9px] font-bold text-gray-400 uppercase mb-1">Submitted URL</div>
                     <a href={d.submitted_url || d.submission_url} target="_blank" rel="noreferrer" className="text-navy underline break-all">{d.submitted_url || d.submission_url}</a>

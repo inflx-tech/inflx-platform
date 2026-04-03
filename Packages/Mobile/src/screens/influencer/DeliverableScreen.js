@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, ActivityIndicator, Alert, Linking,
+  TextInput, ActivityIndicator, Alert, Linking, Image,
+  Platform,
 } from 'react-native';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { colors } from '../../theme/tokens';
-import { influencerApi } from '../../services/api';
+import { influencerApi, uploadFile } from '../../services/api';
 
 const STATUS_CONFIG = {
   pending:           { label: 'Pending',           color: colors.t3,    bg: colors.surface2 },
@@ -15,13 +17,32 @@ const STATUS_CONFIG = {
   live:              { label: 'Live',               color: colors.navy,  bg: colors.navy + '22' },
 };
 
+const TYPE_LABELS = {
+  reel: 'Instagram Reel',
+  post: 'Instagram Post',
+  story: 'Instagram Story',
+  youtube_video: 'YouTube Video',
+  youtube_short: 'YouTube Short',
+};
+
 export default function DeliverableScreen({ navigation, route }) {
   const { deliverable: initialDeliverable, deliverableId } = route.params || {};
   const [deliverable, setDeliverable] = useState(initialDeliverable || null);
   const [loading, setLoading] = useState(!initialDeliverable && !!deliverableId);
+
+  // Media upload state
+  const [selectedMedia, setSelectedMedia] = useState(null);  // { uri, type, fileName }
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+
+  // URL-based submission (fallback)
   const [submitUrl, setSubmitUrl] = useState('');
   const [liveUrl, setLiveUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Media playback URL
+  const [mediaUrl, setMediaUrl] = useState(null);
+  const [loadingMedia, setLoadingMedia] = useState(false);
 
   // Fetch deliverable by ID if not passed as full object
   useEffect(() => {
@@ -33,7 +54,6 @@ export default function DeliverableScreen({ navigation, route }) {
           if (res.success && res.data?.deliverable) {
             setDeliverable(res.data.deliverable);
           } else if (res.success && res.data) {
-            // Some endpoints return data directly
             setDeliverable(res.data);
           }
         } catch (e) {
@@ -45,9 +65,129 @@ export default function DeliverableScreen({ navigation, route }) {
     }
   }, [deliverableId]);
 
+  // Fetch media URL if deliverable has media_key
+  useEffect(() => {
+    if (deliverable?.media_key && !mediaUrl) {
+      (async () => {
+        setLoadingMedia(true);
+        try {
+          const res = await influencerApi.getMediaUrl(deliverable.id);
+          if (res.success && res.data?.url) {
+            setMediaUrl(res.data.url);
+          }
+        } catch (e) {
+          console.error('[DeliverableScreen] media URL fetch failed:', e);
+        } finally {
+          setLoadingMedia(false);
+        }
+      })();
+    }
+  }, [deliverable?.media_key]);
+
   const statusCfg = STATUS_CONFIG[deliverable?.status] || STATUS_CONFIG.pending;
 
-  async function handleSubmit() {
+  // ── Media picker ──────────────────────────────────────────────────────────
+
+  function pickFromGallery() {
+    launchImageLibrary(
+      {
+        mediaType: 'mixed',
+        videoQuality: 'high',
+        selectionLimit: 1,
+        includeBase64: false,
+      },
+      handlePickerResponse,
+    );
+  }
+
+  function recordVideo() {
+    launchCamera(
+      {
+        mediaType: 'video',
+        videoQuality: 'high',
+        durationLimit: 300, // 5 min max
+      },
+      handlePickerResponse,
+    );
+  }
+
+  function handlePickerResponse(response) {
+    if (response.didCancel) return;
+    if (response.errorCode) {
+      Alert.alert('Error', response.errorMessage || 'Could not pick file');
+      return;
+    }
+    const asset = response.assets?.[0];
+    if (!asset) return;
+
+    setSelectedMedia({
+      uri: asset.uri,
+      type: asset.type || 'video/mp4',
+      fileName: asset.fileName || `content_${Date.now()}.mp4`,
+      fileSize: asset.fileSize,
+      width: asset.width,
+      height: asset.height,
+      duration: asset.duration,
+    });
+  }
+
+  // ── Upload & Submit ───────────────────────────────────────────────────────
+
+  async function handleMediaUpload() {
+    if (!selectedMedia) return;
+
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+
+      // Step 1: Get upload URL from backend
+      const urlRes = await influencerApi.getUploadUrl(deliverable.id, {
+        filename: selectedMedia.fileName,
+        content_type: selectedMedia.type,
+      });
+
+      if (!urlRes.success) {
+        Alert.alert('Error', urlRes.error?.message || 'Failed to get upload URL');
+        setUploading(false);
+        return;
+      }
+
+      const { url, key, method } = urlRes.data;
+
+      // Step 2: Upload file
+      await uploadFile(
+        url,
+        method,
+        selectedMedia.uri,
+        selectedMedia.fileName,
+        selectedMedia.type,
+        key,
+        (progress) => setUploadProgress(progress),
+      );
+
+      setUploadProgress(1);
+
+      // Step 3: Submit deliverable with media_key
+      const submitRes = await influencerApi.submitDeliverable(deliverable.id, {
+        media_key: key,
+        media_type: selectedMedia.type,
+      });
+
+      if (submitRes.success) {
+        setDeliverable(submitRes.data?.deliverable || { ...deliverable, status: 'submitted', media_key: key });
+        setSelectedMedia(null);
+        Alert.alert('Submitted!', 'Your content has been uploaded and sent for brand review.');
+      } else {
+        Alert.alert('Failed', submitRes.error?.message || 'Submission failed');
+      }
+    } catch (e) {
+      Alert.alert('Upload Failed', e.message || 'Could not upload file');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleUrlSubmit() {
     if (!submitUrl.trim()) {
       Alert.alert('URL required', 'Please paste the content draft URL');
       return;
@@ -58,7 +198,7 @@ export default function DeliverableScreen({ navigation, route }) {
     });
     setSubmitting(false);
     if (res.success) {
-      setDeliverable(res.data?.deliverable || { ...deliverable, status: 'submitted', submission_url: submitUrl });
+      setDeliverable(res.data?.deliverable || { ...deliverable, status: 'submitted' });
       Alert.alert('Submitted!', 'Your content has been sent for brand review.');
     } else {
       Alert.alert('Failed', res.error?.message || 'Submission failed');
@@ -81,6 +221,8 @@ export default function DeliverableScreen({ navigation, route }) {
     }
   }
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
   if (loading) {
     return <View style={styles.center}><ActivityIndicator size="large" color={colors.navy} /></View>;
   }
@@ -88,6 +230,10 @@ export default function DeliverableScreen({ navigation, route }) {
   if (!deliverable) {
     return <View style={styles.center}><Text style={styles.errorText}>No deliverable data</Text></View>;
   }
+
+  const isVideo = (selectedMedia?.type || deliverable?.media_type || '').startsWith('video');
+  const isImage = (selectedMedia?.type || deliverable?.media_type || '').startsWith('image');
+  const canSubmit = ['pending', 'revision_requested'].includes(deliverable.status);
 
   return (
     <ScrollView style={styles.container}>
@@ -97,26 +243,32 @@ export default function DeliverableScreen({ navigation, route }) {
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>{deliverable.type?.toUpperCase() || 'DELIVERABLE'}</Text>
+          <Text style={styles.title}>
+            {TYPE_LABELS[deliverable.type] || deliverable.type?.toUpperCase() || 'DELIVERABLE'}
+          </Text>
           <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
             <Text style={[styles.statusText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
           </View>
         </View>
-        <Text style={styles.sub}>{deliverable.campaign_name || ''}</Text>
+        {deliverable.submission_deadline && (
+          <Text style={styles.sub}>
+            Deadline: {new Date(deliverable.submission_deadline).toLocaleDateString('en-IN', {
+              day: 'numeric', month: 'short', year: 'numeric',
+            })}
+          </Text>
+        )}
       </View>
 
-      {/* Status card */}
+      {/* Info card */}
       <View style={styles.card}>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Type</Text>
           <Text style={styles.rowValue}>{deliverable.type?.replace(/_/g, ' ')}</Text>
         </View>
-        {deliverable.posting_date && (
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>Post By</Text>
-            <Text style={styles.rowValue}>{new Date(deliverable.posting_date).toLocaleDateString('en-IN')}</Text>
-          </View>
-        )}
+        <View style={styles.row}>
+          <Text style={styles.rowLabel}>Revisions</Text>
+          <Text style={styles.rowValue}>{deliverable.revision_count || 0}/{deliverable.revision_limit || 2}</Text>
+        </View>
         {deliverable.content_requirements && (
           <View style={styles.requirementsBox}>
             <Text style={styles.requirementsLabel}>Content Brief</Text>
@@ -125,21 +277,144 @@ export default function DeliverableScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* Submitted URL */}
-      {deliverable.submission_url && (
+      {/* Brand feedback (revision) */}
+      {deliverable.status === 'revision_requested' && deliverable.brand_feedback && (
+        <View style={[styles.card, styles.revisionCard]}>
+          <Text style={styles.revisionTitle}>⚠ Revision Requested</Text>
+          <Text style={styles.revisionText}>{deliverable.brand_feedback}</Text>
+        </View>
+      )}
+
+      {/* Existing media preview */}
+      {deliverable.media_key && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Submitted Content</Text>
-          <TouchableOpacity onPress={() => Linking.openURL(deliverable.submission_url)}>
-            <Text style={styles.link}>{deliverable.submission_url}</Text>
+          {loadingMedia ? (
+            <ActivityIndicator size="small" color={colors.navy} />
+          ) : mediaUrl ? (
+            <View>
+              {(deliverable.media_type || '').startsWith('image') ? (
+                <Image source={{ uri: mediaUrl }} style={styles.mediaPreview} resizeMode="contain" />
+              ) : (
+                <TouchableOpacity
+                  style={styles.videoPreviewBox}
+                  onPress={() => Linking.openURL(mediaUrl)}
+                >
+                  <Text style={styles.videoPlayIcon}>▶</Text>
+                  <Text style={styles.videoPlayText}>Tap to play video</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <Text style={styles.hint}>Media uploaded</Text>
+          )}
+        </View>
+      )}
+
+      {/* Existing URL if submitted */}
+      {deliverable.submitted_url && !deliverable.media_key && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Submitted URL</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(deliverable.submitted_url)}>
+            <Text style={styles.link}>{deliverable.submitted_url}</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Brand feedback (revision) */}
-      {deliverable.status === 'revision_requested' && deliverable.brand_feedback && (
-        <View style={[styles.card, styles.revisionCard]}>
-          <Text style={styles.revisionTitle}>Revision Requested</Text>
-          <Text style={styles.revisionText}>{deliverable.brand_feedback}</Text>
+      {/* ── UPLOAD SECTION (pending / revision_requested) ─────────────── */}
+      {canSubmit && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+            {deliverable.status === 'revision_requested' ? 'Upload Revised Content' : 'Upload Content'}
+          </Text>
+
+          {/* Selected media preview */}
+          {selectedMedia && (
+            <View style={styles.previewContainer}>
+              {selectedMedia.type?.startsWith('image') ? (
+                <Image source={{ uri: selectedMedia.uri }} style={styles.mediaPreview} resizeMode="contain" />
+              ) : (
+                <View style={styles.videoSelected}>
+                  <Text style={styles.videoSelectedIcon}>🎬</Text>
+                  <Text style={styles.videoSelectedText}>
+                    {selectedMedia.fileName}
+                  </Text>
+                  {selectedMedia.duration && (
+                    <Text style={styles.videoSelectedDuration}>
+                      {Math.round(selectedMedia.duration)}s
+                      {selectedMedia.fileSize ? ` · ${(selectedMedia.fileSize / 1024 / 1024).toFixed(1)} MB` : ''}
+                    </Text>
+                  )}
+                </View>
+              )}
+              <TouchableOpacity style={styles.removeBtn} onPress={() => setSelectedMedia(null)}>
+                <Text style={styles.removeBtnText}>✕ Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Upload progress */}
+          {uploading && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${Math.round(uploadProgress * 100)}%` }]} />
+              </View>
+              <Text style={styles.progressText}>{Math.round(uploadProgress * 100)}%</Text>
+            </View>
+          )}
+
+          {/* Picker buttons */}
+          {!selectedMedia && !uploading && (
+            <View style={styles.pickerButtons}>
+              <TouchableOpacity style={styles.pickerBtn} onPress={pickFromGallery}>
+                <Text style={styles.pickerBtnIcon}>📁</Text>
+                <Text style={styles.pickerBtnText}>Choose from Gallery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.pickerBtn} onPress={recordVideo}>
+                <Text style={styles.pickerBtnIcon}>📹</Text>
+                <Text style={styles.pickerBtnText}>Record Video</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Submit button */}
+          {selectedMedia && !uploading && (
+            <TouchableOpacity style={styles.uploadBtn} onPress={handleMediaUpload}>
+              <Text style={styles.uploadBtnText}>Upload & Submit for Review</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Divider — OR paste URL */}
+          {!selectedMedia && !uploading && (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+              <Text style={styles.hint}>Paste a URL instead (Google Drive, Dropbox, etc.)</Text>
+              <TextInput
+                style={styles.urlInput}
+                value={submitUrl}
+                onChangeText={setSubmitUrl}
+                placeholder="https://drive.google.com/..."
+                placeholderTextColor={colors.t3}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+              <TouchableOpacity
+                style={[styles.submitBtn, (submitting || !submitUrl.trim()) && { opacity: 0.5 }]}
+                onPress={handleUrlSubmit}
+                disabled={submitting || !submitUrl.trim()}
+              >
+                {submitting
+                  ? <ActivityIndicator color={colors.white} />
+                  : <Text style={styles.submitBtnText}>Submit URL for Review</Text>
+                }
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
 
@@ -153,41 +428,11 @@ export default function DeliverableScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* ACTION: Submit draft (pending or revision_requested) */}
-      {(deliverable.status === 'pending' || deliverable.status === 'revision_requested') && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            {deliverable.status === 'revision_requested' ? 'Submit Revised Content' : 'Submit Content for Review'}
-          </Text>
-          <Text style={styles.hint}>Paste the URL of your draft (Google Drive, Dropbox, etc.)</Text>
-          <TextInput
-            style={styles.urlInput}
-            value={submitUrl}
-            onChangeText={setSubmitUrl}
-            placeholder="https://drive.google.com/..."
-            placeholderTextColor={colors.t3}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
-          <TouchableOpacity
-            style={[styles.submitBtn, (submitting || !submitUrl.trim()) && { opacity: 0.5 }]}
-            onPress={handleSubmit}
-            disabled={submitting || !submitUrl.trim()}
-          >
-            {submitting
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.submitBtnText}>Submit for Review</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* ACTION: Submit live URL (approved — waiting for brand confirm-live) */}
+      {/* ACTION: Submit live URL (approved — waiting for brand confirm) */}
       {deliverable.status === 'approved' && !deliverable.live_url && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Submit Live Post URL</Text>
-          <Text style={styles.hint}>Once your content is posted live, paste the Instagram/YouTube URL here.</Text>
+          <Text style={styles.hint}>Once your content is posted live on social media, paste the public URL here.</Text>
           <TextInput
             style={styles.urlInput}
             value={liveUrl}
@@ -211,11 +456,21 @@ export default function DeliverableScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* Submitted — waiting for brand review */}
+      {deliverable.status === 'submitted' && (
+        <View style={[styles.card, { alignItems: 'center', paddingVertical: 24 }]}>
+          <Text style={{ fontSize: 28, marginBottom: 8 }}>⏳</Text>
+          <Text style={styles.cardTitle}>Waiting for Brand Review</Text>
+          <Text style={styles.hint}>Your content has been submitted. The brand will review and approve or request changes.</Text>
+        </View>
+      )}
+
+      {/* Live confirmation celebration */}
       {deliverable.status === 'live' && (
-        <View style={[styles.card, { alignItems: 'center' }]}>
+        <View style={[styles.card, { alignItems: 'center', paddingVertical: 24 }]}>
           <Text style={{ fontSize: 32, marginBottom: 8 }}>🎉</Text>
           <Text style={styles.cardTitle}>Content is Live!</Text>
-          <Text style={styles.hint}>Tranche 2 has been queued. Tranche 3 releases in 30 days.</Text>
+          <Text style={styles.hint}>Tranche 2 has been queued. Tranche 3 releases automatically in 30 days.</Text>
         </View>
       )}
 
@@ -232,25 +487,78 @@ const styles = StyleSheet.create({
   back: { marginBottom: 12 },
   backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
+  title: { fontSize: 18, fontWeight: '800', color: colors.white, flex: 1 },
   statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
   statusText: { fontSize: 10, fontWeight: '700' },
-  sub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  sub: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+
   card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
   cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 10 },
+
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
   rowLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
   rowValue: { fontSize: 12, color: colors.t1, fontWeight: '700', textTransform: 'capitalize' },
+
   requirementsBox: { backgroundColor: colors.surface2, borderRadius: 10, padding: 12, marginTop: 10 },
   requirementsLabel: { fontSize: 10, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
   requirementsText: { fontSize: 12, color: colors.t2, lineHeight: 18 },
+
   link: { fontSize: 12, color: colors.navy, textDecorationLine: 'underline' },
+
   revisionCard: { borderColor: colors.red, borderWidth: 1.5 },
   revisionTitle: { fontSize: 13, fontWeight: '700', color: colors.red, marginBottom: 6 },
   revisionText: { fontSize: 12, color: colors.t2, lineHeight: 18 },
-  hint: { fontSize: 11, color: colors.t3, marginBottom: 10, lineHeight: 16 },
-  urlInput: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 13, color: colors.t1, marginBottom: 12 },
-  submitBtn: { backgroundColor: colors.navy, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+
+  hint: { fontSize: 11, color: colors.t3, marginBottom: 10, lineHeight: 16, textAlign: 'center' },
+
+  // Picker buttons
+  pickerButtons: { gap: 10, marginBottom: 12 },
+  pickerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: colors.surface2, borderRadius: 12, padding: 16,
+    borderWidth: 2, borderColor: colors.border2, borderStyle: 'dashed',
+  },
+  pickerBtnIcon: { fontSize: 24 },
+  pickerBtnText: { fontSize: 14, fontWeight: '600', color: colors.t1 },
+
+  // Selected media preview
+  previewContainer: { marginBottom: 12 },
+  mediaPreview: { width: '100%', height: 200, borderRadius: 12, backgroundColor: colors.surface2, marginBottom: 8 },
+  videoSelected: {
+    backgroundColor: colors.surface2, borderRadius: 12, padding: 20,
+    alignItems: 'center', marginBottom: 8,
+  },
+  videoSelectedIcon: { fontSize: 40, marginBottom: 8 },
+  videoSelectedText: { fontSize: 12, color: colors.t2, textAlign: 'center' },
+  videoSelectedDuration: { fontSize: 11, color: colors.t3, marginTop: 4 },
+  removeBtn: { alignSelf: 'center', padding: 8 },
+  removeBtnText: { fontSize: 12, color: colors.red, fontWeight: '600' },
+
+  // Video preview for already-submitted content
+  videoPreviewBox: {
+    backgroundColor: '#000', borderRadius: 12, padding: 30,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  videoPlayIcon: { fontSize: 36, color: '#fff', marginBottom: 6 },
+  videoPlayText: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+
+  // Progress bar
+  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
+  progressBar: { flex: 1, height: 8, backgroundColor: colors.surface2, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: colors.navy, borderRadius: 4 },
+  progressText: { fontSize: 12, fontWeight: '700', color: colors.navy, width: 40, textAlign: 'right' },
+
+  // Buttons
+  uploadBtn: { backgroundColor: colors.navy, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  uploadBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  submitBtn: { backgroundColor: colors.t2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   liveBtn: { backgroundColor: colors.teal, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+
+  // Divider
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { paddingHorizontal: 12, fontSize: 11, fontWeight: '700', color: colors.t3 },
+
+  urlInput: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 13, color: colors.t1, marginBottom: 12 },
 });

@@ -161,6 +161,7 @@ export const influencerApi = {
 
 export const deliverableApi = {
   get: (id) => api.get(`/deliverables/${id}`),
+  getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
   review: (id, data) => api.post(`/deliverables/${id}/review`, data),
   confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
 };

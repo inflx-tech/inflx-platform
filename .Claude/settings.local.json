@@ -223,7 +223,8 @@
       "Bash(find /c/WORK/inflx-platform/Packages/Mobile/src -name *Navigator* -o -name *navigation*)",
       "Bash(grep -n \"content\\\\|Content\\\\|CONTENT\" /c/WORK/inflx-platform/Packages/brand-web/app/dashboard/campaigns/[id]/page.js)",
       "Bash(grep -E \"\\\\.\\(js|ts\\)$\")",
-      "Bash(grep -i \"created_at\" /c/WORK/inflx-platform/backend/migrations/*.sql)"
+      "Bash(grep -i \"created_at\" /c/WORK/inflx-platform/backend/migrations/*.sql)",
+      "Bash(./gradlew assembleRelease)"
     ]
   }
 }

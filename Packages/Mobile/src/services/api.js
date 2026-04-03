@@ -101,6 +101,8 @@ export const influencerApi = {
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
   getDeliverable: (id) => api.get(`/deliverables/${id}`),
   getDeliverables: () => api.get('/campaigns'),  // via campaign list
+  getUploadUrl: (id, data) => api.post(`/deliverables/${id}/upload-url`, data),
+  getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
   getContractWithDeliverables: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
   submitDeliverable: (id, data) => api.post(`/deliverables/${id}/submit`, data),
   submitLive: (id, data) => api.post(`/deliverables/${id}/submit-live`, data),
@@ -119,6 +121,67 @@ export const influencerApi = {
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
 };
+
+/**
+ * Upload a file to the backend (mock mode) or R2 (production).
+ * Returns { success, key } on success.
+ */
+export async function uploadFile(uploadUrl, method, fileUri, filename, contentType, key, onProgress) {
+  const token = await getToken();
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) onProgress(e.loaded / e.total);
+      });
+    }
+
+    xhr.addEventListener('load', () => {
+      try {
+        const json = JSON.parse(xhr.responseText);
+        resolve(json);
+      } catch {
+        resolve({ success: xhr.status >= 200 && xhr.status < 300, key });
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Upload failed — network error'));
+    });
+
+    xhr.addEventListener('timeout', () => {
+      reject(new Error('Upload timed out'));
+    });
+
+    xhr.timeout = 300000; // 5 min for large videos
+
+    if (method === 'POST') {
+      // Mock mode: multipart form-data to our backend
+      xhr.open('POST', uploadUrl);
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+      const formData = new FormData();
+      formData.append('key', key);
+      formData.append('file', {
+        uri: fileUri,
+        type: contentType,
+        name: filename,
+      });
+      xhr.send(formData);
+    } else {
+      // Production: PUT raw body to R2 presigned URL
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', contentType);
+      // For presigned URLs, we need to send the raw file
+      fetch(fileUri)
+        .then(r => r.blob())
+        .then(blob => xhr.send(blob))
+        .catch(reject);
+    }
+  });
+}
 
 export const followerApi = {
   getMe: () => api.get('/followers/me'),
