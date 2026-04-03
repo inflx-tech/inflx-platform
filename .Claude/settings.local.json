@@ -232,7 +232,15 @@
       "WebSearch",
       "WebFetch(domain:apify.com)",
       "WebFetch(domain:docs.apify.com)",
-      "WebFetch(domain:use-apify.com)"
+      "WebFetch(domain:use-apify.com)",
+      "Bash(find /c/WORK/inflx-platform -maxdepth 2 -type f \\\\\\(-name *.md -o -name *.txt -o -name *.docx \\\\\\) ! -path */node_modules/* ! -path */.git/*)",
+      "Bash(find /c/WORK/inflx-platform/backend -name *follower* -type f)",
+      "Bash(find /c/WORK/inflx-platform -type f -name *File* -o -name *mockup* -o -name *design*)",
+      "Bash(ls -la /c/WORK/inflx-platform/*.html)",
+      "Bash(grep -E \"\\\\.\\(js|sql\\)$\")",
+      "Read(//c/WORK/**)",
+      "Read(//c/work/**)",
+      "Bash(grep -E \"\\\\.\\(js\\)$\")"
     ]
   }
 }

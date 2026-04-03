@@ -2,7 +2,7 @@
 
 /**
  * follower.controller.js
- * Phase 4 — Block A
+ * Phase 4 — Block A (Updated for Follower App Redesign)
  *
  * Endpoints:
  *   POST   /followers/register
@@ -10,12 +10,17 @@
  *   POST   /follower/follows
  *   DELETE /follower/follows/:influencer_id
  *   GET    /store/:handle          (no auth — uses authenticateOptional)
+ *   GET    /store/:handle/products (no auth)
  *   GET    /business/:brand_id     (no auth)
+ *   GET    /business/:brand_id/store (no auth — full brand store)
  *   GET    /category/:category_key (no auth)
  *   POST   /follower/addresses
  *   GET    /follower/addresses
  *   PATCH  /follower/addresses/:id
- *   GET    /follower/feed
+ *   GET    /follower/feed          (legacy)
+ *   GET    /follower/home-feed     (NEW — product-centric deduped)
+ *   GET    /follower/deals         (NEW — category browse)
+ *   GET    /follower/following     (NEW — followed influencers)
  */
 
 const db = require('../config/db');
@@ -55,12 +60,12 @@ const register = asyncHandler(async (req, res) => {
     );
   }
 
-  // Upsert followers row
+  // Upsert followers row (also sync city to followers table)
   const { rows } = await db.query(
-    `INSERT INTO followers (user_id) VALUES ($1)
-     ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+    `INSERT INTO followers (user_id, city) VALUES ($1, $2)
+     ON CONFLICT (user_id) DO UPDATE SET city = COALESCE(EXCLUDED.city, followers.city)
      RETURNING *`,
-    [userId]
+    [userId, city || null]
   );
 
   return success(res, { follower: rows[0] }, 201);
@@ -127,7 +132,6 @@ const getInfluencerStore = asyncHandler(async (req, res) => {
   let tracking = null;
   if (offers.length > 0) {
     const firstOffer = offers[0];
-    // If query params provided, validate they match this influencer
     if (cid && sid && oid && iid) {
       const matchingOffer = offers.find(o =>
         o.campaign_id === cid &&
@@ -144,7 +148,6 @@ const getInfluencerStore = asyncHandler(async (req, res) => {
         };
       }
     }
-    // Fall back to first active offer
     if (!tracking) {
       tracking = {
         campaign_id: firstOffer.campaign_id,
@@ -184,7 +187,6 @@ const createAddress = asyncHandler(async (req, res) => {
   const { label, line1, line2, city, pincode, is_default } = req.body;
   if (!line1) throw new AppError('VALIDATION_ERROR', 'line1 is required', 422, 'line1');
 
-  // If is_default, unset existing defaults
   if (is_default) {
     await db.query(
       `UPDATE follower_addresses SET is_default = false WHERE follower_id = $1`,
@@ -199,7 +201,6 @@ const createAddress = asyncHandler(async (req, res) => {
     [follower.id, label || null, line1, line2 || null, city || null, pincode || null, !!is_default]
   );
 
-  // Update default_address_id on followers if this is default
   if (is_default) {
     await db.query(
       `UPDATE followers SET default_address_id = $1 WHERE id = $2`,
@@ -228,7 +229,6 @@ const updateAddress = asyncHandler(async (req, res) => {
 
   const { id } = req.params;
 
-  // Verify ownership
   const { rows: existing } = await db.query(
     `SELECT * FROM follower_addresses WHERE id = $1 AND follower_id = $2`,
     [id, follower.id]
@@ -265,7 +265,7 @@ const updateAddress = asyncHandler(async (req, res) => {
   return success(res, { address: rows[0] });
 });
 
-// ── GET /follower/feed ────────────────────────────────────────────────────────
+// ── GET /follower/feed (legacy) ──────────────────────────────────────────────
 
 const getFeed = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
@@ -275,13 +275,51 @@ const getFeed = asyncHandler(async (req, res) => {
   return success(res, { feed });
 });
 
+// ── GET /follower/home-feed — NEW product-centric deduped feed ───────────────
+
+const getHomeFeed = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+
+  const data = await followerService.getHomeFeed(follower.id, follower.user_city, page, limit);
+  return success(res, data, 200, { page: data.page, total: data.total, limit: data.limit });
+});
+
+// ── GET /follower/deals — NEW category browse ────────────────────────────────
+
+const getDeals = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+
+  const { category } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+
+  const data = await followerService.getDealsByCategory(
+    category || 'all', follower.user_city, follower.id, page, limit
+  );
+  return success(res, data, 200, { page: data.page, total: data.total, limit: data.limit });
+});
+
+// ── GET /follower/following — NEW followed influencers with deal counts ──────
+
+const getFollowing = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+
+  const following = await followerService.getFollowing(follower.id);
+  return success(res, { following });
+});
+
 // ── GET /store/:handle/products ───────────────────────────────────────────────
 
 const getStoreProducts = asyncHandler(async (req, res) => {
   const { influencer_handle } = req.params;
   const { offer_id } = req.query;
 
-  // Resolve influencer
   const { rows: infRows } = await db.query(
     `SELECT i.id, i.instagram_handle, u.name
      FROM influencers i JOIN users u ON u.id = i.user_id
@@ -291,13 +329,13 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   if (!infRows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
   const inf = infRows[0];
 
-  // Get brand for this influencer (via offer if given)
   let brandId;
   let discountPct = 0;
+  let campaignId = null;
 
   if (offer_id) {
     const { rows: offerRows } = await db.query(
-      `SELECT co.*, c.brand_id
+      `SELECT co.*, c.brand_id, c.id AS campaign_id
        FROM campaign_offers co
        JOIN campaigns c ON c.id = co.campaign_id
        WHERE co.id = $1`,
@@ -305,14 +343,14 @@ const getStoreProducts = asyncHandler(async (req, res) => {
     );
     if (offerRows[0]) {
       brandId = offerRows[0].brand_id;
+      campaignId = offerRows[0].campaign_id;
       discountPct = parseFloat(offerRows[0].discount_value || 0);
     }
   }
 
   if (!brandId) {
-    // Fall back to influencer's active campaign brand
     const { rows: ciRows } = await db.query(
-      `SELECT c.brand_id FROM campaign_influencers ci
+      `SELECT c.brand_id, c.id AS campaign_id FROM campaign_influencers ci
        JOIN campaign_sets cs ON cs.id = ci.set_id
        JOIN campaigns c ON c.id = cs.campaign_id
        WHERE ci.influencer_id = $1 AND ci.status IN ('contracted','active')
@@ -321,6 +359,7 @@ const getStoreProducts = asyncHandler(async (req, res) => {
     );
     if (!ciRows[0]) throw new AppError('NOT_FOUND', 'No active campaign found', 404);
     brandId = ciRows[0].brand_id;
+    campaignId = ciRows[0].campaign_id;
   }
 
   const { rows: products } = await db.query(
@@ -328,12 +367,22 @@ const getStoreProducts = asyncHandler(async (req, res) => {
     [brandId]
   );
 
+  // Get influencer notes for this campaign
+  const { rows: noteRows } = await db.query(
+    `SELECT product_id, note_text FROM influencer_product_notes
+     WHERE influencer_id = $1 AND campaign_id = $2`,
+    [inf.id, campaignId]
+  );
+  const noteMap = {};
+  for (const n of noteRows) noteMap[n.product_id] = n.note_text;
+
   const productsWithDiscount = products.map(p => {
     const pricePaise = Math.round(parseFloat(p.price || 0) * 100);
     const discountedPrice = Math.floor(pricePaise * (1 - discountPct / 100));
     return {
       id: p.id,
       name: p.name,
+      description: p.description,
       price: pricePaise,
       discounted_price: discountedPrice,
       image_url: p.image_url,
@@ -341,6 +390,7 @@ const getStoreProducts = asyncHandler(async (req, res) => {
       section: p.section,
       variants_json: p.variants_json,
       veg_flag: p.veg_flag,
+      influencer_note: noteMap[p.id] || null,
     };
   });
 
@@ -359,5 +409,8 @@ module.exports = {
   listAddresses,
   updateAddress,
   getFeed,
+  getHomeFeed,
+  getDeals,
+  getFollowing,
   getStoreProducts,
 };

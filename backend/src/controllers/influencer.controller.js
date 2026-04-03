@@ -714,4 +714,18 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail };
+// ── GET /influencers/me/store-preview — influencer sees their store as followers see it
+
+const followerService = require('../services/follower.service');
+
+const storePreview = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const data = await followerService.getInfluencerStorePreview(inf.id);
+  if (!data) throw new AppError('NOT_FOUND', 'Store data not found', 404);
+
+  return success(res, data);
+});
+
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview };

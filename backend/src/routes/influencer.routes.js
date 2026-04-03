@@ -35,6 +35,9 @@ router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer')
 // ── TDS Certificate (Phase F) ─────────────────────────────────────────────────
 router.get('/me/tds-certificate', authenticate, requireRole('influencer'), ctrl.getTdsCertificate);
 
+// ── Store preview — influencer sees their store as followers see it ───────────
+router.get('/me/store-preview', authenticate, requireRole('influencer'), ctrl.storePreview);
+
 // ── Public profile view (brand + admin) ──────────────────────────────────────
 router.get('/:id',            authenticate, requireRole('brand', 'admin'), ctrl.getPublicById);
 

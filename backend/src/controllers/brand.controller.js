@@ -569,9 +569,23 @@ const getPublicProfile = asyncHandler(async (req, res) => {
   return success(res, { brand: rows[0] });
 });
 
+// ── GET /brands/me/store-preview — brand sees their store as followers see it ─
+
+const followerService = require('../services/follower.service');
+
+const storePreview = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const data = await followerService.getBrandStorePreview(brand.id);
+  if (!data) throw new AppError('NOT_FOUND', 'Store data not found', 404);
+
+  return success(res, data);
+});
+
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue,
   listProducts, createProduct, updateProduct, deleteProduct,
-  listBrandOrders, getPublicProfile,
+  listBrandOrders, getPublicProfile, storePreview,
 };

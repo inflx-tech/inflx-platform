@@ -22,6 +22,9 @@ router.get('/addresses',      ...followerAuth, ctrl.listAddresses);
 router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
 
 // ── Feed ──────────────────────────────────────────────────────────────────────
-router.get('/feed', ...followerAuth, ctrl.getFeed);
+router.get('/feed',      ...followerAuth, ctrl.getFeed);       // legacy
+router.get('/home-feed', ...followerAuth, ctrl.getHomeFeed);   // NEW — product-centric
+router.get('/deals',     ...followerAuth, ctrl.getDeals);      // NEW — category browse
+router.get('/following', ...followerAuth, ctrl.getFollowing);  // NEW — followed influencers
 
 module.exports = router;

@@ -22,6 +22,10 @@ const commissionRoutes  = require('./commission.routes');
 const engagementRoutes      = require('./engagement.routes');
 const notificationRoutes    = require('./notification.routes');
 
+// Follower App Redesign
+const savedRoutes           = require('./saved.routes');
+const productNoteRoutes     = require('./productNote.routes');
+
 // Media uploads
 const uploadRoutes = require('./upload.routes');
 
@@ -64,6 +68,10 @@ router.use('/follower', enquiryRoutes);
 // ── Phase 4 — Commission tracker (influencer) ────────────────────────────────
 router.use('/influencers', commissionRoutes);
 
+// ── Follower App Redesign — Saved offers + Influencer product notes ──────────
+router.use('/follower', savedRoutes);
+router.use('/influencers', productNoteRoutes);
+
 // ── Phase 5 — Engagement analytics (brand) ───────────────────────────────────
 router.use('/brands', engagementRoutes);
 
@@ -73,6 +81,7 @@ router.use('/notifications', notificationRoutes);
 // ── Phase 4 — Public store endpoints (no auth required) ──────────────────────
 router.get('/store/:influencer_handle/products', authenticateOptional, followerCtrl.getStoreProducts);
 router.get('/store/:influencer_handle',           authenticateOptional, followerCtrl.getInfluencerStore);
+router.get('/business/:brand_id/store',            authenticateOptional, followerCtrl.getBusinessStore);
 router.get('/business/:brand_id',                 authenticateOptional, followerCtrl.getBusinessStore);
 router.get('/category/:category_key',             authenticateOptional, followerCtrl.getCategoryStore);
 

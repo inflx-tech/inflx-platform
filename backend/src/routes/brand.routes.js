@@ -51,6 +51,9 @@ router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.delet
 // Auth is applied here so wallet routes don't need to repeat it
 router.use('/me/wallet', authenticate, requireRole('brand'), walletRoutes);
 
+// Store preview — brand sees their store as followers see it
+router.get('/me/store-preview', authenticate, requireRole('brand'), ctrl.storePreview);
+
 // Public brand profile (any authenticated user — influencers viewing brand info from offers)
 router.get('/:id/public', authenticate, ctrl.getPublicProfile);
 

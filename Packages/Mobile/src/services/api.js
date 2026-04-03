@@ -185,20 +185,42 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
 }
 
 export const followerApi = {
+  // Profile
   getMe: () => api.get('/followers/me'),
   updateMe: (data) => api.patch('/followers/me', data),
+
+  // Feed (legacy + new)
   getFeed: () => api.get('/followers/feed'),
+  getHomeFeed: (page = 1) => api.get(`/follower/home-feed?page=${page}`),
+  getDeals: (category = 'all', page = 1) => api.get(`/follower/deals?category=${category}&page=${page}`),
+
+  // Store
   getStore: (handle) => api.get(`/store/${handle}`),
-  getStoreProducts: (handle) => api.get(`/store/${handle}/products`),
+  getStoreProducts: (handle, offerId) => api.get(`/store/${handle}/products${offerId ? `?offer_id=${offerId}` : ''}`),
+  getBrandStore: (brandId) => api.get(`/business/${brandId}/store`),
+
+  // Follow
   follow: (id) => api.post('/followers/follows', { influencer_id: id }),
   unfollow: (id) => api.delete(`/followers/follows/${id}`),
+  getFollowing: () => api.get('/follower/following'),
+
+  // Saved offers
+  saveOffer: (offer_id, influencer_id) => api.post('/follower/saved', { offer_id, influencer_id }),
+  unsaveOffer: (offer_id) => api.delete(`/follower/saved/${offer_id}`),
+  getSavedOffers: () => api.get('/follower/saved'),
+
+  // Transactions
   payAtStore: (data) => api.post('/follower/pay-at-store', data),
   prebook: (data) => api.post('/follower/prebook', data),
   prebookVerify: (data) => api.post('/follower/prebook/verify', data),
   createOrder: (data) => api.post('/follower/orders', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),
   getOrders: () => api.get('/follower/orders'),
+
+  // Addresses
   getAddresses: () => api.get('/followers/addresses'),
   addAddress: (data) => api.post('/followers/addresses', data),
+
+  // Enquiry
   submitEnquiry: (data) => api.post('/follower/enquiry', data),
 };
