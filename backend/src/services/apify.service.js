@@ -53,21 +53,22 @@ async function scrapePostEngagement(live_url) {
 
   console.log(`[APIFY] Scraping post engagement for ${live_url}...`);
 
-  // Use apify/instagram-post-scraper
-  // The actor accepts multiple input field names depending on version
+  // Extract shortcode from URL (e.g. /reel/DUd7Wy0EtCS/ → DUd7Wy0EtCS)
+  const shortcodeMatch = live_url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
+  if (!shortcodeMatch) {
+    throw new Error(`Could not extract Instagram shortcode from URL: ${live_url}`);
+  }
+  const shortcode = shortcodeMatch[2];
+
+  // apify/instagram-post-scraper requires 'username' but we can use
+  // the main instagram-scraper with directUrls which handles post URLs
   const input = {
     directUrls: [live_url],
-    shortcodes: [],
+    resultsType: 'posts',
     resultsLimit: 1,
   };
 
-  // Extract shortcode from URL as fallback (e.g. /reel/DUd7Wy0EtCS/ → DUd7Wy0EtCS)
-  const shortcodeMatch = live_url.match(/\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
-  if (shortcodeMatch) {
-    input.shortcodes = [shortcodeMatch[2]];
-  }
-
-  const items = await _runActor('apify~instagram-post-scraper', input);
+  const items = await _runActor('apify~instagram-scraper', input);
   if (!items || items.length === 0) {
     throw new Error(`Apify returned no data for URL: ${live_url}`);
   }
