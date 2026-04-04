@@ -37,3 +37,7 @@ const getBrandWebUrl = () => {
 };
 
 export const BRAND_WEB_URL = getBrandWebUrl();
+
+// ── OneSignal Push Notifications ─────────────────────────────────────────
+// Get this from OneSignal Dashboard → Settings → Keys & IDs
+export const ONESIGNAL_APP_ID = 'YOUR_ONESIGNAL_APP_ID_HERE';

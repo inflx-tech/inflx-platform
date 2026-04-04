@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const { authenticate } = require('../middleware/auth');
-const { sendOtp, verifyOtp, refresh, logout, registerFcmToken } = require('../controllers/auth.controller');
+const { sendOtp, verifyOtp, refresh, logout, registerFcmToken, registerOneSignalPlayerId } = require('../controllers/auth.controller');
 
 const router = Router();
 
@@ -14,5 +14,6 @@ router.post('/refresh', refresh);
 // Requires a valid access token
 router.post('/logout', authenticate, logout);
 router.post('/fcm-token', authenticate, registerFcmToken);
+router.post('/onesignal-player-id', authenticate, registerOneSignalPlayerId);
 
 module.exports = router;

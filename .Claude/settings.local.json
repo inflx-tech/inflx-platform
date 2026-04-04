@@ -240,7 +240,18 @@
       "Bash(grep -E \"\\\\.\\(js|sql\\)$\")",
       "Read(//c/WORK/**)",
       "Read(//c/work/**)",
-      "Bash(grep -E \"\\\\.\\(js\\)$\")"
+      "Bash(grep -E \"\\\\.\\(js\\)$\")",
+      "Bash(\"/c/Program Files/PostgreSQL/18/bin/psql.exe\" \"postgresql://postgres.yfeqtzcxqkfmgceonmtf:%21%40MONW%40Y%40%2318@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres\" -f \"C:/WORK/inflx-platform/backend/migrations/011_follower_app_redesign.sql\")",
+      "Bash(npx expo:*)",
+      "Bash(ls *.json android/)",
+      "Bash(cp C:/WORK/inflx-platform/packages/Mobile/android/app/build/outputs/apk/follower/release/app-follower-release.apk C:/Users/aveen/OneDrive/Desktop/INFLX-Follower.apk)",
+      "Bash(cp C:/WORK/inflx-platform/packages/Mobile/android/app/build/outputs/apk/influencer/release/app-influencer-release.apk C:/Users/aveen/OneDrive/Desktop/INFLX-Influencer.apk)",
+      "Bash(cp C:/WORK/inflx-platform/packages/Mobile/android/app/build/outputs/apk/brand/release/app-brand-release.apk C:/Users/aveen/OneDrive/Desktop/INFLX-Brand.apk)",
+      "Bash(grep -E \"CREATE TABLE.*otp_codes|CREATE TABLE.*notifications|CREATE TABLE.*fcm|CREATE TABLE.*deliverable\" /c/WORK/inflx-platform/backend/migrations/*.sql -A 10)",
+      "Bash(grep -r \"registerFcmToken\\\\|useEffect.*fcm\\\\|useEffect.*notification\\\\|messaging\\\\|firebase\" /c/WORK/inflx-platform/packages/mobile/src --include=*.js --include=*.jsx)",
+      "Bash(head -20 /c/WORK/inflx-platform/Docs/*)",
+      "Bash(npm view:*)",
+      "Bash(node -e \"require\\(''./src/config/env''\\); require\\(''./src/services/notification.service''\\); console.log\\(''✅ Backend modules load OK''\\)\")"
     ]
   }
 }

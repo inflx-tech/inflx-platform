@@ -201,4 +201,23 @@ const registerFcmToken = asyncHandler(async (req, res) => {
   return success(res, { message: 'FCM token registered' });
 });
 
-module.exports = { sendOtp, verifyOtp, refresh, logout, registerFcmToken };
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /auth/onesignal-player-id — register OneSignal subscription ID
+// ─────────────────────────────────────────────────────────────────────────────
+
+const registerOneSignalPlayerId = asyncHandler(async (req, res) => {
+  const { player_id } = req.body;
+
+  if (!player_id || typeof player_id !== 'string' || !player_id.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'player_id is required', 422, 'player_id');
+  }
+
+  await db.query(
+    `UPDATE users SET onesignal_player_id = $1 WHERE id = $2`,
+    [player_id.trim(), req.user.sub]
+  );
+
+  return success(res, { message: 'OneSignal player ID registered' });
+});
+
+module.exports = { sendOtp, verifyOtp, refresh, logout, registerFcmToken, registerOneSignalPlayerId };

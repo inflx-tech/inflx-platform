@@ -63,6 +63,7 @@ export const authApi = {
     api.post('/auth/verify-otp', { phone, otp, role, ...(name && { name }) }),
   logout: () => api.post('/auth/logout'),
   registerFcmToken: (token) => api.post('/auth/fcm-token', { token }),
+  registerOneSignalPlayerId: (playerId) => api.post('/auth/onesignal-player-id', { player_id: playerId }),
 };
 
 export const brandApi = {

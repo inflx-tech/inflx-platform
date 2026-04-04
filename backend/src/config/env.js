@@ -48,6 +48,11 @@ module.exports = {
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || '',
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY || '',
 
+  // OneSignal push notifications (replaces Firebase FCM)
+  ONESIGNAL_MOCK: process.env.ONESIGNAL_MOCK !== 'false',
+  ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID || '',
+  ONESIGNAL_REST_API_KEY: process.env.ONESIGNAL_REST_API_KEY || '',
+
   RAZORPAY_MOCK: process.env.RAZORPAY_MOCK !== 'false',
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock',
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
