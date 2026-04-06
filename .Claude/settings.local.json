@@ -251,7 +251,8 @@
       "Bash(grep -r \"registerFcmToken\\\\|useEffect.*fcm\\\\|useEffect.*notification\\\\|messaging\\\\|firebase\" /c/WORK/inflx-platform/packages/mobile/src --include=*.js --include=*.jsx)",
       "Bash(head -20 /c/WORK/inflx-platform/Docs/*)",
       "Bash(npm view:*)",
-      "Bash(node -e \"require\\(''./src/config/env''\\); require\\(''./src/services/notification.service''\\); console.log\\(''✅ Backend modules load OK''\\)\")"
+      "Bash(node -e \"require\\(''./src/config/env''\\); require\\(''./src/services/notification.service''\\); console.log\\(''✅ Backend modules load OK''\\)\")",
+      "Bash(ls /c/Users/aveen/Downloads/google*)"
     ]
   }
 }
