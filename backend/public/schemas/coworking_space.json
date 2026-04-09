@@ -1,0 +1,65 @@
+{
+  "category_key": "coworking_space",
+  "label": "Co-working Spaces",
+  "icon": "🏢",
+  "product_noun": "Plan",
+  "product_noun_plural": "Plans",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Hot Desk", "Dedicated Desk", "Private Cabin", "Meeting Room", "Day Pass", "Virtual Office"],
+  "booking_type": "membership",
+  "availing_modes": ["pay_at_store", "prebook"],
+  "fields": [
+    { "key": "name", "label": "Plan Name", "type": "text", "required": true, "placeholder": "e.g. Hot Desk — Monthly" },
+    { "key": "section", "label": "Type", "type": "select", "options": ["Hot Desk", "Dedicated Desk", "Private Cabin", "Meeting Room", "Day Pass", "Virtual Office"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "5000" },
+    { "key": "description", "label": "What's Included", "type": "textarea", "required": false, "placeholder": "WiFi, power, pantry, lockers..." },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Available Seats", "type": "number", "required": false },
+    { "key": "variants_json", "label": "Duration Options", "type": "variant_builder", "required": false, "placeholder": "e.g. Daily / Weekly / Monthly" }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Now" },
+
+  "phase": 3,
+  "status": "coming_soon",
+  "super_category": "home",
+
+  "action_types": {
+    "book_now": { "enabled": true, "type": "membership", "cta_label": "Book Desk", "requires_date": true, "payment_mode": "full" },
+    "walkin_pay": { "enabled": true, "cta_label": "Day Pass", "discount_levels": ["shop", "product"] },
+    "enquiry": { "enabled": true, "cta_label": "Visit & Tour" }
+  },
+
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["Hot Desk", "Dedicated Desk", "Private Cabin", "Meeting Room", "Day Pass", "Virtual Office"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Plan Name", "Type", "Price", "Duration", "Amenities"] },
+
+  "card_config": {
+    "accent": "#8b5cf6",
+    "accent_dim": "rgba(139,92,246,0.1)",
+    "icon": "🏢",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#8b5cf6" },
+    "cta_secondary": { "label": "Day Pass", "action": "walkin_pay" },
+    "price_display": { "source": "cheapest_item", "unit": "/month" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["section", "amenities"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Space name & contact" },
+    { "items": "plan", "min": 2, "points": 25, "label": "2+ plans listed" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

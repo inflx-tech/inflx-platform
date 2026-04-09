@@ -14,20 +14,131 @@
     "enquiry_only": false,
     "availability": false
   },
-  "sections": ["Full Planning", "Partial Planning", "Decoration", "Catering", "Photography", "Mehendi", "Entertainment"],
+  "sections": [
+    "Full Planning",
+    "Partial Planning",
+    "Decoration",
+    "Catering",
+    "Photography",
+    "Mehendi",
+    "Entertainment"
+  ],
   "booking_type": "event",
-  "availing_modes": ["prebook"],
+  "availing_modes": [
+    "prebook"
+  ],
   "fields": [
-    { "key": "name", "label": "Package Name", "type": "text", "required": true, "placeholder": "e.g. Royal Wedding Package" },
-    { "key": "section", "label": "Service Type", "type": "select", "options": ["Full Planning", "Partial Planning", "Decoration", "Catering", "Photography", "Mehendi", "Entertainment"], "required": false },
-    { "key": "price", "label": "Starting Price (₹)", "type": "number", "required": true, "placeholder": "50000" },
-    { "key": "description", "label": "What's Included", "type": "textarea", "required": true, "placeholder": "Describe what's included in this package" },
-    { "key": "image_url", "label": "Image URL", "type": "url", "required": false }
+    {
+      "key": "name",
+      "label": "Package Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "e.g. Royal Wedding Package"
+    },
+    {
+      "key": "section",
+      "label": "Service Type",
+      "type": "select",
+      "options": [
+        "Full Planning",
+        "Partial Planning",
+        "Decoration",
+        "Catering",
+        "Photography",
+        "Mehendi",
+        "Entertainment"
+      ],
+      "required": false
+    },
+    {
+      "key": "price",
+      "label": "Starting Price (₹)",
+      "type": "number",
+      "required": true,
+      "placeholder": "50000"
+    },
+    {
+      "key": "description",
+      "label": "What's Included",
+      "type": "textarea",
+      "required": true,
+      "placeholder": "Describe what's included in this package"
+    },
+    {
+      "key": "image_url",
+      "label": "Image URL",
+      "type": "url",
+      "required": false
+    }
   ],
   "buyer_config": {
     "show_veg_filter": false,
     "show_sections": true,
     "show_enquiry_form": true,
     "cta_label": "Book Consultation"
-  }
+  },
+  "phase": 4,
+  "status": "coming_soon",
+  "super_category": "events",
+  "action_types": {
+    "enquiry": {
+      "enabled": true,
+      "cta_label": "Book Consultation"
+    },
+    "book_now": {
+      "enabled": true,
+      "type": "slot_based",
+      "cta_label": "Book Consultation",
+      "requires_date": true,
+      "requires_time_slot": true
+    },
+    "walkin_pay": {
+      "enabled": false
+    }
+  },
+  "listing_steps": [],
+  "product_config": {
+    "enabled": true,
+    "required": false,
+    "excel_upload": false,
+    "fields": []
+  },
+  "card_config": {
+    "accent": "#ec4899",
+    "accent_dim": "rgba(236,72,153,0.1)",
+    "icon": "💍",
+    "cta_primary": {
+      "label": "Enquire",
+      "action": "enquiry",
+      "color": "#ec4899"
+    },
+    "cta_secondary": null,
+    "price_display": {
+      "source": "cheapest_item",
+      "unit": "onwards"
+    },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": [
+      "service_types"
+    ]
+  },
+  "quality_rules": [
+    {
+      "field": "business_name",
+      "points": 20,
+      "label": "Business name & contact"
+    },
+    {
+      "items": "package",
+      "min": 1,
+      "points": 20,
+      "label": "1+ packages"
+    },
+    {
+      "type": "photos",
+      "min": 1,
+      "points": 20,
+      "label": "Photos uploaded"
+    }
+  ]
 }

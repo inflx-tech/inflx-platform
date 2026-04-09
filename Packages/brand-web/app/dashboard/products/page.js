@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { brandApi, fmtRupees } from '../../../lib/api';
+import ListingWizard from './components/ListingWizard';
 
 // ─── Dynamic Field Renderer (for non-catalogue categories) ───────────────────
 
@@ -510,6 +511,48 @@ function ProductCard({ product, onEdit, onDelete, onToggle }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
+  // ── Feature flag: check if listing engine is active for this brand ─────────
+  const [useListingWizard, setUseListingWizard] = useState(null); // null = loading
+
+  useEffect(() => {
+    async function checkListingEngine() {
+      try {
+        const res = await brandApi.get('/brands/me/listing-config');
+        if (res.success && res.data?.listing_engine_active) {
+          setUseListingWizard(true);
+        } else {
+          setUseListingWizard(false);
+        }
+      } catch {
+        setUseListingWizard(false);
+      }
+    }
+    checkListingEngine();
+  }, []);
+
+  // If listing engine is active, render the new ListingWizard
+  if (useListingWizard === true) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-black text-gray-900">Listing Setup</h1>
+          <p className="text-sm text-gray-500 mt-1">Complete your store listing to attract followers</p>
+        </div>
+        <ListingWizard />
+      </div>
+    );
+  }
+
+  // Loading state for feature flag check
+  if (useListingWizard === null) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-3 border-orange-400 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  // ── Original products page (for non-listing-engine categories) ─────────────
   const [schema,    setSchema]    = useState(null);
   const [products,  setProducts]  = useState([]);
   const [catalogue, setCatalogue] = useState(null); // master catalogue items

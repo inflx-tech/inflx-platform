@@ -30,5 +30,125 @@
     "show_veg_filter": true,
     "show_sections": true,
     "cta_label": "Order Now"
-  }
+  },
+
+  "phase": 1,
+  "status": "active",
+  "super_category": "eat",
+
+  "action_types": {
+    "walkin_pay": {
+      "enabled": true,
+      "cta_label": "Walk-in & Pay",
+      "discount_levels": ["shop", "category", "product"]
+    },
+    "book_now": {
+      "enabled": true,
+      "type": "slot_based",
+      "cta_label": "Book Table",
+      "requires_date": true,
+      "requires_time_slot": true,
+      "requires_guest_count": true,
+      "payment_mode": "token_or_full",
+      "token_amount": null,
+      "cancellation": "configurable"
+    },
+    "online_order": {
+      "enabled": true,
+      "cta_label": "Order Online",
+      "delivery_supported": true
+    },
+    "enquiry": {
+      "enabled": false
+    }
+  },
+
+  "listing_steps": [
+    {
+      "id": "basics",
+      "title": "Restaurant Details",
+      "subtitle": "Basic info — followers see your restaurant name, location & hours",
+      "fields": [
+        { "key": "business_name", "type": "text", "label": "Restaurant Name", "required": true },
+        { "key": "city", "type": "select", "source": "cities_db", "required": true, "grid": "half" },
+        { "key": "locality", "type": "text", "label": "Area / Locality", "required": true, "grid": "half" },
+        { "key": "cuisine_type", "type": "chip_group", "multi": true, "label": "Cuisine Types",
+          "options": ["North Indian", "South Indian", "Chinese", "Continental", "Italian", "Mughlai", "Street Food", "Fast Food", "Biryani", "Seafood"] },
+        { "key": "dining_type", "type": "chip_group", "multi": true, "label": "Dining Style",
+          "options": ["🍽️ Dine-in", "📦 Takeaway", "🚚 Delivery", "☁️ Cloud Kitchen"] },
+        { "key": "veg_only", "type": "toggle", "label": "Pure vegetarian restaurant",
+          "follower_sync": { "target": "badge", "text": "🌿 Pure Veg" } },
+        { "key": "operating_hours", "type": "text", "label": "Operating Hours", "placeholder": "e.g. 11 AM – 11 PM" },
+        { "key": "phone", "type": "text", "label": "Contact Number" },
+        { "key": "whatsapp", "type": "text", "label": "WhatsApp Number" },
+        { "key": "address", "type": "textarea", "label": "Full Address" },
+        { "key": "google_maps_url", "type": "url", "label": "Google Maps Link" }
+      ]
+    },
+    {
+      "id": "menu",
+      "title": "Menu & Pricing",
+      "subtitle": "Add your menu items — followers browse these when visiting your store",
+      "sections": [
+        {
+          "type": "repeatable_items",
+          "item_type": "menu_item",
+          "auto_suggest": { "source": "restaurant_items", "depends_on": "cuisine_type" },
+          "item_fields": [
+            { "key": "name", "type": "text", "label": "Item Name", "required": true },
+            { "key": "price", "type": "number", "label": "Price (₹)", "required": true, "market_benchmark": true },
+            { "key": "veg_flag", "type": "veg_toggle", "label": "Type", "required": true },
+            { "key": "section", "type": "select", "label": "Section", "options": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"] },
+            { "key": "description", "type": "textarea", "label": "Description", "placeholder": "Brief description" },
+            { "key": "stock", "type": "number", "label": "Daily Stock", "placeholder": "Leave blank = unlimited" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "title": "Preview & Publish",
+      "subtitle": "See how followers will discover your restaurant",
+      "sections": [
+        { "type": "photo_upload", "slots": ["Exterior", "Interior", "Food", "Menu Card"] },
+        { "type": "live_preview" },
+        { "type": "quality_score" },
+        { "type": "publish_button" }
+      ]
+    }
+  ],
+
+  "product_config": {
+    "enabled": true,
+    "required": true,
+    "excel_upload": false,
+    "fields": [
+      { "key": "veg_flag", "type": "veg_toggle", "options": ["veg", "non_veg"] },
+      { "key": "section", "type": "select", "options": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"] }
+    ],
+    "excel_columns": ["Item Name", "Section", "Price", "Veg/Non-Veg", "Description"]
+  },
+
+  "card_config": {
+    "accent": "#ef4444",
+    "accent_dim": "rgba(239,68,68,0.08)",
+    "icon": "🍽️",
+    "cta_primary": { "label": "Order", "action": "walkin_pay", "color": "#ef4444" },
+    "cta_secondary": { "label": "Book Table", "action": "book_slot" },
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{cuisine_type} · {locality} · {distance}",
+    "tags": ["cuisine_type", "dining_type", "veg_only", "top_3_items"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 15, "label": "Restaurant name & contact" },
+    { "field": "cuisine_type", "points": 10, "label": "Cuisine type set" },
+    { "field": "dining_type", "points": 5, "label": "Dining style set" },
+    { "items": "menu_item", "min": 5, "points": 20, "label": "5+ menu items" },
+    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
+    { "field": "operating_hours", "points": 10, "label": "Operating hours set" },
+    { "field": "address", "points": 10, "label": "Address provided" },
+    { "field": "google_maps_url", "points": 10, "label": "Google Maps link" },
+    { "field": "phone", "points": 5, "label": "Contact number" }
+  ]
 }

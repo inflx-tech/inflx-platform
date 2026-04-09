@@ -1,0 +1,65 @@
+{
+  "category_key": "hotel_homestay",
+  "label": "Hotels & Homestays",
+  "icon": "🏨",
+  "product_noun": "Room",
+  "product_noun_plural": "Rooms",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": true
+  },
+  "sections": ["Standard Room", "Deluxe Room", "Suite", "Family Room", "Dormitory"],
+  "booking_type": "date_range",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Room Type", "type": "text", "required": true, "placeholder": "e.g. Deluxe Double Room" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Standard Room", "Deluxe Room", "Suite", "Family Room", "Dormitory"], "required": false },
+    { "key": "price", "label": "Price per Night (₹)", "type": "number", "required": true, "placeholder": "2500" },
+    { "key": "description", "label": "Room Details", "type": "textarea", "required": false, "placeholder": "Amenities, bed type, max guests..." },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Available Rooms", "type": "number", "required": false, "placeholder": "Number of rooms" },
+    { "key": "variants_json", "label": "Occupancy Options", "type": "variant_builder", "required": false, "placeholder": "e.g. Single / Double / Triple" }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Room" },
+
+  "phase": 3,
+  "status": "coming_soon",
+  "super_category": "travel",
+
+  "action_types": {
+    "book_now": { "enabled": true, "type": "date_range", "cta_label": "Book Room", "requires_date": true, "payment_mode": "token_or_full" },
+    "walkin_pay": { "enabled": true, "cta_label": "Walk-in", "discount_levels": ["shop", "product"] },
+    "enquiry": { "enabled": true, "cta_label": "Check Availability" }
+  },
+
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["Standard Room", "Deluxe Room", "Suite", "Family Room", "Dormitory"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Room Type", "Category", "Price/Night", "Max Guests", "Amenities"] },
+
+  "card_config": {
+    "accent": "#14b8a6",
+    "accent_dim": "rgba(20,184,166,0.1)",
+    "icon": "🏨",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#14b8a6" },
+    "cta_secondary": { "label": "Check", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "/night" },
+    "subtitle_template": "{locality} · {distance} · {rating}",
+    "tags": ["amenities", "room_types"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 15, "label": "Property name & contact" },
+    { "items": "room", "min": 1, "points": 25, "label": "1+ room types listed" },
+    { "type": "photos", "min": 2, "points": 20, "label": "2+ photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

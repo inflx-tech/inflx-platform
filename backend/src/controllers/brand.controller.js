@@ -583,9 +583,75 @@ const storePreview = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Listing Engine endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+const listingService = require('../services/listing.service');
+
+// GET /brands/me/listing-config — full config including listing_steps, card_config, quality_rules
+const getListingConfig = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const config = listingService.getConfigForCategory(brand.category);
+  if (!config) throw new AppError('NOT_FOUND', `No config for category: ${brand.category}`, 404);
+
+  const isActive = listingService.isCategoryActive(brand.category);
+
+  return success(res, {
+    config,
+    listing_engine_active: isActive,
+    current_phase: listingService.LISTING_ENGINE_PHASE,
+  });
+});
+
+// GET /brands/me/quality-score — quality score with breakdown and suggestions
+const getQualityScore = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const result = await listingService.calculateQualityScore(brand.id, brand.category);
+  return success(res, result);
+});
+
+// GET /brands/me/listing-preview — products + card_config for LivePreview component
+const getListingPreview = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const cardConfig = listingService.getCardConfig(brand.category);
+  const actionTypes = listingService.getActionTypes(brand.category);
+  const qualityScore = await listingService.calculateQualityScore(brand.id, brand.category);
+
+  // Fetch top products for preview
+  const { rows: products } = await db.query(
+    `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+     FROM brand_products
+     WHERE brand_id = $1 AND is_active = true
+     ORDER BY section NULLS LAST, name ASC
+     LIMIT 10`,
+    [brand.id]
+  );
+
+  return success(res, {
+    brand: {
+      id: brand.id,
+      business_name: brand.business_name,
+      category: brand.category,
+      city: brand.city,
+    },
+    card_config: cardConfig,
+    action_types: actionTypes,
+    quality_score: qualityScore,
+    products,
+  });
+});
+
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue,
   listProducts, createProduct, updateProduct, deleteProduct,
   listBrandOrders, getPublicProfile, storePreview,
+  getListingConfig, getQualityScore, getListingPreview,
 };

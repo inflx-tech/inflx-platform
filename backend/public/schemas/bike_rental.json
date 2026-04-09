@@ -1,0 +1,68 @@
+{
+  "category_key": "bike_rental",
+  "label": "Bike Rental",
+  "icon": "🏍️",
+  "product_noun": "Vehicle",
+  "product_noun_plural": "Fleet",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": false,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": true
+  },
+  "sections": ["Scooter", "Bike", "Sports Bike", "Electric"],
+  "booking_type": "date_range",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Vehicle Model", "type": "text", "required": true, "placeholder": "e.g. Honda Activa 6G" },
+    { "key": "section", "label": "Vehicle Type", "type": "select", "options": ["Scooter", "Bike", "Sports Bike", "Electric"], "required": false },
+    { "key": "price", "label": "Price per day (₹)", "type": "number", "required": true, "placeholder": "500" },
+    { "key": "description", "label": "Features", "type": "textarea", "required": false, "placeholder": "CC, mileage, helmet included..." },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "variants_json", "label": "Duration Packages", "type": "variant_builder", "required": false, "placeholder": "e.g. Half day / Full day / Weekly" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Book Now"
+  },
+
+  "phase": 3,
+  "status": "coming_soon",
+  "super_category": "travel",
+
+  "action_types": {
+    "book_now": { "enabled": true, "type": "date_range", "cta_label": "Book Bike", "requires_date": true, "payment_mode": "token_or_full" },
+    "walkin_pay": { "enabled": false },
+    "enquiry": { "enabled": true, "cta_label": "Get Quote" }
+  },
+
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["Scooter", "Bike", "Sports Bike", "Electric"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Vehicle Model", "Type", "Price/Day", "Features"] },
+
+  "card_config": {
+    "accent": "#f59e0b",
+    "accent_dim": "rgba(245,158,11,0.1)",
+    "icon": "🏍️",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#f59e0b" },
+    "cta_secondary": { "label": "Enquire", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "/day" },
+    "subtitle_template": "{section} · {locality} · {distance}",
+    "tags": ["section", "helmet_included"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Business name & contact" },
+    { "items": "vehicle", "min": 2, "points": 25, "label": "2+ vehicles listed" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Pickup location" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "category_key": "hardware",
+  "label": "Hardware & Building Materials",
+  "icon": "🔨",
+  "product_noun": "Product",
+  "product_noun_plural": "Products",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": false,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Cement", "Paint", "Plumbing", "Electrical", "Tools", "Tiles", "Wood & Plywood"],
+  "booking_type": null,
+  "availing_modes": ["pay_at_store"],
+  "fields": [
+    { "key": "name", "label": "Product Name", "type": "text", "required": true, "placeholder": "e.g. UltraTech Cement 50kg" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Cement", "Paint", "Plumbing", "Electrical", "Tools", "Tiles", "Wood & Plywood"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "400" },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants_json", "label": "Unit & Quantity Options", "type": "variant_builder", "required": false, "placeholder": "e.g. 1kg / 5kg / 20kg / 50kg, Per Piece / Per Box / Per Bag" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Visit Store"
+  },
+
+  "phase": 5,
+  "status": "coming_soon",
+  "super_category": "shop",
+
+  "action_types": {
+    "walkin_pay": {
+      "enabled": true,
+      "cta_label": "Visit & Pay via INFLX",
+      "discount_levels": ["shop", "category", "product"]
+    },
+    "book_now": {
+      "enabled": false
+    },
+    "online_order": {
+      "enabled": false
+    },
+    "enquiry": {
+      "enabled": false
+    }
+  },
+
+  "listing_steps": [],
+
+  "product_config": {
+    "enabled": true,
+    "required": false,
+    "excel_upload": true,
+    "fields": [
+      { "key": "section", "type": "select", "options": ["Cement", "Paint", "Plumbing", "Electrical", "Tools", "Tiles", "Wood & Plywood"] },
+      { "key": "variants_json", "type": "variant_builder" }
+    ],
+    "excel_columns": ["Product Name", "Category", "Price", "Unit", "Quantity", "Stock"]
+  },
+
+  "card_config": {
+    "accent": "#f97316",
+    "accent_dim": "rgba(249,115,22,0.1)",
+    "icon": "🔨",
+    "cta_primary": { "label": "Visit & Pay", "action": "walkin_pay", "color": "#f97316" },
+    "cta_secondary": null,
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["top_3_products"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Store name & contact" },
+    { "items": "product", "min": 3, "points": 25, "label": "3+ products listed" },
+    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

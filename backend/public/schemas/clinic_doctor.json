@@ -1,0 +1,42 @@
+{
+  "category_key": "clinic_doctor",
+  "label": "Clinics & Doctors",
+  "icon": "🏥",
+  "product_noun": "Consultation",
+  "product_noun_plural": "Consultations",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": true, "variants": false, "stock": false, "booking": true, "enquiry_only": false, "availability": true },
+  "sections": ["General Physician", "Pediatrics", "Gynecology", "Orthopedics", "ENT", "Dermatology", "Cardiology", "Ophthalmology"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Consultation Type", "type": "text", "required": true, "placeholder": "e.g. General Consultation" },
+    { "key": "section", "label": "Specialty", "type": "select", "options": ["General Physician", "Pediatrics", "Gynecology", "Orthopedics", "ENT", "Dermatology", "Cardiology", "Ophthalmology"], "required": false },
+    { "key": "price", "label": "Consultation Fee (₹)", "type": "number", "required": true, "placeholder": "500" },
+    { "key": "duration_mins", "label": "Duration", "type": "duration_select", "options": [15, 30, 45, 60], "required": false },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Appointment" },
+  "phase": 4, "status": "coming_soon", "super_category": "fitness",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "slot_based", "cta_label": "Book Appointment", "requires_date": true, "requires_time_slot": true, "payment_mode": "token_or_full" },
+    "enquiry": { "enabled": true, "cta_label": "Enquire" },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": false, "excel_upload": false, "fields": [] },
+  "card_config": {
+    "accent": "#3b82f6", "accent_dim": "rgba(59,130,246,0.08)", "icon": "🏥",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#3b82f6" },
+    "cta_secondary": { "label": "Enquire", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "consultation" },
+    "subtitle_template": "{section} · {locality} · {distance}",
+    "tags": ["section", "specialties"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Clinic name & contact" },
+    { "items": "consultation", "min": 1, "points": 25, "label": "1+ consultation types" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

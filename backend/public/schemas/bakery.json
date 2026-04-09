@@ -14,22 +14,161 @@
     "enquiry_only": false,
     "availability": false
   },
-  "sections": ["Cakes", "Cookies", "Breads", "Pastries", "Seasonal"],
+  "sections": [
+    "Cakes",
+    "Cookies",
+    "Breads",
+    "Pastries",
+    "Seasonal"
+  ],
   "booking_type": "prebook",
-  "availing_modes": ["pay_at_store", "online_order", "prebook"],
+  "availing_modes": [
+    "pay_at_store",
+    "online_order",
+    "prebook"
+  ],
   "fields": [
-    { "key": "name", "label": "Item Name", "type": "text", "required": true, "placeholder": "e.g. Chocolate Truffle Cake" },
-    { "key": "section", "label": "Category", "type": "select", "options": ["Cakes", "Cookies", "Breads", "Pastries", "Seasonal"], "required": false },
-    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "499" },
-    { "key": "veg_flag", "label": "Type", "type": "veg_toggle", "required": false },
-    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
-    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
-    { "key": "stock", "label": "Daily Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
-    { "key": "variants", "label": "Custom Sizes Available", "type": "checkbox", "required": false, "placeholder": "e.g. 500g, 1kg, 2kg" }
+    {
+      "key": "name",
+      "label": "Item Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "e.g. Chocolate Truffle Cake"
+    },
+    {
+      "key": "section",
+      "label": "Category",
+      "type": "select",
+      "options": [
+        "Cakes",
+        "Cookies",
+        "Breads",
+        "Pastries",
+        "Seasonal"
+      ],
+      "required": false
+    },
+    {
+      "key": "price",
+      "label": "Price (₹)",
+      "type": "number",
+      "required": true,
+      "placeholder": "499"
+    },
+    {
+      "key": "veg_flag",
+      "label": "Type",
+      "type": "veg_toggle",
+      "required": false
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "Brief description"
+    },
+    {
+      "key": "image_url",
+      "label": "Image URL",
+      "type": "url",
+      "required": false
+    },
+    {
+      "key": "stock",
+      "label": "Daily Stock",
+      "type": "number",
+      "required": false,
+      "placeholder": "Leave blank = unlimited"
+    },
+    {
+      "key": "variants",
+      "label": "Custom Sizes Available",
+      "type": "checkbox",
+      "required": false,
+      "placeholder": "e.g. 500g, 1kg, 2kg"
+    }
   ],
   "buyer_config": {
     "show_veg_filter": true,
     "show_sections": true,
     "cta_label": "Order Now"
-  }
+  },
+  "phase": 2,
+  "status": "coming_soon",
+  "super_category": "eat",
+  "action_types": {
+    "walkin_pay": {
+      "enabled": true,
+      "cta_label": "Walk-in & Pay",
+      "discount_levels": [
+        "shop",
+        "category",
+        "product"
+      ]
+    },
+    "online_order": {
+      "enabled": true,
+      "cta_label": "Order Online",
+      "delivery_supported": true
+    },
+    "book_now": {
+      "enabled": true,
+      "type": "slot_based",
+      "cta_label": "Pre-order",
+      "requires_date": true
+    },
+    "enquiry": {
+      "enabled": false
+    }
+  },
+  "listing_steps": [],
+  "product_config": {
+    "enabled": true,
+    "required": false,
+    "excel_upload": false,
+    "fields": []
+  },
+  "card_config": {
+    "accent": "#f97316",
+    "accent_dim": "rgba(249,115,22,0.1)",
+    "icon": "🎂",
+    "cta_primary": {
+      "label": "Order",
+      "action": "walkin_pay",
+      "color": "#f97316"
+    },
+    "cta_secondary": {
+      "label": "Pre-order",
+      "action": "book_slot"
+    },
+    "price_display": {
+      "source": "cheapest_item",
+      "unit": "onwards"
+    },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": [
+      "veg_only",
+      "top_3_items"
+    ]
+  },
+  "quality_rules": [
+    {
+      "field": "business_name",
+      "points": 20,
+      "label": "Bakery name & contact"
+    },
+    {
+      "items": "baked_item",
+      "min": 3,
+      "points": 20,
+      "label": "3+ items"
+    },
+    {
+      "type": "photos",
+      "min": 1,
+      "points": 15,
+      "label": "Photos uploaded"
+    }
+  ]
 }

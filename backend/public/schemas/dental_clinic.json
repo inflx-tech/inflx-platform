@@ -1,0 +1,42 @@
+{
+  "category_key": "dental_clinic",
+  "label": "Dental Clinics",
+  "icon": "🦷",
+  "product_noun": "Treatment",
+  "product_noun_plural": "Treatments",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": true, "variants": false, "stock": false, "booking": true, "enquiry_only": false, "availability": true },
+  "sections": ["Cleaning", "Filling", "Root Canal", "Extraction", "Braces", "Implants", "Whitening", "Check-up"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Treatment Name", "type": "text", "required": true, "placeholder": "e.g. Teeth Cleaning" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Cleaning", "Filling", "Root Canal", "Extraction", "Braces", "Implants", "Whitening", "Check-up"], "required": false },
+    { "key": "price", "label": "Starting Price (₹)", "type": "number", "required": true, "placeholder": "500" },
+    { "key": "duration_mins", "label": "Duration", "type": "duration_select", "options": [15, 30, 45, 60, 90], "required": false },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Appointment" },
+  "phase": 4, "status": "coming_soon", "super_category": "fitness",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "slot_based", "cta_label": "Book Appointment", "requires_date": true, "requires_time_slot": true, "payment_mode": "token_or_full" },
+    "enquiry": { "enabled": true, "cta_label": "Enquire" },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": false, "excel_upload": false, "fields": [] },
+  "card_config": {
+    "accent": "#3b82f6", "accent_dim": "rgba(59,130,246,0.08)", "icon": "🦷",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#3b82f6" },
+    "cta_secondary": { "label": "Enquire", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["treatments_offered"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Clinic name & contact" },
+    { "items": "treatment", "min": 2, "points": 25, "label": "2+ treatments listed" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

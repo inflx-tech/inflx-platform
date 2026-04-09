@@ -27,4 +27,8 @@ router.get('/home-feed', ...followerAuth, ctrl.getHomeFeed);   // NEW — produc
 router.get('/deals',     ...followerAuth, ctrl.getDeals);      // NEW — category browse
 router.get('/following', ...followerAuth, ctrl.getFollowing);  // NEW — followed influencers
 
+// ── Listing Engine endpoints ─────────────────────────────────────────────────
+router.get('/stories',    ...followerAuth, ctrl.getStories);    // Influencer story circles
+router.get('/categories', ...followerAuth, ctrl.getCategories); // Super-category browser
+
 module.exports = router;

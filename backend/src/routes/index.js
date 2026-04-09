@@ -85,4 +85,7 @@ router.get('/business/:brand_id/store',            authenticateOptional, followe
 router.get('/business/:brand_id',                 authenticateOptional, followerCtrl.getBusinessStore);
 router.get('/category/:category_key',             authenticateOptional, followerCtrl.getCategoryStore);
 
+// ── Listing Engine — category stores with inline products ────────────────────
+router.get('/category/:super_category/stores',    authenticateOptional, followerCtrl.getCategoryStores);
+
 module.exports = router;

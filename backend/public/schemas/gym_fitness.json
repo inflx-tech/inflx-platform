@@ -1,0 +1,141 @@
+{
+  "category_key": "gym_fitness",
+  "label": "Gym & Fitness Studio",
+  "icon": "💪",
+  "product_noun": "Plan",
+  "product_noun_plural": "Plans",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": false,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Gym Membership", "Personal Training", "Yoga", "Zumba", "CrossFit", "Day Pass"],
+  "booking_type": "membership",
+  "availing_modes": ["pay_at_store", "prebook"],
+  "fields": [
+    { "key": "name", "label": "Plan Name", "type": "text", "required": true, "placeholder": "e.g. Monthly Gym Plan" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Gym Membership", "Personal Training", "Yoga", "Zumba", "CrossFit", "Day Pass"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "2500" },
+    { "key": "description", "label": "Plan Details", "type": "textarea", "required": false, "placeholder": "What's included in this plan" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "variants_json", "label": "Duration Options", "type": "variant_builder", "required": false, "placeholder": "e.g. 1 Month / 3 Months / 6 Months / 1 Year" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Join Now"
+  },
+
+  "phase": 2,
+  "status": "coming_soon",
+  "super_category": "fitness",
+
+  "action_types": {
+    "book_now": {
+      "enabled": true,
+      "type": "membership",
+      "cta_label": "Join Now",
+      "requires_date": true,
+      "requires_time_slot": false,
+      "payment_mode": "full",
+      "cancellation": "configurable"
+    },
+    "walkin_pay": {
+      "enabled": true,
+      "cta_label": "Walk-in & Pay",
+      "discount_levels": ["shop", "category", "product"]
+    },
+    "enquiry": { "enabled": true, "cta_label": "Get Info" }
+  },
+
+  "listing_steps": [
+    {
+      "id": "basics",
+      "title": "Gym Details",
+      "subtitle": "Basic info — followers see your gym name, location & facilities",
+      "fields": [
+        { "key": "business_name", "type": "text", "label": "Gym / Studio Name", "required": true },
+        { "key": "city", "type": "select", "source": "cities_db", "required": true, "grid": "half" },
+        { "key": "locality", "type": "text", "label": "Area / Locality", "required": true, "grid": "half" },
+        { "key": "gym_type", "type": "chip_group", "multi": true, "label": "Gym Type",
+          "options": ["🏋️ Gym", "🧘 Yoga", "💃 Zumba", "🥊 CrossFit", "🏊 Swimming", "🤸 Aerobics"] },
+        { "key": "facilities", "type": "chip_group", "multi": true, "label": "Facilities",
+          "options": ["AC", "Shower", "Locker", "Parking", "Trainer", "Steam/Sauna", "Cardio Zone", "Free Weights"] },
+        { "key": "operating_hours", "type": "text", "label": "Operating Hours", "placeholder": "e.g. 5 AM – 10 PM" },
+        { "key": "phone", "type": "text", "label": "Contact Number" },
+        { "key": "address", "type": "textarea", "label": "Full Address" },
+        { "key": "google_maps_url", "type": "url", "label": "Google Maps Link" },
+        { "key": "day_pass", "type": "toggle", "label": "Day pass available",
+          "follower_sync": { "target": "badge", "text": "🎟️ Day Pass" } }
+      ]
+    },
+    {
+      "id": "plans",
+      "title": "Plans & Pricing",
+      "subtitle": "Add membership plans and pricing — followers compare and choose",
+      "sections": [
+        {
+          "type": "repeatable_items",
+          "item_type": "plan",
+          "item_fields": [
+            { "key": "name", "type": "text", "label": "Plan Name", "required": true },
+            { "key": "price", "type": "number", "label": "Price (₹)", "required": true, "market_benchmark": true },
+            { "key": "section", "type": "select", "label": "Category", "options": ["Gym Membership", "Personal Training", "Yoga", "Zumba", "CrossFit", "Day Pass"] },
+            { "key": "variants_json", "type": "variant_builder", "label": "Duration Options", "placeholder": "e.g. 1 Month / 3 Months / 1 Year" },
+            { "key": "description", "type": "textarea", "label": "What's Included" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "preview",
+      "title": "Preview & Publish",
+      "subtitle": "See how followers will discover your gym",
+      "sections": [
+        { "type": "photo_upload", "slots": ["Gym Floor", "Equipment", "Yoga Area", "Exterior"] },
+        { "type": "live_preview" },
+        { "type": "quality_score" },
+        { "type": "publish_button" }
+      ]
+    }
+  ],
+
+  "product_config": {
+    "enabled": true,
+    "required": true,
+    "excel_upload": false,
+    "fields": [
+      { "key": "section", "type": "select", "options": ["Gym Membership", "Personal Training", "Yoga", "Zumba", "CrossFit", "Day Pass"] },
+      { "key": "variants_json", "type": "variant_builder" }
+    ],
+    "excel_columns": ["Plan Name", "Category", "Price", "Duration Options", "Description"]
+  },
+
+  "card_config": {
+    "accent": "#3b82f6",
+    "accent_dim": "rgba(59,130,246,0.08)",
+    "icon": "💪",
+    "cta_primary": { "label": "Join", "action": "book_slot", "color": "#3b82f6" },
+    "cta_secondary": { "label": "Day Pass", "action": "walkin_pay" },
+    "price_display": { "source": "cheapest_item", "unit": "/month" },
+    "subtitle_template": "{gym_type} · {locality} · {distance}",
+    "tags": ["gym_type", "facilities", "day_pass"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 15, "label": "Gym name & contact" },
+    { "field": "gym_type", "points": 10, "label": "Gym type set" },
+    { "field": "facilities", "points": 10, "label": "Facilities listed" },
+    { "items": "plan", "min": 2, "points": 20, "label": "2+ plans listed" },
+    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
+    { "field": "operating_hours", "points": 10, "label": "Operating hours set" },
+    { "field": "address", "points": 10, "label": "Address provided" },
+    { "field": "google_maps_url", "points": 5, "label": "Google Maps link" },
+    { "field": "phone", "points": 5, "label": "Contact number" }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "category_key": "photography",
+  "label": "Photography Studios",
+  "icon": "📸",
+  "product_noun": "Package",
+  "product_noun_plural": "Packages",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": true, "variants": true, "stock": false, "booking": true, "enquiry_only": false, "availability": true },
+  "sections": ["Wedding", "Pre-Wedding", "Portrait", "Product", "Event", "Maternity", "Birthday"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Package Name", "type": "text", "required": true, "placeholder": "e.g. Wedding Gold Package" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Wedding", "Pre-Wedding", "Portrait", "Product", "Event", "Maternity", "Birthday"], "required": false },
+    { "key": "price", "label": "Starting Price (₹)", "type": "number", "required": true, "placeholder": "15000" },
+    { "key": "description", "label": "What's Included", "type": "textarea", "required": true, "placeholder": "Number of photos, album, video..." },
+    { "key": "image_url", "label": "Sample Image URL", "type": "url", "required": false },
+    { "key": "variants_json", "label": "Package Tiers", "type": "variant_builder", "required": false }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Now" },
+  "phase": 4, "status": "coming_soon", "super_category": "events",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "slot_based", "cta_label": "Book Session", "requires_date": true, "requires_time_slot": true, "payment_mode": "token_or_full" },
+    "enquiry": { "enabled": true, "cta_label": "Get Quote" },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["Wedding", "Pre-Wedding", "Portrait", "Product", "Event", "Maternity", "Birthday"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Package Name", "Category", "Price", "Deliverables"] },
+  "card_config": {
+    "accent": "#f97316", "accent_dim": "rgba(249,115,22,0.1)", "icon": "📸",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#f97316" },
+    "cta_secondary": { "label": "Quote", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{section} · {locality}",
+    "tags": ["section", "portfolio"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 15, "label": "Studio name & contact" },
+    { "items": "package", "min": 2, "points": 20, "label": "2+ packages listed" },
+    { "type": "photos", "min": 3, "points": 25, "label": "3+ portfolio photos" },
+    { "field": "address", "points": 10, "label": "Studio address" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

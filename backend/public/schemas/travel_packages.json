@@ -1,0 +1,84 @@
+{
+  "category_key": "travel_packages",
+  "label": "Travel Packages & Tours",
+  "icon": "✈️",
+  "product_noun": "Package",
+  "product_noun_plural": "Packages",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": true,
+    "enquiry_only": false,
+    "availability": true
+  },
+  "sections": ["Domestic Tours", "International Tours", "Weekend Getaways", "Honeymoon", "Family", "Adventure", "Pilgrimage"],
+  "booking_type": "date_range",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Package Name", "type": "text", "required": true, "placeholder": "e.g. Manali & Shimla 5N/6D" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Domestic Tours", "International Tours", "Weekend Getaways", "Honeymoon", "Family", "Adventure", "Pilgrimage"], "required": false },
+    { "key": "price", "label": "Starting Price per Person (₹)", "type": "number", "required": true, "placeholder": "18999" },
+    { "key": "description", "label": "Package Overview", "type": "textarea", "required": true, "placeholder": "Itinerary highlights, inclusions" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Available Seats", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants_json", "label": "Pricing Tiers", "type": "variant_builder", "required": false, "placeholder": "e.g. Budget / Standard / Premium" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Book Trip"
+  },
+
+  "phase": 3,
+  "status": "coming_soon",
+  "super_category": "travel",
+
+  "action_types": {
+    "book_now": {
+      "enabled": true,
+      "type": "date_range",
+      "cta_label": "Book Trip",
+      "requires_date": true,
+      "requires_time_slot": false,
+      "payment_mode": "token_or_full",
+      "token_amount": null,
+      "cancellation": "configurable"
+    },
+    "enquiry": { "enabled": true, "cta_label": "Enquire" },
+    "walkin_pay": { "enabled": false }
+  },
+
+  "listing_steps": [],
+  "product_config": {
+    "enabled": true,
+    "required": true,
+    "excel_upload": false,
+    "fields": [
+      { "key": "section", "type": "select", "options": ["Domestic Tours", "International Tours", "Weekend Getaways", "Honeymoon", "Family", "Adventure", "Pilgrimage"] },
+      { "key": "variants_json", "type": "variant_builder" }
+    ],
+    "excel_columns": ["Package Name", "Category", "Price per Person", "Duration", "Description"]
+  },
+
+  "card_config": {
+    "accent": "#14b8a6",
+    "accent_dim": "rgba(20,184,166,0.1)",
+    "icon": "✈️",
+    "cta_primary": { "label": "Book Trip", "action": "book_slot", "color": "#14b8a6" },
+    "cta_secondary": { "label": "Enquire", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "/person" },
+    "subtitle_template": "{section} · {duration} · {distance}",
+    "tags": ["section", "duration", "inclusions"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 15, "label": "Business name & contact" },
+    { "items": "package", "min": 2, "points": 25, "label": "2+ packages listed" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Photos uploaded" },
+    { "field": "address", "points": 10, "label": "Office address" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "category_key": "jewellery",
+  "label": "Jewellery & Watches",
+  "icon": "💎",
+  "product_noun": "Product",
+  "product_noun_plural": "Products",
+  "features": {
+    "sections": true,
+    "veg_flag": false,
+    "duration_mins": false,
+    "variants": true,
+    "stock": true,
+    "booking": false,
+    "enquiry_only": false,
+    "availability": false
+  },
+  "sections": ["Gold", "Diamond", "Silver", "Artificial", "Watches", "Bridal Sets"],
+  "booking_type": null,
+  "availing_modes": ["pay_at_store"],
+  "fields": [
+    { "key": "name", "label": "Product Name", "type": "text", "required": true, "placeholder": "e.g. Gold Necklace Set" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Gold", "Diamond", "Silver", "Artificial", "Watches", "Bridal Sets"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "15000" },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
+    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
+    { "key": "stock", "label": "Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
+    { "key": "variants_json", "label": "Weight & Carat Options", "type": "variant_builder", "required": false, "placeholder": "e.g. 10g / 20g / 50g, 22K / 24K" }
+  ],
+  "buyer_config": {
+    "show_veg_filter": false,
+    "show_sections": true,
+    "cta_label": "Visit Store"
+  },
+
+  "phase": 5,
+  "status": "coming_soon",
+  "super_category": "shop",
+
+  "action_types": {
+    "walkin_pay": {
+      "enabled": true,
+      "cta_label": "Visit & Pay via INFLX",
+      "discount_levels": ["shop", "category", "product"]
+    },
+    "book_now": {
+      "enabled": false
+    },
+    "online_order": {
+      "enabled": false
+    },
+    "enquiry": {
+      "enabled": false
+    }
+  },
+
+  "listing_steps": [],
+
+  "product_config": {
+    "enabled": true,
+    "required": false,
+    "excel_upload": true,
+    "fields": [
+      { "key": "section", "type": "select", "options": ["Gold", "Diamond", "Silver", "Artificial", "Watches", "Bridal Sets"] },
+      { "key": "variants_json", "type": "variant_builder" }
+    ],
+    "excel_columns": ["Product Name", "Category", "Price", "Weight", "Carat", "Stock"]
+  },
+
+  "card_config": {
+    "accent": "#f59e0b",
+    "accent_dim": "rgba(245,158,11,0.1)",
+    "icon": "💎",
+    "cta_primary": { "label": "Visit & Pay", "action": "walkin_pay", "color": "#f59e0b" },
+    "cta_secondary": null,
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["top_3_products"]
+  },
+
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Store name & contact" },
+    { "items": "product", "min": 3, "points": 25, "label": "3+ products listed" },
+    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

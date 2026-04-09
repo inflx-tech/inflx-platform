@@ -38,6 +38,11 @@ router.get('/me/campaigns/:campaign_id/conversions', authenticate, requireRole('
 // Category schema (drives dynamic product form)
 router.get('/me/schema',            authenticate, requireRole('brand'), ctrl.getCategorySchema);
 
+// Listing engine endpoints
+router.get('/me/listing-config',    authenticate, requireRole('brand'), ctrl.getListingConfig);
+router.get('/me/quality-score',     authenticate, requireRole('brand'), ctrl.getQualityScore);
+router.get('/me/listing-preview',   authenticate, requireRole('brand'), ctrl.getListingPreview);
+
 // Master catalogue — pre-seeded vehicles/services for car_rental and salon
 router.get('/me/master-catalogue',  authenticate, requireRole('brand'), ctrl.getMasterCatalogue);
 

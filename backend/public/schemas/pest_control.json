@@ -1,0 +1,45 @@
+{
+  "category_key": "pest_control",
+  "label": "Pest Control",
+  "icon": "🐛",
+  "product_noun": "Service",
+  "product_noun_plural": "Services",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": true, "variants": true, "stock": false, "booking": true, "enquiry_only": false, "availability": true },
+  "sections": ["General Pest Control", "Termite Treatment", "Cockroach Control", "Bed Bug Treatment", "Mosquito Control", "Rodent Control"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Service Name", "type": "text", "required": true, "placeholder": "e.g. General Pest Control — 2BHK" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["General Pest Control", "Termite Treatment", "Cockroach Control", "Bed Bug Treatment", "Mosquito Control", "Rodent Control"], "required": false },
+    { "key": "price", "label": "Starting Price (₹)", "type": "number", "required": true, "placeholder": "999" },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false },
+    { "key": "variants_json", "label": "Size Options", "type": "variant_builder", "required": false, "placeholder": "e.g. 1BHK / 2BHK / 3BHK / Villa" }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Service" },
+  "phase": 4, "status": "coming_soon", "super_category": "home",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "slot_based", "cta_label": "Book Service", "requires_date": true, "requires_time_slot": true, "payment_mode": "token_or_full" },
+    "enquiry": { "enabled": true, "cta_label": "Get Quote" },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["General Pest Control", "Termite Treatment", "Cockroach Control", "Bed Bug Treatment", "Mosquito Control", "Rodent Control"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Service Name", "Category", "Price", "Area Size", "Description"] },
+  "card_config": {
+    "accent": "#10b981", "accent_dim": "rgba(16,185,129,0.1)", "icon": "🐛",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#10b981" },
+    "cta_secondary": { "label": "Quote", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["service_types", "warranty"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Business name & contact" },
+    { "items": "service", "min": 2, "points": 25, "label": "2+ services listed" },
+    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Service area" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

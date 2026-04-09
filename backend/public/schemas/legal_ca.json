@@ -1,0 +1,35 @@
+{
+  "category_key": "legal_ca",
+  "label": "Legal / CA Consultation",
+  "icon": "⚖️",
+  "product_noun": "Service",
+  "product_noun_plural": "Services",
+  "features": { "sections": false, "veg_flag": false, "duration_mins": false, "variants": false, "stock": false, "booking": false, "enquiry_only": true, "availability": false },
+  "sections": [],
+  "booking_type": null,
+  "availing_modes": [],
+  "fields": [],
+  "buyer_config": { "show_veg_filter": false, "show_sections": false, "show_enquiry_form": true, "cta_label": "Book Consultation" },
+  "phase": 4, "status": "coming_soon", "super_category": "events",
+  "action_types": {
+    "enquiry": { "enabled": true, "cta_label": "Book Consultation" },
+    "book_now": { "enabled": false },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": false, "required": false, "excel_upload": false, "fields": [] },
+  "card_config": {
+    "accent": "#6366f1", "accent_dim": "rgba(99,102,241,0.1)", "icon": "⚖️",
+    "cta_primary": { "label": "Consult", "action": "enquiry", "color": "#6366f1" },
+    "cta_secondary": null,
+    "price_display": { "source": "none", "unit": "" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["expertise_areas"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 30, "label": "Firm name & contact" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Office photos" },
+    { "field": "address", "points": 20, "label": "Office address" },
+    { "field": "phone", "points": 15, "label": "Contact number" }
+  ]
+}

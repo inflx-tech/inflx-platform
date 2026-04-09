@@ -28,7 +28,11 @@ async function migrate() {
 
   console.log(`\nRunning migration on: ${connectionString.replace(/:[^:@]+@/, ':***@')}`);
 
-  const client = new Client({ connectionString });
+  const requireSSL = connectionString.includes('supabase.com');
+  const client = new Client({
+    connectionString,
+    ...(requireSSL && { ssl: { rejectUnauthorized: false } }),
+  });
   await client.connect();
 
   // Ordered list of all migration files. Each is run sequentially.
@@ -42,6 +46,11 @@ async function migrate() {
     '006_contracts_and_payment_config.sql',
     '007_link_clicks.sql',
     '008_fix_withdrawal.sql',
+    '009_deliverable_media.sql',
+    '010_brand_products_missing_columns.sql',
+    '011_follower_app_redesign.sql',
+    '012_onesignal_player_id.sql',
+    '013_listing_engine.sql',
   ];
 
   try {

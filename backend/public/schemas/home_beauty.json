@@ -1,0 +1,43 @@
+{
+  "category_key": "home_beauty",
+  "label": "Home Beauty / At-home Salon",
+  "icon": "💅",
+  "product_noun": "Service",
+  "product_noun_plural": "Services",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": true, "variants": false, "stock": false, "booking": true, "enquiry_only": false, "availability": true },
+  "sections": ["Hair", "Skin", "Nails", "Makeup", "Spa", "Waxing", "Bridal"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Service Name", "type": "text", "required": true, "placeholder": "e.g. Bridal Makeup — At Home" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Hair", "Skin", "Nails", "Makeup", "Spa", "Waxing", "Bridal"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "999" },
+    { "key": "duration_mins", "label": "Duration", "type": "duration_select", "options": [30, 45, 60, 90, 120, 180], "required": true },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book At Home" },
+  "phase": 4, "status": "coming_soon", "super_category": "groom",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "slot_based", "cta_label": "Book At Home", "requires_date": true, "requires_time_slot": true, "payment_mode": "token_or_full" },
+    "enquiry": { "enabled": true, "cta_label": "Enquire" },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["Hair", "Skin", "Nails", "Makeup", "Spa", "Waxing", "Bridal"] }
+  ], "excel_columns": ["Service", "Category", "Price", "Duration"] },
+  "card_config": {
+    "accent": "#ec4899", "accent_dim": "rgba(236,72,153,0.1)", "icon": "💅",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#ec4899" },
+    "cta_secondary": null,
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{section} · At-home · {locality}",
+    "tags": ["section", "at_home"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Business name & contact" },
+    { "items": "service", "min": 3, "points": 25, "label": "3+ services listed" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Work photos" },
+    { "field": "phone", "points": 15, "label": "Contact number" }
+  ]
+}

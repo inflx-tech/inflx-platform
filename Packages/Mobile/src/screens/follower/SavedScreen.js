@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, spacing } from '../../theme/tokens';
+import { darkColors, spacing } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import OfferCard from '../../components/OfferCard';
 
@@ -80,7 +80,7 @@ export default function SavedScreen({ navigation }) {
   }, [handleCTA, handleUnsave, navigation]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={colors.orange} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={darkColors.amber} /></View>;
   }
 
   return (
@@ -95,7 +95,7 @@ export default function SavedScreen({ navigation }) {
         keyExtractor={(item, idx) => `${item.offer_id}_${idx}`}
         renderItem={renderItem}
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.orange]} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}
         ListEmptyComponent={
           <View style={s.empty}>
             <Text style={{ fontSize: 48, marginBottom: 12 }}>🔖</Text>
@@ -109,15 +109,15 @@ export default function SavedScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5EEE6' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5EEE6' },
+  container: { flex: 1, backgroundColor: darkColors.bg2 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkColors.bg2 },
   header: {
     paddingHorizontal: spacing.lg, paddingTop: 50, paddingBottom: spacing.sm,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    backgroundColor: darkColors.bg2,
   },
-  title: { fontSize: 22, fontWeight: '800', color: colors.t1 },
-  count: { fontSize: 12, color: colors.t3, marginTop: 2 },
+  title: { fontSize: 22, fontWeight: '800', color: darkColors.text },
+  count: { fontSize: 12, color: darkColors.textSecondary, marginTop: 2 },
   empty: { alignItems: 'center', paddingTop: 60 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptyText: { fontSize: 12, color: colors.t3, textAlign: 'center', paddingHorizontal: 40 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: darkColors.text, marginBottom: 4 },
+  emptyText: { fontSize: 12, color: darkColors.textSecondary, textAlign: 'center', paddingHorizontal: 40 },
 });

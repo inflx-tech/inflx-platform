@@ -2,10 +2,14 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text } from 'react-native';
-import { colors } from '../theme/tokens';
+import { colors, darkColors } from '../theme/tokens';
 
-// New screens
-import HomeScreen from '../screens/follower/HomeScreen';
+// V2 screens (dark theme, products-first)
+import HomeScreenV2 from '../screens/follower/HomeScreenV2';
+import FindScreen from '../screens/follower/FindScreen';
+import CategoryListScreen from '../screens/follower/CategoryListScreen';
+
+// Existing screens
 import DealsScreen from '../screens/follower/DealsScreen';
 import SavedScreen from '../screens/follower/SavedScreen';
 import MeScreen from '../screens/follower/MeScreen';
@@ -13,7 +17,7 @@ import InfluencerStoreScreen from '../screens/follower/InfluencerStoreScreen';
 import BrandStoreScreen from '../screens/follower/BrandStoreScreen';
 import FollowedInfluencersScreen from '../screens/follower/FollowedInfluencersScreen';
 
-// Existing screens (transaction flows)
+// Existing transaction flow screens
 import PayAtStoreScreen from '../screens/follower/PayAtStoreScreen';
 import PreBookScreen from '../screens/follower/PreBookScreen';
 import OnlineOrderScreen from '../screens/follower/OnlineOrderScreen';
@@ -26,7 +30,7 @@ import AddressScreen from '../screens/follower/AddressScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-// Shared transaction screens used across multiple stacks
+// Shared screens used across multiple stacks
 const SHARED_SCREENS = (Stack) => (
   <>
     <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
@@ -38,13 +42,25 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     <Stack.Screen name="Enquiry" component={EnquiryScreen} />
     <Stack.Screen name="Address" component={AddressScreen} />
+    <Stack.Screen name="Find" component={FindScreen} />
+    <Stack.Screen name="CategoryList" component={CategoryListScreen} />
   </>
 );
 
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Home" component={HomeScreenV2} />
+      {SHARED_SCREENS(Stack)}
+    </Stack.Navigator>
+  );
+}
+
+function FindStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="FindHome" component={FindScreen} />
+      <Stack.Screen name="CategoryList" component={CategoryListScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );
@@ -59,18 +75,11 @@ function DealsStack() {
   );
 }
 
-function OrdersStack() {
+function MyStuffStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function SavedStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SavedList" component={SavedScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
@@ -95,11 +104,11 @@ export default function FollowerNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.orange,
-        tabBarInactiveTintColor: colors.t3,
+        tabBarActiveTintColor: darkColors.amber,
+        tabBarInactiveTintColor: darkColors.textMuted,
         tabBarStyle: {
-          borderTopColor: colors.border,
-          backgroundColor: colors.white,
+          borderTopColor: darkColors.border,
+          backgroundColor: darkColors.card,
           paddingTop: 4,
           height: 60,
         },
@@ -117,6 +126,16 @@ export default function FollowerNavigator() {
         }}
       />
       <Tab.Screen
+        name="FindTab"
+        component={FindStack}
+        options={{
+          tabBarLabel: 'Find',
+          tabBarIcon: ({ focused }) => (
+            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>🔍</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
         name="DealsTab"
         component={DealsStack}
         options={{
@@ -127,22 +146,12 @@ export default function FollowerNavigator() {
         }}
       />
       <Tab.Screen
-        name="OrdersTab"
-        component={OrdersStack}
+        name="MyStuffTab"
+        component={MyStuffStack}
         options={{
-          tabBarLabel: 'Orders',
+          tabBarLabel: 'My Stuff',
           tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>📦</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="SavedTab"
-        component={SavedStack}
-        options={{
-          tabBarLabel: 'Saved',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>🔖</Text>
+            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>📋</Text>
           ),
         }}
       />

@@ -1,21 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import { colors, spacing, radius } from '../../theme/tokens';
+import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
-import OfferCard from '../../components/OfferCard';
+import ProductCard from '../../components/cards/ProductCard';
+import NewOfferCard from '../../components/cards/NewOfferCard';
 
 const FILTER_TABS = [
   { key: 'all', label: 'All' },
-  { key: 'dining', label: 'Dining' },
-  { key: 'shopping', label: 'Shopping' },
-  { key: 'booking', label: 'Booking' },
+  { key: 'products', label: '🛍️ Products' },
+  { key: 'store_deals', label: '🏪 Store Deals' },
+  { key: 'services', label: '✨ Services' },
 ];
-
-const CATEGORY_GROUPS = {
-  dining: ['restaurant', 'bakery'],
-  shopping: ['fashion_walkin', 'fashion_online', 'florist', 'packaged_food'],
-  booking: ['salon', 'car_rental', 'function_hall', 'wedding_planner'],
-};
 
 export default function InfluencerStoreScreen({ navigation, route }) {
   const { handle } = route.params;
@@ -60,13 +55,6 @@ export default function InfluencerStoreScreen({ navigation, route }) {
     }
   }, [isFollowing, store]);
 
-  const filteredOffers = useCallback(() => {
-    if (!store?.offers) return [];
-    if (filter === 'all') return store.offers;
-    const cats = CATEGORY_GROUPS[filter] || [];
-    return store.offers.filter(o => cats.includes(o.brand_category));
-  }, [store, filter]);
-
   const handleCTA = useCallback((offer, mode) => {
     const params = {
       offer: { id: offer.offer_id, offer_type: offer.offer_type, discount_value: offer.discount_value, availing_modes: offer.availing_modes },
@@ -83,110 +71,163 @@ export default function InfluencerStoreScreen({ navigation, route }) {
   }, [navigation, store]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={colors.orange} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={darkColors.amber} /></View>;
   }
 
   const inf = store?.influencer;
-  const offers = filteredOffers();
+  const offers = store?.offers || [];
+
+  // Extract products from all offers
+  const allProducts = [];
+  const storeDeals = [];
+  for (const offer of offers) {
+    if (offer.products && offer.products.length > 0) {
+      for (const product of offer.products) {
+        allProducts.push({ product, offer, brand: { id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city } });
+      }
+    } else {
+      storeDeals.push(offer);
+    }
+  }
 
   return (
-    <View style={s.container}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Text style={{ fontSize: 16 }}>←</Text>
-        </TouchableOpacity>
-        <View style={s.infAvatar}>
-          <Text style={s.infAvatarText}>{getInitials(inf?.name)}</Text>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}>
+      {/* Influencer profile header */}
+      <View style={s.profileCard}>
+        <View style={s.avatar}>
+          <Text style={s.avatarText}>{inf?.name?.[0] || '?'}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={s.storeName}>{inf?.name}'s Store</Text>
-          <Text style={s.storeHandle}>@{inf?.instagram_handle} · {offers.length} deals</Text>
+          <Text style={s.infName}>{inf?.name}</Text>
+          <Text style={s.infMeta}>{inf?.niche?.[0] || 'Lifestyle'} · Vijayawada</Text>
+          <View style={s.statsRow}>
+            <Text style={s.statText}><Text style={s.statNum}>{formatCount(inf?.followers_count)}</Text> followers</Text>
+            <Text style={s.statText}><Text style={s.statNum}>{offers.length}</Text> deals</Text>
+          </View>
         </View>
         <TouchableOpacity style={[s.followBtn, isFollowing && s.followingBtn]} onPress={handleFollow}>
           <Text style={[s.followText, isFollowing && s.followingText]}>
-            {isFollowing ? 'Following' : 'Follow'}
+            {isFollowing ? 'Following ✓' : '+ Follow'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Filter tabs */}
-      <View style={s.filterRow}>
-        {FILTER_TABS.map(tab => (
+      {/* Filter pills */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.pills}>
+        {FILTER_TABS.map(t => (
           <TouchableOpacity
-            key={tab.key}
-            style={[s.filterTab, filter === tab.key && s.filterTabActive]}
-            onPress={() => setFilter(tab.key)}
+            key={t.key}
+            style={[s.pill, filter === t.key && s.pillActive]}
+            onPress={() => setFilter(t.key)}
           >
-            <Text style={[s.filterText, filter === tab.key && s.filterTextActive]}>{tab.label}</Text>
+            <Text style={[s.pillText, filter === t.key && s.pillTextActive]}>{t.label}</Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
-      {/* Offers list */}
-      <FlatList
-        data={offers}
-        keyExtractor={(item, idx) => `${item.offer_id}_${idx}`}
-        renderItem={({ item: offer }) => {
-          const product = offer.products?.[0] || null;
-          return (
-            <OfferCard
-              brand={{ id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city }}
-              offer={{ id: offer.offer_id, offer_type: offer.offer_type, discount_value: offer.discount_value, availing_modes: offer.availing_modes, prebook_advance: offer.prebook_advance }}
-              product={product}
-              influencer={inf ? { ...inf, note_text: product?.influencer_note } : null}
-              tracking={{ campaign_id: offer.campaign_id, set_id: offer.set_id, offer_id: offer.offer_id, campaign_influencer_id: offer.campaign_influencer_id }}
-              onPressCTA={(mode) => handleCTA(offer, mode)}
-              onPressBrand={() => navigation.navigate('BrandStore', { brandId: offer.brand_id, brandName: offer.brand_name })}
-            />
-          );
-        }}
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 100 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.orange]} />}
-        ListEmptyComponent={
-          <View style={s.empty}>
-            <Text style={{ fontSize: 40 }}>🏷️</Text>
-            <Text style={s.emptyText}>No active deals</Text>
+      {/* Products FIRST */}
+      {(filter === 'all' || filter === 'products') && allProducts.length > 0 && (
+        <>
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{inf?.name}'s Product Deals</Text>
           </View>
-        }
-      />
-    </View>
+          <View style={s.productGrid}>
+            {allProducts.map((item, i) => (
+              <View key={`${item.offer.offer_id}_${item.product.id}_${i}`} style={s.gridItem}>
+                <ProductCard
+                  product={item.product}
+                  brand={item.brand}
+                  discount={{ type: item.offer.offer_type, value: item.offer.discount_value }}
+                  onPress={() => navigation.navigate('BrandStore', { brandId: item.brand.id })}
+                />
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* Store & service deals */}
+      {(filter === 'all' || filter === 'store_deals') && storeDeals.length > 0 && (
+        <>
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>{inf?.name}'s Store & Service Deals</Text>
+          </View>
+          {storeDeals.map((offer, i) => (
+            <NewOfferCard
+              key={offer.offer_id || i}
+              store={{ name: offer.brand_name, category: offer.brand_category, logo_initial: offer.brand_name?.[0] }}
+              dealType="shop"
+              dealLabel={`${offer.brand_name} · All ${offer.brand_category?.replace(/_/g, ' ')}`}
+              discountValue={`${offer.discount_value}%`}
+              tags={[]}
+              onPress={() => navigation.navigate('BrandStore', { brandId: offer.brand_id })}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Empty */}
+      {offers.length === 0 && (
+        <View style={s.empty}>
+          <Text style={{ fontSize: 40 }}>🏷️</Text>
+          <Text style={s.emptyText}>No active deals</Text>
+        </View>
+      )}
+
+      <View style={{ height: 80 }} />
+    </ScrollView>
   );
 }
 
-function getInitials(name) {
-  if (!name) return '?';
-  return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+function formatCount(n) {
+  if (!n) return '0';
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}K`;
+  return String(n);
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5EEE6' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F5EEE6' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: spacing.lg, paddingTop: 50, paddingBottom: spacing.md,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+  container: { flex: 1, backgroundColor: darkColors.bg2 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkColors.bg2 },
+  profileCard: {
+    marginHorizontal: 20, marginTop: 50, marginBottom: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: darkColors.card, borderRadius: 16,
+    borderWidth: 1, borderColor: darkColors.borderAccent,
+    padding: 16,
   },
-  backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  infAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.orangePale, alignItems: 'center', justifyContent: 'center' },
-  infAvatarText: { fontSize: 12, fontWeight: '700', color: colors.orangeDeep },
-  storeName: { fontSize: 15, fontWeight: '700', color: colors.t1 },
-  storeHandle: { fontSize: 10, color: colors.t3 },
+  avatar: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: darkColors.amber,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarText: { fontSize: 22, fontWeight: '800', color: '#fff' },
+  infName: { fontSize: 16, fontWeight: '700', color: darkColors.text },
+  infMeta: { fontSize: 11, color: darkColors.textSecondary },
+  statsRow: { flexDirection: 'row', gap: 14, marginTop: 4 },
+  statText: { fontSize: 10, color: darkColors.textSecondary },
+  statNum: { fontWeight: '700', color: darkColors.amber },
   followBtn: {
-    paddingHorizontal: 16, paddingVertical: 7, borderRadius: radius.full,
-    backgroundColor: colors.orange,
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 20, backgroundColor: darkColors.amber,
   },
-  followingBtn: { backgroundColor: colors.surface2, borderWidth: 1.5, borderColor: colors.border2 },
-  followText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  followingText: { color: colors.t2 },
-  filterRow: {
-    flexDirection: 'row', backgroundColor: colors.white,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+  followingBtn: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: darkColors.amber },
+  followText: { fontSize: 11, fontWeight: '700', color: '#000' },
+  followingText: { color: darkColors.amber },
+  pills: { paddingHorizontal: 20, paddingBottom: 12, gap: 6 },
+  pill: {
+    paddingHorizontal: 14, paddingVertical: 6,
+    borderRadius: 20, borderWidth: 1.5, borderColor: darkColors.border,
   },
-  filterTab: { flex: 1, paddingVertical: 10, alignItems: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  filterTabActive: { borderBottomColor: colors.orange },
-  filterText: { fontSize: 12, fontWeight: '600', color: colors.t3 },
-  filterTextActive: { color: colors.orangeDeep, fontWeight: '700' },
+  pillActive: { borderColor: darkColors.amber, backgroundColor: darkColors.amberDim },
+  pillText: { fontSize: 11, fontWeight: '600', color: darkColors.textSecondary },
+  pillTextActive: { color: darkColors.amber },
+  section: { paddingHorizontal: 20, marginBottom: 8 },
+  sectionTitle: { fontSize: 14, fontWeight: '700', color: darkColors.text },
+  productGrid: {
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: 20, paddingBottom: 14, gap: 10,
+  },
+  gridItem: { width: '48%' },
   empty: { alignItems: 'center', paddingTop: 60 },
-  emptyText: { fontSize: 14, color: colors.t3, marginTop: 8 },
+  emptyText: { fontSize: 14, color: darkColors.textSecondary, marginTop: 8 },
 });

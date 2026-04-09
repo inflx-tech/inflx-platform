@@ -397,6 +397,171 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   return success(res, { products: productsWithDiscount });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Listing Engine — new follower endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+const listingService = require('../services/listing.service');
+
+// GET /follower/stories — influencers with active deals for story circle row
+const getStories = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+
+  // Get followed influencers with active deal counts
+  const { rows } = await db.query(
+    `SELECT
+       i.id, u.name, i.instagram_handle,
+       i.followers_count, i.niche,
+       COUNT(DISTINCT co.id)::int AS active_deal_count,
+       MAX(co.created_at) AS latest_deal_at
+     FROM follower_follows ff
+     JOIN influencers i ON i.id = ff.influencer_id
+     JOIN users u ON u.id = i.user_id
+     LEFT JOIN campaign_influencers ci ON ci.influencer_id = i.id
+       AND ci.status IN ('contracted', 'active', 'completed')
+     LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
+     LEFT JOIN campaigns c ON c.id = cs.campaign_id
+       AND c.status IN ('published', 'active', 'live')
+       AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+     LEFT JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
+     WHERE ff.follower_id = $1
+     GROUP BY i.id, u.name, i.instagram_handle, i.followers_count, i.niche
+     ORDER BY active_deal_count DESC, u.name ASC`,
+    [follower.id]
+  );
+
+  const stories = rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    handle: r.instagram_handle,
+    followers_count: r.followers_count,
+    niche: r.niche,
+    active_deals: r.active_deal_count,
+    latest_deal_at: r.latest_deal_at,
+    ring_state: r.active_deal_count > 0
+      ? (r.latest_deal_at && new Date(r.latest_deal_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) ? 'pulse' : 'ring')
+      : 'grey',
+  }));
+
+  return success(res, { stories });
+});
+
+// GET /follower/categories — super-categories with deal counts
+const getCategories = asyncHandler(async (req, res) => {
+  const superCats = listingService.getSuperCategories();
+
+  // Get deal counts per super_category
+  const { rows } = await db.query(
+    `SELECT b.category, COUNT(DISTINCT co.id)::int AS deal_count
+     FROM campaign_offers co
+     JOIN campaign_sets cs ON cs.id = co.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
+     WHERE co.is_active = true
+       AND c.status IN ('published', 'active', 'live')
+       AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+     GROUP BY b.category`
+  );
+
+  const countMap = {};
+  for (const r of rows) {
+    const schema = listingService.loadSchema(r.category);
+    if (schema?.super_category) {
+      countMap[schema.super_category] = (countMap[schema.super_category] || 0) + r.deal_count;
+    }
+  }
+
+  const result = superCats.map(sc => ({
+    ...sc,
+    deal_count: countMap[sc.key] || 0,
+  }));
+
+  return success(res, { categories: result });
+});
+
+// GET /category/:super_category/stores — stores with inline products for CategoryListScreen
+const getCategoryStores = asyncHandler(async (req, res) => {
+  const { super_category } = req.params;
+  const { sort, sub_category, page } = req.query;
+  const pageNum = parseInt(page || '1', 10);
+  const limit = 10;
+  const offset = (pageNum - 1) * limit;
+
+  const superCat = listingService.getSuperCategories().find(s => s.key === super_category);
+  if (!superCat) throw new AppError('NOT_FOUND', `Unknown super-category: ${super_category}`, 404);
+
+  // Filter by sub_category or all sub_categories
+  const categoryKeys = sub_category ? [sub_category] : superCat.sub_categories;
+  if (!categoryKeys.length) return success(res, { stores: [], total: 0 });
+
+  // Get brands in these categories with active deals
+  const placeholders = categoryKeys.map((_, i) => `$${i + 1}`).join(',');
+  const { rows: stores } = await db.query(
+    `SELECT DISTINCT ON (b.id)
+       b.id, b.business_name, b.category, u.city,
+       b.listing_score,
+       (SELECT COUNT(*)::int FROM campaign_offers co
+        JOIN campaign_sets cs ON cs.id = co.set_id
+        JOIN campaigns c ON c.id = cs.campaign_id
+        WHERE c.brand_id = b.id AND co.is_active = true
+          AND c.status IN ('published', 'active', 'live')
+          AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+       ) AS deal_count
+     FROM brands b
+     JOIN users u ON u.id = b.user_id
+     WHERE b.category IN (${placeholders})
+       AND u.status = 'approved'
+     ORDER BY b.id, deal_count DESC
+     LIMIT $${categoryKeys.length + 1} OFFSET $${categoryKeys.length + 2}`,
+    [...categoryKeys, limit, offset]
+  );
+
+  // For each store, fetch top products + card_config
+  const storesWithProducts = await Promise.all(stores.map(async (store) => {
+    const { rows: products } = await db.query(
+      `SELECT id, name, price, image_url, section, veg_flag, description
+       FROM brand_products
+       WHERE brand_id = $1 AND is_active = true
+       ORDER BY section NULLS LAST, name ASC
+       LIMIT 6`,
+      [store.id]
+    );
+
+    const cardConfig = listingService.getCardConfig(store.category);
+
+    // Fetch active offers for this store
+    const { rows: offers } = await db.query(
+      `SELECT co.id AS offer_id, co.offer_type, co.discount_value,
+              ci.influencer_id, u_inf.name AS influencer_name
+       FROM campaign_offers co
+       JOIN campaign_sets cs ON cs.id = co.set_id
+       JOIN campaigns c ON c.id = cs.campaign_id
+       JOIN campaign_influencers ci ON ci.set_id = cs.id
+         AND ci.status IN ('contracted', 'active', 'completed')
+       JOIN influencers i ON i.id = ci.influencer_id
+       JOIN users u_inf ON u_inf.id = i.user_id
+       WHERE c.brand_id = $1 AND co.is_active = true
+         AND c.status IN ('published', 'active', 'live')
+         AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+       LIMIT 5`,
+      [store.id]
+    );
+
+    return {
+      ...store,
+      card_config: cardConfig,
+      products: products.map(p => ({
+        ...p,
+        price: Math.round(parseFloat(p.price || 0) * 100), // paise
+      })),
+      offers,
+    };
+  }));
+
+  return success(res, { stores: storesWithProducts, super_category: superCat });
+});
+
 module.exports = {
   register,
   getMe,
@@ -413,4 +578,7 @@ module.exports = {
   getDeals,
   getFollowing,
   getStoreProducts,
+  getStories,
+  getCategories,
+  getCategoryStores,
 };

@@ -195,6 +195,18 @@ export const followerApi = {
   getHomeFeed: (page = 1) => api.get(`/follower/home-feed?page=${page}`),
   getDeals: (category = 'all', page = 1) => api.get(`/follower/deals?category=${category}&page=${page}`),
 
+  // Listing Engine — new endpoints
+  getStories: () => api.get('/follower/stories'),
+  getCategories: () => api.get('/follower/categories'),
+  getCategoryStores: (superCategory, opts = {}) => {
+    const params = [];
+    if (opts.sub_category) params.push(`sub_category=${opts.sub_category}`);
+    if (opts.page) params.push(`page=${opts.page}`);
+    if (opts.sort) params.push(`sort=${opts.sort}`);
+    const qs = params.length ? `?${params.join('&')}` : '';
+    return api.get(`/category/${superCategory}/stores${qs}`);
+  },
+
   // Store
   getStore: (handle) => api.get(`/store/${handle}`),
   getStoreProducts: (handle, offerId) => api.get(`/store/${handle}/products${offerId ? `?offer_id=${offerId}` : ''}`),

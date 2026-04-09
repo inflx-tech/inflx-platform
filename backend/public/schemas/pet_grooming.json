@@ -1,0 +1,46 @@
+{
+  "category_key": "pet_grooming",
+  "label": "Pet Grooming",
+  "icon": "🐾",
+  "product_noun": "Service",
+  "product_noun_plural": "Services",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": true, "variants": true, "stock": false, "booking": true, "enquiry_only": false, "availability": true },
+  "sections": ["Bath & Groom", "Hair Trim", "Nail Clipping", "Ear Cleaning", "Full Spa", "De-shedding", "Teeth Cleaning"],
+  "booking_type": "appointment",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Service Name", "type": "text", "required": true, "placeholder": "e.g. Full Grooming — Small Dog" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["Bath & Groom", "Hair Trim", "Nail Clipping", "Ear Cleaning", "Full Spa", "De-shedding", "Teeth Cleaning"], "required": false },
+    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "800" },
+    { "key": "duration_mins", "label": "Duration", "type": "duration_select", "options": [30, 45, 60, 90, 120], "required": false },
+    { "key": "description", "label": "Description", "type": "textarea", "required": false },
+    { "key": "variants_json", "label": "Pet Size Options", "type": "variant_builder", "required": false, "placeholder": "e.g. Small / Medium / Large breed" }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Book Grooming" },
+  "phase": 4, "status": "coming_soon", "super_category": "groom",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "slot_based", "cta_label": "Book Grooming", "requires_date": true, "requires_time_slot": true, "payment_mode": "token_or_full" },
+    "walkin_pay": { "enabled": true, "cta_label": "Walk-in", "discount_levels": ["shop", "product"] },
+    "enquiry": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["Bath & Groom", "Hair Trim", "Nail Clipping", "Ear Cleaning", "Full Spa", "De-shedding", "Teeth Cleaning"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Service", "Category", "Price", "Duration", "Pet Size"] },
+  "card_config": {
+    "accent": "#f59e0b", "accent_dim": "rgba(245,158,11,0.1)", "icon": "🐾",
+    "cta_primary": { "label": "Book", "action": "book_slot", "color": "#f59e0b" },
+    "cta_secondary": { "label": "Walk-in", "action": "walkin_pay" },
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{locality} · {distance}",
+    "tags": ["pet_types", "services"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Business name & contact" },
+    { "items": "service", "min": 3, "points": 25, "label": "3+ services listed" },
+    { "type": "photos", "min": 1, "points": 20, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}

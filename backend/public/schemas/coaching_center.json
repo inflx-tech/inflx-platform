@@ -1,0 +1,46 @@
+{
+  "category_key": "coaching_center",
+  "label": "Coaching & Tutoring Centers",
+  "icon": "📚",
+  "product_noun": "Course",
+  "product_noun_plural": "Courses",
+  "features": { "sections": true, "veg_flag": false, "duration_mins": false, "variants": true, "stock": true, "booking": true, "enquiry_only": false, "availability": false },
+  "sections": ["IIT/JEE", "NEET", "UPSC", "SSC/Banking", "Spoken English", "Coding", "Music", "Dance", "Arts", "Tuition (School)"],
+  "booking_type": "membership",
+  "availing_modes": ["prebook"],
+  "fields": [
+    { "key": "name", "label": "Course Name", "type": "text", "required": true, "placeholder": "e.g. JEE Crash Course — 6 Months" },
+    { "key": "section", "label": "Category", "type": "select", "options": ["IIT/JEE", "NEET", "UPSC", "SSC/Banking", "Spoken English", "Coding", "Music", "Dance", "Arts", "Tuition (School)"], "required": false },
+    { "key": "price", "label": "Fee (₹)", "type": "number", "required": true, "placeholder": "25000" },
+    { "key": "description", "label": "Course Details", "type": "textarea", "required": true, "placeholder": "Duration, batch timings, syllabus..." },
+    { "key": "stock", "label": "Available Seats", "type": "number", "required": false },
+    { "key": "variants_json", "label": "Batch Options", "type": "variant_builder", "required": false, "placeholder": "e.g. Morning / Evening / Weekend" }
+  ],
+  "buyer_config": { "show_veg_filter": false, "show_sections": true, "cta_label": "Enroll Now" },
+  "phase": 4, "status": "coming_soon", "super_category": "fitness",
+  "action_types": {
+    "book_now": { "enabled": true, "type": "membership", "cta_label": "Enroll", "requires_date": false, "payment_mode": "token_or_full" },
+    "enquiry": { "enabled": true, "cta_label": "Get Info" },
+    "walkin_pay": { "enabled": false }
+  },
+  "listing_steps": [],
+  "product_config": { "enabled": true, "required": true, "excel_upload": false, "fields": [
+    { "key": "section", "type": "select", "options": ["IIT/JEE", "NEET", "UPSC", "SSC/Banking", "Spoken English", "Coding", "Music", "Dance", "Arts", "Tuition (School)"] },
+    { "key": "variants_json", "type": "variant_builder" }
+  ], "excel_columns": ["Course", "Category", "Fee", "Duration", "Batch Timing"] },
+  "card_config": {
+    "accent": "#8b5cf6", "accent_dim": "rgba(139,92,246,0.1)", "icon": "📚",
+    "cta_primary": { "label": "Enroll", "action": "book_slot", "color": "#8b5cf6" },
+    "cta_secondary": { "label": "Info", "action": "enquiry" },
+    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "subtitle_template": "{section} · {locality}",
+    "tags": ["section", "batch_timings"]
+  },
+  "quality_rules": [
+    { "field": "business_name", "points": 20, "label": "Center name & contact" },
+    { "items": "course", "min": 2, "points": 25, "label": "2+ courses listed" },
+    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
+    { "field": "address", "points": 15, "label": "Address provided" },
+    { "field": "phone", "points": 10, "label": "Contact number" }
+  ]
+}
