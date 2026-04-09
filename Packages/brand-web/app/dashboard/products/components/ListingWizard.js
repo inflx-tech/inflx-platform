@@ -5,13 +5,22 @@ import DynamicStepRenderer from './DynamicStepRenderer';
 import QualityScore from './QualityScore';
 import LivePreview from './LivePreview';
 
+// Business-specific custom wizards
+import CarRentalWizard from './car-rental/CarRentalWizard';
+
 /**
  * ListingWizard — the top-level orchestrator for config-driven listing.
  *
- * Fetches config from GET /brands/me/listing-config, renders wizard steps
- * via DynamicStepRenderer, manages form state across steps, shows LivePreview
- * and QualityScore in sidebar.
+ * For businesses with custom wizards (e.g. car_rental), routes to the custom component.
+ * For generic businesses, renders DynamicStepRenderer with listing_steps from config.
  */
+
+// Map of category_key → custom wizard component
+const CUSTOM_WIZARDS = {
+  car_rental: CarRentalWizard,
+  // salon: SalonWizard,        // future
+  // gym_fitness: GymWizard,    // future
+};
 
 export default function ListingWizard() {
   const [config, setConfig] = useState(null);
@@ -196,6 +205,15 @@ export default function ListingWizard() {
         <p className="text-red-600 text-sm">{error}</p>
       </div>
     );
+  }
+
+  // ── Custom wizard routing ───────────────────────────────────────────────────
+  // If this business type has a dedicated wizard component, use it instead of generic
+  const categoryKey = config?.category_key;
+  const CustomWizard = categoryKey ? CUSTOM_WIZARDS[categoryKey] : null;
+
+  if (CustomWizard) {
+    return <CustomWizard config={config} />;
   }
 
   if (!config || !steps.length) {

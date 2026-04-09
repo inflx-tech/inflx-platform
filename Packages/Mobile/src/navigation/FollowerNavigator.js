@@ -17,6 +17,10 @@ import InfluencerStoreScreen from '../screens/follower/InfluencerStoreScreen';
 import BrandStoreScreen from '../screens/follower/BrandStoreScreen';
 import FollowedInfluencersScreen from '../screens/follower/FollowedInfluencersScreen';
 
+// Car rental specific screens
+import CarDetailScreen from '../screens/follower/CarDetailScreen';
+import CarBookingScreen from '../screens/follower/CarBookingScreen';
+
 // Existing transaction flow screens
 import PayAtStoreScreen from '../screens/follower/PayAtStoreScreen';
 import PreBookScreen from '../screens/follower/PreBookScreen';
@@ -44,6 +48,8 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="Address" component={AddressScreen} />
     <Stack.Screen name="Find" component={FindScreen} />
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
+    <Stack.Screen name="CarDetail" component={CarDetailScreen} />
+    <Stack.Screen name="CarBooking" component={CarBookingScreen} />
   </>
 );
 
