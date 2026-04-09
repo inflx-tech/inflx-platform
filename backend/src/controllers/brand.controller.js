@@ -654,10 +654,79 @@ const getListingPreview = asyncHandler(async (req, res) => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Excel Bulk Upload endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
+const excelService = require('../services/excel.service');
+
+// GET /brands/me/listing-template/download — download auto-generated Excel template
+const downloadListingTemplate = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const wb = await excelService.generateTemplate(brand.category, brand.business_name);
+  const schema = listingService.getConfigForCategory(brand.category);
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=INFLX_${(schema?.label || brand.category).replace(/\s+/g, '_')}_Template.xlsx`);
+
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+// POST /brands/me/products/bulk-upload — parse Excel and create products
+const bulkUploadProducts = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  if (!req.file) throw new AppError('VALIDATION_ERROR', 'No file uploaded', 400);
+
+  const { rows, errors, totalParsed } = await excelService.parseUpload(req.file.buffer, brand.category);
+
+  if (errors.length > 0 && rows.length === 0) {
+    return success(res, { created: 0, errors, totalParsed }, 400);
+  }
+
+  // Convert parsed rows to product payloads and insert
+  const products = excelService.rowsToProducts(rows, brand.category);
+  const created = [];
+
+  for (const product of products) {
+    const { rows: [newProd] } = await db.query(
+      `INSERT INTO brand_products (brand_id, name, price, section, description, image_url, veg_flag,
+        variants_json, is_active, is_bookable, category_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10)
+       RETURNING id, name, price, section`,
+      [brand.id, product.name, product.price, product.section, product.description || '',
+       product.image_url || '', product.veg_flag || 'na',
+       product.variants_json || null, product.is_bookable || false, brand.category]
+    );
+    created.push(newProd);
+  }
+
+  return success(res, {
+    created: created.length,
+    products: created,
+    errors,
+    totalParsed,
+  });
+});
+
+// GET /brands/me/listing-template/columns — get column definitions (for frontend preview)
+const getTemplateColumns = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const columns = excelService.getColumnsForCategory(brand.category);
+  return success(res, { columns, category: brand.category });
+});
+
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue,
   listProducts, createProduct, updateProduct, deleteProduct,
   listBrandOrders, getPublicProfile, storePreview,
   getListingConfig, getQualityScore, getListingPreview,
+  downloadListingTemplate, bulkUploadProducts, getTemplateColumns,
 };

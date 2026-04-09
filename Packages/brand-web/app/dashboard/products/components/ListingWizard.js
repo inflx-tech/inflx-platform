@@ -224,10 +224,64 @@ export default function ListingWizard() {
     );
   }
 
+  // ── Excel bulk upload handlers ─────────────────────────────────────────────
+  async function handleDownloadTemplate() {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('inflx_token') : null;
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1').replace(/\/+$/, '');
+      const res = await fetch(`${apiBase}/brands/me/listing-template/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `INFLX_${(config?.label || 'Products').replace(/\s+/g, '_')}_Template.xlsx`; a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (e) { alert('Download failed: ' + e.message); }
+  }
+
+  async function handleBulkUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('inflx_token') : null;
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1').replace(/\/+$/, '');
+      const formData = new FormData(); formData.append('file', file);
+      const res = await fetch(`${apiBase}/brands/me/products/bulk-upload`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData,
+      });
+      const json = await res.json();
+      if (json.data?.created > 0) {
+        alert(`${json.data.created} items uploaded successfully!`);
+        // Refresh products
+        const productsRes = await brandApi.get('/brands/me/products');
+        if (productsRes.data?.products) setProducts(productsRes.data.products);
+      }
+      if (json.data?.errors?.length) {
+        alert('Some rows had errors:\n' + json.data.errors.join('\n'));
+      }
+    } catch (e) { alert('Upload failed: ' + e.message); }
+  }
+
   return (
     <div className="flex gap-6">
       {/* Main content area */}
       <div className="flex-1 min-w-0">
+        {/* Excel bulk upload bar */}
+        <div className="flex items-center gap-3 mb-4 bg-blue-50 rounded-xl px-4 py-3 border border-blue-200">
+          <span className="text-sm">📤</span>
+          <span className="text-xs text-blue-700 font-medium flex-1">Bulk upload via Excel — download template, fill offline, upload</span>
+          <button onClick={handleDownloadTemplate}
+            className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-bold rounded-lg transition-colors">
+            📥 Template
+          </button>
+          <label className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg cursor-pointer transition-colors">
+            📤 Upload
+            <input type="file" accept=".xlsx,.xls" onChange={handleBulkUpload} className="hidden" />
+          </label>
+        </div>
+
         {/* Step indicator */}
         <div className="flex items-center gap-2 mb-6">
           {steps.map((step, i) => (

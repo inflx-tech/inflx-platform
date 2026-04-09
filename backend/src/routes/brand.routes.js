@@ -10,6 +10,9 @@ const enquiryCtrl = require('../controllers/enquiry.controller');
 const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
 
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
+
 const router = Router();
 
 // Brand self-service routes (require brand role)
@@ -45,6 +48,11 @@ router.get('/me/listing-preview',   authenticate, requireRole('brand'), ctrl.get
 
 // Master catalogue — pre-seeded vehicles/services for car_rental and salon
 router.get('/me/master-catalogue',  authenticate, requireRole('brand'), ctrl.getMasterCatalogue);
+
+// Excel bulk upload
+router.get('/me/listing-template/download',  authenticate, requireRole('brand'), ctrl.downloadListingTemplate);
+router.get('/me/listing-template/columns',   authenticate, requireRole('brand'), ctrl.getTemplateColumns);
+router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'), upload.single('file'), ctrl.bulkUploadProducts);
 
 // Brand products — full CRUD with category-aware validation
 router.get('/me/products',        authenticate, requireRole('brand'), ctrl.listProducts);
