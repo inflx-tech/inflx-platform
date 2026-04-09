@@ -511,9 +511,23 @@ function ProductCard({ product, onEdit, onDelete, onToggle }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  // ── Feature flag: check if listing engine is active for this brand ─────────
+  // ── ALL hooks must be declared at the top, before any conditional returns ──
   const [useListingWizard, setUseListingWizard] = useState(null); // null = loading
+  const [schema,    setSchema]    = useState(null);
+  const [products,  setProducts]  = useState([]);
+  const [catalogue, setCatalogue] = useState(null);
+  const [loading,   setLoading]   = useState(true);
+  const [modal,     setModal]     = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const [toast,     setToast]     = useState('');
+  const [section,   setSection]   = useState('');
 
+  const showToast = useCallback((msg, type = 'ok') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(''), 3200);
+  }, []);
+
+  // ── Feature flag: check if listing engine is active for this brand ─────────
   useEffect(() => {
     async function checkListingEngine() {
       try {
@@ -529,6 +543,26 @@ export default function ProductsPage() {
     }
     checkListingEngine();
   }, []);
+
+  const isMasterCatalogue = schema?.features?.master_catalogue === true;
+  const category = catalogue?.category || (schema?.category_key);
+
+  async function load() {
+    const [schemaRes, prodRes] = await Promise.all([brandApi.getSchema(), brandApi.getProducts()]);
+    if (schemaRes.success) setSchema(schemaRes.data?.schema);
+    if (prodRes.success)   setProducts(prodRes.data?.products || []);
+
+    const sch = schemaRes.data?.schema;
+    if (sch?.features?.master_catalogue) {
+      const catRes = await brandApi.getMasterCatalogue();
+      if (catRes.success) setCatalogue(catRes.data);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => { if (useListingWizard === false) load(); }, [useListingWizard]);
+
+  // ── Conditional renders (AFTER all hooks) ──────────────────────────────────
 
   // If listing engine is active, render the new ListingWizard
   if (useListingWizard === true) {
@@ -553,38 +587,6 @@ export default function ProductsPage() {
   }
 
   // ── Original products page (for non-listing-engine categories) ─────────────
-  const [schema,    setSchema]    = useState(null);
-  const [products,  setProducts]  = useState([]);
-  const [catalogue, setCatalogue] = useState(null); // master catalogue items
-  const [loading,   setLoading]   = useState(true);
-  const [modal,     setModal]     = useState(null);
-  const [saving,    setSaving]    = useState(false);
-  const [toast,     setToast]     = useState('');
-  const [section,   setSection]   = useState('');
-
-  const showToast = useCallback((msg, type = 'ok') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(''), 3200);
-  }, []);
-
-  const isMasterCatalogue = schema?.features?.master_catalogue === true;
-  const category = catalogue?.category || (schema?.category_key);
-
-  async function load() {
-    const [schemaRes, prodRes] = await Promise.all([brandApi.getSchema(), brandApi.getProducts()]);
-    if (schemaRes.success) setSchema(schemaRes.data?.schema);
-    if (prodRes.success)   setProducts(prodRes.data?.products || []);
-
-    // If master catalogue category, also fetch catalogue items
-    const sch = schemaRes.data?.schema;
-    if (sch?.features?.master_catalogue) {
-      const catRes = await brandApi.getMasterCatalogue();
-      if (catRes.success) setCatalogue(catRes.data);
-    }
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, []);
 
   // ── Handlers (standard) ──
   async function handleSave(form) {

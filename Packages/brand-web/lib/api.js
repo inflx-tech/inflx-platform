@@ -108,6 +108,11 @@ export const brandApi = {
   getCampaignEscrow: (campaignId) => api.get(`/brands/me/campaigns/${campaignId}/escrow`),
   getEnquiries: (params) => api.get(`/brands/me/enquiries${params ? '?' + new URLSearchParams(params) : ''}`),
   updateEnquiry: (id, data) => api.patch(`/brands/me/enquiries/${id}`, data),
+  // Generic GET (for listing engine and new endpoints)
+  get: (path) => api.get(path),
+  // Generic POST/PATCH
+  post: (path, data) => api.post(path, data),
+  patch: (path, data) => api.patch(path, data),
   // Category schema
   getSchema: () => api.get('/brands/me/schema'),
   // Master catalogue (car_rental + salon browse-and-activate)
