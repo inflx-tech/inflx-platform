@@ -52,7 +52,6 @@ const ACTIVE_CI_QUERY = `
   LEFT JOIN campaign_offers co   ON co.set_id = cs.id AND co.is_active = true
   WHERE ci.status IN ('contracted', 'active', 'completed')
     AND c.status  IN ('published', 'active', 'live')
-    AND (c.start_date IS NULL OR c.start_date <= CURRENT_DATE)
     AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
     AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
@@ -95,7 +94,6 @@ const FEED_QUERY = `
   JOIN users u_i                 ON u_i.id = i.user_id
   WHERE ci.status IN ('contracted', 'active', 'completed')
     AND c.status  IN ('published', 'active', 'live')
-    AND (c.start_date IS NULL OR c.start_date <= CURRENT_DATE)
     AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
     AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
