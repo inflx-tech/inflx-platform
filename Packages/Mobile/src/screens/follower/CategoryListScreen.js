@@ -117,17 +117,31 @@ export default function CategoryListScreen({ route, navigation }) {
           {/* Inline products (2-col grid) */}
           {store.products && store.products.length > 0 ? (
             <View style={styles.productGrid}>
-              {store.products.slice(0, 4).map((product, pIdx) => (
-                <View key={pIdx} style={styles.productGridItem}>
-                  <ProductCard
-                    product={product}
-                    brand={{ name: store.business_name, category: store.category, locality: store.city }}
-                    discount={store.offers?.[0] ? { type: 'percentage', value: store.offers[0].discount_value } : null}
-                    influencer={store.offers?.[0] ? { name: store.offers[0].influencer_name, avatar_initial: store.offers[0].influencer_name?.[0] } : null}
-                    onPress={() => navigation.navigate('BrandStore', { brandId: store.id })}
-                  />
-                </View>
-              ))}
+              {store.products.slice(0, 4).map((product, pIdx) => {
+                const isCarRental = store.category === 'car_rental' || store.category === 'bike_rental';
+                return (
+                  <View key={pIdx} style={styles.productGridItem}>
+                    <ProductCard
+                      product={product}
+                      brand={{ name: store.business_name, category: store.category, locality: store.city }}
+                      discount={store.offers?.[0] ? { type: 'percentage', value: store.offers[0].discount_value } : null}
+                      influencer={store.offers?.[0] ? { name: store.offers[0].influencer_name, avatar_initial: store.offers[0].influencer_name?.[0] } : null}
+                      onPress={() => {
+                        if (isCarRental) {
+                          const specs = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {});
+                          navigation.navigate('CarDetail', {
+                            vehicle: { name: product.name, specs: specs.specs || {}, location: store.city, distance: '1.2 km', rating: '4.5', trips: 42 },
+                            pricing: { day_rate: product.price, ...specs },
+                            discount: store.offers?.[0] ? { value: store.offers[0].discount_value, influencer_name: store.offers[0].influencer_name } : null,
+                          });
+                        } else {
+                          navigation.navigate('BrandStore', { brandId: store.id });
+                        }
+                      }}
+                    />
+                  </View>
+                );
+              })}
             </View>
           ) : (
             <View style={styles.noDealsBanner}>

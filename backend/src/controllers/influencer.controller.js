@@ -754,11 +754,19 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     [ci.set_id]
   );
 
-  // Get brand products — if offer has products_json, filter; else all
-  const offerProductIds = offers.flatMap(o => (o.products_json || []).map(p => p.product_id)).filter(Boolean);
+  // Get brand products
+  // If offer has products_json with specific product IDs → show ONLY those
+  // If offer exists but products_json is null/empty → show all (shop-level offer)
+  // If NO offers exist → show all brand products (brand hasn't created offer yet)
+  const offerProductIds = offers.flatMap(o => {
+    if (!o.products_json) return [];
+    const pj = typeof o.products_json === 'string' ? JSON.parse(o.products_json) : o.products_json;
+    return (Array.isArray(pj) ? pj : []).map(p => p.product_id).filter(Boolean);
+  });
 
   let products;
   if (offerProductIds.length > 0) {
+    // Specific products linked to offer
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
        FROM brand_products WHERE brand_id = $1 AND id = ANY($2) AND is_active = true
@@ -767,7 +775,7 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     );
     products = rows;
   } else {
-    // No specific products linked — return all brand products
+    // No specific products → return all brand products
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
        FROM brand_products WHERE brand_id = $1 AND is_active = true

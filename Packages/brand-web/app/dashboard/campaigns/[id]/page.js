@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { campaignApi, deliverableApi, negotiationApi, contractApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
+import { campaignApi, brandApi, deliverableApi, negotiationApi, contractApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -361,6 +361,7 @@ export default function CampaignDetailPage() {
   const [cancellingInf, setCancellingInf] = useState(null); // campaign_influencer id being cancelled
 
   const [loadError, setLoadError] = useState(null);
+  const [campaignProducts, setCampaignProducts] = useState(null);
 
   // ── Load campaign (sets + influencers included) ──────────────────────────
   useEffect(() => {
@@ -389,6 +390,12 @@ export default function CampaignDetailPage() {
     }
     if (tab === 'conversions' && !conversions) {
       campaignApi.getConversions(id).then(res => { if (res.success) setConversions(res.data); });
+    }
+    if (tab === 'products' && !campaignProducts) {
+      // Fetch brand products for this campaign
+      brandApi.getProducts().then(res => {
+        if (res.success) setCampaignProducts(res.data?.products || []);
+      });
     }
   }, [tab]);
 
@@ -489,7 +496,7 @@ export default function CampaignDetailPage() {
   const setBudgetSum = sets.reduce((t, s) => t + Number(s.set_budget || 0), 0);
   const totalInfluencers = allInfluencers.length;
 
-  const TABS = ['overview', 'content', 'analytics', 'conversions'];
+  const TABS = ['overview', 'products', 'content', 'analytics', 'conversions'];
 
   return (
     <div className="max-w-5xl mx-auto pb-16">
@@ -692,6 +699,51 @@ export default function CampaignDetailPage() {
               );
             })
           )}
+        </div>
+      )}
+
+      {/* ── PRODUCTS TAB ─────────────────────────────────────────────────── */}
+      {tab === 'products' && (
+        <div className="space-y-4">
+          {!campaignProducts ? (
+            <div className="text-center py-12 text-gray-400 text-sm">Loading products…</div>
+          ) : campaignProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-3">📦</div>
+              <div className="text-gray-500 text-sm font-semibold">No products listed yet</div>
+              <div className="text-gray-400 text-xs mt-1">Add products in the Listings page first, then create offers linking them to this campaign.</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {campaignProducts.map(p => (
+                <div key={p.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="h-20 bg-gray-100 flex items-center justify-center text-3xl">
+                    {campaign?.sets?.[0]?.brand_category === 'car_rental' ? '🚗' :
+                     campaign?.sets?.[0]?.brand_category === 'restaurant' ? '🍽️' : '📦'}
+                  </div>
+                  <div className="p-3">
+                    <div className="text-sm font-bold text-gray-900 truncate">{p.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{p.section || 'General'}</div>
+                    <div className="text-sm font-extrabold text-navy mt-1">{fmtRupees(p.price)}</div>
+                    {p.description && (
+                      <div className="text-[10px] text-gray-400 mt-1 line-clamp-2">{p.description}</div>
+                    )}
+                    <div className="mt-2 flex gap-1">
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${p.is_active ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
+                        {p.is_active ? '● Active' : '○ Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+            <div className="text-xs text-amber-800">
+              <strong>💡 Tip:</strong> To assign specific products to this campaign, create an offer in the campaign set and link products to it.
+              Products shown here are all products in your listing — create offers to select which ones influencers promote.
+            </div>
+          </div>
         </div>
       )}
 

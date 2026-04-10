@@ -123,6 +123,9 @@ export const influencerApi = {
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
 
+  // Store preview — see what followers see
+  getMyStorePreview: () => api.get('/influencers/me/store-preview'),
+
   // Product notes — publish products to influencer store
   getCampaignProducts: (campaignId) => api.get(`/influencers/me/campaigns/${campaignId}/products`),
   upsertProductNote: (data) => api.post('/influencers/me/product-notes', data),

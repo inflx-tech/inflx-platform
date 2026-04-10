@@ -37,9 +37,9 @@ export default function HomeScreenV2({ navigation }) {
   const loadData = useCallback(async (pageNum = 1, refresh = false) => {
     try {
       const [feedRes, storiesRes, categoriesRes] = await Promise.all([
-        followerApi.getHomeFeed(pageNum),
-        followerApi.getStories?.() || Promise.resolve({ data: { stories: [] } }),
-        followerApi.getCategories?.() || Promise.resolve({ data: { categories: [] } }),
+        followerApi.getHomeFeed(pageNum).catch(() => ({ data: { items: [] } })),
+        followerApi.getStories().catch(() => ({ data: { stories: [] } })),
+        followerApi.getCategories().catch(() => ({ data: { categories: [] } })),
       ]);
 
       const feedItems = feedRes?.data?.items || feedRes?.data?.offers || [];
@@ -124,17 +124,32 @@ export default function HomeScreenV2({ navigation }) {
         <>
           <SectionHeader title="🔥 Hot Products Near You" onSeeAll={() => {}} />
           <View style={styles.productGrid}>
-            {hotProducts.map((item, i) => (
-              <View key={item.id || i} style={styles.productGridItem}>
-                <ProductCard
-                  product={item.product || item}
-                  brand={item.brand || { name: item.brand_name, category: item.brand_category, locality: item.brand_city }}
-                  discount={item.discount || (item.discount_value ? { type: item.offer_type || 'percentage', value: item.discount_value } : null)}
-                  influencer={item.influencer}
-                  onPress={() => navigation.navigate('BrandStore', { brandId: item.brand_id || item.brand?.id })}
-                />
-              </View>
-            ))}
+            {hotProducts.map((item, i) => {
+              const category = item.brand_category || item.brand?.category;
+              const isCarRental = category === 'car_rental' || category === 'bike_rental';
+              return (
+                <View key={item.id || i} style={styles.productGridItem}>
+                  <ProductCard
+                    product={item.product || item}
+                    brand={item.brand || { name: item.brand_name, category, locality: item.brand_city }}
+                    discount={item.discount || (item.discount_value ? { type: item.offer_type || 'percentage', value: item.discount_value } : null)}
+                    influencer={item.influencer}
+                    onPress={() => {
+                      if (isCarRental) {
+                        navigation.navigate('CarDetail', {
+                          vehicle: { name: (item.product || item).name, specs: (item.product || item).variants_json?.specs || {}, location: item.brand_city || item.brand?.locality, distance: '1.2 km', rating: '4.5', trips: 42 },
+                          pricing: { day_rate: (item.product || item).price, ...(item.product || item).variants_json },
+                          discount: item.discount || (item.discount_value ? { value: item.discount_value, influencer_name: item.influencer?.name } : null),
+                          tracking: item.tracking,
+                        });
+                      } else {
+                        navigation.navigate('BrandStore', { brandId: item.brand_id || item.brand?.id });
+                      }
+                    }}
+                  />
+                </View>
+              );
+            })}
           </View>
         </>
       )}

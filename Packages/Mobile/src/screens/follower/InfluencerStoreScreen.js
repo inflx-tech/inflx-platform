@@ -132,16 +132,31 @@ export default function InfluencerStoreScreen({ navigation, route }) {
             <Text style={s.sectionTitle}>{inf?.name}'s Product Deals</Text>
           </View>
           <View style={s.productGrid}>
-            {allProducts.map((item, i) => (
-              <View key={`${item.offer.offer_id}_${item.product.id}_${i}`} style={s.gridItem}>
-                <ProductCard
-                  product={item.product}
-                  brand={item.brand}
-                  discount={{ type: item.offer.offer_type, value: item.offer.discount_value }}
-                  onPress={() => navigation.navigate('BrandStore', { brandId: item.brand.id })}
-                />
-              </View>
-            ))}
+            {allProducts.map((item, i) => {
+              const isCarRental = item.brand.category === 'car_rental' || item.brand.category === 'bike_rental';
+              return (
+                <View key={`${item.offer.offer_id}_${item.product.id}_${i}`} style={s.gridItem}>
+                  <ProductCard
+                    product={item.product}
+                    brand={item.brand}
+                    discount={{ type: item.offer.offer_type, value: item.offer.discount_value }}
+                    onPress={() => {
+                      if (isCarRental) {
+                        const specs = typeof item.product.variants_json === 'string' ? JSON.parse(item.product.variants_json || '{}') : (item.product.variants_json || {});
+                        navigation.navigate('CarDetail', {
+                          vehicle: { name: item.product.name, specs: specs.specs || {}, location: item.brand.city, distance: '1.2 km' },
+                          pricing: { day_rate: item.product.price, ...specs },
+                          discount: { value: item.offer.discount_value, influencer_name: inf?.name, influencer_handle: inf?.instagram_handle },
+                          tracking: { campaign_id: item.offer.campaign_id, set_id: item.offer.set_id, offer_id: item.offer.offer_id, campaign_influencer_id: item.offer.campaign_influencer_id },
+                        });
+                      } else {
+                        navigation.navigate('BrandStore', { brandId: item.brand.id });
+                      }
+                    }}
+                  />
+                </View>
+              );
+            })}
           </View>
         </>
       )}
