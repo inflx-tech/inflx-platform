@@ -37,8 +37,8 @@ const ACTIVE_CI_QUERY = `
     b.category            AS brand_category,
     u_b.city              AS brand_city,
     co.id                 AS offer_id,
-    COALESCE(co.offer_type, ci.offer_type)    AS offer_type,
-    COALESCE(co.discount_value, (ci.offer_config_json->>'value')::numeric) AS discount_value,
+    COALESCE(co.offer_type::text, ci.offer_type::text) AS offer_type,
+    COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
     co.availing_modes,
     co.products_json,
     co.bundle_price,
@@ -76,8 +76,8 @@ const FEED_QUERY = `
     b.category            AS brand_category,
     u_b.city              AS brand_city,
     co.id                 AS offer_id,
-    COALESCE(co.offer_type, ci.offer_type)    AS offer_type,
-    COALESCE(co.discount_value, (ci.offer_config_json->>'value')::numeric) AS discount_value,
+    COALESCE(co.offer_type::text, ci.offer_type::text) AS offer_type,
+    COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
     co.availing_modes,
     co.products_json,
     co.prebook_advance,
@@ -140,15 +140,34 @@ async function resolveStore(handle) {
     noteMap[`${n.product_id}_${n.campaign_id}`] = n.note_text;
   }
 
-  // Fetch products for each offer's brand, with notes attached
+  // Fetch products — prioritize published products (with notes), then fill from brand catalog
   const offersWithProducts = [];
   for (const r of offerRows) {
-    const { rows: products } = await db.query(
-      `SELECT id, name, price, image_url, section, veg_flag, description
-       FROM brand_products WHERE brand_id = $1 AND is_active = true
-       ORDER BY section, name LIMIT 10`,
-      [r.brand_id]
-    );
+    // Get product IDs that have notes (published by this influencer for this campaign)
+    const publishedIds = noteRows
+      .filter(n => n.campaign_id === r.campaign_id)
+      .map(n => n.product_id);
+
+    let products;
+    if (publishedIds.length > 0) {
+      // Show ONLY published products (influencer chose to publish these)
+      const { rows } = await db.query(
+        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+         FROM brand_products WHERE id = ANY($1) AND is_active = true
+         ORDER BY section, name`,
+        [publishedIds]
+      );
+      products = rows;
+    } else {
+      // No published products — show brand catalog as preview
+      const { rows } = await db.query(
+        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+         FROM brand_products WHERE brand_id = $1 AND is_active = true
+         ORDER BY section, name LIMIT 10`,
+        [r.brand_id]
+      );
+      products = rows;
+    }
 
     offersWithProducts.push({
       campaign_influencer_id: r.campaign_influencer_id,
@@ -161,7 +180,7 @@ async function resolveStore(handle) {
       brand_city: r.brand_city,
       offer_type: r.offer_type,
       discount_value: r.discount_value,
-      availing_modes: r.availing_modes,
+      availing_modes: r.availing_modes || ['pay_at_store', 'prebook'],
       coupon_code: r.coupon_code,
       commission_pct: r.commission_pct,
       prebook_advance: r.prebook_advance,
@@ -175,6 +194,7 @@ async function resolveStore(handle) {
         section: p.section,
         veg_flag: p.veg_flag,
         description: p.description,
+        variants_json: p.variants_json,
         influencer_note: noteMap[`${p.id}_${r.campaign_id}`] || null,
       })),
     });
@@ -677,12 +697,29 @@ async function getInfluencerStorePreview(influencerId) {
 
   const offersWithProducts = [];
   for (const r of offerRows) {
-    const { rows: products } = await db.query(
-      `SELECT id, name, price, image_url, section, veg_flag, description
-       FROM brand_products WHERE brand_id = $1 AND is_active = true
-       ORDER BY section, name`,
-      [r.brand_id]
-    );
+    // Get published product IDs (with notes)
+    const publishedIds = noteRows
+      .filter(n => n.campaign_id === r.campaign_id)
+      .map(n => n.product_id);
+
+    let products;
+    if (publishedIds.length > 0) {
+      const { rows } = await db.query(
+        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+         FROM brand_products WHERE id = ANY($1) AND is_active = true
+         ORDER BY section, name`,
+        [publishedIds]
+      );
+      products = rows;
+    } else {
+      const { rows } = await db.query(
+        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+         FROM brand_products WHERE brand_id = $1 AND is_active = true
+         ORDER BY section, name`,
+        [r.brand_id]
+      );
+      products = rows;
+    }
 
     offersWithProducts.push({
       brand_name: r.brand_name,
@@ -690,9 +727,13 @@ async function getInfluencerStorePreview(influencerId) {
       brand_category: r.brand_category,
       offer_type: r.offer_type,
       discount_value: r.discount_value,
-      availing_modes: r.availing_modes,
+      availing_modes: r.availing_modes || ['pay_at_store', 'prebook'],
       coupon_code: r.coupon_code,
       end_date: r.end_date,
+      campaign_influencer_id: r.campaign_influencer_id,
+      set_id: r.set_id,
+      campaign_id: r.campaign_id,
+      offer_id: r.offer_id,
       products: products.map(p => ({
         id: p.id,
         name: p.name,
