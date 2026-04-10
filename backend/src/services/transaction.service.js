@@ -50,21 +50,26 @@ function consumeMockOrder(orderId) {
  * @param {string} offerId
  */
 async function validateTracking(campaignId, setId, campaignInfluencerId, offerId) {
+  // Support both campaign_offers-based and campaign_influencers-based offers
   const { rows } = await db.query(
     `SELECT
        ci.id, ci.status AS ci_status, ci.commission_pct, ci.coupon_code,
+       ci.influencer_id, ci.offer_type AS ci_offer_type, ci.offer_config_json,
        cs.id AS set_id, cs.campaign_id,
        c.brand_id, c.status AS campaign_status, c.end_date,
-       co.id AS offer_id
+       co.id AS offer_id,
+       COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
+       b.platform_fee_pct
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c      ON c.id  = cs.campaign_id
-     JOIN campaign_offers co ON co.set_id = cs.id
+     JOIN brands b         ON b.id  = c.brand_id
+     LEFT JOIN campaign_offers co ON co.set_id = cs.id AND ($4::uuid IS NULL OR co.id = $4)
      WHERE ci.id = $1
        AND cs.id = $2
        AND c.id  = $3
-       AND co.id = $4`,
-    [campaignInfluencerId, setId, campaignId, offerId]
+       AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)`,
+    [campaignInfluencerId, setId, campaignId, offerId || null]
   );
 
   const record = rows[0];
@@ -75,7 +80,7 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
   if (!['published', 'active', 'live'].includes(record.campaign_status)) throw UNAVAILABLE;
   if (record.end_date && new Date(record.end_date) < new Date()) throw UNAVAILABLE;
 
-  return record; // { ci_status, commission_pct, coupon_code, brand_id, campaign_id, set_id, offer_id }
+  return record;
 }
 
 /**

@@ -242,6 +242,7 @@ export const followerApi = {
 
   // Transactions
   payAtStore: (data) => api.post('/follower/pay-at-store', data),
+  verifyPayAtStore: (data) => api.post('/follower/pay-at-store/verify', data),
   prebook: (data) => api.post('/follower/prebook', data),
   prebookVerify: (data) => api.post('/follower/prebook/verify', data),
   createOrder: (data) => api.post('/follower/orders', data),
