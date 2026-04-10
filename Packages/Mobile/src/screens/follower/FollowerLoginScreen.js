@@ -12,9 +12,9 @@ import { api } from '../../services/api';
 export default function FollowerLoginScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [name, setName] = useState('');
   const [step, setStep] = useState('phone'); // 'phone' | 'otp' | 'register'
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState('');
 
   async function handleSendOtp() {
     const cleaned = phone.replace(/\D/g, '');
@@ -36,50 +36,37 @@ export default function FollowerLoginScreen({ navigation }) {
   }
 
   async function handleVerifyOtp() {
-    if (otp.length < 4) { Alert.alert('Enter a valid OTP'); return; }
+    if (otp.length < 6) { Alert.alert('Enter the 6-digit OTP'); return; }
     setLoading(true);
     try {
       const cleaned = phone.replace(/\D/g, '');
       const fullPhone = cleaned.startsWith('91') ? `+${cleaned}` : `+91${cleaned}`;
       const res = await api.post('/auth/verify-otp', { phone: fullPhone, otp, role: 'follower' });
+
       if (res.success || res.data) {
         const token = res.data?.access_token;
         const user = res.data?.user;
+
         if (token) {
           await AsyncStorage.setItem('inflx_token', token);
           await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...user, role: 'follower' }));
 
-          // Check if follower profile exists
-          if (user?.status === 'approved') {
-            Alert.alert('Welcome back!', 'You are now signed in.', [
-              { text: 'Continue', onPress: () => navigation.goBack() },
-            ]);
-          } else {
-            // New user — need to register as follower
-            setStep('register');
+          // Try to register as follower (idempotent — if already registered, this is fine)
+          try {
+            await api.post('/followers/register', { name: user?.name || 'Follower', city: 'Vijayawada', state: 'AP' });
+          } catch (regErr) {
+            // Ignore — user might already be registered
+            console.log('[Login] Register attempt:', regErr.message);
           }
+
+          Alert.alert('Signed In!', 'You can now make payments and bookings.', [
+            { text: 'Continue', onPress: () => navigation.goBack() },
+          ]);
+        } else {
+          Alert.alert('Failed', 'No token received');
         }
       } else {
-        Alert.alert('Invalid OTP', res.error?.message || 'Please try again');
-      }
-    } catch (e) {
-      Alert.alert('Error', e.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleRegister() {
-    if (!name.trim()) { Alert.alert('Enter your name'); return; }
-    setLoading(true);
-    try {
-      const res = await api.post('/followers/register', { name: name.trim(), city: 'Vijayawada', state: 'AP' });
-      if (res.success || res.data) {
-        Alert.alert('Welcome to INFLX!', 'You are now signed in.', [
-          { text: 'Continue', onPress: () => navigation.goBack() },
-        ]);
-      } else {
-        Alert.alert('Failed', res.error?.message || 'Could not register');
+        Alert.alert('Invalid OTP', res.error?.message || 'Please check and try again');
       }
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -90,109 +77,130 @@ export default function FollowerLoginScreen({ navigation }) {
 
   return (
     <View style={s.container}>
+      {/* Back button */}
       <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
         <Text style={s.backText}>← Back to browsing</Text>
       </TouchableOpacity>
 
-      <View style={s.card}>
-        <Text style={s.emoji}>🔐</Text>
-        <Text style={s.title}>
-          {step === 'phone' ? 'Quick Sign In' :
-           step === 'otp' ? 'Enter OTP' : 'Almost Done!'}
-        </Text>
+      <View style={s.content}>
+        {/* Icon */}
+        <View style={s.iconCircle}>
+          <Text style={{ fontSize: 32 }}>{step === 'phone' ? '📱' : '🔑'}</Text>
+        </View>
+
+        {/* Title */}
+        <Text style={s.title}>{step === 'phone' ? 'Quick Sign In' : 'Enter OTP'}</Text>
         <Text style={s.subtitle}>
-          {step === 'phone' ? 'Sign in to make payments and bookings' :
-           step === 'otp' ? `We sent a code to +91${phone.replace(/\D/g, '').slice(-10)}` :
-           'Just tell us your name'}
+          {step === 'phone'
+            ? 'Sign in to make payments and bookings'
+            : `We sent a 6-digit code to +91 ${phone.replace(/\D/g, '').slice(-10)}`}
         </Text>
 
+        {/* Phone step */}
         {step === 'phone' && (
-          <>
-            <View style={s.inputWrap}>
-              <Text style={s.prefix}>+91</Text>
+          <View style={s.formBox}>
+            <Text style={s.label}>Phone Number</Text>
+            <View style={s.phoneRow}>
+              <View style={s.prefixBox}>
+                <Text style={s.prefixText}>+91</Text>
+              </View>
               <TextInput
-                style={s.input}
+                style={s.phoneInput}
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
-                placeholder="Enter phone number"
-                placeholderTextColor={darkColors.textMuted}
+                placeholder="Enter 10-digit number"
+                placeholderTextColor="rgba(255,255,255,0.25)"
                 maxLength={10}
+                autoFocus
               />
             </View>
-            <TouchableOpacity style={s.btn} onPress={handleSendOtp} disabled={loading}>
+            <TouchableOpacity
+              style={[s.btn, phone.replace(/\D/g, '').length < 10 && s.btnDisabled]}
+              onPress={handleSendOtp}
+              disabled={loading || phone.replace(/\D/g, '').length < 10}
+            >
               {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Send OTP →</Text>}
             </TouchableOpacity>
-          </>
+          </View>
         )}
 
+        {/* OTP step */}
         {step === 'otp' && (
-          <>
+          <View style={s.formBox}>
+            <Text style={s.label}>Enter OTP</Text>
             <TextInput
-              style={[s.input, s.otpInput]}
+              style={s.otpInput}
               value={otp}
               onChangeText={setOtp}
               keyboardType="number-pad"
-              placeholder="Enter 6-digit OTP"
-              placeholderTextColor={darkColors.textMuted}
+              placeholder="0 0 0 0 0 0"
+              placeholderTextColor="rgba(255,255,255,0.2)"
               maxLength={6}
+              autoFocus
             />
-            <Text style={s.hint}>For testing: use OTP 000000</Text>
-            <TouchableOpacity style={s.btn} onPress={handleVerifyOtp} disabled={loading}>
+            <Text style={s.hint}>For testing use: 000000</Text>
+            <TouchableOpacity
+              style={[s.btn, otp.length < 6 && s.btnDisabled]}
+              onPress={handleVerifyOtp}
+              disabled={loading || otp.length < 6}
+            >
               {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Verify & Sign In →</Text>}
             </TouchableOpacity>
-          </>
-        )}
-
-        {step === 'register' && (
-          <>
-            <TextInput
-              style={s.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Your name"
-              placeholderTextColor={darkColors.textMuted}
-            />
-            <TouchableOpacity style={s.btn} onPress={handleRegister} disabled={loading}>
-              {loading ? <ActivityIndicator color="#000" /> : <Text style={s.btnText}>Get Started →</Text>}
+            <TouchableOpacity onPress={() => { setStep('phone'); setOtp(''); }} style={s.linkBtn}>
+              <Text style={s.linkText}>← Change phone number</Text>
             </TouchableOpacity>
-          </>
+          </View>
         )}
       </View>
 
+      {/* Footer note */}
       <Text style={s.note}>Browse deals freely without signing in.{'\n'}Sign in is only needed for payments & bookings.</Text>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg, justifyContent: 'center', padding: 20 },
-  backBtn: { position: 'absolute', top: 50, left: 20 },
-  backText: { color: darkColors.amber, fontSize: 13, fontWeight: '600' },
-  card: {
-    backgroundColor: darkColors.card, borderRadius: 20, padding: 24,
-    borderWidth: 1, borderColor: darkColors.border, alignItems: 'center',
+  container: { flex: 1, backgroundColor: '#070b16', justifyContent: 'center', paddingHorizontal: 24 },
+  backBtn: { position: 'absolute', top: 52, left: 20 },
+  backText: { color: '#F59E0B', fontSize: 13, fontWeight: '600' },
+  content: { alignItems: 'center' },
+  iconCircle: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  emoji: { fontSize: 40, marginBottom: 12 },
-  title: { fontSize: 20, fontWeight: '800', color: darkColors.text, marginBottom: 4 },
-  subtitle: { fontSize: 12, color: darkColors.textSecondary, marginBottom: 20, textAlign: 'center' },
-  inputWrap: {
-    flexDirection: 'row', alignItems: 'center', width: '100%',
-    backgroundColor: darkColors.input, borderRadius: 12,
-    borderWidth: 1.5, borderColor: darkColors.border, marginBottom: 14,
+  title: { fontSize: 22, fontWeight: '800', color: '#fff', marginBottom: 6 },
+  subtitle: { fontSize: 13, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+  formBox: { width: '100%' },
+  label: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  phoneRow: { flexDirection: 'row', marginBottom: 16 },
+  prefixBox: {
+    backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
+    borderTopLeftRadius: 12, borderBottomLeftRadius: 12,
+    paddingHorizontal: 14, justifyContent: 'center', borderRightWidth: 0,
   },
-  prefix: { paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: darkColors.textSecondary, borderRightWidth: 1, borderRightColor: darkColors.border, paddingVertical: 14 },
-  input: {
-    flex: 1, paddingHorizontal: 14, paddingVertical: 14, fontSize: 16,
-    fontWeight: '600', color: darkColors.text, backgroundColor: darkColors.input,
-    borderRadius: 12, borderWidth: 1.5, borderColor: darkColors.border, width: '100%',
+  prefixText: { fontSize: 15, fontWeight: '700', color: 'rgba(255,255,255,0.5)' },
+  phoneInput: {
+    flex: 1, backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
+    borderTopRightRadius: 12, borderBottomRightRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 16,
+    fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 1,
   },
-  otpInput: { textAlign: 'center', letterSpacing: 8, fontSize: 22, marginBottom: 8 },
-  hint: { fontSize: 10, color: darkColors.textMuted, marginBottom: 14 },
+  otpInput: {
+    backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12, paddingHorizontal: 20, paddingVertical: 18,
+    fontSize: 28, fontWeight: '800', color: '#fff', textAlign: 'center', letterSpacing: 12,
+    marginBottom: 8, width: '100%',
+  },
+  hint: { fontSize: 11, color: 'rgba(255,255,255,0.25)', textAlign: 'center', marginBottom: 16 },
   btn: {
-    width: '100%', backgroundColor: darkColors.amber, paddingVertical: 15,
-    borderRadius: 12, alignItems: 'center', marginTop: 4,
+    backgroundColor: '#F59E0B', paddingVertical: 16, borderRadius: 12,
+    alignItems: 'center', width: '100%',
   },
+  btnDisabled: { opacity: 0.4 },
   btnText: { fontSize: 15, fontWeight: '800', color: '#000' },
-  note: { textAlign: 'center', fontSize: 11, color: darkColors.textMuted, marginTop: 20, lineHeight: 18 },
+  linkBtn: { marginTop: 14, alignItems: 'center' },
+  linkText: { fontSize: 12, color: 'rgba(255,255,255,0.35)' },
+  note: { textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', marginTop: 32, lineHeight: 18 },
 });
