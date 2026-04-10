@@ -75,24 +75,38 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
   if (!bill_amount || parseInt(bill_amount, 10) <= 0) {
     throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive integer (paise)', 422, 'bill_amount');
   }
-  if (!offer_id || !campaign_id || !set_id || !campaign_influencer_id) {
-    throw new AppError('VALIDATION_ERROR', 'offer_id, campaign_id, set_id, campaign_influencer_id are required', 422);
+  if (!campaign_id || !set_id || !campaign_influencer_id) {
+    throw new AppError('VALIDATION_ERROR', 'campaign_id, set_id, campaign_influencer_id are required', 422);
   }
 
-  // Validate tracking IDs
-  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id);
+  // Validate tracking IDs (offer_id is optional — may not exist for CI-based offers)
+  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
-  // Get offer details
-  const { rows: offerRows } = await db.query(
-    `SELECT co.*, b.platform_fee_pct FROM campaign_offers co
-     JOIN campaigns c ON c.id = co.campaign_id
-     JOIN brands b ON b.id = c.brand_id
-     WHERE co.id = $1`,
-    [offer_id]
-  );
-  const offer = offerRows[0];
-  const discountPct = parseFloat(offer.discount_value || 0);
-  const platformFeePct = parseFloat(offer.platform_fee_pct || env.PLATFORM_FEE_PCT);
+  // Get discount — from campaign_offers if exists, otherwise from campaign_influencers
+  let discountPct = 0;
+  let platformFeePct = parseFloat(env.PLATFORM_FEE_PCT);
+
+  if (offer_id) {
+    const { rows: offerRows } = await db.query(
+      `SELECT co.*, b.platform_fee_pct FROM campaign_offers co
+       JOIN campaigns c ON c.id = co.campaign_id
+       JOIN brands b ON b.id = c.brand_id
+       WHERE co.id = $1`,
+      [offer_id]
+    );
+    if (offerRows[0]) {
+      discountPct = parseFloat(offerRows[0].discount_value || 0);
+      platformFeePct = parseFloat(offerRows[0].platform_fee_pct || env.PLATFORM_FEE_PCT);
+    }
+  }
+
+  // Fallback: use campaign_influencer discount
+  if (discountPct === 0 && record.discount_value) {
+    discountPct = parseFloat(record.discount_value);
+  }
+  if (record.platform_fee_pct) {
+    platformFeePct = parseFloat(record.platform_fee_pct);
+  }
   const commissionPct = parseFloat(record.commission_pct || 0);
 
   const billAmountPaise = parseInt(bill_amount, 10);
@@ -211,35 +225,47 @@ const initiatePrebook = asyncHandler(async (req, res) => {
   requireFollowerProfile(follower);
 
   const { offer_id, campaign_id, set_id, campaign_influencer_id, booking_date, booking_time, guest_count } = req.body;
-  if (!offer_id || !campaign_id || !set_id || !campaign_influencer_id || !booking_date || !booking_time) {
-    throw new AppError('VALIDATION_ERROR', 'offer_id, campaign_id, set_id, campaign_influencer_id, booking_date, booking_time are required', 422);
+  if (!campaign_id || !set_id || !campaign_influencer_id || !booking_date || !booking_time) {
+    throw new AppError('VALIDATION_ERROR', 'campaign_id, set_id, campaign_influencer_id, booking_date, booking_time are required', 422);
   }
 
-  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id);
+  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
-  // Get advance amount from offer
-  const { rows: offerRows } = await db.query(
-    `SELECT prebook_advance, discount_value FROM campaign_offers WHERE id = $1`,
-    [offer_id]
-  );
-  const offer = offerRows[0];
-  // prebook_advance stored in rupees → multiply by 100 for paise; default ₹200 = 20000 paise
-  const advancePaise = offer?.prebook_advance
-    ? Math.round(parseFloat(offer.prebook_advance) * 100)
-    : 20000;
-
-  // Check slot availability
-  const slots = await bookingService.getSlots(offer_id, booking_date);
-  const slot = slots.find(s => s.time === booking_time);
-  if (!slot?.available) {
-    throw new AppError('SLOT_FULL', 'This time slot is fully booked', 409);
+  // Get advance amount — from campaign_offers if exists, otherwise default
+  let advancePaise = 20000; // default ₹200
+  if (offer_id) {
+    const { rows: offerRows } = await db.query(
+      `SELECT prebook_advance, discount_value FROM campaign_offers WHERE id = $1`,
+      [offer_id]
+    );
+    if (offerRows[0]?.prebook_advance) {
+      advancePaise = Math.round(parseFloat(offerRows[0].prebook_advance) * 100);
+    }
   }
+
+  // For car rentals, use token_amount from schema (₹300)
+  if (advancePaise === 20000) {
+    // Check if there's a token amount in the CI offer config
+    const tokenAmount = record.offer_config_json?.token_amount;
+    if (tokenAmount) advancePaise = tokenAmount * 100;
+  }
+
+  // Check slot availability (skip if no offer_id — car rental doesn't use slots)
+  if (offer_id) {
+    const slots = await bookingService.getSlots(offer_id, booking_date);
+    const slot = slots.find(s => s.time === booking_time);
+    if (!slot?.available) {
+      throw new AppError('SLOT_FULL', 'This time slot is fully booked', 409);
+    }
+  }
+
+  const discountPct = parseFloat(record.discount_value || 0);
 
   const orderId = txService.createMockOrder(advancePaise, {
     type: 'prebook',
-    offer_id, campaign_id, set_id, campaign_influencer_id,
+    offer_id: offer_id || null, campaign_id, set_id, campaign_influencer_id,
     booking_date, booking_time, guest_count: guest_count || 1,
-    advance_amount: advancePaise, discount_pct: parseFloat(offer?.discount_value || 0),
+    advance_amount: advancePaise, discount_pct: discountPct,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: parseFloat(record.commission_pct || 0),
   });
@@ -340,11 +366,11 @@ const placeOrder = asyncHandler(async (req, res) => {
   requireFollowerProfile(follower);
 
   const { offer_id, campaign_id, set_id, campaign_influencer_id, items, address_id, delivery_fee } = req.body;
-  if (!offer_id || !campaign_id || !set_id || !campaign_influencer_id || !items?.length) {
-    throw new AppError('VALIDATION_ERROR', 'offer_id, campaign_id, set_id, campaign_influencer_id, items are required', 422);
+  if (!campaign_id || !set_id || !campaign_influencer_id || !items?.length) {
+    throw new AppError('VALIDATION_ERROR', 'campaign_id, set_id, campaign_influencer_id, items are required', 422);
   }
 
-  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id);
+  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
   // Get offer + brand fee
   const { rows: offerRows } = await db.query(
