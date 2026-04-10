@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
+import { processPayment } from '../../services/payment';
 
 /**
  * CarBookingScreen — pre-booking confirmation screen matching the follower app mockup.
@@ -29,6 +31,20 @@ export default function CarBookingScreen({ navigation, route }) {
   const balance = totalTrip - tokenAmount;
 
   async function handlePay() {
+    // Check if logged in — payments require auth
+    const token = await AsyncStorage.getItem('inflx_token');
+    if (!token) {
+      Alert.alert(
+        'Sign In Required',
+        'You need to sign in to make bookings. It only takes 30 seconds!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => navigation.navigate('FollowerLogin') },
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await followerApi.prebook({

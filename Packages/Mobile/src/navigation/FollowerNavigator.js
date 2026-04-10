@@ -21,6 +21,9 @@ import FollowedInfluencersScreen from '../screens/follower/FollowedInfluencersSc
 import CarDetailScreen from '../screens/follower/CarDetailScreen';
 import CarBookingScreen from '../screens/follower/CarBookingScreen';
 
+// Auth gate for payments
+import FollowerLoginScreen from '../screens/follower/FollowerLoginScreen';
+
 // Existing transaction flow screens
 import PayAtStoreScreen from '../screens/follower/PayAtStoreScreen';
 import PreBookScreen from '../screens/follower/PreBookScreen';
@@ -50,6 +53,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
+    <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
   </>
 );
 

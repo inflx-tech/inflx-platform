@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { darkColors, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
@@ -33,6 +34,21 @@ export default function PayAtStoreScreen({ navigation, route }) {
 
   async function handlePay() {
     if (youPay < 100) { Alert.alert('Enter a valid amount'); return; }
+
+    // Check if logged in — payments require auth
+    const token = await AsyncStorage.getItem('inflx_token');
+    if (!token) {
+      Alert.alert(
+        'Sign In Required',
+        'You need to sign in to make payments. It only takes 30 seconds!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => navigation.navigate('FollowerLogin') },
+        ]
+      );
+      return;
+    }
+
     setStep('processing');
     setLoading(true);
 
