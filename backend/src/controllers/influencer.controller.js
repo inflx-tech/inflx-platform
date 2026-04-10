@@ -728,4 +728,78 @@ const storePreview = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview };
+// ── GET /influencers/me/campaigns/:ci_id/products — products assigned via campaign
+const getCampaignProducts = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  const { campaign_influencer_id } = req.params;
+
+  // Verify this CI belongs to the influencer
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.id, ci.set_id, cs.campaign_id, c.brand_id, b.business_name, b.category
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
+     WHERE ci.id = $1 AND ci.influencer_id = $2`,
+    [campaign_influencer_id, inf.id]
+  );
+  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
+  const ci = ciRows[0];
+
+  // Get offer for this set (to find linked products)
+  const { rows: offers } = await db.query(
+    `SELECT id, offer_type, discount_value, products_json, availing_modes
+     FROM campaign_offers WHERE set_id = $1 AND is_active = true`,
+    [ci.set_id]
+  );
+
+  // Get brand products — if offer has products_json, filter; else all
+  const offerProductIds = offers.flatMap(o => (o.products_json || []).map(p => p.product_id)).filter(Boolean);
+
+  let products;
+  if (offerProductIds.length > 0) {
+    const { rows } = await db.query(
+      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+       FROM brand_products WHERE brand_id = $1 AND id = ANY($2) AND is_active = true
+       ORDER BY section NULLS LAST, name`,
+      [ci.brand_id, offerProductIds]
+    );
+    products = rows;
+  } else {
+    // No specific products linked — return all brand products
+    const { rows } = await db.query(
+      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
+       FROM brand_products WHERE brand_id = $1 AND is_active = true
+       ORDER BY section NULLS LAST, name`,
+      [ci.brand_id]
+    );
+    products = rows;
+  }
+
+  // Get existing notes by this influencer for this campaign
+  const { rows: notes } = await db.query(
+    `SELECT product_id, note_text FROM influencer_product_notes
+     WHERE influencer_id = $1 AND campaign_id = $2`,
+    [inf.id, ci.campaign_id]
+  );
+  const noteMap = {};
+  for (const n of notes) noteMap[n.product_id] = n.note_text;
+
+  // Attach notes to products
+  const productsWithNotes = products.map(p => ({
+    ...p,
+    price: Math.round(parseFloat(p.price || 0) * 100), // paise
+    influencer_note: noteMap[p.id] || null,
+    is_published: !!noteMap[p.id], // has note = published to store
+  }));
+
+  return success(res, {
+    campaign_id: ci.campaign_id,
+    brand: { id: ci.brand_id, name: ci.business_name, category: ci.category },
+    offers,
+    products: productsWithNotes,
+  });
+});
+
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts };

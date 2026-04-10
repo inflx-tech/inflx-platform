@@ -278,28 +278,32 @@ const getFeed = asyncHandler(async (req, res) => {
 // ── GET /follower/home-feed — NEW product-centric deduped feed ───────────────
 
 const getHomeFeed = asyncHandler(async (req, res) => {
-  const follower = await getFollowerByUserId(req.user.sub);
-  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+  // Public access — follower may not be logged in
+  const follower = req.user?.sub ? await getFollowerByUserId(req.user.sub).catch(() => null) : null;
+  const city = follower?.user_city || req.query.city || null;
+  const followerId = follower?.id || null;
 
   const page = parseInt(req.query.page) || 1;
   const limit = Math.min(parseInt(req.query.limit) || 20, 50);
 
-  const data = await followerService.getHomeFeed(follower.id, follower.user_city, page, limit);
+  const data = await followerService.getHomeFeed(followerId, city, page, limit);
   return success(res, data, 200, { page: data.page, total: data.total, limit: data.limit });
 });
 
 // ── GET /follower/deals — NEW category browse ────────────────────────────────
 
 const getDeals = asyncHandler(async (req, res) => {
-  const follower = await getFollowerByUserId(req.user.sub);
-  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+  // Public access — follower may not be logged in
+  const follower = req.user?.sub ? await getFollowerByUserId(req.user.sub).catch(() => null) : null;
+  const city = follower?.user_city || req.query.city || null;
+  const followerId = follower?.id || null;
 
   const { category } = req.query;
   const page = parseInt(req.query.page) || 1;
   const limit = Math.min(parseInt(req.query.limit) || 20, 50);
 
   const data = await followerService.getDealsByCategory(
-    category || 'all', follower.user_city, follower.id, page, limit
+    category || 'all', city, followerId, page, limit
   );
   return success(res, data, 200, { page: data.page, total: data.total, limit: data.limit });
 });
@@ -405,31 +409,57 @@ const listingService = require('../services/listing.service');
 
 // GET /follower/stories — influencers with active deals for story circle row
 const getStories = asyncHandler(async (req, res) => {
-  const follower = await getFollowerByUserId(req.user.sub);
-  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+  // Public access — if not logged in, show top influencers with deals
+  const follower = req.user?.sub ? await getFollowerByUserId(req.user.sub).catch(() => null) : null;
 
-  // Get followed influencers with active deal counts
-  const { rows } = await db.query(
-    `SELECT
-       i.id, u.name, i.instagram_handle,
-       i.followers_count, i.niche,
-       COUNT(DISTINCT co.id)::int AS active_deal_count,
-       MAX(co.created_at) AS latest_deal_at
-     FROM follower_follows ff
-     JOIN influencers i ON i.id = ff.influencer_id
-     JOIN users u ON u.id = i.user_id
-     LEFT JOIN campaign_influencers ci ON ci.influencer_id = i.id
-       AND ci.status IN ('contracted', 'active', 'completed')
-     LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
-     LEFT JOIN campaigns c ON c.id = cs.campaign_id
-       AND c.status IN ('published', 'active', 'live')
-       AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
-     LEFT JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
-     WHERE ff.follower_id = $1
-     GROUP BY i.id, u.name, i.instagram_handle, i.followers_count, i.niche
-     ORDER BY active_deal_count DESC, u.name ASC`,
-    [follower.id]
-  );
+  let rows;
+  if (follower) {
+    // Logged in: show followed influencers
+    const result = await db.query(
+      `SELECT
+         i.id, u.name, i.instagram_handle,
+         i.followers_count, i.niche,
+         COUNT(DISTINCT co.id)::int AS active_deal_count,
+         MAX(co.created_at) AS latest_deal_at
+       FROM follower_follows ff
+       JOIN influencers i ON i.id = ff.influencer_id
+       JOIN users u ON u.id = i.user_id
+       LEFT JOIN campaign_influencers ci ON ci.influencer_id = i.id
+         AND ci.status IN ('contracted', 'active', 'completed')
+       LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
+       LEFT JOIN campaigns c ON c.id = cs.campaign_id
+         AND c.status IN ('published', 'active', 'live')
+         AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+       LEFT JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
+       WHERE ff.follower_id = $1
+       GROUP BY i.id, u.name, i.instagram_handle, i.followers_count, i.niche
+       ORDER BY active_deal_count DESC, u.name ASC`,
+      [follower.id]
+    );
+    rows = result.rows;
+  } else {
+    // Not logged in: show top influencers with active deals
+    const result = await db.query(
+      `SELECT
+         i.id, u.name, i.instagram_handle,
+         i.followers_count, i.niche,
+         COUNT(DISTINCT co.id)::int AS active_deal_count,
+         MAX(co.created_at) AS latest_deal_at
+       FROM influencers i
+       JOIN users u ON u.id = i.user_id
+       JOIN campaign_influencers ci ON ci.influencer_id = i.id
+         AND ci.status IN ('contracted', 'active', 'completed')
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c ON c.id = cs.campaign_id
+         AND c.status IN ('published', 'active', 'live')
+         AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+       JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
+       GROUP BY i.id, u.name, i.instagram_handle, i.followers_count, i.niche
+       ORDER BY active_deal_count DESC, i.followers_count DESC
+       LIMIT 10`
+    );
+    rows = result.rows;
+  }
 
   const stories = rows.map(r => ({
     id: r.id,

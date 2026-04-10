@@ -12,23 +12,23 @@ const followerAuth = [authenticate, requireRole('follower')];
 router.post('/register', authenticate, requireRole('follower'), ctrl.register);
 router.get('/me',        authenticate, requireRole('follower'), ctrl.getMe);
 
-// ── Follow / unfollow ─────────────────────────────────────────────────────────
+// ── Follow / unfollow (auth required) ────────────────────────────────────────
 router.post('/follows',              ...followerAuth, ctrl.followInfluencer);
 router.delete('/follows/:influencer_id', ...followerAuth, ctrl.unfollowInfluencer);
 
-// ── Addresses ─────────────────────────────────────────────────────────────────
+// ── Addresses (auth required) ────────────────────────────────────────────────
 router.post('/addresses',     ...followerAuth, ctrl.createAddress);
 router.get('/addresses',      ...followerAuth, ctrl.listAddresses);
 router.patch('/addresses/:id',...followerAuth, ctrl.updateAddress);
 
-// ── Feed ──────────────────────────────────────────────────────────────────────
-router.get('/feed',      ...followerAuth, ctrl.getFeed);       // legacy
-router.get('/home-feed', ...followerAuth, ctrl.getHomeFeed);   // NEW — product-centric
-router.get('/deals',     ...followerAuth, ctrl.getDeals);      // NEW — category browse
-router.get('/following', ...followerAuth, ctrl.getFollowing);  // NEW — followed influencers
+// ── Feed & browse (public — auth optional for personalization) ───────────────
+router.get('/feed',      authenticateOptional, ctrl.getFeed);       // legacy
+router.get('/home-feed', authenticateOptional, ctrl.getHomeFeed);   // product-centric
+router.get('/deals',     authenticateOptional, ctrl.getDeals);      // category browse
+router.get('/following', ...followerAuth, ctrl.getFollowing);       // auth required (personal)
 
-// ── Listing Engine endpoints ─────────────────────────────────────────────────
-router.get('/stories',    ...followerAuth, ctrl.getStories);    // Influencer story circles
-router.get('/categories', ...followerAuth, ctrl.getCategories); // Super-category browser
+// ── Listing Engine endpoints (public) ────────────────────────────────────────
+router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influencer story circles
+router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
 
 module.exports = router;

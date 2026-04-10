@@ -122,6 +122,12 @@ export const influencerApi = {
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
+
+  // Product notes — publish products to influencer store
+  getCampaignProducts: (campaignId) => api.get(`/influencers/me/campaigns/${campaignId}/products`),
+  upsertProductNote: (data) => api.post('/influencers/me/product-notes', data),
+  getProductNotes: (campaignId) => api.get(`/influencers/me/product-notes/${campaignId}`),
+  deleteProductNote: (noteId) => api.delete(`/influencers/me/product-notes/${noteId}`),
 };
 
 /**

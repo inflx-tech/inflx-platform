@@ -5,6 +5,7 @@ import { View, ActivityIndicator, Platform } from 'react-native';
 import { OneSignal, LogLevel } from 'react-native-onesignal';
 import { colors } from './src/theme/tokens';
 import { ONESIGNAL_APP_ID } from './src/config/api';
+import APP_ROLE from './src/config/appRole';
 
 import AuthNavigator from './src/navigation/AuthNavigator';
 import InfluencerNavigator from './src/navigation/InfluencerNavigator';
@@ -87,12 +88,17 @@ export default function App() {
     );
   }
 
+  // Follower app = public browsing, no login required
+  // Brand/Influencer apps = login required
+  const isFollowerApp = APP_ROLE === 'follower';
+
   return (
     <AuthContext.Provider value={{ setRole }}>
       <NavigationContainer>
         {role === 'brand' ? <BrandNavigator /> :
          role === 'influencer' ? <InfluencerNavigator /> :
          role === 'follower' ? <FollowerNavigator /> :
+         isFollowerApp ? <FollowerNavigator /> :
          <AuthNavigator />}
       </NavigationContainer>
     </AuthContext.Provider>

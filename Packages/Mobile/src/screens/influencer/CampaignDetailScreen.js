@@ -685,6 +685,17 @@ export default function CampaignDetailScreen({ navigation, route }) {
 
             <TouchableOpacity
               style={styles.gridBtn}
+              onPress={() => navigation.navigate('CampaignProducts', {
+                campaignInfluencerId: campaignInfluencerId,
+                campaignName: campaign?.campaign_name || 'Campaign',
+              })}
+            >
+              <Text style={styles.gridBtnIcon}>{'[P]'}</Text>
+              <Text style={styles.gridBtnLabel}>Products</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.gridBtn}
               onPress={() => navigation.navigate('Earnings')}
             >
               <Text style={styles.gridBtnIcon}>{'[$]'}</Text>

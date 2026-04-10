@@ -19,6 +19,7 @@ import MyCampaignsScreen from '../screens/influencer/MyCampaignsScreen';
 import CampaignDetailScreen from '../screens/influencer/CampaignDetailScreen';
 import CampaignCompletionScreen from '../screens/influencer/CampaignCompletionScreen';
 import BrandProfileScreen from '../screens/influencer/BrandProfileScreen';
+import CampaignProductsScreen from '../screens/influencer/CampaignProductsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -38,6 +39,7 @@ function HomeStackNav() {
       <HomeStack.Screen name="DeliverableList" component={DeliverableListScreen} />
       <HomeStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
       <HomeStack.Screen name="BrandProfile" component={BrandProfileScreen} />
+      <HomeStack.Screen name="CampaignProducts" component={CampaignProductsScreen} />
       <HomeStack.Screen name="Negotiation" component={NegotiationScreen} />
     </HomeStack.Navigator>
   );
