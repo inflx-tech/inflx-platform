@@ -1163,6 +1163,78 @@ const openGroupMatches = asyncHandler(async (req, res) => {
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
+// GET /campaigns/:id/products — products assigned to this campaign via influencer offers
+const getCampaignProducts = asyncHandler(async (req, res) => {
+  const { id: campaignId } = req.params;
+
+  // Get all influencers in this campaign with their offer configs
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.id, ci.influencer_id, ci.offer_type, ci.offer_config_json,
+            ci.commission_pct, ci.coupon_code, ci.status,
+            i.instagram_handle, u.name AS influencer_name,
+            c.brand_id
+     FROM campaign_influencers ci
+     JOIN campaign_sets cs ON cs.id = ci.set_id
+     JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN influencers i ON i.id = ci.influencer_id
+     JOIN users u ON u.id = i.user_id
+     WHERE cs.campaign_id = $1`,
+    [campaignId]
+  );
+
+  if (ciRows.length === 0) return success(res, { products: [], influencers: [] });
+
+  const brandId = ciRows[0].brand_id;
+
+  // Collect all product IDs from all influencer offer configs
+  const allProductIds = new Set();
+  for (const ci of ciRows) {
+    const config = ci.offer_config_json || {};
+    const prods = config.products || [];
+    prods.forEach(p => {
+      const pid = typeof p === 'string' ? p : (p.product_id || p.id);
+      if (pid) allProductIds.add(pid);
+    });
+  }
+
+  let products;
+  if (allProductIds.size > 0) {
+    const { rows } = await db.query(
+      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json, is_active
+       FROM brand_products WHERE brand_id = $1 AND id = ANY($2)
+       ORDER BY section NULLS LAST, name`,
+      [brandId, Array.from(allProductIds)]
+    );
+    products = rows;
+  } else {
+    // No specific products assigned — return all brand products
+    const { rows } = await db.query(
+      `SELECT id, name, price, image_url, section, veg_flag, description, variants_json, is_active
+       FROM brand_products WHERE brand_id = $1 AND is_active = true
+       ORDER BY section NULLS LAST, name`,
+      [brandId]
+    );
+    products = rows;
+  }
+
+  return success(res, {
+    products,
+    influencers: ciRows.map(ci => ({
+      id: ci.id,
+      influencer_id: ci.influencer_id,
+      name: ci.influencer_name,
+      handle: ci.instagram_handle,
+      status: ci.status,
+      offer_type: ci.offer_type,
+      discount_value: ci.offer_config_json?.value || null,
+      commission_pct: ci.commission_pct,
+      coupon_code: ci.coupon_code,
+      assigned_products: (ci.offer_config_json?.products || []).length,
+    })),
+    has_specific_products: allProductIds.size > 0,
+  });
+});
+
 module.exports = {
   create,
   list,
@@ -1183,4 +1255,5 @@ module.exports = {
   getLiveHierarchy,
   searchInfluencers,
   openGroupMatches,
+  getCampaignProducts,
 };

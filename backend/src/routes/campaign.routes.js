@@ -50,4 +50,7 @@ router.get('/:id/sets/:sid/open-group-matches', ...brandAuth, ctrl.openGroupMatc
 // ── Live hierarchy ───────────────────────────────────────────────────────────
 router.get('/:id/live', ...brandAuth, ctrl.getLiveHierarchy);
 
+// ── Campaign products ─────────────────────────────────────────────────────────
+router.get('/:id/products', ...brandAuth, ctrl.getCampaignProducts);
+
 module.exports = router;

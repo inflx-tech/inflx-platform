@@ -24,6 +24,8 @@ const ACTIVE_CI_QUERY = `
     ci.coupon_code,
     ci.commission_pct,
     ci.influencer_id,
+    ci.offer_type         AS ci_offer_type,
+    ci.offer_config_json  AS ci_offer_config,
     cs.id                 AS set_id,
     cs.campaign_id,
     c.brand_id,
@@ -35,8 +37,8 @@ const ACTIVE_CI_QUERY = `
     b.category            AS brand_category,
     u_b.city              AS brand_city,
     co.id                 AS offer_id,
-    co.offer_type,
-    co.discount_value,
+    COALESCE(co.offer_type, ci.offer_type)    AS offer_type,
+    COALESCE(co.discount_value, (ci.offer_config_json->>'value')::numeric) AS discount_value,
     co.availing_modes,
     co.products_json,
     co.bundle_price,
@@ -47,11 +49,12 @@ const ACTIVE_CI_QUERY = `
   JOIN campaigns c               ON c.id  = cs.campaign_id
   JOIN brands b                  ON b.id  = c.brand_id
   JOIN users u_b                 ON u_b.id = b.user_id
-  JOIN campaign_offers co        ON co.set_id = cs.id AND co.is_active = true
+  LEFT JOIN campaign_offers co   ON co.set_id = cs.id AND co.is_active = true
   WHERE ci.status IN ('contracted', 'active', 'completed')
     AND c.status  IN ('published', 'active', 'live')
     AND (c.start_date IS NULL OR c.start_date <= CURRENT_DATE)
     AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+    AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
 
 // Extended query that also fetches influencer details + product notes
@@ -61,6 +64,8 @@ const FEED_QUERY = `
     ci.coupon_code,
     ci.commission_pct,
     ci.influencer_id,
+    ci.offer_type         AS ci_offer_type,
+    ci.offer_config_json  AS ci_offer_config,
     cs.id                 AS set_id,
     cs.campaign_id,
     c.brand_id,
@@ -71,8 +76,8 @@ const FEED_QUERY = `
     b.category            AS brand_category,
     u_b.city              AS brand_city,
     co.id                 AS offer_id,
-    co.offer_type,
-    co.discount_value,
+    COALESCE(co.offer_type, ci.offer_type)    AS offer_type,
+    COALESCE(co.discount_value, (ci.offer_config_json->>'value')::numeric) AS discount_value,
     co.availing_modes,
     co.products_json,
     co.prebook_advance,
@@ -85,13 +90,14 @@ const FEED_QUERY = `
   JOIN campaigns c               ON c.id  = cs.campaign_id
   JOIN brands b                  ON b.id  = c.brand_id
   JOIN users u_b                 ON u_b.id = b.user_id
-  JOIN campaign_offers co        ON co.set_id = cs.id AND co.is_active = true
+  LEFT JOIN campaign_offers co   ON co.set_id = cs.id AND co.is_active = true
   JOIN influencers i             ON i.id = ci.influencer_id
   JOIN users u_i                 ON u_i.id = i.user_id
   WHERE ci.status IN ('contracted', 'active', 'completed')
     AND c.status  IN ('published', 'active', 'live')
     AND (c.start_date IS NULL OR c.start_date <= CURRENT_DATE)
     AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
+    AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
 
 // Category mapping for deals tab

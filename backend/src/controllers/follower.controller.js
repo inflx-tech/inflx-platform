@@ -419,18 +419,18 @@ const getStories = asyncHandler(async (req, res) => {
       `SELECT
          i.id, u.name, i.instagram_handle,
          i.followers_count, i.niche,
-         COUNT(DISTINCT co.id)::int AS active_deal_count,
-         MAX(co.created_at) AS latest_deal_at
+         COUNT(DISTINCT ci.id)::int AS active_deal_count,
+         MAX(ci.created_at) AS latest_deal_at
        FROM follower_follows ff
        JOIN influencers i ON i.id = ff.influencer_id
        JOIN users u ON u.id = i.user_id
        LEFT JOIN campaign_influencers ci ON ci.influencer_id = i.id
          AND ci.status IN ('contracted', 'active', 'completed')
+         AND (ci.offer_type IS NOT NULL)
        LEFT JOIN campaign_sets cs ON cs.id = ci.set_id
        LEFT JOIN campaigns c ON c.id = cs.campaign_id
          AND c.status IN ('published', 'active', 'live')
          AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
-       LEFT JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
        WHERE ff.follower_id = $1
        GROUP BY i.id, u.name, i.instagram_handle, i.followers_count, i.niche
        ORDER BY active_deal_count DESC, u.name ASC`,
@@ -443,17 +443,17 @@ const getStories = asyncHandler(async (req, res) => {
       `SELECT
          i.id, u.name, i.instagram_handle,
          i.followers_count, i.niche,
-         COUNT(DISTINCT co.id)::int AS active_deal_count,
-         MAX(co.created_at) AS latest_deal_at
+         COUNT(DISTINCT ci.id)::int AS active_deal_count,
+         MAX(ci.created_at) AS latest_deal_at
        FROM influencers i
        JOIN users u ON u.id = i.user_id
        JOIN campaign_influencers ci ON ci.influencer_id = i.id
          AND ci.status IN ('contracted', 'active', 'completed')
+         AND (ci.offer_type IS NOT NULL)
        JOIN campaign_sets cs ON cs.id = ci.set_id
        JOIN campaigns c ON c.id = cs.campaign_id
          AND c.status IN ('published', 'active', 'live')
          AND (c.end_date IS NULL OR c.end_date >= CURRENT_DATE)
-       JOIN campaign_offers co ON co.set_id = cs.id AND co.is_active = true
        GROUP BY i.id, u.name, i.instagram_handle, i.followers_count, i.niche
        ORDER BY active_deal_count DESC, i.followers_count DESC
        LIMIT 10`

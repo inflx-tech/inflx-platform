@@ -736,7 +736,8 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
 
   // Verify this CI belongs to the influencer
   const { rows: ciRows } = await db.query(
-    `SELECT ci.id, ci.set_id, cs.campaign_id, c.brand_id, b.business_name, b.category
+    `SELECT ci.id, ci.set_id, cs.campaign_id, c.brand_id, b.business_name, b.category,
+            ci.offer_type, ci.offer_config_json
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id
@@ -747,35 +748,46 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
   const ci = ciRows[0];
 
-  // Get offer for this set (to find linked products)
+  // Get offer data — first from campaign_influencers (per-influencer offer), then campaign_offers
+  const ciOfferType = ciRows[0].offer_type || null;
+  const ciOfferConfig = ciRows[0].offer_config_json || {};
+  const offerConfigProducts = ciOfferConfig.products || [];
+
+  // Also check campaign_offers for this set
   const { rows: offers } = await db.query(
     `SELECT id, offer_type, discount_value, products_json, availing_modes
      FROM campaign_offers WHERE set_id = $1 AND is_active = true`,
     [ci.set_id]
   );
 
-  // Get brand products
-  // If offer has products_json with specific product IDs → show ONLY those
-  // If offer exists but products_json is null/empty → show all (shop-level offer)
-  // If NO offers exist → show all brand products (brand hasn't created offer yet)
-  const offerProductIds = offers.flatMap(o => {
-    if (!o.products_json) return [];
-    const pj = typeof o.products_json === 'string' ? JSON.parse(o.products_json) : o.products_json;
-    return (Array.isArray(pj) ? pj : []).map(p => p.product_id).filter(Boolean);
-  });
+  // Determine product IDs — from CI offer_config_json.products first, then campaign_offers.products_json
+  let productIds = [];
+
+  // From per-influencer offer config
+  if (Array.isArray(offerConfigProducts) && offerConfigProducts.length > 0) {
+    productIds = offerConfigProducts.map(p => typeof p === 'string' ? p : p.product_id || p.id).filter(Boolean);
+  }
+
+  // From campaign_offers if no per-influencer products
+  if (productIds.length === 0) {
+    productIds = offers.flatMap(o => {
+      if (!o.products_json) return [];
+      const pj = typeof o.products_json === 'string' ? JSON.parse(o.products_json) : o.products_json;
+      return (Array.isArray(pj) ? pj : []).map(p => typeof p === 'string' ? p : p.product_id).filter(Boolean);
+    });
+  }
 
   let products;
-  if (offerProductIds.length > 0) {
-    // Specific products linked to offer
+  if (productIds.length > 0) {
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
        FROM brand_products WHERE brand_id = $1 AND id = ANY($2) AND is_active = true
        ORDER BY section NULLS LAST, name`,
-      [ci.brand_id, offerProductIds]
+      [ci.brand_id, productIds]
     );
     products = rows;
   } else {
-    // No specific products → return all brand products
+    // No specific products assigned — return all brand products (brand-level offer)
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
        FROM brand_products WHERE brand_id = $1 AND is_active = true
@@ -784,6 +796,10 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     );
     products = rows;
   }
+
+  // Build discount info from CI or campaign_offers
+  const discountValue = ciOfferConfig.value || offers[0]?.discount_value || null;
+  const offerType = ciOfferType || offers[0]?.offer_type || null;
 
   // Get existing notes by this influencer for this campaign
   const { rows: notes } = await db.query(
@@ -805,6 +821,11 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   return success(res, {
     campaign_id: ci.campaign_id,
     brand: { id: ci.brand_id, name: ci.business_name, category: ci.category },
+    offer: {
+      type: offerType,
+      discount_value: discountValue,
+      config: ciOfferConfig,
+    },
     offers,
     products: productsWithNotes,
   });
