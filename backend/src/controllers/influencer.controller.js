@@ -760,7 +760,19 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     [ci.set_id]
   );
 
-  // Determine product IDs — from CI offer_config_json.products first, then campaign_offers.products_json
+  // Get existing notes (published products) by this influencer for this campaign FIRST
+  const { rows: notes } = await db.query(
+    `SELECT product_id, note_text FROM influencer_product_notes
+     WHERE influencer_id = $1 AND campaign_id = $2`,
+    [inf.id, ci.campaign_id]
+  );
+  const publishedProductIds = notes.map(n => n.product_id);
+
+  // Determine product IDs — priority order:
+  // 1. offer_config_json.products (brand selected specific products for this influencer)
+  // 2. campaign_offers.products_json (set-level product assignment)
+  // 3. Published products (influencer already published these)
+  // 4. All brand products (fallback — brand-level offer, no specific products)
   let productIds = [];
 
   // From per-influencer offer config
@@ -777,6 +789,11 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     });
   }
 
+  // From published notes if still no specific products
+  if (productIds.length === 0 && publishedProductIds.length > 0) {
+    productIds = publishedProductIds;
+  }
+
   let products;
   if (productIds.length > 0) {
     const { rows } = await db.query(
@@ -787,7 +804,7 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     );
     products = rows;
   } else {
-    // No specific products assigned — return all brand products (brand-level offer)
+    // No specific products at all — return all brand products
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
        FROM brand_products WHERE brand_id = $1 AND is_active = true
@@ -798,15 +815,8 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   }
 
   // Build discount info from CI or campaign_offers
-  const discountValue = ciOfferConfig.value || offers[0]?.discount_value || null;
+  const discountValue = ciOfferConfig.value || offers[0]?.discount_value || ci.commission_pct || null;
   const offerType = ciOfferType || offers[0]?.offer_type || null;
-
-  // Get existing notes by this influencer for this campaign
-  const { rows: notes } = await db.query(
-    `SELECT product_id, note_text FROM influencer_product_notes
-     WHERE influencer_id = $1 AND campaign_id = $2`,
-    [inf.id, ci.campaign_id]
-  );
   const noteMap = {};
   for (const n of notes) noteMap[n.product_id] = n.note_text;
 

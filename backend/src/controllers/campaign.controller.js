@@ -1186,8 +1186,13 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
 
   const brandId = ciRows[0].brand_id;
 
-  // Collect all product IDs from all influencer offer configs
+  // Collect product IDs from multiple sources:
+  // 1. offer_config_json.products (brand assigned specific products)
+  // 2. Published product notes (influencer published to store)
+  // 3. Fallback: all brand products
   const allProductIds = new Set();
+
+  // From offer configs
   for (const ci of ciRows) {
     const config = ci.offer_config_json || {};
     const prods = config.products || [];
@@ -1195,6 +1200,17 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
       const pid = typeof p === 'string' ? p : (p.product_id || p.id);
       if (pid) allProductIds.add(pid);
     });
+  }
+
+  // From published notes (influencer_product_notes)
+  if (allProductIds.size === 0) {
+    const { rows: noteRows } = await db.query(
+      `SELECT DISTINCT ipn.product_id
+       FROM influencer_product_notes ipn
+       WHERE ipn.campaign_id = $1`,
+      [campaignId]
+    );
+    noteRows.forEach(n => allProductIds.add(n.product_id));
   }
 
   let products;
@@ -1207,7 +1223,7 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     );
     products = rows;
   } else {
-    // No specific products assigned — return all brand products
+    // No specific products at all — return all brand products as fallback
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json, is_active
        FROM brand_products WHERE brand_id = $1 AND is_active = true
