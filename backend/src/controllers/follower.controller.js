@@ -119,12 +119,34 @@ const unfollowInfluencer = asyncHandler(async (req, res) => {
 
 // ── GET /store/:influencer_handle ────────────────────────────────────────────
 
+const locationService = require('../services/location.service');
+
+// Helper: add distance_km to offers that have brand lat/lng
+async function attachDistance(offers, followerLat, followerLng) {
+  if (!followerLat || !followerLng || !offers?.length) return offers;
+  for (const offer of offers) {
+    if (offer.brand_id) {
+      const { rows } = await db.query('SELECT latitude, longitude FROM brands WHERE id = $1', [offer.brand_id]);
+      if (rows[0]?.latitude && rows[0]?.longitude) {
+        offer.distance_km = locationService.haversineKm(followerLat, followerLng, parseFloat(rows[0].latitude), parseFloat(rows[0].longitude));
+        offer.distance_text = locationService.formatDistance(offer.distance_km);
+      }
+    }
+  }
+  return offers;
+}
+
 const getInfluencerStore = asyncHandler(async (req, res) => {
   const { influencer_handle } = req.params;
-  const { cid, sid, oid, iid } = req.query;
+  const { cid, sid, oid, iid, lat, lng } = req.query;
 
   const storeData = await followerService.resolveStore(influencer_handle);
   if (!storeData) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
+
+  // Add distance if follower provided location
+  if (lat && lng) {
+    await attachDistance(storeData.offers, parseFloat(lat), parseFloat(lng));
+  }
 
   const { influencer, offers } = storeData;
 
@@ -513,7 +535,7 @@ const getCategories = asyncHandler(async (req, res) => {
 // GET /category/:super_category/stores — stores with inline products for CategoryListScreen
 const getCategoryStores = asyncHandler(async (req, res) => {
   const { super_category } = req.params;
-  const { sort, sub_category, page } = req.query;
+  const { sort, sub_category, page, lat, lng } = req.query;
   const pageNum = parseInt(page || '1', 10);
   const limit = 10;
   const offset = (pageNum - 1) * limit;
@@ -527,10 +549,14 @@ const getCategoryStores = asyncHandler(async (req, res) => {
 
   // Get brands in these categories with active deals
   const placeholders = categoryKeys.map((_, i) => `$${i + 1}`).join(',');
+  const hasLocation = lat && lng;
+  const followerLat = hasLocation ? parseFloat(lat) : null;
+  const followerLng = hasLocation ? parseFloat(lng) : null;
+
   const { rows: stores } = await db.query(
     `SELECT DISTINCT ON (b.id)
        b.id, b.business_name, b.category, u.city,
-       b.listing_score,
+       b.listing_score, b.latitude, b.longitude,
        (SELECT COUNT(*)::int FROM campaign_offers co
         JOIN campaign_sets cs ON cs.id = co.set_id
         JOIN campaigns c ON c.id = cs.campaign_id
@@ -546,6 +572,18 @@ const getCategoryStores = asyncHandler(async (req, res) => {
      LIMIT $${categoryKeys.length + 1} OFFSET $${categoryKeys.length + 2}`,
     [...categoryKeys, limit, offset]
   );
+
+  // Calculate distance for each store
+  if (hasLocation) {
+    for (const store of stores) {
+      if (store.latitude && store.longitude) {
+        store.distance_km = locationService.haversineKm(followerLat, followerLng, parseFloat(store.latitude), parseFloat(store.longitude));
+        store.distance_text = locationService.formatDistance(store.distance_km);
+      }
+    }
+    // Sort by distance
+    stores.sort((a, b) => (a.distance_km || 9999) - (b.distance_km || 9999));
+  }
 
   // For each store, fetch top products + card_config
   const storesWithProducts = await Promise.all(stores.map(async (store) => {

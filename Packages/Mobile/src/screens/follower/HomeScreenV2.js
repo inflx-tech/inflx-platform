@@ -10,6 +10,7 @@ import ServiceCard from '../../components/cards/ServiceCard';
 import InfluencerStoryRow from '../../components/InfluencerStoryRow';
 import CategoryGrid from '../../components/CategoryGrid';
 import { followerApi } from '../../services/api';
+import useLocation from '../../hooks/useLocation';
 
 /**
  * HomeScreenV2 — dark theme, products-first feed matching the HTML mockup.
@@ -33,11 +34,13 @@ export default function HomeScreenV2({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
+  const { latitude, longitude } = useLocation();
+  const loc = { latitude, longitude };
 
   const loadData = useCallback(async (pageNum = 1, refresh = false) => {
     try {
       const [feedRes, storiesRes, categoriesRes] = await Promise.all([
-        followerApi.getHomeFeed(pageNum).catch(() => ({ data: { items: [] } })),
+        followerApi.getHomeFeed(pageNum, loc).catch(() => ({ data: { items: [] } })),
         followerApi.getStories().catch(() => ({ data: { stories: [] } })),
         followerApi.getCategories().catch(() => ({ data: { categories: [] } })),
       ]);
@@ -84,8 +87,8 @@ export default function HomeScreenV2({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerSub}>📍 Shopping in</Text>
-          <Text style={styles.headerTitle}>Labbipet, Vijayawada <Text style={styles.headerArrow}>▼</Text></Text>
+          <Text style={styles.headerSub}>📍 Deals near you</Text>
+          <Text style={styles.headerTitle}>Vijayawada <Text style={styles.headerArrow}>▼</Text></Text>
         </View>
         <TouchableOpacity style={styles.bellBtn}>
           <Text style={{ fontSize: 14 }}>🔔</Text>

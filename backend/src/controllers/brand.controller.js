@@ -145,16 +145,36 @@ const getMe = asyncHandler(async (req, res) => {
 // PATCH /brands/me
 // ─────────────────────────────────────────────────────────────────────────────
 
+const locationService = require('../services/location.service');
+
 const updateMe = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found. Please register first.', 404);
 
   // Whitelist of updatable fields
-  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url'];
+  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'latitude', 'longitude', 'listing_data'];
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
+
+  // Auto-extract lat/lng from Google Maps URL if provided
+  if (req.body.google_maps_url) {
+    const coords = locationService.extractLatLng(req.body.google_maps_url);
+    if (coords) {
+      updates.latitude = coords.latitude;
+      updates.longitude = coords.longitude;
+    }
+  }
+
+  // If listing_data has google_maps_url, extract from there too
+  if (req.body.listing_data?.google_maps_url) {
+    const coords = locationService.extractLatLng(req.body.listing_data.google_maps_url);
+    if (coords) {
+      updates.latitude = coords.latitude;
+      updates.longitude = coords.longitude;
+    }
+  }
 
   if (Object.keys(updates).length === 0) {
     throw new AppError('VALIDATION_ERROR', 'No valid fields provided to update', 422);

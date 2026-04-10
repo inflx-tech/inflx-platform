@@ -199,10 +199,18 @@ export const followerApi = {
   getMe: () => api.get('/followers/me'),
   updateMe: (data) => api.patch('/followers/me', data),
 
-  // Feed (legacy + new)
+  // Feed (legacy + new) — all accept optional lat/lng for distance
   getFeed: () => api.get('/followers/feed'),
-  getHomeFeed: (page = 1) => api.get(`/follower/home-feed?page=${page}`),
-  getDeals: (category = 'all', page = 1) => api.get(`/follower/deals?category=${category}&page=${page}`),
+  getHomeFeed: (page = 1, loc = null) => {
+    const p = [`page=${page}`];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    return api.get(`/follower/home-feed?${p.join('&')}`);
+  },
+  getDeals: (category = 'all', page = 1, loc = null) => {
+    const p = [`category=${category}`, `page=${page}`];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    return api.get(`/follower/deals?${p.join('&')}`);
+  },
 
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),
@@ -212,6 +220,7 @@ export const followerApi = {
     if (opts.sub_category) params.push(`sub_category=${opts.sub_category}`);
     if (opts.page) params.push(`page=${opts.page}`);
     if (opts.sort) params.push(`sort=${opts.sort}`);
+    if (opts.lat) params.push(`lat=${opts.lat}`, `lng=${opts.lng}`);
     const qs = params.length ? `?${params.join('&')}` : '';
     return api.get(`/category/${superCategory}/stores${qs}`);
   },

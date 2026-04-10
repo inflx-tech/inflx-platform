@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { darkColors, fmtRupees } from '../../theme/tokens';
+import { openDirections } from '../../hooks/useLocation';
 
 /**
  * CarDetailScreen — vehicle detail page matching the follower app mockup.
@@ -190,6 +191,24 @@ export default function CarDetailScreen({ navigation, route }) {
               </TouchableOpacity>
             ))}
           </View>
+
+          {/* Directions button */}
+          {vehicle?.brand_lat && vehicle?.brand_lng && (
+            <TouchableOpacity
+              style={{ backgroundColor: '#142438', borderRadius: 11, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+              onPress={() => openDirections(vehicle.brand_lat, vehicle.brand_lng, vehicle.location)}
+            >
+              <Text style={{ fontSize: 14 }}>📍</Text>
+              <Text style={{ color: '#F59E0B', fontSize: 12, fontWeight: '700' }}>Get Directions to {vehicle.location || 'Garage'}</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Distance badge */}
+          {vehicle?.distance_text && (
+            <View style={{ backgroundColor: '#142438', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', marginBottom: 14 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>📍 {vehicle.distance_text} away</Text>
+            </View>
+          )}
 
           <View style={{ height: 80 }} />
         </View>
