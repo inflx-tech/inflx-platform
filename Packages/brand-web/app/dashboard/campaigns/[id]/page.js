@@ -741,27 +741,49 @@ export default function CampaignDetailPage() {
                 </div>
               )}
 
-              {/* Info about product assignment */}
-              {!campaignProducts.has_specific_products && (
-                <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
-                  <div className="text-xs text-amber-800">
-                    <strong>📋 All products shown:</strong> No specific products were assigned to influencers during campaign creation.
-                    All your listed products are available for this campaign. To assign specific products, edit the campaign and select products when configuring the influencer offer.
+              {/* Summary bar */}
+              {campaignProducts.summary && (
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-white rounded-xl border border-gray-200 p-3 text-center">
+                    <div className="text-lg font-extrabold text-gray-900">{campaignProducts.summary.total_products}</div>
+                    <div className="text-[10px] text-gray-400 font-semibold uppercase">Total Products</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-green-200 p-3 text-center">
+                    <div className="text-lg font-extrabold text-green-600">{campaignProducts.summary.published}</div>
+                    <div className="text-[10px] text-green-500 font-semibold uppercase">Published</div>
+                  </div>
+                  <div className="bg-white rounded-xl border border-amber-200 p-3 text-center">
+                    <div className="text-lg font-extrabold text-amber-600">{campaignProducts.summary.pending}</div>
+                    <div className="text-[10px] text-amber-500 font-semibold uppercase">Pending</div>
                   </div>
                 </div>
               )}
 
-              {/* Product grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {/* Product list with status */}
+              <div className="space-y-2">
                 {(campaignProducts.products || []).map(p => (
-                  <div key={p.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <div className="h-20 bg-gray-100 flex items-center justify-center text-3xl">🚗</div>
-                    <div className="p-3">
+                  <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+                    <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🚗</div>
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-bold text-gray-900 truncate">{p.name}</div>
-                      <div className="text-xs text-gray-500 mt-0.5">{p.section || 'General'}</div>
-                      <div className="text-sm font-extrabold text-navy mt-1">{fmtRupees(p.price)}</div>
-                      {p.description && (
-                        <div className="text-[10px] text-gray-400 mt-1 line-clamp-2">{p.description}</div>
+                      <div className="text-xs text-gray-500">{p.section || 'General'} · {fmtRupees(p.price)}</div>
+                      {p.description && <div className="text-[10px] text-gray-400 mt-0.5 truncate">{p.description}</div>}
+                      {p.published_by?.length > 0 && (
+                        <div className="mt-1.5 bg-green-50 rounded-md px-2 py-1 inline-block">
+                          <span className="text-[10px] text-green-700 italic">"{p.published_by[0].note_text}"</span>
+                          <span className="text-[9px] text-green-500 ml-1">— {p.published_by[0].influencer_name}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0">
+                      {p.publish_status === 'published' ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
+                          ✅ Published
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                          ⏳ Pending
+                        </span>
                       )}
                     </div>
                   </div>

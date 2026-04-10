@@ -1233,8 +1233,38 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     products = rows;
   }
 
+  // Get ALL published notes for this campaign (across all influencers)
+  const { rows: allNotes } = await db.query(
+    `SELECT ipn.product_id, ipn.influencer_id, ipn.note_text, u.name AS influencer_name
+     FROM influencer_product_notes ipn
+     JOIN influencers i ON i.id = ipn.influencer_id
+     JOIN users u ON u.id = i.user_id
+     WHERE ipn.campaign_id = $1`,
+    [campaignId]
+  );
+
+  // Build note lookup: product_id → { influencer_name, note_text }
+  const notesByProduct = {};
+  for (const n of allNotes) {
+    if (!notesByProduct[n.product_id]) notesByProduct[n.product_id] = [];
+    notesByProduct[n.product_id].push({
+      influencer_name: n.influencer_name,
+      influencer_id: n.influencer_id,
+      note_text: n.note_text,
+    });
+  }
+
+  // Attach publish status to each product
+  const productsWithStatus = products.map(p => ({
+    ...p,
+    publish_status: notesByProduct[p.id] ? 'published' : 'pending',
+    published_by: notesByProduct[p.id] || [],
+  }));
+
+  const publishedCount = productsWithStatus.filter(p => p.publish_status === 'published').length;
+
   return success(res, {
-    products,
+    products: productsWithStatus,
     influencers: ciRows.map(ci => ({
       id: ci.id,
       influencer_id: ci.influencer_id,
@@ -1242,12 +1272,17 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
       handle: ci.instagram_handle,
       status: ci.status,
       offer_type: ci.offer_type,
-      discount_value: ci.offer_config_json?.value || null,
+      discount_value: ci.offer_config_json?.value || ci.commission_pct || null,
       commission_pct: ci.commission_pct,
       coupon_code: ci.coupon_code,
-      assigned_products: (ci.offer_config_json?.products || []).length,
+      assigned_products: allProductIds.size > 0 ? allProductIds.size : products.length,
     })),
     has_specific_products: allProductIds.size > 0,
+    summary: {
+      total_products: products.length,
+      published: publishedCount,
+      pending: products.length - publishedCount,
+    },
   });
 });
 
