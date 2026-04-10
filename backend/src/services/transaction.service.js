@@ -8,28 +8,66 @@
  */
 
 const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const db = require('../config/db');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
 
+// ── Razorpay client ──────────────────────────────────────────────────────────
+let _rzp = null;
+function getRzp() {
+  if (!_rzp && env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET) {
+    _rzp = new Razorpay({ key_id: env.RAZORPAY_KEY_ID, key_secret: env.RAZORPAY_KEY_SECRET });
+  }
+  return _rzp;
+}
+
 // ── In-memory mock order store ─────────────────────────────────────────────────
-// Maps razorpay_order_id → { amount, meta }
 const pendingOrders = new Map();
 
 /**
- * Create a mock Razorpay order.
- * Returns { order_id }
+ * Create a Razorpay order — real or mock depending on RAZORPAY_MOCK.
+ * Returns order_id string.
+ */
+async function createOrder(amountPaise, meta = {}) {
+  if (env.RAZORPAY_MOCK) {
+    return createMockOrder(amountPaise, meta);
+  }
+
+  // Real Razorpay order
+  const rzp = getRzp();
+  if (!rzp) throw new AppError('INTERNAL_ERROR', 'Razorpay not configured', 500);
+
+  const order = await rzp.orders.create({
+    amount: amountPaise,
+    currency: 'INR',
+    receipt: `inflx_${crypto.randomBytes(6).toString('hex')}`,
+    notes: {
+      type: meta.type || 'follower_transaction',
+      campaign_id: meta.campaign_id || '',
+      influencer_id: meta.campaign_influencer_id || '',
+      brand_id: meta.brand_id || '',
+    },
+  });
+
+  // Store meta for verification
+  pendingOrders.set(order.id, { amount: amountPaise, meta });
+  console.log(`[RAZORPAY] Order created: ${order.id} ₹${(amountPaise / 100).toFixed(2)}`);
+  return order.id;
+}
+
+/**
+ * Create a mock Razorpay order (dev mode).
  */
 function createMockOrder(amountPaise, meta = {}) {
   const orderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
   pendingOrders.set(orderId, { amount: amountPaise, meta });
-  console.log(`[RAZORPAY MOCK] Follower order created: ${orderId} ₹${(amountPaise / 100).toFixed(2)}`);
+  console.log(`[RAZORPAY MOCK] Order created: ${orderId} ₹${(amountPaise / 100).toFixed(2)}`);
   return orderId;
 }
 
 /**
- * Consume a mock Razorpay order — throws if not found.
- * Returns stored { amount, meta }.
+ * Consume an order — works for both mock and real.
  */
 function consumeMockOrder(orderId) {
   const entry = pendingOrders.get(orderId);
@@ -38,6 +76,19 @@ function consumeMockOrder(orderId) {
   }
   pendingOrders.delete(orderId);
   return entry;
+}
+
+/**
+ * Verify Razorpay payment signature (production only).
+ */
+function verifyPaymentSignature(orderId, paymentId, signature) {
+  if (env.RAZORPAY_MOCK) return true; // skip in mock mode
+
+  const expectedSignature = crypto
+    .createHmac('sha256', env.RAZORPAY_KEY_SECRET)
+    .update(`${orderId}|${paymentId}`)
+    .digest('hex');
+  return expectedSignature === signature;
 }
 
 /**
@@ -125,10 +176,13 @@ async function creditInfluencerCommission(client, influencerId, commissionPaise)
 }
 
 module.exports = {
+  createOrder,
   createMockOrder,
   consumeMockOrder,
+  verifyPaymentSignature,
   validateTracking,
   calcPayAtStore,
   calcOnlineOrder,
   creditInfluencerCommission,
+  getRazorpayKeyId: () => env.RAZORPAY_KEY_ID,
 };

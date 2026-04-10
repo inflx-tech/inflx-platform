@@ -114,7 +114,7 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     txService.calcPayAtStore(billAmountPaise, discountPct, commissionPct, platformFeePct);
 
   // Create Razorpay order
-  const orderId = txService.createMockOrder(netAmount, {
+  const orderId = await txService.createOrder(netAmount, {
     type: 'pay_at_store',
     offer_id, campaign_id, set_id, campaign_influencer_id,
     bill_amount: billAmountPaise, discount_amount: discountAmount,
@@ -124,6 +124,7 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
 
   return success(res, {
     razorpay_order_id: orderId,
+    razorpay_key_id: txService.getRazorpayKeyId(),
     net_amount: netAmount,
     discount_amount: discountAmount,
     original_amount: billAmountPaise,
@@ -261,7 +262,7 @@ const initiatePrebook = asyncHandler(async (req, res) => {
 
   const discountPct = parseFloat(record.discount_value || 0);
 
-  const orderId = txService.createMockOrder(advancePaise, {
+  const orderId = await txService.createOrder(advancePaise, {
     type: 'prebook',
     offer_id: offer_id || null, campaign_id, set_id, campaign_influencer_id,
     booking_date, booking_time, guest_count: guest_count || 1,
@@ -270,7 +271,7 @@ const initiatePrebook = asyncHandler(async (req, res) => {
     commission_pct: parseFloat(record.commission_pct || 0),
   });
 
-  return success(res, { razorpay_order_id: orderId, advance_amount: advancePaise }, 201);
+  return success(res, { razorpay_order_id: orderId, razorpay_key_id: txService.getRazorpayKeyId(), advance_amount: advancePaise }, 201);
 });
 
 // ── POST /follower/prebook/verify ─────────────────────────────────────────────
@@ -412,7 +413,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     price_paise: priceMap[i.product_id] || 0,
   }));
 
-  const orderId = txService.createMockOrder(netAmount, {
+  const orderId = await txService.createOrder(netAmount, {
     type: 'online_order',
     offer_id, campaign_id, set_id, campaign_influencer_id,
     items_total: itemsTotal, discount_amount: discountAmount, net_amount: netAmount,
