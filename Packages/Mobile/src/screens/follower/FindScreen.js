@@ -21,8 +21,7 @@ const SUPER_CATEGORIES = [
   {
     key: 'shop', icon: '🛍️', label: 'Shop',
     subs: [
-      { key: 'fashion_walkin', label: 'Fashion (Walk-in)', icon: '👗' },
-      { key: 'fashion_online', label: 'Fashion (Online)', icon: '🛍️' },
+      { key: 'fashion_walkin', label: 'Fashion & Apparel', icon: '👗' },
       { key: 'electronics', label: 'Electronics & Gadgets', icon: '📱' },
       { key: 'jewellery', label: 'Jewellery & Watches', icon: '💎' },
       { key: 'footwear', label: 'Footwear', icon: '👟' },

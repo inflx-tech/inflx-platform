@@ -3,11 +3,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, brandApi } from '../../lib/api';
 
-'use client';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { authApi, brandApi } from '../../lib/api';
-
 const INDUSTRY_HIERARCHY = [
   { group: 'Food & Dining', categories: [
     { value: 'restaurant', label: 'Restaurant & Cafe' },
@@ -16,8 +11,7 @@ const INDUSTRY_HIERARCHY = [
     { value: 'grocery', label: 'Grocery & Supermarket' },
   ]},
   { group: 'Shopping & Retail', categories: [
-    { value: 'fashion_walkin', label: 'Fashion & Apparel (Walk-in)' },
-    { value: 'fashion_online', label: 'Fashion & Apparel (Online)' },
+    { value: 'fashion_walkin', label: 'Fashion & Apparel' },
     { value: 'electronics', label: 'Electronics & Gadgets' },
     { value: 'jewellery', label: 'Jewellery & Watches' },
     { value: 'footwear', label: 'Footwear' },

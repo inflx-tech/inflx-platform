@@ -88,9 +88,9 @@ function DealsStack() {
 function MyStuffStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MyStuffHome" component={SavedScreen} />
       <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
-      <Stack.Screen name="SavedList" component={SavedScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );
@@ -132,16 +132,6 @@ export default function FollowerNavigator() {
           tabBarLabel: 'Home',
           tabBarIcon: ({ focused }) => (
             <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>🏠</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="FindTab"
-        component={FindStack}
-        options={{
-          tabBarLabel: 'Find',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>🔍</Text>
           ),
         }}
       />
