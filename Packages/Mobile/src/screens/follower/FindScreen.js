@@ -12,44 +12,72 @@ const SUPER_CATEGORIES = [
   {
     key: 'eat', icon: '🍽️', label: 'Eat',
     subs: [
-      { key: 'restaurant', label: 'Restaurants', icon: '🍽️' },
+      { key: 'restaurant', label: 'Restaurants & Cafes', icon: '🍽️' },
       { key: 'bakery', label: 'Bakeries', icon: '🎂' },
-      { key: 'packaged_food', label: 'Grocery', icon: '🛒' },
+      { key: 'packaged_food', label: 'Packaged Food', icon: '📦' },
+      { key: 'grocery', label: 'Grocery & Supermarkets', icon: '🛒' },
     ],
   },
   {
     key: 'shop', icon: '🛍️', label: 'Shop',
     subs: [
-      { key: 'fashion_walkin', label: 'Fashion', icon: '👗' },
-      { key: 'fashion_online', label: 'Online Fashion', icon: '🛍️' },
+      { key: 'fashion_walkin', label: 'Fashion (Walk-in)', icon: '👗' },
+      { key: 'fashion_online', label: 'Fashion (Online)', icon: '🛍️' },
+      { key: 'electronics', label: 'Electronics & Gadgets', icon: '📱' },
+      { key: 'jewellery', label: 'Jewellery & Watches', icon: '💎' },
+      { key: 'footwear', label: 'Footwear', icon: '👟' },
+      { key: 'furniture', label: 'Home Decor & Furniture', icon: '🪴' },
+      { key: 'optical', label: 'Optical / Eyewear', icon: '👓' },
+      { key: 'pet_shop', label: 'Pet Shops', icon: '🐕' },
+      { key: 'flowers_gifting', label: 'Flowers & Gifting', icon: '🌹' },
+      { key: 'hardware', label: 'Hardware & Building', icon: '🔨' },
     ],
   },
   {
     key: 'groom', icon: '✨', label: 'Groom',
     subs: [
-      { key: 'salon', label: 'Salons', icon: '💇' },
+      { key: 'salon', label: 'Salons & Beauty', icon: '💇' },
+      { key: 'home_beauty', label: 'Home Beauty', icon: '💅' },
+      { key: 'pet_grooming', label: 'Pet Grooming', icon: '🐾' },
     ],
   },
   {
     key: 'fitness', icon: '💪', label: 'Stay Fit',
-    subs: [],
+    subs: [
+      { key: 'gym_fitness', label: 'Gyms & Fitness', icon: '💪' },
+      { key: 'clinic_doctor', label: 'Clinics & Doctors', icon: '🏥' },
+      { key: 'dental_clinic', label: 'Dental Clinics', icon: '🦷' },
+      { key: 'diagnostic_lab', label: 'Diagnostic Labs', icon: '🔬' },
+      { key: 'coaching_center', label: 'Coaching & Tutoring', icon: '📚' },
+    ],
   },
   {
     key: 'travel', icon: '✈️', label: 'Travel',
     subs: [
       { key: 'car_rental', label: 'Car Rental', icon: '🚗' },
+      { key: 'bike_rental', label: 'Bike Rental', icon: '🏍️' },
+      { key: 'travel_packages', label: 'Travel Packages', icon: '✈️' },
+      { key: 'hotel_homestay', label: 'Hotels & Homestays', icon: '🏨' },
     ],
   },
   {
     key: 'home', icon: '🏠', label: 'Home',
-    subs: [],
+    subs: [
+      { key: 'home_services', label: 'Home Services', icon: '🔧' },
+      { key: 'pest_control', label: 'Pest Control', icon: '🐛' },
+      { key: 'laundry', label: 'Laundry & Dry Cleaning', icon: '👔' },
+      { key: 'interior_design', label: 'Interior Design', icon: '🎨' },
+      { key: 'coworking_space', label: 'Co-working Spaces', icon: '🏢' },
+    ],
   },
   {
     key: 'events', icon: '🎉', label: 'Events',
     subs: [
-      { key: 'function_hall', label: 'Function Halls', icon: '🏛️' },
+      { key: 'function_hall', label: 'Event Venues', icon: '🏛️' },
       { key: 'wedding_planner', label: 'Wedding Planners', icon: '💍' },
+      { key: 'photography', label: 'Photography Studios', icon: '📸' },
       { key: 'florist', label: 'Florists', icon: '💐' },
+      { key: 'legal_ca', label: 'Legal / CA', icon: '⚖️' },
     ],
   },
 ];

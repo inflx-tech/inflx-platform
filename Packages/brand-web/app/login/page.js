@@ -3,17 +3,62 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, brandApi } from '../../lib/api';
 
-const CATEGORIES = [
-  { value: 'restaurant',       label: 'Restaurant' },
-  { value: 'bakery',           label: 'Bakery' },
-  { value: 'salon',            label: 'Salon' },
-  { value: 'florist',          label: 'Florist' },
-  { value: 'packaged_food',    label: 'Packaged Food' },
-  { value: 'car_rental',       label: 'Car Rental' },
-  { value: 'function_hall',    label: 'Function Hall' },
-  { value: 'wedding_planner',  label: 'Wedding Planner' },
-  { value: 'fashion_walkin',   label: 'Fashion (Walk-in)' },
-  { value: 'fashion_online',   label: 'Fashion (Online)' },
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { authApi, brandApi } from '../../lib/api';
+
+const INDUSTRY_HIERARCHY = [
+  { group: 'Food & Dining', categories: [
+    { value: 'restaurant', label: 'Restaurant & Cafe' },
+    { value: 'bakery', label: 'Bakery' },
+    { value: 'packaged_food', label: 'Packaged Food' },
+    { value: 'grocery', label: 'Grocery & Supermarket' },
+  ]},
+  { group: 'Shopping & Retail', categories: [
+    { value: 'fashion_walkin', label: 'Fashion & Apparel (Walk-in)' },
+    { value: 'fashion_online', label: 'Fashion & Apparel (Online)' },
+    { value: 'electronics', label: 'Electronics & Gadgets' },
+    { value: 'jewellery', label: 'Jewellery & Watches' },
+    { value: 'footwear', label: 'Footwear' },
+    { value: 'furniture', label: 'Home Decor & Furniture' },
+    { value: 'optical', label: 'Optical / Eyewear' },
+    { value: 'pet_shop', label: 'Pet Shops' },
+    { value: 'flowers_gifting', label: 'Flowers & Gifting' },
+    { value: 'hardware', label: 'Hardware & Building Materials' },
+  ]},
+  { group: 'Beauty & Grooming', categories: [
+    { value: 'salon', label: 'Salon & Beauty Parlour' },
+    { value: 'home_beauty', label: 'Home Beauty / At-home Salon' },
+    { value: 'pet_grooming', label: 'Pet Grooming' },
+  ]},
+  { group: 'Health & Fitness', categories: [
+    { value: 'gym_fitness', label: 'Gym & Fitness Studio' },
+    { value: 'clinic_doctor', label: 'Clinic & Doctor' },
+    { value: 'dental_clinic', label: 'Dental Clinic' },
+    { value: 'diagnostic_lab', label: 'Diagnostic Lab' },
+    { value: 'coaching_center', label: 'Coaching & Tutoring Center' },
+  ]},
+  { group: 'Travel & Rentals', categories: [
+    { value: 'car_rental', label: 'Car Rental' },
+    { value: 'bike_rental', label: 'Bike Rental' },
+    { value: 'travel_packages', label: 'Travel Packages & Tours' },
+    { value: 'hotel_homestay', label: 'Hotel & Homestay' },
+  ]},
+  { group: 'Home Services', categories: [
+    { value: 'home_services', label: 'Home Services (Plumbing, Electrician, AC)' },
+    { value: 'pest_control', label: 'Pest Control' },
+    { value: 'laundry', label: 'Laundry & Dry Cleaning' },
+    { value: 'interior_design', label: 'Interior Design Consultation' },
+    { value: 'coworking_space', label: 'Co-working Space' },
+  ]},
+  { group: 'Events & Professional', categories: [
+    { value: 'function_hall', label: 'Event Venue & Banquet Hall' },
+    { value: 'wedding_planner', label: 'Wedding Planner' },
+    { value: 'photography', label: 'Photography Studio' },
+    { value: 'florist', label: 'Florist' },
+    { value: 'legal_ca', label: 'Legal / CA Consultation' },
+  ]},
 ];
 
 export default function LoginPage() {
@@ -227,9 +272,13 @@ export default function LoginPage() {
                 className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white"
                 required
               >
-                <option value="">Select category</option>
-                {CATEGORIES.map(c => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
+                <option value="">Select your business type</option>
+                {INDUSTRY_HIERARCHY.map(group => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.categories.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>

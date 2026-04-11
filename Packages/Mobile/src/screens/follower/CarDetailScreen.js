@@ -214,14 +214,24 @@ export default function CarDetailScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
-      {/* Sticky CTA */}
+      {/* Sticky CTAs — Book Now (full) + Pre-book (token) */}
       <View style={styles.ctaWrap}>
-        <TouchableOpacity style={styles.ctaBtn} onPress={() => navigation.navigate('CarBooking', { vehicle, pricing, discount, tracking, pickupType })}>
+        <TouchableOpacity style={styles.ctaBtn} onPress={() => navigation.navigate('CarBooking', { vehicle, pricing, discount, tracking, pickupType, bookingType: 'full' })}>
           <View>
-            <Text style={styles.ctaBtnText}>Pre-book {vehicle?.name?.split(' ').pop()}</Text>
-            <Text style={styles.ctaBtnSub}>Pay just ₹300 token to confirm</Text>
+            <Text style={styles.ctaBtnText}>Book {vehicle?.name?.split(' ').pop()}</Text>
+            <Text style={styles.ctaBtnSub}>Pay full amount & confirm instantly</Text>
           </View>
           <Text style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)' }}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.ctaBtn, { backgroundColor: '#142438', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)', marginTop: 8 }]}
+          onPress={() => navigation.navigate('CarBooking', { vehicle, pricing, discount, tracking, pickupType, bookingType: 'token' })}
+        >
+          <View>
+            <Text style={[styles.ctaBtnText, { color: '#F59E0B' }]}>Pre-book with ₹300 token</Text>
+            <Text style={[styles.ctaBtnSub, { color: 'rgba(255,255,255,0.4)' }]}>Pay balance at garage</Text>
+          </View>
+          <Text style={{ fontSize: 16, color: 'rgba(245,158,11,0.6)' }}>→</Text>
         </TouchableOpacity>
       </View>
     </View>

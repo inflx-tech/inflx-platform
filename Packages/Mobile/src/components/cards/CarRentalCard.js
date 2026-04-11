@@ -106,7 +106,7 @@ export default function CarRentalCard({
           </View>
           <View style={styles.ctaRow}>
             <TouchableOpacity style={styles.ctaPrimary} onPress={onPressPrebook}>
-              <Text style={styles.ctaPrimaryText}>Pre-book</Text>
+              <Text style={styles.ctaPrimaryText}>Book Now</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.ctaSecondary} onPress={onPressAtGarage}>
               <Text style={styles.ctaSecondaryText}>At Garage</Text>
