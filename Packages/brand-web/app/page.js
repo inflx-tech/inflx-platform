@@ -167,11 +167,11 @@ export default function LandingPage() {
           <div className="flex items-center justify-center gap-4">
             <button onClick={scrollToAuth}
               className="px-8 py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-full text-sm hover:shadow-xl hover:shadow-orange-500/20 transition-all">
-              Start as a Brand →
+              Register Your Business →
             </button>
-            <button onClick={() => { setAuthRole('influencer'); scrollToAuth(); }}
+            <button onClick={scrollToAuth}
               className="px-8 py-3.5 border border-white/15 text-white/80 font-semibold rounded-full text-sm hover:bg-white/5 transition-all">
-              Join as Influencer
+              Sign In
             </button>
           </div>
         </div>
@@ -287,105 +287,120 @@ export default function LandingPage() {
 
       {/* ═══════════════════ AUTH SECTION ═══════════════════ */}
       <section id="auth-section" className="py-20 px-6">
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-extrabold mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>Get Started</h2>
-            <p className="text-white/40 text-sm">Sign in or create your account</p>
-          </div>
+        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
 
-          <div className="bg-[#151d30] rounded-2xl p-8 border border-white/10">
-            {/* Role toggle */}
-            <div className="flex bg-[#0e1525] rounded-xl p-1 mb-6">
-              {['brand', 'influencer'].map(r => (
-                <button key={r} onClick={() => { setAuthRole(r); setAuthStep('phone'); setError(''); }}
-                  className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${authRole === r ? 'bg-[#F47920] text-[#070b16]' : 'text-white/40 hover:text-white/60'}`}>
-                  {r === 'brand' ? '🏪 I\'m a Brand' : '⭐ I\'m an Influencer'}
-                </button>
-              ))}
+          {/* ── Brand Sign In / Sign Up ── */}
+          <div>
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 bg-[#F47920]/10 border border-[#F47920]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#F47920] mb-3">For Brands</div>
+              <h2 className="text-2xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Brand Dashboard</h2>
+              <p className="text-white/40 text-xs mt-1">Sign in or create your business account</p>
             </div>
 
-            {/* Phone step */}
-            {authStep === 'phone' && (
-              <div>
-                <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Phone Number</label>
-                <div className="flex mb-4">
-                  <div className="bg-[#0e1525] border border-white/10 border-r-0 rounded-l-xl px-4 flex items-center text-sm text-white/40 font-medium">+91</div>
-                  <input type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="Enter 10-digit number" autoFocus
-                    className="flex-1 bg-[#0e1525] border border-white/10 rounded-r-xl px-4 py-3.5 text-white text-sm outline-none focus:border-[#F47920]/50 transition-colors" />
-                </div>
-                {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-                <button onClick={handleSendOtp} disabled={loading || phone.replace(/\D/g, '').length < 10}
-                  className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 hover:shadow-lg hover:shadow-orange-500/20 transition-all">
-                  {loading ? 'Sending...' : 'Send OTP →'}
-                </button>
-                <p className="text-[10px] text-white/20 text-center mt-3">Dev mode: OTP is always 000000</p>
-              </div>
-            )}
-
-            {/* OTP step */}
-            {authStep === 'otp' && (
-              <div>
-                <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Enter OTP</label>
-                <p className="text-xs text-white/30 mb-3">Sent to +91 {phone}</p>
-                <input type="text" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="000000" maxLength={6} autoFocus
-                  className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-4 text-white text-2xl text-center tracking-[1em] font-bold outline-none focus:border-[#F47920]/50 mb-4" />
-                {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-                <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6}
-                  className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 transition-all">
-                  {loading ? 'Verifying...' : 'Verify →'}
-                </button>
-                <button onClick={() => { setAuthStep('phone'); setOtp(''); setError(''); }} className="w-full mt-2 py-2 text-xs text-white/30 hover:text-white/50">← Change number</button>
-              </div>
-            )}
-
-            {/* Register step */}
-            {authStep === 'register' && (
-              <div>
-                <div className="mb-3">
-                  <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Your Name</label>
-                  <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Full name" autoFocus
-                    className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50" />
-                </div>
-                {authRole === 'brand' ? (
-                  <>
-                    <div className="mb-3">
-                      <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Business Name</label>
-                      <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Spice Garden Restaurant"
-                        className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50" />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Business Category</label>
-                      <select value={category} onChange={e => setCategory(e.target.value)}
-                        className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50 appearance-none">
-                        <option value="" className="bg-[#0e1525]">Select your business type</option>
-                        {BRAND_CATEGORIES.map(g => (
-                          <optgroup key={g.group} label={g.group}>
-                            {g.categories.map(c => <option key={c.value} value={c.value} className="bg-[#0e1525]">{c.label}</option>)}
-                          </optgroup>
-                        ))}
-                      </select>
-                    </div>
-                  </>
-                ) : (
-                  <div className="mb-4">
-                    <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Instagram Handle</label>
-                    <div className="flex">
-                      <div className="bg-[#0e1525] border border-white/10 border-r-0 rounded-l-xl px-3 flex items-center text-sm text-white/40">@</div>
-                      <input type="text" value={instagramHandle} onChange={e => setInstagramHandle(e.target.value)}
-                        placeholder="yourhandle"
-                        className="flex-1 bg-[#0e1525] border border-white/10 rounded-r-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50" />
-                    </div>
+            <div className="bg-[#151d30] rounded-2xl p-7 border border-white/10">
+              {/* Phone step */}
+              {authStep === 'phone' && (
+                <div>
+                  <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Phone Number</label>
+                  <div className="flex mb-4">
+                    <div className="bg-[#0e1525] border border-white/10 border-r-0 rounded-l-xl px-4 flex items-center text-sm text-white/40 font-medium">+91</div>
+                    <input type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="Enter 10-digit number"
+                      className="flex-1 bg-[#0e1525] border border-white/10 rounded-r-xl px-4 py-3.5 text-white text-sm outline-none focus:border-[#F47920]/50 transition-colors" />
                   </div>
-                )}
-                {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
-                <button onClick={handleRegister} disabled={loading}
-                  className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 transition-all">
-                  {loading ? 'Registering...' : 'Complete Registration →'}
-                </button>
+                  {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+                  <button onClick={handleSendOtp} disabled={loading || phone.replace(/\D/g, '').length < 10}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 hover:shadow-lg hover:shadow-orange-500/20 transition-all">
+                    {loading ? 'Sending...' : 'Send OTP →'}
+                  </button>
+                  <p className="text-[10px] text-white/20 text-center mt-3">New user? You'll be registered automatically after OTP</p>
+                </div>
+              )}
+
+              {/* OTP step */}
+              {authStep === 'otp' && (
+                <div>
+                  <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Enter OTP</label>
+                  <p className="text-xs text-white/30 mb-3">Sent to +91 {phone}</p>
+                  <input type="text" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000" maxLength={6} autoFocus
+                    className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-4 text-white text-2xl text-center tracking-[1em] font-bold outline-none focus:border-[#F47920]/50 mb-4" />
+                  {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+                  <button onClick={handleVerifyOtp} disabled={loading || otp.length < 6}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 transition-all">
+                    {loading ? 'Verifying...' : 'Verify →'}
+                  </button>
+                  <button onClick={() => { setAuthStep('phone'); setOtp(''); setError(''); }} className="w-full mt-2 py-2 text-xs text-white/30 hover:text-white/50">← Change number</button>
+                </div>
+              )}
+
+              {/* Register step (brand only) */}
+              {authStep === 'register' && (
+                <div>
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Your Name</label>
+                    <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Full name" autoFocus
+                      className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50" />
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Business Name</label>
+                    <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Spice Garden Restaurant"
+                      className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50" />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Business Category</label>
+                    <select value={category} onChange={e => setCategory(e.target.value)}
+                      className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50 appearance-none">
+                      <option value="" className="bg-[#0e1525]">Select your business type</option>
+                      {BRAND_CATEGORIES.map(g => (
+                        <optgroup key={g.group} label={g.group}>
+                          {g.categories.map(c => <option key={c.value} value={c.value} className="bg-[#0e1525]">{c.label}</option>)}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                  {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
+                  <button onClick={handleRegister} disabled={loading}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 transition-all">
+                    {loading ? 'Registering...' : 'Complete Registration →'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Influencer — Download App CTA ── */}
+          <div>
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center gap-2 bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 rounded-full px-4 py-1.5 text-xs font-semibold text-[#8b5cf6] mb-3">For Influencers</div>
+              <h2 className="text-2xl font-extrabold" style={{ fontFamily: 'Outfit, sans-serif' }}>Influencer App</h2>
+              <p className="text-white/40 text-xs mt-1">Download the INFLX app to get started</p>
+            </div>
+
+            <div className="bg-[#151d30] rounded-2xl p-7 border border-white/10 text-center">
+              <div className="text-6xl mb-4">📱</div>
+              <h3 className="text-lg font-bold mb-2">Get the INFLX App</h3>
+              <p className="text-sm text-white/40 mb-6 leading-relaxed">
+                Manage your campaigns, publish deals to your store, track commissions, and withdraw earnings — all from the mobile app.
+              </p>
+              <div className="space-y-3">
+                <a href="#" className="flex items-center justify-center gap-3 w-full py-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                  <span className="text-2xl">🤖</span>
+                  <div className="text-left">
+                    <div className="text-[9px] text-white/40 uppercase">Download on</div>
+                    <div className="text-sm font-bold text-white">Google Play</div>
+                  </div>
+                </a>
+                <a href="#" className="flex items-center justify-center gap-3 w-full py-3.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+                  <span className="text-2xl">🍎</span>
+                  <div className="text-left">
+                    <div className="text-[9px] text-white/40 uppercase">Download on</div>
+                    <div className="text-sm font-bold text-white">App Store</div>
+                  </div>
+                </a>
               </div>
-            )}
+              <p className="text-[10px] text-white/20 mt-4">Also available for followers to discover deals</p>
+            </div>
           </div>
         </div>
       </section>
