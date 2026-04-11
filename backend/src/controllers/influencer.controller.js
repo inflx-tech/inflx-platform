@@ -880,7 +880,8 @@ const getMyTransactions = asyncHandler(async (req, res) => {
      LEFT JOIN followers f ON f.id = ft.follower_id
      LEFT JOIN users u_f ON u_f.id = f.user_id
      LEFT JOIN follower_bookings fb ON fb.transaction_id = ft.id
-     LEFT JOIN brand_products bp ON bp.id = (ft.items_json->0->>'product_id')::uuid
+     LEFT JOIN follower_orders fo2 ON fo2.transaction_id = ft.id
+     LEFT JOIN brand_products bp ON bp.id = CASE WHEN fo2.items_json IS NOT NULL THEN (fo2.items_json->0->>'product_id')::uuid ELSE NULL END
      WHERE ${where}
      ORDER BY ft.created_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
