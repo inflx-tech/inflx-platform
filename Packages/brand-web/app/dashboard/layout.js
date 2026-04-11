@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { notificationApi } from '../../lib/api';
+import { notificationApi, brandApi } from '../../lib/api';
 
 const NAV = [
   { href: '/dashboard/campaigns',  label: 'Campaigns',  icon: '📣' },
@@ -19,6 +19,7 @@ export default function DashboardLayout({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [brandStatus, setBrandStatus] = useState(null); // 'pending' | 'approved' | 'rejected'
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -36,6 +37,13 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     notificationApi.list().then(res => {
       if (res.success) setUnreadCount(res.data?.unread_count || 0);
+    });
+    // Check brand approval status
+    brandApi.getMe().then(res => {
+      if (res.success) {
+        const brand = res.data?.brand || res.data;
+        setBrandStatus(brand?.status || null);
+      }
     });
   }, [pathname]);
 
@@ -81,6 +89,24 @@ export default function DashboardLayout({ children }) {
           )}
         </div>
       </header>
+
+      {/* Pending approval banner */}
+      {brandStatus === 'pending' && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-center gap-2">
+          <span className="text-lg">⏳</span>
+          <span className="text-sm text-amber-800 font-medium">
+            Your account is pending admin approval. You can explore the platform, but some features are restricted until approved.
+          </span>
+        </div>
+      )}
+      {brandStatus === 'rejected' && (
+        <div className="bg-red-50 border-b border-red-200 px-6 py-3 flex items-center justify-center gap-2">
+          <span className="text-lg">❌</span>
+          <span className="text-sm text-red-700 font-medium">
+            Your account was not approved. Please contact support or resubmit your application from the Profile page.
+          </span>
+        </div>
+      )}
 
       <main className="flex-1 p-6">
         {children}
