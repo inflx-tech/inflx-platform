@@ -21,6 +21,7 @@ import CampaignCompletionScreen from '../screens/influencer/CampaignCompletionSc
 import BrandProfileScreen from '../screens/influencer/BrandProfileScreen';
 import CampaignProductsScreen from '../screens/influencer/CampaignProductsScreen';
 import MyStoreScreen from '../screens/influencer/MyStoreScreen';
+import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -42,6 +43,7 @@ function HomeStackNav() {
       <HomeStack.Screen name="BrandProfile" component={BrandProfileScreen} />
       <HomeStack.Screen name="CampaignProducts" component={CampaignProductsScreen} />
       <HomeStack.Screen name="MyStore" component={MyStoreScreen} />
+      <HomeStack.Screen name="TransactionFeed" component={TransactionFeedScreen} />
       <HomeStack.Screen name="Negotiation" component={NegotiationScreen} />
     </HomeStack.Navigator>
   );

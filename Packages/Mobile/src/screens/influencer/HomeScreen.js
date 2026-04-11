@@ -115,6 +115,21 @@ export default function HomeScreen({ navigation }) {
         <Text style={{ color: colors.orange, fontSize: 12, fontWeight: '600' }}>View →</Text>
       </TouchableOpacity>
 
+      {/* My Transactions button */}
+      <TouchableOpacity
+        style={[styles.statCard, { marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }]}
+        onPress={() => navigation.navigate('TransactionFeed')}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 20 }}>📊</Text>
+          <View>
+            <Text style={[styles.statLabel, { fontSize: 13, fontWeight: '700', color: colors.t1 }]}>My Transactions</Text>
+            <Text style={styles.statLabel}>Commission from follower payments</Text>
+          </View>
+        </View>
+        <Text style={{ color: colors.teal, fontSize: 12, fontWeight: '600' }}>View →</Text>
+      </TouchableOpacity>
+
       {/* Active Campaigns */}
       {activeCampaigns.length > 0 && (
         <View style={styles.section}>

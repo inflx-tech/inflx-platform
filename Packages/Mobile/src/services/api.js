@@ -126,6 +126,13 @@ export const influencerApi = {
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),
 
+  // Transaction feed — see all follower purchases
+  getMyTransactions: (page = 1, campaignId = null) => {
+    const p = [`page=${page}`];
+    if (campaignId) p.push(`campaign_id=${campaignId}`);
+    return api.get(`/influencers/me/transactions?${p.join('&')}`);
+  },
+
   // Product notes — publish products to influencer store
   getCampaignProducts: (campaignId) => api.get(`/influencers/me/campaigns/${campaignId}/products`),
   upsertProductNote: (data) => api.post('/influencers/me/product-notes', data),

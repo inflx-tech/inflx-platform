@@ -841,4 +841,69 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts };
+// ── GET /influencers/me/transactions — influencer's transaction feed
+const getMyTransactions = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const { campaign_id, page = '1', limit = '20' } = req.query;
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+  const offset = (pageNum - 1) * limitNum;
+
+  const conditions = ['ci.influencer_id = $1'];
+  const params = [inf.id];
+  if (campaign_id) { params.push(campaign_id); conditions.push(`ft.campaign_id = $${params.length}`); }
+  const where = conditions.join(' AND ');
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int FROM follower_transactions ft
+     JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     WHERE ${where}`,
+    params
+  );
+
+  params.push(limitNum, offset);
+  const { rows } = await db.query(
+    `SELECT
+       ft.id, ft.transaction_type, ft.status, ft.gross_amount, ft.net_amount,
+       ft.influencer_commission, ft.coupon_code_used, ft.created_at,
+       b.business_name AS brand_name, b.category AS brand_category,
+       c.name AS campaign_name,
+       u_f.name AS follower_name,
+       bp.name AS product_name,
+       fb.booking_date, fb.booking_time, fb.reference_code AS booking_ref
+     FROM follower_transactions ft
+     JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     JOIN brands b ON b.id = ft.brand_id
+     LEFT JOIN campaigns c ON c.id = ft.campaign_id
+     LEFT JOIN followers f ON f.id = ft.follower_id
+     LEFT JOIN users u_f ON u_f.id = f.user_id
+     LEFT JOIN follower_bookings fb ON fb.transaction_id = ft.id
+     LEFT JOIN brand_products bp ON bp.id = (ft.items_json->0->>'product_id')::uuid
+     WHERE ${where}
+     ORDER BY ft.created_at DESC
+     LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+
+  // Summary
+  const { rows: summary } = await db.query(
+    `SELECT
+       COUNT(*)::int AS total_transactions,
+       COALESCE(SUM(ft.influencer_commission), 0)::bigint AS total_commission,
+       COUNT(CASE WHEN ft.created_at >= CURRENT_DATE THEN 1 END)::int AS today_count,
+       COALESCE(SUM(CASE WHEN ft.created_at >= CURRENT_DATE THEN ft.influencer_commission ELSE 0 END), 0)::bigint AS today_commission
+     FROM follower_transactions ft
+     JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     WHERE ci.influencer_id = $1 AND ft.status = 'completed'`,
+    [inf.id]
+  );
+
+  return success(res, {
+    transactions: rows,
+    summary: summary[0],
+  }, 200, { page: pageNum, limit: limitNum, total: countRows[0].count });
+});
+
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions };

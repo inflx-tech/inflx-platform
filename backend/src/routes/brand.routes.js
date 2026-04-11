@@ -33,6 +33,8 @@ router.patch('/me/enquiries/:id',   authenticate, requireRole('brand'), enquiryC
 
 // Online orders — brand-side order management
 router.get('/me/orders',                       authenticate, requireRole('brand'), ctrl.listBrandOrders);
+// All transactions (pay_at_store + prebook + online_order) with filters
+router.get('/me/transactions',                 authenticate, requireRole('brand'), ctrl.listAllTransactions);
 router.patch('/me/orders/:id/status',          authenticate, requireRole('brand'), transactionCtrl.updateOrderStatus);
 
 // Phase 4 — Brand conversion analytics

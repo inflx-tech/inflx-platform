@@ -571,6 +571,91 @@ const listBrandOrders = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /brands/me/transactions — ALL transactions (pay_at_store + prebook + online_order)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const listAllTransactions = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const { type, campaign_id, influencer_id, status, page = '1', limit = '20' } = req.query;
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+  const offset = (pageNum - 1) * limitNum;
+
+  const conditions = ['ft.brand_id = $1'];
+  const params = [brand.id];
+
+  if (type) { params.push(type); conditions.push(`ft.transaction_type = $${params.length}`); }
+  if (campaign_id) { params.push(campaign_id); conditions.push(`ft.campaign_id = $${params.length}`); }
+  if (status) { params.push(status); conditions.push(`ft.status = $${params.length}`); }
+  if (influencer_id) {
+    params.push(influencer_id);
+    conditions.push(`ci.influencer_id = $${params.length}`);
+  }
+
+  const where = conditions.join(' AND ');
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int FROM follower_transactions ft
+     LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     WHERE ${where}`,
+    params
+  );
+  const total = countRows[0].count;
+
+  params.push(limitNum, offset);
+  const { rows } = await db.query(
+    `SELECT
+       ft.id, ft.transaction_type, ft.status, ft.gross_amount, ft.discount_amount,
+       ft.net_amount, ft.influencer_commission, ft.platform_fee, ft.brand_net,
+       ft.coupon_code_used, ft.razorpay_payment_id, ft.created_at,
+       ft.campaign_id, ft.set_id, ft.campaign_influencer_id,
+       c.name AS campaign_name,
+       u_i.name AS influencer_name, i.instagram_handle,
+       u_f.name AS follower_name, u_f.phone AS follower_phone,
+       bp.name AS product_name, bp.section AS product_section,
+       fb.booking_date, fb.booking_time, fb.reference_code AS booking_ref,
+       fo.order_status, fo.tracking_number
+     FROM follower_transactions ft
+     LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     LEFT JOIN influencers i ON i.id = ci.influencer_id
+     LEFT JOIN users u_i ON u_i.id = i.user_id
+     LEFT JOIN followers f ON f.id = ft.follower_id
+     LEFT JOIN users u_f ON u_f.id = f.user_id
+     LEFT JOIN campaigns c ON c.id = ft.campaign_id
+     LEFT JOIN follower_bookings fb ON fb.transaction_id = ft.id
+     LEFT JOIN follower_orders fo ON fo.transaction_id = ft.id
+     LEFT JOIN brand_products bp ON bp.id = (ft.items_json->0->>'product_id')::uuid
+     WHERE ${where}
+     ORDER BY ft.created_at DESC
+     LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+
+  // Summary stats
+  const { rows: summaryRows } = await db.query(
+    `SELECT
+       COUNT(*)::int AS total_transactions,
+       COALESCE(SUM(ft.net_amount), 0)::bigint AS total_revenue,
+       COALESCE(SUM(ft.influencer_commission), 0)::bigint AS total_commission,
+       COALESCE(SUM(ft.platform_fee), 0)::bigint AS total_platform_fee,
+       COALESCE(SUM(ft.brand_net), 0)::bigint AS total_brand_net,
+       COUNT(CASE WHEN ft.transaction_type = 'pay_at_store' THEN 1 END)::int AS pay_at_store_count,
+       COUNT(CASE WHEN ft.transaction_type = 'prebook' THEN 1 END)::int AS prebook_count,
+       COUNT(CASE WHEN ft.transaction_type = 'online_order' THEN 1 END)::int AS online_order_count
+     FROM follower_transactions ft
+     WHERE ft.brand_id = $1 AND ft.status = 'completed'`,
+    [brand.id]
+  );
+
+  return success(res, {
+    transactions: rows,
+    summary: summaryRows[0],
+  }, 200, { page: pageNum, limit: limitNum, total });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /brands/:id/public — Public brand profile (for influencers viewing brand info)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -746,7 +831,7 @@ module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue,
   listProducts, createProduct, updateProduct, deleteProduct,
-  listBrandOrders, getPublicProfile, storePreview,
+  listBrandOrders, listAllTransactions, getPublicProfile, storePreview,
   getListingConfig, getQualityScore, getListingPreview,
   downloadListingTemplate, bulkUploadProducts, getTemplateColumns,
 };

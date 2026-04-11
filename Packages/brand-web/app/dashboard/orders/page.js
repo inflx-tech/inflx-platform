@@ -1,185 +1,175 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { orderApi, fmtMoney } from '../../../lib/api';
+import { brandApi, fmtMoney } from '../../../lib/api';
 
-const STATUS_FILTERS = ['all', 'pending', 'confirmed', 'dispatched', 'delivered'];
+const TYPE_FILTERS = [
+  { key: 'all', label: 'All Transactions' },
+  { key: 'pay_at_store', label: '🏪 Pay at Store' },
+  { key: 'prebook', label: '📅 Pre-bookings' },
+  { key: 'online_order', label: '📦 Online Orders' },
+];
+
+const TYPE_STYLES = {
+  pay_at_store:  { bg: 'bg-teal-50', text: 'text-teal-700', label: 'Walk-in Pay' },
+  prebook:       { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Pre-booking' },
+  online_order:  { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Online Order' },
+  redirect_click:{ bg: 'bg-gray-50', text: 'text-gray-700', label: 'Click' },
+};
 
 const STATUS_STYLES = {
-  pending:    'bg-yellow-100 text-yellow-700',
-  confirmed:  'bg-blue-100 text-blue-700',
-  dispatched: 'bg-purple-100 text-purple-700',
-  delivered:  'bg-teal-100 text-teal-700',
-  cancelled:  'bg-red-100 text-red-600',
+  completed:  'bg-green-50 text-green-700',
+  initiated:  'bg-yellow-50 text-yellow-700',
+  returned:   'bg-red-50 text-red-600',
+  refunded:   'bg-gray-100 text-gray-600',
 };
 
-const NEXT_STATUS = {
-  pending:    'confirmed',
-  confirmed:  'dispatched',
-  dispatched: 'delivered',
-};
-
-export default function OrdersPage() {
-  const [orders, setOrders]       = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [statusFilter, setFilter] = useState('all');
-  const [page, setPage]           = useState(1);
-  const [meta, setMeta]           = useState(null);
-  const [updating, setUpdating]   = useState('');
-  const [toast, setToast]         = useState('');
+export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [typeFilter, setType] = useState('all');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
   const [expandedId, setExpanded] = useState(null);
 
-  const load = useCallback(async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
-    const params = { page, limit: 20 };
-    if (statusFilter !== 'all') params.status = statusFilter;
-    const res = await orderApi.list(params);
-    setLoading(false);
-    if (res.success) {
-      setOrders(res.data?.orders || []);
-      setMeta(res.meta);
+    try {
+      const params = [`page=${page}`, 'limit=20'];
+      if (typeFilter !== 'all') params.push(`type=${typeFilter}`);
+      const res = await brandApi.get(`/brands/me/transactions?${params.join('&')}`);
+      if (res.success || res.data) {
+        setTransactions(res.data?.transactions || []);
+        setSummary(res.data?.summary || null);
+        setMeta(res.meta || null);
+      }
+    } catch (e) {
+      console.error('Load transactions error:', e);
+    } finally {
+      setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, typeFilter]);
 
-  useEffect(() => { load(); }, [load]);
-
-  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
-
-  async function advance(order) {
-    const next = NEXT_STATUS[order.order_status];
-    if (!next) return;
-    setUpdating(order.id);
-    const res = await orderApi.updateStatus(order.id, { order_status: next });
-    setUpdating('');
-    if (res.success) {
-      showToast(`Order marked as ${next}`);
-      load();
-    } else {
-      showToast(res.error?.message || 'Failed');
-    }
-  }
-
-  function parseItems(items_json) {
-    if (!items_json) return [];
-    try { return typeof items_json === 'string' ? JSON.parse(items_json) : items_json; }
-    catch { return []; }
-  }
+  useEffect(() => { loadData(); }, [loadData]);
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <h1 className="font-display text-xl font-bold text-t1">Orders</h1>
-        <span className="text-xs text-t3">{meta?.total ?? '–'} total</span>
-      </div>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-2xl font-black text-gray-900 mb-1">Transactions</h1>
+      <p className="text-sm text-gray-500 mb-6">All follower payments across your campaigns</p>
 
-      {/* Status filter tabs */}
-      <div className="flex gap-1 mb-5 overflow-x-auto pb-1">
-        {STATUS_FILTERS.map(s => (
-          <button key={s} onClick={() => { setFilter(s); setPage(1); }}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors
-              ${statusFilter === s ? 'bg-navy text-white' : 'bg-surface2 text-t2 hover:bg-navy-pale hover:text-navy'}`}>
-            {s.charAt(0).toUpperCase() + s.slice(1)}
+      {/* Summary cards */}
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <SummaryCard label="Total Revenue" value={fmtMoney(summary.total_revenue)} color="text-gray-900" />
+          <SummaryCard label="Your Net" value={fmtMoney(summary.total_brand_net)} color="text-teal-600" />
+          <SummaryCard label="Commission Paid" value={fmtMoney(summary.total_commission)} color="text-orange-600" />
+          <SummaryCard label="Transactions" value={summary.total_transactions} color="text-blue-600" />
+        </div>
+      )}
+
+      {/* Channel breakdown */}
+      {summary && (
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-teal-50 rounded-xl p-3 text-center border border-teal-200">
+            <div className="text-lg font-extrabold text-teal-700">{summary.pay_at_store_count}</div>
+            <div className="text-[10px] text-teal-500 font-semibold uppercase">Walk-in Payments</div>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-3 text-center border border-blue-200">
+            <div className="text-lg font-extrabold text-blue-700">{summary.prebook_count}</div>
+            <div className="text-[10px] text-blue-500 font-semibold uppercase">Pre-bookings</div>
+          </div>
+          <div className="bg-purple-50 rounded-xl p-3 text-center border border-purple-200">
+            <div className="text-lg font-extrabold text-purple-700">{summary.online_order_count}</div>
+            <div className="text-[10px] text-purple-500 font-semibold uppercase">Online Orders</div>
+          </div>
+        </div>
+      )}
+
+      {/* Type filters */}
+      <div className="flex gap-2 mb-4">
+        {TYPE_FILTERS.map(f => (
+          <button
+            key={f.key}
+            onClick={() => { setType(f.key); setPage(1); }}
+            className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all
+              ${typeFilter === f.key ? 'bg-orange-50 border-orange-300 text-orange-700' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}
+          >
+            {f.label}
           </button>
         ))}
       </div>
 
+      {/* Transaction list */}
       {loading ? (
-        <div className="text-center py-16 text-t3 text-sm">Loading orders…</div>
-      ) : orders.length === 0 ? (
-        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
-          <div className="text-4xl mb-3">📦</div>
-          <div className="font-bold text-t1 mb-1">No orders yet</div>
-          <div className="text-xs text-t3">Orders from your followers will appear here</div>
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin w-8 h-8 border-3 border-orange-400 border-t-transparent rounded-full" />
+        </div>
+      ) : transactions.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+          <div className="text-4xl mb-3">📊</div>
+          <div className="text-lg font-bold text-gray-800">No transactions yet</div>
+          <div className="text-sm text-gray-500 mt-1">Transactions will appear here when followers make payments</div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {orders.map(order => {
-            const items = parseItems(order.items_json);
-            const isExpanded = expandedId === order.id;
-            const nextStatus = NEXT_STATUS[order.order_status];
+        <div className="space-y-2">
+          {transactions.map(tx => {
+            const typeInfo = TYPE_STYLES[tx.transaction_type] || TYPE_STYLES.pay_at_store;
+            const isExpanded = expandedId === tx.id;
+
             return (
-              <div key={order.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                {/* Order header */}
-                <div
-                  className="flex items-start justify-between px-5 py-4 cursor-pointer hover:bg-surface2 transition-colors"
-                  onClick={() => setExpanded(isExpanded ? null : order.id)}
+              <div key={tx.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                {/* Main row */}
+                <button
+                  className="w-full p-4 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpanded(isExpanded ? null : tx.id)}
                 >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs flex-shrink-0">
-                      {(order.follower_name || '??').slice(0, 2).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-sm text-t1">{order.follower_name || 'Follower'}</span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${STATUS_STYLES[order.order_status] || 'bg-gray-100 text-t3'}`}>
-                          {order.order_status}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-t3 flex-wrap">
-                        <span>📱 {order.follower_phone || '—'}</span>
-                        <span>🕐 {order.created_at ? new Date(order.created_at).toLocaleString('en-IN') : '—'}</span>
-                        {order.tracking_number && <span className="font-mono bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded">🚚 {order.tracking_number}</span>}
-                      </div>
-                    </div>
+                  {/* Type badge */}
+                  <div className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${typeInfo.bg} ${typeInfo.text} flex-shrink-0`}>
+                    {typeInfo.label}
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-right">
-                      <div className="font-bold text-sm text-t1">{fmtMoney(order.net_amount || 0)}</div>
-                      <div className="text-[10px] text-t3">{items.length} item{items.length !== 1 ? 's' : ''}</div>
-                    </div>
-                    <span className="text-gray-300 text-xs">{isExpanded ? '▲' : '▼'}</span>
-                  </div>
-                </div>
 
-                {/* Expanded: items + address + actions */}
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold text-gray-900 truncate">
+                      {tx.follower_name || 'Follower'} {tx.product_name ? `· ${tx.product_name}` : ''}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                      {tx.influencer_name ? `via ${tx.influencer_name} (@${tx.instagram_handle})` : ''}
+                      {tx.campaign_name ? ` · ${tx.campaign_name}` : ''}
+                    </div>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-sm font-extrabold text-gray-900">{fmtMoney(tx.net_amount)}</div>
+                    <div className="text-[10px] text-gray-400">{new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+
+                  {/* Status */}
+                  <div className={`px-2 py-1 rounded-md text-[9px] font-bold uppercase ${STATUS_STYLES[tx.status] || 'bg-gray-100 text-gray-500'}`}>
+                    {tx.status}
+                  </div>
+
+                  <div className="text-gray-300">{isExpanded ? '▲' : '▼'}</div>
+                </button>
+
+                {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 px-5 py-4 space-y-4">
-                    {/* Items */}
-                    {items.length > 0 && (
-                      <div>
-                        <div className="text-[10px] font-bold text-t3 uppercase mb-2">Items</div>
-                        <div className="space-y-1.5">
-                          {items.map((item, i) => (
-                            <div key={i} className="flex justify-between text-xs">
-                              <span className="text-t1 font-medium">{item.name || item.product_name || `Item ${i + 1}`}</span>
-                              <span className="text-t2">{item.qty || item.quantity || 1}× {fmtMoney((item.price || 0) * 100)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Delivery address */}
-                    {order.delivery_address && (
-                      <div>
-                        <div className="text-[10px] font-bold text-t3 uppercase mb-1">Delivery Address</div>
-                        <div className="text-xs text-t2 bg-surface2 rounded-lg px-3 py-2">
-                          {typeof order.delivery_address === 'string'
-                            ? order.delivery_address
-                            : (() => {
-                                const a = typeof order.delivery_address === 'object' ? order.delivery_address : {};
-                                return [a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(', ');
-                              })()
-                          }
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Timestamps */}
-                    <div className="flex gap-4 text-[10px] text-t3">
-                      {order.dispatched_at && <span>📦 Dispatched: {new Date(order.dispatched_at).toLocaleString('en-IN')}</span>}
-                      {order.delivered_at  && <span>✅ Delivered: {new Date(order.delivered_at).toLocaleString('en-IN')}</span>}
+                  <div className="px-4 pb-4 pt-0 border-t border-gray-100 bg-gray-50">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+                      <DetailItem label="Bill Amount" value={fmtMoney(tx.gross_amount)} />
+                      <DetailItem label="Discount" value={`-${fmtMoney(tx.discount_amount)}`} color="text-green-600" />
+                      <DetailItem label="Customer Paid" value={fmtMoney(tx.net_amount)} bold />
+                      <DetailItem label="Your Net" value={fmtMoney(tx.brand_net)} color="text-teal-600" bold />
+                      <DetailItem label="Influencer Commission" value={fmtMoney(tx.influencer_commission)} color="text-orange-600" />
+                      <DetailItem label="Platform Fee" value={fmtMoney(tx.platform_fee)} color="text-gray-500" />
+                      <DetailItem label="Coupon Used" value={tx.coupon_code_used || '—'} />
+                      <DetailItem label="Payment ID" value={tx.razorpay_payment_id?.substring(0, 16) || '—'} />
+                      {tx.booking_date && <DetailItem label="Booking Date" value={`${tx.booking_date} ${tx.booking_time}`} />}
+                      {tx.booking_ref && <DetailItem label="Booking Ref" value={tx.booking_ref} />}
+                      {tx.order_status && <DetailItem label="Order Status" value={tx.order_status} />}
+                      {tx.follower_phone && <DetailItem label="Customer Phone" value={tx.follower_phone} />}
                     </div>
-
-                    {/* Advance status button */}
-                    {nextStatus && (
-                      <button
-                        onClick={() => advance(order)}
-                        disabled={updating === order.id}
-                        className="w-full py-2.5 bg-navy text-white font-bold text-xs rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
-                      >
-                        {updating === order.id ? 'Updating…' : `Mark as ${nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1)}`}
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -190,24 +180,42 @@ export default function OrdersPage() {
 
       {/* Pagination */}
       {meta && meta.total > 20 && (
-        <div className="flex items-center justify-between mt-6 text-xs text-t3">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-            className="px-4 py-2 bg-surface2 rounded-xl font-semibold disabled:opacity-40 hover:bg-navy-pale hover:text-navy transition-colors">
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 disabled:opacity-30"
+          >
             ← Previous
           </button>
-          <span>Page {page} of {Math.ceil(meta.total / 20)}</span>
-          <button onClick={() => setPage(p => p + 1)} disabled={orders.length < 20}
-            className="px-4 py-2 bg-surface2 rounded-xl font-semibold disabled:opacity-40 hover:bg-navy-pale hover:text-navy transition-colors">
+          <span className="text-xs text-gray-500">Page {page} of {Math.ceil(meta.total / 20)}</span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={page * 20 >= meta.total}
+            className="px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 disabled:opacity-30"
+          >
             Next →
           </button>
         </div>
       )}
+    </div>
+  );
+}
 
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">
-          {toast}
-        </div>
-      )}
+function SummaryCard({ label, value, color }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4">
+      <div className={`text-xl font-extrabold ${color}`}>{value}</div>
+      <div className="text-[10px] text-gray-400 font-semibold uppercase mt-1">{label}</div>
+    </div>
+  );
+}
+
+function DetailItem({ label, value, color, bold }) {
+  return (
+    <div>
+      <div className="text-[10px] text-gray-400 font-semibold uppercase">{label}</div>
+      <div className={`text-sm ${bold ? 'font-bold' : 'font-medium'} ${color || 'text-gray-800'} mt-0.5`}>{value}</div>
     </div>
   );
 }

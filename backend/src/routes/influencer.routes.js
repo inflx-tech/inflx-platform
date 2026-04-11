@@ -35,6 +35,9 @@ router.post('/me/withdrawals/:id/retry', authenticate, requireRole('influencer')
 // ── TDS Certificate (Phase F) ─────────────────────────────────────────────────
 router.get('/me/tds-certificate', authenticate, requireRole('influencer'), ctrl.getTdsCertificate);
 
+// ── Transaction feed — influencer sees all follower transactions
+router.get('/me/transactions', authenticate, requireRole('influencer'), ctrl.getMyTransactions);
+
 // ── Campaign products — products assigned to influencer via campaign ─────────
 router.get('/me/campaigns/:campaign_influencer_id/products', authenticate, requireRole('influencer'), ctrl.getCampaignProducts);
 
