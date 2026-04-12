@@ -139,7 +139,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 bg-[#070b16]/90 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="font-display text-xl font-extrabold">
-            INFL<span className="bg-gradient-to-r from-[#F47920] to-[#FFB800] bg-clip-text text-transparent">X</span>
+            <img src="/inflx-logo-dark.png" alt="INFLX" style={{height: '32px'}} />
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => { setShowAuth(true); setAuthRole('brand'); scrollToAuth(); }}
@@ -410,7 +410,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <div className="font-display text-lg font-extrabold mb-1">
-              INFL<span className="bg-gradient-to-r from-[#F47920] to-[#FFB800] bg-clip-text text-transparent">X</span>
+              <img src="/inflx-logo-dark.png" alt="INFLX" style={{height: '32px'}} />
             </div>
             <p className="text-xs text-white/25">Connecting local brands with influencers across India</p>
           </div>

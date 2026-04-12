@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }) {
       <header className="bg-navy-deep h-14 flex items-center justify-between px-6 flex-shrink-0 sticky top-0 z-40">
         <div className="flex items-center gap-8">
           <div className="font-display text-lg font-extrabold text-white">
-            INFL<span className="bg-gradient-to-r from-red to-orange bg-clip-text text-transparent">X</span>
+            <img src="/inflx-logo-dark.png" alt="INFLX" style={{height: "28px"}} />
           </div>
           <nav className="flex items-center gap-1">
             {NAV.map(item => {

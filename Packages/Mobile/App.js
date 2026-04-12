@@ -11,11 +11,13 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import InfluencerNavigator from './src/navigation/InfluencerNavigator';
 import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
+import SplashScreen from './src/screens/SplashScreen';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
 export default function App() {
   const [role, setRole] = useState(null); // null = loading, '' = unauthenticated
+  const [showSplash, setShowSplash] = useState(true);
 
   // ── OneSignal initialization ───────────────────────────────────────────
   useEffect(() => {
@@ -94,13 +96,16 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ setRole }}>
-      <NavigationContainer>
-        {role === 'brand' ? <BrandNavigator /> :
-         role === 'influencer' ? <InfluencerNavigator /> :
-         role === 'follower' ? <FollowerNavigator /> :
-         isFollowerApp ? <FollowerNavigator /> :
-         <AuthNavigator />}
-      </NavigationContainer>
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {!showSplash && (
+        <NavigationContainer>
+          {role === 'brand' ? <BrandNavigator /> :
+           role === 'influencer' ? <InfluencerNavigator /> :
+           role === 'follower' ? <FollowerNavigator /> :
+           isFollowerApp ? <FollowerNavigator /> :
+           <AuthNavigator />}
+        </NavigationContainer>
+      )}
     </AuthContext.Provider>
   );
 }
