@@ -64,11 +64,8 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Check if already logged in
+  // No auto-redirect — landing page always stays visible
   useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('inflx_token') : null;
-    const user = token ? JSON.parse(localStorage.getItem('inflx_user') || 'null') : null;
-    if (token && user?.role === 'brand') router.push('/dashboard');
   }, []);
 
   const fmt = phone.startsWith('+91') ? phone : `+91${phone}`;
