@@ -363,6 +363,17 @@ export default function CampaignDetailPage() {
   const [loadError, setLoadError] = useState(null);
   const [campaignProducts, setCampaignProducts] = useState(null);
 
+  // Drill-down expanded state for overview tree
+  const [expandedSets, setExpandedSets] = useState({});
+  const [expandedInfs, setExpandedInfs] = useState({});
+  // Product tab influencer filter
+  const [productInfFilter, setProductInfFilter] = useState('all');
+  // Analytics drill-down
+  const [expandedAnalyticsSets, setExpandedAnalyticsSets] = useState({});
+  const [expandedAnalyticsInfs, setExpandedAnalyticsInfs] = useState({});
+  // Conversions drill-down
+  const [expandedConvInfs, setExpandedConvInfs] = useState({});
+
   // ── Load campaign (sets + influencers included) ──────────────────────────
   useEffect(() => {
     campaignApi.get(id).then(res => {
@@ -495,6 +506,7 @@ export default function CampaignDetailPage() {
   const totalBudget  = Number(campaign.total_budget || 0);
   const setBudgetSum = sets.reduce((t, s) => t + Number(s.set_budget || 0), 0);
   const totalInfluencers = allInfluencers.length;
+  const isConversionCampaign = sets.some(s => s.goal === 'conversion');
 
   const TABS = ['overview', 'products', 'content', 'analytics', 'conversions'];
 
@@ -541,8 +553,8 @@ export default function CampaignDetailPage() {
           </div>
         </div>
 
-        {/* Budget strip */}
-        {totalBudget > 0 && (
+        {/* Budget strip — hidden for conversion campaigns */}
+        {totalBudget > 0 && !isConversionCampaign && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <div className="flex justify-between text-xs text-gray-400 mb-1.5">
               <span>Campaign budget</span>
@@ -571,20 +583,106 @@ export default function CampaignDetailPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────────────────── */}
       {tab === 'overview' && (
         <div className="space-y-4">
-          {/* Quick stats */}
+          {/* Quick stats — conditional on campaign type */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[
+            {(isConversionCampaign ? [
+              { label: 'Commission Rate', value: (() => { const rates = allInfluencers.map(i => Number(i.commission_pct || 0)).filter(Boolean); return rates.length ? `${(rates.reduce((a,b) => a+b, 0) / rates.length).toFixed(1)}%` : '--'; })(), sub: 'Avg across influencers' },
+              { label: 'Active Offers', value: allInfluencers.filter(i => ['contracted','active','live'].includes(i.status)).length },
+              { label: 'Total Transactions', value: conversions?.total_transactions ?? '--', sub: !conversions ? 'Switch to Conversions tab' : '' },
+              { label: 'Influencers', value: totalInfluencers },
+            ] : [
               { label: 'Total Budget', value: fmtRupees(totalBudget), sub: totalBudget === 0 ? 'Commission only' : '' },
               { label: 'Sets', value: sets.length },
               { label: 'Influencers', value: totalInfluencers },
               { label: 'Status', value: campaign.status?.replace(/_/g, ' ') },
-            ].map(s => (
+            ]).map(s => (
               <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3.5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{s.label}</div>
                 <div className="font-display text-lg font-extrabold text-gray-900 capitalize">{s.value}</div>
                 {s.sub && <div className="text-[10px] text-gray-400 mt-0.5">{s.sub}</div>}
               </div>
             ))}
+          </div>
+
+          {/* ── Drill-Down Hierarchy Tree ───────────────────────────── */}
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
+              <div className="text-xs font-bold text-gray-600 uppercase tracking-wider">Campaign Hierarchy</div>
+            </div>
+            <div className="p-4">
+              {/* Campaign root */}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-bold text-gray-900">{campaign.name}</span>
+                <StatusBadge status={campaign.status} />
+              </div>
+              {/* Sets */}
+              {sets.map(set => {
+                const setInfs = set.influencers || [];
+                const setKey = `set-${set.id}`;
+                const isSetOpen = expandedSets[setKey];
+                return (
+                  <div key={set.id} className="ml-4 border-l-2 border-gray-200 pl-4 mt-2">
+                    <button onClick={() => setExpandedSets(prev => ({ ...prev, [setKey]: !prev[setKey] }))}
+                      className="flex items-center gap-2 text-left w-full group hover:bg-gray-50 rounded-lg py-1 -ml-2 pl-2 transition-colors">
+                      <span className={`text-gray-400 text-xs transition-transform ${isSetOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+                      <span className="text-sm font-semibold text-gray-800">{set.name}</span>
+                      <GoalBadge goal={set.goal} />
+                      {set.window_start && (
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(set.window_start).toLocaleDateString('en-IN')} - {set.window_end ? new Date(set.window_end).toLocaleDateString('en-IN') : '?'}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-gray-400 ml-auto">{setInfs.length} influencer{setInfs.length !== 1 ? 's' : ''}</span>
+                    </button>
+                    {isSetOpen && setInfs.map(inf => {
+                      const infKey = `inf-${inf.id}`;
+                      const isInfOpen = expandedInfs[infKey];
+                      const deliverables = inf.deliverables || [];
+                      const products = inf.products || [];
+                      const transactions = inf.transactions || [];
+                      return (
+                        <div key={inf.id} className="ml-4 border-l-2 border-gray-100 pl-4 mt-1">
+                          <button onClick={() => setExpandedInfs(prev => ({ ...prev, [infKey]: !prev[infKey] }))}
+                            className="flex items-center gap-2 text-left w-full group hover:bg-gray-50 rounded-lg py-1 -ml-2 pl-2 transition-colors">
+                            <span className={`text-gray-400 text-xs transition-transform ${isInfOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+                            <Avatar handle={inf.instagram_handle} size="sm" />
+                            <span className="text-sm font-medium text-gray-800">{inf.influencer_name || `@${inf.instagram_handle}`}</span>
+                            {inf.instagram_handle && <span className="text-[10px] text-gray-400">@{inf.instagram_handle}</span>}
+                            <StatusBadge status={inf.status} />
+                          </button>
+                          {isInfOpen && (
+                            <div className="ml-8 mt-1 space-y-0.5 text-xs text-gray-500 pb-2">
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-300">|-</span>
+                                <span>Deliverables: <strong className="text-gray-700">{deliverables.length}</strong>
+                                  {deliverables.length > 0 && (
+                                    <span className="text-gray-400 ml-1">
+                                      ({[...new Set(deliverables.map(d => d.type))].filter(Boolean).join(', ') || 'pending'})
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-300">|-</span>
+                                <span>Products: <strong className="text-gray-700">{products.filter(p => p.publish_status === 'published').length}</strong> published / <strong className="text-gray-700">{products.length}</strong> assigned</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-300">|-</span>
+                                <span>Transactions: <strong className="text-gray-700">{transactions.length || inf.transaction_count || 0}</strong>
+                                  {(inf.revenue_paise || transactions.reduce?.((s, t) => s + Number(t.amount_paise || 0), 0)) > 0 && (
+                                    <span className="ml-1">— <strong className="text-teal-600">{fmtRupees((inf.revenue_paise || transactions.reduce?.((s, t) => s + Number(t.amount_paise || 0), 0)) / 100)}</strong></span>
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Sets breakdown */}
@@ -685,11 +783,13 @@ export default function CampaignDetailPage() {
                                 {cancellingInf === inf.id ? 'Cancelling…' : 'Cancel'}
                               </button>
                             )}
-                            <div className="flex items-center gap-2 text-xs text-gray-400">
-                              <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t1_status} /> T1</span>
-                              <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t2_status} /> T2</span>
-                              <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t3_status} /> T3</span>
-                            </div>
+                            {!isConversionCampaign && (
+                              <div className="flex items-center gap-2 text-xs text-gray-400">
+                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t1_status} /> T1</span>
+                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t2_status} /> T2</span>
+                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t3_status} /> T3</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -715,29 +815,48 @@ export default function CampaignDetailPage() {
             </div>
           ) : (
             <>
-              {/* Influencer assignments summary */}
+              {/* Influencer filter pills */}
               {(campaignProducts.influencers || []).length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Assigned Influencers</div>
-                  <div className="space-y-2">
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Filter by Influencer</div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <button
+                      onClick={() => setProductInfFilter('all')}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${productInfFilter === 'all' ? 'bg-navy text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                      All Influencers
+                    </button>
                     {campaignProducts.influencers.map(inf => (
-                      <div key={inf.id} className="flex items-center gap-3 text-sm">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-600">
-                          {inf.name?.[0]}
-                        </div>
-                        <div className="flex-1">
-                          <span className="font-semibold text-gray-900">{inf.name}</span>
-                          <span className="text-gray-400 ml-1 text-xs">@{inf.handle}</span>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                          {inf.offer_type && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{inf.offer_type}</span>}
-                          {inf.discount_value && <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">{inf.discount_value}% OFF</span>}
-                          {inf.coupon_code && <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-mono">{inf.coupon_code}</span>}
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${inf.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>{inf.status}</span>
-                        </div>
-                      </div>
+                      <button key={inf.id}
+                        onClick={() => setProductInfFilter(inf.id)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 ${productInfFilter === inf.id ? 'bg-navy text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                        <span className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-[9px] font-bold text-orange-600 flex-shrink-0">
+                          {inf.name?.[0] || '?'}
+                        </span>
+                        {inf.name || `@${inf.handle}`}
+                        {inf.coupon_code && <span className="font-mono opacity-70 text-[9px]">({inf.coupon_code})</span>}
+                      </button>
                     ))}
                   </div>
+                  {/* Influencer detail row for selected */}
+                  {productInfFilter !== 'all' && (() => {
+                    const sel = campaignProducts.influencers.find(i => i.id === productInfFilter);
+                    if (!sel) return null;
+                    return (
+                      <div className="flex items-center gap-3 text-sm bg-navy/5 rounded-lg px-3 py-2">
+                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-xs font-bold text-orange-600">{sel.name?.[0]}</div>
+                        <div className="flex-1">
+                          <span className="font-semibold text-gray-900">{sel.name}</span>
+                          <span className="text-gray-400 ml-1 text-xs">@{sel.handle}</span>
+                        </div>
+                        <div className="flex gap-2 items-center">
+                          {sel.offer_type && <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">{sel.offer_type}</span>}
+                          {sel.discount_value && <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded">{sel.discount_value}% OFF</span>}
+                          {sel.coupon_code && <span className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-mono">{sel.coupon_code}</span>}
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${sel.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-gray-100 text-gray-500'}`}>{sel.status}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -759,35 +878,56 @@ export default function CampaignDetailPage() {
                 </div>
               )}
 
-              {/* Product list with status */}
+              {/* Product list with status — filtered by selected influencer */}
               <div className="space-y-2">
-                {(campaignProducts.products || []).map(p => (
+                {(campaignProducts.products || [])
+                  .filter(p => {
+                    if (productInfFilter === 'all') return true;
+                    // Filter by assigned influencer id
+                    return p.assigned_to === productInfFilter
+                      || p.influencer_id === productInfFilter
+                      || (p.published_by || []).some(pb => pb.influencer_id === productInfFilter);
+                  })
+                  .map(p => (
                   <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
                     <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🚗</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-bold text-gray-900 truncate">{p.name}</div>
                       <div className="text-xs text-gray-500">{p.section || 'General'} · {fmtRupees(p.price)}</div>
                       {p.description && <div className="text-[10px] text-gray-400 mt-0.5 truncate">{p.description}</div>}
+                      {/* Show assigned influencer name on each product */}
+                      {(p.assigned_influencer_name || p.influencer_name) && (
+                        <div className="mt-1 flex items-center gap-1">
+                          <span className="w-4 h-4 rounded-full bg-orange-100 flex items-center justify-center text-[8px] font-bold text-orange-600">{(p.assigned_influencer_name || p.influencer_name)?.[0]}</span>
+                          <span className="text-[10px] text-gray-500">{p.assigned_influencer_name || p.influencer_name}</span>
+                        </div>
+                      )}
                       {p.published_by?.length > 0 && (
                         <div className="mt-1.5 bg-green-50 rounded-md px-2 py-1 inline-block">
                           <span className="text-[10px] text-green-700 italic">"{p.published_by[0].note_text}"</span>
-                          <span className="text-[9px] text-green-500 ml-1">— {p.published_by[0].influencer_name}</span>
+                          <span className="text-[9px] text-green-500 ml-1">-- {p.published_by[0].influencer_name}</span>
                         </div>
                       )}
                     </div>
                     <div className="flex-shrink-0">
                       {p.publish_status === 'published' ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
-                          ✅ Published
+                          Published
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                          ⏳ Pending
+                          Pending
                         </span>
                       )}
                     </div>
                   </div>
                 ))}
+                {(campaignProducts.products || []).filter(p => {
+                  if (productInfFilter === 'all') return true;
+                  return p.assigned_to === productInfFilter || p.influencer_id === productInfFilter || (p.published_by || []).some(pb => pb.influencer_id === productInfFilter);
+                }).length === 0 && productInfFilter !== 'all' && (
+                  <div className="text-center py-8 text-gray-400 text-sm">No products assigned to this influencer</div>
+                )}
               </div>
             </>
           )}
@@ -883,13 +1023,14 @@ export default function CampaignDetailPage() {
         </div>
       )}
 
-      {/* ── ANALYTICS TAB ────────────────────────────────────────────────── */}
+      {/* ── ANALYTICS TAB — Drill-Down ────────────────────────────────── */}
       {tab === 'analytics' && (
         <div>
           {!engagement ? (
-            <div className="text-center py-12 text-gray-400 text-sm">Loading analytics…</div>
+            <div className="text-center py-12 text-gray-400 text-sm">Loading analytics...</div>
           ) : (
             <div className="space-y-4">
+              {/* Campaign-level summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'Total Reach',      value: fmtNum(engagement.totals?.total_reach) },
@@ -903,6 +1044,8 @@ export default function CampaignDetailPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Daily reach chart */}
               {engagement.daily_reach?.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-4">
                   <div className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-4">Daily Reach</div>
@@ -917,9 +1060,88 @@ export default function CampaignDetailPage() {
                   </ResponsiveContainer>
                 </div>
               )}
-              {engagement.by_influencer?.length > 0 && (
+
+              {/* Per-set breakdown cards */}
+              {(engagement.by_set || sets).map(set => {
+                const setData = engagement.by_set ? set : { ...set, reach: 0, impressions: 0, engagement_rate: 0 };
+                const setKey = `aset-${set.id || set.set_id}`;
+                const isOpen = expandedAnalyticsSets[setKey];
+                const setInfluencers = engagement.by_influencer?.filter(inf => inf.set_id === (set.id || set.set_id)) || [];
+                // If by_set is not available, group by_influencer by set
+                const infList = setInfluencers.length > 0 ? setInfluencers : (engagement.by_influencer || []);
+                return (
+                  <div key={set.id || set.set_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <button onClick={() => setExpandedAnalyticsSets(prev => ({ ...prev, [setKey]: !prev[setKey] }))}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100 transition-colors text-left">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-gray-400 text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+                        <span className="font-bold text-sm text-gray-800">{set.name || set.set_name || 'Set'}</span>
+                        <GoalBadge goal={set.goal} />
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-400">
+                        {setData.reach != null && <span>Reach: <strong className="text-gray-700">{fmtNum(setData.reach)}</strong></span>}
+                        {setData.impressions != null && <span>Impr: <strong className="text-gray-700">{fmtNum(setData.impressions)}</strong></span>}
+                        {setData.engagement_rate != null && <span>ER: <strong className="text-gray-700">{setData.engagement_rate}%</strong></span>}
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="divide-y divide-gray-50">
+                        {infList.length === 0 ? (
+                          <div className="px-4 py-4 text-xs text-gray-400 text-center">No influencer data for this set</div>
+                        ) : infList.map(inf => {
+                          const infKey = `ainf-${inf.influencer_id}`;
+                          const isInfOpen = expandedAnalyticsInfs[infKey];
+                          const deliverableStats = inf.deliverables || [];
+                          return (
+                            <div key={inf.influencer_id}>
+                              <button onClick={() => setExpandedAnalyticsInfs(prev => ({ ...prev, [infKey]: !prev[infKey] }))}
+                                className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-gray-300 text-[10px] transition-transform ${isInfOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+                                  <Avatar handle={inf.instagram_handle} size="sm" />
+                                  <span className="font-medium text-sm text-gray-800">@{inf.instagram_handle}</span>
+                                </div>
+                                <div className="flex items-center gap-4 text-xs text-gray-400">
+                                  <span>Reach: <strong className="text-gray-800">{fmtNum(inf.reach)}</strong></span>
+                                  <span>ER: <strong className="text-gray-800">{inf.engagement_rate || 0}%</strong></span>
+                                  <span>Likes: <strong className="text-gray-800">{fmtNum(inf.likes)}</strong></span>
+                                </div>
+                              </button>
+                              {isInfOpen && deliverableStats.length > 0 && (
+                                <div className="px-6 pb-3">
+                                  <div className="bg-gray-50 rounded-lg overflow-hidden">
+                                    <div className="grid grid-cols-6 gap-2 px-3 py-2 text-[9px] font-bold text-gray-400 uppercase border-b border-gray-100">
+                                      <span>Type</span><span>Status</span><span>Reach</span><span>Likes</span><span>Comments</span><span>ER</span>
+                                    </div>
+                                    {deliverableStats.map((d, di) => (
+                                      <div key={di} className="grid grid-cols-6 gap-2 px-3 py-2 text-xs text-gray-600 border-b border-gray-50 last:border-0">
+                                        <span className="font-semibold uppercase text-navy">{d.type}</span>
+                                        <span><StatusBadge status={d.status} /></span>
+                                        <span>{fmtNum(d.reach)}</span>
+                                        <span>{fmtNum(d.likes)}</span>
+                                        <span>{fmtNum(d.comments)}</span>
+                                        <span>{d.engagement_rate || '--'}%</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {isInfOpen && deliverableStats.length === 0 && (
+                                <div className="px-6 pb-3 text-xs text-gray-400">No per-deliverable data available</div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Fallback: flat influencer list if no per-set data */}
+              {!engagement.by_set && engagement.by_influencer?.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase tracking-wider">Per Influencer</div>
+                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase tracking-wider">Per Influencer (All Sets)</div>
                   {engagement.by_influencer.map(inf => (
                     <div key={inf.influencer_id} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0 text-sm">
                       <div className="font-medium text-gray-800">@{inf.instagram_handle}</div>
@@ -937,13 +1159,14 @@ export default function CampaignDetailPage() {
         </div>
       )}
 
-      {/* ── CONVERSIONS TAB ──────────────────────────────────────────────── */}
+      {/* ── CONVERSIONS TAB — Drill-Down ──────────────────────────────── */}
       {tab === 'conversions' && (
         <div>
           {!conversions ? (
-            <div className="text-center py-12 text-gray-400 text-sm">Loading conversions…</div>
+            <div className="text-center py-12 text-gray-400 text-sm">Loading conversions...</div>
           ) : (
             <div className="space-y-4">
+              {/* Campaign-level totals */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'Total Transactions', value: fmtNum(conversions.total_transactions) },
@@ -957,19 +1180,67 @@ export default function CampaignDetailPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Per-influencer breakdown table with expandable transaction rows */}
               {conversions.by_influencer?.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase tracking-wider">Per Influencer</div>
-                  {conversions.by_influencer.map(inf => (
-                    <div key={inf.influencer_id} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0 text-sm">
-                      <div className="font-medium text-gray-800">@{inf.instagram_handle || inf.influencer_id}</div>
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span>Sales: <strong className="text-gray-800">{fmtNum(inf.transaction_count)}</strong></span>
-                        <span>Revenue: <strong className="text-gray-800">{fmtMoney(inf.revenue_paise)}</strong></span>
-                        <span>Commission: <strong className="text-teal-600">{fmtMoney(inf.commission_paise)}</strong></span>
+                  {/* Table header */}
+                  <div className="grid grid-cols-6 gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    <span className="col-span-2">Influencer</span>
+                    <span>Transactions</span>
+                    <span>Revenue</span>
+                    <span>Commission</span>
+                    <span>ROI</span>
+                  </div>
+                  {conversions.by_influencer.map(inf => {
+                    const infKey = `cinf-${inf.influencer_id}`;
+                    const isOpen = expandedConvInfs[infKey];
+                    const roi = inf.revenue_paise && inf.commission_paise
+                      ? ((inf.revenue_paise - inf.commission_paise) / inf.commission_paise * 100).toFixed(0)
+                      : '--';
+                    return (
+                      <div key={inf.influencer_id}>
+                        <button onClick={() => setExpandedConvInfs(prev => ({ ...prev, [infKey]: !prev[infKey] }))}
+                          className="w-full grid grid-cols-6 gap-2 px-4 py-3 border-b border-gray-50 text-sm hover:bg-gray-50 transition-colors text-left items-center">
+                          <div className="col-span-2 flex items-center gap-2">
+                            <span className={`text-gray-300 text-[10px] transition-transform ${isOpen ? 'rotate-90' : ''}`}>&#9654;</span>
+                            <Avatar handle={inf.instagram_handle} size="sm" />
+                            <span className="font-medium text-gray-800">@{inf.instagram_handle || inf.influencer_id}</span>
+                          </div>
+                          <div className="font-bold text-gray-900">{fmtNum(inf.transaction_count)}</div>
+                          <div className="font-semibold text-gray-800">{fmtMoney(inf.revenue_paise)}</div>
+                          <div className="font-semibold text-teal-600">{fmtMoney(inf.commission_paise)}</div>
+                          <div className={`font-bold ${roi !== '--' && Number(roi) > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                            {roi !== '--' ? `${roi}%` : '--'}
+                          </div>
+                        </button>
+                        {isOpen && (
+                          <div className="px-6 py-3 bg-gray-50/50 border-b border-gray-100">
+                            {(inf.transactions || []).length > 0 ? (
+                              <div className="space-y-1">
+                                <div className="grid grid-cols-5 gap-2 text-[9px] font-bold text-gray-400 uppercase px-2 pb-1 border-b border-gray-100">
+                                  <span>Date</span><span>Type</span><span>Amount</span><span>Commission</span><span>Status</span>
+                                </div>
+                                {inf.transactions.map((tx, ti) => (
+                                  <div key={ti} className="grid grid-cols-5 gap-2 text-xs text-gray-600 px-2 py-1.5 bg-white rounded border border-gray-50">
+                                    <span>{tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-IN') : '--'}</span>
+                                    <span className="capitalize">{tx.type || tx.transaction_type || '--'}</span>
+                                    <span className="font-semibold">{fmtMoney(tx.amount_paise)}</span>
+                                    <span className="text-teal-600">{fmtMoney(tx.commission_paise)}</span>
+                                    <span><StatusBadge status={tx.status || 'completed'} /></span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-gray-400 text-center py-2">
+                                Transaction details not available. View {fmtNum(inf.transaction_count)} transaction{inf.transaction_count !== 1 ? 's' : ''} totalling {fmtMoney(inf.revenue_paise)}.
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
