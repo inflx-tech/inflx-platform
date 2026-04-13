@@ -63,6 +63,7 @@ export default function LoginPage() {
   const [otp, setOtp]                 = useState('');
   const [name, setName]               = useState('');
   const [businessName, setBusinessName] = useState('');
+  const [industry, setIndustry]       = useState('');
   const [category, setCategory]       = useState('');
   const [loading, setLoading]         = useState(false);
   const [resending, setResending]     = useState(false);
@@ -232,20 +233,28 @@ export default function LoginPage() {
                 placeholder="e.g. Spice Garden Restaurant"
                 className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
             </div>
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Category</label>
-              <select value={category} onChange={e => setCategory(e.target.value)}
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Industry</label>
+              <select value={industry} onChange={e => { setIndustry(e.target.value); setCategory(''); }}
                 className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
-                <option value="">Select your business type</option>
-                {INDUSTRY_HIERARCHY.map(group => (
-                  <optgroup key={group.group} label={group.group}>
-                    {group.categories.map(c => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
-                  </optgroup>
+                <option value="">Select your industry</option>
+                {INDUSTRY_HIERARCHY.map(g => (
+                  <option key={g.group} value={g.group}>{g.group}</option>
                 ))}
               </select>
             </div>
+            {industry && (
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Type</label>
+                <select value={category} onChange={e => setCategory(e.target.value)}
+                  className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
+                  <option value="">Select your business type</option>
+                  {INDUSTRY_HIERARCHY.find(g => g.group === industry)?.categories.map(c => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {error && <div className="mb-3 p-2.5 bg-red-pale rounded-lg text-xs text-red">{error}</div>}
             <button type="submit" disabled={loading || !name.trim() || !businessName.trim() || !category}
               className="w-full py-3 bg-gradient-to-r from-red to-orange text-white font-bold rounded-lg text-sm disabled:opacity-50">

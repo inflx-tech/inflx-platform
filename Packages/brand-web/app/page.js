@@ -59,6 +59,7 @@ export default function LandingPage() {
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
+  const [industry, setIndustry] = useState('');
   const [category, setCategory] = useState('');
   const [instagramHandle, setInstagramHandle] = useState('');
   const [loading, setLoading] = useState(false);
@@ -344,18 +345,26 @@ export default function LandingPage() {
                     <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)} placeholder="e.g. Spice Garden Restaurant"
                       className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50" />
                   </div>
-                  <div className="mb-4">
-                    <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Business Category</label>
-                    <select value={category} onChange={e => setCategory(e.target.value)}
-                      className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50 appearance-none">
-                      <option value="" className="bg-[#0e1525]">Select your business type</option>
-                      {BRAND_CATEGORIES.map(g => (
-                        <optgroup key={g.group} label={g.group}>
-                          {g.categories.map(c => <option key={c.value} value={c.value} className="bg-[#0e1525]">{c.label}</option>)}
-                        </optgroup>
-                      ))}
+                  <div className="mb-3">
+                    <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Industry</label>
+                    <select value={industry} onChange={e => { setIndustry(e.target.value); setCategory(''); }}
+                      className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50">
+                      <option value="" className="bg-[#0e1525]">Select your industry</option>
+                      {BRAND_CATEGORIES.map(g => <option key={g.group} value={g.group} className="bg-[#0e1525]">{g.group}</option>)}
                     </select>
                   </div>
+                  {industry && (
+                    <div className="mb-4">
+                      <label className="block text-xs font-semibold text-white/40 uppercase tracking-wider mb-1.5">Business Type</label>
+                      <select value={category} onChange={e => setCategory(e.target.value)}
+                        className="w-full bg-[#0e1525] border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-[#F47920]/50">
+                        <option value="" className="bg-[#0e1525]">Select your business type</option>
+                        {BRAND_CATEGORIES.find(g => g.group === industry)?.categories.map(c => (
+                          <option key={c.value} value={c.value} className="bg-[#0e1525]">{c.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   {error && <p className="text-red-400 text-xs mb-3">{error}</p>}
                   <button onClick={handleRegister} disabled={loading}
                     className="w-full py-3.5 bg-gradient-to-r from-[#F47920] to-[#FFB800] text-[#070b16] font-bold rounded-xl text-sm disabled:opacity-40 transition-all">
