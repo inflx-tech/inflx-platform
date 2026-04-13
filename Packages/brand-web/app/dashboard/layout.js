@@ -5,13 +5,13 @@ import { useEffect, useState } from 'react';
 import { notificationApi, brandApi } from '../../lib/api';
 
 const NAV = [
-  { href: '/dashboard/campaigns',  label: 'Campaigns',  icon: '📣' },
+  { href: '/dashboard',             label: 'Dashboard',   icon: '🏠' },
+  { href: '/dashboard/campaigns',   label: 'Campaigns',   icon: '📣' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '⭐' },
-  { href: '/dashboard/products',   label: 'Listings',   icon: '🏪' },
-  { href: '/dashboard/orders',     label: 'Orders',     icon: '📦' },
-  { href: '/dashboard/wallet',     label: 'Wallet',     icon: '💰' },
-  { href: '/dashboard/enquiries',  label: 'Enquiries',  icon: '💬' },
-  { href: '/dashboard/profile',    label: 'Profile',    icon: '👤' },
+  { href: '/dashboard/products',    label: 'Listings',    icon: '🏪' },
+  { href: '/dashboard/conversions', label: 'Conversions', icon: '💰' },
+  { href: '/dashboard/wallet',      label: 'Wallet',      icon: '🏦' },
+  { href: '/dashboard/profile',     label: 'Profile',     icon: '👤' },
 ];
 
 export default function DashboardLayout({ children }) {

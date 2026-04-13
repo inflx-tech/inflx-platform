@@ -2,7 +2,9 @@
 import { useEffect, useState } from 'react';
 import { brandApi, walletApi, campaignApi, fmtMoney, fmtRupees } from '../../lib/api';
 
-function StatCard({ label, value, sub, color = 'navy', href }) {
+/* ── Stat Card ──────────────────────────────────────────────── */
+
+function StatCard({ label, value, sub, color = 'navy', href, icon }) {
   const colorMap = {
     navy:   'text-navy border-navy/10',
     teal:   'text-teal border-teal/10',
@@ -11,8 +13,11 @@ function StatCard({ label, value, sub, color = 'navy', href }) {
     red:    'text-red border-red/10',
   };
   const card = (
-    <div className={`bg-white rounded-xl border ${colorMap[color]} p-4 ${href ? 'hover:shadow-md transition-shadow cursor-pointer' : ''}`}>
-      <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-1">{label}</div>
+    <div className={`bg-white rounded-xl border ${colorMap[color]} p-5 ${href ? 'hover:shadow-md transition-shadow cursor-pointer' : ''}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-t3">{label}</div>
+        {icon && <span className="text-lg opacity-60">{icon}</span>}
+      </div>
       <div className={`font-display text-2xl font-extrabold ${colorMap[color].split(' ')[0]} mb-0.5`}>{value}</div>
       {sub && <div className="text-[10px] text-t3">{sub}</div>}
     </div>
@@ -20,155 +25,255 @@ function StatCard({ label, value, sub, color = 'navy', href }) {
   return href ? <a href={href}>{card}</a> : card;
 }
 
+/* ── Campaign Row ───────────────────────────────────────────── */
+
+const CAMPAIGN_STATUS = {
+  draft:          'bg-gray-100 text-gray-500',
+  pending_wallet: 'bg-yellow-100 text-yellow-700',
+  active:         'bg-teal-100 text-teal-700',
+  live:           'bg-teal-100 text-teal-700',
+  published:      'bg-blue-100 text-blue-700',
+  completed:      'bg-blue-100 text-blue-700',
+  cancelled:      'bg-red-100 text-red-600',
+};
+
 function CampaignRow({ c }) {
-  const STATUS = {
-    draft:          'bg-gray-100 text-gray-500',
-    pending_wallet: 'bg-yellow-100 text-yellow-700',
-    active:         'bg-teal-100 text-teal-700',
-    live:           'bg-teal-100 text-teal-700',
-    completed:      'bg-blue-100 text-blue-700',
-    cancelled:      'bg-red-100 text-red-600',
-  };
   return (
     <a href={`/dashboard/campaigns/${c.id}`}
       className="flex items-center justify-between py-3 px-4 hover:bg-surface2 rounded-xl transition-colors">
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-t1 truncate">{c.name}</div>
         <div className="text-[10px] text-t3 mt-0.5">
-          {c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN') : '—'} · {fmtRupees(c.total_budget || 0)}
+          {c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN') : '—'}
+          {c.end_date ? ` — ${new Date(c.end_date).toLocaleDateString('en-IN')}` : ''}
+          {' · '}{fmtRupees(c.total_budget || 0)}
         </div>
       </div>
-      <span className={`ml-3 px-2 py-0.5 rounded-full text-[9px] font-bold capitalize flex-shrink-0 ${STATUS[c.status] || STATUS.draft}`}>
+      <span className={`ml-3 px-2 py-0.5 rounded-full text-[9px] font-bold capitalize flex-shrink-0 ${CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft}`}>
         {c.status?.replace(/_/g, ' ')}
       </span>
     </a>
   );
 }
 
+/* ── Transaction Type Styles ────────────────────────────────── */
+
+const TX_TYPE_STYLES = {
+  pay_at_store:   { bg: 'bg-teal-50', text: 'text-teal-700', label: 'Walk-in' },
+  prebook:        { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Booking' },
+  online_order:   { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Order' },
+  redirect_click: { bg: 'bg-gray-50', text: 'text-gray-600', label: 'Click' },
+};
+
+function TransactionRow({ tx }) {
+  const style = TX_TYPE_STYLES[tx.type] || TX_TYPE_STYLES.redirect_click;
+  return (
+    <div className="flex items-center justify-between py-3 px-4 hover:bg-surface2 rounded-xl transition-colors">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 ${style.bg} ${style.text}`}>
+          {style.label}
+        </span>
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-t1 truncate">
+            {tx.follower_name || tx.follower_phone || 'Customer'}
+          </div>
+          <div className="text-[10px] text-t3">
+            {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </div>
+        </div>
+      </div>
+      <div className="text-sm font-bold text-navy ml-3">{fmtMoney(tx.amount || 0)}</div>
+    </div>
+  );
+}
+
+/* ── Main Dashboard ─────────────────────────────────────────── */
+
 export default function BrandDashboardHome() {
-  const [brand, setBrand]       = useState(null);
-  const [wallet, setWallet]     = useState(null);
-  const [campaigns, setCampaigns] = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [brand, setBrand]               = useState(null);
+  const [wallet, setWallet]             = useState(null);
+  const [campaigns, setCampaigns]       = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [products, setProducts]         = useState([]);
+  const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [br, wl, cp] = await Promise.all([
+      const [br, wl, cp, tx, pr] = await Promise.all([
         brandApi.getMe(),
         walletApi.getBalance(),
         campaignApi.list(),
+        brandApi.get('/brands/me/transactions?limit=5'),
+        brandApi.getProducts(),
       ]);
       setLoading(false);
       if (br.success) setBrand(br.data?.brand || br.data);
       if (wl.success) setWallet(wl.data?.wallet || wl.data);
       if (cp.success) setCampaigns(cp.data?.campaigns || []);
+      if (tx.success) setTransactions(tx.data?.transactions || tx.data || []);
+      if (pr.success) setProducts(pr.data?.products || pr.data || []);
     }
     load();
   }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-40 text-t3 text-sm">Loading dashboard…</div>
+    <div className="flex items-center justify-center h-40 text-t3 text-sm">Loading dashboard...</div>
   );
 
-  const balance     = wallet?.wallet_balance || 0;
+  const balance      = wallet?.wallet_balance || 0;
   const escrowLocked = wallet?.escrow_locked || 0;
-  const active      = campaigns.filter(c => ['active', 'live'].includes(c.status));
-  const draft       = campaigns.filter(c => c.status === 'draft');
-  const pending     = campaigns.filter(c => c.status === 'pending_wallet');
-  const recent      = campaigns.slice(0, 5);
+  const activeCampaigns = campaigns.filter(c => ['active', 'live'].includes(c.status));
+  const recentCampaigns = campaigns.slice(0, 3);
+  const recentTx        = Array.isArray(transactions) ? transactions.slice(0, 5) : [];
+  const productCount    = Array.isArray(products) ? products.length : 0;
 
-  const isLowBalance = balance < 50000; // below ₹500
+  // Revenue from transactions
+  const totalRevenue = recentTx.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
+  const isPending  = brand?.status === 'pending';
+  const isApproved = brand?.status === 'approved';
+  const isRejected = brand?.status === 'rejected';
 
   return (
-    <div className="max-w-4xl">
-      {/* Page header */}
-      <div className="mb-5">
-        <h1 className="font-display text-xl font-bold text-t1">
-          Welcome back{brand?.business_name ? `, ${brand.business_name}` : ''}!
+    <div className="max-w-5xl">
+
+      {/* ── Welcome Header ──────────────────────────────────── */}
+      <div className="mb-6">
+        <h1 className="font-display text-2xl font-bold text-t1">
+          Welcome back{brand?.business_name ? `, ${brand.business_name}` : ''}
         </h1>
-        <p className="text-xs text-t3 mt-0.5">Here's your brand dashboard at a glance</p>
+        <p className="text-xs text-t3 mt-1">{today}</p>
       </div>
 
-      {/* Low wallet / pending wallet alerts */}
-      {pending.length > 0 && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-center justify-between">
+      {/* ── Account Status Banners ──────────────────────────── */}
+      {isPending && (
+        <div className="mb-5 p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-center gap-3">
+          <span className="text-amber-500 text-xl">&#9888;</span>
           <div>
-            <div className="text-sm font-bold text-yellow-700">⚠️ {pending.length} campaign{pending.length > 1 ? 's' : ''} waiting for wallet funds</div>
-            <div className="text-xs text-t2 mt-0.5">Top up your wallet to publish and go live</div>
+            <div className="text-sm font-bold text-amber-700">Account Pending Review</div>
+            <div className="text-xs text-amber-600 mt-0.5">Your account is being reviewed by our team. Some features may be limited until approval.</div>
           </div>
-          <a href="/dashboard/wallet" className="text-xs font-bold text-orange hover:underline">Top Up →</a>
         </div>
       )}
-      {isLowBalance && balance > 0 && (
-        <div className="mb-4 p-3 bg-orange-50 border border-orange/20 rounded-xl flex items-center justify-between">
-          <div className="text-sm font-bold text-orange">💳 Low wallet balance — {fmtMoney(balance)} available</div>
-          <a href="/dashboard/wallet" className="text-xs font-bold text-orange hover:underline">Add Funds →</a>
+      {isRejected && (
+        <div className="mb-5 p-4 bg-red-50 border border-red-300 rounded-xl flex items-center gap-3">
+          <span className="text-red-500 text-xl">&#10006;</span>
+          <div>
+            <div className="text-sm font-bold text-red-700">Account Rejected</div>
+            <div className="text-xs text-red-600 mt-0.5">
+              Your account application was not approved.{' '}
+              <a href="/dashboard/profile" className="font-semibold underline">Review your profile</a> and resubmit.
+            </div>
+          </div>
+        </div>
+      )}
+      {isApproved && (
+        <div className="mb-5 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-xs font-bold text-green-700">
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+            Verified Account
+          </span>
         </div>
       )}
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      {/* ── Overview Stat Cards ─────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard
+          label="Active Campaigns"
+          value={activeCampaigns.length}
+          sub={`${campaigns.length} total campaigns`}
+          color="teal"
+          icon="&#128640;"
+          href="/dashboard/campaigns"
+        />
         <StatCard
           label="Wallet Balance"
           value={fmtMoney(balance)}
-          sub={`${fmtMoney(escrowLocked)} locked in escrow`}
-          color={isLowBalance ? 'red' : 'navy'}
+          sub={escrowLocked > 0 ? `${fmtMoney(escrowLocked)} in escrow` : 'No escrow locked'}
+          color={balance < 50000 ? 'red' : 'navy'}
+          icon="&#128176;"
           href="/dashboard/wallet"
         />
         <StatCard
-          label="Active Campaigns"
-          value={active.length}
-          sub={`${draft.length} draft · ${pending.length} pending wallet`}
-          color="teal"
-          href="/dashboard/campaigns"
+          label="Total Revenue"
+          value={fmtMoney(totalRevenue)}
+          sub="From follower transactions"
+          color="orange"
+          icon="&#128200;"
+          href="/dashboard/conversions"
         />
         <StatCard
-          label="Total Campaigns"
-          value={campaigns.length}
-          sub="All time"
+          label="Listed Products"
+          value={productCount}
+          sub="In your catalogue"
           color="navy"
-          href="/dashboard/campaigns"
-        />
-        <StatCard
-          label="Account Status"
-          value={brand?.status || '—'}
-          sub={brand?.category || ''}
-          color={brand?.status === 'approved' ? 'teal' : 'gold'}
+          icon="&#128722;"
+          href="/dashboard/products"
         />
       </div>
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        {[
-          { href: '/dashboard/campaigns/new', icon: '🚀', label: 'New Campaign' },
-          { href: '/dashboard/influencers',   icon: '🔍', label: 'Find Influencers' },
-          { href: '/dashboard/wallet',        icon: '💰', label: 'Wallet' },
-          { href: '/dashboard/orders',        icon: '📦', label: 'Orders' },
-        ].map(a => (
-          <a key={a.href} href={a.href}
-            className="bg-white border border-border rounded-xl p-3 flex flex-col items-center gap-1.5 hover:border-navy hover:shadow-sm transition-all text-center">
-            <span className="text-2xl">{a.icon}</span>
-            <span className="text-[11px] font-bold text-t1">{a.label}</span>
-          </a>
-        ))}
-      </div>
-
-      {/* Recent campaigns */}
-      <div className="bg-white rounded-xl border border-border">
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <h2 className="text-sm font-bold text-t1">Recent Campaigns</h2>
-          <a href="/dashboard/campaigns" className="text-xs text-navy font-semibold hover:underline">View all →</a>
+      {/* ── Quick Actions ───────────────────────────────────── */}
+      <div className="mb-8">
+        <h2 className="text-sm font-bold text-t1 mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { href: '/dashboard/campaigns/new', label: 'Create Campaign',   gradient: 'from-navy to-teal' },
+            { href: '/dashboard/influencers',   label: 'Browse Influencers', gradient: 'from-teal to-emerald-500' },
+            { href: '/dashboard/products',      label: 'Manage Listings',    gradient: 'from-orange to-amber-400' },
+            { href: '/dashboard/wallet',        label: 'View Wallet',        gradient: 'from-navy to-indigo-500' },
+          ].map(a => (
+            <a key={a.href} href={a.href}
+              className={`bg-gradient-to-r ${a.gradient} rounded-xl p-3.5 text-center text-white text-xs font-bold shadow-sm hover:shadow-md hover:scale-[1.02] transition-all`}>
+              {a.label}
+            </a>
+          ))}
         </div>
-        {recent.length === 0 ? (
-          <div className="px-4 py-8 text-center text-t3 text-sm">
-            <div className="text-3xl mb-2">📣</div>
-            No campaigns yet. <a href="/dashboard/campaigns/new" className="text-navy font-semibold hover:underline">Create your first campaign</a>
+      </div>
+
+      {/* ── Two-column: Recent Activity + Recent Campaigns ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl border border-border">
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <h2 className="text-sm font-bold text-t1">Recent Activity</h2>
+            <a href="/dashboard/conversions" className="text-xs text-navy font-semibold hover:underline">View all &rarr;</a>
           </div>
-        ) : (
-          <div className="pb-2">
-            {recent.map(c => <CampaignRow key={c.id} c={c} />)}
+          {recentTx.length === 0 ? (
+            <div className="px-4 py-8 text-center text-t3 text-sm">
+              <div className="text-3xl mb-2">&#128203;</div>
+              No transactions yet. Activity from follower purchases will appear here.
+            </div>
+          ) : (
+            <div className="pb-2">
+              {recentTx.map((tx, i) => <TransactionRow key={tx.id || i} tx={tx} />)}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Campaigns */}
+        <div className="bg-white rounded-xl border border-border">
+          <div className="flex items-center justify-between px-4 pt-4 pb-2">
+            <h2 className="text-sm font-bold text-t1">Recent Campaigns</h2>
+            <a href="/dashboard/campaigns" className="text-xs text-navy font-semibold hover:underline">View all &rarr;</a>
           </div>
-        )}
+          {recentCampaigns.length === 0 ? (
+            <div className="px-4 py-8 text-center text-t3 text-sm">
+              <div className="text-3xl mb-2">&#128227;</div>
+              No campaigns yet.{' '}
+              <a href="/dashboard/campaigns/new" className="text-navy font-semibold hover:underline">Create your first campaign</a>
+            </div>
+          ) : (
+            <div className="pb-2">
+              {recentCampaigns.map(c => <CampaignRow key={c.id} c={c} />)}
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
