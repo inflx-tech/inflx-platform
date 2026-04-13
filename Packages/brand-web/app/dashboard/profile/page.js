@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { brandApi } from '../../../lib/api';
 
 const STATUS_STYLES = {
@@ -9,7 +9,21 @@ const STATUS_STYLES = {
   suspended: 'bg-gray-200 text-gray-600',
 };
 
-const EMPTY_BRANCH = { name: '', address: '', phone: '', city: '' };
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  // Union Territories
+  'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+];
+
+const EMPTY_BRANCH = {
+  name: '', state: '', city: '', pincode: '', address: '', phone: '', google_maps_url: '',
+};
 
 export default function ProfilePage() {
   const [brand, setBrand]     = useState(null);
@@ -17,22 +31,26 @@ export default function ProfilePage() {
   const [saving, setSaving]   = useState(false);
   const [toast, setToast]     = useState('');
   const [toastType, setToastType] = useState('success');
-
-  // Editable contact person
-  const [editingName, setEditingName] = useState(false);
-  const [contactName, setContactName] = useState('');
+  const [fileTooltip, setFileTooltip] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Form state
   const [form, setForm] = useState({
     business_name: '',
     category: '',
     gstin: '',
-    address_line: '',
-    pincode: '',
     logo_url: '',
   });
 
-  // Branches state
+  // Contact person
+  const [contactName, setContactName] = useState('');
+
+  // Main branch address (structured)
+  const [mainBranch, setMainBranch] = useState({
+    state: '', city: '', pincode: '', address: '', google_maps_url: '',
+  });
+
+  // Additional branches
   const [branches, setBranches] = useState([]);
 
   useEffect(() => {
@@ -46,13 +64,24 @@ export default function ProfilePage() {
           business_name: b.business_name || '',
           category:      b.category || '',
           gstin:         b.gstin || '',
-          address_line:  b.address_line || '',
-          pincode:       b.pincode || '',
           logo_url:      b.logo_url || '',
         });
         const ld = b.listing_data || {};
         setContactName(ld.contact_person_name || b.name || '');
-        setBranches(ld.branches || []);
+
+        // Load main branch from listing_data or fall back to flat fields
+        const allBranches = ld.branches || [];
+        const main = allBranches.find(br => br.name === 'Main Branch') || {};
+        setMainBranch({
+          state:           main.state || '',
+          city:            main.city || '',
+          pincode:         main.pincode || b.pincode || '',
+          address:         main.address || b.address_line || '',
+          google_maps_url: main.google_maps_url || '',
+        });
+
+        // Additional branches (everything except "Main Branch")
+        setBranches(allBranches.filter(br => br.name !== 'Main Branch'));
       }
     }
     load();
@@ -66,6 +95,10 @@ export default function ProfilePage() {
 
   function handleChange(field, value) {
     setForm(prev => ({ ...prev, [field]: value }));
+  }
+
+  function handleMainBranchChange(field, value) {
+    setMainBranch(prev => ({ ...prev, [field]: value }));
   }
 
   // Branch helpers
@@ -90,23 +123,36 @@ export default function ProfilePage() {
 
     setSaving(true);
     const payload = {};
-    // Only send fields that changed
+
+    // Send changed top-level fields
     if (form.business_name !== (brand?.business_name || '')) payload.business_name = form.business_name.trim();
-    if (form.category !== (brand?.category || ''))           payload.category = form.category.trim();
     if (form.gstin !== (brand?.gstin || ''))                 payload.gstin = form.gstin.trim();
-    if (form.address_line !== (brand?.address_line || ''))   payload.address_line = form.address_line.trim();
-    if (form.pincode !== (brand?.pincode || ''))             payload.pincode = form.pincode.trim();
     if (form.logo_url !== (brand?.logo_url || ''))           payload.logo_url = form.logo_url.trim();
 
-    // Build listing_data with contact_person_name and branches
+    // Flatten main branch address to top-level for backward compat
+    const mainAddr = mainBranch.address.trim();
+    const mainPin  = mainBranch.pincode.trim();
+    if (mainAddr !== (brand?.address_line || '')) payload.address_line = mainAddr;
+    if (mainPin !== (brand?.pincode || ''))       payload.pincode = mainPin;
+
+    // Build listing_data
     const existingLd = brand?.listing_data || {};
+    const mainBranchEntry = {
+      name: 'Main Branch',
+      state: mainBranch.state,
+      city: mainBranch.city.trim(),
+      pincode: mainBranch.pincode.trim(),
+      address: mainBranch.address.trim(),
+      phone: brand?.phone || '',
+      google_maps_url: mainBranch.google_maps_url.trim(),
+    };
+    const additionalBranches = branches.filter(b => b.name.trim() || b.address.trim());
     const newLd = {
       ...existingLd,
       contact_person_name: contactName.trim(),
-      branches: branches.filter(b => b.name.trim() || b.address.trim()),
+      branches: [mainBranchEntry, ...additionalBranches],
     };
 
-    // Check if listing_data actually changed
     const ldChanged = JSON.stringify(newLd) !== JSON.stringify(existingLd);
     if (ldChanged) payload.listing_data = newLd;
 
@@ -122,7 +168,6 @@ export default function ProfilePage() {
     if (res.success) {
       const updated = res.data?.brand || res.data;
       setBrand(updated);
-      setEditingName(false);
       showToast('Profile updated successfully');
     } else {
       showToast(res.error?.message || 'Failed to update profile', 'error');
@@ -148,7 +193,7 @@ export default function ProfilePage() {
     <div className="max-w-2xl mx-auto">
       <h1 className="font-display text-xl font-bold text-t1 mb-5">Profile & Settings</h1>
 
-      {/* Status banner — only shown for pending / rejected */}
+      {/* Status banner -- only shown for pending / rejected */}
       {(userStatus === 'pending' || userStatus === 'rejected') && (
         <div className={`mb-5 px-4 py-3 rounded-xl text-sm font-medium ${STATUS_STYLES[userStatus] || STATUS_STYLES.pending}`}>
           <span className="font-bold capitalize">{userStatus}</span>
@@ -164,7 +209,7 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Logo preview hero */}
+      {/* Logo section */}
       <div className="bg-white rounded-xl border border-border p-5 mb-5 flex items-center gap-5">
         <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border2 overflow-hidden flex-shrink-0 bg-surface2 flex items-center justify-center">
           {form.logo_url ? (
@@ -186,7 +231,28 @@ export default function ProfilePage() {
             className="w-full border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold transition-colors"
             placeholder="https://example.com/logo.png"
           />
-          <p className="text-[10px] text-t3 mt-1">Direct image URL for your business logo</p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <p className="text-[10px] text-t3">Direct image URL for your business logo</p>
+            <div className="relative">
+              <button
+                type="button"
+                className="text-[10px] font-semibold text-t3 border border-border2 rounded-lg px-2 py-0.5 hover:border-gold hover:text-t2 transition-colors"
+                onMouseEnter={() => setFileTooltip(true)}
+                onMouseLeave={() => setFileTooltip(false)}
+                onClick={() => setFileTooltip(prev => !prev)}
+              >
+                Upload File
+              </button>
+              {fileTooltip && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2.5 py-1.5 bg-t1 text-white text-[10px] rounded-lg whitespace-nowrap shadow-lg z-10">
+                  File upload coming soon — use URL for now
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-t1" />
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Hidden file input for future R2 integration */}
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" />
         </div>
       </div>
 
@@ -207,44 +273,16 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Contact person name — editable */}
+          {/* Contact person name */}
           <div>
             <label className="block text-xs font-semibold text-t2 mb-1">Contact Person</label>
-            {editingName ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={contactName}
-                  onChange={e => setContactName(e.target.value)}
-                  className="flex-1 border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold transition-colors"
-                  placeholder="Contact person name"
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  onClick={() => setEditingName(false)}
-                  className="px-3 py-2 text-xs font-semibold text-t3 hover:text-t1 transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={contactName}
-                  readOnly
-                  className="flex-1 border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t3 bg-surface2 outline-none cursor-not-allowed"
-                />
-                <button
-                  type="button"
-                  onClick={() => setEditingName(true)}
-                  className="px-3 py-2 text-xs font-semibold text-gold hover:text-orange transition-colors"
-                >
-                  Edit
-                </button>
-              </div>
-            )}
+            <input
+              type="text"
+              value={contactName}
+              onChange={e => setContactName(e.target.value)}
+              className="w-full border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold transition-colors"
+              placeholder="Contact person name"
+            />
           </div>
 
           {/* Phone (read-only) */}
@@ -259,45 +297,24 @@ export default function ProfilePage() {
             <p className="text-[10px] text-t3 mt-0.5">Cannot be changed (linked to your login)</p>
           </div>
 
-          {/* Category */}
+          {/* Category (read-only / locked) */}
           <div>
-            <label className="block text-xs font-semibold text-t2 mb-1">Category</label>
+            <label className="block text-xs font-semibold text-t2 mb-1 flex items-center gap-1.5">
+              Category
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-t3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </label>
             <input
               type="text"
               value={form.category}
-              onChange={e => handleChange('category', e.target.value)}
-              className="w-full border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold transition-colors"
-              placeholder="e.g. restaurant, salon, fashion_walkin"
+              readOnly
+              className="w-full border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t3 bg-surface2 outline-none cursor-not-allowed"
             />
-            <p className="text-[10px] text-t3 mt-0.5">Changing category may affect your product schema</p>
+            <p className="text-[10px] text-t3 mt-0.5">Category cannot be changed after registration</p>
           </div>
 
-          {/* Two-column: Address + Pincode */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-t2 mb-1">Address</label>
-              <textarea
-                value={form.address_line}
-                onChange={e => handleChange('address_line', e.target.value)}
-                rows={3}
-                className="w-full border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold transition-colors resize-none"
-                placeholder="Full business address"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-t2 mb-1">Pincode</label>
-              <input
-                type="text"
-                value={form.pincode}
-                onChange={e => handleChange('pincode', e.target.value)}
-                maxLength={6}
-                className="w-full border-2 border-border2 rounded-xl px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold transition-colors"
-                placeholder="560001"
-              />
-            </div>
-          </div>
-
-          {/* GST Number */}
+          {/* GSTIN */}
           <div>
             <label className="block text-xs font-semibold text-t2 mb-1">GSTIN</label>
             <input
@@ -339,15 +356,109 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        {/* Main branch (from profile address) */}
-        <div className="p-3 bg-surface2 rounded-xl mb-3">
-          <div className="flex items-center gap-2 mb-1">
+        {/* Main Branch -- structured address */}
+        <div className="border border-border2 rounded-xl p-4 mb-3">
+          <div className="flex items-center gap-2 mb-3">
             <span className="text-[10px] font-bold uppercase tracking-wider text-t3">Main Branch</span>
             <span className="text-[10px] bg-teal-100 text-teal-700 px-1.5 py-0.5 rounded font-semibold">Primary</span>
           </div>
-          <div className="text-sm text-t1">{form.business_name || 'Business name'}</div>
-          <div className="text-xs text-t2 mt-0.5">{form.address_line || 'Address not set'}{form.pincode ? ` - ${form.pincode}` : ''}</div>
-          <div className="text-xs text-t3 mt-0.5">{brand.phone || ''}</div>
+
+          <div className="space-y-3">
+            {/* Country (locked) */}
+            <div>
+              <label className="block text-[10px] font-semibold text-t3 mb-1 flex items-center gap-1">
+                Country
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-2.5 h-2.5 text-t3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </label>
+              <input
+                type="text"
+                value="India"
+                readOnly
+                className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t3 bg-surface2 outline-none cursor-not-allowed"
+              />
+            </div>
+
+            {/* State + City */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] font-semibold text-t3 mb-1">State</label>
+                <select
+                  value={mainBranch.state}
+                  onChange={e => handleMainBranchChange('state', e.target.value)}
+                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors bg-white"
+                >
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-t3 mb-1">City / District</label>
+                <input
+                  type="text"
+                  value={mainBranch.city}
+                  onChange={e => handleMainBranchChange('city', e.target.value)}
+                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
+                  placeholder="e.g. Bangalore"
+                />
+              </div>
+            </div>
+
+            {/* Pincode */}
+            <div>
+              <label className="block text-[10px] font-semibold text-t3 mb-1">Pincode</label>
+              <input
+                type="text"
+                value={mainBranch.pincode}
+                onChange={e => {
+                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  handleMainBranchChange('pincode', val);
+                }}
+                maxLength={6}
+                inputMode="numeric"
+                className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors font-mono"
+                placeholder="560001"
+              />
+            </div>
+
+            {/* Full address */}
+            <div>
+              <label className="block text-[10px] font-semibold text-t3 mb-1">Full Address</label>
+              <textarea
+                value={mainBranch.address}
+                onChange={e => handleMainBranchChange('address', e.target.value)}
+                rows={3}
+                className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors resize-none"
+                placeholder="Detailed street address, landmark, etc."
+              />
+            </div>
+
+            {/* Google Maps URL */}
+            <div>
+              <label className="block text-[10px] font-semibold text-t3 mb-1">Google Maps URL</label>
+              <input
+                type="url"
+                value={mainBranch.google_maps_url}
+                onChange={e => handleMainBranchChange('google_maps_url', e.target.value)}
+                className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
+                placeholder="📍 Paste Google Maps link"
+              />
+            </div>
+
+            {/* Phone (from profile, read-only here) */}
+            <div>
+              <label className="block text-[10px] font-semibold text-t3 mb-1">Phone</label>
+              <input
+                type="text"
+                value={brand.phone || ''}
+                readOnly
+                className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t3 bg-surface2 outline-none cursor-not-allowed"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Additional branches */}
@@ -367,7 +478,8 @@ export default function ProfilePage() {
                 Remove
               </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
+              {/* Branch name */}
               <div>
                 <label className="block text-[10px] font-semibold text-t3 mb-1">Branch Name</label>
                 <input
@@ -378,35 +490,85 @@ export default function ProfilePage() {
                   placeholder="e.g. Indiranagar Branch"
                 />
               </div>
+
+              {/* State + City */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-semibold text-t3 mb-1">State</label>
+                  <select
+                    value={branch.state || ''}
+                    onChange={e => updateBranch(idx, 'state', e.target.value)}
+                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors bg-white"
+                  >
+                    <option value="">Select state</option>
+                    {INDIAN_STATES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-t3 mb-1">City / District</label>
+                  <input
+                    type="text"
+                    value={branch.city || ''}
+                    onChange={e => updateBranch(idx, 'city', e.target.value)}
+                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
+                    placeholder="e.g. Bangalore"
+                  />
+                </div>
+              </div>
+
+              {/* Pincode */}
               <div>
-                <label className="block text-[10px] font-semibold text-t3 mb-1">City</label>
+                <label className="block text-[10px] font-semibold text-t3 mb-1">Pincode</label>
                 <input
                   type="text"
-                  value={branch.city}
-                  onChange={e => updateBranch(idx, 'city', e.target.value)}
-                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
-                  placeholder="e.g. Bangalore"
+                  value={branch.pincode || ''}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    updateBranch(idx, 'pincode', val);
+                  }}
+                  maxLength={6}
+                  inputMode="numeric"
+                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors font-mono"
+                  placeholder="560001"
                 />
               </div>
-              <div className="col-span-2">
+
+              {/* Address */}
+              <div>
                 <label className="block text-[10px] font-semibold text-t3 mb-1">Address</label>
-                <input
-                  type="text"
-                  value={branch.address}
+                <textarea
+                  value={branch.address || ''}
                   onChange={e => updateBranch(idx, 'address', e.target.value)}
-                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
+                  rows={2}
+                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors resize-none"
                   placeholder="Full address"
                 />
               </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-t3 mb-1">Phone</label>
-                <input
-                  type="text"
-                  value={branch.phone}
-                  onChange={e => updateBranch(idx, 'phone', e.target.value)}
-                  className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
-                  placeholder="+91 9876543210"
-                />
+
+              {/* Phone + Google Maps */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-semibold text-t3 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={branch.phone || ''}
+                    onChange={e => updateBranch(idx, 'phone', e.target.value)}
+                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
+                    placeholder="+91 9876543210"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-t3 mb-1">Google Maps URL</label>
+                  <input
+                    type="url"
+                    value={branch.google_maps_url || ''}
+                    onChange={e => updateBranch(idx, 'google_maps_url', e.target.value)}
+                    className="w-full border-2 border-border2 rounded-xl px-3 py-2 text-sm text-t1 outline-none focus:border-gold transition-colors"
+                    placeholder="📍 Paste Google Maps link"
+                  />
+                </div>
               </div>
             </div>
           </div>
