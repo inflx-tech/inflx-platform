@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireApproved } = require('../middleware/auth');
 const ctrl = require('../controllers/influencer.controller');
 const offerCtrl = require('../controllers/offer.controller');
 const withdrawalCtrl = require('../controllers/withdrawal.controller');
@@ -10,7 +10,7 @@ const { requireAnyAdminRole } = require('../middleware/auth');
 const router = Router();
 
 // ── Brand/Admin search endpoints (must come BEFORE /me/* to avoid shadowing) ─
-router.get('/search', authenticate, requireRole('brand', 'admin'), ctrl.search);
+router.get('/search', authenticate, requireRole('brand', 'admin'), requireApproved, ctrl.search);
 
 // ── Influencer self-service routes ───────────────────────────────────────────
 router.post('/register',  authenticate, requireRole('influencer'), ctrl.register);

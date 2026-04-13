@@ -1,18 +1,19 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireApproved } = require('../middleware/auth');
 const ctrl = require('../controllers/campaign.controller');
 
 const router = Router();
 const brandAuth = [authenticate, requireRole('brand')];
+const brandApproved = [authenticate, requireRole('brand'), requireApproved];
 
 // ── Campaign CRUD ────────────────────────────────────────────────────────────
-router.post('/',       ...brandAuth, ctrl.create);
+router.post('/',       ...brandApproved, ctrl.create);
 router.get('/',        ...brandAuth, ctrl.list);
 router.get('/:id',     ...brandAuth, ctrl.getById);
-router.patch('/:id',   ...brandAuth, ctrl.update);
-router.delete('/:id',  ...brandAuth, ctrl.remove);
+router.patch('/:id',   ...brandApproved, ctrl.update);
+router.delete('/:id',  ...brandApproved, ctrl.remove);
 
 // ── Campaign Publish / Cancel ─────────────────────────────────────────────────
 router.post('/:id/publish', ...brandAuth, ctrl.publish);

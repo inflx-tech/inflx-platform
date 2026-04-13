@@ -110,4 +110,19 @@ function requireAnyAdminRole(req, res, next) {
   next();
 }
 
-module.exports = { authenticate, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional };
+/**
+ * requireApproved
+ * Blocks unapproved brands from major actions (campaigns, influencer browse, products).
+ * Must be placed AFTER authenticate + requireRole('brand').
+ */
+const requireApproved = asyncHandler(async (req, res, next) => {
+  if (!req.user?.sub) return next(new AppError('UNAUTHORIZED', 'Authentication required', 401));
+  const { rows } = await db.query('SELECT status FROM users WHERE id = $1', [req.user.sub]);
+  const status = rows[0]?.status;
+  if (status === 'approved') return next();
+  if (status === 'pending') return next(new AppError('ACCOUNT_PENDING', 'Your account is under review by admin. This feature will be available once approved (usually within 24 hours).', 403));
+  if (status === 'rejected') return next(new AppError('ACCOUNT_REJECTED', 'Your account was not approved. Please update your profile and resubmit.', 403));
+  return next(new AppError('FORBIDDEN', 'Account access restricted.', 403));
+});
+
+module.exports = { authenticate, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional, requireApproved };

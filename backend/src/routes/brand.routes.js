@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, requireRole, requireAdminRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireAdminRole, requireApproved } = require('../middleware/auth');
 const ctrl = require('../controllers/brand.controller');
 
 const walletRoutes = require('./wallet.routes');
@@ -54,11 +54,11 @@ router.get('/me/master-catalogue',  authenticate, requireRole('brand'), ctrl.get
 // Excel bulk upload
 router.get('/me/listing-template/download',  authenticate, requireRole('brand'), ctrl.downloadListingTemplate);
 router.get('/me/listing-template/columns',   authenticate, requireRole('brand'), ctrl.getTemplateColumns);
-router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'), upload.single('file'), ctrl.bulkUploadProducts);
+router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'), requireApproved, upload.single('file'), ctrl.bulkUploadProducts);
 
 // Brand products — full CRUD with category-aware validation
 router.get('/me/products',        authenticate, requireRole('brand'), ctrl.listProducts);
-router.post('/me/products',       authenticate, requireRole('brand'), ctrl.createProduct);
+router.post('/me/products',       authenticate, requireRole('brand'), requireApproved, ctrl.createProduct);
 router.patch('/me/products/:pid', authenticate, requireRole('brand'), ctrl.updateProduct);
 router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.deleteProduct);
 
