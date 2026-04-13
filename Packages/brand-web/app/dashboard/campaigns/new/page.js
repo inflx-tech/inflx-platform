@@ -395,7 +395,7 @@ function NewCampaignPageInner() {
   const [error, setError] = useState('');
   const [campaignId, setCampaignId] = useState(null);
 
-  // Check brand approval status before showing form
+  // Check brand approval status
   useEffect(() => {
     brandApi.getMe().then(res => {
       if (res.success) {
@@ -407,26 +407,7 @@ function NewCampaignPageInner() {
     });
   }, []);
 
-  // Block unapproved brands
-  if (brandStatus === null) {
-    return <div className="flex items-center justify-center py-20"><div className="animate-spin w-8 h-8 border-3 border-orange border-t-transparent rounded-full" /></div>;
-  }
-  if (brandStatus !== 'approved') {
-    return (
-      <div className="max-w-lg mx-auto text-center py-20">
-        <div className="text-5xl mb-4">⏳</div>
-        <h2 className="text-xl font-bold text-t1 mb-2">Account Under Review</h2>
-        <p className="text-sm text-t2 mb-6 leading-relaxed">
-          Your account is pending admin approval. Campaign creation will be available once your account is approved — usually within 24 hours.
-        </p>
-        <button onClick={() => router.push('/dashboard')} className="px-6 py-2.5 bg-navy text-white text-sm font-bold rounded-xl">
-          ← Back to Dashboard
-        </button>
-      </div>
-    );
-  }
-
-  // Campaign basics
+  // Campaign basics — ALL hooks must be declared before any conditional return
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -1609,6 +1590,25 @@ function NewCampaignPageInner() {
           <div style={{ fontSize: 32, marginBottom: 12 }}>⏳</div>
           <div style={{ color: 'var(--t2)', fontSize: 14 }}>Loading your draft campaign…</div>
         </div>
+      </div>
+    );
+  }
+
+  // Block unapproved brands (AFTER all hooks)
+  if (brandStatus === null) {
+    return <div className="flex items-center justify-center py-20"><div className="animate-spin w-8 h-8 border-3 border-orange border-t-transparent rounded-full" /></div>;
+  }
+  if (brandStatus !== 'approved') {
+    return (
+      <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center', paddingTop: 80 }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
+        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Account Under Review</h2>
+        <p style={{ fontSize: 14, color: '#6b7280', marginBottom: 24, lineHeight: 1.6 }}>
+          Your account is pending admin approval. Campaign creation will be available once approved — usually within 24 hours.
+        </p>
+        <button onClick={() => router.push('/dashboard')} style={{ padding: '10px 24px', background: '#1B2D5E', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+          ← Back to Dashboard
+        </button>
       </div>
     );
   }
