@@ -11,6 +11,7 @@ const TIERS    = [{key:'nano',label:'Nano',sub:'1K–10K'},{key:'micro',label:'M
 const OFFER_TYPES = ['Discount','Volume discount','BOGO','Bundle','Free gift'];
 const LANGUAGES = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Urdu'];
 const GENDERS = [{key:'male',label:'Male'},{key:'female',label:'Female'},{key:'non_binary',label:'Non-binary'}];
+const PHYSICAL_GOODS_CATEGORIES = ['fashion_walkin', 'fashion_online', 'electronics', 'jewellery', 'footwear', 'furniture', 'pet_shop', 'flowers_gifting', 'grocery', 'hardware', 'bakery', 'packaged_food', 'optical'];
 
 // ─── Influencer Groups (localStorage) ────────────────────────────────────────
 const GROUPS_KEY = 'inflx_influencer_groups';
@@ -388,6 +389,7 @@ function NewCampaignPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [brandStatus, setBrandStatus] = useState(null); // null=loading
+  const [brandCategory, setBrandCategory] = useState(null);
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -401,6 +403,7 @@ function NewCampaignPageInner() {
       if (res.success) {
         const b = res.data?.brand || res.data;
         setBrandStatus(b?.user_status || b?.status || 'pending');
+        setBrandCategory(b?.category || b?.business_category || null);
       } else {
         setBrandStatus('pending');
       }
@@ -1089,11 +1092,13 @@ function NewCampaignPageInner() {
               )}
             </div>
           )}
-          <label className="phys-check">
-            <input type="checkbox" checked={inf.physical_delivery || false} onChange={e => onChg('physical_delivery', e.target.checked)} style={{ width: 14, height: 14, accentColor: 'var(--orange)', flexShrink: 0, marginTop: 2 }} />
-            <div><div className="phys-lbl">Physical product delivery</div><div className="phys-sub">Send product samples for content creation</div></div>
-          </label>
-          {inf.physical_delivery && <input className="ie-inp" placeholder="Delivery address" value={inf.delivery_address || ''} onChange={e => onChg('delivery_address', e.target.value)} />}
+          {PHYSICAL_GOODS_CATEGORIES.includes(brandCategory) && (
+            <label className="phys-check">
+              <input type="checkbox" checked={inf.physical_delivery || false} onChange={e => onChg('physical_delivery', e.target.checked)} style={{ width: 14, height: 14, accentColor: 'var(--orange)', flexShrink: 0, marginTop: 2 }} />
+              <div><div className="phys-lbl">Physical product delivery</div><div className="phys-sub">Send product samples for content creation</div></div>
+            </label>
+          )}
+          {inf.physical_delivery && PHYSICAL_GOODS_CATEGORIES.includes(brandCategory) && <input className="ie-inp" placeholder="Delivery address" value={inf.delivery_address || ''} onChange={e => onChg('delivery_address', e.target.value)} />}
         </div>
       </div>
     );
@@ -1175,10 +1180,12 @@ function NewCampaignPageInner() {
           {needsCoupon(set.goal) && set.coupon_prefix && (
             <div className="ib amber">Coupon codes auto-generated as <strong>{set.coupon_prefix}_FIRSTNAME</strong> when each influencer accepts.</div>
           )}
-          <label className="phys-check">
-            <input type="checkbox" checked={g.physical_delivery || false} onChange={e => onChg('physical_delivery', e.target.checked)} style={{ width: 14, height: 14, accentColor: 'var(--orange)', flexShrink: 0, marginTop: 2 }} />
-            <div><div className="phys-lbl">Physical product delivery</div><div className="phys-sub">Address collected from each influencer on acceptance</div></div>
-          </label>
+          {PHYSICAL_GOODS_CATEGORIES.includes(brandCategory) && (
+            <label className="phys-check">
+              <input type="checkbox" checked={g.physical_delivery || false} onChange={e => onChg('physical_delivery', e.target.checked)} style={{ width: 14, height: 14, accentColor: 'var(--orange)', flexShrink: 0, marginTop: 2 }} />
+              <div><div className="phys-lbl">Physical product delivery</div><div className="phys-sub">Address collected from each influencer on acceptance</div></div>
+            </label>
+          )}
         </div>
       </div>
     );
@@ -1214,7 +1221,7 @@ function NewCampaignPageInner() {
               ))}
             </div>
             {set.goal === 'engagement' && <div className="ib teal">Engagement campaigns pay a fixed fee for content creation only. No product promotion, no coupon codes.</div>}
-            {set.goal === 'conversion' && <div className="ib orange">Conversion campaigns are commission-only. All sales tracked via unique coupon codes per influencer.</div>}
+            {set.goal === 'conversion' && <div className="ib orange">Conversion campaigns are commission-only. All sales tracked per influencer.</div>}
           </div>
           {set.goal && <>
             {/* Set budget */}
@@ -1238,14 +1245,27 @@ function NewCampaignPageInner() {
             <div className="sec">
               <div className="sec-lbl">Content window — influencers pick their posting date within this range</div>
               <div className="g2">
-                <div className="f"><label className="flbl">Window start</label><input className="inp" type="date" value={set.window_start || ''} min={startDate || undefined} max={endDate || undefined} onChange={e => updateSet(si, { window_start: e.target.value })} /></div>
+                <div className="f">
+                  <label className="flbl">Window start</label>
+                  <input className="inp" type="date" value={set.window_start || ''} min={startDate || undefined} max={endDate || undefined} onChange={e => {
+                    const v = e.target.value;
+                    if (startDate && v < startDate) { updateSet(si, { window_start: startDate }); return; }
+                    if (endDate && v > endDate) { updateSet(si, { window_start: endDate }); return; }
+                    updateSet(si, { window_start: v });
+                  }} />
+                  {set.window_start && startDate && set.window_start < startDate && <div className="err-msg">Start date cannot be before campaign start ({startDate})</div>}
+                  {set.window_start && endDate && set.window_start > endDate && <div className="err-msg">Start date cannot be after campaign end ({endDate})</div>}
+                </div>
                 <div className="f">
                   <label className="flbl">Window end{set.goal === 'hybrid' ? ' (offer expiry)' : ''}</label>
-                  {set.goal === 'hybrid' ? (
-                    <input className="inp" type="date" value={set.window_end || ''} min={set.window_start || startDate || undefined} max={endDate || undefined} onChange={e => updateSet(si, { window_end: e.target.value })} />
-                  ) : (
-                    <div className="ro">{endDate || 'Inherits campaign end date'}</div>
-                  )}
+                  <input className="inp" type="date" value={set.window_end || ''} min={set.window_start || startDate || undefined} max={endDate || undefined} onChange={e => {
+                    const v = e.target.value;
+                    if (startDate && v < startDate) { updateSet(si, { window_end: startDate }); return; }
+                    if (endDate && v > endDate) { updateSet(si, { window_end: endDate }); return; }
+                    updateSet(si, { window_end: v });
+                  }} />
+                  {set.window_end && startDate && set.window_end < startDate && <div className="err-msg">End date cannot be before campaign start ({startDate})</div>}
+                  {set.window_end && endDate && set.window_end > endDate && <div className="err-msg">End date cannot be after campaign end ({endDate})</div>}
                 </div>
               </div>
             </div>
@@ -1555,6 +1575,17 @@ function NewCampaignPageInner() {
                     {needsOffer(set.goal) && inf.offer_type && <div className="rv-ir"><span className="rv-ir-k">Offer</span><span className="rv-ir-v">{offerSummary(inf)}</span></div>}
                     {needsCoupon(set.goal) && <div className="rv-ir"><span className="rv-ir-k">Coupon</span><span className="rv-ir-v">{inf.custom_code || autoCode(set.coupon_prefix, inf.name)}</span></div>}
                     {inf.physical_delivery && <div className="rv-ir"><span className="rv-ir-k">Physical delivery</span><span className="rv-ir-v">Yes</span></div>}
+                    {(() => {
+                      const prods = [...(inf.d_prods || []), ...(inf.v_prods || []), ...(inf.bnd_prods || [])].filter(Boolean);
+                      const giftProds = (inf.gift_offers || []).flatMap(go => [go.main, go.gift]).filter(Boolean);
+                      const bogoProds = [inf.bogo_buy, inf.bogo_get].filter(Boolean);
+                      const allProds = [...prods, ...giftProds, ...bogoProds];
+                      const uniqueNames = [...new Set(allProds.map(p => typeof p === 'string' ? p : p?.name || p?.id).filter(Boolean))];
+                      if (uniqueNames.length > 0) {
+                        return <div className="rv-ir"><span className="rv-ir-k">Products</span><span className="rv-ir-v">{uniqueNames.join(', ')}</span></div>;
+                      }
+                      return <div className="rv-ir"><span className="rv-ir-k">Products</span><span className="rv-ir-v" style={{ color: 'var(--t3)', fontWeight: 400 }}>No specific products assigned (all products available)</span></div>;
+                    })()}
                   </div>
                 ))}
               </div>
@@ -1679,9 +1710,22 @@ function NewCampaignPageInner() {
               )}
               <div className="set-tabs">
                 {sets.map((s, i) => (
-                  <button key={i} className={`set-tab${activeSet === i ? ' act' : ''}`} onClick={() => setActiveSet(i)}>
-                    {s.name}<span className="mdot" style={{ background: s.influencer_mode === 'open_group' ? 'var(--group)' : 'var(--orange)' }} />
-                  </button>
+                  <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 0 }}>
+                    <button className={`set-tab${activeSet === i ? ' act' : ''}`} onClick={() => setActiveSet(i)} style={{ borderRadius: sets.length > 1 ? '20px 0 0 20px' : '20px', paddingRight: sets.length > 1 ? 8 : 14 }}>
+                      {s.name}<span className="mdot" style={{ background: s.influencer_mode === 'open_group' ? 'var(--group)' : 'var(--orange)' }} />
+                    </button>
+                    {sets.length > 1 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteSet(i); }}
+                        style={{ padding: '6px 10px 6px 6px', border: '1px solid var(--border2)', borderLeft: 'none', borderRadius: '0 20px 20px 0', fontSize: 10, fontWeight: 700, cursor: 'pointer', color: 'var(--t3)', background: activeSet === i ? 'var(--orange)' : 'none', fontFamily: "'Plus Jakarta Sans',sans-serif", transition: 'all .15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = activeSet === i ? 'rgba(255,255,255,.7)' : 'var(--t3)'; }}
+                        title="Remove set"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 ))}
                 <button className="add-set-btn" onClick={addSet}>+ Add set</button>
               </div>
