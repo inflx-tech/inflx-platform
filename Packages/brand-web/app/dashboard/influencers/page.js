@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { influencerApi, fmtNum, fmtRupees } from '../../../lib/api';
+import { influencerApi, brandApi, fmtNum, fmtRupees } from '../../../lib/api';
 
 const NICHES    = ['Food','Fashion','Beauty','Lifestyle','Fitness','Travel','Tech','Gaming','Finance','Parenting','Education'];
 const TIERS     = ['nano','micro','macro','mega'];
@@ -124,6 +124,8 @@ function InfluencerCard({ inf }) {
 }
 
 export default function InfluencersPage() {
+  const router = useRouter();
+  const [brandStatus, setBrandStatus] = useState(null);
   const [results,      setResults]     = useState([]);
   const [loading,      setLoading]     = useState(false);
   const [searched,     setSearched]    = useState(false);
@@ -135,8 +137,29 @@ export default function InfluencersPage() {
   const [minFollowers, setMinFollowers] = useState('');
   const [minEr,        setMinEr]       = useState('');
 
+  // Check brand approval
+  useEffect(() => {
+    brandApi.getMe().then(res => {
+      if (res.success) {
+        const b = res.data?.brand || res.data;
+        setBrandStatus(b?.user_status || b?.status || 'pending');
+      } else setBrandStatus('pending');
+    });
+  }, []);
+
   // Auto-load all approved influencers on first visit
-  useEffect(() => { doSearch(); }, []);
+  useEffect(() => { if (brandStatus === 'approved') doSearch(); }, [brandStatus]);
+
+  // Block unapproved
+  if (brandStatus === null) return <div className="flex items-center justify-center py-20"><div className="animate-spin w-8 h-8 border-3 border-orange border-t-transparent rounded-full" /></div>;
+  if (brandStatus !== 'approved') return (
+    <div className="max-w-lg mx-auto text-center py-20">
+      <div className="text-5xl mb-4">⏳</div>
+      <h2 className="text-xl font-bold text-t1 mb-2">Account Under Review</h2>
+      <p className="text-sm text-t2 mb-6">Your account is pending admin approval. Influencer browsing will be available once approved — usually within 24 hours.</p>
+      <button onClick={() => router.push('/dashboard')} className="px-6 py-2.5 bg-navy text-white text-sm font-bold rounded-xl">← Back to Dashboard</button>
+    </div>
+  );
 
   async function doSearch(e) {
     e?.preventDefault();

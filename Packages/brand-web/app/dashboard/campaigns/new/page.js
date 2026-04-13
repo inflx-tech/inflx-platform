@@ -387,12 +387,44 @@ const CSS = `
 function NewCampaignPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [brandStatus, setBrandStatus] = useState(null); // null=loading
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [error, setError] = useState('');
   const [campaignId, setCampaignId] = useState(null);
+
+  // Check brand approval status before showing form
+  useEffect(() => {
+    brandApi.getMe().then(res => {
+      if (res.success) {
+        const b = res.data?.brand || res.data;
+        setBrandStatus(b?.user_status || b?.status || 'pending');
+      } else {
+        setBrandStatus('pending');
+      }
+    });
+  }, []);
+
+  // Block unapproved brands
+  if (brandStatus === null) {
+    return <div className="flex items-center justify-center py-20"><div className="animate-spin w-8 h-8 border-3 border-orange border-t-transparent rounded-full" /></div>;
+  }
+  if (brandStatus !== 'approved') {
+    return (
+      <div className="max-w-lg mx-auto text-center py-20">
+        <div className="text-5xl mb-4">⏳</div>
+        <h2 className="text-xl font-bold text-t1 mb-2">Account Under Review</h2>
+        <p className="text-sm text-t2 mb-6 leading-relaxed">
+          Your account is pending admin approval. Campaign creation will be available once your account is approved — usually within 24 hours.
+        </p>
+        <button onClick={() => router.push('/dashboard')} className="px-6 py-2.5 bg-navy text-white text-sm font-bold rounded-xl">
+          ← Back to Dashboard
+        </button>
+      </div>
+    );
+  }
 
   // Campaign basics
   const [name, setName] = useState('');
