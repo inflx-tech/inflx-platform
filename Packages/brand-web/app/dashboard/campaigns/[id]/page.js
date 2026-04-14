@@ -651,28 +651,26 @@ export default function CampaignDetailPage() {
                             <StatusBadge status={inf.status} />
                           </button>
                           {isInfOpen && (
-                            <div className="ml-8 mt-1 space-y-0.5 text-xs text-gray-500 pb-2">
+                            <div className="ml-8 mt-1 space-y-1 text-xs text-gray-500 pb-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {inf.offer_type && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold">{inf.offer_type}</span>}
+                                {inf.commission_pct && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-[10px] font-bold">{parseFloat(inf.commission_pct)}% commission</span>}
+                                {inf.coupon_code && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-mono">{inf.coupon_code}</span>}
+                              </div>
                               <div className="flex items-center gap-1">
-                                <span className="text-gray-300">|-</span>
-                                <span>Deliverables: <strong className="text-gray-700">{deliverables.length}</strong>
-                                  {deliverables.length > 0 && (
-                                    <span className="text-gray-400 ml-1">
-                                      ({[...new Set(deliverables.map(d => d.type))].filter(Boolean).join(', ') || 'pending'})
-                                    </span>
-                                  )}
+                                <span className="text-gray-300">├</span>
+                                <span>Deliverables: <strong className="text-gray-700">{deliverables.length || 0}</strong>
+                                  {deliverables.length > 0 ? <span className="text-gray-400 ml-1">({[...new Set(deliverables.map(d => d.type))].filter(Boolean).join(', ')})</span>
+                                    : <span className="text-gray-400 ml-1">(awaiting — {inf.status})</span>}
                                 </span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <span className="text-gray-300">|-</span>
-                                <span>Products: <strong className="text-gray-700">{products.filter(p => p.publish_status === 'published').length}</strong> published / <strong className="text-gray-700">{products.length}</strong> assigned</span>
+                                <span className="text-gray-300">├</span>
+                                <span>Products: <span className="text-gray-400">All brand products (brand-level offer)</span></span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <span className="text-gray-300">|-</span>
-                                <span>Transactions: <strong className="text-gray-700">{transactions.length || inf.transaction_count || 0}</strong>
-                                  {(inf.revenue_paise || transactions.reduce?.((s, t) => s + Number(t.amount_paise || 0), 0)) > 0 && (
-                                    <span className="ml-1">— <strong className="text-teal-600">{fmtRupees((inf.revenue_paise || transactions.reduce?.((s, t) => s + Number(t.amount_paise || 0), 0)) / 100)}</strong></span>
-                                  )}
-                                </span>
+                                <span className="text-gray-300">└</span>
+                                <span>Transactions: <strong className="text-gray-700">{transactions.length || 0}</strong></span>
                               </div>
                             </div>
                           )}
@@ -926,7 +924,7 @@ export default function CampaignDetailPage() {
                   if (productInfFilter === 'all') return true;
                   return p.assigned_to === productInfFilter || p.influencer_id === productInfFilter || (p.published_by || []).some(pb => pb.influencer_id === productInfFilter);
                 }).length === 0 && productInfFilter !== 'all' && (
-                  <div className="text-center py-8 text-gray-400 text-sm">No products assigned to this influencer</div>
+                  <div className="text-center py-8 text-gray-400 text-sm">All brand products available for this influencer (brand-level offer)</div>
                 )}
               </div>
             </>
