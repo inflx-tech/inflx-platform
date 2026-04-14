@@ -517,11 +517,11 @@ function NewCampaignPageInner() {
               physical_delivery: ci.physical_delivery || false,
               delivery_address: ci.delivery_address || '',
               custom_code: ci.coupon_code || '',
-              ...(ci.offer_type === 'discount'  && { d_sub: cfg.sub_type || 'pct', d_val: String(cfg.value || ''), d_prods: cfg.products || [] }),
-              ...(ci.offer_type === 'volume'    && { v_tiers: cfg.tiers || [{min_spend:'',pct_off:''}], v_prods: cfg.products || [] }),
-              ...(ci.offer_type === 'bogo'      && { bogo_buy: cfg.buy_product || null, bogo_get: cfg.get_product || null }),
-              ...(ci.offer_type === 'bundle'    && { bnd_prods: cfg.products || [], bnd_price: String(cfg.bundle_price || '') }),
-              ...(ci.offer_type === 'free_gift' && { gift_offers: cfg.offers || [{main:null,gift:null}] }),
+              ...((ci.offer_type || '').toLowerCase().includes('discount') && { d_sub: cfg.sub_type || 'pct', d_val: String(cfg.value || ''), d_prods: cfg.products || [] }),
+              ...((ci.offer_type || '').toLowerCase().includes('volume')   && { v_tiers: cfg.tiers || [{min_spend:'',pct_off:''}], v_prods: cfg.products || [] }),
+              ...((ci.offer_type || '').toLowerCase() === 'bogo'           && { bogo_buy: cfg.buy_product || null, bogo_get: cfg.get_product || null }),
+              ...((ci.offer_type || '').toLowerCase().includes('bundle')   && { bnd_prods: cfg.products || [], bnd_price: String(cfg.bundle_price || '') }),
+              ...((ci.offer_type || '').toLowerCase().includes('gift')     && { gift_offers: cfg.offers || [{main:null,gift:null}] }),
             };
           });
 
@@ -797,13 +797,16 @@ function NewCampaignPageInner() {
 
   // ── Build offer_config from a row (inf slot or group) ────────────────────────
   const buildOfferConfig = (item) => {
-    switch (item.offer_type) {
-      case 'discount':  return { sub_type: item.d_sub, value: Number(item.d_val) || 0, products: item.d_prods };
-      case 'volume':    return { tiers: item.v_tiers, products: item.v_prods };
-      case 'bogo':      return { buy_product: item.bogo_buy, get_product: item.bogo_get };
-      case 'bundle':    return { products: item.bnd_prods, bundle_price: Number(item.bnd_price) || 0 };
-      case 'free_gift': return { offers: item.gift_offers };
-      default:          return {};
+    const t = (item.offer_type || '').toLowerCase().trim();
+    switch (t) {
+      case 'discount':          return { sub_type: item.d_sub, value: Number(item.d_val) || 0, products: item.d_prods };
+      case 'volume discount':   return { tiers: item.v_tiers, products: item.v_prods };
+      case 'volume':            return { tiers: item.v_tiers, products: item.v_prods };
+      case 'bogo':              return { buy_product: item.bogo_buy, get_product: item.bogo_get };
+      case 'bundle':            return { products: item.bnd_prods, bundle_price: Number(item.bnd_price) || 0 };
+      case 'free gift':         return { offers: item.gift_offers };
+      case 'free_gift':         return { offers: item.gift_offers };
+      default:                  return {};
     }
   };
 
