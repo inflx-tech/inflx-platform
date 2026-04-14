@@ -881,6 +881,7 @@ export default function CampaignDetailPage() {
                 {(campaignProducts.products || [])
                   .filter(p => {
                     if (productInfFilter === 'all') return true;
+                    if (!campaignProducts?.has_specific_products) return true; // brand-level offer = show all
                     // Filter by assigned influencer id
                     return p.assigned_to === productInfFilter
                       || p.influencer_id === productInfFilter
@@ -922,9 +923,10 @@ export default function CampaignDetailPage() {
                 ))}
                 {(campaignProducts.products || []).filter(p => {
                   if (productInfFilter === 'all') return true;
+                    if (!campaignProducts?.has_specific_products) return true; // brand-level offer = show all
                   return p.assigned_to === productInfFilter || p.influencer_id === productInfFilter || (p.published_by || []).some(pb => pb.influencer_id === productInfFilter);
                 }).length === 0 && productInfFilter !== 'all' && (
-                  <div className="text-center py-8 text-gray-400 text-sm">All brand products available for this influencer (brand-level offer)</div>
+                  <div className="text-center py-8 text-gray-400 text-sm">All brand products shown — no specific product selection was made for this influencer during campaign creation</div>
                 )}
               </div>
             </>
