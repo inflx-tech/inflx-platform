@@ -11,6 +11,7 @@ import CommissionDetailScreen from '../screens/influencer/CommissionDetailScreen
 import ProfileScreen from '../screens/influencer/ProfileScreen';
 import NegotiationScreen from '../screens/influencer/NegotiationScreen';
 import ContractScreen from '../screens/influencer/ContractScreen';
+import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 import DeliverableScreen from '../screens/influencer/DeliverableScreen';
 import DeliverableListScreen from '../screens/influencer/DeliverableListScreen';
 import DeliverableDetailScreen from '../screens/influencer/DeliverableDetailScreen';
@@ -37,6 +38,7 @@ function HomeStackNav() {
       <HomeStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
       <HomeStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
       <HomeStack.Screen name="Contract" component={ContractScreen} />
+      <HomeStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <HomeStack.Screen name="Deliverable" component={DeliverableScreen} />
       <HomeStack.Screen name="DeliverableList" component={DeliverableListScreen} />
       <HomeStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
@@ -57,6 +59,7 @@ function OffersStack() {
       <Stack.Screen name="OfferDetail" component={OfferDetailScreen} />
       <Stack.Screen name="Negotiation" component={NegotiationScreen} />
       <Stack.Screen name="Contract" component={ContractScreen} />
+      <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <Stack.Screen name="Deliverable" component={DeliverableScreen} />
       <Stack.Screen name="DeliverableList" component={DeliverableListScreen} />
       <Stack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />
@@ -74,6 +77,7 @@ function CampaignsStackNav() {
       <CampaignsStack.Screen name="CampaignDetail" component={CampaignDetailScreen} />
       <CampaignsStack.Screen name="CampaignCompletion" component={CampaignCompletionScreen} />
       <CampaignsStack.Screen name="Contract" component={ContractScreen} />
+      <CampaignsStack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <CampaignsStack.Screen name="Deliverable" component={DeliverableScreen} />
       <CampaignsStack.Screen name="DeliverableList" component={DeliverableListScreen} />
       <CampaignsStack.Screen name="DeliverableDetail" component={DeliverableDetailScreen} />

@@ -459,6 +459,49 @@ export default function OfferDetailScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* ── Post-accept actions: contract + content submission ─────────── */}
+      {['accepted', 'contracted', 'active'].includes(offer.status) && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Next Steps</Text>
+
+          {/* Contract — view/sign */}
+          <TouchableOpacity
+            style={styles.nextStepBtn}
+            onPress={() => navigation.navigate('Contract', { campaignInfluencerId: offer.id })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.nextStepTitle}>
+                {offer.status === 'accepted' ? 'Review & Sign Contract' : 'View Contract'}
+              </Text>
+              <Text style={styles.nextStepDesc}>
+                {offer.status === 'accepted'
+                  ? 'Sign the contract to unlock Tranche 1 payment.'
+                  : 'See terms, signatures, and payment schedule.'}
+              </Text>
+            </View>
+            <Text style={styles.nextStepArrow}>›</Text>
+          </TouchableOpacity>
+
+          {/* Submit content — only after contract is fully signed (status=contracted/active) */}
+          {['contracted', 'active'].includes(offer.status) && (
+            <TouchableOpacity
+              style={[styles.nextStepBtn, { marginTop: 8 }]}
+              onPress={() => navigation.navigate('DeliverableList', { campaignInfluencerId: offer.id })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nextStepTitle}>Submit Content</Text>
+                <Text style={styles.nextStepDesc}>
+                  {deliverables.length > 0
+                    ? `Upload your ${deliverables.length} deliverable${deliverables.length > 1 ? 's' : ''} for brand review.`
+                    : 'Upload your content for brand review.'}
+                </Text>
+              </View>
+              <Text style={styles.nextStepArrow}>›</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* ── Action Buttons ─────────────────────────────────────────────── */}
       {isActionable && countdown !== 'Expired' && (
         <View style={styles.card}>
@@ -769,6 +812,21 @@ const styles = StyleSheet.create({
   },
   declineText: { fontSize: 14, fontWeight: '700', color: colors.red },
   disabledBtn: { opacity: 0.5 },
+
+  // Next-step CTA rows (View Contract / Submit Content)
+  nextStepBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.navyPale,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: colors.navy,
+  },
+  nextStepTitle: { fontSize: 14, fontWeight: '800', color: colors.navy },
+  nextStepDesc:  { fontSize: 11, color: colors.t2, marginTop: 2, lineHeight: 15 },
+  nextStepArrow: { fontSize: 22, fontWeight: '800', color: colors.navy, marginLeft: 8 },
 
   // Decline reasons
   declineHint: { fontSize: 12, color: colors.t3, marginBottom: 10 },

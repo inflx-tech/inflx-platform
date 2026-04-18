@@ -469,4 +469,83 @@ const getMediaUrl = asyncHandler(async (req, res) => {
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { getById, submit, review, submitLive, confirmLive, getUploadUrl, getMediaUrl };
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /v1/deliverables/bulk-review  (brand)
+// Body: { deliverable_ids: [..], action: 'approve' | 'request_revision', feedback?: string }
+//
+// Loops through deliverables, applies review() logic per-row, ignores rows that
+// don't belong to the brand or are not in a reviewable state, and returns a
+// summary { ok: [ids], skipped: [{id, reason}] }.
+// ─────────────────────────────────────────────────────────────────────────────
+const bulkReview = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'brand') {
+    throw new AppError('FORBIDDEN', 'Only brands can review deliverables', 403);
+  }
+
+  const { deliverable_ids, action, feedback } = req.body || {};
+  if (!Array.isArray(deliverable_ids) || deliverable_ids.length === 0) {
+    throw new AppError('VALIDATION_ERROR', 'deliverable_ids must be a non-empty array', 422, 'deliverable_ids');
+  }
+  if (!VALID_REVIEW_ACTIONS.includes(action)) {
+    throw new AppError('VALIDATION_ERROR', `action must be one of: ${VALID_REVIEW_ACTIONS.join(', ')}`, 422, 'action');
+  }
+  const normalisedAction = action === 'revision' ? 'request_revision' : action;
+
+  const ok = [];
+  const skipped = [];
+
+  for (const id of deliverable_ids) {
+    try {
+      const d = await getDeliverableOrThrow(id);
+      if (d.brand_user_id !== req.user.sub) {
+        skipped.push({ id, reason: 'not your deliverable' });
+        continue;
+      }
+      if (!['submitted', 'under_review'].includes(d.status)) {
+        skipped.push({ id, reason: `status=${d.status}` });
+        continue;
+      }
+      if (normalisedAction === 'approve') {
+        await db.query(`UPDATE deliverables SET status = 'approved' WHERE id = $1`, [d.id]);
+        await notificationService.send({
+          userId:   d.influencer_user_id,
+          type:     'deliverable.approved',
+          title:    'Content Approved!',
+          body:     `Your content submission has been approved. Please post it live and submit the live URL.`,
+          data:     { screen: 'deliverable_detail', deliverable_id: d.id },
+          fcmToken: d.influencer_fcm_token,
+          sendSms:  false,
+        }).catch(e => console.error('[NOTIFICATION]', e.message));
+      } else {
+        if (d.revision_count >= d.revision_limit) {
+          skipped.push({ id, reason: 'revision limit reached' });
+          continue;
+        }
+        await db.query(
+          `UPDATE deliverables
+           SET status = 'revision_requested',
+               revision_count = revision_count + 1,
+               brand_feedback = $2
+           WHERE id = $1`,
+          [d.id, (feedback || '').trim() || null]
+        );
+        await notificationService.send({
+          userId:   d.influencer_user_id,
+          type:     'deliverable.revision_requested',
+          title:    'Revision Requested',
+          body:     `The brand has requested a revision on your content.${feedback ? ` Feedback: ${feedback}` : ''}`,
+          data:     { screen: 'deliverable_detail', deliverable_id: d.id },
+          fcmToken: d.influencer_fcm_token,
+          sendSms:  false,
+        }).catch(e => console.error('[NOTIFICATION]', e.message));
+      }
+      ok.push(id);
+    } catch (e) {
+      skipped.push({ id, reason: e.message });
+    }
+  }
+
+  return success(res, { ok, skipped });
+});
+
+module.exports = { getById, submit, review, bulkReview, submitLive, confirmLive, getUploadUrl, getMediaUrl };

@@ -300,29 +300,65 @@ const brandSign = asyncHandler(async (req, res) => {
         contract.campaign_id
       );
 
-      // 5. Auto-create deliverables from formats_json (or default 1 reel)
-      let formats = [];
+      // 5. Auto-create deliverables from formats_json. Strict — if formats_json
+      //    is missing/invalid we fail loudly rather than silently creating a
+      //    single reel and losing the brand's other deliverables (post/story/etc).
+      const raw = contract.formats_json;
+      let formats;
+      if (raw == null || raw === '') {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'Cannot create contract: campaign set has no deliverable formats configured. ' +
+          'Edit the set in the campaign wizard and add at least one format (reel/post/story/...).',
+          422
+        );
+      }
       try {
-        const raw = contract.formats_json;
-        formats = typeof raw === 'string' ? JSON.parse(raw) : (Array.isArray(raw) ? raw : []);
-      } catch { formats = []; }
-
-      if (formats.length === 0) {
-        // Default: 1 reel if no formats specified
-        formats = [{ type: 'reel', count: 1 }];
+        formats = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      } catch (parseErr) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          `Cannot create contract: campaign set's formats_json is malformed (${parseErr.message}).`,
+          422
+        );
+      }
+      if (!Array.isArray(formats) || formats.length === 0) {
+        throw new AppError(
+          'VALIDATION_ERROR',
+          'Cannot create contract: campaign set has no deliverable formats. ' +
+          'Add at least one format (reel/post/story/...) before signing.',
+          422
+        );
       }
 
-      for (const fmt of formats) {
-        const delType = fmt.type || 'reel';
-        const count = parseInt(fmt.count, 10) || 1;
-        for (let i = 0; i < count; i++) {
+      // formats_json may be EITHER an array of strings ("Instagram reel", "Instagram post")
+      // from the wizard, OR an array of objects [{ type, count }] from older campaigns.
+      // Normalise both shapes.
+      const FORMAT_ALIAS = {
+        'instagram reel':   'reel',
+        'instagram post':   'post',
+        'instagram story':  'story',
+        'instagram stories':'story',
+        'youtube short':    'youtube_short',
+        'youtube video':    'youtube_video',
+      };
+      const normalised = formats.map(f => {
+        if (typeof f === 'string') {
+          const key = f.toLowerCase().trim();
+          return { type: FORMAT_ALIAS[key] || key.replace(/\s+/g, '_'), count: 1 };
+        }
+        return { type: (f.type || 'reel'), count: Math.max(1, parseInt(f.count, 10) || 1) };
+      });
+
+      for (const fmt of normalised) {
+        for (let i = 0; i < fmt.count; i++) {
           await client.query(
             `INSERT INTO deliverables
                (campaign_influencer_id, type, quantity, status, submission_deadline, revision_limit)
              VALUES ($1, $2, 1, 'pending', $3, $4)`,
             [
               contract.campaign_influencer_id,
-              delType,
+              fmt.type,
               updatedContract.posting_date || null,
               updatedContract.revision_limit,
             ]
@@ -335,27 +371,12 @@ const brandSign = asyncHandler(async (req, res) => {
     throw new AppError('INTERNAL_ERROR', `Contract signing failed: ${txErr.message}`, 500);
   }
 
-  // 6. Generate PDF (outside transaction — non-critical for DB integrity)
-  let pdfUrl = null;
-  try {
-    const { rows: freshRows } = await db.query(
-      `SELECT * FROM contracts WHERE id = $1`,
-      [contract.id]
-    );
-    const freshContract = freshRows[0];
-
-    const pdfBuffer = await pdfService.generateContractPDF(freshContract);
-    const filename  = `contract_${contract.id}.pdf`;
-    pdfUrl = await storageService.uploadPDF(pdfBuffer, filename);
-
-    await db.query(
-      `UPDATE contracts SET pdf_url = $1 WHERE id = $2`,
-      [pdfUrl, contract.id]
-    );
-    updatedContract.pdf_url = pdfUrl;
-  } catch (pdfErr) {
-    console.error('[CONTRACT] PDF generation failed (non-fatal):', pdfErr.message);
-  }
+  // 6. Generate PDF (outside transaction — non-critical for DB integrity).
+  //    Failures are persisted on the contract row so the UI can show "PDF
+  //    pending — regenerate" instead of a silent NULL.
+  await _generateAndStorePdf(contract.id).catch(err => {
+    console.error('[CONTRACT] PDF generation failed:', err.message);
+  });
 
   // 7. Notify influencer that contract is now active + T1 released
   try {
@@ -388,7 +409,133 @@ const brandSign = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Internal: build the PDF, upload it, persist URL or error on the contract row.
+// Always updates contracts.pdf_generated_at + clears/sets pdf_generation_error.
+// Called by brandSign and by the regenerate endpoint.
+// ─────────────────────────────────────────────────────────────────────────────
+async function _generateAndStorePdf(contractId) {
+  try {
+    const { rows } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contractId]);
+    if (!rows[0]) throw new Error('Contract not found');
+
+    const pdfBuffer = await pdfService.generateContractPDF(rows[0]);
+    const filename  = `contract_${contractId}.pdf`;
+    const pdfUrl    = await storageService.uploadPDF(pdfBuffer, filename);
+
+    await db.query(
+      `UPDATE contracts
+       SET pdf_url                 = $1,
+           pdf_generated_at        = now(),
+           pdf_generation_error    = NULL
+       WHERE id = $2`,
+      [pdfUrl, contractId]
+    );
+    return pdfUrl;
+  } catch (err) {
+    await db.query(
+      `UPDATE contracts
+       SET pdf_generation_error = $1,
+           pdf_generated_at     = now()
+       WHERE id = $2`,
+      [err.message, contractId]
+    ).catch(() => {});
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/contracts/:id/pdf — stream the contract as a PDF.
+// Auth: brand or influencer party. Always regenerates from DB (no dependence
+// on R2/local storage URLs being reachable from the client).
+// ─────────────────────────────────────────────────────────────────────────────
+const getContractPdf = asyncHandler(async (req, res) => {
+  const contract = await getContractByIdOrThrow(req.params.id);
+  assertPartyAccess(contract, req);
+
+  const buffer = await pdfService.generateContractPDF(contract);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="contract_${contract.id}.pdf"`);
+  res.setHeader('Cache-Control', 'private, max-age=300');
+  res.send(buffer);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /v1/contracts/:id/regenerate-pdf — brand-only.
+// Forces a fresh PDFKit generation + re-upload. Useful when the original
+// generation failed (pdf_generation_error is set) or after contract edits.
+// ─────────────────────────────────────────────────────────────────────────────
+const regeneratePdf = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'brand') {
+    throw new AppError('FORBIDDEN', 'Only brands can regenerate contract PDFs', 403);
+  }
+  const contract = await getContractByIdOrThrow(req.params.id);
+  if (contract.brand_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'You do not own this contract', 403);
+  }
+  const pdfUrl = await _generateAndStorePdf(contract.id);
+  return success(res, { pdf_url: pdfUrl });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /v1/campaign-influencers/:ciId/retry-contract
+// If contract auto-create failed at offer-accept time, brand or the influencer
+// can retry it. Idempotent: returns the existing contract if one already exists.
+// ─────────────────────────────────────────────────────────────────────────────
+const retryContractCreate = asyncHandler(async (req, res) => {
+  const ciId = req.params.ciId;
+
+  // Auth — both parties allowed
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.id,
+            ci.status,
+            inf.user_id  AS influencer_user_id,
+            b.user_id    AS brand_user_id
+     FROM   campaign_influencers ci
+     JOIN   campaign_sets cs  ON cs.id  = ci.set_id
+     JOIN   campaigns     c   ON c.id   = cs.campaign_id
+     JOIN   brands        b   ON b.id   = c.brand_id
+     JOIN   influencers   inf ON inf.id = ci.influencer_id
+     WHERE  ci.id = $1`,
+    [ciId]
+  );
+  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign influencer not found', 404);
+  const ci = ciRows[0];
+
+  if (req.user.sub !== ci.brand_user_id && req.user.sub !== ci.influencer_user_id) {
+    throw new AppError('FORBIDDEN', 'You are not a party to this offer', 403);
+  }
+  if (!['accepted', 'contracted', 'active'].includes(ci.status)) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot retry contract creation while offer is in '${ci.status}' status. Influencer must accept first.`,
+      422
+    );
+  }
+
+  // If a contract already exists, just return it.
+  const { rows: existingRows } = await db.query(
+    `SELECT * FROM contracts WHERE campaign_influencer_id = $1`,
+    [ciId]
+  );
+  if (existingRows[0]) {
+    return success(res, { contract: existingRows[0], created: false });
+  }
+
+  // Retry — bubble up errors so caller sees real reason.
+  const contractService = require('../services/contract.service');
+  const created = await contractService.autoCreate(ciId);
+  return success(res, { contract: created, created: !!created });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { getContract, sign, brandSign };
+module.exports = {
+  getContract,
+  sign,
+  brandSign,
+  getContractPdf,
+  regeneratePdf,
+  retryContractCreate,
+};

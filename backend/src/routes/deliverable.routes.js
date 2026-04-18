@@ -15,10 +15,13 @@
 
 const { Router } = require('express');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { getById, submit, review, submitLive, confirmLive, getUploadUrl, getMediaUrl } = require('../controllers/deliverable.controller');
+const { getById, submit, review, bulkReview, submitLive, confirmLive, getUploadUrl, getMediaUrl } = require('../controllers/deliverable.controller');
 const { refreshDeliverableStats } = require('../controllers/engagement.controller');
 
 const router = Router();
+
+// Brand bulk review — declared FIRST so /bulk-review isn't matched as /:id
+router.post('/bulk-review', authenticate, requireRole('brand'), bulkReview);
 
 // Get single deliverable (brand or influencer)
 router.get('/:id', authenticate, getById);

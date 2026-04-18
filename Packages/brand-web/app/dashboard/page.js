@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { brandApi, walletApi, campaignApi, fmtMoney, fmtRupees } from '../../lib/api';
+import { brandApi, walletApi, campaignApi, brandInboxApi, fmtMoney, fmtRupees } from '../../lib/api';
 
 /* ── Stat Card ──────────────────────────────────────────────── */
 
@@ -95,16 +95,18 @@ export default function BrandDashboardHome() {
   const [campaigns, setCampaigns]       = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [products, setProducts]         = useState([]);
+  const [inbox, setInbox]               = useState(null);
   const [loading, setLoading]           = useState(true);
 
   useEffect(() => {
     async function load() {
-      const [br, wl, cp, tx, pr] = await Promise.all([
+      const [br, wl, cp, tx, pr, ib] = await Promise.all([
         brandApi.getMe(),
         walletApi.getBalance(),
         campaignApi.list(),
         brandApi.get('/brands/me/transactions?limit=5'),
         brandApi.getProducts(),
+        brandInboxApi.summary().catch(() => ({ success: false })),
       ]);
       setLoading(false);
       if (br.success) setBrand(br.data?.brand || br.data);
@@ -112,6 +114,7 @@ export default function BrandDashboardHome() {
       if (cp.success) setCampaigns(cp.data?.campaigns || []);
       if (tx.success) setTransactions(tx.data?.transactions || tx.data || []);
       if (pr.success) setProducts(pr.data?.products || pr.data || []);
+      if (ib.success) setInbox(ib.data?.summary || null);
     }
     load();
   }, []);
@@ -177,6 +180,42 @@ export default function BrandDashboardHome() {
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
             Verified Account
           </span>
+        </div>
+      )}
+
+      {/* ── Action Required (brand inbox) ─────────────────────── */}
+      {inbox && (inbox.pending_negotiations + inbox.pending_reviews + inbox.pending_signatures + inbox.contracts_failed + inbox.pdf_failed) > 0 && (
+        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-orange-900">Action Required</h2>
+            <span className="text-[10px] text-orange-600 font-semibold">Things waiting on you</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            <a href="/dashboard/inbox?tab=negotiations" className="bg-white border border-orange-200 rounded-xl px-3 py-2 hover:border-orange-400 transition-colors">
+              <div className="text-2xl font-extrabold text-orange-700">{inbox.pending_negotiations}</div>
+              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Negotiations</div>
+            </a>
+            <a href="/dashboard/inbox?tab=reviews" className="bg-white border border-orange-200 rounded-xl px-3 py-2 hover:border-orange-400 transition-colors">
+              <div className="text-2xl font-extrabold text-orange-700">{inbox.pending_reviews}</div>
+              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Content reviews</div>
+            </a>
+            <a href="/dashboard/inbox?tab=signatures" className="bg-white border border-orange-200 rounded-xl px-3 py-2 hover:border-orange-400 transition-colors">
+              <div className="text-2xl font-extrabold text-orange-700">{inbox.pending_signatures}</div>
+              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Contract signs</div>
+            </a>
+            {inbox.contracts_failed > 0 && (
+              <a href="/dashboard/inbox?tab=failures" className="bg-white border border-red-300 rounded-xl px-3 py-2 hover:border-red-500 transition-colors">
+                <div className="text-2xl font-extrabold text-red-700">{inbox.contracts_failed}</div>
+                <div className="text-[10px] font-bold text-red-700 uppercase tracking-wide">Contract failed</div>
+              </a>
+            )}
+            {inbox.pdf_failed > 0 && (
+              <a href="/dashboard/inbox?tab=failures" className="bg-white border border-red-300 rounded-xl px-3 py-2 hover:border-red-500 transition-colors">
+                <div className="text-2xl font-extrabold text-red-700">{inbox.pdf_failed}</div>
+                <div className="text-[10px] font-bold text-red-700 uppercase tracking-wide">PDF failed</div>
+              </a>
+            )}
+          </div>
         </div>
       )}
 

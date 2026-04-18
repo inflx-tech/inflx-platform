@@ -78,16 +78,25 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
   if (!entryRows[0]) throw new Error(`Escrow entry not found: ${escrowEntryId}`);
   const entry = entryRows[0];
 
-  // Generate payout ID — mock mode or live Razorpay
-  let payoutId;
-  if (!env.RAZORPAY_MOCK && env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET && env.RAZORPAY_KEY_ID !== 'rzp_test_mock') {
-    // TODO: call Razorpay Payout API when live keys are configured
-    // For now, fall through to mock mode
-    payoutId = `pending_payout_${Date.now()}`;
-    console.log(`[RAZORPAY] Live payouts not yet implemented — using pending ID: ${payoutId} ₹${entry.net_to_influencer}`);
+  // NOTE: Tranche release is a WALLET CREDIT, not a Razorpay payout. The
+  // actual money movement to the influencer's bank/UPI happens later, when
+  // they request a withdrawal — see withdrawal.service.js, which uses the
+  // RazorpayX Payouts API. Lumping every tranche into its own bank transfer
+  // (e.g. ₹250 for T1 of a ₹1000 fee) would burn fees and clutter the bank
+  // statement; spec Section 4 batches them at withdrawal time instead.
+  //
+  // The reference ID below is just an audit handle for this internal credit,
+  // not a Razorpay payout_id.
+  const payoutId = `tranche_${entry.tranche_number}_${Date.now()}`;
+  const liveKeysReady =
+    !env.RAZORPAY_MOCK
+    && env.RAZORPAY_KEY_ID
+    && env.RAZORPAY_KEY_SECRET
+    && env.RAZORPAY_KEY_ID !== 'rzp_test_mock';
+  if (liveKeysReady) {
+    console.log(`[ESCROW] Tranche ${entry.tranche_number} credited to influencer wallet — ref ${payoutId} ₹${entry.net_to_influencer} (real payout at withdrawal)`);
   } else {
-    payoutId = `mock_payout_${Date.now()}`;
-    console.log(`[RAZORPAY MOCK] Tranche ${entry.tranche_number} payout — ${payoutId} ₹${entry.net_to_influencer}`);
+    console.log(`[ESCROW MOCK] Tranche ${entry.tranche_number} credited — ref ${payoutId} ₹${entry.net_to_influencer}`);
   }
 
   // Mark escrow entry as released

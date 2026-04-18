@@ -19,9 +19,11 @@ const apifyEngagementJob   = require('./apify-engagement.job');
 const campaignStatusJob    = require('./campaign-status.job');
 const bookingReminderJob   = require('./booking-reminder.job');
 const lowWalletJob         = require('./low-wallet-alert.job');
+const negotiationExpiryJob = require('./negotiation-expiry.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
-const offerExpiryRun = () => offerExpiryJob.runOfferExpiryJob();
+const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
+const negotiationExpiryRun = () => negotiationExpiryJob.runNegotiationExpiryJob();
 
 function startAllJobs() {
   if (!env.ENABLE_CRONS) {
@@ -40,6 +42,9 @@ function startAllJobs() {
 
   // offer-expiry — every 15 minutes
   cron.schedule('0,15,30,45 * * * *', offerExpiryRun, { timezone: tz });
+
+  // negotiation-expiry — every 30 minutes (auto-walks-away after 48h SLA)
+  cron.schedule('7,37 * * * *', negotiationExpiryRun, { timezone: tz });
 
   // apify-engagement — 06:00 UTC daily
   cron.schedule('0 6 * * *', apifyEngagementJob.run);
@@ -66,4 +71,5 @@ module.exports = {
   campaignStatusJob,
   bookingReminderJob,
   lowWalletJob,
+  negotiationExpiryJob,
 };

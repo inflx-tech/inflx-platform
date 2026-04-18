@@ -25,6 +25,30 @@ const authenticate = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * authenticateWithQuery
+ * Like `authenticate` but accepts a JWT in `?download_token=` as a fallback.
+ * Use ONLY for binary-stream endpoints (PDF, file downloads) embedded in
+ * `<iframe>` / `<img>` / browser tabs that cannot set Authorization headers.
+ *
+ * Trade-off: token may appear in access logs. Mitigated by short JWT lifetime
+ * (15 min) and the endpoint returning only the requesting party's own data.
+ */
+const authenticateWithQuery = asyncHandler(async (req, res, next) => {
+  const header = req.headers.authorization;
+  let token = null;
+  if (header && header.startsWith('Bearer ')) {
+    token = header.slice(7);
+  } else if (req.query && req.query.download_token) {
+    token = String(req.query.download_token);
+  }
+  if (!token) {
+    throw new AppError('UNAUTHORIZED', 'Missing token', 401);
+  }
+  req.user = jwtService.verifyToken(token);
+  next();
+});
+
+/**
  * requireRole(...roles)
  * Middleware factory. Ensures the authenticated user has one of the given roles.
  *
@@ -125,4 +149,4 @@ const requireApproved = asyncHandler(async (req, res, next) => {
   return next(new AppError('FORBIDDEN', 'Account access restricted.', 403));
 });
 
-module.exports = { authenticate, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional, requireApproved };
+module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional, requireApproved };

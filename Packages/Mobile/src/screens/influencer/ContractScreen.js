@@ -175,6 +175,14 @@ export default function ContractScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* ── View PDF button (always available once a contract row exists) ─── */}
+      <TouchableOpacity
+        style={styles.pdfBtn}
+        onPress={() => navigation.navigate('ContractPdf', { contractId: contract.id })}
+      >
+        <Text style={styles.pdfBtnText}>View Contract PDF</Text>
+      </TouchableOpacity>
+
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <ScrollView ref={scrollRef} style={styles.body}>
 
@@ -424,6 +432,17 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.teal,
   },
   successBannerText: { fontSize: 12, fontWeight: '600', color: colors.tealDeep },
+
+  // View PDF button
+  pdfBtn: {
+    margin: 16,
+    marginBottom: 0,
+    backgroundColor: colors.navy,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  pdfBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
 
   // Body
   body: { flex: 1 },

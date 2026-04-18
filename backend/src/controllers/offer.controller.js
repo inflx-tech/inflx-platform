@@ -178,15 +178,23 @@ const accept = asyncHandler(async (req, res) => {
     console.error('[NOTIFICATION] offer.accepted send failed:', notifErr.message);
   }
 
-  // Auto-create contract (Phase 3) — non-fatal if it fails
+  // Auto-create contract (Phase 3). Non-fatal for the accept itself, but the
+  // failure is now persisted on the CI (contract.service.autoCreate) and we
+  // tell the client so the UI can show "contract pending — retry".
+  let contractError = null;
   try {
     const contractService = require('../services/contract.service');
     await contractService.autoCreate(ci.id);
   } catch (contractErr) {
     console.error('[CONTRACT] Auto-create failed on accept:', contractErr.message);
+    contractError = contractErr.message;
   }
 
-  return success(res, { campaign_influencer: rows[0] });
+  return success(res, {
+    campaign_influencer: rows[0],
+    contract_pending: !!contractError,
+    contract_error:   contractError,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -291,14 +299,14 @@ const negotiate = asyncHandler(async (req, res) => {
 
   const { proposed_fee, proposed_deadline, note } = req.body;
 
-  // Create negotiation + first turn atomically
+  // Create negotiation + first turn atomically. SLA = 48h from now to next response.
   let negotiation, turn;
   await db.withTransaction(async (client) => {
     // Create negotiation thread (brand's turn to respond)
     const { rows: negRows } = await client.query(
       `INSERT INTO negotiations
-         (campaign_influencer_id, initiated_by, status, current_turn)
-       VALUES ($1, $2, 'awaiting_brand', 'brand')
+         (campaign_influencer_id, initiated_by, status, current_turn, expires_at)
+       VALUES ($1, $2, 'awaiting_brand', 'brand', now() + interval '48 hours')
        RETURNING *`,
       [ci.id, req.user.sub]
     );
@@ -429,12 +437,16 @@ const respond = asyncHandler(async (req, res) => {
         [neg.id, userTurn, proposed_fee || null, proposed_deadline || null, note || null]
       );
 
-      // Flip turn
+      // Flip turn — SLA clock resets to 48h for the next responder.
       const nextTurn = userTurn === 'brand' ? 'influencer' : 'brand';
       const nextStatus = nextTurn === 'brand' ? 'awaiting_brand' : 'awaiting_influencer';
 
       const { rows } = await client.query(
-        `UPDATE negotiations SET current_turn = $2, status = $3 WHERE id = $1 RETURNING *`,
+        `UPDATE negotiations
+         SET current_turn = $2,
+             status       = $3,
+             expires_at   = now() + interval '48 hours'
+         WHERE id = $1 RETURNING *`,
         [neg.id, nextTurn, nextStatus]
       );
       updatedNeg = rows[0];
@@ -446,9 +458,13 @@ const respond = asyncHandler(async (req, res) => {
       updatedCi = ciRows[0];
 
     } else if (action === 'accept') {
-      // Mark negotiation as agreed
+      // Mark negotiation as agreed — clear SLA clock
       const { rows } = await client.query(
-        `UPDATE negotiations SET status = 'agreed', current_turn = NULL WHERE id = $1 RETURNING *`,
+        `UPDATE negotiations
+         SET status       = 'agreed',
+             current_turn = NULL,
+             expires_at   = NULL
+         WHERE id = $1 RETURNING *`,
         [neg.id]
       );
       updatedNeg = rows[0];
@@ -465,9 +481,13 @@ const respond = asyncHandler(async (req, res) => {
       updatedCi = ciRows[0];
 
     } else if (action === 'walkaway') {
-      // Mark negotiation as walked_away
+      // Mark negotiation as walked_away — clear SLA clock
       const { rows } = await client.query(
-        `UPDATE negotiations SET status = 'walked_away', current_turn = NULL WHERE id = $1 RETURNING *`,
+        `UPDATE negotiations
+         SET status       = 'walked_away',
+             current_turn = NULL,
+             expires_at   = NULL
+         WHERE id = $1 RETURNING *`,
         [neg.id]
       );
       updatedNeg = rows[0];
@@ -482,13 +502,15 @@ const respond = asyncHandler(async (req, res) => {
     }
   });
 
-  // Auto-create contract when negotiation is agreed (Phase 3) — non-fatal
+  // Auto-create contract when negotiation is agreed (Phase 3) — error tracked on CI
+  let negContractError = null;
   if (action === 'accept' && updatedCi) {
     try {
       const contractService = require('../services/contract.service');
       await contractService.autoCreate(updatedCi.id);
     } catch (contractErr) {
       console.error('[CONTRACT] Auto-create failed on negotiate accept:', contractErr.message);
+      negContractError = contractErr.message;
     }
   }
 
@@ -529,6 +551,8 @@ const respond = asyncHandler(async (req, res) => {
   return success(res, {
     negotiation: updatedNeg,
     campaign_influencer: updatedCi,
+    contract_pending: !!negContractError,
+    contract_error:   negContractError,
   });
 });
 

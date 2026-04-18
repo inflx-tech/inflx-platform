@@ -1,6 +1,7 @@
 'use client';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1').replace(/\/+$/, '');
+export { API_BASE };
 
 export function getToken() {
   if (typeof window === 'undefined') return null;
@@ -181,6 +182,17 @@ export const negotiationApi = {
 export const contractApi = {
   get: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
   brandSign: (id) => api.post(`/contracts/${id}/brand-sign`),
+  regeneratePdf: (id) => api.post(`/contracts/${id}/regenerate-pdf`),
+  retryCreate: (ciId) => api.post(`/contracts/by-ci/${ciId}/retry`),
+  // Returns a URL safe for use in <iframe src> / <a href> — JWT goes in query
+  // because iframes/anchors cannot set Authorization headers.
+  pdfUrl: (id) => `${API_BASE}/contracts/${id}/pdf?download_token=${encodeURIComponent(getToken() || '')}`,
+};
+
+export const brandInboxApi = {
+  summary:        ()      => api.get('/brands/me/inbox-summary'),
+  negotiations:   (status = 'awaiting_brand') => api.get(`/brands/me/negotiations?status=${status}`),
+  deliverables:   (status = 'submitted')      => api.get(`/brands/me/deliverables?status=${status}`),
 };
 
 export const notificationApi = {

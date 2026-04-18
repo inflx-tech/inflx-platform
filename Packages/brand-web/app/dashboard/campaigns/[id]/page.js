@@ -316,11 +316,43 @@ function ContractModal({ inf, contract, loading, onClose, onSign }) {
               {contract.content_requirements}
             </div>
           )}
-          {contract.pdf_url && (
-            <a href={contract.pdf_url} target="_blank" rel="noreferrer"
-              className="flex items-center gap-2 mt-2 text-xs text-navy font-semibold hover:underline">
-              📄 View Contract PDF
-            </a>
+          {/* Inline PDF preview — always embeds the streaming endpoint, which
+              regenerates the PDF on demand from the live contract row. */}
+          {contract.id && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Contract PDF</span>
+                <div className="flex items-center gap-3">
+                  <a href={contractApi.pdfUrl(contract.id)} target="_blank" rel="noreferrer"
+                    className="text-xs text-navy font-semibold hover:underline">Open ↗</a>
+                  <button
+                    onClick={async () => {
+                      const res = await contractApi.regeneratePdf(contract.id);
+                      if (res.success || res.ok) {
+                        // Force iframe reload by tweaking the URL
+                        const iframe = document.getElementById(`contract-pdf-${contract.id}`);
+                        if (iframe) iframe.src = contractApi.pdfUrl(contract.id) + `&_=${Date.now()}`;
+                      } else {
+                        alert(res.error?.message || 'Regenerate failed');
+                      }
+                    }}
+                    className="text-xs text-gray-500 font-semibold hover:text-gray-700">
+                    Regenerate
+                  </button>
+                </div>
+              </div>
+              <iframe
+                id={`contract-pdf-${contract.id}`}
+                src={contractApi.pdfUrl(contract.id)}
+                className="w-full h-[420px] border border-gray-200 rounded-lg bg-gray-50"
+                title="Contract PDF"
+              />
+              {contract.pdf_generation_error && (
+                <div className="mt-2 text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg p-2">
+                  Last PDF generation failed: {contract.pdf_generation_error}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

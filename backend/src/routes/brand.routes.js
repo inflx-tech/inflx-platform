@@ -9,6 +9,7 @@ const { getBrandEscrow, getCampaignEscrow } = require('../controllers/escrow.con
 const enquiryCtrl = require('../controllers/enquiry.controller');
 const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
+const inboxCtrl = require('../controllers/brandInbox.controller');
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
@@ -20,6 +21,11 @@ router.post('/register',  authenticate, requireRole('brand'), ctrl.register);
 router.get('/me',         authenticate, requireRole('brand'), ctrl.getMe);
 router.patch('/me',       authenticate, requireRole('brand'), ctrl.updateMe);
 router.post('/resubmit',  authenticate, requireRole('brand'), ctrl.resubmit);
+
+// Brand inbox — items waiting on brand action (negotiations, reviews, signatures)
+router.get('/me/inbox-summary',  authenticate, requireRole('brand'), inboxCtrl.getSummary);
+router.get('/me/negotiations',   authenticate, requireRole('brand'), inboxCtrl.listNegotiations);
+router.get('/me/deliverables',   authenticate, requireRole('brand'), inboxCtrl.listDeliverables);
 
 // Escrow overview (Phase 3 — Block E)
 router.get('/me/escrow', authenticate, requireRole('brand'), getBrandEscrow);

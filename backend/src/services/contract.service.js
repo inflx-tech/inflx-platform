@@ -14,10 +14,39 @@ const notificationService = require('./notification.service');
  * Auto-create a contract for an accepted campaign_influencer.
  * Idempotent: skips creation if contract already exists (ON CONFLICT DO NOTHING).
  *
+ * Records its own success/failure on campaign_influencers so callers and
+ * operators can see whether a contract actually exists for an accepted offer.
+ *
  * @param {string} campaignInfluencerId
  * @returns {object|null} — created contract row, or null if already existed
  */
 async function autoCreate(campaignInfluencerId) {
+  try {
+    const result = await _autoCreateInner(campaignInfluencerId);
+    // Record success — clear any prior error
+    await db.query(
+      `UPDATE campaign_influencers
+       SET contract_create_error = NULL,
+           contract_create_attempt_at = now()
+       WHERE id = $1`,
+      [campaignInfluencerId]
+    ).catch(() => {}); // ignore if columns not yet migrated
+    return result;
+  } catch (err) {
+    console.error(`[CONTRACT] autoCreate FAILED for CI ${campaignInfluencerId}:`, err.message);
+    // Persist the error on the CI row so retry UI can surface it
+    await db.query(
+      `UPDATE campaign_influencers
+       SET contract_create_error = $2,
+           contract_create_attempt_at = now()
+       WHERE id = $1`,
+      [campaignInfluencerId, err.message]
+    ).catch(() => {});
+    throw err;
+  }
+}
+
+async function _autoCreateInner(campaignInfluencerId) {
   // Fetch CI with all data needed for the contract
   const { rows } = await db.query(
     `SELECT
