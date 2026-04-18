@@ -168,9 +168,7 @@ export default function MyCampaignsScreen({ navigation }) {
                 <Text style={styles.dateText}>
                   {formatDate(c.start_date)} - {formatDate(c.end_date)}
                 </Text>
-                {c.set_name && (
-                  <Text style={styles.setName}>Set: {c.set_name}</Text>
-                )}
+                {/* Set name intentionally hidden — brand-side grouping concept */}
               </View>
             </TouchableOpacity>
           ))

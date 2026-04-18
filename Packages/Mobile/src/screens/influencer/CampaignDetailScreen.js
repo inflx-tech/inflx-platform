@@ -140,8 +140,19 @@ export default function CampaignDetailScreen({ navigation, route }) {
   const contract = data.contract || null;
   const tranches = data.tranches || [];
   const fee = campaign.agreed_fee || campaign.influencer_budget || campaign.per_influencer_budget || 0;
+  const commissionPct = campaign.commission_pct ? parseFloat(campaign.commission_pct) : 0;
   const currentStep = getStepIndex(campaign.influencer_status);
   const influencerStatus = campaign.influencer_status || 'invited';
+
+  // Goal-based visibility — matches OfferDetailScreen.
+  // Conversion campaigns have no fee → no tranches; engagement/hybrid keep them.
+  const goal = (campaign.goal || 'engagement').toLowerCase();
+  const isConversion   = goal === 'conversion';
+  const isHybrid       = goal === 'hybrid';
+  const isEngagement   = goal === 'engagement';
+  const showFee        = isEngagement || isHybrid;
+  const showCommission = isConversion || isHybrid;
+  const showTranches   = isEngagement || isHybrid;
 
   // ── Render helpers ───────────────────────────────────────────────────────
 
@@ -467,17 +478,12 @@ export default function CampaignDetailScreen({ navigation, route }) {
 
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Goal</Text>
+              <Text style={styles.infoLabel}>Type</Text>
               <Text style={styles.infoValue}>
                 {(campaign.goal || '--').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}
               </Text>
             </View>
-            {campaign.set_name ? (
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Set</Text>
-                <Text style={styles.infoValue}>{campaign.set_name}</Text>
-              </View>
-            ) : null}
+            {/* Set name intentionally hidden — brand-side grouping concept */}
           </View>
         </View>
 
@@ -503,13 +509,33 @@ export default function CampaignDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Payment</Text>
 
-          <View style={styles.feeHighlight}>
-            <Text style={styles.feeLabel}>Agreed Fee</Text>
-            <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
-          </View>
+          {/* Fee — engagement & hybrid only */}
+          {showFee && (
+            <View style={styles.feeHighlight}>
+              <Text style={styles.feeLabel}>Agreed Fee</Text>
+              <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
+            </View>
+          )}
 
-          {/* Tranche progress */}
-          {tranches.length > 0 ? (
+          {/* Commission — conversion & hybrid only */}
+          {showCommission && (
+            <View style={[styles.feeHighlight, showFee && { marginTop: 10 }]}>
+              <Text style={styles.feeLabel}>Commission per Conversion</Text>
+              <Text style={styles.feeValue}>{commissionPct ? `${commissionPct}%` : 'Not set'}</Text>
+            </View>
+          )}
+
+          {/* For pure-conversion: no fee → no tranches, show earning flow instead */}
+          {!showTranches && (
+            <Text style={[styles.paymentNote, { marginTop: 12 }]}>
+              You earn {commissionPct ? `${commissionPct}% commission` : 'commission'} on every
+              conversion driven through your tracking link. Earnings sit in your pending balance
+              during a 30-day return window, then move to your wallet for withdrawal.
+            </Text>
+          )}
+
+          {/* Tranche progress — engagement/hybrid only */}
+          {showTranches && tranches.length > 0 ? (
             <View>
               <Text style={styles.sectionLabel}>Tranche Progress</Text>
               {tranches.map(t => {
@@ -542,7 +568,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
                 );
               })}
             </View>
-          ) : (
+          ) : showTranches ? (
             <View>
               <Text style={styles.paymentNote}>
                 Payment terms will appear once the contract is signed.
@@ -565,13 +591,17 @@ export default function CampaignDetailScreen({ navigation, route }) {
                 </View>
               ))}
             </View>
-          )}
+          ) : null}
 
-          <View style={styles.tdsNote}>
-            <Text style={styles.tdsText}>
-              Note: 10% TDS is deducted at the time of withdrawal, not at earning.
-            </Text>
-          </View>
+          {/* TDS note only for campaigns with a fee (tranches/withdrawal). Pure
+              commission campaigns show it implicitly via the withdrawal flow. */}
+          {showTranches && (
+            <View style={styles.tdsNote}>
+              <Text style={styles.tdsText}>
+                Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* ── Contract Status (BUG 1 fix: status-based rendering) ────────── */}
