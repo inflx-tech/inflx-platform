@@ -159,6 +159,14 @@ export default function OfferListScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* TEMP OTA test banner — proves the JS bundle was delivered OTA.
+          Remove once OTA loop is verified. */}
+      <View style={{ backgroundColor: '#00B894', paddingVertical: 8, alignItems: 'center' }}>
+        <Text style={{ color: '#ffffff', fontWeight: '800', fontSize: 13, letterSpacing: 0.5 }}>
+          🎉 OTA ✓ v2 — delivered without reinstall
+        </Text>
+      </View>
+
       {/* Tab bar */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar} contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 10 }}>
         {TABS.map(t => {
