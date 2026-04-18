@@ -38,10 +38,18 @@ async function tryRefreshAccessToken() {
       });
       if (!res.ok) return null;
       const json = await res.json().catch(() => null);
-      const newToken = json?.data?.access_token;
-      if (!newToken) return null;
-      await AsyncStorage.setItem('inflx_token', newToken);
-      return newToken;
+      const newAccess  = json?.data?.access_token;
+      const newRefresh = json?.data?.refresh_token;
+      if (!newAccess) return null;
+      await AsyncStorage.setItem('inflx_token', newAccess);
+      // Backend rotates the refresh token on every refresh call. Persist the
+      // new one so the 30-day clock resets — this is what keeps users
+      // logged in indefinitely as long as they open the app at least once
+      // every 30 days.
+      if (newRefresh) {
+        await AsyncStorage.setItem('inflx_refresh_token', newRefresh);
+      }
+      return newAccess;
     } catch {
       return null;
     } finally {
