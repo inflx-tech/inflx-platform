@@ -8,6 +8,19 @@ uploads/
 tmp/
 .next/
 .expo/
-android/
-ios/
 .env.local
+.env.ota
+.ota-tmp/
+
+# Android build artifacts — but keep source (Kotlin, gradle configs, manifest)
+**/android/build/
+**/android/app/build/
+**/android/.gradle/
+**/android/local.properties
+**/android/.idea/
+**/android/*.iml
+
+# iOS — fully excluded (we don't ship iOS yet)
+**/ios/build/
+**/ios/Pods/
+**/ios/DerivedData/

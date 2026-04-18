@@ -29,6 +29,9 @@ const productNoteRoutes     = require('./productNote.routes');
 // Media uploads
 const uploadRoutes = require('./upload.routes');
 
+// OTA JS bundle updates for installed mobile apps
+const otaRoutes = require('./ota.routes');
+
 // Webhooks
 const webhookRoutes = require('./webhook.routes');
 
@@ -52,6 +55,7 @@ router.use('/negotiations',  negotiationRoutes);
 router.use('/contracts',     contractRoutes);
 router.use('/deliverables',  deliverableRoutes);
 router.use('/uploads',       uploadRoutes);
+router.use('/ota',           otaRoutes);
 
 // ── Phase 4 — Follower identity + follow + addresses + feed ──────────────────
 // Note: /followers/* uses 'followers' (plural) for register/me

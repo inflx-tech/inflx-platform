@@ -68,6 +68,11 @@ module.exports = {
   R2_BUCKET: process.env.R2_BUCKET || 'inflx-dev',
   PDF_STORAGE_PATH: process.env.PDF_STORAGE_PATH || './tmp/contracts',
 
+  // OTA publish endpoint — the shared secret that the local publish-ota
+  // script sends in the X-OTA-Token header to authorise bundle uploads.
+  // If unset in prod, the publish endpoint refuses all requests.
+  OTA_PUBLISH_TOKEN: process.env.OTA_PUBLISH_TOKEN || '',
+
   PLATFORM_FEE_PCT: parseFloat(process.env.PLATFORM_FEE_PCT || '8'),
   TDS_PCT: parseFloat(process.env.TDS_PCT || '10'),
   RETURN_WINDOW_DAYS: parseInt(process.env.RETURN_WINDOW_DAYS || '30', 10),

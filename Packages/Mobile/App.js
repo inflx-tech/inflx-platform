@@ -12,6 +12,7 @@ import InfluencerNavigator from './src/navigation/InfluencerNavigator';
 import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
 import SplashScreen from './src/screens/SplashScreen';
+import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
@@ -56,6 +57,18 @@ export default function App() {
           console.log('[OneSignal] Failed to save player ID:', e);
         }
       }
+    });
+  }, []);
+
+  // ── OTA update check ───────────────────────────────────────────────────
+  // The JS bundle running RIGHT NOW was either baked into the APK or loaded
+  // from a previously-downloaded OTA bundle. Either way, this is the one
+  // the user chose to run this session — confirm it's good, then check
+  // the backend for an even newer one. If found, it downloads silently
+  // in the background and activates on the NEXT app launch.
+  useEffect(() => {
+    confirmAppliedVersion().finally(() => {
+      checkForOtaUpdate();
     });
   }, []);
 

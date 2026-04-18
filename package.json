@@ -8,7 +8,12 @@
     "dev:brand": "cd packages/brand-web && npm run dev -- --port 3002",
     "dev:mobile": "cd packages/mobile && npx react-native start",
     "dev:android": "cd packages/mobile && npx react-native run-android",
-    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:brand\""
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:admin\" \"npm run dev:brand\"",
+    "publish-ota": "node scripts/publish-ota.js",
+    "publish-ota:all": "node scripts/publish-ota.js all",
+    "publish-ota:brand": "node scripts/publish-ota.js brand",
+    "publish-ota:influencer": "node scripts/publish-ota.js influencer",
+    "publish-ota:follower": "node scripts/publish-ota.js follower"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"
