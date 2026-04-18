@@ -144,7 +144,13 @@ const verifyOtp = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const refresh = asyncHandler(async (req, res) => {
-  const rawToken = req.cookies && req.cookies.refresh_token;
+  // Cookie path is used by the brand-web (HttpOnly cookie set on verify-otp).
+  // Body path is used by mobile, which can't share cookies across fetch calls
+  // and stores the refresh_token in AsyncStorage instead.
+  const rawToken =
+    (req.cookies && req.cookies.refresh_token) ||
+    (req.body && req.body.refresh_token) ||
+    null;
   if (!rawToken) {
     throw new AppError('UNAUTHORIZED', 'No refresh token found', 401);
   }

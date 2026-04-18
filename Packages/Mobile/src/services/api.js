@@ -9,20 +9,56 @@ async function getToken() {
   }
 }
 
-export async function clearSession() {
-  await AsyncStorage.multiRemove(['inflx_token', 'inflx_user']);
+async function getRefreshToken() {
+  try {
+    return await AsyncStorage.getItem('inflx_refresh_token');
+  } catch {
+    return null;
+  }
 }
 
-async function request(method, path, body) {
-  const token = await getToken();
+export async function clearSession() {
+  await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
+}
+
+// Single in-flight refresh promise so concurrent 401s don't trigger
+// multiple parallel /auth/refresh calls. All callers await the same one.
+let _refreshInFlight = null;
+
+async function tryRefreshAccessToken() {
+  if (_refreshInFlight) return _refreshInFlight;
+  _refreshInFlight = (async () => {
+    try {
+      const rt = await getRefreshToken();
+      if (!rt) return null;
+      const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+      });
+      if (!res.ok) return null;
+      const json = await res.json().catch(() => null);
+      const newToken = json?.data?.access_token;
+      if (!newToken) return null;
+      await AsyncStorage.setItem('inflx_token', newToken);
+      return newToken;
+    } catch {
+      return null;
+    } finally {
+      _refreshInFlight = null;
+    }
+  })();
+  return _refreshInFlight;
+}
+
+async function fetchOnce(method, path, body, token) {
   const headers = { 'Content-Type': 'application/json' };
   if (token && token.length > 0) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30s for Render cold starts
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout for Render cold starts
     const res = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
@@ -30,10 +66,34 @@ async function request(method, path, body) {
       signal: controller.signal,
     });
     clearTimeout(timeout);
-    if (res.status === 401) {
-      if (token) await clearSession();
-      return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
+    return res;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function request(method, path, body) {
+  // Skip refresh dance for the refresh endpoint itself.
+  const isRefreshCall = path === '/auth/refresh';
+  let token = await getToken();
+
+  try {
+    let res = await fetchOnce(method, path, body, token);
+
+    // Silent retry: on 401, try to refresh once and retry the original call.
+    // Only if BOTH the original call AND the refresh fail do we tell the user.
+    if (res.status === 401 && !isRefreshCall) {
+      const newToken = await tryRefreshAccessToken();
+      if (newToken) {
+        res = await fetchOnce(method, path, body, newToken);
+      }
+      if (res.status === 401) {
+        // Both attempts failed — refresh token is also invalid/expired.
+        await clearSession();
+        return { success: false, error: { code: 'UNAUTHORIZED', message: 'Session expired. Please log in again.' } };
+      }
     }
+
     const text = await res.text();
     try {
       return JSON.parse(text);

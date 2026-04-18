@@ -27,7 +27,8 @@ async function getConfig() {
   try {
     const { rows } = await db.query(
       `SELECT platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
-              tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr
+              tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr,
+              allow_commission_negotiation
        FROM payment_config WHERE id = 1`
     );
     if (rows[0]) {
@@ -40,6 +41,7 @@ async function getConfig() {
         offerExpiryHours: parseInt(rows[0].offer_expiry_hours, 10),
         returnWindowDays: parseInt(rows[0].return_window_days, 10),
         minWithdrawalInr: parseFloat(rows[0].min_withdrawal_inr),
+        allowCommissionNegotiation: rows[0].allow_commission_negotiation !== false,
       };
       _cacheTime = now;
       return _cache;
@@ -58,6 +60,7 @@ async function getConfig() {
     offerExpiryHours: env.OFFER_EXPIRY_HOURS ?? 48,
     returnWindowDays: env.RETURN_WINDOW_DAYS ?? 30,
     minWithdrawalInr: 100,
+    allowCommissionNegotiation: true,
   };
 }
 
@@ -69,6 +72,7 @@ async function updateConfig(fields, adminUserId) {
   const allowed = [
     'platform_fee_pct', 'tranche_1_pct', 'tranche_2_pct', 'tranche_3_pct',
     'tds_pct', 'offer_expiry_hours', 'return_window_days', 'min_withdrawal_inr',
+    'allow_commission_negotiation',
   ];
 
   const updates = {};

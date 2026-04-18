@@ -8,6 +8,7 @@
 
 const db = require('../config/db');
 const notificationService = require('../services/notification.service');
+const paymentConfigSvc    = require('../services/paymentConfig.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -297,7 +298,30 @@ const negotiate = asyncHandler(async (req, res) => {
     );
   }
 
-  const { proposed_fee, proposed_deadline, note } = req.body;
+  const { proposed_fee, proposed_commission_pct, proposed_deadline, note } = req.body;
+
+  // Validate at least one numeric proposal was provided
+  if ((proposed_fee == null || proposed_fee === '') &&
+      (proposed_commission_pct == null || proposed_commission_pct === '')) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Provide either proposed_fee or proposed_commission_pct',
+      422
+    );
+  }
+
+  // Gate commission negotiation behind admin flag
+  if (proposed_commission_pct != null && proposed_commission_pct !== '') {
+    const cfg = await paymentConfigSvc.getConfig();
+    if (!cfg.allowCommissionNegotiation) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        'Commission negotiation is currently disabled by the platform',
+        422,
+        'proposed_commission_pct'
+      );
+    }
+  }
 
   // Create negotiation + first turn atomically. SLA = 48h from now to next response.
   let negotiation, turn;
@@ -315,10 +339,16 @@ const negotiate = asyncHandler(async (req, res) => {
     // Record first turn (influencer's opening)
     const { rows: turnRows } = await client.query(
       `INSERT INTO negotiation_turns
-         (negotiation_id, sent_by, proposed_fee, proposed_deadline, note)
-       VALUES ($1, 'influencer', $2, $3, $4)
+         (negotiation_id, sent_by, proposed_fee, proposed_commission_pct, proposed_deadline, note)
+       VALUES ($1, 'influencer', $2, $3, $4, $5)
        RETURNING *`,
-      [negotiation.id, proposed_fee || null, proposed_deadline || null, note || null]
+      [
+        negotiation.id,
+        proposed_fee || null,
+        proposed_commission_pct != null && proposed_commission_pct !== '' ? proposed_commission_pct : null,
+        proposed_deadline || null,
+        note || null,
+      ]
     );
     turn = turnRows[0];
 
@@ -415,7 +445,7 @@ const respond = asyncHandler(async (req, res) => {
     );
   }
 
-  const { action, proposed_fee, proposed_deadline, note } = req.body;
+  const { action, proposed_fee, proposed_commission_pct, proposed_deadline, note } = req.body;
 
   if (!action || !VALID_ACTIONS.includes(action)) {
     throw new AppError(
@@ -426,15 +456,36 @@ const respond = asyncHandler(async (req, res) => {
     );
   }
 
+  // Gate commission counters behind admin flag
+  if (proposed_commission_pct != null && proposed_commission_pct !== '') {
+    const cfgGate = await paymentConfigSvc.getConfig();
+    if (!cfgGate.allowCommissionNegotiation) {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        'Commission negotiation is currently disabled by the platform',
+        422,
+        'proposed_commission_pct'
+      );
+    }
+  }
+
   let updatedNeg, updatedCi;
 
   await db.withTransaction(async (client) => {
     if (action === 'counter') {
-      // Add turn record
+      // Add turn record (fee, commission, or both)
       await client.query(
-        `INSERT INTO negotiation_turns (negotiation_id, sent_by, proposed_fee, proposed_deadline, note)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [neg.id, userTurn, proposed_fee || null, proposed_deadline || null, note || null]
+        `INSERT INTO negotiation_turns
+           (negotiation_id, sent_by, proposed_fee, proposed_commission_pct, proposed_deadline, note)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          neg.id,
+          userTurn,
+          proposed_fee || null,
+          proposed_commission_pct != null && proposed_commission_pct !== '' ? proposed_commission_pct : null,
+          proposed_deadline || null,
+          note || null,
+        ]
       );
 
       // Flip turn — SLA clock resets to 48h for the next responder.
@@ -469,14 +520,30 @@ const respond = asyncHandler(async (req, res) => {
       );
       updatedNeg = rows[0];
 
-      // Mark offer as accepted — use last proposed_fee as agreed_fee if available
-      const lastProposedFee = (req.body.proposed_fee || updatedNeg.proposed_fee) || null;
+      // Pick the LAST proposed values from the thread (the values the
+      // accepting party is agreeing to). Fall back to whatever was passed
+      // in this body for back-compat.
+      const { rows: lastTurnRows } = await client.query(
+        `SELECT proposed_fee, proposed_commission_pct
+         FROM   negotiation_turns
+         WHERE  negotiation_id = $1
+         ORDER  BY created_at DESC
+         LIMIT  1`,
+        [neg.id]
+      );
+      const lastTurn = lastTurnRows[0] || {};
+      const lastProposedFee        = req.body.proposed_fee            ?? lastTurn.proposed_fee            ?? null;
+      const lastProposedCommission = req.body.proposed_commission_pct ?? lastTurn.proposed_commission_pct ?? null;
+
+      // Persist whichever fields were negotiated. COALESCE keeps existing
+      // values for fields that weren't part of this negotiation.
       const { rows: ciRows } = await client.query(
         `UPDATE campaign_influencers
-         SET status = 'accepted',
-             agreed_fee = COALESCE($2, agreed_fee, influencer_budget)
+         SET status         = 'accepted',
+             agreed_fee     = COALESCE($2, agreed_fee, influencer_budget),
+             commission_pct = COALESCE($3, commission_pct)
          WHERE id = $1 RETURNING *`,
-        [neg.ci_id, lastProposedFee]
+        [neg.ci_id, lastProposedFee, lastProposedCommission]
       );
       updatedCi = ciRows[0];
 
@@ -765,11 +832,16 @@ const getOfferDetail = asyncHandler(async (req, res) => {
     [offer.id]
   );
 
+  // Read platform-level toggle so the mobile screen knows whether to enable
+  // the commission counter input on the negotiation form.
+  const cfg = await paymentConfigSvc.getConfig();
+
   return success(res, {
     offer: {
       ...offer,
       deliverables,
       negotiation: negRows[0] || null,
+      allow_commission_negotiation: cfg.allowCommissionNegotiation,
     },
   });
 });

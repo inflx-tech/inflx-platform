@@ -72,6 +72,7 @@ export default function OfferDetailScreen({ navigation, route }) {
   const [showNegotiate, setShowNegotiate] = useState(false);
   const [showDeclineReasons, setShowDeclineReasons] = useState(false);
   const [negotiatingFee, setNegotiatingFee] = useState('');
+  const [negotiatingCommission, setNegotiatingCommission] = useState('');
   const [note, setNote] = useState('');
 
   const countdown = useCountdown(offer?.offer_expires_at);
@@ -131,20 +132,38 @@ export default function OfferDetailScreen({ navigation, route }) {
   }
 
   async function submitCounter() {
-    const feeAmount = parseFloat(negotiatingFee);
-    if (!feeAmount || feeAmount <= 0) {
+    // Goal-aware validation. We rely on showFee / showCommission flags
+    // computed below. Recompute here too because submitCounter runs early.
+    const _goal = (offer?.goal || 'engagement').toLowerCase();
+    const _showFee        = _goal === 'engagement' || _goal === 'hybrid';
+    const _showCommission = _goal === 'conversion' || _goal === 'hybrid';
+    const _allowCommission = offer?.allow_commission_negotiation !== false;
+
+    const feeAmount = _showFee ? parseFloat(negotiatingFee) : null;
+    const commissionAmount = (_showCommission && _allowCommission)
+      ? parseFloat(negotiatingCommission)
+      : null;
+
+    if (_showFee && (!feeAmount || feeAmount <= 0)) {
       Alert.alert('Invalid Fee', 'Please enter a valid fee amount.');
       return;
     }
+    if (_showCommission && _allowCommission && (!commissionAmount || commissionAmount <= 0 || commissionAmount > 100)) {
+      Alert.alert('Invalid Commission', 'Please enter a commission % between 0 and 100.');
+      return;
+    }
+
+    const payloadFields = {
+      ...(feeAmount        != null && { proposed_fee: feeAmount }),
+      ...(commissionAmount != null && { proposed_commission_pct: commissionAmount }),
+      note: note || undefined,
+    };
 
     setActionLoading(true);
 
     // If no negotiation thread exists yet, initiate one
     if (!offer.negotiation?.id && !offer.negotiation_id) {
-      const negRes = await influencerApi.negotiateOffer(offer.id, {
-        proposed_fee: feeAmount,
-        note: note || undefined,
-      });
+      const negRes = await influencerApi.negotiateOffer(offer.id, payloadFields);
       setActionLoading(false);
       if (negRes.success) {
         Alert.alert('Sent', 'Counter offer sent! The brand will review it.');
@@ -157,8 +176,7 @@ export default function OfferDetailScreen({ navigation, route }) {
 
     const negId = offer.negotiation?.id || offer.negotiation_id;
     const res = await influencerApi.submitNegotiationTurn(negId, {
-      proposed_fee: feeAmount,
-      note: note || undefined,
+      ...payloadFields,
       action: 'counter',
     });
     setActionLoading(false);
@@ -181,9 +199,20 @@ export default function OfferDetailScreen({ navigation, route }) {
   }
 
   const fee = offer.agreed_fee || offer.influencer_budget || offer.per_influencer_budget || offer.set_budget || 0;
+  const commissionPct = offer.commission_pct ? parseFloat(offer.commission_pct) : 0;
   const isActionable = offer.status === 'invited';
   const isNegotiating = offer.status === 'negotiating';
   const deliverables = offer.deliverables || [];
+
+  // Goal-based behaviour. The whole screen branches on these three flags.
+  const goal           = (offer.goal || 'engagement').toLowerCase();
+  const isConversion   = goal === 'conversion';
+  const isHybrid       = goal === 'hybrid';
+  const isEngagement   = goal === 'engagement';
+  const showFee        = isEngagement || isHybrid;
+  const showCommission = isConversion || isHybrid;
+  const showTranches   = isEngagement || isHybrid;   // No fee → no tranches.
+  const allowCommissionNegotiation = offer.allow_commission_negotiation !== false;
 
   // Tranche breakdown (spec defaults: 25/25/50)
   const t1Pct = 25;
@@ -291,18 +320,14 @@ export default function OfferDetailScreen({ navigation, route }) {
           </View>
         </View>
 
+        {/* Set name is intentionally hidden — sets are a brand-side
+            grouping concept and only confuse the influencer. */}
         {offer.goal && (
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Goal</Text>
+              <Text style={styles.infoLabel}>Type</Text>
               <Text style={styles.infoValue}>{(offer.goal || '').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase())}</Text>
             </View>
-            {offer.set_name && (
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Set</Text>
-                <Text style={styles.infoValue}>{offer.set_name}</Text>
-              </View>
-            )}
           </View>
         )}
 
@@ -318,10 +343,24 @@ export default function OfferDetailScreen({ navigation, route }) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Offer Details</Text>
 
-        <View style={styles.feeHighlight}>
-          <Text style={styles.feeLabel}>Offered Fee</Text>
-          <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
-        </View>
+        {/* Fee highlight — engagement & hybrid only */}
+        {showFee && (
+          <View style={styles.feeHighlight}>
+            <Text style={styles.feeLabel}>Offered Fee</Text>
+            <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
+          </View>
+        )}
+
+        {/* Commission highlight — conversion & hybrid only */}
+        {showCommission && (
+          <View style={[styles.feeHighlight, showFee && { marginTop: 10 }]}>
+            <Text style={styles.feeLabel}>Commission per Conversion</Text>
+            <Text style={styles.feeValue}>{commissionPct ? `${commissionPct}%` : 'Not set'}</Text>
+            <Text style={styles.commissionHint}>
+              You earn this on every sale/booking made via your tracking link.
+            </Text>
+          </View>
+        )}
 
         {/* Deliverables list */}
         {deliverables.length > 0 ? (
@@ -369,24 +408,31 @@ export default function OfferDetailScreen({ navigation, route }) {
           )}
         </View>
 
-        {/* Commission info for conversion/hybrid goals */}
-        {offer.commission_pct && (
+        {/* Coupon code for conversion/hybrid (commission rate already shown above) */}
+        {showCommission && offer.coupon_code && (
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Commission Rate</Text>
-              <Text style={styles.infoValue}>{parseFloat(offer.commission_pct)}%</Text>
+              <Text style={styles.infoLabel}>Coupon Code</Text>
+              <Text style={[styles.infoValue, { fontFamily: 'monospace' }]}>{offer.coupon_code}</Text>
             </View>
-            {offer.coupon_code && (
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>Coupon Code</Text>
-                <Text style={[styles.infoValue, { fontFamily: 'monospace' }]}>{offer.coupon_code}</Text>
-              </View>
-            )}
           </View>
         )}
       </View>
 
       {/* ── Payment Terms ──────────────────────────────────────────────── */}
+      {/* Conversion-only campaigns have no fee → no tranches. We replace the
+          tranche schedule with a one-liner explaining commission payouts. */}
+      {!showTranches && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Payment Terms</Text>
+          <Text style={styles.paymentNote}>
+            You earn {commissionPct ? `${commissionPct}% commission` : 'commission'} on every conversion driven through your tracking link.
+            Earnings sit in your pending balance during a 30-day return window, then move to your wallet for withdrawal.
+          </Text>
+        </View>
+      )}
+
+      {showTranches && (
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Payment Terms</Text>
         <Text style={styles.paymentNote}>
@@ -430,7 +476,18 @@ export default function OfferDetailScreen({ navigation, route }) {
             Note: 10% TDS is deducted at the time of withdrawal, not at earning.
           </Text>
         </View>
+
+        {/* For HYBRID, the fee tranches above are the fixed part. The
+            commission is paid separately whenever conversions happen. */}
+        {isHybrid && (
+          <View style={[styles.tdsNote, { backgroundColor: colors.tealPale, marginTop: 8 }]}>
+            <Text style={[styles.tdsText, { color: colors.tealDeep }]}>
+              Plus {commissionPct ? `${commissionPct}% commission` : 'commission'} on every conversion driven through your tracking link.
+            </Text>
+          </View>
+        )}
       </View>
+      )}
 
       {/* ── Requirements / Brief ───────────────────────────────────────── */}
       {(offer.brief || offer.campaign_brief) && (
@@ -567,19 +624,44 @@ export default function OfferDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Counter Offer</Text>
           <Text style={styles.negotiateHint}>
-            Enter your proposed fee and optionally add a note explaining your rate.
+            {showFee && showCommission && 'Propose a fee and/or commission %.'}
+            {showFee && !showCommission && 'Enter your proposed fee and optionally add a note explaining your rate.'}
+            {!showFee && showCommission && 'Propose a commission % per conversion.'}
+            {showCommission && !allowCommissionNegotiation &&
+              ' Commission negotiation is currently disabled by the platform — only the brand can change it.'}
           </Text>
-          <View style={styles.inputWrap}>
-            <Text style={styles.rupee}>&#8377;</Text>
-            <TextInput
-              style={styles.feeInput}
-              value={negotiatingFee}
-              onChangeText={setNegotiatingFee}
-              keyboardType="numeric"
-              placeholder="Your proposed fee"
-              placeholderTextColor={colors.t3}
-            />
-          </View>
+
+          {/* Fee input — engagement & hybrid */}
+          {showFee && (
+            <View style={styles.inputWrap}>
+              <Text style={styles.rupee}>&#8377;</Text>
+              <TextInput
+                style={styles.feeInput}
+                value={negotiatingFee}
+                onChangeText={setNegotiatingFee}
+                keyboardType="numeric"
+                placeholder="Your proposed fee"
+                placeholderTextColor={colors.t3}
+              />
+            </View>
+          )}
+
+          {/* Commission input — conversion & hybrid (locked if admin disabled) */}
+          {showCommission && (
+            <View style={[styles.inputWrap, !allowCommissionNegotiation && styles.disabledBtn]}>
+              <TextInput
+                style={[styles.feeInput, { paddingLeft: 14 }]}
+                value={negotiatingCommission}
+                onChangeText={setNegotiatingCommission}
+                keyboardType="numeric"
+                placeholder="Proposed commission %"
+                placeholderTextColor={colors.t3}
+                editable={allowCommissionNegotiation}
+              />
+              <Text style={styles.rupee}>%</Text>
+            </View>
+          )}
+
           <TextInput
             style={styles.noteInput}
             value={note}
@@ -590,9 +672,18 @@ export default function OfferDetailScreen({ navigation, route }) {
             numberOfLines={3}
           />
           <TouchableOpacity
-            style={[styles.counterSubmitBtn, (actionLoading || !negotiatingFee) && styles.disabledBtn]}
+            style={[
+              styles.counterSubmitBtn,
+              actionLoading && styles.disabledBtn,
+              showFee && !negotiatingFee && styles.disabledBtn,
+              showCommission && allowCommissionNegotiation && !negotiatingCommission && !showFee && styles.disabledBtn,
+            ]}
             onPress={submitCounter}
-            disabled={actionLoading || !negotiatingFee}
+            disabled={
+              actionLoading ||
+              (showFee && !negotiatingFee) ||
+              (showCommission && allowCommissionNegotiation && !showFee && !negotiatingCommission)
+            }
           >
             {actionLoading ? (
               <ActivityIndicator size="small" color={colors.white} />
@@ -710,6 +801,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   feeValue: { fontSize: 28, fontWeight: '800', color: colors.tealDeep },
+  commissionHint: { fontSize: 11, color: colors.tealDeep, marginTop: 6, opacity: 0.85, textAlign: 'center' },
 
   // Section
   section: { marginBottom: 12 },

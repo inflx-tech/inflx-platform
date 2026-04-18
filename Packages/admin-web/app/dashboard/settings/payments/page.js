@@ -57,6 +57,7 @@ function cfgToForm(cfg) {
     offer_expiry_hours: cfg.offerExpiryHours,
     return_window_days: cfg.returnWindowDays,
     min_withdrawal_inr: cfg.minWithdrawalInr,
+    allow_commission_negotiation: cfg.allowCommissionNegotiation !== false,
   };
 }
 
@@ -214,6 +215,36 @@ export default function PaymentConfigPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Negotiation policy ─────────────────────────────────────────── */}
+      {!loading && (
+        <div className="mt-5 bg-white rounded-xl border border-border overflow-hidden">
+          <div className="px-5 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-t1">Allow Commission Negotiation</span>
+                <div className="text-[11px] text-t3 mt-0.5">
+                  When enabled, influencers can counter-propose the commission % (not just the fee) on
+                  conversion / hybrid campaigns. When disabled, commission is fixed by the brand.
+                </div>
+              </div>
+              {editing ? (
+                <button
+                  type="button"
+                  onClick={() => setField('allow_commission_negotiation', !form.allow_commission_negotiation)}
+                  className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors ${form.allow_commission_negotiation ? 'bg-teal-600' : 'bg-gray-300'}`}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${form.allow_commission_negotiation ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              ) : (
+                <div className={`font-display text-xs font-bold px-3 py-1 rounded-lg flex-shrink-0 ${form.allow_commission_negotiation ? 'bg-teal-50 text-teal-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {form.allow_commission_negotiation ? 'ENABLED' : 'DISABLED'}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

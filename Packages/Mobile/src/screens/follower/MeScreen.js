@@ -31,7 +31,7 @@ export default function MeScreen({ navigation }) {
         text: 'Logout',
         style: 'destructive',
         onPress: async () => {
-          await AsyncStorage.multiRemove(['inflx_token', 'inflx_user', 'inflx_refresh']);
+          await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
           setRole('');
         },
       },

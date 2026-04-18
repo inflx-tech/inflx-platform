@@ -113,8 +113,11 @@ export default function OTPScreen({ navigation, route }) {
     }
     if (!res.success) { setError(res.error?.message || 'Invalid OTP'); return; }
 
-    const { access_token, user } = res.data;
+    const { access_token, refresh_token, user } = res.data;
     await AsyncStorage.setItem('inflx_token', access_token);
+    if (refresh_token) {
+      await AsyncStorage.setItem('inflx_refresh_token', refresh_token);
+    }
     await AsyncStorage.setItem('inflx_user', JSON.stringify(user));
 
     if (user.role === 'brand') {

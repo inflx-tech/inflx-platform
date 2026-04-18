@@ -17,7 +17,7 @@ export default function RejectedScreen({ navigation, route }) {
   }
 
   async function logout() {
-    await AsyncStorage.multiRemove(['inflx_token', 'inflx_user']);
+    await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
     navigation.reset({ index: 0, routes: [{ name: 'Phone' }] });
   }
 
