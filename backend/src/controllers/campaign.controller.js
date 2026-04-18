@@ -2,7 +2,6 @@
 
 const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
-const paymentConfigSvc    = require('../services/paymentConfig.service');
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
@@ -507,8 +506,9 @@ const invite = asyncHandler(async (req, res) => {
     submissionDeadline = pd.toISOString();
   }
 
-  const cfg       = await paymentConfigSvc.getConfig();
-  const expiresAt = new Date(Date.now() + cfg.offerExpiryHours * 60 * 60 * 1000);
+  // Offer expires when the influencer's posting_date is reached. If no posting_date
+  // is set yet, leave NULL — the offer will not auto-expire until one is assigned.
+  const expiresAt = posting_date ? new Date(posting_date) : null;
 
   const { rows } = await db.query(
     `INSERT INTO campaign_influencers
@@ -596,6 +596,14 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     }
   }
 
+  // Keep offer_expires_at in sync with posting_date (new rule: offer expires when
+  // influencer's posting_date is reached). If posting_date wasn't part of this
+  // request, leave the existing offer_expires_at untouched.
+  const newPostingDate = posting_date || null;
+  const newOfferExpiresAt = posting_date !== undefined
+    ? (newPostingDate ? new Date(newPostingDate) : null)
+    : existing[0].offer_expires_at;
+
   const { rows } = await db.query(
     `UPDATE campaign_influencers SET
        posting_date = $2,
@@ -605,12 +613,13 @@ const updateInfluencer = asyncHandler(async (req, res) => {
        physical_delivery = $6,
        delivery_address = $7,
        influencer_budget = $8,
-       submission_deadline = $9
+       submission_deadline = $9,
+       offer_expires_at = $10
      WHERE id = $1
      RETURNING *`,
     [
       ciId,
-      posting_date || null,
+      newPostingDate,
       offer_type || null,
       offer_config_json ? JSON.stringify(offer_config_json) : null,
       commission_pct != null ? commission_pct : null,
@@ -618,6 +627,7 @@ const updateInfluencer = asyncHandler(async (req, res) => {
       delivery_address || null,
       influencer_budget != null ? influencer_budget : null,
       submissionDeadline,
+      newOfferExpiresAt,
     ]
   );
 

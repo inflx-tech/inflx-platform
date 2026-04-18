@@ -2,10 +2,17 @@
 
 /**
  * offer-expiry.job.js
- * Block B — runs every 15 minutes (see Section 8 of spec).
+ * Runs every 15 minutes.
+ *
+ * Expiry rule (per product change Apr 2026):
+ *   An offer expires when the influencer's `posting_date` is reached. The
+ *   `posting_date` is mirrored into `offer_expires_at` at invite/update time
+ *   (see campaign.controller.js). The cron just flips status = 'expired'
+ *   for any 'invited' row whose expiry has passed.
  *
  * Finds all campaign_influencer rows where:
  *   - status = 'invited'
+ *   - offer_expires_at IS NOT NULL
  *   - offer_expires_at < now()
  *
  * For each expired offer:
@@ -39,6 +46,7 @@ async function runOfferExpiryJob() {
      JOIN brands b ON b.id = c.brand_id
      JOIN users u ON u.id = b.user_id
      WHERE ci.status = 'invited'
+       AND ci.offer_expires_at IS NOT NULL
        AND ci.offer_expires_at < now()`
   );
 
