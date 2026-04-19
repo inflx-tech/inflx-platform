@@ -297,6 +297,28 @@ const STANDARD_CLAUSES_WEB = [
 ];
 
 function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprove }) {
+  // ── HOOKS MUST RUN UNCONDITIONALLY (Rules of Hooks). ──────────────────
+  // Compute initial state from contract; fall back to safe defaults when
+  // contract is null so we can still call useState on every render. The
+  // null-check + early-return now happens AFTER all hook declarations.
+  const safeContract = contract || {};
+  const initialClauses = (() => {
+    const cc = safeContract.custom_clauses;
+    if (!cc) return {};
+    if (typeof cc === 'string') { try { return (JSON.parse(cc).clauses) || {}; } catch { return {}; } }
+    return cc.clauses || {};
+  })();
+  const initialNotes = (() => {
+    const cc = safeContract.custom_clauses;
+    if (!cc) return '';
+    if (typeof cc === 'string') { try { return (JSON.parse(cc).notes) || ''; } catch { return ''; } }
+    return cc.notes || '';
+  })();
+  const [clauses, setClauses]     = useState(initialClauses);
+  const [extraNotes, setExtraNotes] = useState(initialNotes);
+  const [bonusAmount, setBonusAmount] = useState(String(safeContract.bonus_amount || ''));
+
+  // Now the conditional early-return (after all hooks)
   if (!contract) return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl p-8 text-center">
@@ -314,21 +336,6 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
 
   // Draft state: brand reviews + edits clauses + bonus, then "Approve & Send"
   const isDraft = contract.status === 'draft';
-  const initialClauses = (() => {
-    const cc = contract.custom_clauses;
-    if (!cc) return {};
-    if (typeof cc === 'string') { try { return (JSON.parse(cc).clauses) || {}; } catch { return {}; } }
-    return cc.clauses || {};
-  })();
-  const initialNotes = (() => {
-    const cc = contract.custom_clauses;
-    if (!cc) return '';
-    if (typeof cc === 'string') { try { return (JSON.parse(cc).notes) || ''; } catch { return ''; } }
-    return cc.notes || '';
-  })();
-  const [clauses, setClauses]     = useState(initialClauses);
-  const [extraNotes, setExtraNotes] = useState(initialNotes);
-  const [bonusAmount, setBonusAmount] = useState(String(contract.bonus_amount || ''));
 
   function toggleClause(id) {
     setClauses(prev => {
@@ -602,11 +609,19 @@ export default function CampaignDetailPage() {
   }, [campaign?.id]);
 
   // If user lands on a tab that's not visible for this goal, snap to overview.
+  // NOTE: TABS is declared AFTER this hook (after the loading guards), so we
+  // cannot reference it directly here — that would throw ReferenceError on
+  // first render due to const TDZ. Instead recompute the tab list inline.
   useEffect(() => {
-    if (campaign && !TABS.includes(tab)) {
-      setTab('overview');
-    }
-  }, [campaign?.id, TABS.length]);
+    if (!campaign) return;
+    const setsLocal = campaign.sets || [];
+    const goalSetLocal = new Set(setsLocal.map(s => (s.goal || '').toLowerCase()).filter(Boolean));
+    const isEngagementOnly = goalSetLocal.size > 0 && [...goalSetLocal].every(g => g === 'engagement');
+    const visibleTabs = isEngagementOnly
+      ? ['overview', 'content', 'analytics']
+      : ['overview', 'products', 'content', 'analytics', 'conversions'];
+    if (!visibleTabs.includes(tab)) setTab('overview');
+  }, [campaign?.id]);
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
 
