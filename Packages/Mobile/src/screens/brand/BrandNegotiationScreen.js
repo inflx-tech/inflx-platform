@@ -308,14 +308,15 @@ export default function BrandNegotiationScreen({ route, navigation }) {
               multiline
             />
             <TouchableOpacity
-              style={[styles.actionBtn, styles.counterBtn, submitting && { opacity: 0.5 }]}
+              style={[styles.sendCounterBtn, submitting && { opacity: 0.5 }]}
               onPress={() => handleAction('counter')}
               disabled={submitting}
+              activeOpacity={0.8}
             >
               {submitting ? (
                 <ActivityIndicator color={colors.white} size="small" />
               ) : (
-                <Text style={styles.counterBtnText}>Send Counter</Text>
+                <Text style={styles.sendCounterBtnText}>Send Counter Offer</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -411,9 +412,25 @@ const styles = StyleSheet.create({
   counterRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginBottom: 8 },
   rupee: { paddingHorizontal: 12, fontSize: 16, fontWeight: '700', color: colors.t2 },
   counterInput: { flex: 1, paddingVertical: 10, fontSize: 14, fontWeight: '700', color: colors.t1 },
-  noteInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 12, color: colors.t1, marginBottom: 8, minHeight: 40 },
+  noteInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12, fontSize: 13, color: colors.t1, marginBottom: 12, minHeight: 56, textAlignVertical: 'top' },
+  // Old (cramped) styles kept in case anything else references them
   counterBtn: { backgroundColor: colors.navy },
   counterBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  // New full-width primary CTA — matches Accept/Walk Away visual weight
+  sendCounterBtn: {
+    backgroundColor: colors.navy,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.navy,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 4,
+  },
+  sendCounterBtnText: { color: colors.white, fontWeight: '800', fontSize: 15, letterSpacing: 0.3 },
 
   waitingPanel: { backgroundColor: colors.goldPale, padding: 16, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#E8D590' },
   waitingText: { fontSize: 13, color: '#7A5500', fontWeight: '600' },

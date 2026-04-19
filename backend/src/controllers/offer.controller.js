@@ -673,14 +673,24 @@ const getNegotiation = asyncHandler(async (req, res) => {
     [neg.id]
   );
 
-  // Derive original/current proposals so the UI doesn't have to recompute
+  // Derive original/current proposals so the UI doesn't have to recompute.
+  //
+  // "Original" = the brand's INITIAL offer (before any negotiation began).
+  // That's the per-influencer budget the brand set when inviting, which
+  // lives on campaign_influencers.influencer_budget (or agreed_fee if it
+  // was already set). The first turn in negotiation_turns is the influencer's
+  // OPENING COUNTER — NOT the brand's original — so we must not use it
+  // for "original".
+  //
+  // "Current" = whatever the most recent turn proposed. If no turns yet,
+  // fall back to the brand's original.
   const firstTurn = turns[0] || {};
   const lastTurn  = turns[turns.length - 1] || {};
   const enriched = {
     ...neg,
-    original_fee:            firstTurn.proposed_fee || neg.ci_agreed_fee || neg.ci_influencer_budget || null,
-    original_commission_pct: firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
-    current_fee:             lastTurn.proposed_fee || firstTurn.proposed_fee || neg.ci_agreed_fee || null,
+    original_fee:            neg.ci_influencer_budget || neg.ci_agreed_fee || firstTurn.proposed_fee || null,
+    original_commission_pct: neg.ci_commission_pct || firstTurn.proposed_commission_pct || null,
+    current_fee:             lastTurn.proposed_fee || firstTurn.proposed_fee || neg.ci_agreed_fee || neg.ci_influencer_budget || null,
     current_commission_pct:  lastTurn.proposed_commission_pct || firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
   };
 
@@ -733,13 +743,15 @@ const getNegotiationByCampaignInfluencer = asyncHandler(async (req, res) => {
     [neg.id]
   );
 
+  // See getNegotiation above for the full reasoning. Same logic here.
+  // Original = brand's initial budget; Latest = most recent counter from either party.
   const firstTurn = turns[0] || {};
   const lastTurn  = turns[turns.length - 1] || {};
   const enriched = {
     ...neg,
-    original_fee:            firstTurn.proposed_fee || neg.ci_agreed_fee || neg.ci_influencer_budget || null,
-    original_commission_pct: firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
-    current_fee:             lastTurn.proposed_fee || firstTurn.proposed_fee || neg.ci_agreed_fee || null,
+    original_fee:            neg.ci_influencer_budget || neg.ci_agreed_fee || firstTurn.proposed_fee || null,
+    original_commission_pct: neg.ci_commission_pct || firstTurn.proposed_commission_pct || null,
+    current_fee:             lastTurn.proposed_fee || firstTurn.proposed_fee || neg.ci_agreed_fee || neg.ci_influencer_budget || null,
     current_commission_pct:  lastTurn.proposed_commission_pct || firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
   };
 

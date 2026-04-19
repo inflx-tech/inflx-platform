@@ -713,16 +713,20 @@ export default function CampaignDetailScreen({ navigation, route }) {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={styles.gridBtn}
-              onPress={() => navigation.navigate('CampaignProducts', {
-                campaignInfluencerId: campaignInfluencerId,
-                campaignName: campaign?.campaign_name || 'Campaign',
-              })}
-            >
-              <Text style={styles.gridBtnIcon}>{'[P]'}</Text>
-              <Text style={styles.gridBtnLabel}>Products</Text>
-            </TouchableOpacity>
+            {/* Products button only relevant for conversion/hybrid campaigns
+                (engagement campaigns don't have products to promote). */}
+            {showCommission && (
+              <TouchableOpacity
+                style={styles.gridBtn}
+                onPress={() => navigation.navigate('CampaignProducts', {
+                  campaignInfluencerId: campaignInfluencerId,
+                  campaignName: campaign?.campaign_name || 'Campaign',
+                })}
+              >
+                <Text style={styles.gridBtnIcon}>{'[P]'}</Text>
+                <Text style={styles.gridBtnLabel}>Products</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.gridBtn}
