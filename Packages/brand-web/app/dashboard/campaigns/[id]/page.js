@@ -1164,14 +1164,29 @@ export default function CampaignDetailPage() {
                 </div>
               )}
 
+              {/* Brand-level offer banner — shown when no per-influencer
+                  product allocation exists. Every influencer effectively
+                  promotes the entire catalogue, so per-influencer filter is
+                  meaningless. */}
+              {campaignProducts.is_brand_level_offer && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                  <strong>Brand-level offer:</strong> no specific products were allocated per influencer.
+                  Every influencer promotes the entire catalogue ({campaignProducts.products.length} products).
+                </div>
+              )}
+
               {/* Product list with status — filtered by selected influencer */}
               <div className="space-y-2">
                 {(campaignProducts.products || [])
                   .filter(p => {
                     if (productInfFilter === 'all') return true;
-                    if (!campaignProducts?.has_specific_products) return true; // brand-level offer = show all
-                    // Filter by assigned influencer id
-                    return p.assigned_to === productInfFilter
+                    if (campaignProducts.is_brand_level_offer) return true; // every influencer sees every product
+                    // Match the new assigned_to_influencers array shape from the
+                    // backend (campaign_influencer_id is the filter key from
+                    // the pill above). Falls back to the legacy fields too.
+                    const arr = p.assigned_to_influencers || [];
+                    return arr.some(a => a.campaign_influencer_id === productInfFilter)
+                      || p.assigned_to === productInfFilter
                       || p.influencer_id === productInfFilter
                       || (p.published_by || []).some(pb => pb.influencer_id === productInfFilter);
                   })
@@ -1182,11 +1197,16 @@ export default function CampaignDetailPage() {
                       <div className="text-sm font-bold text-gray-900 truncate">{p.name}</div>
                       <div className="text-xs text-gray-500">{p.section || 'General'} · {fmtRupees(p.price)}</div>
                       {p.description && <div className="text-[10px] text-gray-400 mt-0.5 truncate">{p.description}</div>}
-                      {/* Show assigned influencer name on each product */}
-                      {(p.assigned_influencer_name || p.influencer_name) && (
-                        <div className="mt-1 flex items-center gap-1">
-                          <span className="w-4 h-4 rounded-full bg-orange-100 flex items-center justify-center text-[8px] font-bold text-orange-600">{(p.assigned_influencer_name || p.influencer_name)?.[0]}</span>
-                          <span className="text-[10px] text-gray-500">{p.assigned_influencer_name || p.influencer_name}</span>
+                      {/* Show assigned influencer chips on each product */}
+                      {(p.assigned_to_influencers || []).length > 0 && (
+                        <div className="mt-1 flex items-center gap-1 flex-wrap">
+                          <span className="text-[9px] text-gray-400 uppercase font-bold">Assigned:</span>
+                          {(p.assigned_to_influencers || []).map(a => (
+                            <span key={a.campaign_influencer_id} className="inline-flex items-center gap-1 bg-orange-50 px-1.5 py-0.5 rounded">
+                              <span className="w-3.5 h-3.5 rounded-full bg-orange-100 flex items-center justify-center text-[8px] font-bold text-orange-600">{(a.name || a.handle)?.[0]}</span>
+                              <span className="text-[10px] text-gray-700 font-semibold">@{a.handle || a.name}</span>
+                            </span>
+                          ))}
                         </div>
                       )}
                       {p.published_by?.length > 0 && (

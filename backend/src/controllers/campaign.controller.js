@@ -1196,31 +1196,43 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
 
   const brandId = ciRows[0].brand_id;
 
-  // Collect product IDs from multiple sources:
-  // 1. offer_config_json.products (brand assigned specific products)
-  // 2. Published product notes (influencer published to store)
-  // 3. Fallback: all brand products
-  const allProductIds = new Set();
+  // ── Build per-influencer product assignment map ──────────────────────────
+  // For each campaign_influencer, look at their offer_config_json.products
+  // to know which product IDs were ALLOCATED TO THIS INFLUENCER specifically.
+  // This is the key data the brand needs in the Products tab to drill down
+  // by influencer, and the data the influencer mobile app needs to know
+  // "what am I promoting".
+  const productIdsByCi = {};      // ci.id → Set<product_id>
+  const ciIdsByProduct = {};      // product_id → Set<ci.id>
+  const allProductIds  = new Set();
 
-  // From offer configs
   for (const ci of ciRows) {
     const config = ci.offer_config_json || {};
-    const prods = config.products || [];
-    prods.forEach(p => {
+    const prods  = config.products || [];
+    productIdsByCi[ci.id] = new Set();
+    for (const p of prods) {
       const pid = typeof p === 'string' ? p : (p.product_id || p.id);
-      if (pid) allProductIds.add(pid);
-    });
+      if (!pid) continue;
+      allProductIds.add(pid);
+      productIdsByCi[ci.id].add(pid);
+      if (!ciIdsByProduct[pid]) ciIdsByProduct[pid] = new Set();
+      ciIdsByProduct[pid].add(ci.id);
+    }
   }
 
-  // From published notes (influencer_product_notes)
+  // Fallback chain when no per-influencer offer config has products:
+  //   1. published notes (influencer_product_notes) — pick those product IDs
+  //   2. all active brand products (brand-level offer)
+  let usingFallback = false;
   if (allProductIds.size === 0) {
     const { rows: noteRows } = await db.query(
       `SELECT DISTINCT ipn.product_id
-       FROM influencer_product_notes ipn
-       WHERE ipn.campaign_id = $1`,
+       FROM   influencer_product_notes ipn
+       WHERE  ipn.campaign_id = $1`,
       [campaignId]
     );
     noteRows.forEach(n => allProductIds.add(n.product_id));
+    if (allProductIds.size === 0) usingFallback = true;
   }
 
   let products;
@@ -1233,7 +1245,9 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     );
     products = rows;
   } else {
-    // No specific products at all — return all brand products as fallback
+    // No specific products at all — return all brand products as fallback.
+    // In this case the offer is "brand-level" — every influencer effectively
+    // promotes the entire catalogue.
     const { rows } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description, variants_json, is_active
        FROM brand_products WHERE brand_id = $1 AND is_active = true
@@ -1253,45 +1267,75 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
     [campaignId]
   );
 
-  // Build note lookup: product_id → { influencer_name, note_text }
+  // Build note lookup: product_id → [{influencer_name, note_text, ...}]
   const notesByProduct = {};
   for (const n of allNotes) {
     if (!notesByProduct[n.product_id]) notesByProduct[n.product_id] = [];
     notesByProduct[n.product_id].push({
       influencer_name: n.influencer_name,
-      influencer_id: n.influencer_id,
-      note_text: n.note_text,
+      influencer_id:   n.influencer_id,
+      note_text:       n.note_text,
     });
   }
 
-  // Attach publish status to each product
-  const productsWithStatus = products.map(p => ({
-    ...p,
-    publish_status: notesByProduct[p.id] ? 'published' : 'pending',
-    published_by: notesByProduct[p.id] || [],
-  }));
+  // Build influencer index for assigned-to lookup
+  const influencerByCi = {};
+  for (const ci of ciRows) {
+    influencerByCi[ci.id] = {
+      campaign_influencer_id: ci.id,
+      influencer_id:          ci.influencer_id,
+      name:                   ci.influencer_name,
+      handle:                 ci.instagram_handle,
+    };
+  }
+
+  // Attach publish status + per-influencer assignment to each product
+  const productsWithStatus = products.map(p => {
+    const assignedCiIds = ciIdsByProduct[p.id] ? Array.from(ciIdsByProduct[p.id]) : [];
+    return {
+      ...p,
+      publish_status: notesByProduct[p.id] ? 'published' : 'pending',
+      published_by:   notesByProduct[p.id] || [],
+      // NEW: which influencers in this campaign were assigned this product?
+      // Empty array = brand-level offer (all influencers see the whole
+      // catalogue). Used by brand-web Products tab + mobile drill-downs.
+      assigned_to_influencers: assignedCiIds.map(ciId => ({
+        campaign_influencer_id: ciId,
+        influencer_id:          influencerByCi[ciId]?.influencer_id,
+        handle:                 influencerByCi[ciId]?.handle,
+        name:                   influencerByCi[ciId]?.name,
+      })),
+    };
+  });
 
   const publishedCount = productsWithStatus.filter(p => p.publish_status === 'published').length;
 
   return success(res, {
-    products: productsWithStatus,
-    influencers: ciRows.map(ci => ({
-      id: ci.id,
-      influencer_id: ci.influencer_id,
-      name: ci.influencer_name,
-      handle: ci.instagram_handle,
-      status: ci.status,
-      offer_type: ci.offer_type,
-      discount_value: ci.offer_config_json?.value || ci.commission_pct || null,
-      commission_pct: ci.commission_pct,
-      coupon_code: ci.coupon_code,
-      assigned_products: allProductIds.size > 0 ? allProductIds.size : products.length,
-    })),
-    has_specific_products: allProductIds.size > 0,
+    products:               productsWithStatus,
+    influencers:            ciRows.map(ci => {
+      const ciProducts = productIdsByCi[ci.id] ? Array.from(productIdsByCi[ci.id]) : [];
+      // For brand-level (fallback) offers, every influencer promotes every product
+      const productCount = ciProducts.length > 0 ? ciProducts.length : (usingFallback ? products.length : 0);
+      return {
+        id:                ci.id,
+        influencer_id:     ci.influencer_id,
+        name:              ci.influencer_name,
+        handle:            ci.instagram_handle,
+        status:            ci.status,
+        offer_type:        ci.offer_type,
+        discount_value:    ci.offer_config_json?.value || ci.commission_pct || null,
+        commission_pct:    ci.commission_pct,
+        coupon_code:       ci.coupon_code,
+        product_ids:       ciProducts,            // NEW: explicit list
+        assigned_products: productCount,
+      };
+    }),
+    has_specific_products: !usingFallback && allProductIds.size > 0,
+    is_brand_level_offer:  usingFallback,         // NEW: tells UI when to show "all brand products"
     summary: {
       total_products: products.length,
-      published: publishedCount,
-      pending: products.length - publishedCount,
+      published:      publishedCount,
+      pending:        products.length - publishedCount,
     },
   });
 });
