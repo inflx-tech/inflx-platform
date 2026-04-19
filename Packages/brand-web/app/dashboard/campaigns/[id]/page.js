@@ -578,6 +578,36 @@ export default function CampaignDetailPage() {
     }
   }, [tab]);
 
+  // Auto-load engagement + conversions + products when campaign first loads
+  // so the Overview tab can show real campaign-level rollups without the
+  // user having to switch tabs first.
+  useEffect(() => {
+    if (!campaign) return;
+    if (!engagement) {
+      campaignApi.getEngagement(id).then(res => { if (res.success) setEngagement(res.data); });
+    }
+    // Conversion / hybrid only — engagement-only campaigns don't have these.
+    const goalsLocal = (campaign.sets || []).map(s => (s.goal || '').toLowerCase()).filter(Boolean);
+    const hasConversionLocal = goalsLocal.some(g => g === 'conversion' || g === 'hybrid');
+    if (hasConversionLocal) {
+      if (!conversions) {
+        campaignApi.getConversions(id).then(res => { if (res.success) setConversions(res.data); });
+      }
+      if (!campaignProducts) {
+        campaignApi.get(id + '/products').then(res => {
+          if (res.success) setCampaignProducts(res.data || { products: [], influencers: [] });
+        });
+      }
+    }
+  }, [campaign?.id]);
+
+  // If user lands on a tab that's not visible for this goal, snap to overview.
+  useEffect(() => {
+    if (campaign && !TABS.includes(tab)) {
+      setTab('overview');
+    }
+  }, [campaign?.id, TABS.length]);
+
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
 
   async function handleReview(deliverableId, action, feedback) {
@@ -686,9 +716,34 @@ export default function CampaignDetailPage() {
   const totalBudget  = Number(campaign.total_budget || 0);
   const setBudgetSum = sets.reduce((t, s) => t + Number(s.set_budget || 0), 0);
   const totalInfluencers = allInfluencers.length;
-  const isConversionCampaign = sets.some(s => s.goal === 'conversion');
 
-  const TABS = ['overview', 'products', 'content', 'analytics', 'conversions'];
+  // Goal classification — a campaign is "conversion-only" if every set is
+  // conversion, "engagement-only" if every set is engagement, otherwise hybrid/mixed.
+  const goalSet = new Set(sets.map(s => (s.goal || '').toLowerCase()).filter(Boolean));
+  const hasConversion        = goalSet.has('conversion') || goalSet.has('hybrid');
+  const hasEngagement        = goalSet.has('engagement') || goalSet.has('hybrid');
+  const isConversionCampaign = goalSet.size > 0 && [...goalSet].every(g => g === 'conversion');
+  const isEngagementCampaign = goalSet.size > 0 && [...goalSet].every(g => g === 'engagement');
+
+  // Tab visibility per goal:
+  //  Engagement only  → Overview / Content / Analytics
+  //  Conversion only  → Overview / Products / Content / Analytics / Conversions
+  //  Hybrid (or mix)  → Overview / Products / Content / Analytics / Conversions
+  const TABS = isEngagementCampaign
+    ? ['overview', 'content', 'analytics']
+    : ['overview', 'products', 'content', 'analytics', 'conversions'];
+
+  // Campaign-level rollups computed from already-loaded data.
+  const allDeliverables = allInfluencers.flatMap(i => i.deliverables || []);
+  const deliverableCounts = {
+    total:       allDeliverables.length,
+    submitted:   allDeliverables.filter(d => ['submitted', 'under_review'].includes(d.status)).length,
+    approved:    allDeliverables.filter(d => d.status === 'approved').length,
+    live:        allDeliverables.filter(d => d.status === 'live').length,
+    pending:     allDeliverables.filter(d => d.status === 'pending').length,
+    revision:    allDeliverables.filter(d => d.status === 'revision_requested').length,
+  };
+  const activeOffers = allInfluencers.filter(i => ['contracted','active','live'].includes(i.status)).length;
 
   return (
     <div className="max-w-5xl mx-auto pb-16">
@@ -763,26 +818,68 @@ export default function CampaignDetailPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────────────────── */}
       {tab === 'overview' && (
         <div className="space-y-4">
-          {/* Quick stats — conditional on campaign type */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {(isConversionCampaign ? [
-              { label: 'Commission Rate', value: (() => { const rates = allInfluencers.map(i => Number(i.commission_pct || 0)).filter(Boolean); return rates.length ? `${(rates.reduce((a,b) => a+b, 0) / rates.length).toFixed(1)}%` : '--'; })(), sub: 'Avg across influencers' },
-              { label: 'Active Offers', value: allInfluencers.filter(i => ['contracted','active','live'].includes(i.status)).length },
-              { label: 'Total Transactions', value: conversions?.total_transactions ?? '--', sub: !conversions ? 'Switch to Conversions tab' : '' },
-              { label: 'Influencers', value: totalInfluencers },
-            ] : [
-              { label: 'Total Budget', value: fmtRupees(totalBudget), sub: totalBudget === 0 ? 'Commission only' : '' },
-              { label: 'Sets', value: sets.length },
-              { label: 'Influencers', value: totalInfluencers },
-              { label: 'Status', value: campaign.status?.replace(/_/g, ' ') },
-            ]).map(s => (
-              <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3.5">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{s.label}</div>
-                <div className="font-display text-lg font-extrabold text-gray-900 capitalize">{s.value}</div>
-                {s.sub && <div className="text-[10px] text-gray-400 mt-0.5">{s.sub}</div>}
+          {/*
+            Goal-aware campaign-level stats.
+            • Engagement-only: budget + activity (no commission/transactions)
+            • Conversion-only: commerce metrics (no budget concept)
+            • Hybrid: a mix of both
+            We removed the misleading single "Commission Rate" stat — each
+            influencer negotiates their own % so an average is meaningless.
+          */}
+          {(() => {
+            // Pull lazy-loaded engagement + conversions data into rollups
+            const engOverall   = engagement?.overall || engagement?.totals || {};
+            const totalReach   = engOverall.reach        ?? engOverall.total_reach   ?? null;
+            const totalEng     = engOverall.engagement   ?? engOverall.total_engagement ?? null;
+            const avgER        = engOverall.engagement_rate ?? engOverall.avg_engagement_rate ?? null;
+            const txCount      = conversions?.total_transactions ?? conversions?.summary?.total_transactions ?? null;
+            const txRevenue    = conversions?.total_revenue      ?? conversions?.summary?.total_revenue      ?? null;
+            const txCommission = conversions?.total_commission   ?? conversions?.summary?.total_commission   ?? null;
+            const productCount = campaignProducts?.products?.length ?? campaignProducts?.summary?.total_products ?? null;
+
+            // Build the stat cards based on goal
+            let cards = [];
+
+            // Always-on first row (universal)
+            cards.push({ label: 'Influencers',  value: totalInfluencers });
+            cards.push({ label: 'Active Offers', value: activeOffers, sub: `of ${totalInfluencers} invited` });
+            cards.push({ label: 'Sets',         value: sets.length });
+            cards.push({ label: 'Status',       value: (campaign.status || '—').replace(/_/g, ' ') });
+
+            // Activity row (deliverables — always relevant)
+            cards.push({ label: 'Deliverables Total', value: deliverableCounts.total });
+            cards.push({ label: 'Awaiting Review',    value: deliverableCounts.submitted, sub: deliverableCounts.submitted > 0 ? 'Open Content tab' : '' });
+            cards.push({ label: 'Live',               value: deliverableCounts.live });
+            cards.push({ label: 'In Revision',        value: deliverableCounts.revision });
+
+            // Engagement rollups (everyone benefits from these)
+            cards.push({ label: 'Total Reach',     value: totalReach != null ? Number(totalReach).toLocaleString('en-IN') : '—' });
+            cards.push({ label: 'Total Engagement', value: totalEng != null ? Number(totalEng).toLocaleString('en-IN') : '—' });
+            cards.push({ label: 'Avg ER %',        value: avgER != null ? `${Number(avgER).toFixed(1)}%` : '—' });
+
+            // Money / commerce rollups
+            if (hasEngagement) {
+              cards.push({ label: 'Total Budget', value: fmtRupees(totalBudget) });
+            }
+            if (hasConversion) {
+              cards.push({ label: 'Total Products', value: productCount != null ? productCount : '—', sub: productCount == null ? 'Loading…' : '' });
+              cards.push({ label: 'Conversions',    value: txCount != null ? Number(txCount).toLocaleString('en-IN') : '—' });
+              cards.push({ label: 'Revenue',        value: txRevenue != null ? fmtRupees(txRevenue) : '—' });
+              cards.push({ label: 'Commission Paid', value: txCommission != null ? fmtRupees(txCommission) : '—' });
+            }
+
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {cards.map((s, i) => (
+                  <div key={`${s.label}-${i}`} className="bg-white rounded-xl border border-gray-200 p-3.5">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{s.label}</div>
+                    <div className="font-display text-lg font-extrabold text-gray-900 capitalize">{s.value}</div>
+                    {s.sub && <div className="text-[10px] text-gray-400 mt-0.5">{s.sub}</div>}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
 
           {/* ── Drill-Down Hierarchy Tree ───────────────────────────── */}
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
