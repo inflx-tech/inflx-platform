@@ -343,7 +343,9 @@ const confirmLive = asyncHandler(async (req, res) => {
   }
 
   let updatedDeliverable;
-  let t2Result;
+  let t2Result = null;
+  let liveCount = 0;
+  let totalCount = 0;
 
   await db.withTransaction(async (client) => {
     // 1. Mark deliverable as live
@@ -356,21 +358,42 @@ const confirmLive = asyncHandler(async (req, res) => {
     );
     updatedDeliverable = delivRows[0];
 
-    // 2. Mark campaign_influencer as active
+    // 2. Mark campaign_influencer as active (idempotent)
     await client.query(
       `UPDATE campaign_influencers SET status = 'active' WHERE id = $1`,
       [d.ci_id]
     );
 
-    // 3. Get T2 escrow entry
-    const { rows: t2Rows } = await client.query(
-      `SELECT id FROM escrow_entries
-       WHERE campaign_influencer_id = $1 AND tranche_number = 2 AND status = 'locked'`,
+    // 3. Count all deliverables for this contract vs. ones now live.
+    //    T2 releases only when every deliverable for this campaign_influencer
+    //    is in status 'live'. This prevents the "T2 already released" error
+    //    when a contract has multiple deliverables (e.g. reel + post + story).
+    const { rows: countRows } = await client.query(
+      `SELECT
+         COUNT(*)::int                                              AS total,
+         COUNT(*) FILTER (WHERE status = 'live')::int               AS live
+       FROM deliverables
+       WHERE campaign_influencer_id = $1`,
       [d.ci_id]
     );
-    if (!t2Rows[0]) throw new AppError('INTERNAL_ERROR', 'T2 escrow entry not found', 500);
+    totalCount = countRows[0].total;
+    liveCount  = countRows[0].live;
 
-    // 4. Release T2
+    if (liveCount < totalCount) return; // wait for remaining confirmations
+
+    // 4. All deliverables live — release T2 if still locked. FOR UPDATE guards
+    //    against a race when two confirm-live calls land concurrently.
+    const { rows: t2Rows } = await client.query(
+      `SELECT id, status FROM escrow_entries
+       WHERE campaign_influencer_id = $1 AND tranche_number = 2
+       FOR UPDATE`,
+      [d.ci_id]
+    );
+    if (!t2Rows[0]) {
+      throw new AppError('INTERNAL_ERROR', 'T2 escrow entry missing for this contract', 500);
+    }
+    if (t2Rows[0].status !== 'locked') return; // already released (idempotent)
+
     t2Result = await escrowService.processTrancheRelease(
       client,
       t2Rows[0].id,
@@ -380,26 +403,31 @@ const confirmLive = asyncHandler(async (req, res) => {
     );
   });
 
-  // 5. Notify influencer
-  try {
-    await notificationService.send({
-      userId:   d.influencer_user_id,
-      type:     'deliverable.live_confirmed',
-      title:    'Content Confirmed Live — T2 Payment Initiated',
-      body:     `Your content has been confirmed live. Tranche 2 payment of ₹${t2Result.netAmount.toFixed(2)} has been initiated.`,
-      data:     { screen: 'deliverable_detail', deliverable_id: d.id },
-      fcmToken: d.influencer_fcm_token,
-      sendSms:  true,
-      phone:    d.influencer_phone,
-    });
-  } catch (notifErr) {
-    console.error('[DELIVERABLE] Notification failed (non-fatal):', notifErr.message);
+  // 5. Notify influencer — only when T2 actually released on this call
+  if (t2Result) {
+    try {
+      await notificationService.send({
+        userId:   d.influencer_user_id,
+        type:     'deliverable.live_confirmed',
+        title:    'All Content Confirmed Live — T2 Payment Initiated',
+        body:     `Your content has been confirmed live. Tranche 2 payment of ₹${t2Result.netAmount.toFixed(2)} has been initiated.`,
+        data:     { screen: 'deliverable_detail', deliverable_id: d.id },
+        fcmToken: d.influencer_fcm_token,
+        sendSms:  true,
+        phone:    d.influencer_phone,
+      });
+    } catch (notifErr) {
+      console.error('[DELIVERABLE] Notification failed (non-fatal):', notifErr.message);
+    }
   }
 
   return success(res, {
-    deliverable:  updatedDeliverable,
-    t2_released:  true,
-    t2_amount:    t2Result.netAmount,
+    deliverable:     updatedDeliverable,
+    t2_released:     !!t2Result,
+    t2_amount:       t2Result ? t2Result.netAmount : null,
+    live_count:      liveCount,
+    total_count:     totalCount,
+    pending_count:   Math.max(0, totalCount - liveCount),
   });
 });
 

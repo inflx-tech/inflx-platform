@@ -116,7 +116,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   async function handleConfirmLive(deliverableId, liveUrl) {
     Alert.alert(
       'Confirm Content Live',
-      `Confirm the content is live at:\n${liveUrl}\n\nThis releases Tranche 2 to the influencer.`,
+      `Confirm the content is live at:\n${liveUrl}\n\nTranche 2 releases once every deliverable in this contract is confirmed live.`,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Confirm Live', onPress: async () => {
@@ -124,7 +124,22 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
           const res = await brandApi.confirmLive(deliverableId);
           setActionLoading(null);
           if (res.success) {
-            Alert.alert('Confirmed!', 'Content marked live. Tranche 2 released to influencer.');
+            const d = res.data || {};
+            if (d.t2_released) {
+              const amt = typeof d.t2_amount === 'number' ? ` of ₹${d.t2_amount.toFixed(2)}` : '';
+              Alert.alert(
+                'All Content Live!',
+                `Every deliverable in this contract is now live. Tranche 2${amt} has been released to the influencer.`
+              );
+            } else {
+              const live = d.live_count ?? 0;
+              const total = d.total_count ?? 0;
+              const pending = d.pending_count ?? Math.max(0, total - live);
+              Alert.alert(
+                'Marked Live',
+                `Deliverable confirmed live (${live} of ${total}). ${pending} still pending — Tranche 2 releases once all are confirmed live.`
+              );
+            }
             load();
           } else {
             Alert.alert('Error', res.error?.message || 'Failed to confirm live');
@@ -590,7 +605,7 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Confirm Content Live ({liveAwaitingConfirm.length})</Text>
           <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 8 }]}>
-            Influencer posted live URLs. Tap "Confirm Live" to release Tranche 2.
+            Influencer posted live URLs. Confirm every deliverable below — Tranche 2 releases once all are live.
           </Text>
           {liveAwaitingConfirm.map(d => {
             const isConfirming = actionLoading === d.id;
