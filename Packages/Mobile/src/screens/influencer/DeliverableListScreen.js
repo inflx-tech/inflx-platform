@@ -266,25 +266,40 @@ export default function DeliverableListScreen({ navigation, route }) {
                 <StatusBadge status={d.status} size={9} />
               </View>
 
-              {/* Action hint */}
-              {d.status === 'revision_requested' && (
-                <View style={styles.actionHint}>
-                  <Text style={styles.actionHintText}>
-                    Revision requested — tap to view feedback and resubmit
-                  </Text>
+              {/* Big obvious per-row CTA so the influencer sees 3 distinct
+                  upload entry points (one for each deliverable). Replaces
+                  the older subtle "tap to..." hint that confused users into
+                  thinking there was only one upload spot. */}
+              {d.status === 'pending' && (
+                <View style={styles.rowCta}>
+                  <Text style={styles.rowCtaLabel}>Upload {DELIVERABLE_LABELS[d.type] || d.type} →</Text>
                 </View>
               )}
-              {d.status === 'pending' && (
-                <View style={[styles.actionHint, { backgroundColor: colors.goldPale }]}>
-                  <Text style={[styles.actionHintText, { color: '#7A5500' }]}>
-                    Tap to submit your content for review
+              {d.status === 'revision_requested' && (
+                <View style={[styles.rowCta, { backgroundColor: colors.redPale }]}>
+                  <Text style={[styles.rowCtaLabel, { color: colors.red }]}>
+                    Revision needed — tap to resubmit
                   </Text>
                 </View>
               )}
               {d.status === 'approved' && !d.live_url && (
-                <View style={[styles.actionHint, { backgroundColor: colors.tealPale }]}>
-                  <Text style={[styles.actionHintText, { color: colors.tealDeep }]}>
-                    Approved — tap to submit live post URL
+                <View style={[styles.rowCta, { backgroundColor: colors.tealPale }]}>
+                  <Text style={[styles.rowCtaLabel, { color: colors.tealDeep }]}>
+                    Approved — tap to submit Live URL
+                  </Text>
+                </View>
+              )}
+              {d.status === 'approved' && d.live_url && (
+                <View style={[styles.rowCta, { backgroundColor: colors.navyPale }]}>
+                  <Text style={[styles.rowCtaLabel, { color: colors.navy }]}>
+                    Live URL submitted — awaiting brand confirmation
+                  </Text>
+                </View>
+              )}
+              {d.status === 'live' && (
+                <View style={[styles.rowCta, { backgroundColor: colors.tealPale }]}>
+                  <Text style={[styles.rowCtaLabel, { color: colors.tealDeep }]}>
+                    ✓ Live and confirmed
                   </Text>
                 </View>
               )}
@@ -434,6 +449,15 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   actionHintText: { fontSize: 11, color: colors.red, fontWeight: '600', textAlign: 'center' },
+  // Per-row CTA replacing the older subtle hint
+  rowCta: {
+    backgroundColor: colors.goldPale,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+  },
+  rowCtaLabel: { fontSize: 12, fontWeight: '800', color: '#7A5500', textAlign: 'center' },
 
   // Chevron
   chevronWrap: {

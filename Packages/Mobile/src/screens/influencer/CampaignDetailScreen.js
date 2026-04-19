@@ -140,12 +140,13 @@ export default function CampaignDetailScreen({ navigation, route }) {
   const contract = data.contract || null;
   const tranches = data.tranches || [];
 
-  // Fee breakdown: contract.influencer_fee = base + bonus once brand approves.
-  // Before approval, fee = the brand's original budget (no bonus yet).
-  const totalFee   = parseFloat(contract?.influencer_fee || campaign.agreed_fee || campaign.influencer_budget || campaign.per_influencer_budget || 0);
+  // contracts.influencer_fee is the BASE agreed fee (after the F.2 backend fix
+  // that stopped overwriting it with base+bonus). Total payout = base + bonus.
+  const baseFee     = parseFloat(contract?.influencer_fee || campaign.agreed_fee || campaign.influencer_budget || campaign.per_influencer_budget || 0);
   const bonusAmount = parseFloat(contract?.bonus_amount || 0);
-  const baseFee     = bonusAmount > 0 ? Math.max(0, totalFee - bonusAmount) : totalFee;
-  // Backwards-compat alias used by older render code below
+  const totalFee    = baseFee + bonusAmount;
+  // Backwards-compat alias used by older render code below — uses TOTAL so
+  // tranche math (fee × 25%) gives the right amount.
   const fee = totalFee;
   const commissionPct = campaign.commission_pct ? parseFloat(campaign.commission_pct) : 0;
   const currentStep = getStepIndex(campaign.influencer_status);
@@ -422,11 +423,11 @@ export default function CampaignDetailScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Upload All Content — only after contract is fully active.
-            Routes to DeliverableList which shows EVERY deliverable with its
-            own upload entry point, fixing the "only one deliverable upload"
-            complaint. */}
-        {influencerStatus === 'active' &&
+        {/* Upload Content — every deliverable has its own row + upload entry
+            in DeliverableList, so the influencer sees ALL deliverables (not
+            just the first). Available throughout the active phase: pending /
+            revision_requested → upload media; approved → submit live URL. */}
+        {(influencerStatus === 'active' || influencerStatus === 'contracted') &&
          deliverables.some(d => ['pending', 'revision_requested'].includes(d.status)) && (
           <TouchableOpacity
             style={[styles.actionBtn, { marginTop: 14 }]}
@@ -438,6 +439,25 @@ export default function CampaignDetailScreen({ navigation, route }) {
           >
             <Text style={styles.actionBtnText}>
               Upload Content ({deliverables.filter(d => ['pending', 'revision_requested'].includes(d.status)).length} pending)
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Submit Live URL — once brand approves, influencer needs to post
+            on Instagram and submit the live URL. Without this CTA, after
+            brand approval the upload button disappears and the live-URL
+            submit form is hidden 2-3 navigations deep. */}
+        {deliverables.some(d => d.status === 'approved' && !d.live_url) && (
+          <TouchableOpacity
+            style={[styles.actionBtn, { marginTop: 10, backgroundColor: colors.tealDeep }]}
+            onPress={() => navigation.navigate('DeliverableList', {
+              campaign_influencer_id: campaign.campaign_influencer_id,
+              campaign_name: campaign.campaign_name,
+              brand_name: campaign.brand_name,
+            })}
+          >
+            <Text style={styles.actionBtnText}>
+              Submit Live URL ({deliverables.filter(d => d.status === 'approved' && !d.live_url).length} approved, awaiting URL)
             </Text>
           </TouchableOpacity>
         )}

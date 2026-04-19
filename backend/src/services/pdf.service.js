@@ -43,15 +43,17 @@ async function generateContractPDF(contract) {
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
     doc.text(`Campaign:          ${contract.campaign_name || 'N/A'}`);
-    const totalFee = parseFloat(contract.influencer_fee || 0);
+    // contracts.influencer_fee is the BASE agreed fee. The total paid to the
+    // influencer is base + bonus_amount.
+    const baseFee  = parseFloat(contract.influencer_fee || 0);
     const bonus    = parseFloat(contract.bonus_amount || 0);
+    const totalFee = baseFee + bonus;
     if (bonus > 0) {
-      const baseFee = totalFee - bonus;
       doc.text(`Base Fee:          ₹${baseFee.toFixed(2)}`);
       doc.text(`Brand Bonus:       ₹${bonus.toFixed(2)}`);
       doc.text(`Total Fee:         ₹${totalFee.toFixed(2)}`);
     } else {
-      doc.text(`Agreed Fee:        ₹${totalFee.toFixed(2)}`);
+      doc.text(`Agreed Fee:        ₹${baseFee.toFixed(2)}`);
     }
     doc.text(`Posting Date:      ${contract.posting_date || 'To be agreed'}`);
     doc.text(`Revision Limit:    ${contract.revision_limit}`);
@@ -108,13 +110,15 @@ async function generateContractPDF(contract) {
     doc.moveDown(1.5);
 
     // ── Payment Schedule ───────────────────────────────────────────────────
+    // Tranches are computed off the TOTAL (base + bonus), since the influencer
+    // is owed the full sum.
     doc.fontSize(14).font('Helvetica-Bold').text('PAYMENT SCHEDULE');
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
-    const fee = parseFloat(contract.influencer_fee || 0);
-    doc.text(`Tranche 1 (25%): ₹${(fee * 0.25).toFixed(2)} — Released on contract activation`);
-    doc.text(`Tranche 2 (25%): ₹${(fee * 0.25).toFixed(2)} — Released on content going live`);
-    doc.text(`Tranche 3 (50%): ₹${(fee * 0.50).toFixed(2)} — Released 30 days after content live`);
+    const tranchedFee = parseFloat(contract.influencer_fee || 0) + parseFloat(contract.bonus_amount || 0);
+    doc.text(`Tranche 1 (25%): ₹${(tranchedFee * 0.25).toFixed(2)} — Released on contract activation`);
+    doc.text(`Tranche 2 (25%): ₹${(tranchedFee * 0.25).toFixed(2)} — Released on content going live`);
+    doc.text(`Tranche 3 (50%): ₹${(tranchedFee * 0.50).toFixed(2)} — Released 30 days after content live`);
     doc.moveDown(1.5);
 
     // ── Terms & Conditions ─────────────────────────────────────────────────

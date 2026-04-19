@@ -151,7 +151,11 @@ export default function ContractScreen({ navigation, route }) {
   const fullyActive = contract.status === 'active' || (influencerHasSigned && brandHasSigned);
   const needsInfluencerSignature = contract.status === 'pending_influencer' && !influencerHasSigned;
 
-  const fee = contract.influencer_fee || contract.agreed_fee || 0;
+  // influencer_fee is the BASE agreed fee. Total = base + bonus. The Payment
+  // Terms tranche schedule + Total Fee display use the TOTAL.
+  const baseFee = parseFloat(contract.influencer_fee || contract.agreed_fee || 0);
+  const bonus   = parseFloat(contract.bonus_amount || 0);
+  const fee     = baseFee + bonus;
   // Tranche defaults: 25/25/50
   const t1Pct = 25;
   const t2Pct = 25;

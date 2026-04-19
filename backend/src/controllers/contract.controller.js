@@ -253,9 +253,14 @@ const brandSign = asyncHandler(async (req, res) => {
   let t1EntryId;
   let t1Result;
 
-  // Compute effective fee — fallback chain for when agreed_fee was never set
-  const effectiveFee = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
-  console.log('[brandSign] effectiveFee:', effectiveFee, '| influencer_fee:', contract.influencer_fee, '| agreed_fee:', contract.agreed_fee, '| influencer_budget:', contract.influencer_budget, '| per_influencer_budget:', contract.per_influencer_budget);
+  // effectiveFee = the TOTAL the influencer is owed (base + brand bonus).
+  // contracts.influencer_fee holds the BASE agreed amount only. Bonus, if
+  // any, is added separately. Escrow tranches + wallet lock are computed off
+  // this combined total so the influencer receives the full agreed sum.
+  const baseFee     = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
+  const bonusOnTop  = parseFloat(contract.bonus_amount || 0);
+  const effectiveFee = baseFee + bonusOnTop;
+  console.log('[brandSign] effectiveFee:', effectiveFee, '| base:', baseFee, '| bonus:', bonusOnTop, '| influencer_fee(base):', contract.influencer_fee);
 
   // ── Per-contract wallet lock ─────────────────────────────────────────────
   // Money used to be locked at campaign publish for the entire budget.
@@ -290,10 +295,12 @@ const brandSign = asyncHandler(async (req, res) => {
   // Everything in one transaction for atomicity
   try {
     await db.withTransaction(async (client) => {
-      // 0. Backfill: update contract and CI if fee was NULL
-      if (!contract.influencer_fee && effectiveFee > 0) {
-        await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [effectiveFee, contract.id]);
-        await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [effectiveFee, contract.campaign_influencer_id]);
+      // 0. Backfill base fee only — keep influencer_fee = base. Bonus stays
+      //    in its own column. effectiveFee (base+bonus) is what's used for
+      //    escrow + wallet, but we don't write the inflated number back.
+      if (!contract.influencer_fee && baseFee > 0) {
+        await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [baseFee, contract.id]);
+        await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [baseFee, contract.campaign_influencer_id]);
       }
 
       // 0.5 NEW: Lock per-contract funds in brand wallet (engagement/hybrid only)
@@ -402,12 +409,30 @@ const brandSign = asyncHandler(async (req, res) => {
         'youtube short':    'youtube_short',
         'youtube video':    'youtube_video',
       };
+      // Helper: turn any format identifier (string or object field) into the
+      // canonical short type ('reel' / 'post' / 'story' / 'youtube_short' /
+      // 'youtube_video') stored in the deliverables.type column.
+      const toCanonicalType = (raw) => {
+        if (!raw) return 'reel';
+        const key = String(raw).toLowerCase().trim();
+        return FORMAT_ALIAS[key] || key.replace(/\s+/g, '_');
+      };
+
       const normalised = formats.map(f => {
         if (typeof f === 'string') {
-          const key = f.toLowerCase().trim();
-          return { type: FORMAT_ALIAS[key] || key.replace(/\s+/g, '_'), count: 1 };
+          // Wizard often sends just strings: ["Instagram reel", "Instagram post"]
+          return { type: toCanonicalType(f), count: 1 };
         }
-        return { type: (f.type || 'reel'), count: Math.max(1, parseInt(f.count, 10) || 1) };
+        // Wizard ALSO sends objects with a `name` field, NOT `type`. The old
+        // code only checked `f.type`, so every format defaulted to 'reel' and
+        // an influencer with reel + post + story ended up with three reels.
+        // Fix: try `f.type` first (legacy), then `f.name` (current wizard
+        // shape), then fall back to 'reel'.
+        const rawType = f.type || f.name || f.label || 'reel';
+        return {
+          type:  toCanonicalType(rawType),
+          count: Math.max(1, parseInt(f.count, 10) || 1),
+        };
       });
 
       for (const fmt of normalised) {
@@ -618,25 +643,25 @@ const approveContract = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'bonus_amount must be 0 or positive', 422, 'bonus_amount');
   }
 
-  // Recompute total fee = base + bonus. Persist on contract; influencer's
-  // T1/T2/T3 will be calculated off this number when brand counter-signs.
-  const baseFee  = parseFloat(contract.influencer_fee || 0);
-  const newTotal = baseFee + bonus;
-
+  // Persist clauses + bonus only. We deliberately do NOT touch
+  // influencer_fee — it must keep its original meaning of "base agreed fee".
+  // The total paid to the influencer (base + bonus) is derived everywhere it's
+  // needed (escrow tranche math, PDF "Total Fee" line, mobile fee-breakdown
+  // display). Mixing the two into a single column caused a cascading bug
+  // where the brand mobile screen showed Base=3700 (the inflated total) and
+  // then added the bonus on top → 4200 instead of the correct 3700.
   await db.query(
     `UPDATE contracts
      SET status         = 'pending_influencer',
          custom_clauses = $2,
          bonus_amount   = $3,
-         influencer_fee = $4,
          approved_at    = now(),
-         approved_by    = $5
+         approved_by    = $4
      WHERE id = $1`,
     [
       contract.id,
       custom_clauses ? JSON.stringify(custom_clauses) : null,
       bonus,
-      newTotal,
       req.user.sub,
     ]
   );

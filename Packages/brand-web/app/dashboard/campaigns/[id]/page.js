@@ -1433,17 +1433,39 @@ export default function CampaignDetailPage() {
                               {isInfOpen && deliverableStats.length > 0 && (
                                 <div className="px-6 pb-3">
                                   <div className="bg-gray-50 rounded-lg overflow-hidden">
-                                    <div className="grid grid-cols-6 gap-2 px-3 py-2 text-[9px] font-bold text-gray-400 uppercase border-b border-gray-100">
-                                      <span>Type</span><span>Status</span><span>Reach</span><span>Likes</span><span>Comments</span><span>ER</span>
+                                    <div className="grid grid-cols-7 gap-2 px-3 py-2 text-[9px] font-bold text-gray-400 uppercase border-b border-gray-100">
+                                      <span>Type</span><span>Status</span><span>Reach</span><span>Likes</span><span>Comments</span><span>ER</span><span className="text-right">Refresh</span>
                                     </div>
                                     {deliverableStats.map((d, di) => (
-                                      <div key={di} className="grid grid-cols-6 gap-2 px-3 py-2 text-xs text-gray-600 border-b border-gray-50 last:border-0">
+                                      <div key={d.id || di} className="grid grid-cols-7 gap-2 px-3 py-2 text-xs text-gray-600 border-b border-gray-50 last:border-0 items-center">
                                         <span className="font-semibold uppercase text-navy">{d.type}</span>
                                         <span><StatusBadge status={d.status} /></span>
                                         <span>{fmtNum(d.reach)}</span>
                                         <span>{fmtNum(d.likes)}</span>
                                         <span>{fmtNum(d.comments)}</span>
                                         <span>{d.engagement_rate || '--'}%</span>
+                                        {/* On-demand Apify refresh (live deliverables only). Calls
+                                            POST /deliverables/:id/refresh-stats which scrapes
+                                            Instagram and updates deliverable_stats. */}
+                                        <span className="text-right">
+                                          {d.status === 'live' && d.id ? (
+                                            <button
+                                              onClick={async () => {
+                                                const res = await deliverableApi.refreshStats(d.id);
+                                                if (res.success) {
+                                                  // Re-fetch engagement to update the row in place
+                                                  campaignApi.getEngagement(id).then(r => { if (r.success) setEngagement(r.data); });
+                                                } else {
+                                                  alert(res.error?.message || 'Refresh failed');
+                                                }
+                                              }}
+                                              className="text-[10px] font-bold text-navy bg-white border border-gray-200 rounded px-2 py-0.5 hover:bg-navy hover:text-white transition-colors"
+                                              title="Re-scrape Instagram engagement now"
+                                            >
+                                              ↻
+                                            </button>
+                                          ) : <span className="text-gray-300">—</span>}
+                                        </span>
                                       </div>
                                     ))}
                                   </div>

@@ -173,6 +173,10 @@ export default function BrandContractScreen({ route, navigation }) {
   const isPendingInf      = status === 'pending_influencer';
   const isActive          = status === 'active';
 
+  // contracts.influencer_fee is the BASE agreed fee (after the F.2 fix).
+  // Total = base + bonus, where bonus comes either from contract.bonus_amount
+  // (after brand has approved) or from the editable bonusAmount input
+  // (during draft review before approval).
   const baseFee  = parseFloat(contract.influencer_fee || 0);
   const bonus    = parseFloat(bonusAmount || contract.bonus_amount || 0);
   const totalFee = baseFee + bonus;
