@@ -73,13 +73,28 @@ const getCampaignEscrow = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   const { campaign_id } = req.params;
 
-  // Verify campaign belongs to this brand
+  // Verify campaign belongs to this brand AND learn the goals of its sets so
+  // the response can be goal-aware. Conversion-only campaigns intentionally
+  // have no escrow tranches (no fee → no money to lock) — we still return a
+  // 200 with empty arrays + a goal_summary so the UI can render the right
+  // explanation instead of pretending tranches exist.
   const { rows: campRows } = await db.query(
-    `SELECT id, name, status FROM campaigns WHERE id = $1 AND brand_id = $2`,
+    `SELECT c.id, c.name, c.status,
+            ARRAY_AGG(DISTINCT cs.goal) FILTER (WHERE cs.goal IS NOT NULL) AS goals
+     FROM   campaigns c
+     LEFT JOIN campaign_sets cs ON cs.campaign_id = c.id
+     WHERE  c.id = $1 AND c.brand_id = $2
+     GROUP  BY c.id`,
     [campaign_id, brand.id]
   );
   if (!campRows[0]) throw new AppError('NOT_FOUND', 'Campaign not found', 404);
   const campaign = campRows[0];
+  const goals    = campaign.goals || [];
+
+  // A campaign is "conversion-only" if every set is conversion (or no sets exist).
+  // It's "engagement/hybrid" if any set involves a fee.
+  const hasFeeBearingGoal  = goals.some(g => g === 'engagement' || g === 'hybrid');
+  const isConversionOnly   = goals.length > 0 && !hasFeeBearingGoal;
 
   // Fetch escrow entries for this specific campaign (brand ownership verified above)
   const { rows: escrowEntries } = await db.query(
@@ -140,7 +155,16 @@ const getCampaignEscrow = asyncHandler(async (req, res) => {
   }
 
   return success(res, {
-    campaign: { id: campaign.id, name: campaign.name, status: campaign.status },
+    campaign: {
+      id:     campaign.id,
+      name:   campaign.name,
+      status: campaign.status,
+      goals,                                          // ['engagement'] / ['conversion'] / ['hybrid'] / mix
+      goal_summary: isConversionOnly
+        ? 'conversion'
+        : (hasFeeBearingGoal && goals.includes('conversion') ? 'mixed' : (goals[0] || 'engagement')),
+      has_tranches: hasFeeBearingGoal,                // false → UI should not show tranche schedule
+    },
     entries: escrowEntries,
     influencer_breakdown: Object.values(byInfluencer),
     summary: {

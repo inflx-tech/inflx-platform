@@ -273,7 +273,7 @@ function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
 
 // ─── Contract Countersign Modal ───────────────────────────────────────────────
 
-function ContractModal({ inf, contract, loading, onClose, onSign }) {
+function ContractModal({ inf, contract, goal, loading, onClose, onSign }) {
   if (!contract) return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl p-8 text-center">
@@ -283,9 +283,22 @@ function ContractModal({ inf, contract, loading, onClose, onSign }) {
     </div>
   );
 
+  // Goal-aware rows. Conversion campaigns have no fee → show commission instead.
+  // Hybrid shows both. Default falls back to engagement (fee) if goal is missing.
+  const goalLower      = (goal || 'engagement').toLowerCase();
+  const showFee        = goalLower === 'engagement' || goalLower === 'hybrid';
+  const showCommission = goalLower === 'conversion' || goalLower === 'hybrid';
+
   const rows = [
     { label: 'Influencer', value: contract.influencer_name || `@${inf.instagram_handle}` },
-    { label: 'Agreed Fee', value: `₹${Number(contract.influencer_fee || 0).toLocaleString('en-IN')}` },
+    ...(showFee ? [{
+      label: 'Agreed Fee',
+      value: `₹${Number(contract.influencer_fee || inf.influencer_budget || 0).toLocaleString('en-IN')}`
+    }] : []),
+    ...(showCommission ? [{
+      label: 'Commission',
+      value: inf.commission_pct ? `${parseFloat(inf.commission_pct)}% per conversion` : '—'
+    }] : []),
     { label: 'Posting Date', value: contract.posting_date ? new Date(contract.posting_date).toLocaleDateString('en-IN') : '—' },
     { label: 'Revision Limit', value: contract.revision_limit ?? 2 },
     { label: 'Influencer Signed', value: contract.influencer_signed_at ? new Date(contract.influencer_signed_at).toLocaleString('en-IN') : 'Not yet' },
@@ -358,7 +371,11 @@ function ContractModal({ inf, contract, loading, onClose, onSign }) {
 
         {contract.status === 'pending_brand' ? (
           <div className="p-5 border-t border-gray-100">
-            <p className="text-xs text-gray-500 mb-3">By signing, you confirm the above terms. Tranche 1 ({contract.influencer_fee ? `₹${(contract.influencer_fee * 0.25).toLocaleString('en-IN')}` : '25%'}) will be queued for release.</p>
+            <p className="text-xs text-gray-500 mb-3">
+              {showFee
+                ? `By signing, you confirm the above terms. Tranche 1 (${contract.influencer_fee ? `₹${(contract.influencer_fee * 0.25).toLocaleString('en-IN')}` : '25%'}) will be queued for release.`
+                : `By signing, you confirm the above terms. Commissions will be paid as conversions happen, after the 30-day return window.`}
+            </p>
             <button onClick={onSign} disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity">
               {loading ? 'Signing…' : 'Sign Contract'}
@@ -461,7 +478,7 @@ export default function CampaignDetailPage() {
     } else showToast(res.error?.message || 'Failed');
   }
 
-  async function openNegModal(inf) {
+  async function openNegModal(inf, goal) {
     let res;
     if (inf.negotiation_id) {
       res = await negotiationApi.get(inf.negotiation_id);
@@ -472,7 +489,7 @@ export default function CampaignDetailPage() {
       showToast('No negotiation thread found');
       return;
     }
-    if (res.success) setNegModal({ inf, negotiation: res.data?.negotiation || res.data });
+    if (res.success) setNegModal({ inf, negotiation: res.data?.negotiation || res.data, goal });
     else showToast(res.error?.message || 'Failed to load negotiation');
   }
 
@@ -489,9 +506,9 @@ export default function CampaignDetailPage() {
     } else showToast(res.error?.message || 'Failed');
   }
 
-  async function openContractModal(inf) {
+  async function openContractModal(inf, goal) {
     const res = await contractApi.get(inf.id);
-    if (res.success) setContractModal({ inf, contract: res.data?.contract || res.data });
+    if (res.success) setContractModal({ inf, contract: res.data?.contract || res.data, goal });
     else showToast(res.error?.message || 'Failed to load contract');
   }
 
@@ -672,6 +689,10 @@ export default function CampaignDetailPage() {
                       const deliverables = inf.deliverables || [];
                       const products = inf.products || [];
                       const transactions = inf.transactions || [];
+                      // Goal-aware: only show fields that apply to the parent set's goal.
+                      const setGoal       = (set.goal || 'engagement').toLowerCase();
+                      const showFeeFields = setGoal === 'engagement' || setGoal === 'hybrid';
+                      const showCommFields = setGoal === 'conversion' || setGoal === 'hybrid';
                       return (
                         <div key={inf.id} className="ml-4 border-l-2 border-gray-100 pl-4 mt-1">
                           <button onClick={() => setExpandedInfs(prev => ({ ...prev, [infKey]: !prev[infKey] }))}
@@ -686,7 +707,7 @@ export default function CampaignDetailPage() {
                             <div className="ml-8 mt-1 space-y-1 text-xs text-gray-500 pb-2">
                               <div className="flex items-center gap-2 flex-wrap">
                                 {inf.offer_type && <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-[10px] font-bold">{inf.offer_type}</span>}
-                                {inf.commission_pct && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-[10px] font-bold">{parseFloat(inf.commission_pct)}% commission</span>}
+                                {showCommFields && inf.commission_pct && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-[10px] font-bold">{parseFloat(inf.commission_pct)}% commission</span>}
                                 {inf.coupon_code && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-mono">{inf.coupon_code}</span>}
                               </div>
                               <div className="flex items-center gap-1">
@@ -764,7 +785,13 @@ export default function CampaignDetailPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-50">
-                      {setInfs.map(inf => (
+                      {setInfs.map(inf => {
+                        // Goal-aware per-row (set is in scope from outer map)
+                        const goalLower      = (set.goal || 'engagement').toLowerCase();
+                        const showFee        = goalLower === 'engagement' || goalLower === 'hybrid';
+                        const showCommission = goalLower === 'conversion' || goalLower === 'hybrid';
+                        const showTranches   = showFee;   // No fee → no tranches
+                        return (
                         <div key={inf.id} className="flex items-start justify-between px-4 py-3 hover:bg-gray-50 transition-colors gap-3">
                           <div className="flex items-start gap-3 min-w-0">
                             <Avatar handle={inf.instagram_handle} />
@@ -774,10 +801,10 @@ export default function CampaignDetailPage() {
                                 <StatusBadge status={inf.status} />
                               </div>
                               <div className="flex items-center gap-3 mt-1 text-[10px] text-gray-400 flex-wrap">
-                                {inf.influencer_budget > 0 && (
+                                {showFee && inf.influencer_budget > 0 && (
                                   <span>💰 Budget: <strong className="text-gray-700">{fmtRupees(inf.influencer_budget)}</strong></span>
                                 )}
-                                {inf.commission_pct > 0 && (
+                                {showCommission && inf.commission_pct > 0 && (
                                   <span>📊 Commission: <strong className="text-gray-700">{inf.commission_pct}%</strong></span>
                                 )}
                                 {inf.posting_date && (
@@ -795,13 +822,13 @@ export default function CampaignDetailPage() {
                           {/* Tranche status + action buttons */}
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {inf.status === 'negotiating' && (
-                              <button onClick={() => openNegModal(inf)}
+                              <button onClick={() => openNegModal(inf, set.goal)}
                                 className="px-3 py-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 font-bold text-[10px] rounded-lg hover:bg-yellow-100 transition-colors">
                                 Respond
                               </button>
                             )}
                             {inf.status === 'accepted' && (
-                              <button onClick={() => openContractModal(inf)}
+                              <button onClick={() => openContractModal(inf, set.goal)}
                                 className="px-3 py-1.5 bg-teal-50 border border-teal-200 text-teal-700 font-bold text-[10px] rounded-lg hover:bg-teal-100 transition-colors">
                                 Sign Contract
                               </button>
@@ -813,7 +840,7 @@ export default function CampaignDetailPage() {
                                 {cancellingInf === inf.id ? 'Cancelling…' : 'Cancel'}
                               </button>
                             )}
-                            {!isConversionCampaign && (
+                            {showTranches && (
                               <div className="flex items-center gap-2 text-xs text-gray-400">
                                 <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t1_status} /> T1</span>
                                 <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t2_status} /> T2</span>
@@ -822,7 +849,8 @@ export default function CampaignDetailPage() {
                             )}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -1293,6 +1321,7 @@ export default function CampaignDetailPage() {
       {contractModal && <ContractModal
         inf={contractModal.inf}
         contract={contractModal.contract}
+        goal={contractModal.goal}
         loading={contractLoading}
         onClose={() => setContractModal(null)}
         onSign={handleBrandSign}

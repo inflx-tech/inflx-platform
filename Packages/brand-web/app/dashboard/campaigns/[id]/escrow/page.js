@@ -57,6 +57,24 @@ export default function EscrowDetailPage() {
         <div className="text-center py-12 text-t3 text-sm">Loading...</div>
       ) : error ? (
         <div className="bg-white rounded-xl border border-red-200 p-8 text-center text-red-600 text-sm">{error}</div>
+      ) : campaign?.has_tranches === false ? (
+        // Conversion-only campaign — no fee, no escrow tranches.
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">💸</div>
+            <div className="flex-1">
+              <div className="text-sm font-bold text-orange-900 mb-1">No escrow for conversion campaigns</div>
+              <p className="text-xs text-orange-800 leading-relaxed mb-2">
+                This campaign pays influencers <strong>commission per conversion</strong>, not a fixed fee — so there are no tranches
+                to lock up front. Earnings appear in the influencer's pending balance as conversions happen, and roll over to their
+                wallet after the 30-day return window.
+              </p>
+              <a href={`/dashboard/campaigns/${id}?tab=conversions`} className="text-xs font-semibold text-orange-700 hover:underline">
+                Open Conversions tab →
+              </a>
+            </div>
+          </div>
+        </div>
       ) : (!data?.entries || data.entries.length === 0) ? (
         <div className="bg-white rounded-xl border border-border p-8 text-center">
           <div className="text-t3 text-sm mb-2">No escrow entries for this campaign</div>

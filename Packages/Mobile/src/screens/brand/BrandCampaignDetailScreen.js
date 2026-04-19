@@ -154,6 +154,13 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   const remainingBudget = Math.max(0, totalBudget - allocatedBudget);
   const budgetProgress = totalBudget > 0 ? Math.min(1, allocatedBudget / totalBudget) : 0;
 
+  // Goal-aware: if every set is 'conversion', campaign has no fee/escrow.
+  // (Mixed campaigns with at least one engagement/hybrid set still show
+  // budget + tranches.)
+  const setGoals          = sets.map(s => (s.goal || '').toLowerCase()).filter(Boolean);
+  const hasFeeBearingSet  = setGoals.some(g => g === 'engagement' || g === 'hybrid');
+  const isConversionOnly  = setGoals.length > 0 && !hasFeeBearingSet;
+
   // Collect all deliverables from influencers that need review
   const deliverablesToReview = [];
   for (const set of sets) {
@@ -201,29 +208,45 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* ── Budget Section ──────────────────────────────────────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Budget Overview</Text>
-        <View style={styles.budgetHighlight}>
-          <Text style={styles.budgetLabel}>Total Budget</Text>
-          <Text style={styles.budgetValue}>{fmtRupees(totalBudget)}</Text>
-        </View>
-        <View style={styles.budgetRow}>
-          <View style={styles.budgetItem}>
-            <Text style={styles.budgetItemLabel}>Allocated</Text>
-            <Text style={[styles.budgetItemValue, { color: colors.navy }]}>{fmtRupees(allocatedBudget)}</Text>
+      {/* ── Budget Section (only meaningful when fees are involved) ────── */}
+      {isConversionOnly ? (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Payment Model</Text>
+          <View style={[styles.budgetHighlight, { backgroundColor: colors.tealPale }]}>
+            <Text style={[styles.budgetLabel, { color: colors.tealDeep }]}>Commission per Conversion</Text>
+            <Text style={[styles.budgetValue, { color: colors.tealDeep, fontSize: 18 }]}>
+              No upfront fee
+            </Text>
           </View>
-          <View style={styles.budgetItem}>
-            <Text style={styles.budgetItemLabel}>Remaining</Text>
-            <Text style={[styles.budgetItemValue, { color: colors.tealDeep }]}>{fmtRupees(remainingBudget)}</Text>
+          <Text style={[styles.briefText, { marginTop: 10 }]}>
+            Influencers earn commission only when their tracking link drives a conversion.
+            Earnings hold for 30 days, then move to their wallet.
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Budget Overview</Text>
+          <View style={styles.budgetHighlight}>
+            <Text style={styles.budgetLabel}>Total Budget</Text>
+            <Text style={styles.budgetValue}>{fmtRupees(totalBudget)}</Text>
           </View>
+          <View style={styles.budgetRow}>
+            <View style={styles.budgetItem}>
+              <Text style={styles.budgetItemLabel}>Allocated</Text>
+              <Text style={[styles.budgetItemValue, { color: colors.navy }]}>{fmtRupees(allocatedBudget)}</Text>
+            </View>
+            <View style={styles.budgetItem}>
+              <Text style={styles.budgetItemLabel}>Remaining</Text>
+              <Text style={[styles.budgetItemValue, { color: colors.tealDeep }]}>{fmtRupees(remainingBudget)}</Text>
+            </View>
+          </View>
+          {/* Progress bar */}
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${Math.round(budgetProgress * 100)}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{Math.round(budgetProgress * 100)}% allocated</Text>
         </View>
-        {/* Progress bar */}
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${Math.round(budgetProgress * 100)}%` }]} />
-        </View>
-        <Text style={styles.progressText}>{Math.round(budgetProgress * 100)}% allocated</Text>
-      </View>
+      )}
 
       {/* ── Brief ───────────────────────────────────────────────────────── */}
       {campaign.brief ? (
@@ -278,6 +301,11 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
             const completedDel = deliverables.filter(d => ['approved', 'live'].includes(d.status)).length;
             const totalDel = deliverables.length;
 
+            // Per-row goal awareness — derived from the parent set's goal
+            const rowGoal        = (ci.set_goal || 'engagement').toLowerCase();
+            const rowShowFee     = rowGoal === 'engagement' || rowGoal === 'hybrid';
+            const rowShowComm    = rowGoal === 'conversion' || rowGoal === 'hybrid';
+
             return (
               <View key={ci.id} style={styles.influencerRow}>
                 <View style={styles.influencerInfo}>
@@ -290,8 +318,11 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
                     <StatusBadge status={ci.status} size={9} />
-                    {ci.agreed_fee > 0 && (
+                    {rowShowFee && ci.agreed_fee > 0 && (
                       <Text style={styles.influencerFee}>{fmtRupees(ci.agreed_fee)}</Text>
+                    )}
+                    {rowShowComm && ci.commission_pct > 0 && (
+                      <Text style={[styles.influencerFee, { color: colors.tealDeep }]}>{parseFloat(ci.commission_pct)}% comm.</Text>
                     )}
                   </View>
                 </View>
@@ -339,7 +370,9 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
       </View>
 
       {/* ── Escrow Section ──────────────────────────────────────────────── */}
-      {hasEscrowData && (
+      {/* Conversion-only campaigns have no fee → no escrow tranches.
+          Only show this card when the campaign actually has fee-bearing sets. */}
+      {!isConversionOnly && hasEscrowData && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Escrow Overview</Text>
           {trancheSummary.map(t => {
