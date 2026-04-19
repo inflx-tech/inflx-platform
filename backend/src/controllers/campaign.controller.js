@@ -732,20 +732,16 @@ const publish = asyncHandler(async (req, res) => {
       );
     }
 
-    // Debit wallet + create escrow
-    const newBalance = walletBalancePaise - budgetPaise;
-    await db.withTransaction(async (client) => {
-      await client.query(`UPDATE brands SET wallet_balance = $1 WHERE id = $2`, [newBalance, brand.id]);
-      await client.query(
-        `INSERT INTO wallet_transactions (brand_id, type, amount, direction, balance_after, campaign_id, notes)
-         VALUES ($1, 'escrow_lock', $2, 'debit', $3, $4, $5)`,
-        [brand.id, budgetPaise, newBalance, campaign.id, `Escrow lock for campaign: ${campaign.name}`]
-      );
-      await client.query(
-        `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
-        [campaign.id]
-      );
-    });
+    // ── Publish: NO money moves yet ──────────────────────────────────────
+    // We only verify the brand has enough in their wallet to potentially
+    // cover the full budget. Funds STAY in wallet_balance — they're locked
+    // per-influencer at the moment that influencer's contract gets fully
+    // brand-signed (see contract.controller.brandSign). This avoids tying
+    // up money for influencers who never sign / negotiate down / decline.
+    await db.query(
+      `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
+      [campaign.id]
+    );
   } else {
     // Conversion-only: no budget needed, just activate
     await db.query(
@@ -877,20 +873,26 @@ const cancel = asyncHandler(async (req, res) => {
     return success(res, { campaign_id: campaign.id, status: 'cancelled', refund_paise: 0 });
   }
 
-  // Calculate how much was originally locked (campaign budget in paise)
-  const budgetPaise = campaign.total_budget ? Math.round(parseFloat(campaign.total_budget) * 100) : 0;
-
-  // Sum escrow already released for this campaign's influencers (in rupees → convert to paise)
-  const { rows: releasedRows } = await db.query(
-    `SELECT COALESCE(SUM(ee.amount), 0) AS released_rupees
+  // Refund = sum of LOCKED escrow_entries across all influencers in this
+  // campaign + the platform-fee portion that was locked alongside them.
+  //
+  // Under the new per-contract escrow model, money is only locked when each
+  // influencer's contract was brand-signed. Cancelling refunds whatever's
+  // still locked (not yet released as tranches). Released tranches stay
+  // paid out to the influencers — they earned them.
+  const { rows: lockedRows } = await db.query(
+    `SELECT COALESCE(SUM(ee.amount), 0) AS locked_amount,
+            COALESCE(SUM(ee.platform_fee_amount), 0) AS locked_platform_fee
      FROM escrow_entries ee
      JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
      JOIN campaign_sets cs ON cs.id = ci.set_id
-     WHERE cs.campaign_id = $1 AND ee.status = 'released'`,
+     WHERE cs.campaign_id = $1 AND ee.status = 'locked'`,
     [campaign.id]
   );
-  const releasedPaise = Math.round(parseFloat(releasedRows[0].released_rupees) * 100);
-  const refundPaise   = Math.max(0, budgetPaise - releasedPaise);
+  const lockedAmountRupees    = parseFloat(lockedRows[0].locked_amount || 0);
+  const lockedPlatformRupees  = parseFloat(lockedRows[0].locked_platform_fee || 0);
+  // wallet_transactions.amount is in PAISE
+  const refundPaise = Math.round((lockedAmountRupees + lockedPlatformRupees) * 100);
 
   await db.withTransaction(async (client) => {
     // Mark all still-locked escrow entries as cancelled

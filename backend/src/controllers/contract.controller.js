@@ -257,6 +257,36 @@ const brandSign = asyncHandler(async (req, res) => {
   const effectiveFee = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
   console.log('[brandSign] effectiveFee:', effectiveFee, '| influencer_fee:', contract.influencer_fee, '| agreed_fee:', contract.agreed_fee, '| influencer_budget:', contract.influencer_budget, '| per_influencer_budget:', contract.per_influencer_budget);
 
+  // ── Per-contract wallet lock ─────────────────────────────────────────────
+  // Money used to be locked at campaign publish for the entire budget.
+  // Now we lock only what's needed for THIS specific contract — at the
+  // moment both parties have agreed on the final fee. If brand wallet
+  // doesn't have enough, brand-sign is refused with WALLET_INSUFFICIENT.
+  //
+  // What gets locked = effectiveFee + (effectiveFee × platform_fee_pct%).
+  // wallet_balance is in PAISE; effectiveFee is in RUPEES.
+  const platformFeePct      = parseFloat(contract.platform_fee_pct || 8);
+  const lockAmountRupees    = effectiveFee * (1 + platformFeePct / 100);
+  const lockAmountPaise     = Math.round(lockAmountRupees * 100);
+  const needsWalletLock     = effectiveFee > 0;   // conversion-only contracts skip this
+
+  if (needsWalletLock) {
+    const { rows: brandWalletRows } = await db.query(
+      `SELECT wallet_balance FROM brands WHERE id = $1`,
+      [contract.brand_id]
+    );
+    const walletBalancePaise = parseFloat(brandWalletRows[0]?.wallet_balance || 0);
+    if (walletBalancePaise < lockAmountPaise) {
+      throw new AppError(
+        'WALLET_INSUFFICIENT',
+        `Insufficient wallet balance to sign this contract. ` +
+        `Need ₹${lockAmountRupees.toFixed(2)} (₹${effectiveFee.toFixed(2)} fee + ${platformFeePct}% platform fee). ` +
+        `Available: ₹${(walletBalancePaise / 100).toFixed(2)}. Top up your wallet first.`,
+        422
+      );
+    }
+  }
+
   // Everything in one transaction for atomicity
   try {
     await db.withTransaction(async (client) => {
@@ -264,6 +294,36 @@ const brandSign = asyncHandler(async (req, res) => {
       if (!contract.influencer_fee && effectiveFee > 0) {
         await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [effectiveFee, contract.id]);
         await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [effectiveFee, contract.campaign_influencer_id]);
+      }
+
+      // 0.5 NEW: Lock per-contract funds in brand wallet (engagement/hybrid only)
+      if (needsWalletLock) {
+        const { rows: walletRows } = await client.query(
+          `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
+          [contract.brand_id]
+        );
+        const currentBalance = parseFloat(walletRows[0].wallet_balance);
+        const newBalance = currentBalance - lockAmountPaise;
+        if (newBalance < 0) {
+          // Race condition guard — another contract grabbed funds first
+          throw new AppError('WALLET_INSUFFICIENT', 'Wallet balance changed; please retry.', 422);
+        }
+        await client.query(
+          `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
+          [newBalance, contract.brand_id]
+        );
+        await client.query(
+          `INSERT INTO wallet_transactions
+             (brand_id, type, amount, direction, balance_after, campaign_id, notes)
+           VALUES ($1, 'escrow_lock', $2, 'debit', $3, $4, $5)`,
+          [
+            contract.brand_id,
+            lockAmountPaise,
+            newBalance,
+            contract.campaign_id,
+            `Escrow lock for contract: ${contract.influencer_name || contract.influencer_id} (${contract.campaign_name})`,
+          ]
+        );
       }
 
       // 1. Mark contract as active
