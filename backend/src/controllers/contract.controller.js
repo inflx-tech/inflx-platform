@@ -528,6 +528,85 @@ const retryContractCreate = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /v1/contracts/:id/approve  (brand)
+//
+// Brand reviews the auto-created draft contract, optionally adds custom
+// clauses + bonus, then sends it to the influencer.
+//   draft → pending_influencer
+//
+// Body: { custom_clauses?: object, bonus_amount?: number }
+// ─────────────────────────────────────────────────────────────────────────────
+const approveContract = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'brand') {
+    throw new AppError('FORBIDDEN', 'Only brands can approve contracts', 403);
+  }
+  const contract = await getContractByIdOrThrow(req.params.id);
+  if (contract.brand_user_id !== req.user.sub) {
+    throw new AppError('FORBIDDEN', 'You do not own this contract', 403);
+  }
+  if (contract.status !== 'draft') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot approve contract in '${contract.status}' status. Must be 'draft'.`,
+      422
+    );
+  }
+
+  const { custom_clauses, bonus_amount } = req.body || {};
+  const bonus = parseFloat(bonus_amount) || 0;
+  if (bonus < 0) {
+    throw new AppError('VALIDATION_ERROR', 'bonus_amount must be 0 or positive', 422, 'bonus_amount');
+  }
+
+  // Recompute total fee = base + bonus. Persist on contract; influencer's
+  // T1/T2/T3 will be calculated off this number when brand counter-signs.
+  const baseFee  = parseFloat(contract.influencer_fee || 0);
+  const newTotal = baseFee + bonus;
+
+  await db.query(
+    `UPDATE contracts
+     SET status         = 'pending_influencer',
+         custom_clauses = $2,
+         bonus_amount   = $3,
+         influencer_fee = $4,
+         approved_at    = now(),
+         approved_by    = $5
+     WHERE id = $1`,
+    [
+      contract.id,
+      custom_clauses ? JSON.stringify(custom_clauses) : null,
+      bonus,
+      newTotal,
+      req.user.sub,
+    ]
+  );
+
+  // Now notify the influencer their contract is ready to sign.
+  try {
+    await notificationService.send({
+      userId:   contract.influencer_user_id,
+      type:     'contract.ready',
+      title:    'Contract Ready to Sign',
+      body:     `Your contract for "${contract.campaign_name}" is ready. Review the terms and sign to begin.`,
+      data:     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id },
+      fcmToken: contract.influencer_fcm_token,
+      sendSms:  true,
+      phone:    contract.influencer_phone,
+    });
+  } catch (notifErr) {
+    console.error('[CONTRACT] approve notification failed:', notifErr.message);
+  }
+
+  // Regenerate PDF so the brand-side preview reflects new clauses + bonus
+  _generateAndStorePdf(contract.id).catch(err =>
+    console.error('[CONTRACT] PDF regen after approve failed:', err.message)
+  );
+
+  const { rows: fresh } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
+  return success(res, { contract: fresh[0] });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -538,4 +617,5 @@ module.exports = {
   getContractPdf,
   regeneratePdf,
   retryContractCreate,
+  approveContract,
 };

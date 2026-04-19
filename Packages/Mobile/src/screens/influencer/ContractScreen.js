@@ -34,14 +34,26 @@ const DELIVERABLE_LABELS = {
 
 function contractStatusLabel(status) {
   switch (status) {
+    case 'draft':              return 'Brand Reviewing';
     case 'pending_influencer': return 'Awaiting Your Signature';
-    case 'pending_brand': return 'Awaiting Brand Signature';
-    case 'active': return 'Contract Active';
-    case 'completed': return 'Completed';
-    case 'cancelled': return 'Cancelled';
-    default: return (status || '').replace(/_/g, ' ');
+    case 'pending_brand':      return 'Awaiting Brand Signature';
+    case 'active':             return 'Contract Active';
+    case 'completed':          return 'Completed';
+    case 'cancelled':          return 'Cancelled';
+    default:                   return (status || '').replace(/_/g, ' ');
   }
 }
+
+const CLAUSE_LABELS = {
+  commercial_rights:    'Commercial Usage Rights',
+  category_exclusivity: 'Category Exclusivity',
+  content_ownership:    'Content Ownership Transfer',
+};
+const CLAUSE_DESCS = {
+  commercial_rights:    (v) => `The brand may use your content in paid ads / social / offline marketing for ${v} days after going live.`,
+  category_exclusivity: (v) => `You agree not to promote a competing brand in the same category for ${v} days from contract signing.`,
+  content_ownership:    ()  => `Final approved content becomes the brand's property. You retain the right to keep it on your own profile.`,
+};
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -168,12 +180,58 @@ export default function ContractScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* ── Draft state — brand is still reviewing ──────────────────────── */}
+      {contract.status === 'draft' && (
+        <View style={[styles.successBanner, { backgroundColor: '#FFF8E0', borderBottomColor: '#E8D590' }]}>
+          <Text style={[styles.successBannerText, { color: '#7A5500' }]}>
+            ⏳ Brand is reviewing the contract. You'll be notified when it's ready to sign.
+          </Text>
+        </View>
+      )}
+
       {/* ── Just-signed success banner ──────────────────────────────────── */}
       {signed && !fullyActive && (
         <View style={styles.successBanner}>
           <Text style={styles.successBannerText}>Contract signed successfully. Waiting for brand to countersign.</Text>
         </View>
       )}
+
+      {/* ── HIGHLIGHT: Special clauses + bonus the brand attached ───────── */}
+      {(() => {
+        let cc = contract.custom_clauses;
+        if (typeof cc === 'string') { try { cc = JSON.parse(cc); } catch { cc = null; } }
+        const enabledIds = cc ? Object.keys(cc.clauses || {}).filter(k => cc.clauses[k]?.enabled) : [];
+        const hasNotes = cc?.notes;
+        const bonus    = parseFloat(contract.bonus_amount || 0);
+        if (enabledIds.length === 0 && !hasNotes && bonus <= 0) return null;
+        return (
+          <View style={styles.clauseHighlightBox}>
+            <Text style={styles.clauseHighlightTitle}>⚠️ Important Terms Attached</Text>
+            {bonus > 0 && (
+              <Text style={styles.clauseHighlightItem}>
+                💰 <Text style={{ fontWeight: '800' }}>+ ₹{bonus.toLocaleString('en-IN')} bonus</Text> on top of agreed fee
+              </Text>
+            )}
+            {enabledIds.map(id => (
+              <View key={id} style={{ marginTop: 6 }}>
+                <Text style={styles.clauseHighlightItem}>
+                  • <Text style={{ fontWeight: '800' }}>{CLAUSE_LABELS[id] || id}</Text>
+                  {cc.clauses[id].value ? ` (${cc.clauses[id].value} days)` : ''}
+                </Text>
+                <Text style={styles.clauseHighlightDesc}>
+                  {CLAUSE_DESCS[id] ? CLAUSE_DESCS[id](cc.clauses[id].value) : ''}
+                </Text>
+              </View>
+            ))}
+            {hasNotes && (
+              <View style={{ marginTop: 6 }}>
+                <Text style={styles.clauseHighlightItem}>• <Text style={{ fontWeight: '800' }}>Additional Notes</Text></Text>
+                <Text style={styles.clauseHighlightDesc}>{cc.notes}</Text>
+              </View>
+            )}
+          </View>
+        );
+      })()}
 
       {/* ── View PDF button (always available once a contract row exists) ─── */}
       <TouchableOpacity
@@ -443,6 +501,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pdfBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+
+  // Highlight box for special clauses + bonus the brand attached
+  clauseHighlightBox: {
+    margin: 16,
+    marginBottom: 0,
+    padding: 14,
+    backgroundColor: '#FFF8E0',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E8D590',
+  },
+  clauseHighlightTitle: { fontSize: 14, fontWeight: '800', color: '#7A5500', marginBottom: 8 },
+  clauseHighlightItem:  { fontSize: 13, color: '#5A3F00', lineHeight: 18 },
+  clauseHighlightDesc:  { fontSize: 11, color: '#7A5500', lineHeight: 16, marginTop: 2, marginLeft: 12 },
 
   // Body
   body: { flex: 1 },

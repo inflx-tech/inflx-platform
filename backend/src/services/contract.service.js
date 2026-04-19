@@ -87,12 +87,13 @@ async function _autoCreateInner(campaignInfluencerId) {
   // Build influencer display name from phone (formatted) or handle
   const influencerName = ci.influencer_handle || ci.influencer_phone || 'Influencer';
 
-  // Insert — ON CONFLICT handles re-runs gracefully
+  // Insert as 'draft' — brand has to review + Approve & Send before the
+  // influencer can sign. ON CONFLICT handles re-runs gracefully.
   const { rows: contractRows } = await db.query(
     `INSERT INTO contracts
        (campaign_influencer_id, influencer_fee, revision_limit, posting_date,
         content_requirements, brand_name, influencer_name, campaign_name, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending_influencer')
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'draft')
      ON CONFLICT (campaign_influencer_id) DO NOTHING
      RETURNING *`,
     [
@@ -108,29 +109,35 @@ async function _autoCreateInner(campaignInfluencerId) {
   );
 
   if (contractRows[0]) {
-    console.log(`[CONTRACT] Created contract ${contractRows[0].id} for CI ${campaignInfluencerId}`);
+    console.log(`[CONTRACT] Created DRAFT contract ${contractRows[0].id} for CI ${campaignInfluencerId}`);
 
-    // Notify the influencer that their contract is ready to sign
+    // Notify the BRAND (not the influencer) that a contract draft is ready
+    // for their review. The influencer is notified later when the brand
+    // taps "Approve & Send" (see contract.controller.approveContract).
     try {
-      const { rows: infUserRows } = await db.query(
+      const { rows: brandUserRows } = await db.query(
         `SELECT u.id AS user_id, u.fcm_token
-         FROM influencers inf JOIN users u ON u.id = inf.user_id
-         WHERE inf.id = $1`,
-        [ci.influencer_id]
+         FROM   campaign_influencers ci2
+         JOIN   campaign_sets cs ON cs.id = ci2.set_id
+         JOIN   campaigns c ON c.id = cs.campaign_id
+         JOIN   brands b ON b.id = c.brand_id
+         JOIN   users u ON u.id = b.user_id
+         WHERE  ci2.id = $1`,
+        [campaignInfluencerId]
       );
-      if (infUserRows[0]) {
+      if (brandUserRows[0]) {
         await notificationService.send({
-          userId:   infUserRows[0].user_id,
-          type:     'contract.ready',
-          title:    'Contract Ready to Sign',
-          body:     `Your contract for ${ci.campaign_name} is ready. Please review and sign.`,
-          data:     { screen: 'contract_detail', campaign_influencer_id: campaignInfluencerId },
-          fcmToken: infUserRows[0].fcm_token,
+          userId:   brandUserRows[0].user_id,
+          type:     'contract.draft_ready',
+          title:    'Contract Draft Ready for Review',
+          body:     `An influencer accepted your offer for "${ci.campaign_name}". Review the contract draft and send it to them for signing.`,
+          data:     { screen: 'contract_review', campaign_influencer_id: campaignInfluencerId },
+          fcmToken: brandUserRows[0].fcm_token,
           sendSms:  false,
         });
       }
     } catch (notifErr) {
-      console.error('[NOTIFICATION] contract.ready send failed:', notifErr.message);
+      console.error('[NOTIFICATION] contract.draft_ready send failed:', notifErr.message);
     }
 
     return contractRows[0];

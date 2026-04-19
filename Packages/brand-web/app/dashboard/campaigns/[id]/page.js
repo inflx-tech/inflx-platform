@@ -273,7 +273,30 @@ function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
 
 // ─── Contract Countersign Modal ───────────────────────────────────────────────
 
-function ContractModal({ inf, contract, goal, loading, onClose, onSign }) {
+const STANDARD_CLAUSES_WEB = [
+  {
+    id: 'commercial_rights',
+    label: 'Commercial Usage Rights',
+    description: 'Brand may repurpose your content in paid ads / social / offline marketing.',
+    options: [30, 60, 90, 180, 365],
+    optionLabel: 'days',
+  },
+  {
+    id: 'category_exclusivity',
+    label: 'Category Exclusivity',
+    description: 'Influencer won\'t promote competing brands in same category.',
+    options: [7, 14, 30],
+    optionLabel: 'days',
+  },
+  {
+    id: 'content_ownership',
+    label: 'Content Ownership Transfer',
+    description: 'Brand owns final approved content; influencer keeps it on their profile.',
+    options: [],
+  },
+];
+
+function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprove }) {
   if (!contract) return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl p-8 text-center">
@@ -288,6 +311,36 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign }) {
   const goalLower      = (goal || 'engagement').toLowerCase();
   const showFee        = goalLower === 'engagement' || goalLower === 'hybrid';
   const showCommission = goalLower === 'conversion' || goalLower === 'hybrid';
+
+  // Draft state: brand reviews + edits clauses + bonus, then "Approve & Send"
+  const isDraft = contract.status === 'draft';
+  const initialClauses = (() => {
+    const cc = contract.custom_clauses;
+    if (!cc) return {};
+    if (typeof cc === 'string') { try { return (JSON.parse(cc).clauses) || {}; } catch { return {}; } }
+    return cc.clauses || {};
+  })();
+  const initialNotes = (() => {
+    const cc = contract.custom_clauses;
+    if (!cc) return '';
+    if (typeof cc === 'string') { try { return (JSON.parse(cc).notes) || ''; } catch { return ''; } }
+    return cc.notes || '';
+  })();
+  const [clauses, setClauses]     = useState(initialClauses);
+  const [extraNotes, setExtraNotes] = useState(initialNotes);
+  const [bonusAmount, setBonusAmount] = useState(String(contract.bonus_amount || ''));
+
+  function toggleClause(id) {
+    setClauses(prev => {
+      const cur = prev[id];
+      if (cur?.enabled) return { ...prev, [id]: { ...cur, enabled: false } };
+      const def = STANDARD_CLAUSES_WEB.find(c => c.id === id);
+      return { ...prev, [id]: { enabled: true, value: def?.options?.[0] || null } };
+    });
+  }
+  function setClauseValue(id, value) {
+    setClauses(prev => ({ ...prev, [id]: { ...(prev[id] || {}), enabled: true, value } }));
+  }
 
   const rows = [
     { label: 'Influencer', value: contract.influencer_name || `@${inf.instagram_handle}` },
@@ -369,7 +422,73 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign }) {
           )}
         </div>
 
-        {contract.status === 'pending_brand' ? (
+        {isDraft ? (
+          <div className="p-5 border-t border-gray-100 space-y-4 bg-amber-50/30">
+            <div className="bg-amber-100 border border-amber-300 rounded-lg p-3">
+              <div className="text-xs font-bold text-amber-900 mb-1">📝 Draft — Your Review</div>
+              <div className="text-[11px] text-amber-800 leading-relaxed">
+                The influencer accepted your offer. Tick any optional clauses + add a bonus if you want, then send.
+              </div>
+            </div>
+
+            {/* Clause toggles */}
+            <div>
+              <div className="text-xs font-bold text-gray-700 mb-2">Optional Clauses</div>
+              {STANDARD_CLAUSES_WEB.map(c => {
+                const cur = clauses[c.id];
+                const enabled = !!cur?.enabled;
+                return (
+                  <div key={c.id} className={`mb-2 border rounded-lg p-2 ${enabled ? 'border-teal-400 bg-teal-50' : 'border-gray-200'}`}>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="checkbox" checked={enabled} onChange={() => toggleClause(c.id)} className="mt-1" />
+                      <div className="flex-1">
+                        <div className="text-[12px] font-bold text-gray-800">{c.label}</div>
+                        <div className="text-[10px] text-gray-500">{c.description}</div>
+                      </div>
+                    </label>
+                    {enabled && c.options.length > 0 && (
+                      <div className="flex gap-1 flex-wrap mt-2 ml-6">
+                        {c.options.map(opt => (
+                          <button key={opt} onClick={() => setClauseValue(c.id, opt)}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${cur.value === opt ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-gray-600 border-gray-200'}`}>
+                            {opt} {c.optionLabel}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div>
+              <div className="text-xs font-bold text-gray-700 mb-1">Additional Notes (optional)</div>
+              <textarea value={extraNotes} onChange={e => setExtraNotes(e.target.value)}
+                placeholder="e.g. must wear blue shirt, tag our outlet"
+                className="w-full border border-gray-200 rounded-lg p-2 text-xs" rows={2} />
+            </div>
+
+            {showFee && (
+              <div>
+                <div className="text-xs font-bold text-gray-700 mb-1">Bonus on top of fee (optional)</div>
+                <div className="flex items-center border-2 border-navy rounded-lg overflow-hidden">
+                  <span className="px-3 text-base font-bold text-gray-500">₹</span>
+                  <input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)}
+                    placeholder="0"
+                    className="flex-1 py-2 px-2 text-base font-bold outline-none" />
+                </div>
+              </div>
+            )}
+
+            <button onClick={() => onApprove({
+              custom_clauses: { clauses, notes: extraNotes || null },
+              bonus_amount: parseFloat(bonusAmount) || 0,
+            })} disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50">
+              {loading ? 'Sending…' : 'Approve & Send to Influencer'}
+            </button>
+          </div>
+        ) : contract.status === 'pending_brand' ? (
           <div className="p-5 border-t border-gray-100">
             <p className="text-xs text-gray-500 mb-3">
               {showFee
@@ -519,6 +638,18 @@ export default function CampaignDetailPage() {
     setContractLoading(false);
     if (res.success) {
       showToast('Contract signed! Tranche 1 queued.');
+      setContractModal(null);
+      campaignApi.get(id).then(r => { if (r.success) setCampaign(r.data?.campaign || r.data); });
+    } else showToast(res.error?.message || 'Failed');
+  }
+
+  async function handleApproveContract(payload) {
+    if (!contractModal?.contract) return;
+    setContractLoading(true);
+    const res = await contractApi.approve(contractModal.contract.id, payload);
+    setContractLoading(false);
+    if (res.success) {
+      showToast('Contract sent to influencer for signing.');
       setContractModal(null);
       campaignApi.get(id).then(r => { if (r.success) setCampaign(r.data?.campaign || r.data); });
     } else showToast(res.error?.message || 'Failed');
@@ -1325,6 +1456,7 @@ export default function CampaignDetailPage() {
         loading={contractLoading}
         onClose={() => setContractModal(null)}
         onSign={handleBrandSign}
+        onApprove={handleApproveContract}
       />}
 
       {toast && (

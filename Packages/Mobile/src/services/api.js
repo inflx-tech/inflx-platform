@@ -151,6 +151,10 @@ export const brandApi = {
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
   getCampaignEscrow: (campaignId) => api.get(`/brands/me/campaigns/${campaignId}/escrow`),
   cancelInfluencer: (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/cancel`),
+  // Contracts (brand side)
+  getContract:    (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
+  brandSign:      (id) => api.post(`/contracts/${id}/brand-sign`),
+  approveContract:(id, data) => api.post(`/contracts/${id}/approve`, data),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
 };

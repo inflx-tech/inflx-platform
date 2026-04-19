@@ -14,6 +14,7 @@ const { authenticate, authenticateWithQuery, requireRole } = require('../middlew
 const {
   getContract, sign, brandSign,
   getContractPdf, regeneratePdf, retryContractCreate,
+  approveContract,
 } = require('../controllers/contract.controller');
 
 const router = Router();
@@ -58,6 +59,14 @@ router.post(
   authenticate,
   requireRole('influencer'),
   sign
+);
+
+// Brand approves draft + (optionally) attaches clauses & bonus, then sends to influencer
+router.post(
+  '/:id/approve',
+  authenticate,
+  requireRole('brand'),
+  approveContract
 );
 
 // Brand countersigns contract

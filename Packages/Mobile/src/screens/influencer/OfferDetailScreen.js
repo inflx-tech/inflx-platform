@@ -83,14 +83,24 @@ export default function OfferDetailScreen({ navigation, route }) {
     loadDetail();
   }, [passedOffer?.id]);
 
+  const [products, setProducts] = useState([]);
+
   async function loadDetail() {
     setLoading(true);
-    const res = await influencerApi.getOfferDetail(passedOffer.id);
+    // Fetch offer detail + linked products in parallel. Products endpoint
+    // returns the brand catalogue items the influencer is supposed to promote
+    // (relevant for conversion / hybrid campaigns).
+    const [res, prodRes] = await Promise.all([
+      influencerApi.getOfferDetail(passedOffer.id),
+      influencerApi.getCampaignProducts(passedOffer.id).catch(() => ({ success: false })),
+    ]);
     setLoading(false);
     if (res.success) {
       setOffer(res.data?.offer || passedOffer);
     }
-    // If the detail fetch fails, we still show the passed-in data
+    if (prodRes?.success) {
+      setProducts(prodRes.data?.products || prodRes.data || []);
+    }
   }
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -426,6 +436,102 @@ export default function OfferDetailScreen({ navigation, route }) {
           </View>
         )}
       </View>
+
+      {/* ── What you're promoting ────────────────────────────────────────
+          Shows the actual offer the influencer's followers will see:
+          discount type/value, BOGO config, bundle, free gift, plus the
+          product list and physical-delivery info if applicable. */}
+      {(offer.offer_config_json || offer.offer_type || products.length > 0 || offer.physical_delivery) && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>What You're Promoting</Text>
+
+          {/* Offer type + breakdown */}
+          {offer.offer_type && (() => {
+            // offer_config_json may be a string or already an object
+            let cfg = offer.offer_config_json;
+            if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch { cfg = {}; } }
+            cfg = cfg || {};
+            const type = (offer.offer_type || '').toLowerCase().trim();
+            return (
+              <View style={styles.briefBox}>
+                <Text style={styles.infoLabel}>Offer Type</Text>
+                <Text style={[styles.infoValue, { textTransform: 'capitalize', marginBottom: 6 }]}>{offer.offer_type}</Text>
+
+                {type === 'discount' && (
+                  <Text style={styles.briefText}>
+                    {cfg.sub_type === 'flat'
+                      ? `Flat ₹${cfg.value || '?'} off`
+                      : `${cfg.value || '?'}% off`}
+                    {(cfg.products?.length || 0) > 0 ? ` on ${cfg.products.length} selected products` : ' on eligible items'}
+                  </Text>
+                )}
+                {(type === 'volume' || type === 'volume discount') && cfg.tiers && (
+                  <View>
+                    {cfg.tiers.map((t, i) => (
+                      <Text key={i} style={styles.briefText}>
+                        {`Spend ₹${t.min_spend || '?'} → get ${t.pct_off || '?'}% off`}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                {type === 'bogo' && (
+                  <Text style={styles.briefText}>
+                    Buy 1 (selected product) → Get 1 free
+                  </Text>
+                )}
+                {type === 'bundle' && (
+                  <Text style={styles.briefText}>
+                    {`Bundle of ${cfg.products?.length || '?'} products at ₹${cfg.bundle_price || '?'}`}
+                  </Text>
+                )}
+                {(type === 'free gift' || type === 'free_gift') && cfg.offers && (
+                  <View>
+                    {cfg.offers.map((o, i) => (
+                      <Text key={i} style={styles.briefText}>
+                        {`Buy product → get free gift`}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
+
+          {/* Product list */}
+          {products.length > 0 && (
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.infoLabel}>Products in this Offer ({products.length})</Text>
+              {products.slice(0, 8).map((p, i) => (
+                <View key={p.id || i} style={styles.productRow}>
+                  <View style={styles.productDot} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.productName}>{p.name || p.product_name}</Text>
+                    {p.price > 0 && (
+                      <Text style={styles.productPrice}>{fmtRupees(p.price)}</Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+              {products.length > 8 && (
+                <Text style={[styles.briefText, { marginTop: 6, textAlign: 'center' }]}>
+                  + {products.length - 8} more
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Physical delivery info */}
+          {offer.physical_delivery && (
+            <View style={[styles.briefBox, { marginTop: 12, backgroundColor: colors.goldPale }]}>
+              <Text style={[styles.infoLabel, { color: '#7A5500' }]}>📦 Physical Sample</Text>
+              <Text style={[styles.briefText, { color: '#7A5500' }]}>
+                The brand will ship a physical product to you for content creation.
+                {offer.delivery_address ? ` Delivery to: ${offer.delivery_address}` : ''}
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* ── Payment Terms ──────────────────────────────────────────────── */}
       {/* Conversion-only campaigns have no fee → no tranches. We replace the
@@ -827,6 +933,13 @@ const styles = StyleSheet.create({
   },
   feeValue: { fontSize: 28, fontWeight: '800', color: colors.tealDeep },
   commissionHint: { fontSize: 11, color: colors.tealDeep, marginTop: 6, opacity: 0.85, textAlign: 'center' },
+  productRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  productDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.navy },
+  productName: { fontSize: 13, fontWeight: '600', color: colors.t1 },
+  productPrice: { fontSize: 11, color: colors.t3, marginTop: 2 },
 
   // Section
   section: { marginBottom: 12 },

@@ -577,6 +577,10 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
          ci.posting_date,
          ci.coupon_code,
          ci.commission_pct,
+         ci.offer_type,
+         ci.offer_config_json,
+         ci.physical_delivery,
+         ci.delivery_address,
          ci.contract_signed_at,
          ci.brand_signed_at,
          ci.created_at AS invited_at,
@@ -590,11 +594,15 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
          cs.id AS set_id,
          cs.name AS set_name,
          cs.goal,
+         cs.set_budget,
          cs.per_influencer_budget,
+         cs.coupon_prefix,
          cs.content_start_date,
          cs.content_end_date,
+         cs.formats_json,
          b.id AS brand_id,
          b.business_name AS brand_name,
+         b.logo_url AS brand_logo_url,
          u.name AS brand_contact_name
        FROM campaign_influencers ci
        JOIN campaign_sets cs ON cs.id = ci.set_id

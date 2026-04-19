@@ -182,6 +182,7 @@ export const negotiationApi = {
 export const contractApi = {
   get: (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
   brandSign: (id) => api.post(`/contracts/${id}/brand-sign`),
+  approve: (id, body) => api.post(`/contracts/${id}/approve`, body),
   regeneratePdf: (id) => api.post(`/contracts/${id}/regenerate-pdf`),
   retryCreate: (ciId) => api.post(`/contracts/by-ci/${ciId}/retry`),
   // Returns a URL safe for use in <iframe src> / <a href> — JWT goes in query

@@ -822,23 +822,25 @@ const getOfferDetail = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT ci.*,
-            cs.name          AS set_name,
+            cs.name           AS set_name,
             cs.goal,
-            cs.budget        AS set_budget,
+            cs.set_budget,
             cs.per_influencer_budget,
+            cs.coupon_prefix,
+            cs.formats_json,
             cs.content_start_date,
             cs.content_end_date,
-            c.name           AS campaign_name,
-            c.brief          AS campaign_brief,
+            c.name            AS campaign_name,
+            c.brief           AS campaign_brief,
             c.total_budget,
-            c.start_date     AS campaign_start_date,
-            c.end_date       AS campaign_end_date,
-            c.status         AS campaign_status,
-            b.id             AS brand_id,
-            b.business_name  AS brand_name,
-            b.logo_url       AS brand_logo_url,
-            b.category       AS brand_category,
-            b.address_line   AS brand_city
+            c.start_date      AS campaign_start_date,
+            c.end_date        AS campaign_end_date,
+            c.status          AS campaign_status,
+            b.id              AS brand_id,
+            b.business_name   AS brand_name,
+            b.logo_url        AS brand_logo_url,
+            b.category        AS brand_category,
+            b.address_line    AS brand_city
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id

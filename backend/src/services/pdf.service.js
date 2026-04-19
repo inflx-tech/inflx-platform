@@ -43,10 +43,62 @@ async function generateContractPDF(contract) {
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
     doc.text(`Campaign:          ${contract.campaign_name || 'N/A'}`);
-    doc.text(`Agreed Fee:        ₹${parseFloat(contract.influencer_fee || 0).toFixed(2)}`);
+    const totalFee = parseFloat(contract.influencer_fee || 0);
+    const bonus    = parseFloat(contract.bonus_amount || 0);
+    if (bonus > 0) {
+      const baseFee = totalFee - bonus;
+      doc.text(`Base Fee:          ₹${baseFee.toFixed(2)}`);
+      doc.text(`Brand Bonus:       ₹${bonus.toFixed(2)}`);
+      doc.text(`Total Fee:         ₹${totalFee.toFixed(2)}`);
+    } else {
+      doc.text(`Agreed Fee:        ₹${totalFee.toFixed(2)}`);
+    }
     doc.text(`Posting Date:      ${contract.posting_date || 'To be agreed'}`);
     doc.text(`Revision Limit:    ${contract.revision_limit}`);
     doc.moveDown(1.5);
+
+    // ── Custom Clauses (only if brand selected any) ────────────────────────
+    let clausesData = contract.custom_clauses;
+    if (typeof clausesData === 'string') {
+      try { clausesData = JSON.parse(clausesData); } catch { clausesData = null; }
+    }
+    if (clausesData) {
+      const enabled = clausesData.clauses || {};
+      const enabledIds = Object.keys(enabled).filter(k => enabled[k]?.enabled);
+      const notes = clausesData.notes;
+
+      if (enabledIds.length > 0 || notes) {
+        doc.fontSize(14).font('Helvetica-Bold').text('SPECIAL CLAUSES');
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica');
+
+        const labels = {
+          commercial_rights:      'Commercial Usage Rights',
+          category_exclusivity:   'Category Exclusivity',
+          content_ownership:      'Content Ownership Transfer',
+        };
+        const descTemplates = {
+          commercial_rights:    (v) => `The brand may repurpose the influencer's content in paid advertising, social, and offline marketing channels for ${v} days after the content goes live.`,
+          category_exclusivity: (v) => `The influencer agrees not to promote a competing brand in the same category for ${v} days from the date of contract signing.`,
+          content_ownership:    ()  => `Final approved content (raw + edited versions) becomes the brand's property to use indefinitely. The influencer retains the right to keep the content on their own profile.`,
+        };
+
+        let counter = 1;
+        for (const id of enabledIds) {
+          const v = enabled[id]?.value;
+          doc.font('Helvetica-Bold').text(`${counter}. ${labels[id] || id}`);
+          doc.font('Helvetica').text(descTemplates[id] ? descTemplates[id](v) : '', { align: 'justify' });
+          doc.moveDown(0.5);
+          counter++;
+        }
+        if (notes) {
+          doc.font('Helvetica-Bold').text(`${counter}. Additional Notes`);
+          doc.font('Helvetica').text(notes, { align: 'justify' });
+          doc.moveDown(0.5);
+        }
+        doc.moveDown(1);
+      }
+    }
 
     // ── Content Requirements ───────────────────────────────────────────────
     doc.fontSize(14).font('Helvetica-Bold').text('CONTENT REQUIREMENTS');

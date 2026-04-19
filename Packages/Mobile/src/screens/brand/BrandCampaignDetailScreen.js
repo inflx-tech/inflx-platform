@@ -106,6 +106,27 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
     }
   }
 
+  async function handleConfirmLive(deliverableId, liveUrl) {
+    Alert.alert(
+      'Confirm Content Live',
+      `Confirm the content is live at:\n${liveUrl}\n\nThis releases Tranche 2 to the influencer.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Confirm Live', onPress: async () => {
+          setActionLoading(deliverableId);
+          const res = await brandApi.confirmLive(deliverableId);
+          setActionLoading(null);
+          if (res.success) {
+            Alert.alert('Confirmed!', 'Content marked live. Tranche 2 released to influencer.');
+            load();
+          } else {
+            Alert.alert('Error', res.error?.message || 'Failed to confirm live');
+          }
+        }},
+      ]
+    );
+  }
+
   function promptRevisionFeedback(deliverableId) {
     Alert.prompt
       ? Alert.prompt(
@@ -163,12 +184,17 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 
   // Collect all deliverables from influencers that need review
   const deliverablesToReview = [];
+  // Approved deliverables with a live_url posted — brand still needs to confirm-live
+  const liveAwaitingConfirm = [];
   for (const set of sets) {
     for (const ci of (set.influencers || [])) {
       if (ci.deliverables) {
         for (const d of ci.deliverables) {
           if (['submitted', 'under_review'].includes(d.status)) {
             deliverablesToReview.push({ ...d, influencer_name: ci.influencer_name, instagram_handle: ci.instagram_handle });
+          }
+          if (d.status === 'approved' && d.live_url) {
+            liveAwaitingConfirm.push({ ...d, influencer_name: ci.influencer_name, instagram_handle: ci.instagram_handle });
           }
         }
       }
@@ -349,6 +375,19 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                       }
                     </TouchableOpacity>
                   )}
+                  {/* Open native contract screen — covers draft/pending_brand */}
+                  {(ci.status === 'accepted' || ci.status === 'contracted' || ci.status === 'active') && (
+                    <TouchableOpacity
+                      style={[styles.negotiateBtn, { backgroundColor: colors.tealPale }]}
+                      onPress={() => navigation.navigate('BrandContract', {
+                        campaignInfluencerId: ci.id,
+                        influencerName: ci.influencer_name,
+                        goal: ci.set_goal,
+                      })}
+                    >
+                      <Text style={[styles.negotiateBtnText, { color: colors.tealDeep }]}>Contract</Text>
+                    </TouchableOpacity>
+                  )}
                   {ci.status === 'negotiating' && (
                     <TouchableOpacity
                       style={styles.negotiateBtn}
@@ -438,6 +477,42 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                     disabled={isReviewing}
                   >
                     <Text style={styles.revisionBtnText}>Revise</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ── Live URLs awaiting brand confirmation (releases T2 escrow) ──── */}
+      {liveAwaitingConfirm.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Confirm Content Live ({liveAwaitingConfirm.length})</Text>
+          <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 8 }]}>
+            Influencer posted live URLs. Tap "Confirm Live" to release Tranche 2.
+          </Text>
+          {liveAwaitingConfirm.map(d => {
+            const isConfirming = actionLoading === d.id;
+            return (
+              <View key={d.id} style={styles.reviewRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.reviewType}>
+                    {DELIVERABLE_LABELS[d.type] || d.type}
+                  </Text>
+                  <Text style={styles.reviewInfluencer}>@{d.instagram_handle} - {d.influencer_name}</Text>
+                  <Text style={styles.reviewUrl} numberOfLines={1}>{d.live_url}</Text>
+                </View>
+                <View style={styles.reviewActions}>
+                  <TouchableOpacity
+                    style={[styles.approveBtn, { backgroundColor: colors.tealDeep }]}
+                    onPress={() => handleConfirmLive(d.id, d.live_url)}
+                    disabled={isConfirming}
+                  >
+                    {isConfirming
+                      ? <ActivityIndicator size="small" color={colors.white} />
+                      : <Text style={styles.approveBtnText}>Confirm Live</Text>
+                    }
                   </TouchableOpacity>
                 </View>
               </View>
