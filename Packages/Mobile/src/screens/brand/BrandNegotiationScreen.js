@@ -4,17 +4,41 @@ import {
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, spacing, radius, fmtMoney } from '../../theme/tokens';
+import { colors, spacing, radius, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 
+function statusLabel(status) {
+  switch (status) {
+    case 'awaiting_brand':      return 'Your Turn';
+    case 'awaiting_influencer': return 'Waiting for Influencer';
+    case 'agreed':              return 'Agreed';
+    case 'walked_away':         return 'Closed';
+    case 'open':                return 'Open';
+    default:                    return status || '—';
+  }
+}
+
+function renderProposal(fee, commissionPct) {
+  const parts = [];
+  if (fee != null && fee !== '')                 parts.push(fmtRupees(fee));
+  if (commissionPct != null && commissionPct !== '') parts.push(`${commissionPct}% comm.`);
+  return parts.length ? parts.join(' + ') : '—';
+}
+
 export default function BrandNegotiationScreen({ route, navigation }) {
-  const { negotiationId, campaignInfluencerId, influencerName, influencerHandle } = route.params || {};
+  const {
+    negotiationId,
+    campaignInfluencerId,
+    influencerName,
+    influencerHandle,
+  } = route.params || {};
 
   const [negotiation, setNegotiation] = useState(null);
   const [turns, setTurns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [counterFee, setCounterFee] = useState('');
+  const [counterCommission, setCounterCommission] = useState('');
   const [note, setNote] = useState('');
   const scrollRef = useRef(null);
 
@@ -38,48 +62,82 @@ export default function BrandNegotiationScreen({ route, navigation }) {
     }, [negotiationId, campaignInfluencerId])
   );
 
-  const isMyTurn = negotiation?.next_turn === 'brand';
-  const negId = negotiation?.id;
+  // ── Goal-aware ─────────────────────────────────────────────────────────
+  const goal           = (negotiation?.goal || 'engagement').toLowerCase();
+  const isConversion   = goal === 'conversion';
+  const isHybrid       = goal === 'hybrid';
+  const isEngagement   = goal === 'engagement';
+  const showFee        = isEngagement || isHybrid;
+  const showCommission = isConversion || isHybrid;
+
+  const isMyTurn = negotiation?.current_turn === 'brand';
+  const isOpen   = ['open', 'awaiting_brand', 'awaiting_influencer'].includes(negotiation?.status);
+  const isClosed = ['agreed', 'walked_away'].includes(negotiation?.status);
+  const negId    = negotiation?.id;
 
   async function handleAction(action) {
     if (!negId) return;
-    if (action === 'decline') {
-      Alert.alert('Decline Negotiation', 'Are you sure you want to decline?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Decline', style: 'destructive', onPress: () => doRespond('decline') },
-      ]);
+    if (action === 'walkaway') {
+      Alert.alert(
+        'Walk Away',
+        'Are you sure you want to close this negotiation? The offer will be declined.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Walk Away', style: 'destructive', onPress: () => doRespond('walkaway') },
+        ]
+      );
       return;
     }
     if (action === 'accept') {
-      doRespond('accept');
+      const summary = renderProposal(
+        negotiation.current_fee,
+        negotiation.current_commission_pct
+      );
+      Alert.alert(
+        'Accept',
+        `Accept ${summary}? A contract will be generated for the influencer to sign.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Accept', onPress: () => doRespond('accept') },
+        ]
+      );
       return;
     }
     if (action === 'counter') {
-      const fee = parseInt(counterFee, 10);
-      if (!fee || fee <= 0) {
-        Alert.alert('Invalid Amount', 'Please enter a valid counter-offer amount.');
+      const fee        = showFee        ? parseFloat(counterFee)        : null;
+      const commission = showCommission ? parseFloat(counterCommission) : null;
+      if (showFee && (!fee || fee <= 0)) {
+        Alert.alert('Invalid Fee', 'Please enter a valid counter-offer fee.');
         return;
       }
-      doRespond('counter', fee, note);
+      if (showCommission && (!commission || commission <= 0 || commission > 100)) {
+        Alert.alert('Invalid Commission', 'Please enter a commission % between 0 and 100.');
+        return;
+      }
+      doRespond('counter', { fee, commission });
     }
   }
 
-  async function doRespond(action, proposed_fee, noteText) {
+  async function doRespond(action, vals) {
     setSubmitting(true);
     const body = { action };
-    if (proposed_fee) body.proposed_fee = proposed_fee;
-    if (noteText) body.note = noteText;
+    if (vals?.fee        != null) body.proposed_fee            = vals.fee;
+    if (vals?.commission != null) body.proposed_commission_pct = vals.commission;
+    if (note)                     body.note                    = note;
     const res = await brandApi.submitNegotiationTurn(negId, body);
     setSubmitting(false);
     if (res.success) {
       setCounterFee('');
+      setCounterCommission('');
       setNote('');
       if (action === 'accept') {
-        Alert.alert('Accepted', 'You accepted the proposed fee. A contract will be generated.');
-        navigation.goBack();
-      } else if (action === 'decline') {
-        Alert.alert('Declined', 'You declined the negotiation.');
-        navigation.goBack();
+        Alert.alert('Accepted', 'You accepted the proposed terms. A contract will be generated.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } else if (action === 'walkaway') {
+        Alert.alert('Closed', 'You walked away from this negotiation.', [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
       } else {
         await load();
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
@@ -105,8 +163,6 @@ export default function BrandNegotiationScreen({ route, navigation }) {
     );
   }
 
-  const latestInfluencerTurn = [...turns].reverse().find(t => t.proposed_by === 'influencer');
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -122,10 +178,33 @@ export default function BrandNegotiationScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.headerTitle}>Negotiation</Text>
             <Text style={styles.headerSub}>
-              {influencerName || 'Influencer'}{influencerHandle ? ` @${influencerHandle}` : ''}
+              {influencerName || negotiation.influencer_name || 'Influencer'}
+              {influencerHandle ? ` @${influencerHandle}` : ''}
+            </Text>
+            {negotiation.campaign_name && (
+              <Text style={styles.headerSub2}>{negotiation.campaign_name}</Text>
+            )}
+          </View>
+          <View style={styles.pill}>
+            <Text style={styles.pillText}>{statusLabel(negotiation.status)}</Text>
+          </View>
+        </View>
+
+        {/* Original vs Latest */}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryBox}>
+            <Text style={styles.summaryLabel}>ORIGINAL</Text>
+            <Text style={styles.summaryValue}>
+              {renderProposal(negotiation.original_fee, negotiation.original_commission_pct)}
             </Text>
           </View>
-          <StatusPill status={negotiation.status} />
+          <Text style={styles.arrow}>{'-->'}</Text>
+          <View style={[styles.summaryBox, styles.summaryBoxCurrent]}>
+            <Text style={[styles.summaryLabel, { color: colors.tealDeep }]}>LATEST</Text>
+            <Text style={[styles.summaryValue, { color: colors.tealDeep }]}>
+              {renderProposal(negotiation.current_fee, negotiation.current_commission_pct)}
+            </Text>
+          </View>
         </View>
 
         {/* Turn Thread */}
@@ -137,11 +216,11 @@ export default function BrandNegotiationScreen({ route, navigation }) {
         >
           {turns.length === 0 ? (
             <View style={styles.emptyThread}>
-              <Text style={styles.emptyThreadText}>No turns yet</Text>
+              <Text style={styles.emptyThreadText}>No messages yet</Text>
             </View>
           ) : (
             turns.map((turn, i) => {
-              const isBrand = turn.proposed_by === 'brand';
+              const isBrand = turn.sent_by === 'brand';
               return (
                 <View
                   key={turn.id || i}
@@ -149,16 +228,16 @@ export default function BrandNegotiationScreen({ route, navigation }) {
                 >
                   <View style={styles.turnHeader}>
                     <Text style={[styles.turnAuthor, { color: isBrand ? colors.navy : colors.teal }]}>
-                      {isBrand ? 'You (Brand)' : (influencerName || 'Influencer')}
+                      {isBrand ? 'You (Brand)' : (influencerName || negotiation.influencer_name || 'Influencer')}
                     </Text>
-                    <Text style={styles.turnAction}>
-                      {turn.action === 'counter' ? 'Counter Offer' : turn.action === 'accept' ? 'Accepted' : turn.action === 'decline' ? 'Declined' : turn.action || 'Proposed'}
-                    </Text>
+                    <Text style={styles.turnAction}>Counter Offer</Text>
                   </View>
-                  {turn.proposed_fee != null && (
-                    <Text style={styles.turnFee}>{fmtMoney(turn.proposed_fee * 100)}</Text>
+                  {(turn.proposed_fee != null || turn.proposed_commission_pct != null) && (
+                    <Text style={styles.turnFee}>
+                      {renderProposal(turn.proposed_fee, turn.proposed_commission_pct)}
+                    </Text>
                   )}
-                  {turn.note ? <Text style={styles.turnNote}>{turn.note}</Text> : null}
+                  {turn.note ? <Text style={styles.turnNote}>"{turn.note}"</Text> : null}
                   <Text style={styles.turnTime}>
                     {new Date(turn.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                   </Text>
@@ -169,97 +248,96 @@ export default function BrandNegotiationScreen({ route, navigation }) {
         </ScrollView>
 
         {/* Action Panel */}
-        {negotiation.status === 'active' && (
+        {isOpen && isMyTurn && (
           <View style={styles.actionPanel}>
-            {isMyTurn ? (
-              <>
-                <Text style={styles.turnIndicator}>Your turn to respond</Text>
-                {latestInfluencerTurn && (
-                  <Text style={styles.lastProposal}>
-                    Influencer proposed: {fmtMoney(latestInfluencerTurn.proposed_fee * 100)}
-                  </Text>
-                )}
+            <Text style={styles.turnIndicator}>Your turn to respond</Text>
 
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.acceptBtn]}
-                    onPress={() => handleAction('accept')}
-                    disabled={submitting}
-                  >
-                    <Text style={styles.acceptBtnText}>Accept</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, styles.declineBtn]}
-                    onPress={() => handleAction('decline')}
-                    disabled={submitting}
-                  >
-                    <Text style={styles.declineBtnText}>Decline</Text>
-                  </TouchableOpacity>
-                </View>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.acceptBtn]}
+                onPress={() => handleAction('accept')}
+                disabled={submitting}
+              >
+                <Text style={styles.acceptBtnText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, styles.declineBtn]}
+                onPress={() => handleAction('walkaway')}
+                disabled={submitting}
+              >
+                <Text style={styles.declineBtnText}>Walk Away</Text>
+              </TouchableOpacity>
+            </View>
 
-                <Text style={styles.orText}>-- or send a counter-offer --</Text>
+            <Text style={styles.orText}>-- or send a counter --</Text>
 
-                <View style={styles.counterRow}>
-                  <TextInput
-                    style={styles.counterInput}
-                    placeholder="Counter fee (e.g. 5000)"
-                    placeholderTextColor={colors.t3}
-                    keyboardType="numeric"
-                    value={counterFee}
-                    onChangeText={setCounterFee}
-                  />
-                </View>
+            {showFee && (
+              <View style={styles.counterRow}>
+                <Text style={styles.rupee}>₹</Text>
                 <TextInput
-                  style={styles.noteInput}
-                  placeholder="Optional note..."
+                  style={styles.counterInput}
+                  placeholder="Counter fee (e.g. 5000)"
                   placeholderTextColor={colors.t3}
-                  value={note}
-                  onChangeText={setNote}
-                  multiline
+                  keyboardType="numeric"
+                  value={counterFee}
+                  onChangeText={setCounterFee}
                 />
-                <TouchableOpacity
-                  style={[styles.actionBtn, styles.counterBtn, submitting && { opacity: 0.5 }]}
-                  onPress={() => handleAction('counter')}
-                  disabled={submitting}
-                >
-                  {submitting ? (
-                    <ActivityIndicator color={colors.white} size="small" />
-                  ) : (
-                    <Text style={styles.counterBtnText}>Send Counter</Text>
-                  )}
-                </TouchableOpacity>
-              </>
-            ) : (
-              <View style={styles.waitingPanel}>
-                <Text style={styles.waitingText}>Waiting for influencer to respond...</Text>
               </View>
             )}
+
+            {showCommission && (
+              <View style={styles.counterRow}>
+                <TextInput
+                  style={[styles.counterInput, { paddingLeft: 14 }]}
+                  placeholder="Counter commission %"
+                  placeholderTextColor={colors.t3}
+                  keyboardType="numeric"
+                  value={counterCommission}
+                  onChangeText={setCounterCommission}
+                />
+                <Text style={styles.rupee}>%</Text>
+              </View>
+            )}
+
+            <TextInput
+              style={styles.noteInput}
+              placeholder="Optional note..."
+              placeholderTextColor={colors.t3}
+              value={note}
+              onChangeText={setNote}
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.counterBtn, submitting && { opacity: 0.5 }]}
+              onPress={() => handleAction('counter')}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color={colors.white} size="small" />
+              ) : (
+                <Text style={styles.counterBtnText}>Send Counter</Text>
+              )}
+            </TouchableOpacity>
           </View>
         )}
 
-        {negotiation.status !== 'active' && (
-          <View style={styles.actionPanel}>
+        {isOpen && !isMyTurn && (
+          <View style={styles.waitingPanel}>
+            <Text style={styles.waitingText}>Waiting for influencer to respond...</Text>
+          </View>
+        )}
+
+        {isClosed && (
+          <View style={styles.closedPanel}>
             <Text style={styles.closedText}>
-              This negotiation is {negotiation.status === 'accepted' ? 'accepted' : negotiation.status === 'declined' ? 'declined' : negotiation.status}.
+              {negotiation.status === 'agreed'
+                ? `Agreed on ${renderProposal(negotiation.current_fee, negotiation.current_commission_pct)}. Contract is being generated.`
+                : 'This negotiation was closed without an agreement.'}
             </Text>
           </View>
         )}
       </View>
     </KeyboardAvoidingView>
-  );
-}
-
-function StatusPill({ status }) {
-  const cfg = {
-    active: { label: 'Active', color: colors.teal, bg: colors.tealPale },
-    accepted: { label: 'Accepted', color: colors.navy, bg: colors.navyPale },
-    declined: { label: 'Declined', color: colors.red, bg: colors.redPale },
-  };
-  const c = cfg[status] || { label: status, color: colors.t3, bg: colors.surface2 };
-  return (
-    <View style={[styles.pill, { backgroundColor: c.bg }]}>
-      <Text style={[styles.pillText, { color: c.color }]}>{c.label}</Text>
-    </View>
   );
 }
 
@@ -271,7 +349,6 @@ const styles = StyleSheet.create({
   backBtn: { marginTop: 16, backgroundColor: colors.navy, paddingHorizontal: 24, paddingVertical: 10, borderRadius: radius.md },
   backBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
 
-  // Header
   header: {
     backgroundColor: colors.navyDeep,
     flexDirection: 'row',
@@ -284,90 +361,62 @@ const styles = StyleSheet.create({
   headerBack: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
   headerBackText: { fontSize: 22, fontWeight: '700', color: colors.white },
   headerTitle: { fontSize: 18, fontWeight: '800', color: colors.white },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-  pill: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  pillText: { fontSize: 11, fontWeight: '700' },
+  headerSub:  { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  headerSub2: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  pill: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: 'rgba(255,255,255,0.18)' },
+  pillText: { fontSize: 11, fontWeight: '700', color: colors.white },
 
-  // Thread
+  summaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    margin: 12,
+    marginBottom: 0,
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+  },
+  summaryBox: { flex: 1, alignItems: 'center', backgroundColor: colors.surface2, borderRadius: 10, padding: 10 },
+  summaryBoxCurrent: { backgroundColor: colors.tealPale },
+  summaryLabel: { fontSize: 9, fontWeight: '800', color: colors.t3, letterSpacing: 0.5, marginBottom: 2 },
+  summaryValue: { fontSize: 13, fontWeight: '800', color: colors.t1, textAlign: 'center' },
+  arrow: { fontSize: 14, fontWeight: '700', color: colors.t3 },
+
   threadContainer: { flex: 1 },
   threadContent: { padding: 16, paddingBottom: 8 },
   emptyThread: { alignItems: 'center', paddingVertical: 40 },
   emptyThreadText: { fontSize: 14, color: colors.t3 },
 
-  turnBubble: {
-    borderRadius: radius.lg,
-    padding: 14,
-    marginBottom: 10,
-    maxWidth: '85%',
-    borderWidth: 1,
-  },
-  turnBrand: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.navyPale,
-    borderColor: colors.navy + '30',
-  },
-  turnInfluencer: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.tealPale,
-    borderColor: colors.teal + '30',
-  },
-  turnHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  turnAuthor: { fontSize: 12, fontWeight: '700' },
-  turnAction: { fontSize: 10, fontWeight: '600', color: colors.t3, textTransform: 'uppercase' },
-  turnFee: { fontSize: 20, fontWeight: '800', color: colors.t1, marginVertical: 4 },
-  turnNote: { fontSize: 13, color: colors.t2, marginTop: 4, fontStyle: 'italic' },
-  turnTime: { fontSize: 10, color: colors.t3, marginTop: 6, textAlign: 'right' },
+  turnBubble: { marginBottom: 12, padding: 12, borderRadius: 14, borderWidth: 1 },
+  turnBrand: { backgroundColor: colors.navyPale, borderColor: '#D0D5EC', marginLeft: 40 },
+  turnInfluencer: { backgroundColor: colors.surface2, borderColor: colors.border, marginRight: 40 },
+  turnHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  turnAuthor: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  turnAction: { fontSize: 10, fontWeight: '700', color: colors.t2, backgroundColor: colors.orangePale, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  turnFee: { fontSize: 16, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  turnNote: { fontSize: 13, color: colors.t2, fontStyle: 'italic', marginBottom: 4 },
+  turnTime: { fontSize: 10, color: colors.t3 },
 
-  // Action Panel
-  actionPanel: {
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-  },
-  turnIndicator: { fontSize: 14, fontWeight: '700', color: colors.navy, textAlign: 'center', marginBottom: 6 },
-  lastProposal: { fontSize: 12, color: colors.t2, textAlign: 'center', marginBottom: 12 },
-  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  actionBtn: { flex: 1, paddingVertical: 12, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  actionPanel: { backgroundColor: colors.white, padding: 16, borderTopWidth: 1, borderTopColor: colors.border },
+  turnIndicator: { fontSize: 13, fontWeight: '700', color: colors.navy, textAlign: 'center', marginBottom: 12 },
+  actionRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  actionBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   acceptBtn: { backgroundColor: colors.teal },
-  acceptBtnText: { color: colors.white, fontWeight: '700', fontSize: 15 },
-  declineBtn: { backgroundColor: colors.redPale, borderWidth: 1, borderColor: colors.red + '40' },
-  declineBtnText: { color: colors.red, fontWeight: '700', fontSize: 15 },
-  orText: { fontSize: 11, color: colors.t3, textAlign: 'center', marginBottom: 10 },
-  counterRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  counterInput: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.t1,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  noteInput: {
-    backgroundColor: colors.surface2,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 13,
-    color: colors.t1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 10,
-    minHeight: 44,
-    maxHeight: 80,
-  },
+  acceptBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  declineBtn: { backgroundColor: colors.redPale },
+  declineBtnText: { color: colors.red, fontWeight: '700', fontSize: 14 },
+  orText: { fontSize: 11, color: colors.t3, textAlign: 'center', marginBottom: 8 },
+  counterRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginBottom: 8 },
+  rupee: { paddingHorizontal: 12, fontSize: 16, fontWeight: '700', color: colors.t2 },
+  counterInput: { flex: 1, paddingVertical: 10, fontSize: 14, fontWeight: '700', color: colors.t1 },
+  noteInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 10, fontSize: 12, color: colors.t1, marginBottom: 8, minHeight: 40 },
   counterBtn: { backgroundColor: colors.navy },
-  counterBtnText: { color: colors.white, fontWeight: '700', fontSize: 15 },
+  counterBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
 
-  // Waiting
-  waitingPanel: { alignItems: 'center', paddingVertical: 12 },
-  waitingText: { fontSize: 14, fontWeight: '600', color: colors.t3, fontStyle: 'italic' },
-
-  // Closed
-  closedText: { fontSize: 14, fontWeight: '600', color: colors.t2, textAlign: 'center', paddingVertical: 8 },
+  waitingPanel: { backgroundColor: colors.goldPale, padding: 16, alignItems: 'center', borderTopWidth: 1, borderTopColor: '#E8D590' },
+  waitingText: { fontSize: 13, color: '#7A5500', fontWeight: '600' },
+  closedPanel: { backgroundColor: colors.surface2, padding: 16, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.border },
+  closedText: { fontSize: 13, color: colors.t2, textAlign: 'center', lineHeight: 19 },
 });

@@ -318,12 +318,17 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                       }
                     </TouchableOpacity>
                   )}
-                  {ci.status === 'negotiating' && ci.negotiation_id && (
+                  {ci.status === 'negotiating' && (
                     <TouchableOpacity
                       style={styles.negotiateBtn}
-                      onPress={() => Alert.alert('Negotiate', 'Open the web dashboard for full negotiation features.')}
+                      onPress={() => navigation.navigate('BrandNegotiation', {
+                        negotiationId: ci.negotiation_id,
+                        campaignInfluencerId: ci.id,
+                        influencerName: ci.influencer_name || ci.full_name,
+                        influencerHandle: ci.instagram_handle,
+                      })}
                     >
-                      <Text style={styles.negotiateBtnText}>Negotiate</Text>
+                      <Text style={styles.negotiateBtnText}>Open Chat</Text>
                     </TouchableOpacity>
                   )}
                 </View>
