@@ -30,6 +30,9 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   const { campaignId } = route.params || {};
   const [campaign, setCampaign]   = useState(null);
   const [escrow, setEscrow]       = useState(null);
+  const [engagement, setEngagement]   = useState(null);
+  const [conversions, setConversions] = useState(null);
+  const [productsData, setProductsData] = useState(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError]         = useState(null);
@@ -37,9 +40,12 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 
   async function load() {
     setError(null);
-    const [campRes, escrowRes] = await Promise.all([
+    const [campRes, escrowRes, engRes, convRes, prodRes] = await Promise.all([
       brandApi.getCampaign(campaignId),
       brandApi.getCampaignEscrow(campaignId),
+      brandApi.getCampaignEngagement(campaignId).catch(() => ({ success: false })),
+      brandApi.getCampaignConversions(campaignId).catch(() => ({ success: false })),
+      brandApi.getCampaignAllProducts(campaignId).catch(() => ({ success: false })),
     ]);
     setLoading(false);
     if (campRes.success) {
@@ -47,9 +53,10 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
     } else {
       setError(campRes.error?.message || 'Failed to load campaign');
     }
-    if (escrowRes.success) {
-      setEscrow(escrowRes.data);
-    }
+    if (escrowRes.success) setEscrow(escrowRes.data);
+    if (engRes?.success)   setEngagement(engRes.data);
+    if (convRes?.success)  setConversions(convRes.data);
+    if (prodRes?.success)  setProductsData(prodRes.data);
   }
 
   useFocusEffect(
@@ -408,6 +415,99 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         )}
       </View>
 
+      {/* ── Analytics Summary (engagement metrics across deliverables) ──── */}
+      {(() => {
+        const overall = engagement?.overall || engagement?.totals || {};
+        const reach   = overall.reach        ?? overall.total_reach        ?? null;
+        const eng     = overall.engagement   ?? overall.total_engagement   ?? null;
+        const er      = overall.engagement_rate ?? overall.avg_engagement_rate ?? null;
+        if (reach == null && eng == null && er == null) return null;
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Analytics</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={[styles.summaryStat, { backgroundColor: colors.navyPale }]}>
+                <Text style={styles.summaryStatLabel}>Total Reach</Text>
+                <Text style={styles.summaryStatValue}>{reach != null ? Number(reach).toLocaleString('en-IN') : '—'}</Text>
+              </View>
+              <View style={[styles.summaryStat, { backgroundColor: colors.tealPale }]}>
+                <Text style={[styles.summaryStatLabel, { color: colors.tealDeep }]}>Engagement</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.tealDeep }]}>{eng != null ? Number(eng).toLocaleString('en-IN') : '—'}</Text>
+              </View>
+              <View style={[styles.summaryStat, { backgroundColor: colors.orangePale }]}>
+                <Text style={[styles.summaryStatLabel, { color: colors.orange }]}>Avg ER</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{er != null ? `${Number(er).toFixed(1)}%` : '—'}</Text>
+              </View>
+            </View>
+            <Text style={[styles.headerDate, { color: colors.t3, marginTop: 10 }]}>
+              Per-deliverable breakdown is available on the web dashboard.
+            </Text>
+          </View>
+        );
+      })()}
+
+      {/* ── Conversions Summary (conversion / hybrid only) ─────────────── */}
+      {!isConversionOnly === false || sets.some(s => ['conversion','hybrid'].includes((s.goal||'').toLowerCase())) ? (() => {
+        const summary = conversions?.summary || {};
+        const txCount      = conversions?.total_transactions ?? summary.total_transactions ?? null;
+        const txRevenue    = conversions?.total_revenue      ?? summary.total_revenue      ?? null;
+        const txCommission = conversions?.total_commission   ?? summary.total_commission   ?? null;
+        if (txCount == null && txRevenue == null) return null;
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Conversions</Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={[styles.summaryStat, { backgroundColor: colors.navyPale }]}>
+                <Text style={styles.summaryStatLabel}>Transactions</Text>
+                <Text style={styles.summaryStatValue}>{txCount != null ? Number(txCount).toLocaleString('en-IN') : '—'}</Text>
+              </View>
+              <View style={[styles.summaryStat, { backgroundColor: colors.tealPale }]}>
+                <Text style={[styles.summaryStatLabel, { color: colors.tealDeep }]}>Revenue</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.tealDeep }]}>{txRevenue != null ? fmtRupees(txRevenue) : '—'}</Text>
+              </View>
+              <View style={[styles.summaryStat, { backgroundColor: colors.orangePale }]}>
+                <Text style={[styles.summaryStatLabel, { color: colors.orange }]}>Commission Paid</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{txCommission != null ? fmtRupees(txCommission) : '—'}</Text>
+              </View>
+            </View>
+          </View>
+        );
+      })() : null}
+
+      {/* ── Products Summary (conversion / hybrid only) ────────────────── */}
+      {productsData && productsData.products && productsData.products.length > 0 &&
+       sets.some(s => ['conversion','hybrid'].includes((s.goal||'').toLowerCase())) && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>
+            Products in Offer ({productsData.summary?.total_products ?? productsData.products.length})
+          </Text>
+          {productsData.is_brand_level_offer && (
+            <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 10 }]}>
+              Brand-level offer — every influencer promotes the entire catalogue.
+            </Text>
+          )}
+          {productsData.products.slice(0, 5).map((p, i) => (
+            <View key={p.id || i} style={styles.productRow}>
+              <View style={styles.productDot} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
+                <Text style={styles.productSection}>{p.section || 'General'} · {fmtRupees(p.price)}</Text>
+                {(p.assigned_to_influencers || []).length > 0 && (
+                  <Text style={styles.productAssigned} numberOfLines={1}>
+                    Assigned to: {p.assigned_to_influencers.map(a => '@' + (a.handle || a.name)).join(', ')}
+                  </Text>
+                )}
+              </View>
+            </View>
+          ))}
+          {productsData.products.length > 5 && (
+            <Text style={[styles.headerDate, { color: colors.t3, marginTop: 6, textAlign: 'center' }]}>
+              + {productsData.products.length - 5} more — open web dashboard for full list
+            </Text>
+          )}
+        </View>
+      )}
+
       {/* ── Escrow Section ──────────────────────────────────────────────── */}
       {/* Conversion-only campaigns have no fee → no escrow tranches.
           Only show this card when the campaign actually has fee-bearing sets. */}
@@ -702,6 +802,18 @@ const styles = StyleSheet.create({
   webLinkIcon: { fontSize: 14, fontWeight: '700', color: colors.navy },
   webLinkText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy },
   webLinkArrow: { fontSize: 18, color: colors.t3 },
+
+  // Summary stat boxes (Analytics + Conversions cards)
+  summaryStat: { flex: 1, padding: 10, borderRadius: 10, alignItems: 'center' },
+  summaryStatLabel: { fontSize: 9, fontWeight: '800', color: colors.navy, letterSpacing: 0.4, marginBottom: 4 },
+  summaryStatValue: { fontSize: 16, fontWeight: '800', color: colors.navy },
+
+  // Product row (Products card)
+  productRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+  productDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.navy },
+  productName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  productSection: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  productAssigned: { fontSize: 10, color: colors.tealDeep, marginTop: 2, fontStyle: 'italic' },
 
   // Back button (error state)
   backBtn: {

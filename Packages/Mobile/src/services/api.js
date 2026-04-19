@@ -150,6 +150,10 @@ export const brandApi = {
   getNegotiationByCampaignInfluencer: (ciId) => api.get(`/negotiations/by-ci/${ciId}`),
   submitNegotiationTurn: (id, data) => api.post(`/negotiations/${id}/respond`, data),
   getCampaignEscrow: (campaignId) => api.get(`/brands/me/campaigns/${campaignId}/escrow`),
+  // New: campaign-level rollups for the brand mobile detail screen
+  getCampaignEngagement: (campaignId) => api.get(`/brands/me/campaigns/${campaignId}/engagement`),
+  getCampaignConversions: (campaignId) => api.get(`/brands/me/campaigns/${campaignId}/conversions`),
+  getCampaignAllProducts: (campaignId) => api.get(`/campaigns/${campaignId}/products`),
   cancelInfluencer: (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/cancel`),
   // Contracts (brand side)
   getContract:    (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
