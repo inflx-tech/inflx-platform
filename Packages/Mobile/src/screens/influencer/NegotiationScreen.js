@@ -26,6 +26,17 @@ function formatDate(dateStr) {
   });
 }
 
+function statusLabel(status) {
+  switch (status) {
+    case 'awaiting_brand':      return 'Waiting for Brand';
+    case 'awaiting_influencer': return 'Your Turn';
+    case 'agreed':              return 'Agreed';
+    case 'walked_away':         return 'Closed';
+    case 'open':                return 'Open';
+    default:                    return status || '—';
+  }
+}
+
 export default function NegotiationScreen({ navigation, route }) {
   const { negotiation_id, campaign_influencer_id } = route.params || {};
 
@@ -35,6 +46,7 @@ export default function NegotiationScreen({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [proposedFee, setProposedFee] = useState('');
+  const [proposedCommission, setProposedCommission] = useState('');
   const [note, setNote] = useState('');
 
   useEffect(() => {
@@ -60,7 +72,7 @@ export default function NegotiationScreen({ navigation, route }) {
     if (res.success) {
       const neg = res.data?.negotiation || res.data;
       setNegotiation(neg);
-      setTurns(neg.turns || res.data?.turns || []);
+      setTurns(res.data?.turns || neg.turns || []);
     } else {
       if (campaign_influencer_id && res.error?.code === 'NOT_FOUND') {
         setNegotiation(null);
@@ -74,10 +86,24 @@ export default function NegotiationScreen({ navigation, route }) {
     loadNegotiation();
   }, [negotiation_id, campaign_influencer_id]);
 
+  // ── Goal-aware: only collect / show fields that apply to this campaign ────
+  const goal           = (negotiation?.goal || 'engagement').toLowerCase();
+  const isConversion   = goal === 'conversion';
+  const isHybrid       = goal === 'hybrid';
+  const isEngagement   = goal === 'engagement';
+  const showFee        = isEngagement || isHybrid;
+  const showCommission = isConversion || isHybrid;
+
   async function submitCounter() {
-    const feeAmount = parseFloat(proposedFee);
-    if (!feeAmount || feeAmount <= 0) {
+    const feeAmount        = showFee        ? parseFloat(proposedFee)        : null;
+    const commissionAmount = showCommission ? parseFloat(proposedCommission) : null;
+
+    if (showFee && (!feeAmount || feeAmount <= 0)) {
       Alert.alert('Invalid Fee', 'Please enter a valid fee amount.');
+      return;
+    }
+    if (showCommission && (!commissionAmount || commissionAmount <= 0 || commissionAmount > 100)) {
+      Alert.alert('Invalid Commission', 'Please enter a commission % between 0 and 100.');
       return;
     }
     if (!negotiation?.id) {
@@ -87,15 +113,16 @@ export default function NegotiationScreen({ navigation, route }) {
 
     setActionLoading(true);
     const res = await influencerApi.submitNegotiationTurn(negotiation.id, {
-      proposed_fee: feeAmount,
+      ...(feeAmount        != null && { proposed_fee: feeAmount }),
+      ...(commissionAmount != null && { proposed_commission_pct: commissionAmount }),
       note: note || undefined,
       action: 'counter',
     });
     setActionLoading(false);
 
     if (res.success) {
-      Alert.alert('Sent', 'Your counter offer has been sent.');
       setProposedFee('');
+      setProposedCommission('');
       setNote('');
       loadNegotiation();
     } else {
@@ -105,9 +132,13 @@ export default function NegotiationScreen({ navigation, route }) {
 
   async function acceptCurrentOffer() {
     if (!negotiation?.id) return;
+    const feePart = negotiation.current_fee ? fmtRupees(negotiation.current_fee) : null;
+    const commPart = negotiation.current_commission_pct ? `${negotiation.current_commission_pct}% commission` : null;
+    const summary = [feePart, commPart].filter(Boolean).join(' + ') || 'the current offer';
+
     Alert.alert(
       'Accept Offer',
-      'Accept the current offer of ' + fmtRupees(negotiation.current_fee || negotiation.proposed_fee) + '?',
+      `Accept ${summary}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -131,28 +162,28 @@ export default function NegotiationScreen({ navigation, route }) {
     );
   }
 
-  async function declineNegotiation() {
+  async function walkAway() {
     if (!negotiation?.id) return;
     Alert.alert(
-      'Decline',
-      'Are you sure you want to decline this negotiation?',
+      'Walk Away',
+      'Are you sure you want to close this negotiation? The offer will be declined.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Decline',
+          text: 'Walk Away',
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true);
             const res = await influencerApi.submitNegotiationTurn(negotiation.id, {
-              action: 'decline',
+              action: 'walkaway',
             });
             setActionLoading(false);
             if (res.success) {
-              Alert.alert('Declined', 'You have declined the negotiation.', [
+              Alert.alert('Closed', 'You have walked away from this negotiation.', [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } else {
-              Alert.alert('Failed', res.error?.message || 'Could not decline');
+              Alert.alert('Failed', res.error?.message || 'Could not close negotiation');
             }
           },
         },
@@ -174,10 +205,10 @@ export default function NegotiationScreen({ navigation, route }) {
   if (!negotiation) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyIcon}>[!]</Text>
-        <Text style={styles.emptyText}>No negotiation found</Text>
+        <Text style={styles.emptyIcon}>!</Text>
+        <Text style={styles.emptyText}>No negotiation yet</Text>
         <Text style={styles.emptySubtext}>
-          There is no active negotiation for this campaign assignment.
+          Tap "Negotiate" on an offer to start a conversation with the brand.
         </Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Text style={styles.backBtnText}>Go Back</Text>
@@ -187,8 +218,16 @@ export default function NegotiationScreen({ navigation, route }) {
   }
 
   const isInfluencerTurn = negotiation.current_turn === 'influencer';
-  const isOpen = negotiation.status === 'open' || negotiation.status === 'active';
-  const isClosed = negotiation.status === 'accepted' || negotiation.status === 'declined' || negotiation.status === 'expired';
+  const isAwaitingBrand  = negotiation.status === 'awaiting_brand';
+  const isOpen           = isAwaitingBrand || negotiation.status === 'awaiting_influencer' || negotiation.status === 'open';
+  const isClosed         = negotiation.status === 'agreed' || negotiation.status === 'walked_away';
+
+  function renderProposalLine(fee, commissionPct) {
+    const parts = [];
+    if (fee != null && fee !== '')           parts.push(fmtRupees(fee));
+    if (commissionPct != null && commissionPct !== '') parts.push(`${commissionPct}% comm.`);
+    return parts.length ? parts.join(' + ') : '—';
+  }
 
   return (
     <ScrollView
@@ -202,37 +241,42 @@ export default function NegotiationScreen({ navigation, route }) {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Negotiation</Text>
         <View style={styles.headerMeta}>
-          <StatusBadge status={negotiation.status} size={11} />
+          <View style={styles.headerStatusPill}>
+            <Text style={styles.headerStatusText}>{statusLabel(negotiation.status)}</Text>
+          </View>
           {negotiation.brand_name && (
             <Text style={styles.headerBrand}>{negotiation.brand_name}</Text>
           )}
         </View>
+        {negotiation.campaign_name && (
+          <Text style={styles.headerCampaign}>{negotiation.campaign_name}</Text>
+        )}
       </View>
 
-      {/* Current Fee Summary */}
+      {/* Original vs Current */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Current Offer</Text>
+        <Text style={styles.cardTitle}>Offer Progress</Text>
         <View style={styles.feeSummary}>
           <View style={styles.feeBox}>
-            <Text style={styles.feeBoxLabel}>Original Fee</Text>
+            <Text style={styles.feeBoxLabel}>Original</Text>
             <Text style={styles.feeBoxValue}>
-              {fmtRupees(negotiation.original_fee || negotiation.initial_fee || 0)}
+              {renderProposalLine(negotiation.original_fee, negotiation.original_commission_pct)}
             </Text>
           </View>
           <View style={styles.feeArrow}>
             <Text style={styles.feeArrowText}>{'-->'}</Text>
           </View>
           <View style={[styles.feeBox, styles.feeBoxCurrent]}>
-            <Text style={styles.feeBoxLabelCurrent}>Latest Offer</Text>
+            <Text style={styles.feeBoxLabelCurrent}>Latest</Text>
             <Text style={styles.feeBoxValueCurrent}>
-              {fmtRupees(negotiation.current_fee || negotiation.proposed_fee || 0)}
+              {renderProposalLine(negotiation.current_fee, negotiation.current_commission_pct)}
             </Text>
           </View>
         </View>
         <View style={styles.turnInfo}>
           <Text style={styles.turnInfoLabel}>
             {isClosed
-              ? 'Negotiation ' + negotiation.status
+              ? 'Negotiation ' + statusLabel(negotiation.status).toLowerCase()
               : isInfluencerTurn
               ? 'Your turn to respond'
               : 'Waiting for brand to respond'}
@@ -240,17 +284,17 @@ export default function NegotiationScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* Turn History */}
+      {/* Turn History (chat-style) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>
-          {'Conversation (' + turns.length + (turns.length === 1 ? ' turn)' : ' turns)')}
+          {'Conversation (' + turns.length + (turns.length === 1 ? ' message)' : ' messages)')}
         </Text>
 
         {turns.length === 0 ? (
           <Text style={styles.noTurnsText}>No messages yet.</Text>
         ) : (
           turns.map((turn, index) => {
-            const isInfluencer = turn.actor === 'influencer';
+            const isInfluencer = turn.sent_by === 'influencer';
             return (
               <View
                 key={turn.id || index}
@@ -269,25 +313,18 @@ export default function NegotiationScreen({ navigation, route }) {
                   <Text style={styles.turnDate}>{formatDate(turn.created_at)}</Text>
                 </View>
 
-                {turn.action && (
-                  <View style={[
-                    styles.turnActionBadge,
-                    turn.action === 'accept' && styles.turnActionAccept,
-                    turn.action === 'decline' && styles.turnActionDecline,
-                    turn.action === 'counter' && styles.turnActionCounter,
-                  ]}>
-                    <Text style={styles.turnActionText}>
-                      {turn.action === 'counter' ? 'Counter Offer' : turn.action.charAt(0).toUpperCase() + turn.action.slice(1)}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.turnActionBadge}>
+                  <Text style={styles.turnActionText}>Counter Offer</Text>
+                </View>
 
-                {turn.proposed_fee != null && (
-                  <Text style={styles.turnFee}>{fmtRupees(turn.proposed_fee)}</Text>
+                {(turn.proposed_fee != null || turn.proposed_commission_pct != null) && (
+                  <Text style={styles.turnFee}>
+                    {renderProposalLine(turn.proposed_fee, turn.proposed_commission_pct)}
+                  </Text>
                 )}
 
                 {turn.note && (
-                  <Text style={styles.turnNote}>{turn.note}</Text>
+                  <Text style={styles.turnNote}>"{turn.note}"</Text>
                 )}
               </View>
             );
@@ -298,7 +335,7 @@ export default function NegotiationScreen({ navigation, route }) {
       {/* Waiting Banner */}
       {isOpen && !isInfluencerTurn && (
         <View style={styles.waitingCard}>
-          <Text style={styles.waitingIcon}>[...]</Text>
+          <Text style={styles.waitingIcon}>...</Text>
           <Text style={styles.waitingTitle}>Waiting for Brand</Text>
           <Text style={styles.waitingText}>
             The brand is reviewing your offer. You will be notified when they respond.
@@ -306,12 +343,12 @@ export default function NegotiationScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Counter Offer Form */}
+      {/* Counter Offer Form (only when it's the influencer's turn) */}
       {isOpen && isInfluencerTurn && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Your Response</Text>
           <Text style={styles.formHint}>
-            You can accept the current offer, submit a counter offer, or decline.
+            You can accept the current offer, send a counter, or walk away.
           </Text>
 
           <TouchableOpacity
@@ -320,23 +357,41 @@ export default function NegotiationScreen({ navigation, route }) {
             disabled={actionLoading}
           >
             <Text style={styles.acceptBtnText}>
-              {'Accept ' + fmtRupees(negotiation.current_fee || negotiation.proposed_fee)}
+              {'Accept ' + renderProposalLine(negotiation.current_fee, negotiation.current_commission_pct)}
             </Text>
           </TouchableOpacity>
 
           <View style={styles.counterSection}>
             <Text style={styles.counterLabel}>Or send a counter offer:</Text>
-            <View style={styles.inputWrap}>
-              <Text style={styles.rupee}>{'\u20B9'}</Text>
-              <TextInput
-                style={styles.feeInput}
-                value={proposedFee}
-                onChangeText={setProposedFee}
-                keyboardType="numeric"
-                placeholder="Your proposed fee"
-                placeholderTextColor={colors.t3}
-              />
-            </View>
+
+            {showFee && (
+              <View style={styles.inputWrap}>
+                <Text style={styles.rupee}>{'\u20B9'}</Text>
+                <TextInput
+                  style={styles.feeInput}
+                  value={proposedFee}
+                  onChangeText={setProposedFee}
+                  keyboardType="numeric"
+                  placeholder="Your proposed fee"
+                  placeholderTextColor={colors.t3}
+                />
+              </View>
+            )}
+
+            {showCommission && (
+              <View style={styles.inputWrap}>
+                <TextInput
+                  style={[styles.feeInput, { paddingLeft: 14 }]}
+                  value={proposedCommission}
+                  onChangeText={setProposedCommission}
+                  keyboardType="numeric"
+                  placeholder="Proposed commission %"
+                  placeholderTextColor={colors.t3}
+                />
+                <Text style={styles.rupee}>%</Text>
+              </View>
+            )}
+
             <TextInput
               style={styles.noteInput}
               value={note}
@@ -347,9 +402,18 @@ export default function NegotiationScreen({ navigation, route }) {
               numberOfLines={3}
             />
             <TouchableOpacity
-              style={[styles.counterBtn, (actionLoading || !proposedFee) && styles.disabledBtn]}
+              style={[
+                styles.counterBtn,
+                actionLoading && styles.disabledBtn,
+                showFee && !proposedFee && styles.disabledBtn,
+                showCommission && !showFee && !proposedCommission && styles.disabledBtn,
+              ]}
               onPress={submitCounter}
-              disabled={actionLoading || !proposedFee}
+              disabled={
+                actionLoading ||
+                (showFee && !proposedFee) ||
+                (showCommission && !showFee && !proposedCommission)
+              }
             >
               {actionLoading ? (
                 <ActivityIndicator size="small" color={colors.white} />
@@ -361,10 +425,10 @@ export default function NegotiationScreen({ navigation, route }) {
 
           <TouchableOpacity
             style={[styles.declineBtn, actionLoading && styles.disabledBtn]}
-            onPress={declineNegotiation}
+            onPress={walkAway}
             disabled={actionLoading}
           >
-            <Text style={styles.declineBtnText}>Decline Negotiation</Text>
+            <Text style={styles.declineBtnText}>Walk Away</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -373,18 +437,12 @@ export default function NegotiationScreen({ navigation, route }) {
       {isClosed && (
         <View style={[styles.card, styles.closedCard]}>
           <Text style={styles.closedTitle}>
-            {negotiation.status === 'accepted'
-              ? 'Negotiation Accepted'
-              : negotiation.status === 'declined'
-              ? 'Negotiation Declined'
-              : 'Negotiation Expired'}
+            {negotiation.status === 'agreed' ? 'Negotiation Agreed' : 'Negotiation Closed'}
           </Text>
           <Text style={styles.closedText}>
-            {negotiation.status === 'accepted'
-              ? 'Final agreed fee: ' + fmtRupees(negotiation.current_fee || negotiation.agreed_fee || 0) + '. A contract will be generated for signing.'
-              : negotiation.status === 'declined'
-              ? 'This negotiation has been declined.'
-              : 'This negotiation has expired.'}
+            {negotiation.status === 'agreed'
+              ? 'Final terms: ' + renderProposalLine(negotiation.current_fee, negotiation.current_commission_pct) + '. A contract will be generated for signing.'
+              : 'This negotiation has been closed without an agreement.'}
           </Text>
         </View>
       )}
@@ -409,7 +467,15 @@ const styles = StyleSheet.create({
   backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: colors.white },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  headerStatusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  headerStatusText: { fontSize: 11, fontWeight: '800', color: colors.white, letterSpacing: 0.4 },
   headerBrand: { fontSize: 13, color: 'rgba(255,255,255,0.55)' },
+  headerCampaign: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4, fontWeight: '600' },
 
   card: {
     margin: 16,
@@ -433,8 +499,8 @@ const styles = StyleSheet.create({
   feeBoxCurrent: { backgroundColor: colors.tealPale },
   feeBoxLabel: { fontSize: 9, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   feeBoxLabelCurrent: { fontSize: 9, fontWeight: '700', color: colors.tealDeep, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  feeBoxValue: { fontSize: 18, fontWeight: '800', color: colors.t1 },
-  feeBoxValueCurrent: { fontSize: 18, fontWeight: '800', color: colors.tealDeep },
+  feeBoxValue: { fontSize: 14, fontWeight: '800', color: colors.t1, textAlign: 'center' },
+  feeBoxValueCurrent: { fontSize: 14, fontWeight: '800', color: colors.tealDeep, textAlign: 'center' },
   feeArrow: { paddingHorizontal: 4 },
   feeArrowText: { fontSize: 14, color: colors.t3, fontWeight: '700' },
 
@@ -475,12 +541,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 6,
     marginBottom: 6,
+    backgroundColor: colors.orangePale,
   },
-  turnActionCounter: { backgroundColor: colors.orangePale },
-  turnActionAccept: { backgroundColor: colors.tealPale },
-  turnActionDecline: { backgroundColor: colors.redPale },
   turnActionText: { fontSize: 10, fontWeight: '700', color: colors.t1 },
-  turnFee: { fontSize: 18, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  turnFee: { fontSize: 16, fontWeight: '800', color: colors.t1, marginBottom: 4 },
   turnNote: { fontSize: 13, color: colors.t2, lineHeight: 19, fontStyle: 'italic' },
 
   waitingCard: {
@@ -493,7 +557,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E8D590',
   },
-  waitingIcon: { fontSize: 28, color: '#7A5500', marginBottom: 8 },
+  waitingIcon: { fontSize: 22, color: '#7A5500', marginBottom: 8, letterSpacing: 4 },
   waitingTitle: { fontSize: 15, fontWeight: '700', color: '#7A5500', marginBottom: 6 },
   waitingText: { fontSize: 13, color: '#7A5500', textAlign: 'center', lineHeight: 20 },
 

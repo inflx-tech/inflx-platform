@@ -632,11 +632,18 @@ const getNegotiation = asyncHandler(async (req, res) => {
   const { rows: negRows } = await db.query(
     `SELECT n.*,
             ci.influencer_id,
-            c.brand_id
+            ci.agreed_fee         AS ci_agreed_fee,
+            ci.influencer_budget  AS ci_influencer_budget,
+            ci.commission_pct     AS ci_commission_pct,
+            cs.goal               AS goal,
+            c.brand_id,
+            c.name                AS campaign_name,
+            b.business_name       AS brand_name
      FROM negotiations n
      JOIN campaign_influencers ci ON ci.id = n.campaign_influencer_id
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
      WHERE n.id = $1`,
     [req.params.id]
   );
@@ -666,7 +673,18 @@ const getNegotiation = asyncHandler(async (req, res) => {
     [neg.id]
   );
 
-  return success(res, { negotiation: neg, turns });
+  // Derive original/current proposals so the UI doesn't have to recompute
+  const firstTurn = turns[0] || {};
+  const lastTurn  = turns[turns.length - 1] || {};
+  const enriched = {
+    ...neg,
+    original_fee:            firstTurn.proposed_fee || neg.ci_agreed_fee || neg.ci_influencer_budget || null,
+    original_commission_pct: firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
+    current_fee:             lastTurn.proposed_fee || firstTurn.proposed_fee || neg.ci_agreed_fee || null,
+    current_commission_pct:  lastTurn.proposed_commission_pct || firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
+  };
+
+  return success(res, { negotiation: enriched, turns });
 });
 
 const getNegotiationByCampaignInfluencer = asyncHandler(async (req, res) => {
@@ -674,11 +692,18 @@ const getNegotiationByCampaignInfluencer = asyncHandler(async (req, res) => {
   const { rows: negRows } = await db.query(
     `SELECT n.*,
             ci.influencer_id,
-            c.brand_id
+            ci.agreed_fee         AS ci_agreed_fee,
+            ci.influencer_budget  AS ci_influencer_budget,
+            ci.commission_pct     AS ci_commission_pct,
+            cs.goal               AS goal,
+            c.brand_id,
+            c.name                AS campaign_name,
+            b.business_name       AS brand_name
      FROM negotiations n
      JOIN campaign_influencers ci ON ci.id = n.campaign_influencer_id
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id
+     JOIN brands b ON b.id = c.brand_id
      WHERE n.campaign_influencer_id = $1
      ORDER BY n.created_at DESC
      LIMIT 1`,
@@ -708,7 +733,17 @@ const getNegotiationByCampaignInfluencer = asyncHandler(async (req, res) => {
     [neg.id]
   );
 
-  return success(res, { negotiation: neg, turns });
+  const firstTurn = turns[0] || {};
+  const lastTurn  = turns[turns.length - 1] || {};
+  const enriched = {
+    ...neg,
+    original_fee:            firstTurn.proposed_fee || neg.ci_agreed_fee || neg.ci_influencer_budget || null,
+    original_commission_pct: firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
+    current_fee:             lastTurn.proposed_fee || firstTurn.proposed_fee || neg.ci_agreed_fee || null,
+    current_commission_pct:  lastTurn.proposed_commission_pct || firstTurn.proposed_commission_pct || neg.ci_commission_pct || null,
+  };
+
+  return success(res, { negotiation: enriched, turns });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

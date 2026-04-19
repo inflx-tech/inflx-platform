@@ -161,19 +161,28 @@ export default function OfferDetailScreen({ navigation, route }) {
 
     setActionLoading(true);
 
-    // If no negotiation thread exists yet, initiate one
+    // If no negotiation thread exists yet, initiate one and open the chat.
     if (!offer.negotiation?.id && !offer.negotiation_id) {
       const negRes = await influencerApi.negotiateOffer(offer.id, payloadFields);
       setActionLoading(false);
       if (negRes.success) {
-        Alert.alert('Sent', 'Counter offer sent! The brand will review it.');
-        navigation.goBack();
+        const negId = negRes.data?.negotiation?.id;
+        // Replace this screen with the chat thread so the user can SEE the
+        // brand's reply when it lands. Replace (not push) so back button
+        // returns to the offer list, not back into this offer detail.
+        if (negId) {
+          navigation.replace('Negotiation', { negotiation_id: negId });
+        } else {
+          // Fallback if for some reason negotiation_id wasn't returned
+          navigation.navigate('Negotiation', { campaign_influencer_id: offer.id });
+        }
       } else {
         Alert.alert('Failed', negRes.error?.message || 'Could not send counter offer');
       }
       return;
     }
 
+    // Negotiation already exists — submit a counter turn, then jump to the chat.
     const negId = offer.negotiation?.id || offer.negotiation_id;
     const res = await influencerApi.submitNegotiationTurn(negId, {
       ...payloadFields,
@@ -181,8 +190,7 @@ export default function OfferDetailScreen({ navigation, route }) {
     });
     setActionLoading(false);
     if (res.success) {
-      Alert.alert('Sent', 'Counter offer sent!');
-      navigation.goBack();
+      navigation.replace('Negotiation', { negotiation_id: negId });
     } else {
       Alert.alert('Failed', res.error?.message || 'Could not send counter offer');
     }
@@ -710,6 +718,23 @@ export default function OfferDetailScreen({ navigation, route }) {
               </Text>
             </View>
           </View>
+
+          {/* Re-open the chat thread any time */}
+          <TouchableOpacity
+            style={[styles.nextStepBtn, { marginTop: 12 }]}
+            onPress={() => navigation.navigate('Negotiation', {
+              negotiation_id: offer.negotiation.id,
+              campaign_influencer_id: offer.id,
+            })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.nextStepTitle}>Open Chat Thread</Text>
+              <Text style={styles.nextStepDesc}>
+                See the full conversation with the brand and respond to any pending offers.
+              </Text>
+            </View>
+            <Text style={styles.nextStepArrow}>›</Text>
+          </TouchableOpacity>
         </View>
       )}
 
