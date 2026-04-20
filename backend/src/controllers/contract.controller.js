@@ -349,23 +349,27 @@ const brandSign = asyncHandler(async (req, res) => {
         [contract.campaign_influencer_id]
       );
 
-      // 3. Create 3 escrow entries
-      const entries = await escrowService.createEscrowEntries(
-        client,
-        contract.campaign_influencer_id,
-        effectiveFee,
-        contract.platform_fee_pct
-      );
-      t1EntryId = entries[0].id; // T1 is first
+      // 3. Create 3 escrow entries — engagement / hybrid only. Conversion-only
+      //    contracts (effectiveFee == 0) get no tranches: the influencer is
+      //    paid on commission via the follower-transaction pipeline instead.
+      if (effectiveFee > 0) {
+        const entries = await escrowService.createEscrowEntries(
+          client,
+          contract.campaign_influencer_id,
+          effectiveFee,
+          contract.platform_fee_pct
+        );
+        t1EntryId = entries[0].id; // T1 is first
 
-      // 4. Release T1 immediately
-      t1Result = await escrowService.processTrancheRelease(
-        client,
-        t1EntryId,
-        contract.influencer_id,
-        contract.brand_id,
-        contract.campaign_id
-      );
+        // 4. Release T1 immediately
+        t1Result = await escrowService.processTrancheRelease(
+          client,
+          t1EntryId,
+          contract.influencer_id,
+          contract.brand_id,
+          contract.campaign_id
+        );
+      }
 
       // 5. Auto-create deliverables from formats_json. Strict — if formats_json
       //    is missing/invalid we fail loudly rather than silently creating a
@@ -463,14 +467,18 @@ const brandSign = asyncHandler(async (req, res) => {
     console.error('[CONTRACT] PDF generation failed:', err.message);
   });
 
-  // 7. Notify influencer that contract is now active + T1 released
+  // 7. Notify influencer that contract is now active. T1 payment line is only
+  //    included when a tranche was actually released (effectiveFee > 0).
   try {
     const netAmt = t1Result?.netAmount || 0;
+    const body = t1Result
+      ? `Your contract for campaign "${contract.campaign_name}" is now active. Tranche 1 payment of ₹${netAmt.toFixed(2)} has been initiated.`
+      : `Your contract for campaign "${contract.campaign_name}" is now active. Time to start creating content!`;
     await notificationService.send({
       userId:   contract.influencer_user_id,
       type:     'contract.active',
-      title:    'Contract Active — Payment Initiated',
-      body:     `Your contract for campaign "${contract.campaign_name}" is now active. Tranche 1 payment of ₹${netAmt.toFixed(2)} has been initiated.`,
+      title:    t1Result ? 'Contract Active — Payment Initiated' : 'Contract Active',
+      body,
       data:     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id },
       fcmToken: contract.influencer_fcm_token,
       sendSms:  true,
@@ -488,7 +496,7 @@ const brandSign = asyncHandler(async (req, res) => {
 
   return success(res, {
     contract:    finalRows[0],
-    t1_released: true,
+    t1_released: !!t1Result,
     t1_amount:   t1Result?.netAmount || 0,
   });
 });
@@ -573,6 +581,7 @@ const retryContractCreate = asyncHandler(async (req, res) => {
   const { rows: ciRows } = await db.query(
     `SELECT ci.id,
             ci.status,
+            cs.goal,
             inf.user_id  AS influencer_user_id,
             b.user_id    AS brand_user_id
      FROM   campaign_influencers ci
@@ -588,6 +597,13 @@ const retryContractCreate = asyncHandler(async (req, res) => {
 
   if (req.user.sub !== ci.brand_user_id && req.user.sub !== ci.influencer_user_id) {
     throw new AppError('FORBIDDEN', 'You are not a party to this offer', 403);
+  }
+  if ((ci.goal || '').toLowerCase() === 'conversion') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Conversion-only campaigns do not use contracts. The influencer earns commission on sales instead.',
+      422
+    );
   }
   if (!['accepted', 'contracted', 'active'].includes(ci.status)) {
     throw new AppError(

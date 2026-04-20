@@ -106,9 +106,13 @@ export default function OfferDetailScreen({ navigation, route }) {
   // ── Actions ──────────────────────────────────────────────────────────────
 
   async function accept() {
+    const goalLc = (offer.goal || 'engagement').toLowerCase();
+    const isConversionAccept = goalLc === 'conversion';
     Alert.alert(
       'Accept Offer',
-      'Are you sure you want to accept this offer? A contract will be generated for signing.',
+      isConversionAccept
+        ? "This is a commission-only campaign — no contract to sign. You'll start promoting right away and earn commission on every sale or booking driven by your tracking link."
+        : 'Are you sure you want to accept this offer? A contract will be generated for signing.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -118,7 +122,12 @@ export default function OfferDetailScreen({ navigation, route }) {
             const res = await influencerApi.acceptOffer(offer.id);
             setActionLoading(false);
             if (res.success) {
-              Alert.alert('Success', 'Offer accepted! A contract will be ready for signing.');
+              Alert.alert(
+                'Success',
+                isConversionAccept
+                  ? "You're in! Start sharing your tracking link to earn commission on sales."
+                  : 'Offer accepted! A contract will be ready for signing.'
+              );
               navigation.goBack();
             } else {
               Alert.alert('Failed', res.error?.message || 'Could not accept offer');
@@ -635,26 +644,43 @@ export default function OfferDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Next Steps</Text>
 
-          {/* Contract — view/sign */}
-          <TouchableOpacity
-            style={styles.nextStepBtn}
-            onPress={() => navigation.navigate('Contract', { campaignInfluencerId: offer.id })}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.nextStepTitle}>
-                {offer.status === 'accepted' ? 'Review & Sign Contract' : 'View Contract'}
-              </Text>
-              <Text style={styles.nextStepDesc}>
-                {offer.status === 'accepted'
-                  ? 'Sign the contract to unlock Tranche 1 payment.'
-                  : 'See terms, signatures, and payment schedule.'}
-              </Text>
-            </View>
-            <Text style={styles.nextStepArrow}>›</Text>
-          </TouchableOpacity>
+          {/* Contract — view/sign (engagement / hybrid only; conversion has none) */}
+          {!isConversion && (
+            <TouchableOpacity
+              style={styles.nextStepBtn}
+              onPress={() => navigation.navigate('Contract', { campaignInfluencerId: offer.id })}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nextStepTitle}>
+                  {offer.status === 'accepted' ? 'Review & Sign Contract' : 'View Contract'}
+                </Text>
+                <Text style={styles.nextStepDesc}>
+                  {offer.status === 'accepted'
+                    ? 'Sign the contract to unlock Tranche 1 payment.'
+                    : 'See terms, signatures, and payment schedule.'}
+                </Text>
+              </View>
+              <Text style={styles.nextStepArrow}>›</Text>
+            </TouchableOpacity>
+          )}
 
-          {/* Submit content — only after contract is fully signed (status=contracted/active) */}
-          {['contracted', 'active'].includes(offer.status) && (
+          {/* Commission-only primer for conversion offers */}
+          {isConversion && (
+            <View style={[styles.nextStepBtn, { backgroundColor: '#FFFBEB' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nextStepTitle}>Commission-Only Campaign</Text>
+                <Text style={styles.nextStepDesc}>
+                  No contract to sign. Share your tracking link and earn commission on every sale or booking it drives.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Submit content — conversion goes straight to 'active'; engagement /
+              hybrid wait for contract to be fully signed (contracted / active). */}
+          {(isConversion
+            ? offer.status === 'active'
+            : ['contracted', 'active'].includes(offer.status)) && deliverables.length > 0 && (
             <TouchableOpacity
               style={[styles.nextStepBtn, { marginTop: 8 }]}
               onPress={() => navigation.navigate('DeliverableList', { campaignInfluencerId: offer.id })}
@@ -662,9 +688,7 @@ export default function OfferDetailScreen({ navigation, route }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.nextStepTitle}>Submit Content</Text>
                 <Text style={styles.nextStepDesc}>
-                  {deliverables.length > 0
-                    ? `Upload your ${deliverables.length} deliverable${deliverables.length > 1 ? 's' : ''} for brand review.`
-                    : 'Upload your content for brand review.'}
+                  {`Upload your ${deliverables.length} deliverable${deliverables.length > 1 ? 's' : ''} for brand review.`}
                 </Text>
               </View>
               <Text style={styles.nextStepArrow}>›</Text>

@@ -58,6 +58,7 @@ async function _autoCreateInner(campaignInfluencerId) {
        cs.campaign_id,
        cs.per_influencer_budget,
        cs.set_budget,
+       cs.goal,
        c.name                AS campaign_name,
        c.brief               AS content_requirements,
        c.brand_id,
@@ -81,6 +82,14 @@ async function _autoCreateInner(campaignInfluencerId) {
   }
 
   const ci = rows[0];
+
+  // Conversion-only sets pay commission on sales; there's no upfront fee, no
+  // tranches, and no contract to sign. The influencer is marked 'active' at
+  // offer-accept and starts promoting immediately. Skip contract creation.
+  if ((ci.goal || '').toLowerCase() === 'conversion') {
+    console.log(`[CONTRACT] Skipping contract creation for CI ${campaignInfluencerId} — conversion-only set`);
+    return null;
+  }
   // Fallback chain: agreed_fee → influencer_budget → per_influencer_budget → 0
   const effectiveFee = ci.agreed_fee || ci.influencer_budget || ci.per_influencer_budget || 0;
 

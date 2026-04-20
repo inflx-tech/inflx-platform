@@ -397,8 +397,10 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                       }
                     </TouchableOpacity>
                   )}
-                  {/* Open native contract screen — covers draft/pending_brand */}
-                  {(ci.status === 'accepted' || ci.status === 'contracted' || ci.status === 'active') && (
+                  {/* Open native contract screen — covers draft/pending_brand.
+                      Conversion-only offers have no contract; skip this CTA. */}
+                  {(ci.status === 'accepted' || ci.status === 'contracted' || ci.status === 'active') &&
+                   (ci.set_goal || '').toLowerCase() !== 'conversion' && (
                     <TouchableOpacity
                       style={[styles.negotiateBtn, { backgroundColor: colors.tealPale }]}
                       onPress={() => navigation.navigate('BrandContract', {

@@ -462,8 +462,10 @@ export default function CampaignDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
-        {/* Pre-contract hint: deliverables visible but not yet uploadable */}
-        {influencerStatus !== 'active' && deliverables.length > 0 && (
+        {/* Pre-contract hint: deliverables visible but not yet uploadable.
+            Conversion skips the contract, so the hint only applies to
+            engagement / hybrid campaigns. */}
+        {!isConversion && influencerStatus !== 'active' && deliverables.length > 0 && (
           <Text style={[styles.briefText, { marginTop: 10, fontStyle: 'italic', color: colors.t3 }]}>
             You'll be able to upload content once the contract is fully signed by both parties.
           </Text>
@@ -782,11 +784,28 @@ export default function CampaignDetailScreen({ navigation, route }) {
           )}
         </View>
 
-        {/* ── Contract Status (BUG 1 fix: status-based rendering) ────────── */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Contract</Text>
-          {renderContractSection()}
-        </View>
+        {/* ── Contract Status (BUG 1 fix: status-based rendering) ──────────
+            Conversion-only campaigns have no contract — the influencer is
+            commission-paid on sales, so we replace the section with a primer
+            card instead of the signing flow. */}
+        {isConversion ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>How You Get Paid</Text>
+            <View style={[styles.preparingBox, { backgroundColor: '#FFFBEB', borderColor: '#FFD97A' }]}>
+              <Text style={[styles.preparingText, { color: '#7A5500', fontWeight: '700' }]}>
+                Commission on every sale or booking.
+              </Text>
+            </View>
+            <Text style={[styles.noDataText, { marginTop: 8 }]}>
+              This is a commission-only campaign. Share your tracking link with followers — you earn on each confirmed sale or booking. No upfront fee, no contract to sign.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Contract</Text>
+            {renderContractSection()}
+          </View>
+        )}
 
         {/* (Deliverables list lives inside Requirements & Deliverables now —
             duplicate section removed. Upload action moved to a single

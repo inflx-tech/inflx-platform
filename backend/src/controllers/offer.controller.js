@@ -137,13 +137,19 @@ const accept = asyncHandler(async (req, res) => {
     );
   }
 
+  // Conversion-only sets have no contract and no tranches — influencer starts
+  // promoting immediately and earns commission on sales. Engagement / hybrid
+  // keep the 'accepted' → contract → 'contracted' → 'active' flow.
+  const isConversionOnly = (ci.goal || '').toLowerCase() === 'conversion';
+  const acceptedStatus   = isConversionOnly ? 'active' : 'accepted';
+
   // Set agreed_fee from influencer_budget if not already set
   await db.query(
     `UPDATE campaign_influencers
-     SET status = 'accepted',
+     SET status = $2,
          agreed_fee = COALESCE(agreed_fee, influencer_budget)
      WHERE id = $1`,
-    [ci.id]
+    [ci.id, acceptedStatus]
   );
 
   const { rows } = await db.query(
@@ -179,22 +185,26 @@ const accept = asyncHandler(async (req, res) => {
     console.error('[NOTIFICATION] offer.accepted send failed:', notifErr.message);
   }
 
-  // Auto-create contract (Phase 3). Non-fatal for the accept itself, but the
-  // failure is now persisted on the CI (contract.service.autoCreate) and we
-  // tell the client so the UI can show "contract pending — retry".
+  // Auto-create contract (Phase 3) — engagement / hybrid only. Non-fatal for
+  // the accept itself, but the failure is now persisted on the CI
+  // (contract.service.autoCreate) and we tell the client so the UI can show
+  // "contract pending — retry". Conversion-only sets skip this entirely.
   let contractError = null;
-  try {
-    const contractService = require('../services/contract.service');
-    await contractService.autoCreate(ci.id);
-  } catch (contractErr) {
-    console.error('[CONTRACT] Auto-create failed on accept:', contractErr.message);
-    contractError = contractErr.message;
+  if (!isConversionOnly) {
+    try {
+      const contractService = require('../services/contract.service');
+      await contractService.autoCreate(ci.id);
+    } catch (contractErr) {
+      console.error('[CONTRACT] Auto-create failed on accept:', contractErr.message);
+      contractError = contractErr.message;
+    }
   }
 
   return success(res, {
     campaign_influencer: rows[0],
     contract_pending: !!contractError,
     contract_error:   contractError,
+    conversion_only:  isConversionOnly,
   });
 });
 
@@ -393,6 +403,7 @@ const respond = asyncHandler(async (req, res) => {
     `SELECT n.*,
             ci.influencer_id,
             ci.id AS ci_id,
+            cs.goal,
             c.brand_id
      FROM negotiations n
      JOIN campaign_influencers ci ON ci.id = n.campaign_influencer_id
@@ -537,13 +548,18 @@ const respond = asyncHandler(async (req, res) => {
 
       // Persist whichever fields were negotiated. COALESCE keeps existing
       // values for fields that weren't part of this negotiation.
+      // Conversion-only sets skip the contract/tranche loop entirely — the
+      // influencer is 'active' and starts promoting on agreement.
+      const isConversionOnly = (neg.goal || '').toLowerCase() === 'conversion';
+      const acceptedStatus   = isConversionOnly ? 'active' : 'accepted';
+
       const { rows: ciRows } = await client.query(
         `UPDATE campaign_influencers
-         SET status         = 'accepted',
+         SET status         = $4,
              agreed_fee     = COALESCE($2, agreed_fee, influencer_budget),
              commission_pct = COALESCE($3, commission_pct)
          WHERE id = $1 RETURNING *`,
-        [neg.ci_id, lastProposedFee, lastProposedCommission]
+        [neg.ci_id, lastProposedFee, lastProposedCommission, acceptedStatus]
       );
       updatedCi = ciRows[0];
 
@@ -569,9 +585,11 @@ const respond = asyncHandler(async (req, res) => {
     }
   });
 
-  // Auto-create contract when negotiation is agreed (Phase 3) — error tracked on CI
+  // Auto-create contract when negotiation is agreed (Phase 3) — error tracked
+  // on CI. Conversion-only sets skip this: autoCreate itself returns null for
+  // goal='conversion', but we also gate here to avoid the log spam.
   let negContractError = null;
-  if (action === 'accept' && updatedCi) {
+  if (action === 'accept' && updatedCi && (neg.goal || '').toLowerCase() !== 'conversion') {
     try {
       const contractService = require('../services/contract.service');
       await contractService.autoCreate(updatedCi.id);
