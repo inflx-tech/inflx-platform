@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { campaignApi, brandApi, deliverableApi, negotiationApi, contractApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -109,7 +108,7 @@ function MediaPreview({ deliverableId, mediaType }) {
 
 // ─── Deliverable Stats Card (live deliverable engagement) ────────────────────
 
-function DeliverableStatsCard({ deliverableId }) {
+function DeliverableStatsCard({ deliverableId, type }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -139,6 +138,18 @@ function DeliverableStatsCard({ deliverableId }) {
     return String(n);
   };
 
+  // G.3: honest metrics only. Apify's public Instagram scraper reliably
+  // returns likes + comments for every content type, and the video view
+  // count (stored in the `impressions` column) for reels. Reach, true
+  // impressions, saves, and shares require the Instagram Graph API +
+  // the influencer's business account — not available here, always 0.
+  const isReel = type === 'reel';
+  const tiles = [
+    { label: 'Likes',    val: stats?.likes },
+    { label: 'Comments', val: stats?.comments },
+  ];
+  if (isReel) tiles.push({ label: 'Views', val: stats?.impressions });
+
   return (
     <div className="mt-3 bg-gray-50 rounded-lg p-3">
       <div className="flex items-center justify-between mb-2">
@@ -153,15 +164,8 @@ function DeliverableStatsCard({ deliverableId }) {
       </div>
       {stats ? (
         <>
-          <div className="grid grid-cols-3 gap-2 mb-2">
-            {[
-              { label: 'Likes', val: stats.likes },
-              { label: 'Comments', val: stats.comments },
-              { label: 'Saves', val: stats.saves },
-              { label: 'Shares', val: stats.shares },
-              { label: 'Reach', val: stats.reach },
-              { label: 'Impressions', val: stats.impressions },
-            ].map(s => (
+          <div className={`grid ${isReel ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mb-2`}>
+            {tiles.map(s => (
               <div key={s.label} className="bg-white rounded-lg p-2 text-center border border-gray-100">
                 <div className="text-sm font-bold text-gray-800">{fmt(s.val)}</div>
                 <div className="text-[9px] text-gray-400 uppercase font-semibold">{s.label}</div>
@@ -174,11 +178,10 @@ function DeliverableStatsCard({ deliverableId }) {
               <span className="text-[9px] text-gray-400 uppercase font-semibold ml-2">Engagement Rate</span>
             </div>
           )}
-          {stats.scraped_at && (
-            <div className="text-[9px] text-gray-400 text-center mt-1">
-              Last updated: {new Date(stats.scraped_at).toLocaleString('en-IN')}
-            </div>
-          )}
+          <div className="text-[9px] text-gray-400 text-center mt-1.5 leading-tight">
+            Reach &amp; saves aren&apos;t public — they need the influencer&apos;s Instagram Business API to be connected.
+            {stats.scraped_at && <><br/>Last updated: {new Date(stats.scraped_at).toLocaleString('en-IN')}</>}
+          </div>
         </>
       ) : (
         <div className="text-[10px] text-gray-400 text-center py-2">
@@ -842,35 +845,23 @@ export default function CampaignDetailPage() {
             influencer negotiates their own % so an average is meaningless.
           */}
           {(() => {
-            // Pull lazy-loaded engagement + conversions data into rollups
-            const engOverall   = engagement?.overall || engagement?.totals || {};
-            const totalReach   = engOverall.reach        ?? engOverall.total_reach   ?? null;
-            const totalEng     = engOverall.engagement   ?? engOverall.total_engagement ?? null;
-            const avgER        = engOverall.engagement_rate ?? engOverall.avg_engagement_rate ?? null;
+            // Overview tiles only use funnel + money. Engagement numbers live
+            // on the Analytics tab (G.4) so we don't pull them here.
             const txCount      = conversions?.total_transactions ?? conversions?.summary?.total_transactions ?? null;
             const txRevenue    = conversions?.total_revenue      ?? conversions?.summary?.total_revenue      ?? null;
             const txCommission = conversions?.total_commission   ?? conversions?.summary?.total_commission   ?? null;
             const productCount = campaignProducts?.products?.length ?? campaignProducts?.summary?.total_products ?? null;
 
-            // Build the stat cards based on goal
+            // Build the stat cards — Overview shows funnel + money only.
+            // Performance metrics (deliverables, reach, engagement, ER) live
+            // in the Analytics tab so Overview stays focused on "who / where
+            // / how much". G.2 cleanup.
             let cards = [];
 
-            // Always-on first row (universal)
             cards.push({ label: 'Influencers',  value: totalInfluencers });
             cards.push({ label: 'Active Offers', value: activeOffers, sub: `of ${totalInfluencers} invited` });
             cards.push({ label: 'Sets',         value: sets.length });
             cards.push({ label: 'Status',       value: (campaign.status || '—').replace(/_/g, ' ') });
-
-            // Activity row (deliverables — always relevant)
-            cards.push({ label: 'Deliverables Total', value: deliverableCounts.total });
-            cards.push({ label: 'Awaiting Review',    value: deliverableCounts.submitted, sub: deliverableCounts.submitted > 0 ? 'Open Content tab' : '' });
-            cards.push({ label: 'Live',               value: deliverableCounts.live });
-            cards.push({ label: 'In Revision',        value: deliverableCounts.revision });
-
-            // Engagement rollups (everyone benefits from these)
-            cards.push({ label: 'Total Reach',     value: totalReach != null ? Number(totalReach).toLocaleString('en-IN') : '—' });
-            cards.push({ label: 'Total Engagement', value: totalEng != null ? Number(totalEng).toLocaleString('en-IN') : '—' });
-            cards.push({ label: 'Avg ER %',        value: avgER != null ? `${Number(avgER).toFixed(1)}%` : '—' });
 
             // Money / commerce rollups
             if (hasEngagement) {
@@ -1338,7 +1329,7 @@ export default function CampaignDetailPage() {
                   </div>
                 )}
                 {d.status === 'live' && (
-                  <DeliverableStatsCard deliverableId={d.id} />
+                  <DeliverableStatsCard deliverableId={d.id} type={d.type} />
                 )}
               </div>
             ));
@@ -1346,7 +1337,14 @@ export default function CampaignDetailPage() {
         </div>
       )}
 
-      {/* ── ANALYTICS TAB — Drill-Down ────────────────────────────────── */}
+      {/* ── ANALYTICS TAB — Drill-Down ──────────────────────────────────
+          G.4: campaign-level tiles now combine deliverable pipeline
+          counts (moved from Overview) with Apify-reliable engagement
+          metrics — likes, comments, reel views, avg ER. Reach /
+          impressions / saves / shares are dropped because Instagram
+          hides them from public scraping, so they were always 0 and
+          misleading. Per-set and per-influencer rows follow the same
+          honest metric set. */}
       {tab === 'analytics' && (
         <div>
           {!engagement ? (
@@ -1356,55 +1354,49 @@ export default function CampaignDetailPage() {
               {/* Campaign-level summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: 'Total Reach',      value: fmtNum(engagement.totals?.total_reach) },
-                  { label: 'Total Impressions', value: fmtNum(engagement.totals?.total_impressions) },
-                  { label: 'Blended ER',        value: `${engagement.totals?.blended_er || 0}%` },
-                  { label: 'Benchmark ER',      value: `${engagement.totals?.category_benchmark_er || 3.8}%` },
+                  { label: 'Deliverables',    value: deliverableCounts.total },
+                  { label: 'Awaiting Review', value: deliverableCounts.submitted },
+                  { label: 'Live',            value: deliverableCounts.live },
+                  { label: 'In Revision',     value: deliverableCounts.revision },
+                  { label: 'Total Likes',     value: fmtNum(engagement.totals?.total_likes) },
+                  { label: 'Total Comments',  value: fmtNum(engagement.totals?.total_comments) },
+                  { label: 'Total Views',     value: fmtNum(engagement.totals?.total_views), sub: 'reels only' },
+                  { label: 'Avg ER %',        value: `${engagement.totals?.avg_er || 0}%` },
                 ].map(s => (
                   <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-3.5">
                     <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{s.label}</div>
                     <div className="font-display text-xl font-extrabold text-gray-900">{s.value}</div>
+                    {s.sub && <div className="text-[10px] text-gray-400 mt-0.5">{s.sub}</div>}
                   </div>
                 ))}
               </div>
 
-              {/* Daily reach chart */}
-              {engagement.daily_reach?.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <div className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-4">Daily Reach</div>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={engagement.daily_reach}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E0E4EF" />
-                      <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-                      <YAxis tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-                      <Tooltip formatter={v => [fmtNum(v), 'Reach']} />
-                      <Line type="monotone" dataKey="reach" stroke="#F47920" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <div className="text-[11px] text-gray-400 leading-snug px-1">
+                Reach, impressions, saves and shares aren&apos;t shown: Instagram
+                only exposes them through the Graph API (business-account OAuth),
+                which isn&apos;t wired up yet.
+              </div>
 
               {/* Per-set breakdown cards */}
-              {(engagement.by_set || sets).map(set => {
-                const setData = engagement.by_set ? set : { ...set, reach: 0, impressions: 0, engagement_rate: 0 };
-                const setKey = `aset-${set.id || set.set_id}`;
+              {engagement.by_set?.length > 0 ? engagement.by_set.map(set => {
+                const setKey = `aset-${set.set_id}`;
                 const isOpen = expandedAnalyticsSets[setKey];
-                const setInfluencers = engagement.by_influencer?.filter(inf => inf.set_id === (set.id || set.set_id)) || [];
-                // If by_set is not available, group by_influencer by set
-                const infList = setInfluencers.length > 0 ? setInfluencers : (engagement.by_influencer || []);
+                const infList = (engagement.by_influencer || []).filter(inf => inf.set_id === set.set_id);
                 return (
-                  <div key={set.id || set.set_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div key={set.set_id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                     <button onClick={() => setExpandedAnalyticsSets(prev => ({ ...prev, [setKey]: !prev[setKey] }))}
                       className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100 hover:bg-gray-100 transition-colors text-left">
                       <div className="flex items-center gap-2">
                         <span className={`text-gray-400 text-xs transition-transform ${isOpen ? 'rotate-90' : ''}`}>&#9654;</span>
-                        <span className="font-bold text-sm text-gray-800">{set.name || set.set_name || 'Set'}</span>
+                        <span className="font-bold text-sm text-gray-800">{set.set_name || 'Set'}</span>
                         <GoalBadge goal={set.goal} />
+                        <span className="text-[10px] text-gray-400">{set.influencers} influencer{set.influencers === 1 ? '' : 's'}</span>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
-                        {setData.reach != null && <span>Reach: <strong className="text-gray-700">{fmtNum(setData.reach)}</strong></span>}
-                        {setData.impressions != null && <span>Impr: <strong className="text-gray-700">{fmtNum(setData.impressions)}</strong></span>}
-                        {setData.engagement_rate != null && <span>ER: <strong className="text-gray-700">{setData.engagement_rate}%</strong></span>}
+                        <span>Likes: <strong className="text-gray-700">{fmtNum(set.likes)}</strong></span>
+                        <span>Comments: <strong className="text-gray-700">{fmtNum(set.comments)}</strong></span>
+                        {set.views > 0 && <span>Views: <strong className="text-gray-700">{fmtNum(set.views)}</strong></span>}
+                        <span>ER: <strong className="text-gray-700">{set.engagement_rate}%</strong></span>
                       </div>
                     </button>
                     {isOpen && (
@@ -1425,35 +1417,32 @@ export default function CampaignDetailPage() {
                                   <span className="font-medium text-sm text-gray-800">@{inf.instagram_handle}</span>
                                 </div>
                                 <div className="flex items-center gap-4 text-xs text-gray-400">
-                                  <span>Reach: <strong className="text-gray-800">{fmtNum(inf.reach)}</strong></span>
-                                  <span>ER: <strong className="text-gray-800">{inf.engagement_rate || 0}%</strong></span>
                                   <span>Likes: <strong className="text-gray-800">{fmtNum(inf.likes)}</strong></span>
+                                  <span>Comments: <strong className="text-gray-800">{fmtNum(inf.comments)}</strong></span>
+                                  {inf.views > 0 && <span>Views: <strong className="text-gray-800">{fmtNum(inf.views)}</strong></span>}
+                                  <span>ER: <strong className="text-gray-800">{inf.engagement_rate || 0}%</strong></span>
                                 </div>
                               </button>
                               {isInfOpen && deliverableStats.length > 0 && (
                                 <div className="px-6 pb-3">
                                   <div className="bg-gray-50 rounded-lg overflow-hidden">
                                     <div className="grid grid-cols-7 gap-2 px-3 py-2 text-[9px] font-bold text-gray-400 uppercase border-b border-gray-100">
-                                      <span>Type</span><span>Status</span><span>Reach</span><span>Likes</span><span>Comments</span><span>ER</span><span className="text-right">Refresh</span>
+                                      <span>Type</span><span>Status</span><span>Likes</span><span>Comments</span><span>Views</span><span>ER</span><span className="text-right">Refresh</span>
                                     </div>
                                     {deliverableStats.map((d, di) => (
                                       <div key={d.id || di} className="grid grid-cols-7 gap-2 px-3 py-2 text-xs text-gray-600 border-b border-gray-50 last:border-0 items-center">
                                         <span className="font-semibold uppercase text-navy">{d.type}</span>
                                         <span><StatusBadge status={d.status} /></span>
-                                        <span>{fmtNum(d.reach)}</span>
                                         <span>{fmtNum(d.likes)}</span>
                                         <span>{fmtNum(d.comments)}</span>
-                                        <span>{d.engagement_rate || '--'}%</span>
-                                        {/* On-demand Apify refresh (live deliverables only). Calls
-                                            POST /deliverables/:id/refresh-stats which scrapes
-                                            Instagram and updates deliverable_stats. */}
+                                        <span>{d.type === 'reel' ? fmtNum(d.views) : <span className="text-gray-300">—</span>}</span>
+                                        <span>{d.engagement_rate != null ? `${d.engagement_rate}%` : '—'}</span>
                                         <span className="text-right">
                                           {d.status === 'live' && d.id ? (
                                             <button
                                               onClick={async () => {
                                                 const res = await deliverableApi.refreshStats(d.id);
                                                 if (res.success) {
-                                                  // Re-fetch engagement to update the row in place
                                                   campaignApi.getEngagement(id).then(r => { if (r.success) setEngagement(r.data); });
                                                 } else {
                                                   alert(res.error?.message || 'Refresh failed');
@@ -1472,7 +1461,7 @@ export default function CampaignDetailPage() {
                                 </div>
                               )}
                               {isInfOpen && deliverableStats.length === 0 && (
-                                <div className="px-6 pb-3 text-xs text-gray-400">No per-deliverable data available</div>
+                                <div className="px-6 pb-3 text-xs text-gray-400">No deliverables in this contract yet.</div>
                               )}
                             </div>
                           );
@@ -1481,22 +1470,9 @@ export default function CampaignDetailPage() {
                     )}
                   </div>
                 );
-              })}
-
-              {/* Fallback: flat influencer list if no per-set data */}
-              {!engagement.by_set && engagement.by_influencer?.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600 uppercase tracking-wider">Per Influencer (All Sets)</div>
-                  {engagement.by_influencer.map(inf => (
-                    <div key={inf.influencer_id} className="flex items-center justify-between px-4 py-3 border-b border-gray-50 last:border-0 text-sm">
-                      <div className="font-medium text-gray-800">@{inf.instagram_handle}</div>
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span>Reach: <strong className="text-gray-800">{fmtNum(inf.reach)}</strong></span>
-                        <span>ER: <strong className="text-gray-800">{inf.engagement_rate || 0}%</strong></span>
-                        <span>Likes: <strong className="text-gray-800">{fmtNum(inf.likes)}</strong></span>
-                      </div>
-                    </div>
-                  ))}
+              }) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-6 text-xs text-gray-400 text-center">
+                  No influencers onboarded yet — once you invite creators and they accept, per-set and per-influencer performance will appear here.
                 </div>
               )}
             </div>

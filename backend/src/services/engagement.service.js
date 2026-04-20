@@ -1,7 +1,6 @@
 'use strict';
 
 const db = require('../config/db');
-const env = require('../config/env');
 
 /**
  * Get full engagement analytics for a campaign (brand view).
@@ -17,10 +16,16 @@ async function getCampaignEngagement(campaignId) {
   if (!campRows[0]) return null;
   const campaign = campRows[0];
 
-  // Get all influencers + their deliverables + stats for this campaign
+  // Pull every deliverable for the campaign + its stats + set it lives in.
+  // We include deliverables in ANY status (not just 'live') so the Analytics
+  // tab can report deliverable counts (awaiting review / in revision / live)
+  // alongside performance metrics for live ones.
   const { rows: infRows } = await db.query(
     `SELECT
-       ci.id AS campaign_influencer_id,
+       ci.id  AS campaign_influencer_id,
+       cs.id  AS set_id,
+       cs.name AS set_name,
+       cs.goal AS set_goal,
        i.id AS influencer_id,
        u.name,
        i.instagram_handle AS handle,
@@ -32,104 +37,128 @@ async function getCampaignEngagement(campaignId) {
      JOIN campaign_influencers ci ON ci.set_id = cs.id
      JOIN influencers i ON i.id = ci.influencer_id
      JOIN users u ON u.id = i.user_id
-     LEFT JOIN deliverables d ON d.campaign_influencer_id = ci.id AND d.status = 'live'
+     LEFT JOIN deliverables d ON d.campaign_influencer_id = ci.id
      LEFT JOIN deliverable_stats ds ON ds.deliverable_id = d.id
      WHERE cs.campaign_id = $1`,
     [campaignId]
   );
 
-  // Aggregate by influencer
+  // Aggregate by influencer — only 'live' deliverables contribute performance
+  // numbers. Other statuses still surface in the per-influencer deliverables
+  // list so the UI can show status pills. "Views" is Apify's video-view count
+  // for reels (stored in the impressions column); only counted when the type
+  // is 'reel' to avoid polluting the metric with post "impressions" which
+  // public scraping cannot actually return.
   const influencerMap = {};
+  const seenDeliverables = new Set();
   for (const row of infRows) {
     if (!influencerMap[row.influencer_id]) {
       influencerMap[row.influencer_id] = {
         influencer_id: row.influencer_id,
-        name: row.name,
-        handle: `@${row.handle}`,
-        followers: parseInt(row.followers_count) || 0,
-        reach: 0, impressions: 0, likes: 0, comments: 0, saves: 0, shares: 0,
-        engagement_rate: parseFloat(row.engagement_rate) || 0,
-        benchmark_er: env.CATEGORY_BENCHMARK_ER,
+        set_id:        row.set_id,
+        set_name:      row.set_name,
+        set_goal:      row.set_goal,
+        name:          row.name,
+        handle:        `@${row.handle}`,
+        instagram_handle: row.handle,
+        followers:     parseInt(row.followers_count) || 0,
+        likes: 0, comments: 0, views: 0,
+        engagement_rate: 0,
         deliverables: [],
       };
     }
     const inf = influencerMap[row.influencer_id];
 
-    if (row.reach) inf.reach       += parseInt(row.reach);
-    if (row.impressions) inf.impressions += parseInt(row.impressions);
-    if (row.likes) inf.likes       += parseInt(row.likes);
-    if (row.comments) inf.comments    += parseInt(row.comments);
-    if (row.saves) inf.saves       += parseInt(row.saves);
-    if (row.shares) inf.shares      += parseInt(row.shares);
-    if (row.engagement_rate) inf.engagement_rate = parseFloat(row.engagement_rate);
+    const isLive    = row.deliverable_status === 'live';
+    const isReel    = row.deliverable_type   === 'reel';
+    const likes     = parseInt(row.likes    || 0);
+    const comments  = parseInt(row.comments || 0);
+    const views     = parseInt(row.impressions || 0); // reel view count lives here
 
-    if (row.deliverable_id) {
+    if (isLive) {
+      inf.likes    += likes;
+      inf.comments += comments;
+      if (isReel) inf.views += views;
+    }
+
+    if (row.deliverable_id && !seenDeliverables.has(row.deliverable_id)) {
+      seenDeliverables.add(row.deliverable_id);
       inf.deliverables.push({
-        type: row.deliverable_type,
-        live_url: row.live_url,
-        stats: row.reach ? {
-          reach: parseInt(row.reach),
-          impressions: parseInt(row.impressions),
-          likes: parseInt(row.likes),
-          comments: parseInt(row.comments),
-          saves: parseInt(row.saves),
-          shares: parseInt(row.shares),
-          engagement_rate: parseFloat(row.engagement_rate),
-        } : null,
+        id:        row.deliverable_id,
+        type:      row.deliverable_type,
+        status:    row.deliverable_status,
+        live_url:  row.live_url,
+        likes:     likes,
+        comments:  comments,
+        views:     isReel ? views : null,
+        engagement_rate: row.engagement_rate != null ? parseFloat(row.engagement_rate) : null,
+        scraped_at: row.scraped_at,
       });
     }
+  }
+
+  // Per-influencer ER: recompute from aggregated likes+comments over
+  // followers. Matches how a brand thinks about it ("what % of this
+  // influencer's audience engaged with the content we paid for") and stays
+  // correct as more deliverables go live. Falls back to 0 when followers is
+  // unknown.
+  for (const inf of Object.values(influencerMap)) {
+    inf.engagement_rate = inf.followers > 0
+      ? parseFloat((((inf.likes + inf.comments) / inf.followers) * 100).toFixed(2))
+      : 0;
   }
 
   const byInfluencer = Object.values(influencerMap);
 
-  // Totals
-  const totalReach       = byInfluencer.reduce((s, i) => s + i.reach, 0);
-  const totalImpressions = byInfluencer.reduce((s, i) => s + i.impressions, 0);
-  const blendedEr        = byInfluencer.length > 0
+  // Totals — honest metrics only. Reach / impressions / saves / shares aren't
+  // available from Apify's public scraper so we don't aggregate or surface
+  // them at campaign level.
+  const totalLikes    = byInfluencer.reduce((s, i) => s + i.likes,    0);
+  const totalComments = byInfluencer.reduce((s, i) => s + i.comments, 0);
+  const totalViews    = byInfluencer.reduce((s, i) => s + i.views,    0);
+  const avgEr         = byInfluencer.length > 0
     ? parseFloat((byInfluencer.reduce((s, i) => s + i.engagement_rate, 0) / byInfluencer.length).toFixed(2))
     : 0;
 
-  // daily_reach: aggregate by scraped_at date
-  // When APIFY_MOCK, generate 12 mock days if no real data
-  let dailyReach = [];
-  const { rows: dailyRows } = await db.query(
-    `SELECT DATE(ds.scraped_at) AS date, SUM(ds.reach) AS reach
-     FROM deliverable_stats ds
-     JOIN deliverables d ON d.id = ds.deliverable_id
-     JOIN campaign_influencers ci ON ci.id = d.campaign_influencer_id
-     JOIN campaign_sets cs ON cs.id = ci.set_id
-     WHERE cs.campaign_id = $1
-     GROUP BY DATE(ds.scraped_at)
-     ORDER BY DATE(ds.scraped_at)`,
-    [campaignId]
-  );
-
-  if (dailyRows.length > 0) {
-    dailyReach = dailyRows.map(r => ({ date: r.date, reach: parseInt(r.reach) }));
-  } else if (env.APIFY_MOCK) {
-    // Generate 12 days of mock data for chart rendering
-    const startDate = campaign.start_date ? new Date(campaign.start_date) : new Date();
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(startDate);
-      d.setDate(d.getDate() + i);
-      dailyReach.push({
-        date: d.toISOString().split('T')[0],
-        reach: Math.floor(3000 + Math.random() * 8000),
-      });
+  // Per-set rollup derived from the influencer map so the UI can show
+  // by-set totals without a second round-trip.
+  const setMap = {};
+  for (const inf of byInfluencer) {
+    if (!setMap[inf.set_id]) {
+      setMap[inf.set_id] = {
+        set_id:   inf.set_id,
+        set_name: inf.set_name,
+        goal:     inf.set_goal,
+        influencers: 0,
+        likes: 0, comments: 0, views: 0,
+        engagement_rate: 0,
+      };
     }
+    const s = setMap[inf.set_id];
+    s.influencers += 1;
+    s.likes       += inf.likes;
+    s.comments    += inf.comments;
+    s.views       += inf.views;
   }
+  for (const s of Object.values(setMap)) {
+    const infs = byInfluencer.filter(i => i.set_id === s.set_id);
+    s.engagement_rate = infs.length > 0
+      ? parseFloat((infs.reduce((a, i) => a + i.engagement_rate, 0) / infs.length).toFixed(2))
+      : 0;
+  }
+  const bySet = Object.values(setMap);
 
   return {
     campaign_id: campaign.id,
     campaign_name: campaign.name,
     date_range: { start: campaign.start_date, end: campaign.end_date },
     totals: {
-      total_reach: totalReach,
-      total_impressions: totalImpressions,
-      blended_er: blendedEr,
-      category_benchmark_er: env.CATEGORY_BENCHMARK_ER,
+      total_likes:    totalLikes,
+      total_comments: totalComments,
+      total_views:    totalViews,
+      avg_er:         avgEr,
     },
-    daily_reach: dailyReach,
+    by_set:        bySet,
     by_influencer: byInfluencer,
   };
 }
