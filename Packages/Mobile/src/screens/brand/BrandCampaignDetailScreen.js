@@ -432,32 +432,59 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* ── Analytics Summary (engagement metrics across deliverables) ──── */}
+      {/* ── Analytics Summary (engagement metrics across deliverables) ────
+          G.5: mirrors the brand-web Analytics rework — honest metrics
+          only. Likes + comments land reliably from Apify; Views is the
+          video-view count on reels (stored in the impressions column).
+          Reach / saves / shares aren't fetchable from public scraping
+          so we don't show them. */}
       {(() => {
-        const overall = engagement?.overall || engagement?.totals || {};
-        const reach   = overall.reach        ?? overall.total_reach        ?? null;
-        const eng     = overall.engagement   ?? overall.total_engagement   ?? null;
-        const er      = overall.engagement_rate ?? overall.avg_engagement_rate ?? null;
-        if (reach == null && eng == null && er == null) return null;
+        const totals = engagement?.totals || {};
+        const likes    = totals.total_likes;
+        const comments = totals.total_comments;
+        const views    = totals.total_views;
+        const er       = totals.avg_er;
+        if (likes == null && comments == null && views == null && er == null) return null;
         return (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Analytics</Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
               <View style={[styles.summaryStat, { backgroundColor: colors.navyPale }]}>
-                <Text style={styles.summaryStatLabel}>Total Reach</Text>
-                <Text style={styles.summaryStatValue}>{reach != null ? Number(reach).toLocaleString('en-IN') : '—'}</Text>
+                <Text style={styles.summaryStatLabel}>Likes</Text>
+                <Text style={styles.summaryStatValue}>{likes != null ? Number(likes).toLocaleString('en-IN') : '—'}</Text>
               </View>
               <View style={[styles.summaryStat, { backgroundColor: colors.tealPale }]}>
-                <Text style={[styles.summaryStatLabel, { color: colors.tealDeep }]}>Engagement</Text>
-                <Text style={[styles.summaryStatValue, { color: colors.tealDeep }]}>{eng != null ? Number(eng).toLocaleString('en-IN') : '—'}</Text>
+                <Text style={[styles.summaryStatLabel, { color: colors.tealDeep }]}>Comments</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.tealDeep }]}>{comments != null ? Number(comments).toLocaleString('en-IN') : '—'}</Text>
               </View>
+              {views > 0 && (
+                <View style={[styles.summaryStat, { backgroundColor: colors.navyPale }]}>
+                  <Text style={styles.summaryStatLabel}>Views</Text>
+                  <Text style={styles.summaryStatValue}>{Number(views).toLocaleString('en-IN')}</Text>
+                </View>
+              )}
               <View style={[styles.summaryStat, { backgroundColor: colors.orangePale }]}>
                 <Text style={[styles.summaryStatLabel, { color: colors.orange }]}>Avg ER</Text>
                 <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{er != null ? `${Number(er).toFixed(1)}%` : '—'}</Text>
               </View>
             </View>
-            <Text style={[styles.headerDate, { color: colors.t3, marginTop: 10 }]}>
-              Per-deliverable breakdown is available on the web dashboard.
+            {(engagement?.by_influencer || []).length > 0 && (
+              <View style={{ marginTop: 10 }}>
+                <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 6 }]}>Per Influencer</Text>
+                {engagement.by_influencer.map(inf => (
+                  <View key={inf.influencer_id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomColor: colors.borderLight || '#F0F0F0', borderBottomWidth: 1 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy, flex: 1 }} numberOfLines={1}>
+                      {inf.handle || `@${inf.instagram_handle || ''}`}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.t3 }}>
+                      {Number(inf.likes || 0).toLocaleString('en-IN')} likes · {Number(inf.comments || 0).toLocaleString('en-IN')} cmts{inf.views > 0 ? ` · ${Number(inf.views).toLocaleString('en-IN')} views` : ''} · {(inf.engagement_rate || 0).toFixed(2)}% ER
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            <Text style={[styles.headerDate, { color: colors.t3, marginTop: 10, fontSize: 10, lineHeight: 14 }]}>
+              Reach & saves aren't shown — they need the influencer's Instagram Business API to be connected.
             </Text>
           </View>
         );
