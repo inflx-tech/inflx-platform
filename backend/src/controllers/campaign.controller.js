@@ -136,6 +136,78 @@ const getById = asyncHandler(async (req, res) => {
   }
   campaign.sets = sets;
 
+  // Per-CI drill-down enrichment: tranche statuses, deliverable counts,
+  // transaction count. Three small aggregation queries (rather than one big
+  // Cartesian join) keyed on campaign_influencer_id, then merged in JS.
+  const { rows: trancheRows } = await db.query(
+    `SELECT ee.campaign_influencer_id,
+            MAX(CASE WHEN ee.tranche_number = 1 THEN ee.status END) AS t1,
+            MAX(CASE WHEN ee.tranche_number = 2 THEN ee.status END) AS t2,
+            MAX(CASE WHEN ee.tranche_number = 3 THEN ee.status END) AS t3
+     FROM   escrow_entries ee
+     JOIN   campaign_influencers ci ON ci.id = ee.campaign_influencer_id
+     JOIN   campaign_sets cs        ON cs.id = ci.set_id
+     WHERE  cs.campaign_id = $1
+     GROUP  BY ee.campaign_influencer_id`,
+    [campaign.id]
+  );
+  const trancheMap = {};
+  for (const r of trancheRows) {
+    trancheMap[r.campaign_influencer_id] = { t1: r.t1, t2: r.t2, t3: r.t3 };
+  }
+
+  const { rows: delivRows } = await db.query(
+    `SELECT d.campaign_influencer_id,
+            COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE d.status = 'pending')::int             AS pending,
+            COUNT(*) FILTER (WHERE d.status = 'submitted')::int           AS submitted,
+            COUNT(*) FILTER (WHERE d.status = 'under_review')::int        AS under_review,
+            COUNT(*) FILTER (WHERE d.status = 'revision_requested')::int  AS revision_requested,
+            COUNT(*) FILTER (WHERE d.status = 'approved')::int            AS approved,
+            COUNT(*) FILTER (WHERE d.status = 'live')::int                AS live
+     FROM   deliverables d
+     JOIN   campaign_influencers ci ON ci.id = d.campaign_influencer_id
+     JOIN   campaign_sets cs        ON cs.id = ci.set_id
+     WHERE  cs.campaign_id = $1
+     GROUP  BY d.campaign_influencer_id`,
+    [campaign.id]
+  );
+  const delivMap = {};
+  for (const r of delivRows) {
+    const { campaign_influencer_id, ...counts } = r;
+    delivMap[campaign_influencer_id] = counts;
+  }
+
+  const { rows: txnRows } = await db.query(
+    `SELECT ft.campaign_influencer_id,
+            COUNT(*)::int AS transaction_count
+     FROM   follower_transactions ft
+     WHERE  ft.campaign_id = $1
+       AND  ft.status = 'completed'
+     GROUP  BY ft.campaign_influencer_id`,
+    [campaign.id]
+  );
+  const txnMap = {};
+  for (const r of txnRows) {
+    txnMap[r.campaign_influencer_id] = r.transaction_count;
+  }
+
+  // Merge aggregates onto each influencer. Transaction count is only surfaced
+  // for sets whose goal is conversion or hybrid (engagement has no buyer
+  // transactions, so the field stays undefined and the UI can hide it).
+  for (const set of sets) {
+    const goal = (set.goal || '').toLowerCase();
+    const hasTransactions = goal === 'conversion' || goal === 'hybrid';
+    for (const ci of set.influencers) {
+      ci.tranche_statuses = trancheMap[ci.id] || { t1: null, t2: null, t3: null };
+      ci.deliverable_counts = delivMap[ci.id] || {
+        total: 0, pending: 0, submitted: 0, under_review: 0,
+        revision_requested: 0, approved: 0, live: 0,
+      };
+      if (hasTransactions) ci.transaction_count = txnMap[ci.id] || 0;
+    }
+  }
+
   return success(res, { campaign });
 });
 
