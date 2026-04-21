@@ -97,10 +97,23 @@ All 4 IDs are inherited on every follower transaction for automatic commission a
 
 ## Payment Logic (Section 4 of Spec)
 
+### Money Units — ALL RUPEES
+Since migration **021** (2026-04-21), every monetary value stored in the
+DB and returned by our APIs is in **rupees** (`numeric(x,2)`). Paise
+exists only at the Razorpay API boundary — order creation, payouts, and
+webhook payloads. Conversion happens via `utils/money.js`:
+- `toPaise(rupees)` when sending to Razorpay
+- `fromPaise(paise)` when receiving from Razorpay
+
+Never scatter `* 100` or `/ 100` through business logic — route it through
+those helpers. On the frontend, `fmtMoney` is an alias for `fmtRupees`;
+both treat input as rupees.
+
 ### Brand Wallet Rules
 - Wallet must hold **full campaign budget** before publishing
 - Funds locked in escrow on publish
-- Top-up via Razorpay (UPI, cards, netbanking)
+- Top-up via Razorpay (UPI, cards, netbanking) — client sends rupees,
+  backend converts to paise only for the Razorpay orders API call
 
 ### Tranche Schedule (Admin-configurable)
 | Tranche | Default | Trigger |
