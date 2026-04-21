@@ -920,13 +920,31 @@ export default function CampaignDetailPage() {
                     {isSetOpen && setInfs.map(inf => {
                       const infKey = `inf-${inf.id}`;
                       const isInfOpen = expandedInfs[infKey];
-                      const deliverables = inf.deliverables || [];
-                      const products = inf.products || [];
-                      const transactions = inf.transactions || [];
-                      // Goal-aware: only show fields that apply to the parent set's goal.
-                      const setGoal       = (set.goal || 'engagement').toLowerCase();
-                      const showFeeFields = setGoal === 'engagement' || setGoal === 'hybrid';
-                      const showCommFields = setGoal === 'conversion' || setGoal === 'hybrid';
+                      // Backend enrichment (K.1). Defaults kept so pre-deploy data still renders.
+                      const dc    = inf.deliverable_counts || {
+                        total: 0, pending: 0, submitted: 0, under_review: 0,
+                        revision_requested: 0, approved: 0, live: 0,
+                      };
+                      const tr    = inf.tranche_statuses || { t1: null, t2: null, t3: null };
+                      const setGoal        = (set.goal || 'engagement').toLowerCase();
+                      const isEngagement   = setGoal === 'engagement';
+                      const isConversion   = setGoal === 'conversion';
+                      const isHybrid       = setGoal === 'hybrid';
+                      const showCommFields = isConversion || isHybrid;
+                      const showTxLine     = (isConversion || isHybrid) && inf.transaction_count != null;
+                      // Deliverable summary — goal-aware copy + real per-status counts.
+                      const delivPieces = [];
+                      if (dc.live)               delivPieces.push(`${dc.live} live`);
+                      if (dc.approved)           delivPieces.push(`${dc.approved} approved`);
+                      if (dc.submitted || dc.under_review)
+                        delivPieces.push(`${(dc.submitted || 0) + (dc.under_review || 0)} awaiting review`);
+                      if (dc.revision_requested) delivPieces.push(`${dc.revision_requested} in revision`);
+                      if (dc.pending)            delivPieces.push(`${dc.pending} pending`);
+                      const delivDetail = dc.total > 0
+                        ? (delivPieces.length ? delivPieces.join(' \u00B7 ') : `${dc.total} pending`)
+                        : (inf.status === 'invited' || inf.status === 'negotiating' || inf.status === 'accepted'
+                            ? 'not yet generated \u2014 waiting on contract'
+                            : 'none');
                       return (
                         <div key={inf.id} className="ml-4 border-l-2 border-gray-100 pl-4 mt-1">
                           <button onClick={() => setExpandedInfs(prev => ({ ...prev, [infKey]: !prev[infKey] }))}
@@ -944,21 +962,32 @@ export default function CampaignDetailPage() {
                                 {showCommFields && inf.commission_pct && <span className="px-2 py-0.5 bg-teal-100 text-teal-700 rounded-full text-[10px] font-bold">{parseFloat(inf.commission_pct)}% commission</span>}
                                 {inf.coupon_code && <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[10px] font-mono">{inf.coupon_code}</span>}
                               </div>
+                              {/* Deliverables — always shown since every goal has content to deliver. */}
                               <div className="flex items-center gap-1">
-                                <span className="text-gray-300">├</span>
-                                <span>Deliverables: <strong className="text-gray-700">{deliverables.length || 0}</strong>
-                                  {deliverables.length > 0 ? <span className="text-gray-400 ml-1">({[...new Set(deliverables.map(d => d.type))].filter(Boolean).join(', ')})</span>
-                                    : <span className="text-gray-400 ml-1">(awaiting — {inf.status})</span>}
+                                <span className="text-gray-300">{isConversion ? '└' : '├'}</span>
+                                <span>
+                                  Deliverables: <strong className="text-gray-700">{dc.total}</strong>
+                                  <span className="text-gray-400 ml-1">({delivDetail})</span>
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <span className="text-gray-300">├</span>
-                                <span>Products: <span className="text-gray-400">All brand products (brand-level offer)</span></span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="text-gray-300">└</span>
-                                <span>Transactions: <strong className="text-gray-700">{transactions.length || 0}</strong></span>
-                              </div>
+                              {/* Products — only meaningful for conversion / hybrid sets. */}
+                              {!isEngagement && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-300">├</span>
+                                  <span>Products: <span className="text-gray-400">
+                                    {inf.offer_type === 'flat' || inf.offer_type === 'percentage'
+                                      ? 'All brand products (brand-level offer)'
+                                      : 'Assigned per campaign'}
+                                  </span></span>
+                                </div>
+                              )}
+                              {/* Transactions — only meaningful for conversion / hybrid sets. */}
+                              {showTxLine && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-gray-300">└</span>
+                                  <span>Transactions: <strong className="text-gray-700">{inf.transaction_count}</strong></span>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1076,9 +1105,9 @@ export default function CampaignDetailPage() {
                             )}
                             {showTranches && (
                               <div className="flex items-center gap-2 text-xs text-gray-400">
-                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t1_status} /> T1</span>
-                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t2_status} /> T2</span>
-                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.t3_status} /> T3</span>
+                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.tranche_statuses?.t1} /> T1</span>
+                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.tranche_statuses?.t2} /> T2</span>
+                                <span className="flex items-center gap-0.5"><TrancheIcon status={inf.tranche_statuses?.t3} /> T3</span>
                               </div>
                             )}
                           </div>
