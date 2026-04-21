@@ -44,12 +44,11 @@ async function run() {
     );
 
     // 3. Notify influencer
-    const commissionRupees = (commission / 100).toFixed(2);
     await notificationService.send({
       userId: tx.influencer_user_id,
       type: 'commission.confirmed',
       title: 'Commission Confirmed',
-      body: `₹${commissionRupees} commission confirmed — available to withdraw`,
+      body: `\u20B9${commission.toFixed(2)} commission confirmed \u2014 available to withdraw`,
       data: { screen: 'earnings' },
       fcmToken: tx.fcm_token,
       sendSms: false,
@@ -57,8 +56,7 @@ async function run() {
     });
   }
 
-  const totalRupees = (totalAmount / 100).toFixed(2);
-  console.log(`[CRON commission-confirm] Confirmed ${ready.length} commissions totalling ₹${totalRupees}`);
+  console.log(`[CRON commission-confirm] Confirmed ${ready.length} commissions totalling \u20B9${totalAmount.toFixed(2)}`);
   return { confirmed: ready.length, total_amount: totalAmount };
 }
 

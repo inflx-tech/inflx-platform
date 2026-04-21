@@ -269,24 +269,23 @@ const brandSign = asyncHandler(async (req, res) => {
   // doesn't have enough, brand-sign is refused with WALLET_INSUFFICIENT.
   //
   // What gets locked = effectiveFee + (effectiveFee × platform_fee_pct%).
-  // wallet_balance is in PAISE; effectiveFee is in RUPEES.
-  const platformFeePct      = parseFloat(contract.platform_fee_pct || 8);
-  const lockAmountRupees    = effectiveFee * (1 + platformFeePct / 100);
-  const lockAmountPaise     = Math.round(lockAmountRupees * 100);
-  const needsWalletLock     = effectiveFee > 0;   // conversion-only contracts skip this
+  // All values are RUPEES (migration 021).
+  const platformFeePct  = parseFloat(contract.platform_fee_pct || 8);
+  const lockAmount      = parseFloat((effectiveFee * (1 + platformFeePct / 100)).toFixed(2));
+  const needsWalletLock = effectiveFee > 0;   // conversion-only contracts skip this
 
   if (needsWalletLock) {
     const { rows: brandWalletRows } = await db.query(
       `SELECT wallet_balance FROM brands WHERE id = $1`,
       [contract.brand_id]
     );
-    const walletBalancePaise = parseFloat(brandWalletRows[0]?.wallet_balance || 0);
-    if (walletBalancePaise < lockAmountPaise) {
+    const walletBalance = parseFloat(brandWalletRows[0]?.wallet_balance || 0);
+    if (walletBalance < lockAmount) {
       throw new AppError(
         'WALLET_INSUFFICIENT',
         `Insufficient wallet balance to sign this contract. ` +
-        `Need ₹${lockAmountRupees.toFixed(2)} (₹${effectiveFee.toFixed(2)} fee + ${platformFeePct}% platform fee). ` +
-        `Available: ₹${(walletBalancePaise / 100).toFixed(2)}. Top up your wallet first.`,
+        `Need \u20B9${lockAmount.toFixed(2)} (\u20B9${effectiveFee.toFixed(2)} fee + ${platformFeePct}% platform fee). ` +
+        `Available: \u20B9${walletBalance.toFixed(2)}. Top up your wallet first.`,
         422
       );
     }
@@ -310,7 +309,7 @@ const brandSign = asyncHandler(async (req, res) => {
           [contract.brand_id]
         );
         const currentBalance = parseFloat(walletRows[0].wallet_balance);
-        const newBalance = currentBalance - lockAmountPaise;
+        const newBalance = parseFloat((currentBalance - lockAmount).toFixed(2));
         if (newBalance < 0) {
           // Race condition guard — another contract grabbed funds first
           throw new AppError('WALLET_INSUFFICIENT', 'Wallet balance changed; please retry.', 422);
@@ -325,7 +324,7 @@ const brandSign = asyncHandler(async (req, res) => {
            VALUES ($1, 'escrow_lock', $2, 'debit', $3, $4, $5)`,
           [
             contract.brand_id,
-            lockAmountPaise,
+            lockAmount,
             newBalance,
             contract.campaign_id,
             `Escrow lock for contract: ${contract.influencer_name || contract.influencer_id} (${contract.campaign_name})`,

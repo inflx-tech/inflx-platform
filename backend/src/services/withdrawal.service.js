@@ -4,6 +4,7 @@ const axios             = require('axios');
 const db                = require('../config/db');
 const env               = require('../config/env');
 const { decrypt }       = require('../utils/encrypt');
+const { toPaise }       = require('../utils/money');
 const paymentConfigSvc  = require('./paymentConfig.service');
 const notificationService = require('./notification.service');
 
@@ -12,6 +13,8 @@ const notificationService = require('./notification.service');
 // Uses X-Payout API (RazorpayX) — separate key pair from Payment API
 // ─────────────────────────────────────────────────────────────────────────────
 
+// amountPaise is the only place paise lives in this file — it sits at the
+// Razorpay API boundary. Everything else is rupees.
 async function createRazorpayPayout({ fundAccountId, amountPaise, purpose, referenceId, narration }) {
   const keyId     = env.RAZORPAY_PAYOUT_KEY_ID     || env.RAZORPAY_KEY_ID;
   const keySecret = env.RAZORPAY_PAYOUT_KEY_SECRET  || env.RAZORPAY_KEY_SECRET;
@@ -114,11 +117,11 @@ async function ensureFundAccount(influencer) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function initiateWithdrawal(influencer, amountRequested, method) {
-  // ── Validations ────────────────────────────────────────────────────────────
+  // amountRequested is in RUPEES.
   const cfg = await paymentConfigSvc.getConfig();
-  const minWithdrawalPaise = Math.round(cfg.minWithdrawalInr * 100);
-  if (amountRequested < minWithdrawalPaise) {
-    const err = new Error(`Minimum withdrawal amount is ₹${cfg.minWithdrawalInr}`);
+  const minWithdrawal = parseFloat(cfg.minWithdrawalInr);
+  if (amountRequested < minWithdrawal) {
+    const err = new Error(`Minimum withdrawal amount is \u20B9${minWithdrawal}`);
     err.code = 'WITHDRAWAL_TOO_SMALL'; err.statusCode = 422;
     throw err;
   }
@@ -136,8 +139,8 @@ async function initiateWithdrawal(influencer, amountRequested, method) {
     throw err;
   }
 
-  const tdsDeducted = Math.floor(amountRequested * (cfg.tdsPct / 100));
-  const netPaid     = amountRequested - tdsDeducted;
+  const tdsDeducted = parseFloat((amountRequested * (cfg.tdsPct / 100)).toFixed(2));
+  const netPaid     = parseFloat((amountRequested - tdsDeducted).toFixed(2));
 
   // ── Deduct wallet immediately (prevents double-withdrawal) ────────────────
   await db.query(
@@ -153,13 +156,13 @@ async function initiateWithdrawal(influencer, amountRequested, method) {
   if (env.RAZORPAY_MOCK) {
     razorpayPayoutId = `mock_payout_${Date.now()}`;
     status           = 'completed';
-    console.log(`[RAZORPAY MOCK] Payout ${razorpayPayoutId} — ₹${netPaid / 100} via ${method}`);
+    console.log(`[RAZORPAY MOCK] Payout ${razorpayPayoutId} \u2014 \u20B9${netPaid.toFixed(2)} via ${method}`);
   } else {
     try {
       const fundAccountId = await ensureFundAccount(influencer);
       const payoutRes = await createRazorpayPayout({
         fundAccountId,
-        amountPaise:  netPaid,
+        amountPaise:  toPaise(netPaid),
         purpose:      'payout',
         referenceId,
         narration:    'INFLX Influencer Payout',
@@ -205,13 +208,11 @@ async function initiateWithdrawal(influencer, amountRequested, method) {
   const withdrawal = rows[0];
 
   // ── Notify influencer ─────────────────────────────────────────────────────
-  const netRupees = (netPaid / 100).toFixed(2);
-  const tdsRupees = (tdsDeducted / 100).toFixed(2);
   await notificationService.send({
     userId:   influencer.user_id,
     type:     'withdrawal.initiated',
     title:    status === 'completed' ? 'Withdrawal Processed' : 'Withdrawal Initiated',
-    body:     `₹${netRupees} sent to your ${method === 'upi' ? 'UPI' : 'bank account'}. TDS deducted: ₹${tdsRupees}`,
+    body:     `\u20B9${netPaid.toFixed(2)} sent to your ${method === 'upi' ? 'UPI' : 'bank account'}. TDS deducted: \u20B9${tdsDeducted.toFixed(2)}`,
     data:     { screen: 'withdrawals', withdrawal_id: withdrawal.id },
     fcmToken: influencer.fcm_token,
     sendSms:  true,

@@ -403,13 +403,13 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   for (const n of noteRows) noteMap[n.product_id] = n.note_text;
 
   const productsWithDiscount = products.map(p => {
-    const pricePaise = Math.round(parseFloat(p.price || 0) * 100);
-    const discountedPrice = Math.floor(pricePaise * (1 - discountPct / 100));
+    const price = parseFloat(p.price || 0);
+    const discountedPrice = parseFloat((price * (1 - discountPct / 100)).toFixed(2));
     return {
       id: p.id,
       name: p.name,
       description: p.description,
-      price: pricePaise,
+      price,
       discounted_price: discountedPrice,
       image_url: p.image_url,
       is_active: p.is_active,
@@ -621,7 +621,7 @@ const getCategoryStores = asyncHandler(async (req, res) => {
       card_config: cardConfig,
       products: products.map(p => ({
         ...p,
-        price: Math.round(parseFloat(p.price || 0) * 100), // paise
+        price: parseFloat(p.price || 0),   // rupees — brand_products.price is already rupees
       })),
       offers,
     };

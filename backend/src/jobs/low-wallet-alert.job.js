@@ -37,12 +37,11 @@ async function run() {
     const highestTranche = parseFloat(brand.highest_upcoming_tranche);
 
     if (walletBalance < highestTranche) {
-      const balanceRupees = (walletBalance / 100).toFixed(2);
       await notificationService.send({
         userId: brand.user_id,
         type: 'wallet.low_balance',
         title: 'Low Wallet Balance',
-        body: `Wallet balance (₹${balanceRupees}) is below your campaign requirement`,
+        body: `Wallet balance (\u20B9${walletBalance.toFixed(2)}) is below your campaign requirement`,
         data: { screen: 'wallet' },
         fcmToken: brand.fcm_token,
         sendSms: true,

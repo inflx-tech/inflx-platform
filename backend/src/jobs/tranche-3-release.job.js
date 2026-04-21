@@ -44,16 +44,16 @@ async function run() {
     try {
       await escrowService.processTrancheReleaseStandalone(entry.id);
 
-      const netRupees = (parseFloat(entry.net_to_influencer) / 100).toFixed(2);
-      totalAmount += parseFloat(entry.net_to_influencer);
+      const netAmount = parseFloat(entry.net_to_influencer);
+      totalAmount += netAmount;
       successCount++;
 
-      // Notify influencer
+      // Notify influencer (net_to_influencer already in rupees)
       await notificationService.send({
         userId: entry.influencer_user_id,
         type: 'tranche.released',
         title: 'Payment Released',
-        body: `₹${netRupees} credited. Campaign complete!`,
+        body: `\u20B9${netAmount.toFixed(2)} credited. Campaign complete!`,
         data: { screen: 'earnings', campaign_id: entry.campaign_id },
         fcmToken: entry.inf_fcm_token,
         sendSms: true,
@@ -106,11 +106,10 @@ async function run() {
     }
   }
 
-  const totalRupees = (totalAmount / 100).toFixed(2);
   if (failCount > 0) {
     console.warn(`[CRON tranche-3] ${failCount} of ${due.length} tranches failed to release.`);
   }
-  console.log(`[CRON tranche-3] Released ${successCount} tranches totalling ₹${totalRupees}`);
+  console.log(`[CRON tranche-3] Released ${successCount} tranches totalling \u20B9${totalAmount.toFixed(2)}`);
   return { released: successCount, failed: failCount, total_due: due.length, total_amount: totalAmount };
 }
 

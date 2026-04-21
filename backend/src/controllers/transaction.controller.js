@@ -72,8 +72,8 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
 
   const { offer_id, campaign_id, set_id, campaign_influencer_id, bill_amount } = req.body;
 
-  if (!bill_amount || parseInt(bill_amount, 10) <= 0) {
-    throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive integer (paise)', 422, 'bill_amount');
+  if (!bill_amount || parseFloat(bill_amount) <= 0) {
+    throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive number (rupees)', 422, 'bill_amount');
   }
   if (!campaign_id || !set_id || !campaign_influencer_id) {
     throw new AppError('VALIDATION_ERROR', 'campaign_id, set_id, campaign_influencer_id are required', 422);
@@ -109,15 +109,17 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
   }
   const commissionPct = parseFloat(record.commission_pct || 0);
 
-  const billAmountPaise = parseInt(bill_amount, 10);
+  // bill_amount is in RUPEES (migration 021). calcPayAtStore now returns
+  // rupees too; paise only exists at the Razorpay createOrder boundary.
+  const billAmount = parseFloat(bill_amount);
   const { discountAmount, netAmount, influencerCommission, platformFee, brandNet } =
-    txService.calcPayAtStore(billAmountPaise, discountPct, commissionPct, platformFeePct);
+    txService.calcPayAtStore(billAmount, discountPct, commissionPct, platformFeePct);
 
   // Create Razorpay order
   const orderId = await txService.createOrder(netAmount, {
     type: 'pay_at_store',
     offer_id, campaign_id, set_id, campaign_influencer_id,
-    bill_amount: billAmountPaise, discount_amount: discountAmount,
+    bill_amount: billAmount, discount_amount: discountAmount,
     influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet,
     follower_id: follower.id, brand_id: record.brand_id,
   });
@@ -127,7 +129,7 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     razorpay_key_id: txService.getRazorpayKeyId(),
     net_amount: netAmount,
     discount_amount: discountAmount,
-    original_amount: billAmountPaise,
+    original_amount: billAmount,
     discount_pct: discountPct,
     breakdown: { influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet },
   }, 201);
@@ -145,8 +147,8 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  // Consume mock order
-  const { amount: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  // Consume mock order — returns the rupees amount plus meta we stashed.
+  const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
   const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
 
@@ -161,7 +163,7 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   const influencer = await getInfluencerByCiId(meta.campaign_influencer_id);
 
   await db.withTransaction(async (client) => {
-    // Create follower_transaction
+    // Create follower_transaction — all money columns in rupees
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
@@ -180,18 +182,18 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
     );
     transactionId = txRows[0].id;
 
-    // Credit influencer pending_balance
+    // Credit influencer pending_balance in rupees
     await txService.creditInfluencerCommission(client, influencer.id, meta.influencer_commission);
   });
 
   // Fire notification to influencer
   if (influencer) {
-    const commissionRupees = (meta.influencer_commission / 100).toFixed(2);
+    const commissionRupees = parseFloat(meta.influencer_commission).toFixed(2);
     notificationService.send({
       userId: influencer.user_id,
       type: 'commission.sale',
-      title: '₹' + commissionRupees + ' earned!',
-      body: `₹${commissionRupees} earned — sale via ${couponCode || 'your coupon'}`,
+      title: '\u20B9' + commissionRupees + ' earned!',
+      body: `\u20B9${commissionRupees} earned \u2014 sale via ${couponCode || 'your coupon'}`,
       fcmToken: influencer.fcm_token,
       sendSms: false,
     }).catch(e => console.error('[NOTIFY] commission.sale failed:', e.message));
@@ -232,23 +234,23 @@ const initiatePrebook = asyncHandler(async (req, res) => {
 
   const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
-  // Get advance amount — from campaign_offers if exists, otherwise default
-  let advancePaise = 20000; // default ₹200
+  // Get advance amount — from campaign_offers if exists, otherwise default.
+  // Everything is RUPEES post-migration-021.
+  let advanceAmount = 200; // default ₹200
   if (offer_id) {
     const { rows: offerRows } = await db.query(
       `SELECT prebook_advance, discount_value FROM campaign_offers WHERE id = $1`,
       [offer_id]
     );
     if (offerRows[0]?.prebook_advance) {
-      advancePaise = Math.round(parseFloat(offerRows[0].prebook_advance) * 100);
+      advanceAmount = parseFloat(offerRows[0].prebook_advance);
     }
   }
 
   // For car rentals, use token_amount from schema (₹300)
-  if (advancePaise === 20000) {
-    // Check if there's a token amount in the CI offer config
+  if (advanceAmount === 200) {
     const tokenAmount = record.offer_config_json?.token_amount;
-    if (tokenAmount) advancePaise = tokenAmount * 100;
+    if (tokenAmount) advanceAmount = parseFloat(tokenAmount);
   }
 
   // Check slot availability (skip if no offer_id — car rental doesn't use slots)
@@ -262,16 +264,16 @@ const initiatePrebook = asyncHandler(async (req, res) => {
 
   const discountPct = parseFloat(record.discount_value || 0);
 
-  const orderId = await txService.createOrder(advancePaise, {
+  const orderId = await txService.createOrder(advanceAmount, {
     type: 'prebook',
     offer_id: offer_id || null, campaign_id, set_id, campaign_influencer_id,
     booking_date, booking_time, guest_count: guest_count || 1,
-    advance_amount: advancePaise, discount_pct: discountPct,
+    advance_amount: advanceAmount, discount_pct: discountPct,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: parseFloat(record.commission_pct || 0),
   });
 
-  return success(res, { razorpay_order_id: orderId, razorpay_key_id: txService.getRazorpayKeyId(), advance_amount: advancePaise }, 201);
+  return success(res, { razorpay_order_id: orderId, razorpay_key_id: txService.getRazorpayKeyId(), advance_amount: advanceAmount }, 201);
 });
 
 // ── POST /follower/prebook/verify ─────────────────────────────────────────────
@@ -285,10 +287,10 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  const { amount: advancePaise, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
   const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
-  const commissionPaise = Math.floor(advancePaise * meta.commission_pct / 100);
+  const commissionAmount = parseFloat((advanceAmount * meta.commission_pct / 100).toFixed(2));
 
   const { rows: ciRows } = await db.query(
     `SELECT coupon_code FROM campaign_influencers WHERE id = $1`,
@@ -312,7 +314,7 @@ const verifyPrebook = asyncHandler(async (req, res) => {
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id,
-        advancePaise, commissionPaise, couponCode, returnWindowEndsAt, razorpay_payment_id,
+        advanceAmount, commissionAmount, couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
     );
     transactionId = txRows[0].id;
@@ -325,11 +327,11 @@ const verifyPrebook = asyncHandler(async (req, res) => {
           status, advance_paid, balance_due_at_venue)
        VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, 0)
        RETURNING id`,
-      [transactionId, meta.booking_date, meta.booking_time, meta.guest_count, referenceCode, advancePaise]
+      [transactionId, meta.booking_date, meta.booking_time, meta.guest_count, referenceCode, advanceAmount]
     );
     bookingId = bookRows[0].id;
 
-    await txService.creditInfluencerCommission(client, influencer.id, commissionPaise);
+    await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
   });
 
   const { rows: brandRows } = await db.query(
@@ -353,7 +355,7 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     reference_code: referenceCode,
     booking_date: meta.booking_date,
     booking_time: meta.booking_time,
-    advance_paid: advancePaise,
+    advance_paid: advanceAmount,
     balance_due_at_venue: 0,
     brand_name: brandRows[0]?.business_name,
     brand_whatsapp: brandRows[0]?.brand_phone,
@@ -385,9 +387,9 @@ const placeOrder = asyncHandler(async (req, res) => {
   const discountPct = parseFloat(offer.discount_value || 0);
   const platformFeePct = parseFloat(offer.platform_fee_pct || env.PLATFORM_FEE_PCT);
   const commissionPct = parseFloat(record.commission_pct || 0);
-  const deliveryFeePaise = parseInt(delivery_fee || 0, 10);
+  const deliveryFee   = parseFloat(delivery_fee || 0);   // rupees from client
 
-  // Fetch product prices
+  // Fetch product prices (brand_products.price is already rupees)
   const productIds = items.map(i => i.product_id);
   const { rows: products } = await db.query(
     `SELECT id, price FROM brand_products WHERE id = ANY($1::uuid[])`,
@@ -395,22 +397,22 @@ const placeOrder = asyncHandler(async (req, res) => {
   );
   const priceMap = {};
   for (const p of products) {
-    priceMap[p.id] = Math.round(parseFloat(p.price || 0) * 100); // rupees → paise
+    priceMap[p.id] = parseFloat(p.price || 0);
   }
 
-  const productsPaise = items.map(i => ({
-    price_paise: priceMap[i.product_id] || 0,
+  const orderItems = items.map(i => ({
+    price: priceMap[i.product_id] || 0,
     quantity: parseInt(i.quantity, 10),
     product_id: i.product_id,
   }));
 
   const { itemsTotal, discountAmount, netAmount, influencerCommission, platformFee, brandNet } =
-    txService.calcOnlineOrder(productsPaise, discountPct, commissionPct, platformFeePct, deliveryFeePaise);
+    txService.calcOnlineOrder(orderItems, discountPct, commissionPct, platformFeePct, deliveryFee);
 
   const itemsJson = items.map(i => ({
     product_id: i.product_id,
     quantity: i.quantity,
-    price_paise: priceMap[i.product_id] || 0,
+    price: priceMap[i.product_id] || 0,
   }));
 
   const orderId = await txService.createOrder(netAmount, {
@@ -418,7 +420,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     offer_id, campaign_id, set_id, campaign_influencer_id,
     items_total: itemsTotal, discount_amount: discountAmount, net_amount: netAmount,
     influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet,
-    delivery_fee: deliveryFeePaise, address_id, items_json: itemsJson,
+    delivery_fee: deliveryFee, address_id, items_json: itemsJson,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: commissionPct,
   });
@@ -429,7 +431,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     breakdown: {
       items_total: itemsTotal,
       discount_amount: discountAmount,
-      delivery_fee: deliveryFeePaise,
+      delivery_fee: deliveryFee,
       influencer_commission: influencerCommission,
       platform_fee: platformFee,
       brand_net: brandNet,
@@ -448,10 +450,10 @@ const verifyOrder = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  const { amount: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
   const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
-  const commissionPaise = meta.influencer_commission;
+  const commissionAmount = parseFloat(meta.influencer_commission);
 
   const { rows: ciRows } = await db.query(
     `SELECT coupon_code FROM campaign_influencers WHERE id = $1`,
@@ -482,7 +484,7 @@ const verifyOrder = asyncHandler(async (req, res) => {
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id,
         meta.items_total, meta.discount_amount, netAmount,
-        commissionPaise, meta.platform_fee, meta.brand_net,
+        commissionAmount, meta.platform_fee, meta.brand_net,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
     );
@@ -497,7 +499,7 @@ const verifyOrder = asyncHandler(async (req, res) => {
     );
     orderRowId = orderRows[0].id;
 
-    await txService.creditInfluencerCommission(client, influencer.id, commissionPaise);
+    await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
   });
 
   // Notifications

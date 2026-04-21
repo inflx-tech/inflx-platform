@@ -831,9 +831,9 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   // Attach notes to products
   const productsWithNotes = products.map(p => ({
     ...p,
-    price: Math.round(parseFloat(p.price || 0) * 100), // paise
+    price: parseFloat(p.price || 0),   // rupees — brand_products.price is stored in rupees
     influencer_note: noteMap[p.id] || null,
-    is_published: !!noteMap[p.id], // has note = published to store
+    is_published: !!noteMap[p.id],     // has note = published to store
   }));
 
   return success(res, {

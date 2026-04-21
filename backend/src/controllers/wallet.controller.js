@@ -7,6 +7,7 @@ const env      = require('../config/env');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { toPaise, fromPaise } = require('../utils/money');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Razorpay client (lazy — only initialised when RAZORPAY_MOCK=false)
@@ -76,33 +77,37 @@ const getWallet = asyncHandler(async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /brands/me/wallet/topup
-// Creates a Razorpay order (or mock order) for the given amount (paise).
+//
+// Accepts `amount` in RUPEES from the client. Converts to paise only at the
+// Razorpay API boundary (orders API + mock store). The order response carries
+// `amount` in rupees for the client; the order body sent to Razorpay is paise.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const createTopup = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
-  const { amount } = req.body; // amount in PAISE
+  const amountRupees = parseFloat(req.body.amount);
 
-  if (!amount || parseInt(amount, 10) < 100) {
-    throw new AppError('VALIDATION_ERROR', 'amount must be at least ₹1 (100 paise)', 422, 'amount');
+  if (!amountRupees || amountRupees < 1) {
+    throw new AppError('VALIDATION_ERROR', 'amount must be at least ₹1', 422, 'amount');
   }
 
-  const amountPaise = parseInt(amount, 10);
+  const amountPaise = toPaise(amountRupees);
 
   if (env.RAZORPAY_MOCK) {
     const orderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
-    pendingOrders.set(orderId, { amount: amountPaise, brandId: brand.id });
-    console.log(`[RAZORPAY MOCK] Created order ${orderId} for ₹${amountPaise / 100}`);
+    // Mock pending order keeps RUPEES internally; paise only for the API response.
+    pendingOrders.set(orderId, { amountRupees, brandId: brand.id });
+    console.log(`[RAZORPAY MOCK] Created order ${orderId} for \u20B9${amountRupees}`);
 
     return success(res, {
       order_id: orderId,
-      amount: amountPaise,
+      amount: amountPaise,   // paise — Razorpay checkout requires this
       currency: 'INR',
       key_id: env.RAZORPAY_KEY_ID,
     }, 201);
   }
 
-  // ── Live mode: call Razorpay Orders API ──────────────────────────────────
+  // ── Live mode: call Razorpay Orders API (paise) ─────────────────────────
   const receipt = `brand_${brand.id.slice(0, 8)}_${Date.now()}`;
   let order;
   try {
@@ -119,7 +124,7 @@ const createTopup = asyncHandler(async (req, res) => {
 
   return success(res, {
     order_id: order.id,
-    amount:   order.amount,
+    amount:   order.amount,   // paise — Razorpay's echo; checkout needs this
     currency: order.currency,
     key_id:   env.RAZORPAY_KEY_ID,
   }, 201);
@@ -138,16 +143,18 @@ const verifyTopup = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  let amountPaise;
+  // Determine the verified amount in RUPEES. We accept paise from Razorpay
+  // at the boundary and immediately convert.
+  let amountRupees;
 
   if (env.RAZORPAY_MOCK) {
     const pending = pendingOrders.get(razorpay_order_id);
     if (!pending) {
       throw new AppError('NOT_FOUND', 'Order not found or already processed', 404);
     }
-    amountPaise = pending.amount;
+    amountRupees = pending.amountRupees;
     pendingOrders.delete(razorpay_order_id);
-    console.log(`[RAZORPAY MOCK] Verified payment ${razorpay_payment_id} — ₹${amountPaise / 100}`);
+    console.log(`[RAZORPAY MOCK] Verified payment ${razorpay_payment_id} — \u20B9${amountRupees}`);
   } else {
     // ── Verify HMAC signature ──────────────────────────────────────────────
     if (!razorpay_signature) {
@@ -177,10 +184,10 @@ const verifyTopup = asyncHandler(async (req, res) => {
       throw new AppError('VALIDATION_ERROR', `Order status is "${rzpOrder.status}", expected "paid"`, 422);
     }
 
-    amountPaise = rzpOrder.amount;
+    amountRupees = fromPaise(rzpOrder.amount);
   }
 
-  // ── Credit wallet atomically ───────────────────────────────────────────────
+  // ── Credit wallet atomically (rupees everywhere inside our DB) ──────────
   let newBalance;
   let transaction;
 
@@ -190,7 +197,7 @@ const verifyTopup = asyncHandler(async (req, res) => {
       [brand.id]
     );
     const currentBalance = parseFloat(brandRows[0].wallet_balance);
-    newBalance = currentBalance + amountPaise;
+    newBalance = parseFloat((currentBalance + amountRupees).toFixed(2));
 
     await client.query(
       `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
@@ -202,7 +209,7 @@ const verifyTopup = asyncHandler(async (req, res) => {
          (brand_id, type, amount, direction, balance_after, razorpay_payment_id, notes)
        VALUES ($1, 'topup', $2, 'credit', $3, $4, $5)
        RETURNING *`,
-      [brand.id, amountPaise, newBalance, razorpay_payment_id, 'Wallet top-up via Razorpay']
+      [brand.id, amountRupees, newBalance, razorpay_payment_id, 'Wallet top-up via Razorpay']
     );
     transaction = txRows[0];
   });

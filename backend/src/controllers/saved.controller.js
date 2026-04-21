@@ -137,7 +137,7 @@ const listSaved = asyncHandler(async (req, res) => {
       products: products.map(p => ({
         id: p.id,
         name: p.name,
-        price: Math.round(parseFloat(p.price || 0) * 100),
+        price: parseFloat(p.price || 0),
         image_url: p.image_url,
       })),
     });

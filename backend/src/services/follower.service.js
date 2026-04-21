@@ -187,7 +187,7 @@ async function resolveStore(handle) {
       products: products.map(p => ({
         id: p.id,
         name: p.name,
-        price: Math.round(parseFloat(p.price || 0) * 100),
+        price: parseFloat(p.price || 0),
         image_url: p.image_url,
         section: p.section,
         veg_flag: p.veg_flag,
@@ -268,7 +268,7 @@ async function resolveBusinessStore(brandId) {
     products: products.map(p => ({
       id: p.id,
       name: p.name,
-      price: Math.round(parseFloat(p.price || 0) * 100),
+      price: parseFloat(p.price || 0),
       image_url: p.image_url,
       section: p.section,
       veg_flag: p.veg_flag,
@@ -447,7 +447,7 @@ async function getHomeFeed(followerId, followerCity, page = 1, limit = 20) {
         product: product ? {
           id: product.id,
           name: product.name,
-          price: Math.round(parseFloat(product.price || 0) * 100),
+          price: parseFloat(product.price || 0),
           image_url: product.image_url,
           description: product.description,
         } : null,
@@ -605,7 +605,7 @@ async function getDealsByCategory(category, followerCity, followerId, page = 1, 
       product: product ? {
         id: product.id,
         name: product.name,
-        price: Math.round(parseFloat(product.price || 0) * 100),
+        price: parseFloat(product.price || 0),
         image_url: product.image_url,
       } : null,
       influencer: {
@@ -735,7 +735,7 @@ async function getInfluencerStorePreview(influencerId) {
       products: products.map(p => ({
         id: p.id,
         name: p.name,
-        price: Math.round(parseFloat(p.price || 0) * 100),
+        price: parseFloat(p.price || 0),
         image_url: p.image_url,
         section: p.section,
         description: p.description,

@@ -139,10 +139,11 @@ const updateEnquiry = asyncHandler(async (req, res) => {
   let commissionTriggered = enquiry.commission_triggered;
   let commissionAmount = null;
 
-  // If converting with deal_value, trigger influencer commission
+  // If converting with deal_value, trigger influencer commission.
+  // deal_value comes in RUPEES post-migration-021; commission_pct is a percent.
   if (status === 'converted' && deal_value && enquiry.influencer_id && !enquiry.commission_triggered) {
-    const dealValuePaise = parseInt(deal_value, 10);
-    commissionAmount = Math.floor(dealValuePaise * parseFloat(enquiry.commission_pct || 0) / 100);
+    const dealValueRupees = parseFloat(deal_value);
+    commissionAmount = parseFloat((dealValueRupees * parseFloat(enquiry.commission_pct || 0) / 100).toFixed(2));
 
     if (commissionAmount > 0) {
       await db.query(
@@ -160,7 +161,7 @@ const updateEnquiry = asyncHandler(async (req, res) => {
        commission_triggered = $3
      WHERE id = $4
      RETURNING *`,
-    [status || null, deal_value ? parseInt(deal_value, 10) : null, commissionTriggered, id]
+    [status || null, deal_value ? parseFloat(deal_value) : null, commissionTriggered, id]
   );
 
   // Notify follower when responded

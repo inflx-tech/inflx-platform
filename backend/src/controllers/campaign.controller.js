@@ -713,21 +713,18 @@ const publish = asyncHandler(async (req, res) => {
       );
     }
 
-    // Wallet check — only needed if budget required
-    // NOTE: wallet_balance is stored in PAISE; campaign.total_budget is in RUPEES.
-    // Convert campaign budget to paise for comparison.
+    // Wallet check — everything is RUPEES (migration 021).
     const { rows: brandRows } = await db.query(
       `SELECT wallet_balance FROM brands WHERE id = $1`,
       [brand.id]
     );
-    const walletBalancePaise = parseFloat(brandRows[0].wallet_balance);
-    const budgetRupees       = parseFloat(campaign.total_budget);
-    const budgetPaise        = Math.round(budgetRupees * 100); // convert to paise
+    const walletBalance = parseFloat(brandRows[0].wallet_balance);
+    const budget        = parseFloat(campaign.total_budget);
 
-    if (walletBalancePaise < budgetPaise) {
+    if (walletBalance < budget) {
       throw new AppError(
         'WALLET_INSUFFICIENT',
-        `Insufficient wallet balance. Required: ₹${budgetRupees.toFixed(2)}, Available: ₹${(walletBalancePaise / 100).toFixed(2)}`,
+        `Insufficient wallet balance. Required: \u20B9${budget.toFixed(2)}, Available: \u20B9${walletBalance.toFixed(2)}`,
         422
       );
     }
@@ -870,16 +867,12 @@ const cancel = asyncHandler(async (req, res) => {
   // For draft campaigns there is no locked escrow — just cancel directly
   if (campaign.status === 'draft') {
     await db.query(`UPDATE campaigns SET status = 'cancelled' WHERE id = $1`, [campaign.id]);
-    return success(res, { campaign_id: campaign.id, status: 'cancelled', refund_paise: 0 });
+    return success(res, { campaign_id: campaign.id, status: 'cancelled', refund_amount: 0 });
   }
 
   // Refund = sum of LOCKED escrow_entries across all influencers in this
   // campaign + the platform-fee portion that was locked alongside them.
-  //
-  // Under the new per-contract escrow model, money is only locked when each
-  // influencer's contract was brand-signed. Cancelling refunds whatever's
-  // still locked (not yet released as tranches). Released tranches stay
-  // paid out to the influencers — they earned them.
+  // All figures in RUPEES (migration 021).
   const { rows: lockedRows } = await db.query(
     `SELECT COALESCE(SUM(ee.amount), 0) AS locked_amount,
             COALESCE(SUM(ee.platform_fee_amount), 0) AS locked_platform_fee
@@ -889,13 +882,11 @@ const cancel = asyncHandler(async (req, res) => {
      WHERE cs.campaign_id = $1 AND ee.status = 'locked'`,
     [campaign.id]
   );
-  const lockedAmountRupees    = parseFloat(lockedRows[0].locked_amount || 0);
-  const lockedPlatformRupees  = parseFloat(lockedRows[0].locked_platform_fee || 0);
-  // wallet_transactions.amount is in PAISE
-  const refundPaise = Math.round((lockedAmountRupees + lockedPlatformRupees) * 100);
+  const lockedAmount   = parseFloat(lockedRows[0].locked_amount || 0);
+  const lockedPlatform = parseFloat(lockedRows[0].locked_platform_fee || 0);
+  const refundAmount   = parseFloat((lockedAmount + lockedPlatform).toFixed(2));
 
   await db.withTransaction(async (client) => {
-    // Mark all still-locked escrow entries as cancelled
     await client.query(
       `UPDATE escrow_entries ee
        SET status = 'cancelled'
@@ -907,13 +898,12 @@ const cancel = asyncHandler(async (req, res) => {
       [campaign.id]
     );
 
-    // Refund unreleased amount to brand wallet
-    if (refundPaise > 0) {
+    if (refundAmount > 0) {
       const { rows: brandRows } = await client.query(
         `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
         [brand.id]
       );
-      const newBalance = parseFloat(brandRows[0].wallet_balance) + refundPaise;
+      const newBalance = parseFloat((parseFloat(brandRows[0].wallet_balance) + refundAmount).toFixed(2));
 
       await client.query(
         `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
@@ -926,7 +916,7 @@ const cancel = asyncHandler(async (req, res) => {
          VALUES ($1, 'refund', $2, 'credit', $3, $4, $5)`,
         [
           brand.id,
-          refundPaise,
+          refundAmount,
           newBalance,
           campaign.id,
           `Campaign cancelled — escrow refund for: ${campaign.name}`,
@@ -934,7 +924,6 @@ const cancel = asyncHandler(async (req, res) => {
       );
     }
 
-    // Mark campaign cancelled
     await client.query(
       `UPDATE campaigns SET status = 'cancelled' WHERE id = $1`,
       [campaign.id]
@@ -942,10 +931,9 @@ const cancel = asyncHandler(async (req, res) => {
   });
 
   return success(res, {
-    campaign_id:  campaign.id,
-    status:       'cancelled',
-    refund_paise: refundPaise,
-    refund_rupees: (refundPaise / 100).toFixed(2),
+    campaign_id:   campaign.id,
+    status:        'cancelled',
+    refund_amount: refundAmount,
   });
 });
 
@@ -987,45 +975,44 @@ const cancelInfluencer = asyncHandler(async (req, res) => {
     );
   }
 
-  // Calculate escrow to refund for this influencer
+  // Calculate escrow to refund for this influencer (rupees everywhere).
   const { rows: escrowRows } = await db.query(
     `SELECT COALESCE(SUM(amount), 0) AS locked_amount
      FROM escrow_entries
      WHERE campaign_influencer_id = $1 AND status = 'locked'`,
     [ci.id]
   );
-  const refundPaise = Math.round(parseFloat(escrowRows[0].locked_amount) * 100);
+  const refundAmount = parseFloat(parseFloat(escrowRows[0].locked_amount).toFixed(2));
 
   await db.withTransaction(async (client) => {
-    // Mark the assignment as cancelled
     await client.query(
       `UPDATE campaign_influencers SET status = 'cancelled' WHERE id = $1`,
       [ci.id]
     );
 
-    // Cancel any locked escrow entries for this influencer
-    if (refundPaise > 0) {
+    if (refundAmount > 0) {
       await client.query(
         `UPDATE escrow_entries SET status = 'cancelled' WHERE campaign_influencer_id = $1 AND status = 'locked'`,
         [ci.id]
       );
 
-      // Refund to brand wallet
+      // Refund to brand wallet — refundAmount is rupees, wallet is rupees.
       const { rows: balRows } = await client.query(
         `UPDATE brands SET wallet_balance = wallet_balance + $1 WHERE id = $2 RETURNING wallet_balance`,
-        [refundPaise / 100, brand.id]
+        [refundAmount, brand.id]
       );
-      const newBalance = Math.round(parseFloat(balRows[0].wallet_balance) * 100);
+      const newBalance = parseFloat(balRows[0].wallet_balance);
 
       await client.query(
-        `INSERT INTO wallet_transactions (brand_id, type, amount_paise, balance_after_paise, reference_id, description)
-         VALUES ($1, 'refund', $2, $3, $4, $5)`,
+        `INSERT INTO wallet_transactions
+           (brand_id, type, amount, direction, balance_after, campaign_id, notes)
+         VALUES ($1, 'refund', $2, 'credit', $3, $4, $5)`,
         [
           brand.id,
-          refundPaise,
+          refundAmount,
           newBalance,
-          ci.id,
-          `Influencer assignment cancelled — escrow refund for @${ci.instagram_handle} in: ${campaign.name}`,
+          campaign.id,
+          `Influencer assignment cancelled \u2014 escrow refund for @${ci.instagram_handle} in: ${campaign.name}`,
         ]
       );
     }
@@ -1044,9 +1031,8 @@ const cancelInfluencer = asyncHandler(async (req, res) => {
 
   return success(res, {
     campaign_influencer_id: ci.id,
-    status:       'cancelled',
-    refund_paise: refundPaise,
-    refund_rupees: (refundPaise / 100).toFixed(2),
+    status:        'cancelled',
+    refund_amount: refundAmount,
   });
 });
 

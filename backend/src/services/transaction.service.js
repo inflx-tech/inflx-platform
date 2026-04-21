@@ -12,6 +12,7 @@ const Razorpay = require('razorpay');
 const db = require('../config/db');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
+const { toPaise } = require('../utils/money');
 
 // ── Razorpay client ──────────────────────────────────────────────────────────
 let _rzp = null;
@@ -27,11 +28,14 @@ const pendingOrders = new Map();
 
 /**
  * Create a Razorpay order — real or mock depending on RAZORPAY_MOCK.
- * Returns order_id string.
+ * `amountRupees` is in RUPEES; we convert to paise only at the Razorpay
+ * API boundary. Returns the order_id string.
  */
-async function createOrder(amountPaise, meta = {}) {
+async function createOrder(amountRupees, meta = {}) {
+  const amountPaise = toPaise(amountRupees);
+
   if (env.RAZORPAY_MOCK) {
-    return createMockOrder(amountPaise, meta);
+    return createMockOrder(amountRupees, meta);
   }
 
   // Real Razorpay order
@@ -50,19 +54,19 @@ async function createOrder(amountPaise, meta = {}) {
     },
   });
 
-  // Store meta for verification
-  pendingOrders.set(order.id, { amount: amountPaise, meta });
-  console.log(`[RAZORPAY] Order created: ${order.id} ₹${(amountPaise / 100).toFixed(2)}`);
+  // Store rupees internally (paise only existed on the Razorpay request)
+  pendingOrders.set(order.id, { amountRupees, meta });
+  console.log(`[RAZORPAY] Order created: ${order.id} \u20B9${amountRupees.toFixed(2)}`);
   return order.id;
 }
 
 /**
- * Create a mock Razorpay order (dev mode).
+ * Create a mock Razorpay order (dev mode). Amount is in RUPEES.
  */
-function createMockOrder(amountPaise, meta = {}) {
+function createMockOrder(amountRupees, meta = {}) {
   const orderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
-  pendingOrders.set(orderId, { amount: amountPaise, meta });
-  console.log(`[RAZORPAY MOCK] Order created: ${orderId} ₹${(amountPaise / 100).toFixed(2)}`);
+  pendingOrders.set(orderId, { amountRupees, meta });
+  console.log(`[RAZORPAY MOCK] Order created: ${orderId} \u20B9${amountRupees.toFixed(2)}`);
   return orderId;
 }
 
@@ -134,44 +138,47 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
   return record;
 }
 
+// Helper: round to 2-decimal rupees (matches numeric(x,2) DB column precision).
+const r2 = (n) => parseFloat((n || 0).toFixed(2));
+
 /**
- * Calculate pay-at-store amounts. All values in paise.
+ * Calculate pay-at-store amounts. All values in RUPEES.
  */
 function calcPayAtStore(billAmount, discountPct, commissionPct, platformFeePct) {
-  const discountAmount = Math.floor(billAmount * discountPct / 100);
-  const netAmount = billAmount - discountAmount;
-  const influencerCommission = Math.floor(netAmount * commissionPct / 100);
-  const platformFee = Math.floor(netAmount * platformFeePct / 100);
-  const brandNet = netAmount - influencerCommission - platformFee;
+  const discountAmount       = r2(billAmount * discountPct / 100);
+  const netAmount            = r2(billAmount - discountAmount);
+  const influencerCommission = r2(netAmount * commissionPct / 100);
+  const platformFee          = r2(netAmount * platformFeePct / 100);
+  const brandNet             = r2(netAmount - influencerCommission - platformFee);
   return { discountAmount, netAmount, influencerCommission, platformFee, brandNet };
 }
 
 /**
- * Calculate online order amounts. All values in paise.
- * productsPaise: array of { price_paise, quantity }
+ * Calculate online order amounts. All values in RUPEES.
+ * products: array of { price, quantity } (price in rupees)
  */
-function calcOnlineOrder(productsPaise, discountPct, commissionPct, platformFeePct, deliveryFee) {
-  const itemsTotal = productsPaise.reduce((sum, p) => sum + p.price_paise * p.quantity, 0);
-  const discountAmount = Math.floor(itemsTotal * discountPct / 100);
-  const discountedItems = itemsTotal - discountAmount;
-  const netAmount = discountedItems + deliveryFee;
-  const influencerCommission = Math.floor(discountedItems * commissionPct / 100);
-  const platformFee = Math.floor(discountedItems * platformFeePct / 100);
-  const brandNet = discountedItems - influencerCommission - platformFee;
+function calcOnlineOrder(products, discountPct, commissionPct, platformFeePct, deliveryFee = 0) {
+  const itemsTotal           = r2(products.reduce((sum, p) => sum + parseFloat(p.price) * p.quantity, 0));
+  const discountAmount       = r2(itemsTotal * discountPct / 100);
+  const discountedItems      = r2(itemsTotal - discountAmount);
+  const netAmount            = r2(discountedItems + parseFloat(deliveryFee || 0));
+  const influencerCommission = r2(discountedItems * commissionPct / 100);
+  const platformFee          = r2(discountedItems * platformFeePct / 100);
+  const brandNet             = r2(discountedItems - influencerCommission - platformFee);
   return { itemsTotal, discountAmount, netAmount, influencerCommission, platformFee, brandNet };
 }
 
 /**
  * Credit influencer commission to pending_balance and total_earned.
- * commissionPaise is stored as-is in the numeric column (treated as paise integer).
+ * commissionRupees is rupees (matches the new DB convention).
  */
-async function creditInfluencerCommission(client, influencerId, commissionPaise) {
+async function creditInfluencerCommission(client, influencerId, commissionRupees) {
   await client.query(
     `UPDATE influencers
      SET pending_balance = pending_balance + $1,
          total_earned    = total_earned    + $1
      WHERE id = $2`,
-    [commissionPaise, influencerId]
+    [commissionRupees, influencerId]
   );
 }
 

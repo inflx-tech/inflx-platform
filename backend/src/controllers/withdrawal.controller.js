@@ -32,10 +32,11 @@ const initiateWithdrawal = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'method must be upi or bank_transfer', 422, 'method');
   }
 
-  const amount = parseInt(amount_requested, 10);
+  // amount_requested is in RUPEES
+  const amount = parseFloat(amount_requested);
 
-  if (amount < 10000) {
-    throw new AppError('WITHDRAWAL_TOO_SMALL', 'Minimum withdrawal amount is ₹100 (10000 paise)', 422);
+  if (amount < 100) {
+    throw new AppError('WITHDRAWAL_TOO_SMALL', 'Minimum withdrawal amount is \u20B9100', 422);
   }
   if (amount > parseFloat(influencer.wallet_balance)) {
     throw new AppError('INSUFFICIENT_BALANCE', 'Insufficient wallet balance', 422);
