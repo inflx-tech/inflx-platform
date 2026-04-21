@@ -344,15 +344,28 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
             const canCancel = CANCELLABLE.includes(ci.status);
             const isCancelling = actionLoading === ci.id;
 
-            // Count deliverables
-            const deliverables = ci.deliverables || [];
-            const completedDel = deliverables.filter(d => ['approved', 'live'].includes(d.status)).length;
-            const totalDel = deliverables.length;
+            // Deliverable counts — backend K.1 returns ci.deliverable_counts.
+            // Fallback keeps any stale bundle working.
+            const dc = ci.deliverable_counts || { total: 0, live: 0, approved: 0, submitted: 0, under_review: 0, revision_requested: 0, pending: 0 };
+            const totalDel     = dc.total;
+            const completedDel = (dc.live || 0) + (dc.approved || 0);
 
             // Per-row goal awareness — derived from the parent set's goal
             const rowGoal        = (ci.set_goal || 'engagement').toLowerCase();
             const rowShowFee     = rowGoal === 'engagement' || rowGoal === 'hybrid';
             const rowShowComm    = rowGoal === 'conversion' || rowGoal === 'hybrid';
+            const rowShowTr      = rowGoal === 'engagement' || rowGoal === 'hybrid';
+            const tr             = ci.tranche_statuses || { t1: null, t2: null, t3: null };
+
+            function trancheMark(status) {
+              if (status === 'released') return { char: '\u2713', color: colors.teal };    // ✓
+              if (status === 'locked')   return { char: '\u25CB', color: colors.navy };    // ○
+              if (status === 'queued')   return { char: '\u25D0', color: colors.orange };  // ◐
+              return { char: '\u2014', color: colors.t3 };                                  // —
+            }
+            const t1Mark = trancheMark(tr.t1);
+            const t2Mark = trancheMark(tr.t2);
+            const t3Mark = trancheMark(tr.t3);
 
             return (
               <View key={ci.id} style={styles.influencerRow}>
@@ -375,13 +388,35 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                   </View>
                 </View>
 
+                {/* Deliverable progress — shown whenever any deliverables
+                    exist for this contract. Progress bar uses live+approved
+                    count over total; detail text spells out the states. */}
                 {totalDel > 0 && (
                   <View style={styles.deliverableProgress}>
                     <View style={styles.delProgressBarBg}>
-                      <View style={[styles.delProgressBarFill, { width: totalDel > 0 ? `${Math.round((completedDel / totalDel) * 100)}%` : '0%' }]} />
+                      <View style={[styles.delProgressBarFill, { width: `${Math.round((completedDel / totalDel) * 100)}%` }]} />
                     </View>
-                    <Text style={styles.delProgressText}>{completedDel}/{totalDel} deliverables</Text>
+                    <Text style={styles.delProgressText}>
+                      {completedDel}/{totalDel} deliverables
+                      {dc.submitted + dc.under_review > 0 ? ` · ${dc.submitted + dc.under_review} awaiting review` : ''}
+                      {dc.revision_requested > 0 ? ` · ${dc.revision_requested} in revision` : ''}
+                    </Text>
                   </View>
+                )}
+
+                {/* Tranche status row — engagement / hybrid only. Conversion
+                    contracts have no tranches and this row stays hidden. */}
+                {rowShowTr && (
+                  <View style={styles.trancheRow}>
+                    <Text style={[styles.trancheCell, { color: t1Mark.color }]}>{t1Mark.char} T1</Text>
+                    <Text style={[styles.trancheCell, { color: t2Mark.color }]}>{t2Mark.char} T2</Text>
+                    <Text style={[styles.trancheCell, { color: t3Mark.color }]}>{t3Mark.char} T3</Text>
+                  </View>
+                )}
+
+                {/* Transaction count — conversion / hybrid only. */}
+                {(rowGoal === 'conversion' || rowGoal === 'hybrid') && ci.transaction_count != null && (
+                  <Text style={styles.infoLine}>{ci.transaction_count} transaction{ci.transaction_count === 1 ? '' : 's'} driven</Text>
                 )}
 
                 <View style={styles.influencerActions}>
@@ -779,6 +814,9 @@ const styles = StyleSheet.create({
     height: 4, backgroundColor: colors.teal, borderRadius: 2,
   },
   delProgressText: { fontSize: 10, color: colors.t3, marginTop: 2 },
+  trancheRow:  { flexDirection: 'row', gap: 12, marginTop: 6 },
+  trancheCell: { fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+  infoLine:    { fontSize: 11, color: colors.t2, marginTop: 4 },
   influencerActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
   cancelBtn: {
     backgroundColor: colors.redPale,
