@@ -162,6 +162,9 @@ export const brandApi = {
   approveContract:(id, data) => api.post(`/contracts/${id}/approve`, data),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
+  // Enquiry leads (follower-submitted enquiries, attributed to influencers)
+  getEnquiries: (params) => api.get(`/brands/me/enquiries${params ? '?' + new URLSearchParams(params) : ''}`),
+  updateEnquiry: (id, data) => api.patch(`/brands/me/enquiries/${id}`, data),
 };
 
 export const influencerApi = {
