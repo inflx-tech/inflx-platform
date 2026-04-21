@@ -159,6 +159,10 @@ export default function BrandHomeScreen({ navigation }) {
             <Text style={styles.quickActionIcon}>📩</Text>
             <Text style={styles.quickActionLabel}>Enquiry Leads</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('BrandConversions')}>
+            <Text style={styles.quickActionIcon}>💸</Text>
+            <Text style={styles.quickActionLabel}>Conversions</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

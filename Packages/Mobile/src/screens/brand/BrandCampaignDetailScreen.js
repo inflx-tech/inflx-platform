@@ -514,6 +514,12 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                 <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{txCommission != null ? fmtRupees(txCommission) : '—'}</Text>
               </View>
             </View>
+            <TouchableOpacity
+              style={{ marginTop: 12, backgroundColor: colors.navy, borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
+              onPress={() => navigation.navigate('BrandConversions', { campaignId, campaignName: campaign?.name || campaign?.campaign_name })}
+            >
+              <Text style={{ color: colors.white, fontWeight: '800', fontSize: 12 }}>View every transaction ›</Text>
+            </TouchableOpacity>
           </View>
         );
       })() : null}

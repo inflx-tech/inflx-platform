@@ -13,6 +13,7 @@ import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScree
 import BrandNegotiationScreen from '../screens/brand/BrandNegotiationScreen';
 import BrandContractScreen from '../screens/brand/BrandContractScreen';
 import BrandEnquiriesScreen from '../screens/brand/BrandEnquiriesScreen';
+import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -25,6 +26,7 @@ function HomeStack() {
       <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
       <Stack.Screen name="BrandContract" component={BrandContractScreen} />
       <Stack.Screen name="BrandEnquiries" component={BrandEnquiriesScreen} />
+      <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
     </Stack.Navigator>
   );
 }
@@ -36,6 +38,7 @@ function CampaignsStack() {
       <Stack.Screen name="CampaignDetail" component={BrandCampaignDetailScreen} />
       <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
       <Stack.Screen name="BrandContract" component={BrandContractScreen} />
+      <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
     </Stack.Navigator>
   );
 }
