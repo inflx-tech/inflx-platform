@@ -62,6 +62,36 @@ export default function BrandHomeScreen({ navigation }) {
         <Text style={styles.headerBrand}>{brand?.business_name || brand?.brand_name || 'Dashboard'}</Text>
       </View>
 
+      {/* Account status banner — shown until brand is approved */}
+      {(() => {
+        const s = brand?.user_status || brand?.status;
+        if (s !== 'pending' && s !== 'rejected' && s !== 'suspended') return null;
+        const isRejected = s === 'rejected';
+        const isSuspended = s === 'suspended';
+        const title = isRejected ? 'Account not approved'
+          : isSuspended ? 'Account suspended'
+          : 'Account pending review';
+        const body = isRejected
+          ? (brand?.rejection_reason ? `Reason: ${brand.rejection_reason}` : 'Please contact support.')
+          : isSuspended
+            ? 'Your account is temporarily suspended. Contact support to restore access.'
+            : 'An admin will approve your account soon. You can update your profile in the meantime.';
+        return (
+          <TouchableOpacity
+            style={[styles.statusBanner, isRejected || isSuspended ? styles.statusBannerError : styles.statusBannerWarn]}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Profile', { screen: 'BrandProfile' })}
+          >
+            <Text style={[styles.statusBannerTitle, isRejected || isSuspended ? styles.statusBannerErrorText : styles.statusBannerWarnText]}>
+              {title}
+            </Text>
+            <Text style={[styles.statusBannerBody, isRejected || isSuspended ? styles.statusBannerErrorText : styles.statusBannerWarnText]}>
+              {body}
+            </Text>
+          </TouchableOpacity>
+        );
+      })()}
+
       {/* Wallet card */}
       <View style={styles.walletCard}>
         <Text style={styles.walletLabel}>Wallet Balance</Text>
@@ -81,13 +111,22 @@ export default function BrandHomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Low balance / pending wallet alerts */}
+      {/* Context-aware wallet alert — only shown when a campaign is actually
+          blocked on funds. Tapping opens the wallet top-up flow directly. */}
       {pendingWallet.length > 0 && (
-        <View style={styles.alert}>
-          <Text style={styles.alertText}>
-            ⚠️ {pendingWallet.length} campaign{pendingWallet.length > 1 ? 's' : ''} waiting for wallet funding
+        <TouchableOpacity
+          style={styles.alert}
+          activeOpacity={0.8}
+          onPress={() => navigation.navigate('Wallet')}
+        >
+          <Text style={styles.alertTitle}>
+            {pendingWallet.length} campaign{pendingWallet.length > 1 ? 's' : ''} waiting on wallet top-up
           </Text>
-        </View>
+          <Text style={styles.alertBody}>
+            Top up to release funds and publish{pendingWallet.length > 1 ? ' them' : ' it'} to influencers.
+          </Text>
+          <Text style={styles.alertCta}>Top Up Now →</Text>
+        </TouchableOpacity>
       )}
 
       {/* Open Web Dashboard */}
@@ -175,8 +214,17 @@ const styles = StyleSheet.create({
   walletStatVal: { fontSize: 18, fontWeight: '800', color: colors.white },
   topupBtn: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   topupBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  alert: { margin: 16, marginBottom: 0, backgroundColor: colors.orange + '20', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.orange + '40' },
-  alertText: { fontSize: 12, color: colors.orange, fontWeight: '600' },
+  alert: { margin: 16, marginBottom: 0, backgroundColor: colors.orange + '20', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.orange + '40' },
+  alertTitle: { fontSize: 13, color: colors.orange, fontWeight: '800', marginBottom: 3 },
+  alertBody:  { fontSize: 11, color: colors.orange, opacity: 0.9, lineHeight: 15, marginBottom: 6 },
+  alertCta:   { fontSize: 12, color: colors.orange, fontWeight: '800' },
+  statusBanner: { margin: 16, marginBottom: 0, padding: 12, borderRadius: 12, borderWidth: 1 },
+  statusBannerWarn:  { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
+  statusBannerError: { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
+  statusBannerTitle: { fontSize: 13, fontWeight: '800', marginBottom: 3 },
+  statusBannerBody:  { fontSize: 12, lineHeight: 16 },
+  statusBannerWarnText: { color: '#92400E' },
+  statusBannerErrorText:{ color: '#991B1B' },
   section: { margin: 16, marginBottom: 0 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.t1 },
