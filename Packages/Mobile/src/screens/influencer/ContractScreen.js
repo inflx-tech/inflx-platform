@@ -161,6 +161,15 @@ export default function ContractScreen({ navigation, route }) {
   const t2Pct = 25;
   const t3Pct = 50;
 
+  // Goal-aware gating. Backend now ships `goal` + `commission_pct` on the
+  // contract row (K.1 / L.2 joins). Conversion contracts have no fee and no
+  // tranches; they get a Commission Schedule card instead.
+  const goalLc       = (contract.goal || 'engagement').toLowerCase();
+  const isConversion = goalLc === 'conversion';
+  const commissionPct = parseFloat(contract.commission_pct || 0);
+  const showTranches = fee > 0 && !isConversion;
+  const showCommissionCard = commissionPct > 0 || isConversion;
+
   return (
     <View style={styles.outer}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
@@ -273,14 +282,16 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         </View>
 
-        {/* Agreed Fee */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Agreed Fee</Text>
-          <View style={styles.feeHighlight}>
-            <Text style={styles.feeLabel}>Total Influencer Fee</Text>
-            <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
+        {/* Agreed Fee — shown only when there's an upfront fee (engagement / hybrid). */}
+        {fee > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Agreed Fee</Text>
+            <View style={styles.feeHighlight}>
+              <Text style={styles.feeLabel}>Total Influencer Fee</Text>
+              <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Deliverables */}
         {deliverables.length > 0 && (
@@ -306,51 +317,106 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Payment Terms / Tranche Schedule */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Payment Terms</Text>
-          <Text style={styles.paymentNote}>
-            Your fee is paid in 3 tranches. You receive the full agreed amount.
-          </Text>
-
-          <View style={styles.trancheRow}>
-            <View style={[styles.trancheDot, { backgroundColor: colors.teal }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
-              <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
-            </View>
-            <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t1Pct / 100))}</Text>
-          </View>
-
-          <View style={styles.trancheRow}>
-            <View style={[styles.trancheDot, { backgroundColor: colors.orange }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
-              <Text style={styles.trancheDesc}>Released when content goes live</Text>
-            </View>
-            <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t2Pct / 100))}</Text>
-          </View>
-
-          <View style={styles.trancheRow}>
-            <View style={[styles.trancheDot, { backgroundColor: colors.navy }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
-              <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
-            </View>
-            <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t3Pct / 100))}</Text>
-          </View>
-
-          <View style={styles.trancheTotalRow}>
-            <Text style={styles.trancheTotalLabel}>Total Fee</Text>
-            <Text style={styles.trancheTotalValue}>{fmtRupees(fee)}</Text>
-          </View>
-
-          <View style={styles.tdsNote}>
-            <Text style={styles.tdsText}>
-              Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+        {/* Payment Terms / Tranche Schedule — fee-bearing contracts only.
+            Conversion contracts (no upfront fee) get Commission Schedule below. */}
+        {showTranches && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Payment Terms</Text>
+            <Text style={styles.paymentNote}>
+              Your fee is paid in 3 tranches. You receive the full agreed amount.
             </Text>
+
+            <View style={styles.trancheRow}>
+              <View style={[styles.trancheDot, { backgroundColor: colors.teal }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
+                <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
+              </View>
+              <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t1Pct / 100))}</Text>
+            </View>
+
+            <View style={styles.trancheRow}>
+              <View style={[styles.trancheDot, { backgroundColor: colors.orange }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
+                <Text style={styles.trancheDesc}>Released when content goes live</Text>
+              </View>
+              <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t2Pct / 100))}</Text>
+            </View>
+
+            <View style={styles.trancheRow}>
+              <View style={[styles.trancheDot, { backgroundColor: colors.navy }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
+                <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
+              </View>
+              <Text style={styles.trancheAmount}>{fmtRupees(Math.round(fee * t3Pct / 100))}</Text>
+            </View>
+
+            <View style={styles.trancheTotalRow}>
+              <Text style={styles.trancheTotalLabel}>Total Fee</Text>
+              <Text style={styles.trancheTotalValue}>{fmtRupees(fee)}</Text>
+            </View>
+
+            <View style={styles.tdsNote}>
+              <Text style={styles.tdsText}>
+                Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Commission Schedule — conversion / hybrid contracts. */}
+        {showCommissionCard && (() => {
+          let offerCfg = contract.offer_config_json;
+          if (typeof offerCfg === 'string') {
+            try { offerCfg = JSON.parse(offerCfg); } catch { offerCfg = null; }
+          }
+          const offerValueLabel = offerCfg && offerCfg.value != null
+            ? (contract.offer_type === 'percentage' ? `${offerCfg.value}%` : fmtRupees(offerCfg.value))
+            : null;
+          return (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Commission Schedule</Text>
+              <Text style={styles.paymentNote}>
+                You earn on every sale or booking driven by your tracking link. No upfront payment.
+              </Text>
+              <View style={styles.infoGrid}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Commission Rate</Text>
+                  <Text style={[styles.infoValue, { color: colors.tealDeep, fontWeight: '800' }]}>{commissionPct}%</Text>
+                </View>
+                {contract.offer_type && (
+                  <View style={styles.infoItem}>
+                    <Text style={styles.infoLabel}>Offer Type</Text>
+                    <Text style={styles.infoValue}>{String(contract.offer_type).replace(/_/g, ' ')}</Text>
+                  </View>
+                )}
+              </View>
+              {(offerValueLabel || contract.coupon_code) && (
+                <View style={styles.infoGrid}>
+                  {offerValueLabel && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Offer Value</Text>
+                      <Text style={styles.infoValue}>{offerValueLabel}</Text>
+                    </View>
+                  )}
+                  {contract.coupon_code && (
+                    <View style={styles.infoItem}>
+                      <Text style={styles.infoLabel}>Your Coupon</Text>
+                      <Text style={[styles.infoValue, { fontFamily: 'monospace' }]}>{contract.coupon_code}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              <View style={styles.tdsNote}>
+                <Text style={styles.tdsText}>
+                  Commissions credit to your pending balance immediately and move to withdrawable balance after a 30-day return window. 10% TDS is deducted at withdrawal.
+                </Text>
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Content Guidelines / Brief */}
         {(contract.content_requirements || contract.brief || contract.campaign_brief) && (

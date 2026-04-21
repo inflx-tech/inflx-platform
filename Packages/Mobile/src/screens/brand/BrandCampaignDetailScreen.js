@@ -432,10 +432,10 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                       }
                     </TouchableOpacity>
                   )}
-                  {/* Open native contract screen — covers draft/pending_brand.
-                      Conversion-only offers have no contract; skip this CTA. */}
-                  {(ci.status === 'accepted' || ci.status === 'contracted' || ci.status === 'active') &&
-                   (ci.set_goal || '').toLowerCase() !== 'conversion' && (
+                  {/* Contract button — all goals flow through the contract
+                      state machine. The screen itself is goal-aware and hides
+                      the tranche schedule for commission-only conversion. */}
+                  {(ci.status === 'accepted' || ci.status === 'contracted' || ci.status === 'active') && (
                     <TouchableOpacity
                       style={[styles.negotiateBtn, { backgroundColor: colors.tealPale }]}
                       onPress={() => navigation.navigate('BrandContract', {
