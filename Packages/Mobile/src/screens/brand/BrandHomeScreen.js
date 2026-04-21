@@ -163,6 +163,10 @@ export default function BrandHomeScreen({ navigation }) {
             <Text style={styles.quickActionIcon}>💸</Text>
             <Text style={styles.quickActionLabel}>Conversions</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('BrandInfluencerBrowse')}>
+            <Text style={styles.quickActionIcon}>⭐</Text>
+            <Text style={styles.quickActionLabel}>Find Influencers</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

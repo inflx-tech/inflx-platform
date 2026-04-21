@@ -168,6 +168,11 @@ export const brandApi = {
   // Conversions — all follower transactions across every campaign (paginated,
   // filterable by type / campaign_id / influencer_id / status).
   listTransactions: (params) => api.get(`/brands/me/transactions${params ? '?' + new URLSearchParams(params) : ''}`),
+  // Influencer discovery + invite (H.5)
+  searchInfluencers: (params) => api.get(`/influencers/search${params ? '?' + new URLSearchParams(params) : ''}`),
+  getInfluencer:     (id) => api.get(`/influencers/${id}`),
+  inviteInfluencer:  (campaignId, setId, data) => api.post(`/campaigns/${campaignId}/sets/${setId}/invite`, data),
+  getCampaignSets:   (campaignId) => api.get(`/campaigns/${campaignId}/sets`),
 };
 
 export const influencerApi = {
