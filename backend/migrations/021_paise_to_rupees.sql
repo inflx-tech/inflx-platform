@@ -72,14 +72,12 @@ UPDATE follower_bookings
 -- wallet_balance:
 --   + released tranche net_to_influencer amounts (escrow_entries, already rupees)
 --   + confirmed follower commissions (older than 30-day pending window, now rupees)
---   − withdrawals in completed / processing / requested state (now rupees)
+--   − withdrawals in completed / processing / initiated state (now rupees)
 -- pending_balance:
 --   = follower commissions within the 30-day pending window
 -- total_earned:
 --   + released tranche amounts
 --   + all follower commissions (pending + confirmed)
--- total_withdrawn:
---   = sum of completed withdrawal amount_requested
 UPDATE influencers i SET
   total_earned = COALESCE((
     SELECT SUM(net_to_influencer)
@@ -109,7 +107,7 @@ UPDATE influencers i SET
     SELECT SUM(amount_requested)
     FROM   influencer_withdrawals iw
     WHERE  iw.influencer_id = i.id
-      AND  iw.status IN ('completed', 'processing', 'requested')
+      AND  iw.status IN ('completed', 'processing', 'initiated')
   ), 0),
 
   pending_balance = COALESCE((
@@ -119,13 +117,6 @@ UPDATE influencers i SET
     WHERE  ci.influencer_id = i.id
       AND  ft.status = 'completed'
       AND  ft.created_at >= now() - interval '30 days'
-  ), 0),
-
-  total_withdrawn = COALESCE((
-    SELECT SUM(amount_requested)
-    FROM   influencer_withdrawals iw
-    WHERE  iw.influencer_id = i.id
-      AND  iw.status = 'completed'
   ), 0);
 
 COMMIT;
