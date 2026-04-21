@@ -43,17 +43,22 @@ async function generateContractPDF(contract) {
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
     doc.text(`Campaign:          ${contract.campaign_name || 'N/A'}`);
+    doc.text(`Goal:              ${(contract.goal || 'engagement').replace(/_/g, ' ')}`);
+
     // contracts.influencer_fee is the BASE agreed fee. The total paid to the
-    // influencer is base + bonus_amount.
+    // influencer is base + bonus_amount. Conversion-only contracts have
+    // effectiveFee = 0 — they're commission-only.
     const baseFee  = parseFloat(contract.influencer_fee || 0);
     const bonus    = parseFloat(contract.bonus_amount || 0);
     const totalFee = baseFee + bonus;
-    if (bonus > 0) {
-      doc.text(`Base Fee:          ₹${baseFee.toFixed(2)}`);
-      doc.text(`Brand Bonus:       ₹${bonus.toFixed(2)}`);
-      doc.text(`Total Fee:         ₹${totalFee.toFixed(2)}`);
-    } else {
-      doc.text(`Agreed Fee:        ₹${baseFee.toFixed(2)}`);
+    if (totalFee > 0) {
+      if (bonus > 0) {
+        doc.text(`Base Fee:          \u20B9${baseFee.toFixed(2)}`);
+        doc.text(`Brand Bonus:       \u20B9${bonus.toFixed(2)}`);
+        doc.text(`Total Fee:         \u20B9${totalFee.toFixed(2)}`);
+      } else {
+        doc.text(`Agreed Fee:        \u20B9${baseFee.toFixed(2)}`);
+      }
     }
     doc.text(`Posting Date:      ${contract.posting_date || 'To be agreed'}`);
     doc.text(`Revision Limit:    ${contract.revision_limit}`);
@@ -109,17 +114,45 @@ async function generateContractPDF(contract) {
     doc.text(contract.content_requirements || 'No specific requirements provided.');
     doc.moveDown(1.5);
 
-    // ── Payment Schedule ───────────────────────────────────────────────────
+    // ── Payment Schedule — fee-bearing contracts only (engagement / hybrid) ──
     // Tranches are computed off the TOTAL (base + bonus), since the influencer
-    // is owed the full sum.
-    doc.fontSize(14).font('Helvetica-Bold').text('PAYMENT SCHEDULE');
-    doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica');
-    const tranchedFee = parseFloat(contract.influencer_fee || 0) + parseFloat(contract.bonus_amount || 0);
-    doc.text(`Tranche 1 (25%): ₹${(tranchedFee * 0.25).toFixed(2)} — Released on contract activation`);
-    doc.text(`Tranche 2 (25%): ₹${(tranchedFee * 0.25).toFixed(2)} — Released on content going live`);
-    doc.text(`Tranche 3 (50%): ₹${(tranchedFee * 0.50).toFixed(2)} — Released 30 days after content live`);
-    doc.moveDown(1.5);
+    // is owed the full sum. Conversion contracts have totalFee = 0 and get
+    // a Commission Terms section below instead.
+    if (totalFee > 0) {
+      doc.fontSize(14).font('Helvetica-Bold').text('PAYMENT SCHEDULE');
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica');
+      doc.text(`Tranche 1 (25%): \u20B9${(totalFee * 0.25).toFixed(2)} \u2014 Released on contract activation`);
+      doc.text(`Tranche 2 (25%): \u20B9${(totalFee * 0.25).toFixed(2)} \u2014 Released on content going live`);
+      doc.text(`Tranche 3 (50%): \u20B9${(totalFee * 0.50).toFixed(2)} \u2014 Released 30 days after content live`);
+      doc.moveDown(1.5);
+    }
+
+    // ── Commission Terms — conversion / hybrid contracts ─────────────────────
+    const commissionPct = parseFloat(contract.commission_pct || 0);
+    if (commissionPct > 0) {
+      doc.fontSize(14).font('Helvetica-Bold').text('COMMISSION TERMS');
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica');
+      doc.text(`Commission Rate:   ${commissionPct}% of each sale or booking driven by the influencer.`);
+      if (contract.offer_type) {
+        doc.text(`Offer Type:        ${String(contract.offer_type).replace(/_/g, ' ')}`);
+      }
+      let offerCfg = contract.offer_config_json;
+      if (typeof offerCfg === 'string') {
+        try { offerCfg = JSON.parse(offerCfg); } catch { offerCfg = null; }
+      }
+      if (offerCfg && offerCfg.value != null) {
+        const label = contract.offer_type === 'percentage' ? `${offerCfg.value}%` : `\u20B9${offerCfg.value}`;
+        doc.text(`Offer Value:       ${label}`);
+      }
+      if (contract.coupon_code) {
+        doc.text(`Coupon Code:       ${contract.coupon_code}`);
+      }
+      doc.moveDown(0.3);
+      doc.text('Commissions are credited to the influencer\'s pending balance at the time of each confirmed sale and moved to the withdrawable balance after a 30-day return window. No upfront payment is made for conversion-only engagements.', { align: 'justify' });
+      doc.moveDown(1.5);
+    }
 
     // ── Terms & Conditions ─────────────────────────────────────────────────
     doc.fontSize(14).font('Helvetica-Bold').text('TERMS & CONDITIONS');

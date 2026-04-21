@@ -55,10 +55,15 @@ async function getContractByIdOrThrow(contractId) {
        ci.influencer_id,
        ci.agreed_fee,
        ci.influencer_budget,
+       ci.commission_pct,
+       ci.offer_type,
+       ci.offer_config_json,
+       ci.coupon_code,
        ci.posting_date    AS ci_posting_date,
        cs.campaign_id,
        cs.per_influencer_budget,
        cs.formats_json,
+       cs.goal,
        c.brand_id,
        b.platform_fee_pct,
        b.wallet_balance   AS brand_wallet_balance,
@@ -507,10 +512,11 @@ const brandSign = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 async function _generateAndStorePdf(contractId) {
   try {
-    const { rows } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contractId]);
-    if (!rows[0]) throw new Error('Contract not found');
+    // Use the full joined row so the PDF generator has commission/offer/goal
+    // data available — the raw contracts row doesn't carry those fields.
+    const contract = await getContractByIdOrThrow(contractId);
 
-    const pdfBuffer = await pdfService.generateContractPDF(rows[0]);
+    const pdfBuffer = await pdfService.generateContractPDF(contract);
     const filename  = `contract_${contractId}.pdf`;
     const pdfUrl    = await storageService.uploadPDF(pdfBuffer, filename);
 
@@ -596,13 +602,6 @@ const retryContractCreate = asyncHandler(async (req, res) => {
 
   if (req.user.sub !== ci.brand_user_id && req.user.sub !== ci.influencer_user_id) {
     throw new AppError('FORBIDDEN', 'You are not a party to this offer', 403);
-  }
-  if ((ci.goal || '').toLowerCase() === 'conversion') {
-    throw new AppError(
-      'VALIDATION_ERROR',
-      'Conversion-only campaigns do not use contracts. The influencer earns commission on sales instead.',
-      422
-    );
   }
   if (!['accepted', 'contracted', 'active'].includes(ci.status)) {
     throw new AppError(

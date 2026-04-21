@@ -83,13 +83,10 @@ async function _autoCreateInner(campaignInfluencerId) {
 
   const ci = rows[0];
 
-  // Conversion-only sets pay commission on sales; there's no upfront fee, no
-  // tranches, and no contract to sign. The influencer is marked 'active' at
-  // offer-accept and starts promoting immediately. Skip contract creation.
-  if ((ci.goal || '').toLowerCase() === 'conversion') {
-    console.log(`[CONTRACT] Skipping contract creation for CI ${campaignInfluencerId} — conversion-only set`);
-    return null;
-  }
+  // Conversion contracts are created just like engagement / hybrid. They
+  // capture the agreed commission %, offer_type, coupon, custom clauses and
+  // content requirements. What they DON'T get is any upfront fee or tranche
+  // schedule — that's gated separately in brandSign (`if (effectiveFee > 0)`).
   // Fallback chain: agreed_fee → influencer_budget → per_influencer_budget → 0
   const effectiveFee = ci.agreed_fee || ci.influencer_budget || ci.per_influencer_budget || 0;
 
