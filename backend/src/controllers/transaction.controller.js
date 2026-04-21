@@ -291,6 +291,12 @@ const verifyPrebook = asyncHandler(async (req, res) => {
 
   const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
   const commissionAmount = parseFloat((advanceAmount * meta.commission_pct / 100).toFixed(2));
+  // Prebook has no platform fee line today (always 0) — match pay_at_store /
+  // online_order math: brand_net = net_amount − commission − platform_fee.
+  // Previously the INSERT reused advanceAmount for brand_net, so the brand
+  // appeared to keep the full advance without the commission being deducted.
+  const platformFeeAmount = 0;
+  const brandNetAmount = parseFloat((advanceAmount - commissionAmount - platformFeeAmount).toFixed(2));
 
   const { rows: ciRows } = await db.query(
     `SELECT coupon_code FROM campaign_influencers WHERE id = $1`,
@@ -309,12 +315,13 @@ const verifyPrebook = asyncHandler(async (req, res) => {
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,'prebook',$7,0,$7,$8,0,$7,'completed',$9,$10,$11)
+       VALUES ($1,$2,$3,$4,$5,$6,'prebook',$7,0,$7,$8,$9,$10,'completed',$11,$12,$13)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id,
-        advanceAmount, commissionAmount, couponCode, returnWindowEndsAt, razorpay_payment_id,
+        advanceAmount, commissionAmount, platformFeeAmount, brandNetAmount,
+        couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
     );
     transactionId = txRows[0].id;
