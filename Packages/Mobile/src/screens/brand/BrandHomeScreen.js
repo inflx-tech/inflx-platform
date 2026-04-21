@@ -4,7 +4,7 @@ import {
   RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { colors, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 
@@ -95,7 +95,7 @@ export default function BrandHomeScreen({ navigation }) {
       {/* Wallet card */}
       <View style={styles.walletCard}>
         <Text style={styles.walletLabel}>Wallet Balance</Text>
-        <Text style={styles.walletAmount}>{fmtMoney(brand?.wallet_balance || 0)}</Text>
+        <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
         <View style={styles.walletRow}>
           <View style={styles.walletStat}>
             <Text style={styles.walletStatLabel}>Active Campaigns</Text>
