@@ -136,6 +136,7 @@ export const authApi = {
 
 export const brandApi = {
   getMe: () => api.get('/brands/me'),
+  updateMe: (data) => api.patch('/brands/me', data),
   getWallet: () => api.get('/brands/me/wallet'),
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
   verifyTopup: (data) => api.post('/brands/me/wallet/topup/verify', data),
