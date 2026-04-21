@@ -575,15 +575,15 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                   <View style={styles.escrowAmounts}>
                     <View style={styles.escrowAmountItem}>
                       <View style={[styles.escrowDot, { backgroundColor: colors.navy }]} />
-                      <Text style={styles.escrowAmountText}>Locked: {fmtMoney(Math.round(t.locked * 100))}</Text>
+                      <Text style={styles.escrowAmountText}>Locked: {fmtMoney(t.locked)}</Text>
                     </View>
                     <View style={styles.escrowAmountItem}>
                       <View style={[styles.escrowDot, { backgroundColor: colors.teal }]} />
-                      <Text style={styles.escrowAmountText}>Released: {fmtMoney(Math.round(t.released * 100))}</Text>
+                      <Text style={styles.escrowAmountText}>Released: {fmtMoney(t.released)}</Text>
                     </View>
                   </View>
                 </View>
-                <Text style={styles.escrowTotal}>{fmtMoney(Math.round(t.total * 100))}</Text>
+                <Text style={styles.escrowTotal}>{fmtMoney(t.total)}</Text>
               </View>
             );
           })}

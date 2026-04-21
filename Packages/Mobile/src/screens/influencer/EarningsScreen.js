@@ -37,10 +37,11 @@ export default function EarningsScreen() {
   const onRefresh = useCallback(async () => { setRefreshing(true); await load(); setRefreshing(false); }, []);
 
   async function handleWithdraw() {
-    const amtPaise = Math.round(parseFloat(amount) * 100);
-    if (amtPaise < 10000) { Alert.alert('Minimum ₹100 withdrawal'); return; }
+    const amtRupees = parseFloat(amount);
+    if (!amtRupees || amtRupees < 100) { Alert.alert('Minimum \u20B9100 withdrawal'); return; }
     setWithdrawing(true);
-    const res = await influencerApi.withdraw({ amount_requested: amtPaise, method });
+    // Backend accepts rupees.
+    const res = await influencerApi.withdraw({ amount_requested: amtRupees, method });
     setWithdrawing(false);
     if (res.success) {
       Alert.alert('Withdrawal initiated!', `Net amount: ${fmtMoney(res.data?.withdrawal?.net_paid)}`);
@@ -51,8 +52,10 @@ export default function EarningsScreen() {
     }
   }
 
-  const tds = amount ? Math.floor(parseFloat(amount || '0') * 100 * 0.1) : 0;
-  const net = amount ? Math.round(parseFloat(amount || '0') * 100) - tds : 0;
+  // Client-side preview — rupees in, rupees out.
+  const amtRupees = parseFloat(amount || '0');
+  const tds = amtRupees ? parseFloat((amtRupees * 0.1).toFixed(2)) : 0;
+  const net = amtRupees ? parseFloat((amtRupees - tds).toFixed(2)) : 0;
 
   function getGoalLabel(goal) {
     if (goal === 'engagement') return 'Engagement';

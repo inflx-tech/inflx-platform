@@ -30,9 +30,17 @@ export const colors = {
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 };
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, full: 9999 };
 
-export function fmtMoney(paise) {
-  const rupees = Math.round((paise || 0) / 100);
-  const s = rupees.toString();
+/**
+ * Format a rupee amount for display with Indian number grouping.
+ *
+ * Since migration 021 (paise→rupees), every monetary value in the
+ * platform is stored and returned in rupees, so fmtMoney and fmtRupees
+ * are identical. fmtMoney stays as an alias to avoid a 46-file rename
+ * across web + 3 mobile apps. Prefer fmtRupees in new code.
+ */
+export function fmtRupees(rupees) {
+  const rounded = Math.round(rupees || 0);
+  const s = rounded.toString();
   // Indian number formatting: last 3 digits, then groups of 2
   const lastThree = s.length > 3 ? s.slice(-3) : s;
   const rest = s.length > 3 ? s.slice(0, s.length - 3) : '';
@@ -40,18 +48,8 @@ export function fmtMoney(paise) {
   return `\u20B9${formatted}`;
 }
 
-/**
- * Format a rupee amount (numeric(10,2) from DB) for display.
- * Unlike fmtMoney which expects paise, this takes rupees directly.
- */
-export function fmtRupees(rupees) {
-  const rounded = Math.round(rupees || 0);
-  const s = rounded.toString();
-  const lastThree = s.length > 3 ? s.slice(-3) : s;
-  const rest = s.length > 3 ? s.slice(0, s.length - 3) : '';
-  const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + (rest ? ',' : '') + lastThree;
-  return `\u20B9${formatted}`;
-}
+// Legacy alias. Treat input as RUPEES now (not paise).
+export const fmtMoney = fmtRupees;
 
 export function fmtNum(n) {
   const num = Math.round(n || 0);

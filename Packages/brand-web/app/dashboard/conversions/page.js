@@ -97,7 +97,7 @@ export default function ConversionsPage() {
   async function markConverted(id) {
     const dealValue = prompt('Enter deal value (₹):');
     if (!dealValue) return;
-    const res = await brandApi.updateEnquiry(id, { status: 'converted', deal_value: parseInt(dealValue) * 100 });
+    const res = await brandApi.updateEnquiry(id, { status: 'converted', deal_value: parseFloat(dealValue) });
     if (res.success) { showToast('Marked as converted!'); loadEnquiries(); setSelectedEnq(null); }
     else showToast(res.error?.message || 'Failed');
   }

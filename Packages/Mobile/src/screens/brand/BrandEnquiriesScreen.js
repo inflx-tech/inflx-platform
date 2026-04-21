@@ -94,12 +94,12 @@ export default function BrandEnquiriesScreen({ navigation }) {
       return;
     }
     setConverting(true);
-    const paise = Math.round(rupees * 100);
-    const res = await brandApi.updateEnquiry(detail.id, { status: 'converted', deal_value: paise });
+    // Backend stores deal_value in rupees.
+    const res = await brandApi.updateEnquiry(detail.id, { status: 'converted', deal_value: rupees });
     setConverting(false);
     if (res?.success) {
       Alert.alert('Converted', 'Enquiry marked as converted. Influencer commission has been credited to their pending balance.');
-      setEnquiries(prev => prev.map(e => e.id === detail.id ? { ...e, status: 'converted', deal_value: paise } : e));
+      setEnquiries(prev => prev.map(e => e.id === detail.id ? { ...e, status: 'converted', deal_value: rupees } : e));
       setDetail(null);
     } else {
       Alert.alert('Failed', res?.error?.message || 'Could not convert.');

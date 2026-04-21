@@ -50,10 +50,10 @@ export default function PreBookScreen({ navigation, route }) {
   const [step, setStep]             = useState('form');
   const [bookingResult, setBookingResult] = useState(null);
 
-  // Advance amount: offer.prebook_advance is in rupees, convert to paise; default 200 rupees
-  const advancePaise = offer?.prebook_advance
-    ? Math.round(parseFloat(offer.prebook_advance) * 100)
-    : 20000;
+  // Advance amount in rupees (post-migration). Default ₹200 for restaurants.
+  const advanceRupees = offer?.prebook_advance
+    ? parseFloat(offer.prebook_advance)
+    : 200;
 
   const price = offer?.price || 0;
 
@@ -104,7 +104,7 @@ export default function PreBookScreen({ navigation, route }) {
       if (verifyRes.success) {
         setBookingResult({
           referenceCode: verifyRes.data?.booking?.reference_code || verifyRes.data?.reference_code || `BK${Date.now().toString(36).toUpperCase()}`,
-          advancePaid: advance_amount || advancePaise,
+          advancePaid: advance_amount || advanceRupees,
           date,
           time,
           guests,
@@ -222,12 +222,12 @@ export default function PreBookScreen({ navigation, route }) {
             {price > 0 && (
               <View style={styles.payRow}>
                 <Text style={styles.payLabel}>Offer Price</Text>
-                <Text style={styles.payVal}>{fmtMoney(price * 100)}</Text>
+                <Text style={styles.payVal}>{fmtMoney(price)}</Text>
               </View>
             )}
             <View style={[styles.payRow, styles.payTotalRow]}>
               <Text style={styles.payTotalLabel}>Advance to Pay Now</Text>
-              <Text style={styles.payTotalVal}>{fmtMoney(advancePaise)}</Text>
+              <Text style={styles.payTotalVal}>{fmtMoney(advanceRupees)}</Text>
             </View>
           </View>
           <Text style={styles.payNote}>
@@ -243,7 +243,7 @@ export default function PreBookScreen({ navigation, route }) {
           >
             {loading
               ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.payBtnText}>Pay {fmtMoney(advancePaise)} & Book</Text>
+              : <Text style={styles.payBtnText}>Pay {fmtMoney(advanceRupees)} & Book</Text>
             }
           </TouchableOpacity>
         </View>
@@ -269,12 +269,12 @@ export default function PreBookScreen({ navigation, route }) {
         <View style={styles.card}>
           <View style={styles.offerRow}>
             <Text style={styles.offerName}>{offer.name || offer.title}</Text>
-            {price > 0 && <Text style={styles.offerPrice}>{fmtMoney(price * 100)}</Text>}
+            {price > 0 && <Text style={styles.offerPrice}>{fmtMoney(price)}</Text>}
           </View>
           {offer.description ? <Text style={styles.offerDesc}>{offer.description}</Text> : null}
           <View style={styles.advanceBadge}>
             <Text style={styles.advanceBadgeText}>
-              Advance: {fmtMoney(advancePaise)}
+              Advance: {fmtMoney(advanceRupees)}
             </Text>
           </View>
         </View>
@@ -332,7 +332,7 @@ export default function PreBookScreen({ navigation, route }) {
           onPress={handleReviewBooking}
           disabled={!date || !time}
         >
-          <Text style={styles.bookBtnText}>Review & Pay {fmtMoney(advancePaise)}</Text>
+          <Text style={styles.bookBtnText}>Review & Pay {fmtMoney(advanceRupees)}</Text>
         </TouchableOpacity>
       </View>
 

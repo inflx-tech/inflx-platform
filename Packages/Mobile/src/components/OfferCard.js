@@ -134,15 +134,16 @@ function getDiscountLabel(offer) {
   }
 }
 
-function getDiscountedPrice(pricePaise, offer) {
-  if (!offer || !pricePaise) return pricePaise || 0;
+// All inputs in rupees (post-migration). Discount applied in same unit.
+function getDiscountedPrice(price, offer) {
+  if (!offer || !price) return price || 0;
   if (offer.offer_type === 'percentage') {
-    return Math.floor(pricePaise * (1 - (offer.discount_value || 0) / 100));
+    return parseFloat((price * (1 - (offer.discount_value || 0) / 100)).toFixed(2));
   }
   if (offer.offer_type === 'flat') {
-    return Math.max(0, pricePaise - (offer.discount_value || 0) * 100);
+    return Math.max(0, price - (offer.discount_value || 0));
   }
-  return pricePaise;
+  return price;
 }
 
 function getCategoryEmoji(cat) {

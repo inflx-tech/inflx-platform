@@ -127,7 +127,7 @@ export default function BrandStoreScreen({ navigation, route }) {
                 {sec.items.map((product, i) => (
                   <View key={product.id || i} style={s.gridItem}>
                     <ProductCard
-                      product={{ ...product, price: Math.round(parseFloat(product.price || 0) * 100) }}
+                      product={{ ...product, price: parseFloat(product.price || 0) }}
                       brand={{ name: brand?.business_name, category: brand?.category, locality: brand?.city }}
                       discount={bestOffer ? { type: bestOffer.offer_type || 'percentage', value: bestOffer.discount_value } : null}
                       accentColor={accent.accent}

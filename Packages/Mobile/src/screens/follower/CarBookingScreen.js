@@ -67,11 +67,11 @@ export default function CarBookingScreen({ navigation, route }) {
 
       const orderId = res.data?.razorpay_order_id;
       const keyId = res.data?.razorpay_key_id;
-      const advanceAmount = res.data?.advance_amount || tokenAmount * 100;
+      const advanceRupees = res.data?.advance_amount || tokenAmount;   // backend sends rupees
 
-      // Step 2: Open Razorpay checkout
+      // Step 2: Open Razorpay checkout (Razorpay SDK expects paise)
       const payResult = await processPayment({
-        amount: advanceAmount,
+        amount: Math.round(advanceRupees * 100),
         orderId,
         keyId,
         description: `Pre-book ${vehicle?.name}`,

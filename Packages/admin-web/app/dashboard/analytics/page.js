@@ -6,7 +6,7 @@ import { adminApi } from '../../../lib/api';
 
 function fmt(n) { return new Intl.NumberFormat('en-IN').format(n || 0); }
 function fmtMoney(p) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((p || 0) / 100);
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(p || 0);
 }
 function fmtDate(d) {
   const dt = new Date(d);

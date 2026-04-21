@@ -76,11 +76,12 @@ export default function WalletPage() {
 
   async function handleTopup(e) {
     e.preventDefault();
-    const amountPaise = Math.round(parseFloat(topupAmount) * 100);
-    if (amountPaise < 100) { showToast('Minimum top-up is \u20B91'); return; }
+    const amountRupees = parseFloat(topupAmount);
+    if (!amountRupees || amountRupees < 1) { showToast('Minimum top-up is \u20B91'); return; }
     setToppingUp(true);
 
-    const orderRes = await walletApi.createTopup(amountPaise);
+    // Backend accepts rupees and converts to paise only at the Razorpay API call.
+    const orderRes = await walletApi.createTopup(amountRupees);
     if (!orderRes.success) { showToast(orderRes.error?.message || 'Failed to create order', 'error'); setToppingUp(false); return; }
 
     const { order_id, amount, key_id } = orderRes.data;

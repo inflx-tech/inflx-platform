@@ -222,7 +222,7 @@ function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
             <div key={i} className={`flex ${t.by_role === 'brand' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-xs rounded-xl px-3 py-2 text-xs ${t.by_role === 'brand' ? 'bg-navy text-white' : 'bg-gray-100 text-gray-800'}`}>
                 <div className="font-bold mb-0.5">{t.by_role === 'brand' ? 'You' : `@${inf.instagram_handle}`}</div>
-                <div className="font-bold text-sm">₹{((t.proposed_fee || 0) / 100).toFixed(0)}</div>
+                <div className="font-bold text-sm">₹{parseFloat(t.proposed_fee || 0).toFixed(0)}</div>
                 {t.note && <div className="mt-1 opacity-80">{t.note}</div>}
                 <div className="text-[9px] opacity-60 mt-1 capitalize">{t.action}</div>
               </div>
@@ -235,14 +235,14 @@ function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
             <p className="text-xs font-semibold text-gray-600">Your turn to respond:</p>
             {lastTurn && (
               <div className="bg-orange-50 rounded-lg px-3 py-2 text-xs text-orange-700">
-                Influencer proposes: <strong>₹{((lastTurn.proposed_fee || 0) / 100).toFixed(0)}</strong>
+                Influencer proposes: <strong>₹{parseFloat(lastTurn.proposed_fee || 0).toFixed(0)}</strong>
               </div>
             )}
             <div className="flex gap-2">
               <button onClick={() => onRespond('accept', lastTurn?.proposed_fee, '')}
                 disabled={loading}
                 className="flex-1 py-2.5 bg-teal-500 text-white font-bold text-xs rounded-xl hover:bg-teal-600 disabled:opacity-50 transition-colors">
-                Accept ₹{((lastTurn?.proposed_fee || 0) / 100).toFixed(0)}
+                Accept ₹{parseFloat(lastTurn?.proposed_fee || 0).toFixed(0)}
               </button>
               <button onClick={() => onRespond('decline', 0, '')}
                 disabled={loading}
@@ -258,7 +258,7 @@ function NegotiationModal({ inf, negotiation, loading, onClose, onRespond }) {
             </div>
             <input value={note} onChange={e => setNote(e.target.value)} placeholder="Note (optional)"
               className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-xs outline-none" />
-            <button onClick={() => onRespond('counter', Math.round(parseFloat(counterFee || '0') * 100), note)}
+            <button onClick={() => onRespond('counter', parseFloat(counterFee || '0'), note)}
               disabled={loading || !counterFee}
               className="w-full py-2.5 bg-navy text-white font-bold text-xs rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity">
               Send Counter Offer

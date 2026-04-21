@@ -28,7 +28,7 @@ export default function ProductCard({
   const discountPct = discount?.type === 'percentage' ? discount.value : 0;
   const offerPrice = discountPct > 0 ? Math.floor(mrp * (1 - discountPct / 100)) : mrp;
   const discountLabel = discount?.value
-    ? (discount.type === 'flat' ? `₹${fmtMoney(discount.value * 100).replace('₹', '')} OFF` : `${discount.value}% OFF`)
+    ? (discount.type === 'flat' ? `\u20B9${fmtMoney(discount.value).replace('\u20B9', '')} OFF` : `${discount.value}% OFF`)
     : null;
 
   return (

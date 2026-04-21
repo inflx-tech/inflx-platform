@@ -23,17 +23,19 @@ export default function PayAtStoreScreen({ navigation, route }) {
   const discountPct = offer?.discount_value || 0;
   const isKnownAmount = !!prefillAmount;
 
-  const [billAmount, setBillAmount] = useState(isKnownAmount ? String(prefillAmount / 100) : '');
+  // prefillAmount, when supplied, is now in RUPEES (post-migration 021).
+  const [billAmount, setBillAmount] = useState(isKnownAmount ? String(prefillAmount) : '');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('enter'); // 'enter' | 'confirm' | 'processing' | 'success'
   const [receipt, setReceipt] = useState(null);
 
-  const billPaise = Math.round(parseFloat(billAmount || '0') * 100);
-  const discountPaise = Math.round(billPaise * (discountPct / 100));
-  const youPay = billPaise - discountPaise;
+  // All amounts in RUPEES. We only convert to paise at the Razorpay SDK call.
+  const billRupees     = parseFloat(billAmount || '0');
+  const discountRupees = parseFloat((billRupees * (discountPct / 100)).toFixed(2));
+  const youPay         = parseFloat((billRupees - discountRupees).toFixed(2));
 
   async function handlePay() {
-    if (youPay < 100) { Alert.alert('Enter a valid amount'); return; }
+    if (!youPay || youPay < 1) { Alert.alert('Enter a valid amount'); return; }
 
     // Check if logged in — payments require auth
     const token = await AsyncStorage.getItem('inflx_token');
@@ -55,14 +57,14 @@ export default function PayAtStoreScreen({ navigation, route }) {
     try {
       const trackingData = trackingParams || tracking || {};
 
-      // Step 1: Create order on backend
+      // Step 1: Create order on backend (amounts in RUPEES)
       const orderRes = await followerApi.payAtStore({
         campaign_id: trackingData.cid || trackingData.campaign_id,
         set_id: trackingData.sid || trackingData.set_id,
         offer_id: trackingData.oid || trackingData.offer_id || offer?.id,
         campaign_influencer_id: trackingData.iid || trackingData.campaign_influencer_id,
-        original_bill_amount: billPaise,
-        discount_applied: discountPaise,
+        original_bill_amount: billRupees,
+        discount_applied: discountRupees,
         net_amount: youPay,
         transaction_type: 'pay_at_store',
         product_id: product?.id || null,
@@ -77,9 +79,9 @@ export default function PayAtStoreScreen({ navigation, route }) {
 
       const orderId = orderRes.data?.razorpay_order_id || orderRes.data?.order_id;
 
-      // Step 2: Process payment (Razorpay or mock)
+      // Step 2: Process payment (Razorpay or mock) — SDK needs paise at boundary.
       const payResult = await processPayment({
-        amount: youPay,
+        amount: Math.round(youPay * 100),
         orderId,
         description: `Payment at ${storeName}`,
         brandName: storeName,
@@ -102,12 +104,12 @@ export default function PayAtStoreScreen({ navigation, route }) {
           })
         : { success: true, data: { transaction: { reference_code: 'INFLX-' + Date.now().toString(36).toUpperCase() } } };
 
-      // Step 4: Show receipt
+      // Step 4: Show receipt — all values in rupees.
       setReceipt({
         reference: verifyRes.data?.transaction?.reference_code || 'INFLX-' + Date.now().toString(36).toUpperCase(),
         storeName,
-        billAmount: billPaise,
-        discount: discountPaise,
+        billAmount: billRupees,
+        discount: discountRupees,
         discountPct,
         amountPaid: youPay,
         influencer: infName,
@@ -204,20 +206,20 @@ export default function PayAtStoreScreen({ navigation, route }) {
         </View>
 
         {/* Breakdown */}
-        {billPaise > 0 && (
+        {billRupees > 0 && (
           <View style={s.breakdown}>
             <View style={s.breakdownRow}>
               <Text style={s.breakdownLabel}>{isKnownAmount ? 'Service Price' : 'Bill Amount'}</Text>
-              <Text style={s.breakdownVal}>{fmtMoney(billPaise)}</Text>
+              <Text style={s.breakdownVal}>{fmtMoney(billRupees)}</Text>
             </View>
             {discountPct > 0 && (
               <>
                 <View style={s.breakdownRow}>
                   <Text style={s.breakdownLabel}>Discount ({discountPct}%)</Text>
-                  <Text style={[s.breakdownVal, { color: darkColors.green }]}>- {fmtMoney(discountPaise)}</Text>
+                  <Text style={[s.breakdownVal, { color: darkColors.green }]}>- {fmtMoney(discountRupees)}</Text>
                 </View>
                 <View style={s.savingsRow}>
-                  <Text style={s.savingsText}>✓ You save {fmtMoney(discountPaise)}</Text>
+                  <Text style={s.savingsText}>\u2713 You save {fmtMoney(discountRupees)}</Text>
                 </View>
               </>
             )}
@@ -230,9 +232,9 @@ export default function PayAtStoreScreen({ navigation, route }) {
 
         {/* Pay button */}
         <TouchableOpacity
-          style={[s.payBtn, (loading || youPay < 100) && s.payBtnDisabled]}
+          style={[s.payBtn, (loading || youPay < 1) && s.payBtnDisabled]}
           onPress={handlePay}
-          disabled={loading || youPay < 100}
+          disabled={loading || youPay < 1}
         >
           <Text style={s.payBtnText}>
             {loading ? 'Processing...' : `Pay ${youPay > 0 ? fmtMoney(youPay) : ''} via UPI`}

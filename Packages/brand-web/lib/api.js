@@ -201,15 +201,13 @@ export const notificationApi = {
   markAllRead: () => api.post('/notifications/read-all'),
 };
 
-// fmtMoney — for wallet balances stored in PAISE (÷100 before display)
-export function fmtMoney(paise) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format((paise || 0) / 100);
-}
-
-// fmtRupees — for campaign budgets stored directly in RUPEES (no ÷100)
+// Since migration 021 (paise→rupees) every monetary value is in rupees.
+// fmtMoney stays as an alias to fmtRupees so we don't have to rename 46
+// call sites. Prefer fmtRupees in new code.
 export function fmtRupees(rupees) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(rupees || 0);
 }
+export const fmtMoney = fmtRupees;
 
 export function fmtNum(n) {
   return new Intl.NumberFormat('en-IN').format(n || 0);

@@ -155,9 +155,9 @@ export default function BrandWalletScreen({ navigation }) {
   // ── Top-up flow ─────────────────────────────────────────────────────────────
 
   async function topup() {
-    const amountPaise = Math.round(parseFloat(topupAmt) * 100);
-    if (!amountPaise || amountPaise < 100) {
-      Alert.alert('Invalid Amount', 'Minimum top-up is ₹1');
+    const amountRupees = parseFloat(topupAmt);
+    if (!amountRupees || amountRupees < 1) {
+      Alert.alert('Invalid Amount', 'Minimum top-up is \u20B91');
       return;
     }
 
@@ -172,7 +172,8 @@ export default function BrandWalletScreen({ navigation }) {
     }
 
     setToppingUp(true);
-    const res = await brandApi.createTopup(amountPaise);
+    // Backend accepts rupees and converts to paise only for the Razorpay API.
+    const res = await brandApi.createTopup(amountRupees);
     setToppingUp(false);
 
     if (!res.success) {

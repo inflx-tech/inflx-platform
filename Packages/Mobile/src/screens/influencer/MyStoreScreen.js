@@ -106,7 +106,7 @@ export default function MyStoreScreen({ navigation }) {
                 <View style={{ flex: 1 }}>
                   <Text style={s.productName}>{product.name}</Text>
                   <Text style={s.productDesc}>{product.description || product.section}</Text>
-                  <Text style={s.productPrice}>{fmtMoney(Math.round(parseFloat(product.price || 0) * 100))}</Text>
+                  <Text style={s.productPrice}>{fmtMoney(parseFloat(product.price || 0))}</Text>
                 </View>
               </View>
               {product.influencer_note && (
