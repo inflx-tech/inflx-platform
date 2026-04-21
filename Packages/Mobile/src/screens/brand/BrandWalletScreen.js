@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors, fmtRupees } from '../../theme/tokens';
+import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
 
@@ -279,18 +279,21 @@ export default function BrandWalletScreen({ navigation }) {
           <Text style={styles.title}>Wallet</Text>
         </View>
 
-        {/* ── Balance Card ─────────────────────────────────────────────── */}
+        {/* ── Balance Card ───────────────────────────────────────────────
+            wallet_balance / escrow_locked / total_deposited are stored in
+            PAISE in the DB — fmtMoney handles the /100 conversion. Using
+            fmtRupees here was showing every value 100× too big. */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>Available Balance</Text>
-          <Text style={styles.balanceAmt}>{fmtRupees(balance)}</Text>
+          <Text style={styles.balanceAmt}>{fmtMoney(balance)}</Text>
           <View style={styles.balanceRow}>
             <View style={styles.balanceStat}>
               <Text style={styles.balanceStatLabel}>Locked in Escrow</Text>
-              <Text style={styles.balanceStatVal}>{fmtRupees(escrowLocked)}</Text>
+              <Text style={styles.balanceStatVal}>{fmtMoney(escrowLocked)}</Text>
             </View>
             <View style={styles.balanceStat}>
               <Text style={styles.balanceStatLabel}>Total Deposited</Text>
-              <Text style={styles.balanceStatVal}>{fmtRupees(totalDeposited)}</Text>
+              <Text style={styles.balanceStatVal}>{fmtMoney(totalDeposited)}</Text>
             </View>
           </View>
         </View>
@@ -369,7 +372,7 @@ export default function BrandWalletScreen({ navigation }) {
                     </Text>
                   </View>
                   <Text style={[styles.txAmount, { color: isCredit ? colors.teal : colors.red }]}>
-                    {isCredit ? '+' : '-'}{fmtRupees(Math.abs(txAmount))}
+                    {isCredit ? '+' : '-'}{fmtMoney(Math.abs(txAmount))}
                   </Text>
                 </View>
               );

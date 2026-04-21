@@ -507,11 +507,11 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
               </View>
               <View style={[styles.summaryStat, { backgroundColor: colors.tealPale }]}>
                 <Text style={[styles.summaryStatLabel, { color: colors.tealDeep }]}>Revenue</Text>
-                <Text style={[styles.summaryStatValue, { color: colors.tealDeep }]}>{txRevenue != null ? fmtRupees(txRevenue) : '—'}</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.tealDeep }]}>{txRevenue != null ? fmtMoney(txRevenue) : '—'}</Text>
               </View>
               <View style={[styles.summaryStat, { backgroundColor: colors.orangePale }]}>
                 <Text style={[styles.summaryStatLabel, { color: colors.orange }]}>Commission Paid</Text>
-                <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{txCommission != null ? fmtRupees(txCommission) : '—'}</Text>
+                <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{txCommission != null ? fmtMoney(txCommission) : '—'}</Text>
               </View>
             </View>
             <TouchableOpacity
