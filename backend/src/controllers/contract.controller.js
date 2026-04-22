@@ -119,13 +119,23 @@ function assertPartyAccess(contract, req) {
 const getContract = asyncHandler(async (req, res) => {
   const ciId = req.params.campaign_influencer_id;
 
-  // Look up contract by campaign_influencer_id
+  // Look up contract by campaign_influencer_id. We also pull the set + campaign
+  // brief + formats so the UI can auto-compose a structured Content
+  // Requirements starter text for the brand to edit.
   const { rows } = await db.query(
     `SELECT
        con.*,
        ci.influencer_id,
+       ci.coupon_code,
+       ci.offer_type,
+       ci.offer_config_json,
+       ci.posting_date    AS ci_posting_date,
        cs.campaign_id,
+       cs.goal            AS set_goal,
+       cs.brief           AS set_brief,
+       cs.formats_json    AS set_formats_json,
        c.brand_id,
+       c.brief            AS campaign_brief,
        u_inf.id  AS influencer_user_id,
        u_br.id   AS brand_user_id
      FROM contracts con
@@ -161,11 +171,139 @@ const getContract = asyncHandler(async (req, res) => {
     [ciId]
   );
 
+  // Auto-compose the structured content-requirements starter text. If the
+  // brand has already saved custom text, the client should prefer that.
+  const suggested_content_requirements = _buildSuggestedContentRequirements({
+    deliverables,
+    formats_json:    contract.set_formats_json,
+    set_brief:       contract.set_brief,
+    campaign_brief:  contract.campaign_brief,
+    posting_date:    contract.posting_date || contract.ci_posting_date,
+    coupon_code:     contract.coupon_code,
+    offer_type:      contract.offer_type,
+    offer_config:    contract.offer_config_json,
+  });
+
   // Strip internal join columns before returning
   const { influencer_user_id, brand_user_id, ...contractData } = contract;
 
-  return success(res, { contract: contractData, deliverables });
+  return success(res, { contract: contractData, deliverables, suggested_content_requirements });
 });
+
+/**
+ * Compose a structured starter text for contract.content_requirements.
+ * Includes deliverables list (from live rows OR formats_json fallback),
+ * campaign/set brief, posting date, and coupon / offer details for
+ * conversion campaigns. Brand can edit this freely before approving.
+ */
+function _buildSuggestedContentRequirements({ deliverables, formats_json, set_brief, campaign_brief, posting_date, coupon_code, offer_type, offer_config }) {
+  const TYPE_LABELS = {
+    reel: 'Instagram Reel',
+    post: 'Instagram Post',
+    story: 'Instagram Story',
+    youtube_video: 'YouTube Video',
+    youtube_short: 'YouTube Short',
+  };
+
+  // Collect deliverables. Prefer the live rows (brandSign already ran),
+  // otherwise fall back to the set's formats_json which is what's promised.
+  const counts = {};
+  if (Array.isArray(deliverables) && deliverables.length > 0) {
+    for (const d of deliverables) {
+      counts[d.type] = (counts[d.type] || 0) + (parseInt(d.quantity, 10) || 1);
+    }
+  } else if (formats_json) {
+    let parsed = formats_json;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch { parsed = null; }
+    }
+    if (Array.isArray(parsed)) {
+      for (const f of parsed) {
+        if (!f) continue;
+        if (typeof f === 'string') {
+          const key = _canonicalType(f);
+          counts[key] = (counts[key] || 0) + 1;
+        } else {
+          const rawType = f.type || f.name || f.label || 'reel';
+          const key = _canonicalType(rawType);
+          const c = Math.max(1, parseInt(f.count, 10) || 1);
+          counts[key] = (counts[key] || 0) + c;
+        }
+      }
+    }
+  }
+
+  const lines = [];
+
+  const deliverableKeys = Object.keys(counts);
+  if (deliverableKeys.length > 0) {
+    lines.push('DELIVERABLES');
+    for (const k of deliverableKeys) {
+      const label = TYPE_LABELS[k] || k.replace(/_/g, ' ');
+      lines.push(`- ${counts[k]} x ${label}`);
+    }
+    lines.push('');
+  }
+
+  const brief = (set_brief || campaign_brief || '').trim();
+  if (brief) {
+    lines.push('CAMPAIGN BRIEF');
+    lines.push(brief);
+    lines.push('');
+  }
+
+  if (posting_date) {
+    const d = new Date(posting_date);
+    if (!isNaN(d.getTime())) {
+      lines.push('POSTING DATE');
+      lines.push(`Due by ${d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`);
+      lines.push('');
+    }
+  }
+
+  if (coupon_code) {
+    lines.push('COUPON CODE');
+    lines.push(`${coupon_code} \u2014 the influencer must mention this in the caption / stories so followers can claim the offer.`);
+    lines.push('');
+  }
+
+  if (offer_type) {
+    let offer = offer_config;
+    if (typeof offer === 'string') {
+      try { offer = JSON.parse(offer); } catch { offer = null; }
+    }
+    const valueLabel = offer && offer.value != null
+      ? (offer_type === 'percentage' ? `${offer.value}%` : `Rs. ${offer.value}`)
+      : null;
+    lines.push('OFFER FOR FOLLOWERS');
+    lines.push(valueLabel
+      ? `${String(offer_type).replace(/_/g, ' ')} of ${valueLabel}.`
+      : `${String(offer_type).replace(/_/g, ' ')}.`);
+    lines.push('');
+  }
+
+  if (lines.length === 0) {
+    return '';
+  }
+
+  lines.push('ADDITIONAL REQUIREMENTS');
+  lines.push('(Brand: add specifics here — caption tags, hashtags, product placement, do\'s and don\'ts. Leave blank if none.)');
+
+  return lines.join('\n');
+}
+
+function _canonicalType(raw) {
+  const FORMAT_ALIAS = {
+    'instagram reel':    'reel',
+    'instagram post':    'post',
+    'instagram story':   'story',
+    'instagram stories': 'story',
+    'youtube short':     'youtube_short',
+    'youtube video':     'youtube_video',
+  };
+  const key = String(raw || 'reel').toLowerCase().trim();
+  return FORMAT_ALIAS[key] || key.replace(/\s+/g, '_');
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /v1/contracts/:id/sign  (influencer)
@@ -672,10 +810,18 @@ const retryContractCreate = asyncHandler(async (req, res) => {
 // POST /v1/contracts/:id/approve  (brand)
 //
 // Brand reviews the auto-created draft contract, optionally adds custom
-// clauses + bonus, then sends it to the influencer.
-//   draft → pending_influencer
+// clauses + bonus + content requirements, then sends it to the influencer.
+//   draft                → pending_influencer  ("Approve & Send")
+//   pending_influencer   → pending_influencer  ("Update & Re-send") — allowed
+//                          only while the influencer has NOT yet signed.
+//                          Saves the new terms, regenerates the PDF, and
+//                          notifies the influencer to re-review.
 //
-// Body: { custom_clauses?: object, bonus_amount?: number }
+// Body: {
+//   custom_clauses?:       object,
+//   bonus_amount?:         number,
+//   content_requirements?: string,
+// }
 // ─────────────────────────────────────────────────────────────────────────────
 const approveContract = asyncHandler(async (req, res) => {
   if (req.user.role !== 'brand') {
@@ -685,50 +831,68 @@ const approveContract = asyncHandler(async (req, res) => {
   if (contract.brand_user_id !== req.user.sub) {
     throw new AppError('FORBIDDEN', 'You do not own this contract', 403);
   }
-  if (contract.status !== 'draft') {
+
+  // Editable in draft (first approval) OR pending_influencer while the
+  // influencer hasn't signed (brand forgot a clause / needs to add usage
+  // rights). Once the influencer signs, the terms are locked.
+  const isReApprove = contract.status === 'pending_influencer' && !contract.influencer_signed_at;
+  const isFirstApprove = contract.status === 'draft';
+  if (!isFirstApprove && !isReApprove) {
     throw new AppError(
       'VALIDATION_ERROR',
-      `Cannot approve contract in '${contract.status}' status. Must be 'draft'.`,
+      `Cannot edit contract in '${contract.status}' status. ` +
+      (contract.influencer_signed_at
+        ? 'The influencer has already signed — ask them to re-sign after you renegotiate.'
+        : 'Contract must be draft or pending_influencer.'),
       422
     );
   }
 
-  const { custom_clauses, bonus_amount } = req.body || {};
+  const { custom_clauses, bonus_amount, content_requirements } = req.body || {};
   const bonus = parseFloat(bonus_amount) || 0;
   if (bonus < 0) {
     throw new AppError('VALIDATION_ERROR', 'bonus_amount must be 0 or positive', 422, 'bonus_amount');
   }
 
-  // Persist clauses + bonus only. We deliberately do NOT touch
-  // influencer_fee — it must keep its original meaning of "base agreed fee".
-  // The total paid to the influencer (base + bonus) is derived everywhere it's
-  // needed (escrow tranche math, PDF "Total Fee" line, mobile fee-breakdown
-  // display). Mixing the two into a single column caused a cascading bug
-  // where the brand mobile screen showed Base=3700 (the inflated total) and
-  // then added the bonus on top → 4200 instead of the correct 3700.
+  // Persist clauses + bonus + content requirements. We deliberately do NOT
+  // touch influencer_fee — it must keep its original meaning of "base agreed
+  // fee". The total paid to the influencer (base + bonus) is derived where
+  // needed; mixing the two into one column caused a past bug.
+  // content_requirements is pass-through text (the brand-web / mobile
+  // composer pre-fills it with a structured "deliverables + brief + coupon"
+  // block, but ultimately whatever the brand types wins).
+  const normalisedRequirements = typeof content_requirements === 'string'
+    ? content_requirements.trim()
+    : null;
+
   await db.query(
     `UPDATE contracts
-     SET status         = 'pending_influencer',
-         custom_clauses = $2,
-         bonus_amount   = $3,
-         approved_at    = now(),
-         approved_by    = $4
+     SET status               = 'pending_influencer',
+         custom_clauses       = $2,
+         bonus_amount         = $3,
+         content_requirements = COALESCE($4, content_requirements),
+         approved_at          = now(),
+         approved_by          = $5
      WHERE id = $1`,
     [
       contract.id,
       custom_clauses ? JSON.stringify(custom_clauses) : null,
       bonus,
+      normalisedRequirements,
       req.user.sub,
     ]
   );
 
-  // Now notify the influencer their contract is ready to sign.
+  // Notify the influencer. Copy differs for first approval vs re-send so
+  // they know to re-review updated terms.
   try {
     await notificationService.send({
       userId:   contract.influencer_user_id,
-      type:     'contract.ready',
-      title:    'Contract Ready to Sign',
-      body:     `Your contract for "${contract.campaign_name}" is ready. Review the terms and sign to begin.`,
+      type:     isReApprove ? 'contract.updated' : 'contract.ready',
+      title:    isReApprove ? 'Contract Updated' : 'Contract Ready to Sign',
+      body:     isReApprove
+        ? `The brand updated the contract for "${contract.campaign_name}". Please re-review the new terms before signing.`
+        : `Your contract for "${contract.campaign_name}" is ready. Review the terms and sign to begin.`,
       data:     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id },
       fcmToken: contract.influencer_fcm_token,
       sendSms:  true,
@@ -738,13 +902,13 @@ const approveContract = asyncHandler(async (req, res) => {
     console.error('[CONTRACT] approve notification failed:', notifErr.message);
   }
 
-  // Regenerate PDF so the brand-side preview reflects new clauses + bonus
+  // Regenerate PDF so both sides see the new clauses / bonus / requirements.
   _generateAndStorePdf(contract.id).catch(err =>
     console.error('[CONTRACT] PDF regen after approve failed:', err.message)
   );
 
   const { rows: fresh } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
-  return success(res, { contract: fresh[0] });
+  return success(res, { contract: fresh[0], re_approved: isReApprove });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -49,13 +49,15 @@ export default function BrandContractScreen({ route, navigation }) {
 
   const [contract, setContract] = useState(null);
   const [deliverables, setDeliverables] = useState([]);
+  const [suggestedRequirements, setSuggestedRequirements] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Editable fields (draft only)
+  // Editable fields (draft + pending_influencer-unsigned)
   const [clauses, setClauses] = useState({});         // { commercial_rights: { enabled, value }, ... }
   const [bonusAmount, setBonusAmount] = useState('');
   const [extraNotes, setExtraNotes] = useState('');
+  const [contentReq, setContentReq] = useState('');
 
   useEffect(() => { load(); }, []);
 
@@ -71,6 +73,7 @@ export default function BrandContractScreen({ route, navigation }) {
     const c = data.contract || data;
     setContract(c);
     setDeliverables(data.deliverables || []);
+    setSuggestedRequirements(data.suggested_content_requirements || '');
 
     // Hydrate editor from existing custom_clauses if already saved
     const cc = c.custom_clauses;
@@ -80,6 +83,10 @@ export default function BrandContractScreen({ route, navigation }) {
       setExtraNotes(parsed?.notes || '');
     }
     if (c.bonus_amount) setBonusAmount(String(c.bonus_amount));
+
+    // Prefer saved text; fall back to backend-composed suggestion.
+    const savedReq = (c.content_requirements || '').trim();
+    setContentReq(savedReq || data.suggested_content_requirements || '');
   }
 
   function toggleClause(id) {
@@ -101,22 +108,30 @@ export default function BrandContractScreen({ route, navigation }) {
     const bonus = parseFloat(bonusAmount) || 0;
     if (bonus < 0) { Alert.alert('Invalid bonus', 'Bonus must be 0 or positive.'); return; }
 
+    const reApprove = contract.status === 'pending_influencer' && !contract.influencer_signed_at;
     Alert.alert(
-      'Send to Influencer',
-      'Once sent, the influencer can sign the contract. Confirm details below are final.',
+      reApprove ? 'Update & Re-send' : 'Send to Influencer',
+      reApprove
+        ? 'The updated terms will be sent to the influencer and they will be notified to re-review before signing.'
+        : 'Once sent, the influencer can sign the contract. Confirm details below are final.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Send', onPress: async () => {
+        { text: reApprove ? 'Update' : 'Send', onPress: async () => {
           setSubmitting(true);
           const res = await brandApi.approveContract(contract.id, {
-            custom_clauses: { clauses, notes: extraNotes || null },
-            bonus_amount: bonus,
+            custom_clauses:       { clauses, notes: extraNotes || null },
+            bonus_amount:         bonus,
+            content_requirements: contentReq || null,
           });
           setSubmitting(false);
           if (res.success) {
-            Alert.alert('Sent', 'Contract sent to influencer for signing.', [
-              { text: 'OK', onPress: () => navigation.goBack() },
-            ]);
+            Alert.alert(
+              reApprove ? 'Updated' : 'Sent',
+              reApprove
+                ? 'Updated terms delivered. Influencer has been notified to re-review.'
+                : 'Contract sent to influencer for signing.',
+              [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
           } else {
             Alert.alert('Failed', res.error?.message || 'Could not send contract');
           }
@@ -172,6 +187,10 @@ export default function BrandContractScreen({ route, navigation }) {
   const isPendingBrand    = status === 'pending_brand';
   const isPendingInf      = status === 'pending_influencer';
   const isActive          = status === 'active';
+  // Re-approve flow: brand can still edit while waiting on influencer,
+  // as long as the influencer hasn't signed yet.
+  const isReApprove       = isPendingInf && !contract.influencer_signed_at;
+  const isEditing         = isDraft || isReApprove;
 
   // contracts.influencer_fee is the BASE agreed fee (after the F.2 fix).
   // Total = base + bonus, where bonus comes either from contract.bonus_amount
@@ -211,13 +230,16 @@ export default function BrandContractScreen({ route, navigation }) {
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }}>
-        {/* Big draft banner */}
-        {isDraft && (
+        {/* Big draft / re-approve banner */}
+        {isEditing && (
           <View style={styles.draftBanner}>
-            <Text style={styles.draftTitle}>📝 Draft Contract — Your Review</Text>
+            <Text style={styles.draftTitle}>
+              {isReApprove ? 'Update Terms Before Influencer Signs' : 'Draft Contract — Your Review'}
+            </Text>
             <Text style={styles.draftBody}>
-              The influencer accepted your offer. Review the auto-filled terms below, optionally
-              add clauses or a bonus, then tap "Approve & Send" to forward it for signing.
+              {isReApprove
+                ? 'The influencer has not signed yet, so you can still edit the content requirements, clauses, and bonus. Tap "Update & Re-send" to notify them of the new terms.'
+                : 'The influencer accepted your offer. Confirm the content requirements below, optionally add clauses or a bonus, then tap "Approve & Send" to forward it for signing.'}
             </Text>
           </View>
         )}
@@ -259,8 +281,35 @@ export default function BrandContractScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* Clause toggles (draft only) */}
-        {isDraft && (
+        {/* Content Requirements — auto-filled from deliverables + brief. */}
+        {isEditing && (
+          <View style={styles.card}>
+            <View style={styles.cardTitleRow}>
+              <Text style={styles.cardTitle}>Content Requirements</Text>
+              {suggestedRequirements && contentReq !== suggestedRequirements && (
+                <TouchableOpacity onPress={() => setContentReq(suggestedRequirements)}>
+                  <Text style={styles.restoreDefaultText}>Restore default</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <Text style={styles.helpText}>
+              Pre-filled from the campaign brief + deliverables. Edit freely — this is what the influencer sees in the signed PDF.
+            </Text>
+            <TextInput
+              style={styles.requirementsInput}
+              value={contentReq}
+              onChangeText={setContentReq}
+              placeholder="What exactly should the influencer create?"
+              placeholderTextColor={colors.t3}
+              multiline
+              numberOfLines={10}
+              textAlignVertical="top"
+            />
+          </View>
+        )}
+
+        {/* Clause toggles (draft + pending_influencer-unsigned) */}
+        {isEditing && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Optional Clauses</Text>
             <Text style={styles.helpText}>Tick any clause that should apply to this contract. The influencer will see them highlighted before signing.</Text>
@@ -328,8 +377,9 @@ export default function BrandContractScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* Read-only clauses (after draft) */}
-        {!isDraft && Object.keys(clauses).filter(k => clauses[k]?.enabled).length > 0 && (
+        {/* Read-only clauses — shown after brand has locked the draft AND is
+            no longer editing (i.e. influencer signed or contract is active). */}
+        {!isEditing && Object.keys(clauses).filter(k => clauses[k]?.enabled).length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Special Clauses Attached</Text>
             {STANDARD_CLAUSES.filter(c => clauses[c.id]?.enabled).map(c => (
@@ -386,8 +436,8 @@ export default function BrandContractScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Action button */}
-        {isDraft && (
+        {/* Primary action — Approve & Send (draft) or Update & Re-send (re-approve) */}
+        {isEditing && (
           <TouchableOpacity
             style={[styles.actionBtn, submitting && styles.actionBtnDisabled]}
             onPress={handleApproveAndSend}
@@ -395,7 +445,9 @@ export default function BrandContractScreen({ route, navigation }) {
           >
             {submitting
               ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.actionBtnText}>Approve &amp; Send to Influencer</Text>}
+              : <Text style={styles.actionBtnText}>
+                  {isReApprove ? 'Update \u0026 Re-send to Influencer' : 'Approve \u0026 Send to Influencer'}
+                </Text>}
           </TouchableOpacity>
         )}
         {isPendingBrand && (
@@ -409,9 +461,11 @@ export default function BrandContractScreen({ route, navigation }) {
               : <Text style={styles.actionBtnText}>Counter-sign Contract</Text>}
           </TouchableOpacity>
         )}
-        {isPendingInf && (
+        {/* "Waiting on influencer" banner — only after they've actually signed,
+            since editable pending_influencer is handled above. */}
+        {isPendingInf && contract.influencer_signed_at && (
           <View style={[styles.card, { backgroundColor: colors.goldPale, borderColor: '#E8D590' }]}>
-            <Text style={[styles.cardTitle, { color: '#7A5500' }]}>⏳ Waiting on Influencer</Text>
+            <Text style={[styles.cardTitle, { color: '#7A5500' }]}>\u23F3 Waiting on Influencer</Text>
             <Text style={styles.helpText}>You sent the contract. The influencer will get a notification to review and sign.</Text>
           </View>
         )}
@@ -531,4 +585,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.navy,
   },
   pdfBtnText: { color: colors.navy, fontSize: 13, fontWeight: '700' },
+  cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  restoreDefaultText: { fontSize: 11, fontWeight: '700', color: colors.navy, textDecorationLine: 'underline' },
+  requirementsInput: {
+    marginTop: 8,
+    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg,
+    borderRadius: 10, padding: 10,
+    fontSize: 12, color: colors.t1, fontFamily: 'monospace',
+    minHeight: 180, textAlignVertical: 'top',
+  },
 });

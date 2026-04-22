@@ -299,7 +299,7 @@ const STANDARD_CLAUSES_WEB = [
   },
 ];
 
-function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprove }) {
+function ContractModal({ inf, contract, suggestedContentRequirements, goal, loading, onClose, onSign, onApprove }) {
   // ── HOOKS MUST RUN UNCONDITIONALLY (Rules of Hooks). ──────────────────
   // Compute initial state from contract; fall back to safe defaults when
   // contract is null so we can still call useState on every render. The
@@ -317,9 +317,18 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
     if (typeof cc === 'string') { try { return (JSON.parse(cc).notes) || ''; } catch { return ''; } }
     return cc.notes || '';
   })();
+  const initialRequirements = (() => {
+    // Prefer the brand's saved value. Otherwise use the backend's auto-composed
+    // starter (deliverables + brief + posting date + coupon) as a baseline.
+    if (safeContract.content_requirements && String(safeContract.content_requirements).trim()) {
+      return String(safeContract.content_requirements);
+    }
+    return suggestedContentRequirements || '';
+  })();
   const [clauses, setClauses]     = useState(initialClauses);
   const [extraNotes, setExtraNotes] = useState(initialNotes);
   const [bonusAmount, setBonusAmount] = useState(String(safeContract.bonus_amount || ''));
+  const [contentReq, setContentReq] = useState(initialRequirements);
   const [pdfSrc, setPdfSrc]       = useState(null);
   const [pdfError, setPdfError]   = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -361,8 +370,13 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
   const showFee        = goalLower === 'engagement' || goalLower === 'hybrid';
   const showCommission = goalLower === 'conversion' || goalLower === 'hybrid';
 
-  // Draft state: brand reviews + edits clauses + bonus, then "Approve & Send"
-  const isDraft = contract.status === 'draft';
+  // Brand can edit the draft OR re-edit it after sending (as long as the
+  // influencer hasn't signed). isEditing controls the whole edit form UI;
+  // isReApprove flips copy to "Update & Re-send" when we're editing a
+  // contract that's already in pending_influencer.
+  const isDraft     = contract.status === 'draft';
+  const isReApprove = contract.status === 'pending_influencer' && !contract.influencer_signed_at;
+  const isEditing   = isDraft || isReApprove;
 
   function toggleClause(id) {
     setClauses(prev => {
@@ -477,13 +491,38 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
           )}
         </div>
 
-        {isDraft ? (
+        {isEditing ? (
           <div className="p-5 border-t border-gray-100 space-y-4 bg-amber-50/30">
             <div className="bg-amber-100 border border-amber-300 rounded-lg p-3">
-              <div className="text-xs font-bold text-amber-900 mb-1">📝 Draft — Your Review</div>
-              <div className="text-[11px] text-amber-800 leading-relaxed">
-                The influencer accepted your offer. Tick any optional clauses + add a bonus if you want, then send.
+              <div className="text-xs font-bold text-amber-900 mb-1">
+                {isReApprove ? '✏️ Update Terms Before Influencer Signs' : '📝 Draft — Your Review'}
               </div>
+              <div className="text-[11px] text-amber-800 leading-relaxed">
+                {isReApprove
+                  ? 'The influencer has not signed yet, so you can still edit the content requirements, clauses, and bonus. Click Update & Re-send to notify them.'
+                  : 'The influencer accepted your offer. Confirm the content requirements, tick any optional clauses, and add a bonus if you want, then send.'}
+              </div>
+            </div>
+
+            {/* Content Requirements — auto-filled from deliverables + brief. */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-bold text-gray-700">Content Requirements</div>
+                {suggestedContentRequirements && contentReq !== suggestedContentRequirements && (
+                  <button onClick={() => setContentReq(suggestedContentRequirements)}
+                    className="text-[10px] font-semibold text-navy hover:underline">
+                    Restore default
+                  </button>
+                )}
+              </div>
+              <textarea value={contentReq} onChange={e => setContentReq(e.target.value)}
+                placeholder="What exactly should the influencer create?"
+                className="w-full border border-gray-200 rounded-lg p-2 text-xs font-mono leading-relaxed"
+                rows={10}
+              />
+              <p className="text-[10px] text-gray-400 mt-1">
+                Pre-filled from the campaign brief + deliverables. Edit freely — this text is what the influencer sees in the signed PDF.
+              </p>
             </div>
 
             {/* Clause toggles */}
@@ -536,11 +575,12 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
             )}
 
             <button onClick={() => onApprove({
-              custom_clauses: { clauses, notes: extraNotes || null },
-              bonus_amount: parseFloat(bonusAmount) || 0,
+              custom_clauses:       { clauses, notes: extraNotes || null },
+              bonus_amount:         parseFloat(bonusAmount) || 0,
+              content_requirements: contentReq || null,
             })} disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50">
-              {loading ? 'Sending…' : 'Approve & Send to Influencer'}
+              {loading ? 'Sending…' : (isReApprove ? 'Update & Re-send to Influencer' : 'Approve & Send to Influencer')}
             </button>
           </div>
         ) : contract.status === 'pending_brand' ? (
@@ -721,8 +761,31 @@ export default function CampaignDetailPage() {
 
   async function openContractModal(inf, goal) {
     const res = await contractApi.get(inf.id);
-    if (res.success) setContractModal({ inf, contract: res.data?.contract || res.data, goal });
-    else showToast(res.error?.message || 'Failed to load contract');
+    if (res.success) {
+      setContractModal({
+        inf,
+        contract: res.data?.contract || res.data,
+        suggested_content_requirements: res.data?.suggested_content_requirements || '',
+        goal,
+      });
+    } else {
+      showToast(res.error?.message || 'Failed to load contract');
+    }
+  }
+
+  async function handleApproveContract(payload) {
+    if (!contractModal?.contract) return;
+    setContractLoading(true);
+    const res = await contractApi.approve(contractModal.contract.id, payload);
+    setContractLoading(false);
+    if (res.success) {
+      const wasReApprove = res.data?.re_approved;
+      showToast(wasReApprove ? 'Updated terms sent \u2014 influencer notified.' : 'Contract sent to influencer for signing.');
+      setContractModal(null);
+      campaignApi.get(id).then(r => { if (r.success) setCampaign(r.data?.campaign || r.data); });
+    } else {
+      showToast(res.error?.message || 'Failed');
+    }
   }
 
   async function handleBrandSign() {
@@ -732,18 +795,6 @@ export default function CampaignDetailPage() {
     setContractLoading(false);
     if (res.success) {
       showToast('Contract signed! Tranche 1 queued.');
-      setContractModal(null);
-      campaignApi.get(id).then(r => { if (r.success) setCampaign(r.data?.campaign || r.data); });
-    } else showToast(res.error?.message || 'Failed');
-  }
-
-  async function handleApproveContract(payload) {
-    if (!contractModal?.contract) return;
-    setContractLoading(true);
-    const res = await contractApi.approve(contractModal.contract.id, payload);
-    setContractLoading(false);
-    if (res.success) {
-      showToast('Contract sent to influencer for signing.');
       setContractModal(null);
       campaignApi.get(id).then(r => { if (r.success) setCampaign(r.data?.campaign || r.data); });
     } else showToast(res.error?.message || 'Failed');
@@ -1657,6 +1708,7 @@ export default function CampaignDetailPage() {
       {contractModal && <ContractModal
         inf={contractModal.inf}
         contract={contractModal.contract}
+        suggestedContentRequirements={contractModal.suggested_content_requirements}
         goal={contractModal.goal}
         loading={contractLoading}
         onClose={() => setContractModal(null)}
