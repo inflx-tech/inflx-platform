@@ -8,6 +8,27 @@
 
 const PDFDocument = require('pdfkit');
 
+// PDFKit's built-in fonts (Helvetica / Times / Courier) are restricted to
+// WinAnsiEncoding, which does NOT include the Indian Rupee sign (U+20B9).
+// Using "\u20B9" in the PDF renders as "¹" (superscript 1). We standardise
+// on "Rs." across the contract to keep it readable without embedding a
+// Unicode TTF font (which would add ~1MB to the backend and complicate
+// deployment). Callers should route money through this helper.
+function fmtMoney(rupees) {
+  const n = parseFloat(rupees || 0);
+  return `Rs. ${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// Format a posting / signing date as "01 May 2026" (or just the date portion
+// when the value is already a string). Replaces the raw
+// "Fri May 01 2026 00:00:00 GMT+0000 (Coordinated Universal Time)" dump.
+function fmtDate(value) {
+  if (!value) return 'To be agreed';
+  const d = value instanceof Date ? value : new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
 /**
  * Generate a contract PDF buffer.
  * @param {object} contract  — contract row from DB
@@ -53,14 +74,14 @@ async function generateContractPDF(contract) {
     const totalFee = baseFee + bonus;
     if (totalFee > 0) {
       if (bonus > 0) {
-        doc.text(`Base Fee:          \u20B9${baseFee.toFixed(2)}`);
-        doc.text(`Brand Bonus:       \u20B9${bonus.toFixed(2)}`);
-        doc.text(`Total Fee:         \u20B9${totalFee.toFixed(2)}`);
+        doc.text(`Base Fee:          ${fmtMoney(baseFee)}`);
+        doc.text(`Brand Bonus:       ${fmtMoney(bonus)}`);
+        doc.text(`Total Fee:         ${fmtMoney(totalFee)}`);
       } else {
-        doc.text(`Agreed Fee:        \u20B9${baseFee.toFixed(2)}`);
+        doc.text(`Agreed Fee:        ${fmtMoney(baseFee)}`);
       }
     }
-    doc.text(`Posting Date:      ${contract.posting_date || 'To be agreed'}`);
+    doc.text(`Posting Date:      ${fmtDate(contract.posting_date)}`);
     doc.text(`Revision Limit:    ${contract.revision_limit}`);
     doc.moveDown(1.5);
 
@@ -108,10 +129,21 @@ async function generateContractPDF(contract) {
     }
 
     // ── Content Requirements ───────────────────────────────────────────────
+    // Falls back through contract → set → campaign briefs. Many campaigns
+    // stored the brief at the SET level (campaign_sets.brief) rather than
+    // at campaigns.brief, which is what contract.service.autoCreate used to
+    // copy into contracts.content_requirements. This fallback prevents
+    // PDFs from saying "No specific requirements provided" when the brief
+    // actually exists somewhere in the chain.
     doc.fontSize(14).font('Helvetica-Bold').text('CONTENT REQUIREMENTS');
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica');
-    doc.text(contract.content_requirements || 'No specific requirements provided.');
+    const requirements = contract.content_requirements
+      || contract.set_brief
+      || contract.campaign_brief
+      || contract.brief
+      || 'No specific requirements provided.';
+    doc.text(requirements, { align: 'justify' });
     doc.moveDown(1.5);
 
     // ── Payment Schedule — fee-bearing contracts only (engagement / hybrid) ──
@@ -122,9 +154,9 @@ async function generateContractPDF(contract) {
       doc.fontSize(14).font('Helvetica-Bold').text('PAYMENT SCHEDULE');
       doc.moveDown(0.5);
       doc.fontSize(10).font('Helvetica');
-      doc.text(`Tranche 1 (25%): \u20B9${(totalFee * 0.25).toFixed(2)} \u2014 Released on contract activation`);
-      doc.text(`Tranche 2 (25%): \u20B9${(totalFee * 0.25).toFixed(2)} \u2014 Released on content going live`);
-      doc.text(`Tranche 3 (50%): \u20B9${(totalFee * 0.50).toFixed(2)} \u2014 Released 30 days after content live`);
+      doc.text(`Tranche 1 (25%): ${fmtMoney(totalFee * 0.25)} - Released on contract activation`);
+      doc.text(`Tranche 2 (25%): ${fmtMoney(totalFee * 0.25)} - Released on content going live`);
+      doc.text(`Tranche 3 (50%): ${fmtMoney(totalFee * 0.50)} - Released 30 days after content live`);
       doc.moveDown(1.5);
     }
 
@@ -143,7 +175,7 @@ async function generateContractPDF(contract) {
         try { offerCfg = JSON.parse(offerCfg); } catch { offerCfg = null; }
       }
       if (offerCfg && offerCfg.value != null) {
-        const label = contract.offer_type === 'percentage' ? `${offerCfg.value}%` : `\u20B9${offerCfg.value}`;
+        const label = contract.offer_type === 'percentage' ? `${offerCfg.value}%` : fmtMoney(offerCfg.value);
         doc.text(`Offer Value:       ${label}`);
       }
       if (contract.coupon_code) {
@@ -177,12 +209,12 @@ async function generateContractPDF(contract) {
 
     // Influencer signature
     doc.text(`Influencer: ${contract.influencer_signed_name || '___________________'}`);
-    doc.text(`Date: ${contract.influencer_signed_at ? new Date(contract.influencer_signed_at).toISOString() : '___________________'}`);
+    doc.text(`Date: ${contract.influencer_signed_at ? fmtDate(contract.influencer_signed_at) : '___________________'}`);
     doc.moveDown(1);
 
     // Brand signature
     doc.text(`Brand Representative: ${contract.brand_name || '___________________'}`);
-    doc.text(`Date: ${contract.brand_signed_at ? new Date(contract.brand_signed_at).toISOString() : '___________________'}`);
+    doc.text(`Date: ${contract.brand_signed_at ? fmtDate(contract.brand_signed_at) : '___________________'}`);
     doc.moveDown(1);
 
     // ── Footer ─────────────────────────────────────────────────────────────

@@ -48,6 +48,11 @@ async function autoCreate(campaignInfluencerId) {
 
 async function _autoCreateInner(campaignInfluencerId) {
   // Fetch CI with all data needed for the contract
+  // Brief can live at either the set level (campaign_sets.brief) or the
+  // campaign level (campaigns.brief). Coalesce so content_requirements is
+  // populated as long as at least one of them is set. The PDF generator
+  // also re-falls back at render time for contracts that were already
+  // created when only one of the two was populated.
   const { rows } = await db.query(
     `SELECT
        ci.id,
@@ -59,13 +64,13 @@ async function _autoCreateInner(campaignInfluencerId) {
        cs.per_influencer_budget,
        cs.set_budget,
        cs.goal,
-       c.name                AS campaign_name,
-       c.brief               AS content_requirements,
+       c.name                                AS campaign_name,
+       COALESCE(NULLIF(cs.brief, ''), NULLIF(c.brief, '')) AS content_requirements,
        c.brand_id,
-       b.business_name       AS brand_name,
+       b.business_name                       AS brand_name,
        b.platform_fee_pct,
-       u_inf.phone           AS influencer_phone,
-       inf.instagram_handle  AS influencer_handle
+       u_inf.phone                           AS influencer_phone,
+       inf.instagram_handle                  AS influencer_handle
      FROM campaign_influencers ci
      JOIN campaign_sets  cs  ON cs.id  = ci.set_id
      JOIN campaigns      c   ON c.id   = cs.campaign_id

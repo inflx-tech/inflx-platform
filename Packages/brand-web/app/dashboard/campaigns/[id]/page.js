@@ -393,9 +393,10 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] flex flex-col my-auto" onClick={e => e.stopPropagation()}>
+        {/* Sticky header */}
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0 bg-white rounded-t-2xl">
           <div>
             <h2 className="font-display font-bold text-gray-900">Review & Sign Contract</h2>
             <p className="text-xs text-gray-400 mt-0.5">@{inf.instagram_handle} · {contract.campaign_name}</p>
@@ -403,6 +404,8 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400">✕</button>
         </div>
 
+        {/* Scrollable body — everything except the sticky header / footer */}
+        <div className="flex-1 overflow-y-auto">
         <div className="p-5 space-y-2">
           {rows.map(r => (
             <div key={r.label} className="flex justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
@@ -557,6 +560,7 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
             {contract.brand_signed_at ? `You signed on ${new Date(contract.brand_signed_at).toLocaleString('en-IN')}` : 'Waiting for influencer signature first.'}
           </div>
         )}
+        </div>{/* /scrollable body */}
       </div>
     </div>
   );
