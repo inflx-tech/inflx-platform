@@ -13,7 +13,7 @@ const { Router } = require('express');
 const { authenticate, authenticateWithQuery, requireRole } = require('../middleware/auth');
 const {
   getContract, sign, brandSign,
-  getContractPdf, regeneratePdf, retryContractCreate,
+  getContractPdf, getContractPdfUrl, regeneratePdf, retryContractCreate,
   approveContract,
 } = require('../controllers/contract.controller');
 
@@ -27,6 +27,17 @@ router.get(
   authenticateWithQuery,
   requireRole('brand', 'influencer'),
   getContractPdf
+);
+
+// Either party: ensures the PDF is uploaded to R2 and returns a short-lived
+// presigned GET URL. This is the preferred path — the signed URL works in
+// any browser / Android download manager / Google Docs Viewer without an
+// Authorization header (fixes the "0 KB download" issue).
+router.get(
+  '/:id/pdf-url',
+  authenticate,
+  requireRole('brand', 'influencer'),
+  getContractPdfUrl
 );
 
 // Brand-only: force-regenerate the stored PDF (clears pdf_generation_error)

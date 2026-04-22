@@ -12,13 +12,36 @@ const env  = require('../config/env');
 
 const UPLOAD_DIR = path.join(os.tmpdir(), 'inflx-uploads');
 
-// ─── PDF Upload (existing) ──────────────────────────────────────────────────
+// ─── PDF Upload ─────────────────────────────────────────────────────────────
+// Uploads a contract PDF to R2 (prod) or local disk (mock). Returns the
+// OBJECT KEY (e.g. "contracts/contract_xxxx.pdf"), NOT a URL. Callers must
+// call getPdfDownloadUrl(key) when they need a client-shareable link — that
+// produces a short-lived presigned GET URL, which any HTTP client (browser,
+// Android download manager, Google Docs Viewer) can fetch without special
+// auth headers. Presigned URLs are the fix for the "0 KB download" problem:
+// Android WebView was dropping the Bearer header when forwarding the PDF to
+// its native download manager, so the retry always hit 401.
 
 async function uploadPDF(buffer, filename) {
   if (env.R2_MOCK) {
     return _saveLocally(buffer, filename);
   }
   return _uploadToR2(buffer, filename);
+}
+
+/**
+ * Generate a short-lived presigned GET URL for an uploaded PDF key.
+ * Returns null in mock mode — callers should fall back to the streaming
+ * /contracts/:id/pdf endpoint in that case.
+ */
+async function getPdfDownloadUrl(key, { expiresIn = 3600 } = {}) {
+  if (env.R2_MOCK) return null;
+  if (!key) return null;
+  const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+  const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+  const client = _getR2Client();
+  const command = new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key });
+  return await getSignedUrl(client, command, { expiresIn });
 }
 
 // ─── Media Upload/Download URLs ─────────────────────────────────────────────
@@ -103,18 +126,19 @@ function getUploadDir() {
 // ─── Private helpers ────────────────────────────────────────────────────────
 
 async function _saveLocally(buffer, filename) {
-  const dir = path.resolve(env.PDF_STORAGE_PATH);
+  const dir = path.resolve(env.PDF_STORAGE_PATH || UPLOAD_DIR);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
   const filePath = path.join(dir, filename);
   fs.writeFileSync(filePath, buffer);
   console.log(`[R2 MOCK] PDF saved locally: ${filePath}`);
-  return `local://${filePath}`;
+  // Return the same key shape as prod so downstream code doesn't have to branch.
+  return `contracts/${filename}`;
 }
 
 async function _uploadToR2(buffer, filename) {
-  const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+  const { PutObjectCommand } = require('@aws-sdk/client-s3');
 
   const client = _getR2Client();
   const key = `contracts/${filename}`;
@@ -126,9 +150,8 @@ async function _uploadToR2(buffer, filename) {
     ContentType: 'application/pdf',
   }));
 
-  const url = `https://${env.R2_BUCKET}.${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
-  console.log(`[R2] PDF uploaded: ${url}`);
-  return url;
+  console.log(`[R2] PDF uploaded: key=${key} bucket=${env.R2_BUCKET} size=${buffer.length}B`);
+  return key;   // callers convert to a presigned URL via getPdfDownloadUrl(key)
 }
 
 let _r2Client = null;
@@ -147,4 +170,4 @@ function _getR2Client() {
   return _r2Client;
 }
 
-module.exports = { uploadPDF, generateUploadUrl, generateDownloadUrl, saveFile, getUploadDir };
+module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, getUploadDir };

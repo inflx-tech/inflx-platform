@@ -16,6 +16,7 @@
  */
 
 const db                  = require('../config/db');
+const env                 = require('../config/env');
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
@@ -558,6 +559,43 @@ const getContractPdf = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/contracts/:id/pdf-url — either party.
+//
+// Ensures a PDF exists on R2 for this contract, then returns a short-lived
+// presigned GET URL the client can fetch / render / hand to Google Docs
+// Viewer without any Authorization header. Regenerates on demand if the
+// stored key is stale (legacy URL format from the pre-M.1 code path).
+//
+// In R2_MOCK mode the signed URL isn't available — we fall back to the
+// streaming /pdf route (client should pick that up from `fallback_url`).
+// ─────────────────────────────────────────────────────────────────────────────
+const getContractPdfUrl = asyncHandler(async (req, res) => {
+  const contract = await getContractByIdOrThrow(req.params.id);
+  assertPartyAccess(contract, req);
+
+  let key = contract.pdf_url;
+  // Legacy rows stored a full URL instead of a key — treat anything that
+  // doesn't look like a contracts/ key as stale and regenerate.
+  if (!key || !String(key).startsWith('contracts/')) {
+    key = await _generateAndStorePdf(contract.id);
+  }
+
+  const signedUrl = await storageService.getPdfDownloadUrl(key, { expiresIn: 3600 });
+  if (signedUrl) {
+    return success(res, { url: signedUrl, expires_in: 3600, source: 'r2' });
+  }
+
+  // R2_MOCK — give the client the streaming endpoint as fallback. Auth
+  // headers still needed in this mode.
+  const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${env.PORT}`;
+  return success(res, {
+    url:        `${baseUrl}/v1/contracts/${contract.id}/pdf`,
+    expires_in: null,
+    source:     'stream',
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /v1/contracts/:id/regenerate-pdf — brand-only.
 // Forces a fresh PDFKit generation + re-upload. Useful when the original
 // generation failed (pdf_generation_error is set) or after contract edits.
@@ -570,8 +608,10 @@ const regeneratePdf = asyncHandler(async (req, res) => {
   if (contract.brand_user_id !== req.user.sub) {
     throw new AppError('FORBIDDEN', 'You do not own this contract', 403);
   }
-  const pdfUrl = await _generateAndStorePdf(contract.id);
-  return success(res, { pdf_url: pdfUrl });
+  const key = await _generateAndStorePdf(contract.id);
+  // Hand the caller a ready-to-open signed URL rather than the raw R2 key.
+  const signedUrl = await storageService.getPdfDownloadUrl(key, { expiresIn: 3600 });
+  return success(res, { pdf_key: key, url: signedUrl });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -714,6 +754,7 @@ module.exports = {
   sign,
   brandSign,
   getContractPdf,
+  getContractPdfUrl,
   regeneratePdf,
   retryContractCreate,
   approveContract,
