@@ -157,9 +157,11 @@ export const brandApi = {
   getCampaignAllProducts: (campaignId) => api.get(`/campaigns/${campaignId}/products`),
   cancelInfluencer: (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/cancel`),
   // Contracts (brand side)
-  getContract:    (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
-  brandSign:      (id) => api.post(`/contracts/${id}/brand-sign`),
-  approveContract:(id, data) => api.post(`/contracts/${id}/approve`, data),
+  getContract:       (campaignInfluencerId) => api.get(`/contracts/${campaignInfluencerId}`),
+  brandSign:         (id) => api.post(`/contracts/${id}/brand-sign`),
+  approveContract:   (id, data) => api.post(`/contracts/${id}/approve`, data),
+  getContractPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
+  regenerateContractPdf: (id) => api.post(`/contracts/${id}/regenerate-pdf`),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   // Enquiry leads (follower-submitted enquiries, attributed to influencers)
@@ -198,6 +200,7 @@ export const influencerApi = {
   submitLive: (id, data) => api.post(`/deliverables/${id}/submit-live`, data),
   getContract: (id) => api.get(`/contracts/${id}`),
   signContract: (id, data) => api.post(`/contracts/${id}/sign`, data),
+  getContractPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
   getMyCampaigns: (status) => api.get(`/influencers/me/campaigns${status ? `?status=${status}` : ''}`),
   getMyCampaignDetail: (ciId) => api.get(`/influencers/me/campaigns/${ciId}`),
   getCommissions: () => api.get('/influencers/me/commissions'),

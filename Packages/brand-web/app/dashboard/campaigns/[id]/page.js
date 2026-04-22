@@ -320,6 +320,30 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
   const [clauses, setClauses]     = useState(initialClauses);
   const [extraNotes, setExtraNotes] = useState(initialNotes);
   const [bonusAmount, setBonusAmount] = useState(String(safeContract.bonus_amount || ''));
+  const [pdfSrc, setPdfSrc]       = useState(null);
+  const [pdfError, setPdfError]   = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // Fetch a fresh presigned R2 URL for the contract PDF whenever the modal
+  // opens for a new contract. Using the signed URL directly in an iframe is
+  // the fix for the "0 KB download" issue — browsers can render + download
+  // the PDF without needing an Authorization header.
+  useEffect(() => {
+    if (!safeContract.id) return;
+    let cancelled = false;
+    setPdfLoading(true);
+    setPdfError(null);
+    contractApi.getPdfUrl(safeContract.id).then(res => {
+      if (cancelled) return;
+      setPdfLoading(false);
+      if (res?.success && res.data?.url) {
+        setPdfSrc(res.data.url);
+      } else {
+        setPdfError(res?.error?.message || 'Could not load contract PDF');
+      }
+    });
+    return () => { cancelled = true; };
+  }, [safeContract.id]);
 
   // Now the conditional early-return (after all hooks)
   if (!contract) return (
@@ -392,22 +416,28 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
               {contract.content_requirements}
             </div>
           )}
-          {/* Inline PDF preview — always embeds the streaming endpoint, which
-              regenerates the PDF on demand from the live contract row. */}
+          {/* Inline PDF preview — uses the presigned R2 URL returned by
+              /contracts/:id/pdf-url. The signed URL needs no auth header so
+              browsers render it inline and "Download" saves the real file. */}
           {contract.id && (
             <div className="mt-3">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Contract PDF</span>
                 <div className="flex items-center gap-3">
-                  <a href={contractApi.pdfUrl(contract.id)} target="_blank" rel="noreferrer"
-                    className="text-xs text-navy font-semibold hover:underline">Open ↗</a>
+                  {pdfSrc && (
+                    <a href={pdfSrc} target="_blank" rel="noreferrer"
+                      className="text-xs text-navy font-semibold hover:underline">Open / Download ↗</a>
+                  )}
                   <button
                     onClick={async () => {
                       const res = await contractApi.regeneratePdf(contract.id);
-                      if (res.success || res.ok) {
-                        // Force iframe reload by tweaking the URL
-                        const iframe = document.getElementById(`contract-pdf-${contract.id}`);
-                        if (iframe) iframe.src = contractApi.pdfUrl(contract.id) + `&_=${Date.now()}`;
+                      if (res.success && res.data?.url) {
+                        setPdfSrc(res.data.url);
+                        setPdfError(null);
+                      } else if (res.success) {
+                        // Backend didn't inline a URL — refetch it.
+                        const urlRes = await contractApi.getPdfUrl(contract.id);
+                        if (urlRes?.success && urlRes.data?.url) setPdfSrc(urlRes.data.url);
                       } else {
                         alert(res.error?.message || 'Regenerate failed');
                       }
@@ -417,12 +447,24 @@ function ContractModal({ inf, contract, goal, loading, onClose, onSign, onApprov
                   </button>
                 </div>
               </div>
-              <iframe
-                id={`contract-pdf-${contract.id}`}
-                src={contractApi.pdfUrl(contract.id)}
-                className="w-full h-[420px] border border-gray-200 rounded-lg bg-gray-50"
-                title="Contract PDF"
-              />
+              {pdfLoading && (
+                <div className="w-full h-[420px] border border-gray-200 rounded-lg bg-gray-50 flex items-center justify-center text-xs text-gray-400">
+                  Preparing contract PDF…
+                </div>
+              )}
+              {pdfError && !pdfLoading && (
+                <div className="mt-2 text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg p-2">
+                  {pdfError}
+                </div>
+              )}
+              {pdfSrc && !pdfLoading && !pdfError && (
+                <iframe
+                  id={`contract-pdf-${contract.id}`}
+                  src={pdfSrc}
+                  className="w-full h-[420px] border border-gray-200 rounded-lg bg-gray-50"
+                  title="Contract PDF"
+                />
+              )}
               {contract.pdf_generation_error && (
                 <div className="mt-2 text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg p-2">
                   Last PDF generation failed: {contract.pdf_generation_error}

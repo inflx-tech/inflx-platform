@@ -185,8 +185,10 @@ export const contractApi = {
   approve: (id, body) => api.post(`/contracts/${id}/approve`, body),
   regeneratePdf: (id) => api.post(`/contracts/${id}/regenerate-pdf`),
   retryCreate: (ciId) => api.post(`/contracts/by-ci/${ciId}/retry`),
-  // Returns a URL safe for use in <iframe src> / <a href> — JWT goes in query
-  // because iframes/anchors cannot set Authorization headers.
+  // Preferred: fetch a short-lived presigned R2 URL that works in iframes,
+  // downloads, and Google Docs Viewer without any Authorization header.
+  getPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
+  // Legacy streaming URL kept as a fallback (JWT via query string).
   pdfUrl: (id) => `${API_BASE}/contracts/${id}/pdf?download_token=${encodeURIComponent(getToken() || '')}`,
 };
 

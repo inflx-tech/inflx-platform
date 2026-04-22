@@ -423,6 +423,16 @@ export default function BrandContractScreen({ route, navigation }) {
             </Text>
           </View>
         )}
+
+        {/* View Contract PDF — available once a contract row exists (any state) */}
+        {contract?.id && (
+          <TouchableOpacity
+            style={styles.pdfBtn}
+            onPress={() => navigation.navigate('ContractPdf', { contractId: contract.id, role: 'brand' })}
+          >
+            <Text style={styles.pdfBtnText}>View Contract PDF</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </View>
   );
@@ -516,4 +526,9 @@ const styles = StyleSheet.create({
   },
   actionBtnDisabled: { opacity: 0.5 },
   actionBtnText: { color: colors.white, fontSize: 15, fontWeight: '800' },
+  pdfBtn: {
+    marginHorizontal: 16, marginTop: 12, borderRadius: 12, paddingVertical: 12,
+    alignItems: 'center', backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.navy,
+  },
+  pdfBtnText: { color: colors.navy, fontSize: 13, fontWeight: '700' },
 });
