@@ -246,13 +246,27 @@ export default function ContractScreen({ navigation, route }) {
         );
       })()}
 
-      {/* ── View PDF button (always available once a contract row exists) ─── */}
-      <TouchableOpacity
-        style={styles.pdfBtn}
-        onPress={() => navigation.navigate('ContractPdf', { contractId: contract.id })}
-      >
-        <Text style={styles.pdfBtnText}>View Contract PDF</Text>
-      </TouchableOpacity>
+      {/* ── View PDF button ─────────────────────────────────────────────────
+         Only show after the brand has actually SENT the contract. While
+         it's still in 'draft', the brand is privately preparing the
+         terms — influencer shouldn't see a PDF button because there is
+         no agreed contract to view yet. The button also requires a PDF
+         key on the contract row (pdf_url is set at generation time). */}
+      {contract.status !== 'draft' && contract.pdf_url && (
+        <TouchableOpacity
+          style={styles.pdfBtn}
+          onPress={() => navigation.navigate('ContractPdf', { contractId: contract.id })}
+        >
+          <Text style={styles.pdfBtnText}>View Contract PDF</Text>
+        </TouchableOpacity>
+      )}
+
+      {contract.status === 'draft' && (
+        <View style={styles.draftBanner}>
+          <Text style={styles.draftBannerTitle}>Brand is preparing your contract</Text>
+          <Text style={styles.draftBannerBody}>You'll be notified once the contract is ready to review and sign.</Text>
+        </View>
+      )}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <ScrollView ref={scrollRef} style={styles.body}>
@@ -571,6 +585,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pdfBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+
+  // Draft banner — shown while brand is still preparing the contract
+  draftBanner: {
+    margin: 16,
+    marginBottom: 0,
+    padding: 14,
+    backgroundColor: '#FFF4D6',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F0D987',
+  },
+  draftBannerTitle: { fontSize: 13, fontWeight: '700', color: '#7A5A00', marginBottom: 4 },
+  draftBannerBody:  { fontSize: 12, color: '#6B5200', lineHeight: 18 },
 
   // Highlight box for special clauses + bonus the brand attached
   clauseHighlightBox: {

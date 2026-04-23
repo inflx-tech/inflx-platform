@@ -13,11 +13,16 @@ const MAX_BYTES = 50 * 1024 * 1024; // 50 MB per file
 
 // Whitelist of accepted MIMEs. Kept broad enough for typical brand-kit
 // assets: logos, creatives, reference videos, packaged brand-kit archives.
+// Also covers the variants React Native image pickers sometimes report
+// (image/jpg, image/heic, image/heif) and the generic fallback picker
+// libraries use when they can't sniff a MIME type.
 const ALLOWED_MIMES = new Set([
-  'image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml',
+  'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',
+  'image/svg+xml', 'image/heic', 'image/heif',
   'application/pdf',
-  'video/mp4', 'video/quicktime', 'video/webm',
+  'video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/3gpp',
   'application/zip', 'application/x-zip-compressed',
+  'application/octet-stream',
 ]);
 
 const ALLOWED_TAGS = new Set(['logo', 'brand_kit', 'product_shot', 'video', 'document', 'other']);
@@ -29,11 +34,10 @@ function assertFileMeta({ file_name, file_type, file_size_bytes }) {
   if (!file_type || !ALLOWED_MIMES.has(file_type)) {
     throw new Error(`Unsupported file type: ${file_type}`);
   }
+  // Size may be 0 or missing on mobile (image picker omits it for some
+  // assets) — only reject negative values or ones over the cap.
   const size = Number(file_size_bytes);
-  if (!Number.isFinite(size) || size <= 0) {
-    throw new Error('file_size_bytes must be a positive number');
-  }
-  if (size > MAX_BYTES) {
+  if (Number.isFinite(size) && size > MAX_BYTES) {
     throw new Error(`File too large (max ${MAX_BYTES / 1024 / 1024} MB)`);
   }
 }

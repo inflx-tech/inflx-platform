@@ -76,6 +76,8 @@ const createAsset = asyncHandler(async (req, res) => {
   }
 
   const cleanTags = mediaService.sanitizeTags(tags);
+  const sizeNum = Number(file_size_bytes);
+  const sizeToStore = Number.isFinite(sizeNum) && sizeNum >= 0 ? sizeNum : 0;
 
   const { rows } = await db.query(
     `INSERT INTO brand_media_assets
@@ -84,7 +86,7 @@ const createAsset = asyncHandler(async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      RETURNING *`,
     [brandId, String(title).trim(), description || null, file_r2_key,
-     file_name, file_type, Number(file_size_bytes), cleanTags]
+     file_name, file_type, sizeToStore, cleanTags]
   );
 
   const asset = await _enrich(rows[0]);

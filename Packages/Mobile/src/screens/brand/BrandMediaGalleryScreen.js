@@ -119,9 +119,14 @@ function AssetsTab() {
   async function doUpload(file, title) {
     setUploading(true);
     try {
-      const fileName = file.fileName || `asset_${Date.now()}.${(file.type || 'application/octet-stream').split('/')[1] || 'bin'}`;
-      const fileType = file.type || 'application/octet-stream';
-      const fileSize = file.fileSize || 0;
+      // Image picker sometimes omits type/size on Android — derive safe
+      // defaults so backend validation doesn't reject the request.
+      const guessedType = (file.type && /^[a-z]+\/[a-z0-9.+-]+$/i.test(file.type))
+        ? file.type
+        : (/\.(mp4|mov|m4v)$/i.test(file.fileName || '') ? 'video/mp4' : 'image/jpeg');
+      const fileType = guessedType;
+      const fileName = file.fileName || `asset_${Date.now()}.${fileType.split('/')[1] || 'bin'}`;
+      const fileSize = Number(file.fileSize) || 0;
 
       const urlRes = await brandApi.getMediaUploadUrl({
         file_name: fileName,
@@ -134,9 +139,15 @@ function AssetsTab() {
       }
       const { url, method, key } = urlRes.data;
 
-      const putRes = await uploadFile(url, method, file.uri, fileName, fileType, key);
-      if (!putRes || (putRes.success === false)) {
-        Alert.alert('Upload failed', 'Could not upload file to storage');
+      let putRes;
+      try {
+        putRes = await uploadFile(url, method, file.uri, fileName, fileType, key);
+      } catch (e) {
+        Alert.alert('Upload failed', `Storage upload error: ${e.message || 'unknown'}`);
+        return;
+      }
+      if (!putRes || putRes.success === false) {
+        Alert.alert('Upload failed', 'Storage did not accept the file. Please try a different file.');
         return;
       }
 
