@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../../theme/tokens';
 import { authApi, influencerApi, brandApi } from '../../services/api';
 import { AuthContext } from '../../../App';
+import APP_ROLE from '../../config/appRole';
 
 export default function OTPScreen({ navigation, route }) {
   const { phone, role } = route.params;
@@ -114,6 +115,22 @@ export default function OTPScreen({ navigation, route }) {
     if (!res.success) { setError(res.error?.message || 'Invalid OTP'); return; }
 
     const { access_token, refresh_token, user } = res.data;
+
+    // Role guard — this APK is baked for a specific flavor. Refuse to log
+    // in a user whose registered role doesn't match the APK. Don't save
+    // anything to AsyncStorage in this branch so the app stays on the
+    // auth screen instead of silently routing to the wrong navigator.
+    if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer') && user.role !== APP_ROLE) {
+      const appLabel   = APP_ROLE === 'brand' ? 'Brand' : 'Influencer';
+      const otherLabel = user.role === 'brand' ? 'Brand'
+                       : user.role === 'influencer' ? 'Influencer'
+                       : user.role === 'follower' ? 'Follower'
+                       : user.role === 'admin' ? 'Admin (use the web dashboard)'
+                       : String(user.role || 'another role');
+      setError(`This phone is registered as ${otherLabel}. Please install the ${otherLabel === 'Admin (use the web dashboard)' ? 'admin web dashboard' : otherLabel + ' app'} — this is the ${appLabel} app.`);
+      return;
+    }
+
     await AsyncStorage.setItem('inflx_token', access_token);
     if (refresh_token) {
       await AsyncStorage.setItem('inflx_refresh_token', refresh_token);

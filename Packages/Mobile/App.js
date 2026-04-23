@@ -80,7 +80,21 @@ export default function App() {
         const userStr = await AsyncStorage.getItem('inflx_user');
         if (!token || !userStr) { setRole(''); return; }
         const user = JSON.parse(userStr);
-        setRole(user.role || '');
+        const storedRole = user.role || '';
+
+        // Role guard — this APK is baked for a specific flavor (brand /
+        // influencer / follower). If the logged-in user's role doesn't
+        // match the flavor (e.g. brand APK with an influencer account),
+        // clear the session and return to auth. Follower APKs accept any
+        // logged-in follower; follower flavor also serves unauthenticated
+        // browsing, so only guard brand + influencer flavors here.
+        if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer') && storedRole !== APP_ROLE) {
+          await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
+          setRole('');
+          return;
+        }
+
+        setRole(storedRole);
 
         // If we have a cached OneSignal player ID, send it to backend
         const playerId = await AsyncStorage.getItem('inflx_onesignal_player_id');
