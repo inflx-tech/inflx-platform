@@ -9,6 +9,7 @@ import BrandCampaignListScreen from '../screens/brand/BrandCampaignListScreen';
 import BrandWalletScreen from '../screens/brand/BrandWalletScreen';
 import BrandNotificationsScreen from '../screens/brand/BrandNotificationsScreen';
 import BrandProfileScreen from '../screens/brand/BrandProfileScreen';
+import BrandMediaGalleryScreen from '../screens/brand/BrandMediaGalleryScreen';
 import BrandCampaignDetailScreen from '../screens/brand/BrandCampaignDetailScreen';
 import BrandNegotiationScreen from '../screens/brand/BrandNegotiationScreen';
 import BrandContractScreen from '../screens/brand/BrandContractScreen';
@@ -55,6 +56,8 @@ function ProfileStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="BrandProfile" component={BrandProfileScreen} />
       <Stack.Screen name="Notifications" component={BrandNotificationsScreen} />
+      <Stack.Screen name="MediaGallery" component={BrandMediaGalleryScreen} />
+      <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
     </Stack.Navigator>
   );
 }

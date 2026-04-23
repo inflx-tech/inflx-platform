@@ -452,6 +452,11 @@ export default function BrandProfileScreen({ navigation }) {
             <Text style={styles.linkLabel}>Notifications</Text>
             <Text style={styles.linkArrow}>›</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('MediaGallery')}>
+            <Text style={styles.linkIcon}>[G]</Text>
+            <Text style={styles.linkLabel}>Media Gallery</Text>
+            <Text style={styles.linkArrow}>›</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>

@@ -175,6 +175,15 @@ export const brandApi = {
   getInfluencer:     (id) => api.get(`/influencers/${id}`),
   inviteInfluencer:  (campaignId, setId, data) => api.post(`/campaigns/${campaignId}/sets/${setId}/invite`, data),
   getCampaignSets:   (campaignId) => api.get(`/campaigns/${campaignId}/sets`),
+
+  // Media Gallery — brand asset library
+  listMediaAssets:        (tag)   => api.get(`/brands/me/media-assets${tag ? `?tag=${encodeURIComponent(tag)}` : ''}`),
+  getMediaUploadUrl:      (data)  => api.post('/brands/me/media-assets/upload-url', data),
+  createMediaAsset:       (data)  => api.post('/brands/me/media-assets', data),
+  getMediaDownloadUrl:    (id)    => api.get(`/brands/me/media-assets/${id}/download-url`),
+  updateMediaAsset:       (id, d) => api.patch(`/brands/me/media-assets/${id}`, d),
+  deleteMediaAsset:       (id)    => api.delete(`/brands/me/media-assets/${id}`),
+  listBrandContracts:     ()      => api.get('/brands/me/contracts'),
 };
 
 export const influencerApi = {
@@ -213,6 +222,7 @@ export const influencerApi = {
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
+  listMyContracts: () => api.get('/influencers/me/contracts'),
 
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),
