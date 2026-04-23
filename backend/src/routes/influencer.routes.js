@@ -5,6 +5,7 @@ const { authenticate, requireRole, requireApproved } = require('../middleware/au
 const ctrl = require('../controllers/influencer.controller');
 const offerCtrl = require('../controllers/offer.controller');
 const withdrawalCtrl = require('../controllers/withdrawal.controller');
+const mediaCtrl = require('../controllers/mediaAsset.controller');
 const { requireAnyAdminRole } = require('../middleware/auth');
 
 const router = Router();
@@ -43,6 +44,9 @@ router.get('/me/campaigns/:campaign_influencer_id/products', authenticate, requi
 
 // ── Store preview — influencer sees their store as followers see it ───────────
 router.get('/me/store-preview', authenticate, requireRole('influencer'), ctrl.storePreview);
+
+// ── Aggregate contracts list for the My Contracts gallery screen ─────────────
+router.get('/me/contracts', authenticate, requireRole('influencer'), mediaCtrl.listInfluencerContracts);
 
 // ── Public profile view (brand + admin) ──────────────────────────────────────
 router.get('/:id',            authenticate, requireRole('brand', 'admin'), ctrl.getPublicById);

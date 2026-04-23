@@ -1,0 +1,262 @@
+'use strict';
+
+/**
+ * mediaAsset.controller.js — Brand Media Gallery CRUD.
+ *
+ * The gallery backs two surfaces:
+ *   1. Standalone gallery UI (brand mobile + brand web) — browse/manage.
+ *   2. Campaign-creation upload pickers — brand picks an existing asset
+ *      to attach to a campaign, or uploads a new one (which lands here
+ *      first, then is referenced by the campaign).
+ *
+ * Contract PDFs are NOT stored as media assets. The gallery reads them
+ * directly from the contracts table via listBrandContracts /
+ * listInfluencerContracts below.
+ */
+
+const db = require('../config/db');
+const mediaService = require('../services/media.service');
+const { success } = require('../utils/response');
+const AppError = require('../utils/AppError');
+const asyncHandler = require('../utils/asyncHandler');
+
+async function resolveBrandId(userId) {
+  const { rows } = await db.query('SELECT id FROM brands WHERE user_id = $1', [userId]);
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  return rows[0].id;
+}
+
+async function resolveInfluencerId(userId) {
+  const { rows } = await db.query('SELECT id FROM influencers WHERE user_id = $1', [userId]);
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  return rows[0].id;
+}
+
+// POST /v1/brands/me/media-assets/upload-url
+// Body: { file_name, file_type, file_size_bytes }
+// Returns { url, method, key } — client PUTs the file directly to R2,
+// then calls POST /media-assets to persist the metadata row.
+const getUploadUrl = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const { file_name, file_type, file_size_bytes } = req.body || {};
+  try {
+    const result = await mediaService.generateAssetUploadUrl(brandId, {
+      file_name, file_type, file_size_bytes,
+    });
+    return success(res, result);
+  } catch (err) {
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+});
+
+// POST /v1/brands/me/media-assets
+// Body: { title, description?, file_r2_key, file_name, file_type, file_size_bytes, tags? }
+const createAsset = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const {
+    title, description, file_r2_key,
+    file_name, file_type, file_size_bytes, tags,
+  } = req.body || {};
+
+  if (!title || !String(title).trim()) {
+    throw new AppError('VALIDATION_ERROR', 'title is required', 422, 'title');
+  }
+  if (!file_r2_key || typeof file_r2_key !== 'string') {
+    throw new AppError('VALIDATION_ERROR', 'file_r2_key is required', 422, 'file_r2_key');
+  }
+  // Key must belong to this brand — prevents pointing at someone else's file.
+  if (!file_r2_key.startsWith(`brands/${brandId}/assets/`)) {
+    throw new AppError('VALIDATION_ERROR', 'file_r2_key must be in this brand\'s asset folder', 422, 'file_r2_key');
+  }
+
+  try {
+    mediaService.assertFileMeta({ file_name, file_type, file_size_bytes });
+  } catch (err) {
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+
+  const cleanTags = mediaService.sanitizeTags(tags);
+
+  const { rows } = await db.query(
+    `INSERT INTO brand_media_assets
+       (brand_id, title, description, file_r2_key,
+        file_name, file_type, file_size_bytes, tags)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     RETURNING *`,
+    [brandId, String(title).trim(), description || null, file_r2_key,
+     file_name, file_type, Number(file_size_bytes), cleanTags]
+  );
+
+  const asset = await _enrich(rows[0]);
+  return success(res, { asset }, 201);
+});
+
+// GET /v1/brands/me/media-assets?tag=logo
+const listAssets = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const tag = req.query.tag ? String(req.query.tag).toLowerCase().trim() : null;
+
+  const params = [brandId];
+  let where = 'WHERE brand_id = $1';
+  if (tag && mediaService.ALLOWED_TAGS.has(tag)) {
+    params.push(tag);
+    where += ` AND $${params.length} = ANY(tags)`;
+  }
+
+  const { rows } = await db.query(
+    `SELECT * FROM brand_media_assets
+      ${where}
+      ORDER BY uploaded_at DESC`,
+    params
+  );
+
+  const assets = await Promise.all(rows.map(_enrich));
+  return success(res, { assets });
+});
+
+// GET /v1/brands/me/media-assets/:id/download-url
+const getDownloadUrl = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const { rows } = await db.query(
+    `SELECT * FROM brand_media_assets WHERE id = $1 AND brand_id = $2`,
+    [req.params.id, brandId]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Asset not found', 404);
+
+  const url = await mediaService.generateAssetDownloadUrl(rows[0].file_r2_key);
+  return success(res, { url, expires_in: 3600 });
+});
+
+// PATCH /v1/brands/me/media-assets/:id
+// Body: { title?, description?, tags? }
+const updateAsset = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+
+  const fields = [];
+  const params = [];
+  if (typeof req.body?.title === 'string' && req.body.title.trim()) {
+    params.push(req.body.title.trim());
+    fields.push(`title = $${params.length}`);
+  }
+  if (req.body?.description !== undefined) {
+    params.push(req.body.description || null);
+    fields.push(`description = $${params.length}`);
+  }
+  if (Array.isArray(req.body?.tags)) {
+    params.push(mediaService.sanitizeTags(req.body.tags));
+    fields.push(`tags = $${params.length}`);
+  }
+  if (!fields.length) {
+    throw new AppError('VALIDATION_ERROR', 'No fields to update', 422);
+  }
+  params.push(req.params.id, brandId);
+
+  const { rows } = await db.query(
+    `UPDATE brand_media_assets
+        SET ${fields.join(', ')}
+      WHERE id = $${params.length - 1} AND brand_id = $${params.length}
+      RETURNING *`,
+    params
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Asset not found', 404);
+
+  const asset = await _enrich(rows[0]);
+  return success(res, { asset });
+});
+
+// DELETE /v1/brands/me/media-assets/:id
+// Best-effort R2 delete — if storage delete fails we still return 204 so
+// the row is gone; orphaned R2 objects can be garbage-collected later.
+const deleteAsset = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const { rows } = await db.query(
+    `DELETE FROM brand_media_assets
+      WHERE id = $1 AND brand_id = $2
+      RETURNING file_r2_key`,
+    [req.params.id, brandId]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  return res.status(204).end();
+});
+
+// ─── Aggregate contract lists for the Contracts gallery tab ─────────────────
+
+// GET /v1/brands/me/contracts
+const listBrandContracts = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const { rows } = await db.query(
+    `SELECT c.id,
+            c.status,
+            c.influencer_fee,
+            c.bonus_amount,
+            c.created_at,
+            c.brand_signed_at,
+            c.influencer_signed_at,
+            c.pdf_url,
+            c.pdf_generated_at,
+            camp.id              AS campaign_id,
+            camp.name            AS campaign_name,
+            cs.goal              AS campaign_goal,
+            inf.id               AS influencer_id,
+            inf.instagram_handle AS influencer_handle,
+            u.name               AS influencer_name
+       FROM contracts c
+       JOIN campaign_influencers ci ON ci.id = c.campaign_influencer_id
+       JOIN campaign_sets        cs ON cs.id = ci.set_id
+       JOIN campaigns          camp ON camp.id = cs.campaign_id
+       JOIN influencers         inf ON inf.id = ci.influencer_id
+       JOIN users                u  ON u.id  = inf.user_id
+      WHERE camp.brand_id = $1
+      ORDER BY c.created_at DESC`,
+    [brandId]
+  );
+  return success(res, { contracts: rows });
+});
+
+// GET /v1/influencers/me/contracts
+const listInfluencerContracts = asyncHandler(async (req, res) => {
+  const influencerId = await resolveInfluencerId(req.user.sub);
+  const { rows } = await db.query(
+    `SELECT c.id,
+            c.status,
+            c.influencer_fee,
+            c.bonus_amount,
+            c.created_at,
+            c.brand_signed_at,
+            c.influencer_signed_at,
+            c.pdf_url,
+            c.pdf_generated_at,
+            camp.id       AS campaign_id,
+            camp.name     AS campaign_name,
+            cs.goal       AS campaign_goal,
+            b.id          AS brand_id,
+            b.business_name AS brand_name
+       FROM contracts c
+       JOIN campaign_influencers ci ON ci.id = c.campaign_influencer_id
+       JOIN campaign_sets        cs ON cs.id = ci.set_id
+       JOIN campaigns          camp ON camp.id = cs.campaign_id
+       JOIN brands               b  ON b.id  = camp.brand_id
+      WHERE ci.influencer_id = $1
+      ORDER BY c.created_at DESC`,
+    [influencerId]
+  );
+  return success(res, { contracts: rows });
+});
+
+// ─── Internals ──────────────────────────────────────────────────────────────
+
+async function _enrich(row) {
+  const download_url = await mediaService.generateAssetDownloadUrl(row.file_r2_key);
+  return { ...row, download_url };
+}
+
+module.exports = {
+  getUploadUrl,
+  createAsset,
+  listAssets,
+  getDownloadUrl,
+  updateAsset,
+  deleteAsset,
+  listBrandContracts,
+  listInfluencerContracts,
+};

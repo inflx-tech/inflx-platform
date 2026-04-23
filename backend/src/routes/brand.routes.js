@@ -10,6 +10,7 @@ const enquiryCtrl = require('../controllers/enquiry.controller');
 const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
 const inboxCtrl = require('../controllers/brandInbox.controller');
+const mediaCtrl = require('../controllers/mediaAsset.controller');
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
@@ -71,6 +72,17 @@ router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.delet
 // Wallet sub-router — all routes under /brands/me/wallet/*
 // Auth is applied here so wallet routes don't need to repeat it
 router.use('/me/wallet', authenticate, requireRole('brand'), walletRoutes);
+
+// Media Gallery — brand asset library (logos, creatives, brand kits)
+router.post  ('/me/media-assets/upload-url',        authenticate, requireRole('brand'), mediaCtrl.getUploadUrl);
+router.get   ('/me/media-assets',                   authenticate, requireRole('brand'), mediaCtrl.listAssets);
+router.post  ('/me/media-assets',                   authenticate, requireRole('brand'), mediaCtrl.createAsset);
+router.get   ('/me/media-assets/:id/download-url',  authenticate, requireRole('brand'), mediaCtrl.getDownloadUrl);
+router.patch ('/me/media-assets/:id',               authenticate, requireRole('brand'), mediaCtrl.updateAsset);
+router.delete('/me/media-assets/:id',               authenticate, requireRole('brand'), mediaCtrl.deleteAsset);
+
+// Aggregate contracts list for the gallery Contracts tab
+router.get('/me/contracts', authenticate, requireRole('brand'), mediaCtrl.listBrandContracts);
 
 // Store preview — brand sees their store as followers see it
 router.get('/me/store-preview', authenticate, requireRole('brand'), ctrl.storePreview);
