@@ -556,6 +556,21 @@ export default function ProfileScreen({ navigation }) {
         </Text>
       </View>
 
+      {/* ── Documents ── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Documents</Text>
+        <TouchableOpacity
+          style={styles.docRow}
+          onPress={() => navigation.navigate('MyContracts')}>
+          <Text style={styles.docIcon}>📝</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.docLabel}>My Contracts</Text>
+            <Text style={styles.docHint}>All your signed contract PDFs in one place</Text>
+          </View>
+          <Text style={styles.docArrow}>›</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* ── Logout ── */}
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
         <Text style={styles.logoutText}>Logout</Text>
@@ -636,6 +651,13 @@ const styles = StyleSheet.create({
   settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   settingLabel: { fontSize: 14, fontWeight: '700', color: colors.t1 },
   settingDesc: { fontSize: 11, color: colors.t3, marginTop: 2 },
+
+  // Documents
+  docRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  docIcon: { fontSize: 22 },
+  docLabel: { fontSize: 14, fontWeight: '700', color: colors.t1 },
+  docHint: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  docArrow: { fontSize: 22, color: colors.t3, fontWeight: '300' },
 
   // Logout
   logoutBtn: { margin: 16, borderWidth: 1.5, borderColor: colors.red, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },

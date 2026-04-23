@@ -23,12 +23,24 @@ import BrandProfileScreen from '../screens/influencer/BrandProfileScreen';
 import CampaignProductsScreen from '../screens/influencer/CampaignProductsScreen';
 import MyStoreScreen from '../screens/influencer/MyStoreScreen';
 import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
+import InfluencerContractsScreen from '../screens/influencer/InfluencerContractsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const HomeStack = createNativeStackNavigator();
 const CampaignsStack = createNativeStackNavigator();
 const EarningsStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator();
+
+function ProfileStackNav() {
+  return (
+    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
+      <ProfileStack.Screen name="MyContracts" component={InfluencerContractsScreen} />
+      <ProfileStack.Screen name="ContractPdf" component={ContractPdfScreen} />
+    </ProfileStack.Navigator>
+  );
+}
 
 function HomeStackNav() {
   return (
@@ -113,7 +125,7 @@ export default function InfluencerNavigator() {
       <Tab.Screen name="Offers" component={OffersStack} options={tabIcon('📩', 'Offers')} />
       <Tab.Screen name="Campaigns" component={CampaignsStackNav} options={tabIcon('📋', 'Campaigns')} />
       <Tab.Screen name="Earnings" component={EarningsStackNav} options={tabIcon('💰', 'Earnings')} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={tabIcon('👤', 'Profile')} />
+      <Tab.Screen name="Profile" component={ProfileStackNav} options={tabIcon('👤', 'Profile')} />
     </Tab.Navigator>
   );
 }
