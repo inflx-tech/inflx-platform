@@ -11,6 +11,7 @@ const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
 const inboxCtrl = require('../controllers/brandInbox.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
+const linkCtrl = require('../controllers/referenceLink.controller');
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
@@ -75,11 +76,19 @@ router.use('/me/wallet', authenticate, requireRole('brand'), walletRoutes);
 
 // Media Gallery — brand asset library (logos, creatives, brand kits)
 router.post  ('/me/media-assets/upload-url',        authenticate, requireRole('brand'), mediaCtrl.getUploadUrl);
+router.get   ('/me/media-assets/usage',             authenticate, requireRole('brand'), mediaCtrl.getUsage);
 router.get   ('/me/media-assets',                   authenticate, requireRole('brand'), mediaCtrl.listAssets);
 router.post  ('/me/media-assets',                   authenticate, requireRole('brand'), mediaCtrl.createAsset);
 router.get   ('/me/media-assets/:id/download-url',  authenticate, requireRole('brand'), mediaCtrl.getDownloadUrl);
 router.patch ('/me/media-assets/:id',               authenticate, requireRole('brand'), mediaCtrl.updateAsset);
 router.delete('/me/media-assets/:id',               authenticate, requireRole('brand'), mediaCtrl.deleteAsset);
+
+// Reference Links — URLs (YouTube / Drive / Figma / Notion) kept alongside
+// uploaded assets. Zero storage cost — only the URL is persisted.
+router.get   ('/me/reference-links',      authenticate, requireRole('brand'), linkCtrl.listLinks);
+router.post  ('/me/reference-links',      authenticate, requireRole('brand'), linkCtrl.createLink);
+router.patch ('/me/reference-links/:id',  authenticate, requireRole('brand'), linkCtrl.updateLink);
+router.delete('/me/reference-links/:id',  authenticate, requireRole('brand'), linkCtrl.deleteLink);
 
 // Aggregate contracts list for the gallery Contracts tab
 router.get('/me/contracts', authenticate, requireRole('brand'), mediaCtrl.listBrandContracts);

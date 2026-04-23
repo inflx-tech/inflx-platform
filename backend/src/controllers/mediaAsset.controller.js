@@ -26,6 +26,20 @@ async function resolveBrandId(userId) {
   return rows[0].id;
 }
 
+async function getBrandQuotaBytes(brandId) {
+  const { rows } = await db.query('SELECT storage_quota_bytes FROM brands WHERE id = $1', [brandId]);
+  const q = Number(rows[0]?.storage_quota_bytes);
+  return Number.isFinite(q) && q > 0 ? q : 500 * 1024 * 1024;
+}
+
+async function getUsedBytes(brandId) {
+  const { rows } = await db.query(
+    `SELECT COALESCE(SUM(file_size_bytes), 0) AS used FROM brand_media_assets WHERE brand_id = $1`,
+    [brandId]
+  );
+  return Number(rows[0]?.used || 0);
+}
+
 async function resolveInfluencerId(userId) {
   const { rows } = await db.query('SELECT id FROM influencers WHERE user_id = $1', [userId]);
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
@@ -36,17 +50,49 @@ async function resolveInfluencerId(userId) {
 // Body: { file_name, file_type, file_size_bytes }
 // Returns { url, method, key } — client PUTs the file directly to R2,
 // then calls POST /media-assets to persist the metadata row.
+//
+// Enforces the brand's storage quota. Projected usage (current + this
+// file) must not exceed brands.storage_quota_bytes. Returns 413 with
+// QUOTA_EXCEEDED when over, so the client can prompt the brand to
+// delete unused assets or ask admin for an increase.
 const getUploadUrl = asyncHandler(async (req, res) => {
   const brandId = await resolveBrandId(req.user.sub);
   const { file_name, file_type, file_size_bytes } = req.body || {};
   try {
-    const result = await mediaService.generateAssetUploadUrl(brandId, {
-      file_name, file_type, file_size_bytes,
-    });
-    return success(res, result);
+    mediaService.assertFileMeta({ file_name, file_type, file_size_bytes });
   } catch (err) {
     throw new AppError('VALIDATION_ERROR', err.message, 422);
   }
+
+  const quota = await getBrandQuotaBytes(brandId);
+  const used  = await getUsedBytes(brandId);
+  const incoming = Math.max(0, Number(file_size_bytes) || 0);
+  if (used + incoming > quota) {
+    const remainingMb = Math.max(0, Math.floor((quota - used) / (1024 * 1024)));
+    throw new AppError(
+      'QUOTA_EXCEEDED',
+      `Storage limit reached. ${remainingMb} MB free out of ${Math.floor(quota / (1024 * 1024))} MB. Delete unused assets or contact support for more space.`,
+      413
+    );
+  }
+
+  const result = await mediaService.generateAssetUploadUrl(brandId, {
+    file_name, file_type, file_size_bytes,
+  });
+  return success(res, result);
+});
+
+// GET /v1/brands/me/media-assets/usage
+const getUsage = asyncHandler(async (req, res) => {
+  const brandId = await resolveBrandId(req.user.sub);
+  const quota = await getBrandQuotaBytes(brandId);
+  const used  = await getUsedBytes(brandId);
+  return success(res, {
+    quota_bytes:     quota,
+    used_bytes:      used,
+    remaining_bytes: Math.max(0, quota - used),
+    used_pct:        quota > 0 ? Math.min(100, Math.round((used / quota) * 100)) : 0,
+  });
 });
 
 // POST /v1/brands/me/media-assets
@@ -254,6 +300,7 @@ async function _enrich(row) {
 
 module.exports = {
   getUploadUrl,
+  getUsage,
   createAsset,
   listAssets,
   getDownloadUrl,

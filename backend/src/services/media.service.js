@@ -9,18 +9,16 @@
 const crypto = require('crypto');
 const storageService = require('./storage.service');
 
-const MAX_BYTES = 50 * 1024 * 1024; // 50 MB per file
+const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file
 
-// Whitelist of accepted MIMEs. Kept broad enough for typical brand-kit
-// assets: logos, creatives, reference videos, packaged brand-kit archives.
-// Also covers the variants React Native image pickers sometimes report
-// (image/jpg, image/heic, image/heif) and the generic fallback picker
-// libraries use when they can't sniff a MIME type.
+// Whitelist of accepted MIMEs. Images + documents only — videos are
+// intentionally blocked because R2 storage cost scales with MB and brands
+// usually have video assets already hosted on YouTube/Drive. Use a
+// Reference Link (URL, zero storage cost) for video references instead.
 const ALLOWED_MIMES = new Set([
   'image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif',
   'image/svg+xml', 'image/heic', 'image/heif',
   'application/pdf',
-  'video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/3gpp',
   'application/zip', 'application/x-zip-compressed',
   'application/octet-stream',
 ]);
@@ -32,6 +30,9 @@ function assertFileMeta({ file_name, file_type, file_size_bytes }) {
     throw new Error('file_name is required');
   }
   if (!file_type || !ALLOWED_MIMES.has(file_type)) {
+    if ((file_type || '').startsWith('video/')) {
+      throw new Error('Videos are not accepted. Add a Reference Link to your YouTube / Drive URL instead.');
+    }
     throw new Error(`Unsupported file type: ${file_type}`);
   }
   // Size may be 0 or missing on mobile (image picker omits it for some
