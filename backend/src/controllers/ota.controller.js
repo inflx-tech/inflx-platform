@@ -21,7 +21,7 @@
  *        cache; MainApplication.kt picks it up on next launch.
  */
 
-const { S3Client, PutObjectCommand, GetObjectCommand, PutBucketCorsCommand, GetBucketCorsCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl }                                 = require('@aws-sdk/s3-request-presigner');
 const crypto      = require('crypto');
 const env         = require('../config/env');
@@ -190,66 +190,4 @@ const publish = asyncHandler(async (req, res) => {
   }, 201);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /v1/ota/configure-r2-cors
-// Header: X-OTA-Token
-//
-// One-time maintenance endpoint — applies a CORS policy to the R2 bucket
-// so the brand-web / admin-web can PUT directly to presigned URLs from
-// the browser. Without this, browser uploads fail with "Failed to fetch"
-// because R2's preflight OPTIONS returns no Access-Control-* headers.
-// Safe to call repeatedly (PutBucketCors is idempotent).
-// ─────────────────────────────────────────────────────────────────────────────
-const configureR2Cors = asyncHandler(async (req, res) => {
-  const token = req.get('x-ota-token') || '';
-  if (!env.OTA_PUBLISH_TOKEN || token !== env.OTA_PUBLISH_TOKEN) {
-    throw new AppError('UNAUTHORIZED', 'Invalid or missing X-OTA-Token', 401);
-  }
-
-  const extraOrigins = Array.isArray(req.body?.extra_origins) ? req.body.extra_origins : [];
-
-  const corsConfig = {
-    CORSRules: [
-      {
-        AllowedOrigins: [
-          'https://inflx.in',
-          'https://www.inflx.in',
-          'https://brand.inflx.in',
-          'https://admin.inflx.in',
-          'https://*.vercel.app',
-          'http://localhost:3000',
-          'http://localhost:3002',
-          'http://localhost:3003',
-          ...extraOrigins,
-        ],
-        AllowedMethods: ['GET', 'PUT', 'HEAD'],
-        AllowedHeaders: ['*'],
-        ExposeHeaders: ['ETag', 'Content-Length', 'Content-Type'],
-        MaxAgeSeconds: 3600,
-      },
-    ],
-  };
-
-  try {
-    await r2().send(new PutBucketCorsCommand({
-      Bucket: env.R2_BUCKET,
-      CORSConfiguration: corsConfig,
-    }));
-  } catch (err) {
-    throw new AppError(
-      'R2_CORS_FAILED',
-      `PutBucketCors failed: ${err.name || ''} ${err.message || ''} (http ${err.$metadata?.httpStatusCode || '?'})`,
-      500
-    );
-  }
-
-  let verify;
-  try {
-    verify = await r2().send(new GetBucketCorsCommand({ Bucket: env.R2_BUCKET }));
-  } catch (err) {
-    return success(res, { bucket: env.R2_BUCKET, cors_rules: null, verify_error: err.message });
-  }
-  return success(res, { bucket: env.R2_BUCKET, cors_rules: verify.CORSRules });
-});
-
-module.exports = { getManifest, publish, configureR2Cors };
+module.exports = { getManifest, publish };

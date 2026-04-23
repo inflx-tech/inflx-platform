@@ -9,7 +9,7 @@
 
 const { Router } = require('express');
 const express    = require('express');
-const { getManifest, publish, configureR2Cors } = require('../controllers/ota.controller');
+const { getManifest, publish } = require('../controllers/ota.controller');
 
 const router = Router();
 
@@ -18,8 +18,5 @@ const router = Router();
 router.post('/publish', express.json({ limit: '20mb' }), publish);
 
 router.get('/manifest', getManifest);
-
-// Maintenance: apply R2 bucket CORS policy. Token-gated like /publish.
-router.post('/configure-r2-cors', configureR2Cors);
 
 module.exports = router;
