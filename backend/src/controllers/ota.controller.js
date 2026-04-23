@@ -230,12 +230,25 @@ const configureR2Cors = asyncHandler(async (req, res) => {
     ],
   };
 
-  await r2().send(new PutBucketCorsCommand({
-    Bucket: env.R2_BUCKET,
-    CORSConfiguration: corsConfig,
-  }));
+  try {
+    await r2().send(new PutBucketCorsCommand({
+      Bucket: env.R2_BUCKET,
+      CORSConfiguration: corsConfig,
+    }));
+  } catch (err) {
+    throw new AppError(
+      'R2_CORS_FAILED',
+      `PutBucketCors failed: ${err.name || ''} ${err.message || ''} (http ${err.$metadata?.httpStatusCode || '?'})`,
+      500
+    );
+  }
 
-  const verify = await r2().send(new GetBucketCorsCommand({ Bucket: env.R2_BUCKET }));
+  let verify;
+  try {
+    verify = await r2().send(new GetBucketCorsCommand({ Bucket: env.R2_BUCKET }));
+  } catch (err) {
+    return success(res, { bucket: env.R2_BUCKET, cors_rules: null, verify_error: err.message });
+  }
   return success(res, { bucket: env.R2_BUCKET, cors_rules: verify.CORSRules });
 });
 
