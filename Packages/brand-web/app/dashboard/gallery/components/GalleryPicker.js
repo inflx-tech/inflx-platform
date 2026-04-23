@@ -2,6 +2,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { mediaGalleryApi, uploadFileToGallery } from '../../../../lib/api';
 
+const ACCEPT_FILE_TYPES = 'image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/heic,image/heif,application/pdf,application/zip';
+
 const TAG_OPTIONS = [
   { value: 'logo',         label: 'Logo' },
   { value: 'brand_kit',    label: 'Brand Kit' },
@@ -181,11 +183,12 @@ export default function GalleryPicker({ open, onClose, onSelect, multiple = true
                 className="border-2 border-dashed border-border rounded-xl p-10 text-center cursor-pointer hover:border-navy hover:bg-navy-pale/20 transition-colors">
                 <div className="text-4xl mb-2">☁️</div>
                 <div className="font-bold text-t1 mb-1">Click to select files</div>
-                <div className="text-xs text-t3">Images, video, PDF, ZIP · max 50 MB each</div>
+                <div className="text-xs text-t3">Images, PDF, ZIP · max 25 MB each. For videos, add a Reference Link in the Gallery.</div>
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple={multiple}
+                  accept={ACCEPT_FILE_TYPES}
                   className="hidden"
                   onChange={e => handleUpload(Array.from(e.target.files || []))}
                 />

@@ -1,7 +1,9 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { mediaGalleryApi, uploadFileToGallery } from '../../../lib/api';
+import { mediaGalleryApi, referenceLinkApi, uploadFileToGallery } from '../../../lib/api';
+
+const ACCEPT_FILE_TYPES = 'image/png,image/jpeg,image/jpg,image/webp,image/gif,image/svg+xml,image/heic,image/heif,application/pdf,application/zip';
 
 const TAG_OPTIONS = [
   { value: 'logo',         label: 'Logo' },
@@ -48,13 +50,13 @@ const STATUS_COLORS = {
 };
 
 export default function GalleryPage() {
-  const [tab, setTab] = useState('assets'); // 'assets' | 'contracts'
+  const [tab, setTab] = useState('assets'); // 'assets' | 'links' | 'contracts'
 
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-5">
         <h1 className="font-display text-xl font-bold text-t1">Media Gallery</h1>
-        <p className="text-xs text-t3 mt-0.5">Brand assets you share with influencers, plus all signed contracts in one place.</p>
+        <p className="text-xs text-t3 mt-0.5">Brand assets you share with influencers, links to external references, and every signed contract in one place.</p>
       </div>
 
       <div className="flex gap-1 mb-4 border-b border-border">
@@ -64,13 +66,45 @@ export default function GalleryPage() {
           Brand Assets
         </button>
         <button
+          onClick={() => setTab('links')}
+          className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${tab === 'links' ? 'border-navy text-navy' : 'border-transparent text-t3 hover:text-t1'}`}>
+          Reference Links
+        </button>
+        <button
           onClick={() => setTab('contracts')}
           className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${tab === 'contracts' ? 'border-navy text-navy' : 'border-transparent text-t3 hover:text-t1'}`}>
           Contracts
         </button>
       </div>
 
-      {tab === 'assets' ? <AssetsPanel /> : <ContractsPanel />}
+      {tab === 'assets'    ? <AssetsPanel /> :
+       tab === 'links'     ? <LinksPanel /> :
+       <ContractsPanel />}
+    </div>
+  );
+}
+
+function UsageBar({ usage }) {
+  if (!usage) return null;
+  const pct = usage.used_pct || 0;
+  const usedMb = (usage.used_bytes / (1024 * 1024)).toFixed(1);
+  const quotaMb = Math.floor(usage.quota_bytes / (1024 * 1024));
+  const remainingMb = Math.max(0, (usage.remaining_bytes / (1024 * 1024))).toFixed(0);
+  const barColor = pct >= 90 ? 'bg-red-500' : pct >= 75 ? 'bg-amber-500' : 'bg-navy';
+  return (
+    <div className="mb-4 p-3 bg-white rounded-xl border border-border">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs font-semibold text-t1">Storage: {usedMb} MB of {quotaMb} MB used</span>
+        <span className="text-[11px] text-t3">{remainingMb} MB free</span>
+      </div>
+      <div className="h-2 bg-surface2 rounded-full overflow-hidden">
+        <div className={`h-full ${barColor} transition-all`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+      {pct >= 90 && (
+        <div className="mt-2 text-[11px] text-red-700">
+          You're near the limit. Delete unused assets, or contact support to increase your quota.
+        </div>
+      )}
     </div>
   );
 }
@@ -82,13 +116,18 @@ function AssetsPanel() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [editingAsset, setEditingAsset] = useState(null);
+  const [usage, setUsage] = useState(null);
   const fileInputRef = useRef(null);
 
   async function load() {
     setLoading(true);
-    const res = await mediaGalleryApi.list(tagFilter ? { tag: tagFilter } : null);
+    const [assetsRes, usageRes] = await Promise.all([
+      mediaGalleryApi.list(tagFilter ? { tag: tagFilter } : null),
+      mediaGalleryApi.getUsage(),
+    ]);
     setLoading(false);
-    if (res.success) setAssets(res.data?.assets || []);
+    if (assetsRes.success) setAssets(assetsRes.data?.assets || []);
+    if (usageRes.success)  setUsage(usageRes.data);
   }
 
   useEffect(() => { load(); }, [tagFilter]);
@@ -113,6 +152,8 @@ function AssetsPanel() {
 
   return (
     <div>
+      <UsageBar usage={usage} />
+
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
@@ -142,6 +183,7 @@ function AssetsPanel() {
           ref={fileInputRef}
           type="file"
           multiple
+          accept={ACCEPT_FILE_TYPES}
           className="hidden"
           onChange={e => handleFiles(Array.from(e.target.files || []))}
         />
@@ -159,7 +201,7 @@ function AssetsPanel() {
         className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:border-navy hover:bg-navy-pale/20 transition-colors mb-5">
         <div className="text-2xl mb-1">☁️</div>
         <div className="text-sm font-semibold text-t1">Click or drag files here to upload</div>
-        <div className="text-[11px] text-t3">Images, video, PDF, ZIP · max 50 MB each</div>
+        <div className="text-[11px] text-t3">Images, PDF, ZIP · max 25 MB each. For videos, add a Reference Link instead.</div>
       </div>
 
       {/* Grid */}
@@ -290,6 +332,141 @@ function EditAssetModal({ asset, onClose, onSaved }) {
         <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
           <button onClick={onClose} className="px-4 py-2 bg-surface2 text-t2 font-semibold text-xs rounded-xl">Cancel</button>
           <button onClick={save} disabled={saving || !title.trim()} className="px-4 py-2 bg-navy text-white font-semibold text-xs rounded-xl disabled:opacity-40">
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LinksPanel() {
+  const [links, setLinks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null); // null = none, {} = new, {id} = edit
+
+  async function load() {
+    setLoading(true);
+    const res = await referenceLinkApi.list();
+    setLoading(false);
+    if (res.success) setLinks(res.data?.links || []);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleDelete(id) {
+    if (!confirm('Delete this link?')) return;
+    const res = await referenceLinkApi.delete(id);
+    if (res.success || res.ok || res.status === 204) load();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-xs text-t3">
+          URLs to YouTube videos, Drive folders, Figma files, etc. Zero storage cost — only the link is saved.
+        </div>
+        <button
+          onClick={() => setEditing({})}
+          className="px-4 py-2 bg-navy text-white font-semibold text-xs rounded-xl hover:bg-navy-deep">
+          + Add Link
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="p-8 text-center text-t3 text-sm">Loading…</div>
+      ) : links.length === 0 ? (
+        <div className="p-12 text-center bg-white rounded-xl border border-border">
+          <div className="text-4xl mb-2">🔗</div>
+          <div className="font-bold text-t1 mb-1">No reference links yet</div>
+          <div className="text-xs text-t3">Add YouTube reels, Drive folders, Figma files, Notion briefs — anything you'd normally share by link.</div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-border overflow-hidden">
+          {links.map(l => (
+            <div key={l.id} className="flex items-start gap-3 p-4 border-b border-border last:border-0 hover:bg-surface1/50">
+              <div className="text-xl flex-shrink-0">{iconForUrl(l.url)}</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-t1 truncate">{l.title}</div>
+                <a href={l.url} target="_blank" rel="noreferrer" className="text-[11px] text-navy hover:underline truncate block">{l.url}</a>
+                {l.description && <div className="text-[11px] text-t3 mt-1 line-clamp-2">{l.description}</div>}
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                <a href={l.url} target="_blank" rel="noreferrer" className="px-2 py-1 text-[11px] text-navy font-semibold hover:bg-navy-pale rounded">Open</a>
+                <button onClick={() => setEditing(l)} className="px-2 py-1 text-[11px] text-t3 hover:bg-surface2 rounded">Edit</button>
+                <button onClick={() => handleDelete(l.id)} className="px-2 py-1 text-[11px] text-red-600 hover:bg-red-50 rounded">Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editing && (
+        <LinkModal
+          link={editing.id ? editing : null}
+          onClose={() => setEditing(null)}
+          onSaved={() => { setEditing(null); load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function iconForUrl(url) {
+  const u = (url || '').toLowerCase();
+  if (u.includes('youtube.') || u.includes('youtu.be')) return '▶️';
+  if (u.includes('drive.google.') || u.includes('docs.google.')) return '📄';
+  if (u.includes('figma.com')) return '🎨';
+  if (u.includes('notion.')) return '📝';
+  if (u.includes('instagram.')) return '📷';
+  if (u.includes('dropbox.')) return '📦';
+  return '🔗';
+}
+
+function LinkModal({ link, onClose, onSaved }) {
+  const [title, setTitle] = useState(link?.title || '');
+  const [url, setUrl] = useState(link?.url || '');
+  const [description, setDescription] = useState(link?.description || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    const payload = { url, title, description: description || null };
+    const res = link?.id
+      ? await referenceLinkApi.update(link.id, payload)
+      : await referenceLinkApi.create(payload);
+    setSaving(false);
+    if (res.success) onSaved();
+    else setError(res.error?.message || 'Save failed');
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-border px-5 py-3">
+          <div className="font-display text-base font-bold text-t1">{link?.id ? 'Edit Link' : 'Add Reference Link'}</div>
+          <button onClick={onClose} className="text-t3 hover:text-t1 text-xl leading-none">×</button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-t2 block mb-1">Title</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Product launch hero video" className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-t2 block mb-1">URL</label>
+            <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://…" className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-t2 block mb-1">Description (optional)</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+          </div>
+          {error && <div className="text-xs text-red-600">{error}</div>}
+        </div>
+        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+          <button onClick={onClose} className="px-4 py-2 bg-surface2 text-t2 font-semibold text-xs rounded-xl">Cancel</button>
+          <button onClick={save} disabled={saving || !title.trim() || !url.trim()} className="px-4 py-2 bg-navy text-white font-semibold text-xs rounded-xl disabled:opacity-40">
             {saving ? 'Saving…' : 'Save'}
           </button>
         </div>

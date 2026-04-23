@@ -173,10 +173,18 @@ export const mediaGalleryApi = {
   getDownloadUrl: (id) => api.get(`/brands/me/media-assets/${id}/download-url`),
   update: (id, data) => api.patch(`/brands/me/media-assets/${id}`, data),
   delete: (id) => api.delete(`/brands/me/media-assets/${id}`),
+  getUsage: () => api.get('/brands/me/media-assets/usage'),
   // Aggregate contracts (for gallery Contracts tab)
   listContracts: () => api.get('/brands/me/contracts'),
   // Signed URL for contract PDF (reuses existing endpoint)
   contractPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
+};
+
+export const referenceLinkApi = {
+  list:    ()       => api.get('/brands/me/reference-links'),
+  create:  (data)   => api.post('/brands/me/reference-links', data),
+  update:  (id, d)  => api.patch(`/brands/me/reference-links/${id}`, d),
+  delete:  (id)     => api.delete(`/brands/me/reference-links/${id}`),
 };
 
 /**
