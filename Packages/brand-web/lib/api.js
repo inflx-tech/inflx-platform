@@ -165,6 +165,74 @@ export const influencerApi = {
   search: (params) => api.get(`/influencers/search${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
+export const mediaGalleryApi = {
+  // Asset library
+  list: (params) => api.get(`/brands/me/media-assets${params ? '?' + new URLSearchParams(params) : ''}`),
+  uploadUrl: (data) => api.post('/brands/me/media-assets/upload-url', data),
+  create: (data) => api.post('/brands/me/media-assets', data),
+  getDownloadUrl: (id) => api.get(`/brands/me/media-assets/${id}/download-url`),
+  update: (id, data) => api.patch(`/brands/me/media-assets/${id}`, data),
+  delete: (id) => api.delete(`/brands/me/media-assets/${id}`),
+  // Aggregate contracts (for gallery Contracts tab)
+  listContracts: () => api.get('/brands/me/contracts'),
+  // Signed URL for contract PDF (reuses existing endpoint)
+  contractPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
+};
+
+/**
+ * Upload a File to R2 using a presigned PUT URL + persist metadata.
+ * Returns { asset } on success or { error } on failure.
+ */
+export async function uploadFileToGallery(file, { title, description, tags }) {
+  if (!file) return { error: { message: 'No file provided' } };
+
+  const presign = await mediaGalleryApi.uploadUrl({
+    file_name: file.name,
+    file_type: file.type || 'application/octet-stream',
+    file_size_bytes: file.size,
+  });
+  if (!presign.success) return { error: presign.error || { message: 'Upload URL failed' } };
+
+  const { url, method, key } = presign.data;
+
+  try {
+    if (method === 'PUT') {
+      const putRes = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+      if (!putRes.ok) return { error: { message: `R2 upload failed (${putRes.status})` } };
+    } else {
+      // Mock mode — multipart POST to backend
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('key', key);
+      const token = getToken();
+      const postRes = await fetch(url, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (!postRes.ok) return { error: { message: `Mock upload failed (${postRes.status})` } };
+    }
+  } catch (err) {
+    return { error: { message: `Upload failed: ${err.message}` } };
+  }
+
+  const created = await mediaGalleryApi.create({
+    title: title || file.name,
+    description: description || null,
+    file_r2_key: key,
+    file_name: file.name,
+    file_type: file.type || 'application/octet-stream',
+    file_size_bytes: file.size,
+    tags: tags || [],
+  });
+  if (!created.success) return { error: created.error || { message: 'Create failed' } };
+  return { asset: created.data.asset };
+}
+
 export const deliverableApi = {
   get: (id) => api.get(`/deliverables/${id}`),
   getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),

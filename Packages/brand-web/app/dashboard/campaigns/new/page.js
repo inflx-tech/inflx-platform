@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { campaignApi, brandApi, influencerApi, fmtNum } from '../../../../lib/api';
+import GalleryPicker from '../../gallery/components/GalleryPicker';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const FORMATS = ['Instagram reel', 'Instagram stories', 'Instagram post', 'YouTube short', 'YouTube video'];
@@ -420,6 +421,9 @@ function NewCampaignPageInner() {
   const [sets, setSets] = useState([mkSet(0)]);
   const [activeSet, setActiveSet] = useState(0);
 
+  // Gallery picker — set-index this instance targets (null = closed)
+  const [galleryPickerSetIdx, setGalleryPickerSetIdx] = useState(null);
+
   // Products from API
   const [products, setProducts] = useState([]);
 
@@ -538,6 +542,17 @@ function NewCampaignPageInner() {
             brief: s.brief || '',
             coupon_prefix: s.coupon_prefix || '',
             formats: s.formats_json || [],
+            assets: (s.assets_json || []).map(a => ({
+              asset_id: a.asset_id || null,
+              title: a.title || a.file_name,
+              file_r2_key: a.file_r2_key,
+              file_name: a.file_name,
+              file_type: a.file_type,
+              file_size_bytes: a.file_size_bytes,
+              name: a.title || a.file_name,
+              icon: (a.file_type || '').startsWith('video') ? '🎬' : (a.file_type || '').startsWith('image') ? '🖼️' : '📄',
+              size: a.file_size_bytes ? `${(a.file_size_bytes / 1024).toFixed(0)} KB` : '',
+            })),
             influencers,
             group,
           };
@@ -823,6 +838,14 @@ function NewCampaignPageInner() {
         goal: s.goal,
         brief: s.brief || null,
         formats_json: s.formats,
+        assets_json: (s.assets || []).map(a => ({
+          asset_id: a.asset_id || a.id || null,
+          title: a.title || a.name || a.file_name || null,
+          file_r2_key: a.file_r2_key || null,
+          file_name: a.file_name || a.name || null,
+          file_type: a.file_type || null,
+          file_size_bytes: a.file_size_bytes || null,
+        })).filter(a => a.file_r2_key),
         influencer_mode: s.influencer_mode,
         window_start: s.window_start || null,
         window_end: s.window_end || null,
@@ -1298,23 +1321,25 @@ function NewCampaignPageInner() {
               <div className="assets-zone">
                 <div className="assets-hint">Logos, raw footage, brand guidelines, reference images</div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <label>
-                    <input type="file" multiple style={{ display: 'none' }} onChange={e => {
-                      const files = Array.from(e.target.files).map(f => ({ name: f.name, icon: f.type.startsWith('video') ? '🎬' : f.type.startsWith('image') ? '🖼️' : '📄', size: `${(f.size / 1024).toFixed(0)} KB` }));
-                      updateSet(si, { assets: [...set.assets, ...files] });
-                    }} />
-                    <span className="assets-btn">+ Upload files</span>
-                  </label>
+                  <span className="assets-btn" onClick={() => setGalleryPickerSetIdx(si)} style={{ cursor: 'pointer' }}>
+                    + Add from Gallery
+                  </span>
                 </div>
                 {set.assets.length > 0 && (
                   <div className="asset-chips">
-                    {set.assets.map((a, ai) => (
-                      <div key={ai} className="asset-chip">
-                        <span>{a.icon}</span><span>{a.name}</span>
-                        <span style={{ fontSize: 10, color: 'var(--t3)' }}>{a.size}</span>
-                        <span className="ax" onClick={() => updateSet(si, { assets: set.assets.filter((_, j) => j !== ai) })}>✕</span>
-                      </div>
-                    ))}
+                    {set.assets.map((a, ai) => {
+                      const mime = a.file_type || '';
+                      const icon = a.icon || (mime.startsWith('video') ? '🎬' : mime.startsWith('image') ? '🖼️' : '📄');
+                      const name = a.title || a.name || a.file_name;
+                      const size = a.size || (a.file_size_bytes ? `${(a.file_size_bytes / 1024).toFixed(0)} KB` : '');
+                      return (
+                        <div key={a.asset_id || a.id || ai} className="asset-chip">
+                          <span>{icon}</span><span>{name}</span>
+                          {size && <span style={{ fontSize: 10, color: 'var(--t3)' }}>{size}</span>}
+                          <span className="ax" onClick={() => updateSet(si, { assets: set.assets.filter((_, j) => j !== ai) })}>✕</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1865,6 +1890,35 @@ function NewCampaignPageInner() {
           </div>
         </div>
       )}
+
+      {/* Gallery picker for brand-assets section */}
+      <GalleryPicker
+        open={galleryPickerSetIdx !== null}
+        onClose={() => setGalleryPickerSetIdx(null)}
+        initialSelectedIds={galleryPickerSetIdx !== null ? (sets[galleryPickerSetIdx]?.assets || []).map(a => a.asset_id || a.id).filter(Boolean) : []}
+        onSelect={(picked) => {
+          if (galleryPickerSetIdx === null) return;
+          const si = galleryPickerSetIdx;
+          const current = sets[si]?.assets || [];
+          const existingKeys = new Set(current.map(a => a.file_r2_key).filter(Boolean));
+          const additions = picked
+            .filter(a => !existingKeys.has(a.file_r2_key))
+            .map(a => ({
+              asset_id: a.id,
+              title: a.title,
+              file_r2_key: a.file_r2_key,
+              file_name: a.file_name,
+              file_type: a.file_type,
+              file_size_bytes: a.file_size_bytes,
+              download_url: a.download_url,
+              // Legacy display fields so existing chip render keeps working
+              name: a.title,
+              icon: (a.file_type || '').startsWith('video') ? '🎬' : (a.file_type || '').startsWith('image') ? '🖼️' : '📄',
+              size: a.file_size_bytes ? `${(a.file_size_bytes / 1024).toFixed(0)} KB` : '',
+            }));
+          updateSet(si, { assets: [...current, ...additions] });
+        }}
+      />
     </div>
   );
 }
