@@ -178,11 +178,18 @@ export const brandApi = {
 
   // Media Gallery — brand asset library
   listMediaAssets:        (tag)   => api.get(`/brands/me/media-assets${tag ? `?tag=${encodeURIComponent(tag)}` : ''}`),
+  getMediaUsage:          ()      => api.get('/brands/me/media-assets/usage'),
   getMediaUploadUrl:      (data)  => api.post('/brands/me/media-assets/upload-url', data),
   createMediaAsset:       (data)  => api.post('/brands/me/media-assets', data),
   getMediaDownloadUrl:    (id)    => api.get(`/brands/me/media-assets/${id}/download-url`),
   updateMediaAsset:       (id, d) => api.patch(`/brands/me/media-assets/${id}`, d),
   deleteMediaAsset:       (id)    => api.delete(`/brands/me/media-assets/${id}`),
+  // Reference Links — URLs with no file storage
+  listReferenceLinks:     ()      => api.get('/brands/me/reference-links'),
+  createReferenceLink:    (data)  => api.post('/brands/me/reference-links', data),
+  updateReferenceLink:    (id, d) => api.patch(`/brands/me/reference-links/${id}`, d),
+  deleteReferenceLink:    (id)    => api.delete(`/brands/me/reference-links/${id}`),
+  // Aggregate contracts
   listBrandContracts:     ()      => api.get('/brands/me/contracts'),
 };
 
