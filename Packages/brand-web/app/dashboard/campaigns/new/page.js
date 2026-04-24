@@ -424,6 +424,9 @@ function NewCampaignPageInner() {
   // Gallery picker — set-index this instance targets (null = closed)
   const [galleryPickerSetIdx, setGalleryPickerSetIdx] = useState(null);
 
+  // Transient toast shown after duplicating a set
+  const [duplicateToast, setDuplicateToast] = useState(null);
+
   // Products from API
   const [products, setProducts] = useState([]);
 
@@ -772,14 +775,32 @@ function NewCampaignPageInner() {
   };
   const duplicateSet = (si) => {
     const idx = sets.length;
+    const source = sets[si];
+    const clone = JSON.parse(JSON.stringify(source));
+    // Strip every backend id so the save path inserts fresh rows for the
+    // new set + its influencers, instead of overwriting the original.
+    // Also reset per-influencer codes/flags that shouldn't carry over.
     const dup = {
-      ...JSON.parse(JSON.stringify(sets[si])),
+      ...clone,
       _id: Date.now(),
-      name: `Set ${String.fromCharCode(65 + idx)}`,
-      influencers: sets[si].influencers.map(inf => ({ ...inf, custom_code: '', edit_code: false })),
+      backendId: null,
+      name: `${source.name} (copy)`,
+      influencers: (source.influencers || []).map((inf, ii) => ({
+        ...JSON.parse(JSON.stringify(inf)),
+        backendId: null,
+        _id: Date.now() + ii + 1,
+        custom_code: '',
+        edit_code: false,
+      })),
     };
     setSets(prev => [...prev, dup]);
     setActiveSet(idx);
+    // Visible confirmation — brief banner so the click feels like it did
+    // something. Without this, the cloned form body looks identical to
+    // the original and users think the button is dead.
+    setError('');
+    setDuplicateToast(`Duplicated "${source.name}" → "${dup.name}". Edit the fields below to differ.`);
+    setTimeout(() => setDuplicateToast(null), 3500);
   };
 
   // ── Save draft ────────────────────────────────────────────────────────────────
@@ -1734,6 +1755,11 @@ function NewCampaignPageInner() {
                   <div className="bstrip-top"><span className="bstrip-lbl">Campaign budget</span><span className={`bstrip-val ${rem < 0 ? 'bv-over' : pct > 80 ? 'bv-warn' : 'bv-ok'}`}>₹{fmtN(rem)} of ₹{fmtN(totalBudget)} remaining</span></div>
                   <div className="bbar"><div className={`bfill ${rem < 0 ? 'over' : pct > 80 ? 'warn' : ''}`} style={{ width: `${pct}%` }} /></div>
                   <div className="bstrip-note">{rem < 0 ? <span style={{ color: 'var(--red)' }}>Over by ₹{fmtN(Math.abs(rem))}</span> : 'Distributed across engagement & hybrid sets'}</div>
+                </div>
+              )}
+              {duplicateToast && (
+                <div style={{ marginBottom: 12, padding: '10px 14px', background: 'var(--teal-l)', border: '1px solid var(--teal)', borderRadius: 10, fontSize: 12, fontWeight: 600, color: 'var(--teal)' }}>
+                  ✓ {duplicateToast}
                 </div>
               )}
               <div className="set-tabs">
