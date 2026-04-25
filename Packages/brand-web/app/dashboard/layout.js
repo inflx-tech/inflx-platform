@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { notificationApi, brandApi } from '../../lib/api';
+import { notificationApi, brandApi, authApi, tryRefreshToken } from '../../lib/api';
 
 const NAV = [
   { href: '/dashboard',             label: 'Dashboard',   icon: '🏠' },
@@ -31,6 +31,17 @@ export default function DashboardLayout({ children }) {
         // Re-sync cookie so middleware doesn't expire it before localStorage does
         document.cookie = `inflx_token=${token}; path=/; max-age=2592000`;
         setUser(u);
+
+        // Proactive refresh on cold start. The HttpOnly refresh cookie
+        // (30-day, rotating) is sent automatically because every fetch
+        // uses credentials: 'include'. If it's still valid we get a
+        // fresh access token before any data fetch hits the wire — no
+        // visible 401 → retry blink. If the refresh cookie is stale,
+        // the next API call will 401, the request wrapper will trigger
+        // clearSession, and the user lands on /login. Don't redirect
+        // here — the existing access token may still be valid for the
+        // remainder of its 15-minute window.
+        tryRefreshToken().catch(() => {});
       } catch { router.push('/login'); }
     }
   }, []);
@@ -48,7 +59,11 @@ export default function DashboardLayout({ children }) {
     });
   }, [pathname]);
 
-  function logout() {
+  async function logout() {
+    // Best-effort server-side revoke so a stolen refresh cookie can't
+    // be replayed. Don't block UX on it — even if the network call
+    // fails we still clear local state and redirect.
+    try { await authApi.logout(); } catch { /* ignore */ }
     localStorage.clear();
     document.cookie = 'inflx_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
     router.push('/login');

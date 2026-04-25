@@ -25,6 +25,9 @@ export function clearSession() {
 let isRefreshing = false;
 let refreshPromise = null;
 
+// Exposed (re-exported below as `tryRefreshToken`) so the dashboard layout
+// can fire a proactive refresh on cold start. Prevents the visible 401 →
+// retry blink and ensures the next data fetch lands with a fresh token.
 async function tryRefreshToken() {
   if (isRefreshing) return refreshPromise;
   isRefreshing = true;
@@ -93,7 +96,14 @@ export const api = {
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
   verifyOtp: (phone, otp, name) => api.post('/auth/verify-otp', { phone, otp, role: 'brand', ...(name && { name }) }),
+  // Server-side revoke. Backend clears the HttpOnly refresh cookie and
+  // marks the refresh token as used so it can't be replayed.
+  logout: () => api.post('/auth/logout'),
 };
+
+// Re-export tryRefreshToken so the dashboard layout can call it on mount
+// to proactively rotate the access token before any API request fires.
+export { tryRefreshToken };
 
 export const orderApi = {
   list: (params) => api.get(`/brands/me/orders${params ? '?' + new URLSearchParams(params) : ''}`),

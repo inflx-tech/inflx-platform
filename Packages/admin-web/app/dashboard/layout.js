@@ -2,6 +2,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { authApi, tryRefreshToken } from '../../lib/api';
 
 const NAV = [
   { section: 'OVERVIEW' },
@@ -29,8 +30,22 @@ export default function DashboardLayout({ children }) {
     if (typeof window !== 'undefined') {
       try {
         const u = JSON.parse(localStorage.getItem('inflx_user') || 'null');
-        if (!u || u.role !== 'admin') { router.push('/login'); return; }
+        const token = localStorage.getItem('inflx_token');
+        if (!u || u.role !== 'admin' || !token) { router.push('/login'); return; }
+        // Re-sync the cookie middleware reads — the access-token cookie
+        // is short-lived (15 min) but middleware only checks existence,
+        // so renew its lifetime to match the refresh window.
+        document.cookie = `inflx_token=${token}; path=/; max-age=2592000`;
         setUser(u);
+
+        // Proactive refresh on cold start. The HttpOnly refresh cookie
+        // is sent with credentials: 'include' on every fetch. If still
+        // valid (within 30 days) we get a fresh access token before any
+        // data fetch hits the wire — no 401 → retry blink. If it's
+        // expired, the next API call's 401 path runs clearSession()
+        // and the user lands on /login. We don't redirect from here so
+        // a momentary network hiccup doesn't kick a logged-in admin.
+        tryRefreshToken().catch(() => {});
       } catch { router.push('/login'); }
     }
   }, []);
@@ -49,7 +64,12 @@ export default function DashboardLayout({ children }) {
     fetchPending();
   }, []);
 
-  function logout() {
+  async function logout() {
+    // Best-effort server-side revoke. Backend clears the HttpOnly
+    // refresh cookie + marks the token used so it can't be replayed.
+    // Don't block the redirect on it — local state still gets cleared
+    // even if the network call fails.
+    try { await authApi.logout(); } catch { /* ignore */ }
     localStorage.clear();
     document.cookie = 'inflx_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
     router.push('/login');

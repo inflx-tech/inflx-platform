@@ -91,7 +91,14 @@ export const api = {
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
   verifyOtp: (phone, otp) => api.post('/auth/verify-otp', { phone, otp, role: 'admin' }),
+  // Server-side revoke. Backend clears the HttpOnly refresh cookie so
+  // a stolen cookie can't be replayed.
+  logout: () => api.post('/auth/logout'),
 };
+
+// Re-exported so the dashboard layout can fire a proactive refresh on
+// cold start, before any data fetch races against an expired token.
+export { tryRefreshToken };
 
 // Admin
 export const adminApi = {
