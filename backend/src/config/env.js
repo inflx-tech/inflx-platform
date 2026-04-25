@@ -73,6 +73,19 @@ module.exports = {
   // If unset in prod, the publish endpoint refuses all requests.
   OTA_PUBLISH_TOKEN: process.env.OTA_PUBLISH_TOKEN || '',
 
+  // Ingest endpoint — shared secret with the external Marketing Automation
+  // system. Sent in the X-Ingest-Token header on every push to
+  // /v1/internal/ingest/*. If unset in prod, the endpoints refuse all requests.
+  // In dev/test a fixed value is used so smoke tests work without configuration.
+  INFLX_INGEST_TOKEN: process.env.INFLX_INGEST_TOKEN ||
+    (process.env.NODE_ENV === 'production' ? '' : 'dev-ingest-token'),
+
+  // External-only ingest mode disables the in-platform Apify cron
+  // (apify-engagement-scrape). Set to 'external' once the marketing
+  // automation pipeline is the source of truth. Default 'internal' keeps
+  // existing behaviour.
+  APIFY_INGEST_MODE: process.env.APIFY_INGEST_MODE || 'internal',
+
   PLATFORM_FEE_PCT: parseFloat(process.env.PLATFORM_FEE_PCT || '8'),
   TDS_PCT: parseFloat(process.env.TDS_PCT || '10'),
   RETURN_WINDOW_DAYS: parseInt(process.env.RETURN_WINDOW_DAYS || '30', 10),

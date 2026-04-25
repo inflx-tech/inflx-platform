@@ -35,6 +35,9 @@ const otaRoutes = require('./ota.routes');
 // Webhooks
 const webhookRoutes = require('./webhook.routes');
 
+// Internal ingest (token-authenticated push from Marketing Automation)
+const ingestRoutes = require('./ingest.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional } = require('../middleware/auth');
@@ -43,6 +46,9 @@ const router = Router();
 
 // ── Webhooks (no auth — verified by signature) ───────────────────────────────
 router.use('/webhooks', webhookRoutes);
+
+// ── Internal ingest (X-Ingest-Token authenticated; not for end-users) ────────
+router.use('/internal/ingest', ingestRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
