@@ -182,6 +182,15 @@ export const brandApi = {
   dispatchProduction:          (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
   completeProduction:          (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
 
+  // Proposals (Phase Q) — brand side
+  getProposalSettings:    () => api.get('/brands/me/proposal-settings'),
+  updateProposalSettings: (data) => api.patch('/brands/me/proposal-settings', data),
+  listProposals:          (status) => api.get(`/brands/me/proposals${status ? `?status=${status}` : ''}`),
+  getProposal:            (id) => api.get(`/brands/me/proposals/${id}`),
+  acceptProposal:         (id) => api.post(`/brands/me/proposals/${id}/accept`),
+  rejectProposal:         (id, message) => api.post(`/brands/me/proposals/${id}/reject`, { message }),
+  counterProposal:        (id, terms, message) => api.post(`/brands/me/proposals/${id}/counter`, { counter_terms: terms, message }),
+
   // Media Gallery — brand asset library
   listMediaAssets:        (tag)   => api.get(`/brands/me/media-assets${tag ? `?tag=${encodeURIComponent(tag)}` : ''}`),
   getMediaUsage:          ()      => api.get('/brands/me/media-assets/usage'),
