@@ -1052,6 +1052,71 @@ const getAnalytics = asyncHandler(async (req, res) => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/production/queue — production events that need attention
+//
+// Surfaces three buckets:
+//   * proposed > 3 days       (brand never filled in details)
+//   * in_progress > 14 days   (shipment stuck, possibly lost)
+//   * reschedule limit hit    (either side has used 2 reschedules)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getProductionQueue = asyncHandler(async (req, res) => {
+  const RESCHEDULE_LIMIT = 2;
+
+  const { rows } = await db.query(
+    `SELECT pe.id,
+            pe.contract_id,
+            pe.mode,
+            pe.status,
+            pe.created_at,
+            pe.shipment_dispatched_at,
+            pe.shipment_courier,
+            pe.shipment_awb,
+            pe.visit_scheduled_at,
+            pe.reschedule_count_brand,
+            pe.reschedule_count_influencer,
+            EXTRACT(EPOCH FROM (NOW() - pe.created_at)) / 86400 AS days_since_created,
+            EXTRACT(EPOCH FROM (NOW() - pe.shipment_dispatched_at)) / 86400 AS days_since_dispatch,
+            camp.name AS campaign_name,
+            b.business_name AS brand_name,
+            inf_u.name AS influencer_name,
+            inf.instagram_handle AS influencer_handle
+     FROM   production_events pe
+     JOIN   contracts c ON c.id = pe.contract_id
+     JOIN   campaign_influencers ci ON ci.id = c.campaign_influencer_id
+     JOIN   campaign_sets cs ON cs.id = ci.set_id
+     JOIN   campaigns camp ON camp.id = cs.campaign_id
+     JOIN   brands b ON b.id = camp.brand_id
+     JOIN   influencers inf ON inf.id = ci.influencer_id
+     JOIN   users inf_u ON inf_u.id = inf.user_id
+     WHERE  pe.status NOT IN ('completed', 'cancelled')
+       AND  (
+              (pe.status = 'proposed'   AND pe.created_at < NOW() - INTERVAL '3 days')
+           OR (pe.status = 'in_progress' AND pe.shipment_dispatched_at < NOW() - INTERVAL '14 days')
+           OR pe.reschedule_count_brand >= $1
+           OR pe.reschedule_count_influencer >= $1
+            )
+     ORDER  BY pe.updated_at ASC`,
+    [RESCHEDULE_LIMIT]
+  );
+
+  const items = rows.map(r => {
+    const reasons = [];
+    if (r.status === 'proposed' && Number(r.days_since_created) >= 3) {
+      reasons.push(`Stale 'proposed' for ${Math.floor(r.days_since_created)}d`);
+    }
+    if (r.status === 'in_progress' && Number(r.days_since_dispatch || 0) >= 14) {
+      reasons.push(`Shipment unconfirmed for ${Math.floor(r.days_since_dispatch)}d`);
+    }
+    if (Number(r.reschedule_count_brand) >= RESCHEDULE_LIMIT) reasons.push('Brand reschedule limit reached');
+    if (Number(r.reschedule_count_influencer) >= RESCHEDULE_LIMIT) reasons.push('Influencer reschedule limit reached');
+    return { ...r, reasons };
+  });
+
+  return success(res, { items, total: items.length });
+});
+
 module.exports = {
   getBrandQueue,
   getInfluencerQueue,
@@ -1070,4 +1135,5 @@ module.exports = {
   processWithdrawal,
   getBrands,
   getAnalytics,
+  getProductionQueue,
 };

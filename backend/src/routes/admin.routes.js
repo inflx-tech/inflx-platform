@@ -49,6 +49,9 @@ router.post('/withdrawals/:id/process', authenticate, requireAdminRole('finance'
 // Analytics — any admin role
 router.get('/analytics', authenticate, requireAnyAdminRole, ctrl.getAnalytics);
 
+// Production queue — flag stuck production events to admin (Phase P.3)
+router.get('/production/queue', authenticate, requireAnyAdminRole, ctrl.getProductionQueue);
+
 // Influencer Instagram rescrape — already in influencer.routes.js (/influencers/:id/rescrape)
 
 module.exports = router;

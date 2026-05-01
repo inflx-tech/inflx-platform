@@ -12,6 +12,7 @@ const NAV = [
   { href: '/dashboard/approvals', label: 'Approvals', icon: '✅', badge: 'pending' },
   { href: '/dashboard/brands', label: 'Brands', icon: '🏢' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '⭐' },
+  { href: '/dashboard/production-queue', label: 'Production Queue', icon: '🚚' },
   { section: 'FINANCE' },
   { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒' },
   { href: '/dashboard/payouts', label: 'Payouts', icon: '💸' },

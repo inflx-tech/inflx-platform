@@ -20,6 +20,7 @@ const campaignStatusJob    = require('./campaign-status.job');
 const bookingReminderJob   = require('./booking-reminder.job');
 const lowWalletJob         = require('./low-wallet-alert.job');
 const negotiationExpiryJob = require('./negotiation-expiry.job');
+const productionReminderJob = require('./production-shipment-reminder.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -58,6 +59,10 @@ function startAllJobs() {
   // low-wallet-alert — 09:00 UTC daily
   cron.schedule('0 9 * * *', lowWalletJob.run);
 
+  // production-shipment-reminder — 09:30 IST daily; nudges influencers with
+  // unconfirmed shipments and flags 14+ day stalls for admin attention.
+  cron.schedule('30 9 * * *', productionReminderJob.run, { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -72,4 +77,5 @@ module.exports = {
   bookingReminderJob,
   lowWalletJob,
   negotiationExpiryJob,
+  productionReminderJob,
 };
