@@ -176,6 +176,12 @@ export const brandApi = {
   inviteInfluencer:  (campaignId, setId, data) => api.post(`/campaigns/${campaignId}/sets/${setId}/invite`, data),
   getCampaignSets:   (campaignId) => api.get(`/campaigns/${campaignId}/sets`),
 
+  // Production Coordination (Phase P) — brand side
+  getProduction:               (contractId) => api.get(`/contracts/${contractId}/production`),
+  setProductionVisitDetails:   (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
+  dispatchProduction:          (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
+  completeProduction:          (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
+
   // Media Gallery — brand asset library
   listMediaAssets:        (tag)   => api.get(`/brands/me/media-assets${tag ? `?tag=${encodeURIComponent(tag)}` : ''}`),
   getMediaUsage:          ()      => api.get('/brands/me/media-assets/usage'),
@@ -230,6 +236,13 @@ export const influencerApi = {
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   getBrandPublicProfile: (brandId) => api.get(`/brands/${brandId}/public`),
   listMyContracts: () => api.get('/influencers/me/contracts'),
+
+  // Production Coordination (Phase P) — influencer side
+  getProduction:                (contractId) => api.get(`/contracts/${contractId}/production`),
+  acceptProduction:             (eventId)         => api.post(`/production-events/${eventId}/accept`),
+  counterProposeProduction:     (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),
+  confirmProductionReceived:    (eventId, data)   => api.post(`/production-events/${eventId}/confirm-received`, data),
+  completeProduction:           (eventId, data)   => api.post(`/production-events/${eventId}/complete`, data),
 
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),

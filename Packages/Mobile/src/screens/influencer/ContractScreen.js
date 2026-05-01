@@ -533,11 +533,317 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         )}
 
+        {/* ── Production coordination (visible after activation) ─────────── */}
+        {fullyActive && <InfluencerProductionPanel contractId={contract.id} />}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
 }
+
+// ─── Production Panel (influencer side) ──────────────────────────────────────
+
+function InfluencerProductionPanel({ contractId }) {
+  const [event, setEvent]  = useState(null);
+  const [mode, setMode]    = useState(null);
+  const [log, setLog]      = useState([]);
+  const [loading, setLoad] = useState(true);
+  const [busy, setBusy]    = useState(false);
+
+  const [counterDate, setCounterDate]     = useState('');
+  const [counterTime, setCounterTime]     = useState('');
+  const [counterAddress, setCounterAddress] = useState('');
+  const [counterNotes, setCounterNotes]   = useState('');
+  const [counterOpen, setCounterOpen]     = useState(false);
+
+  async function load() {
+    setLoad(true);
+    const res = await influencerApi.getProduction(contractId);
+    setLoad(false);
+    if (res.success) {
+      setEvent(res.data?.production_event || null);
+      setMode(res.data?.production_mode || null);
+      setLog(res.data?.log || []);
+    }
+  }
+  useEffect(() => { load(); }, [contractId]);
+
+  async function handleAccept() {
+    if (!event) return;
+    setBusy(true);
+    const res = await influencerApi.acceptProduction(event.id);
+    setBusy(false);
+    if (res.success) load();
+    else Alert.alert('Failed', res.error?.message || 'Could not accept');
+  }
+
+  async function handleCounter() {
+    if (!event) return;
+    if (event.mode === 'visit') {
+      if (!counterDate) { Alert.alert('Missing', 'Pick an alternative date'); return; }
+    } else if (event.mode === 'shipment') {
+      if (!counterAddress.trim()) { Alert.alert('Missing', 'Enter the new address'); return; }
+    }
+    setBusy(true);
+    const body = event.mode === 'visit'
+      ? {
+          visit_scheduled_at: counterDate ? new Date(`${counterDate}T${counterTime || '11:00'}:00`).toISOString() : null,
+          visit_address: counterAddress.trim() || undefined,
+          notes: counterNotes.trim() || undefined,
+        }
+      : {
+          shipment_to_address_line: counterAddress.trim(),
+          notes: counterNotes.trim() || undefined,
+        };
+    const res = await influencerApi.counterProposeProduction(event.id, body);
+    setBusy(false);
+    if (res.success) {
+      setCounterOpen(false);
+      load();
+    } else {
+      Alert.alert('Failed', res.error?.message || 'Could not counter-propose');
+    }
+  }
+
+  async function handleConfirmReceived() {
+    if (!event) return;
+    Alert.alert('Confirm package received?', 'This signals the brand that the shipment arrived.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Confirm', onPress: async () => {
+        setBusy(true);
+        const res = await influencerApi.confirmProductionReceived(event.id, {});
+        setBusy(false);
+        if (res.success) load();
+        else Alert.alert('Failed', res.error?.message || 'Could not confirm');
+      }},
+    ]);
+  }
+
+  async function handleMarkVisitDone() {
+    if (!event) return;
+    Alert.alert('Mark visit complete?', 'Signal the brand that the shoot is done.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Confirm', onPress: async () => {
+        setBusy(true);
+        const res = await influencerApi.completeProduction(event.id, {});
+        setBusy(false);
+        if (res.success) load();
+        else Alert.alert('Failed', res.error?.message || 'Could not complete');
+      }},
+    ]);
+  }
+
+  if (loading) return <View style={ipStyles.loading}><ActivityIndicator color={colors.navy} /></View>;
+  if (mode === 'remote' || !event) {
+    return (
+      <View style={ipStyles.remoteBox}>
+        <Text style={ipStyles.remoteTitle}>💻 Remote production</Text>
+        <Text style={ipStyles.remoteBody}>No coordination needed — you can start creating content directly from the brief.</Text>
+      </View>
+    );
+  }
+
+  const STATUS_PILL = {
+    proposed:    { bg: '#FFF4D6', fg: '#7A5500', label: 'Action needed' },
+    confirmed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Confirmed' },
+    in_progress: { bg: '#EEEDFE', fg: '#5C50C8', label: 'In transit' },
+    completed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Completed' },
+    cancelled:   { bg: '#FDEEE9', fg: '#E8401A', label: 'Cancelled' },
+  }[event.status] || { bg: colors.surface2, fg: colors.t2, label: event.status };
+
+  const visit = event.mode === 'visit';
+  const ship  = event.mode === 'shipment';
+
+  return (
+    <View style={ipStyles.panel}>
+      <View style={ipStyles.head}>
+        <Text style={ipStyles.title}>{visit ? '🏬 Visit Coordination' : '📦 Product Shipment'}</Text>
+        <View style={[ipStyles.pill, { backgroundColor: STATUS_PILL.bg }]}>
+          <Text style={[ipStyles.pillTxt, { color: STATUS_PILL.fg }]}>{STATUS_PILL.label}</Text>
+        </View>
+      </View>
+
+      {visit && (
+        <>
+          {event.visit_address ? (
+            <View style={ipStyles.detailBox}>
+              <Text style={ipStyles.label}>Address</Text>
+              <Text style={ipStyles.value}>{event.visit_address}{event.visit_city ? `, ${event.visit_city}` : ''}{event.visit_pincode ? ` ${event.visit_pincode}` : ''}</Text>
+              {event.visit_scheduled_at && (
+                <>
+                  <Text style={[ipStyles.label, { marginTop: 8 }]}>When</Text>
+                  <Text style={ipStyles.value}>
+                    {new Date(event.visit_scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {event.visit_window_minutes ? ` · ${event.visit_window_minutes} min window` : ''}
+                  </Text>
+                </>
+              )}
+              {(event.visit_contact_name || event.visit_contact_phone) && (
+                <>
+                  <Text style={[ipStyles.label, { marginTop: 8 }]}>Contact</Text>
+                  <Text style={ipStyles.value}>{event.visit_contact_name || ''} {event.visit_contact_phone ? `· ${event.visit_contact_phone}` : ''}</Text>
+                </>
+              )}
+            </View>
+          ) : (
+            <Text style={ipStyles.note}>The brand has not filled in visit details yet. You'll be notified once they do.</Text>
+          )}
+
+          {event.status === 'proposed' && event.visit_address && (
+            <>
+              <View style={ipStyles.actionRow}>
+                <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleAccept}>
+                  <Text style={ipStyles.primaryTxt}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[ipStyles.altBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={() => setCounterOpen(o => !o)}>
+                  <Text style={ipStyles.altTxt}>{counterOpen ? 'Cancel' : 'Suggest a change'}</Text>
+                </TouchableOpacity>
+              </View>
+              {counterOpen && (
+                <View style={ipStyles.counterBox}>
+                  <Text style={ipStyles.label}>Alternative date (YYYY-MM-DD)</Text>
+                  <TextInput style={ipStyles.input} value={counterDate} onChangeText={setCounterDate} placeholder="2026-04-29" placeholderTextColor={colors.t3} />
+                  <Text style={ipStyles.label}>Time (HH:MM 24h)</Text>
+                  <TextInput style={ipStyles.input} value={counterTime} onChangeText={setCounterTime} placeholder="14:30" placeholderTextColor={colors.t3} />
+                  <Text style={ipStyles.label}>Reason / notes (optional)</Text>
+                  <TextInput style={[ipStyles.input, { height: 60 }]} multiline value={counterNotes} onChangeText={setCounterNotes} placeholder="Already have another shoot at the proposed time…" placeholderTextColor={colors.t3} />
+                  <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleCounter}>
+                    <Text style={ipStyles.primaryTxt}>Send suggestion</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+          {event.status === 'confirmed' && (
+            <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleMarkVisitDone}>
+              <Text style={ipStyles.primaryTxt}>Visit done — mark complete</Text>
+            </TouchableOpacity>
+          )}
+          {event.status === 'completed' && (
+            <Text style={ipStyles.completeTxt}>✓ Visit complete — start creating your content.</Text>
+          )}
+          {event.reschedule_count_influencer > 0 && (
+            <Text style={ipStyles.smallNote}>You've used {event.reschedule_count_influencer} of 2 reschedules.</Text>
+          )}
+        </>
+      )}
+
+      {ship && (
+        <>
+          <View style={ipStyles.detailBox}>
+            <Text style={ipStyles.label}>Shipping to</Text>
+            <Text style={ipStyles.value}>
+              {[event.shipment_to_address_line, event.shipment_to_city, event.shipment_to_state, event.shipment_to_pincode].filter(Boolean).join(', ') || '— address pending —'}
+            </Text>
+          </View>
+
+          {event.status === 'proposed' && (
+            <>
+              <Text style={ipStyles.note}>The brand will ship to this address. Confirm or send a different one.</Text>
+              <View style={ipStyles.actionRow}>
+                <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleAccept}>
+                  <Text style={ipStyles.primaryTxt}>Confirm address</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[ipStyles.altBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={() => setCounterOpen(o => !o)}>
+                  <Text style={ipStyles.altTxt}>{counterOpen ? 'Cancel' : 'Use a different address'}</Text>
+                </TouchableOpacity>
+              </View>
+              {counterOpen && (
+                <View style={ipStyles.counterBox}>
+                  <Text style={ipStyles.label}>New address</Text>
+                  <TextInput style={[ipStyles.input, { height: 80 }]} multiline value={counterAddress} onChangeText={setCounterAddress} placeholder="Full shipping address with city + pincode" placeholderTextColor={colors.t3} />
+                  <Text style={ipStyles.label}>Notes (optional)</Text>
+                  <TextInput style={ipStyles.input} value={counterNotes} onChangeText={setCounterNotes} placeholder="Why you need a different address" placeholderTextColor={colors.t3} />
+                  <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleCounter}>
+                    <Text style={ipStyles.primaryTxt}>Send new address</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+          {event.status === 'confirmed' && (
+            <Text style={ipStyles.note}>Address confirmed. Brand will dispatch your package shortly.</Text>
+          )}
+          {event.status === 'in_progress' && (
+            <>
+              <View style={ipStyles.detailBox}>
+                <Text style={ipStyles.label}>Courier</Text>
+                <Text style={ipStyles.value}>{event.shipment_courier || '—'}</Text>
+                <Text style={[ipStyles.label, { marginTop: 6 }]}>Tracking</Text>
+                <Text style={ipStyles.value}>{event.shipment_awb || '—'}</Text>
+                {event.shipment_expected_at && (
+                  <>
+                    <Text style={[ipStyles.label, { marginTop: 6 }]}>Expected</Text>
+                    <Text style={ipStyles.value}>{new Date(event.shipment_expected_at).toLocaleDateString('en-IN')}</Text>
+                  </>
+                )}
+              </View>
+              <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleConfirmReceived}>
+                <Text style={ipStyles.primaryTxt}>Package received — confirm</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {event.status === 'completed' && (
+            <Text style={ipStyles.completeTxt}>✓ Package received — go ahead and create content.</Text>
+          )}
+        </>
+      )}
+
+      {/* History strip */}
+      {log.length > 0 && (
+        <View style={ipStyles.logBox}>
+          <Text style={ipStyles.logTitle}>History</Text>
+          {log.slice(-5).reverse().map(l => (
+            <Text key={l.id} style={ipStyles.logRow}>
+              <Text style={ipStyles.logTime}>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</Text>
+              {' · '}
+              <Text style={ipStyles.logActor}>{l.actor_role}</Text>
+              {' · '}
+              {(l.action || '').replace(/_/g, ' ')}{l.notes ? ` — ${l.notes}` : ''}
+            </Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const ipStyles = StyleSheet.create({
+  loading:      { padding: 24, alignItems: 'center' },
+  panel:        { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.navyPale, borderWidth: 1, borderColor: colors.border },
+  head:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  title:        { fontSize: 14, fontWeight: '800', color: colors.t1 },
+  pill:         { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  pillTxt:      { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+
+  remoteBox:    { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  remoteTitle:  { fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  remoteBody:   { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
+
+  detailBox:    { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
+  label:        { fontSize: 9, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 2 },
+  value:        { fontSize: 12, color: colors.t1 },
+  note:         { fontSize: 11, color: colors.t3, marginVertical: 6, lineHeight: 16 },
+  smallNote:    { fontSize: 10, color: colors.t3, marginTop: 6, textAlign: 'center' },
+
+  actionRow:    { flexDirection: 'row', gap: 8, marginTop: 8 },
+  primaryBtn:   { flex: 1, paddingVertical: 11, backgroundColor: colors.navy, borderRadius: 10, alignItems: 'center', marginTop: 8 },
+  primaryTxt:   { color: colors.white, fontSize: 12, fontWeight: '800' },
+  altBtn:       { flex: 1, paddingVertical: 11, backgroundColor: colors.surface2, borderRadius: 10, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: colors.border },
+  altTxt:       { color: colors.t2, fontSize: 12, fontWeight: '800' },
+
+  counterBox:   { marginTop: 10, padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
+  input:        { backgroundColor: colors.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9, fontSize: 12, color: colors.t1, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+
+  completeTxt:  { fontSize: 12, color: colors.tealDeep, fontWeight: '700', marginTop: 8, textAlign: 'center' },
+
+  logBox:       { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+  logTitle:     { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
+  logRow:       { fontSize: 10, color: colors.t2, marginBottom: 2 },
+  logTime:      { color: colors.t3 },
+  logActor:     { color: colors.t2, fontWeight: '700' },
+});
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 

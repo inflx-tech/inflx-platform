@@ -58,6 +58,7 @@ export default function BrandContractScreen({ route, navigation }) {
   const [bonusAmount, setBonusAmount] = useState('');
   const [extraNotes, setExtraNotes] = useState('');
   const [contentReq, setContentReq] = useState('');
+  const [productionMode, setProductionMode] = useState('remote');
 
   useEffect(() => { load(); }, []);
 
@@ -83,6 +84,7 @@ export default function BrandContractScreen({ route, navigation }) {
       setExtraNotes(parsed?.notes || '');
     }
     if (c.bonus_amount) setBonusAmount(String(c.bonus_amount));
+    if (c.production_mode) setProductionMode(c.production_mode);
 
     // Prefer saved text; fall back to backend-composed suggestion.
     const savedReq = (c.content_requirements || '').trim();
@@ -122,6 +124,7 @@ export default function BrandContractScreen({ route, navigation }) {
             custom_clauses:       { clauses, notes: extraNotes || null },
             bonus_amount:         bonus,
             content_requirements: contentReq || null,
+            production_mode:      productionMode,
           });
           setSubmitting(false);
           if (res.success) {
@@ -374,6 +377,29 @@ export default function BrandContractScreen({ route, navigation }) {
                 </View>
               </>
             )}
+
+            {/* Production mode — how will content actually get made? */}
+            <Text style={[styles.cardTitle, { marginTop: 16 }]}>How will the content be produced?</Text>
+            <View style={pmStyles.modeRow}>
+              {[
+                { v: 'visit',    label: 'Visit',    icon: '🏬' },
+                { v: 'shipment', label: 'Shipment', icon: '📦' },
+                { v: 'remote',   label: 'Remote',   icon: '💻' },
+              ].map(opt => (
+                <TouchableOpacity
+                  key={opt.v}
+                  style={[pmStyles.modeCard, productionMode === opt.v && pmStyles.modeCardActive]}
+                  onPress={() => setProductionMode(opt.v)}>
+                  <Text style={pmStyles.modeIcon}>{opt.icon}</Text>
+                  <Text style={[pmStyles.modeLabel, productionMode === opt.v && pmStyles.modeLabelActive]}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.helpText}>
+              {productionMode === 'visit'    ? "Influencer will visit your store / location. You'll fill in address + time after both parties sign."
+               : productionMode === 'shipment' ? "You'll ship product to the influencer. Address comes from their profile; you provide AWB after dispatch."
+               : "No physical exchange. Influencer creates content from your brief."}
+            </Text>
           </View>
         )}
 
@@ -477,6 +503,10 @@ export default function BrandContractScreen({ route, navigation }) {
             </Text>
           </View>
         )}
+
+        {/* Production coordination panel — visit form / shipment dispatch /
+            remote notice. Only relevant after contract activation. */}
+        {isActive && <BrandProductionPanel contractId={contract.id} />}
 
         {/* View Contract PDF — available once a contract row exists (any state) */}
         {contract?.id && (
@@ -594,4 +624,279 @@ const styles = StyleSheet.create({
     fontSize: 12, color: colors.t1, fontFamily: 'monospace',
     minHeight: 180, textAlignVertical: 'top',
   },
+});
+
+// ─── Production Panel ─────────────────────────────────────────────────────────
+
+function BrandProductionPanel({ contractId }) {
+  const [event, setEvent]   = useState(null);
+  const [mode, setMode]     = useState(null);
+  const [log, setLog]       = useState([]);
+  const [loading, setLoad]  = useState(true);
+  const [saving, setSave]   = useState(false);
+
+  const [vAddress, setVAddress] = useState('');
+  const [vCity, setVCity]       = useState('');
+  const [vPincode, setVPincode] = useState('');
+  const [vDate, setVDate]       = useState('');     // ISO yyyy-mm-dd
+  const [vTime, setVTime]       = useState('11:00');
+  const [vWindow, setVWindow]   = useState(60);
+  const [vName, setVName]       = useState('');
+  const [vPhone, setVPhone]     = useState('');
+
+  const [courier, setCourier] = useState('');
+  const [awb, setAwb]         = useState('');
+
+  async function load() {
+    setLoad(true);
+    const res = await brandApi.getProduction(contractId);
+    setLoad(false);
+    if (res.success) {
+      setEvent(res.data?.production_event || null);
+      setMode(res.data?.production_mode || null);
+      setLog(res.data?.log || []);
+      const e = res.data?.production_event;
+      if (e) {
+        setVAddress(e.visit_address || '');
+        setVCity(e.visit_city || '');
+        setVPincode(e.visit_pincode || '');
+        if (e.visit_scheduled_at) {
+          const d = new Date(e.visit_scheduled_at);
+          setVDate(d.toISOString().slice(0, 10));
+          setVTime(d.toTimeString().slice(0, 5));
+        }
+        if (e.visit_window_minutes) setVWindow(e.visit_window_minutes);
+        setVName(e.visit_contact_name || '');
+        setVPhone(e.visit_contact_phone || '');
+        setCourier(e.shipment_courier || '');
+        setAwb(e.shipment_awb || '');
+      }
+    }
+  }
+  useEffect(() => { load(); }, [contractId]);
+
+  async function saveVisitDetails() {
+    if (!vAddress.trim()) { Alert.alert('Missing', 'Address is required'); return; }
+    if (!vDate) { Alert.alert('Missing', 'Pick a date for the visit'); return; }
+    setSave(true);
+    const scheduled = new Date(`${vDate}T${vTime || '11:00'}:00`).toISOString();
+    const res = await brandApi.setProductionVisitDetails(contractId, {
+      visit_address: vAddress.trim(),
+      visit_city: vCity.trim() || null,
+      visit_pincode: vPincode.trim() || null,
+      visit_scheduled_at: scheduled,
+      visit_window_minutes: Number(vWindow) || null,
+      visit_contact_name:  vName.trim() || null,
+      visit_contact_phone: vPhone.trim() || null,
+    });
+    setSave(false);
+    if (res.success) load();
+    else Alert.alert('Failed', res.error?.message || 'Save failed');
+  }
+
+  async function saveDispatch() {
+    if (!event) return;
+    if (!courier.trim() || !awb.trim()) { Alert.alert('Missing', 'Courier and AWB are required'); return; }
+    setSave(true);
+    const res = await brandApi.dispatchProduction(event.id, {
+      courier: courier.trim(), awb: awb.trim(),
+    });
+    setSave(false);
+    if (res.success) load();
+    else Alert.alert('Failed', res.error?.message || 'Dispatch failed');
+  }
+
+  async function markVisitDone() {
+    if (!event) return;
+    Alert.alert('Mark visit complete?', 'This signals the influencer that the shoot is done.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Confirm', onPress: async () => {
+        setSave(true);
+        const res = await brandApi.completeProduction(event.id, {});
+        setSave(false);
+        if (res.success) load();
+        else Alert.alert('Failed', res.error?.message || 'Complete failed');
+      }},
+    ]);
+  }
+
+  if (loading) return <View style={pmStyles.loadingBox}><ActivityIndicator color={colors.navy} /></View>;
+  if (mode === 'remote' || !event) {
+    return (
+      <View style={pmStyles.remoteBox}>
+        <Text style={pmStyles.remoteTitle}>💻 Remote production</Text>
+        <Text style={pmStyles.remoteBody}>No physical exchange needed. The influencer will create content directly from your brief.</Text>
+      </View>
+    );
+  }
+
+  const STATUS_PILL = {
+    proposed:    { bg: '#FFF4D6', fg: '#7A5500', label: 'Awaiting influencer' },
+    confirmed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Confirmed' },
+    in_progress: { bg: '#EEEDFE', fg: '#5C50C8', label: 'In progress' },
+    completed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Completed' },
+    cancelled:   { bg: '#FDEEE9', fg: '#E8401A', label: 'Cancelled' },
+  }[event.status] || { bg: colors.surface2, fg: colors.t2, label: event.status };
+
+  return (
+    <View style={pmStyles.panel}>
+      <View style={pmStyles.panelHead}>
+        <Text style={pmStyles.panelTitle}>
+          {event.mode === 'visit' ? '🏬 Visit Coordination' : '📦 Product Shipment'}
+        </Text>
+        <View style={[pmStyles.statusPill, { backgroundColor: STATUS_PILL.bg }]}>
+          <Text style={[pmStyles.statusPillTxt, { color: STATUS_PILL.fg }]}>{STATUS_PILL.label}</Text>
+        </View>
+      </View>
+
+      {event.mode === 'visit' && (
+        <>
+          <Text style={pmStyles.fieldLabel}>Address</Text>
+          <TextInput style={pmStyles.input} value={vAddress} onChangeText={setVAddress} placeholder="Plot 42, Silicon Valley..." placeholderTextColor={colors.t3} />
+          <View style={pmStyles.row2}>
+            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vCity} onChangeText={setVCity} placeholder="City" placeholderTextColor={colors.t3} />
+            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPincode} onChangeText={setVPincode} placeholder="Pincode" keyboardType="numeric" placeholderTextColor={colors.t3} />
+          </View>
+          <View style={pmStyles.row2}>
+            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vDate} onChangeText={setVDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
+            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vTime} onChangeText={setVTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
+          </View>
+          <View style={pmStyles.windowRow}>
+            {[30, 60, 120, 240].map(m => (
+              <TouchableOpacity key={m} style={[pmStyles.windowChip, vWindow === m && pmStyles.windowChipActive]} onPress={() => setVWindow(m)}>
+                <Text style={[pmStyles.windowChipTxt, vWindow === m && pmStyles.windowChipTxtActive]}>
+                  {m < 60 ? `${m} min` : m === 240 ? 'Half day' : `${m / 60} hr`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View style={pmStyles.row2}>
+            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vName} onChangeText={setVName} placeholder="Contact name" placeholderTextColor={colors.t3} />
+            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPhone} onChangeText={setVPhone} placeholder="Contact phone" keyboardType="phone-pad" placeholderTextColor={colors.t3} />
+          </View>
+
+          <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={saveVisitDetails}>
+            <Text style={pmStyles.primaryBtnTxt}>
+              {saving ? 'Saving…' : event.visit_address ? 'Update visit details' : 'Send to influencer'}
+            </Text>
+          </TouchableOpacity>
+          {event.status === 'confirmed' && (
+            <TouchableOpacity style={[pmStyles.primaryBtnAlt, saving && { opacity: 0.6 }]} disabled={saving} onPress={markVisitDone}>
+              <Text style={pmStyles.primaryBtnAltTxt}>Mark visit done</Text>
+            </TouchableOpacity>
+          )}
+          {event.reschedule_count_brand > 0 && (
+            <Text style={pmStyles.smallNote}>Reschedules used: {event.reschedule_count_brand} of 2</Text>
+          )}
+        </>
+      )}
+
+      {event.mode === 'shipment' && (
+        <>
+          <View style={pmStyles.addrBox}>
+            <Text style={pmStyles.addrLabel}>Shipping to</Text>
+            <Text style={pmStyles.addrText}>
+              {[event.shipment_to_address_line, event.shipment_to_city, event.shipment_to_state, event.shipment_to_pincode].filter(Boolean).join(', ') || '— address pending —'}
+            </Text>
+          </View>
+
+          {event.status === 'proposed' && (
+            <Text style={pmStyles.smallNote}>Waiting for influencer to confirm address.</Text>
+          )}
+
+          {event.status === 'confirmed' && (
+            <>
+              <Text style={pmStyles.fieldLabel}>Courier</Text>
+              <TextInput style={pmStyles.input} value={courier} onChangeText={setCourier} placeholder="Bluedart / Delhivery / Shiprocket / DTDC" placeholderTextColor={colors.t3} />
+              <Text style={pmStyles.fieldLabel}>AWB / Tracking</Text>
+              <TextInput style={pmStyles.input} value={awb} onChangeText={setAwb} placeholder="Enter tracking number" placeholderTextColor={colors.t3} />
+              <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={saveDispatch}>
+                <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Marking…' : 'Mark as dispatched'}</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {event.status === 'in_progress' && (
+            <View style={pmStyles.statusBox}>
+              <Text style={pmStyles.statusLine}>Courier: {event.shipment_courier || '—'}</Text>
+              <Text style={pmStyles.statusLine}>AWB: {event.shipment_awb || '—'}</Text>
+              <Text style={[pmStyles.smallNote, { marginTop: 6 }]}>Awaiting influencer to confirm receipt.</Text>
+            </View>
+          )}
+
+          {event.status === 'completed' && (
+            <View style={pmStyles.completeBox}>
+              <Text style={pmStyles.completeTxt}>✓ Package received{event.shipment_received_confirmed_at ? ` on ${new Date(event.shipment_received_confirmed_at).toLocaleDateString('en-IN')}` : ''}.</Text>
+            </View>
+          )}
+        </>
+      )}
+
+      {/* Audit log */}
+      {log.length > 0 && (
+        <View style={pmStyles.logBox}>
+          <Text style={pmStyles.logTitle}>History</Text>
+          {log.slice(-5).reverse().map(l => (
+            <Text key={l.id} style={pmStyles.logRow}>
+              <Text style={pmStyles.logTime}>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</Text>
+              {' · '}
+              <Text style={pmStyles.logActor}>{l.actor_role}</Text>
+              {' · '}
+              {(l.action || '').replace(/_/g, ' ')}
+            </Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const pmStyles = StyleSheet.create({
+  loadingBox:    { padding: 24, alignItems: 'center' },
+  panel:         { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.navyPale, borderWidth: 1, borderColor: colors.border },
+  panelHead:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  panelTitle:    { fontSize: 14, fontWeight: '800', color: colors.t1 },
+  statusPill:    { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  statusPillTxt: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+
+  remoteBox:     { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
+  remoteTitle:   { fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  remoteBody:    { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
+
+  fieldLabel:    { fontSize: 11, fontWeight: '700', color: colors.t2, marginTop: 10, marginBottom: 4 },
+  input:         { backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 10, fontSize: 12, color: colors.t1, marginBottom: 6 },
+  row2:          { flexDirection: 'row', gap: 8 },
+  windowRow:     { flexDirection: 'row', gap: 6, marginVertical: 8, flexWrap: 'wrap' },
+  windowChip:    { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
+  windowChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
+  windowChipTxt: { fontSize: 11, fontWeight: '700', color: colors.t2 },
+  windowChipTxtActive: { color: colors.white },
+
+  primaryBtn:    { marginTop: 12, paddingVertical: 12, backgroundColor: colors.navy, borderRadius: 10, alignItems: 'center' },
+  primaryBtnTxt: { color: colors.white, fontSize: 13, fontWeight: '800' },
+  primaryBtnAlt: { marginTop: 8, paddingVertical: 12, backgroundColor: colors.teal, borderRadius: 10, alignItems: 'center' },
+  primaryBtnAltTxt: { color: colors.white, fontSize: 13, fontWeight: '800' },
+  smallNote:     { fontSize: 10, color: colors.t3, marginTop: 6, textAlign: 'center' },
+
+  addrBox:       { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },
+  addrLabel:     { fontSize: 9, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
+  addrText:      { fontSize: 12, color: colors.t1 },
+  statusBox:     { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginTop: 8 },
+  statusLine:    { fontSize: 12, color: colors.t1, marginBottom: 2 },
+  completeBox:   { marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: colors.tealPale, borderWidth: 1, borderColor: colors.teal },
+  completeTxt:   { fontSize: 12, color: colors.tealDeep, fontWeight: '700' },
+
+  logBox:        { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
+  logTitle:      { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
+  logRow:        { fontSize: 10, color: colors.t2, marginBottom: 2 },
+  logTime:       { color: colors.t3 },
+  logActor:      { color: colors.t2, fontWeight: '700' },
+
+  // Mode picker (used inline in editing card; not nested but referenced from outer scope)
+  modeRow:       { flexDirection: 'row', gap: 6, marginTop: 4 },
+  modeCard:      { flex: 1, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center', backgroundColor: colors.white, borderRadius: 10, borderWidth: 2, borderColor: colors.border },
+  modeCardActive:{ borderColor: colors.navy, backgroundColor: colors.navyPale },
+  modeIcon:      { fontSize: 22 },
+  modeLabel:     { fontSize: 11, fontWeight: '700', color: colors.t2, marginTop: 4 },
+  modeLabelActive:{ color: colors.navy },
 });
