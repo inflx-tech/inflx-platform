@@ -26,6 +26,9 @@ const notificationRoutes    = require('./notification.routes');
 const savedRoutes           = require('./saved.routes');
 const productNoteRoutes     = require('./productNote.routes');
 
+// Production coordination (Phase P)
+const productionRoutes = require('./production.routes');
+
 // Media uploads
 const uploadRoutes = require('./upload.routes');
 
@@ -60,6 +63,7 @@ router.use('/offers',        offerRoutes);
 router.use('/negotiations',  negotiationRoutes);
 router.use('/contracts',     contractRoutes);
 router.use('/deliverables',  deliverableRoutes);
+router.use('/',              productionRoutes);   // /contracts/:id/production + /production-events/:id/*
 router.use('/uploads',       uploadRoutes);
 router.use('/ota',           otaRoutes);
 

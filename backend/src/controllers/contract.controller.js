@@ -24,6 +24,7 @@ const notificationService = require('../services/notification.service');
 const pdfService          = require('../services/pdf.service');
 const storageService      = require('../services/storage.service');
 const escrowService       = require('../services/escrow.service');
+const productionService   = require('../services/production.service');
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
@@ -494,6 +495,20 @@ const brandSign = asyncHandler(async (req, res) => {
         [contract.campaign_influencer_id]
       );
 
+      // 2b. Auto-create the production_event row so the post-signing
+      //     coordination phase has a place to land. Mode comes from
+      //     contracts.production_mode (set during approve). Falls back
+      //     to 'remote' when missing — that mode is a no-op so it's the
+      //     safest default for legacy contracts approved before the
+      //     production-mode picker existed.
+      try {
+        await productionService.autoCreateForContract(client, updatedContract);
+      } catch (peErr) {
+        console.error('[CONTRACT] production_event auto-create failed:', peErr.message);
+        // Don't roll back — the contract is signed, money is locked.
+        // Admin can manually patch production_events later if needed.
+      }
+
       // 3. Create 3 escrow entries — engagement / hybrid only. Conversion-only
       //    contracts (effectiveFee == 0) get no tranches: the influencer is
       //    paid on commission via the follower-transaction pipeline instead.
@@ -848,10 +863,23 @@ const approveContract = asyncHandler(async (req, res) => {
     );
   }
 
-  const { custom_clauses, bonus_amount, content_requirements } = req.body || {};
+  const { custom_clauses, bonus_amount, content_requirements, production_mode } = req.body || {};
   const bonus = parseFloat(bonus_amount) || 0;
   if (bonus < 0) {
     throw new AppError('VALIDATION_ERROR', 'bonus_amount must be 0 or positive', 422, 'bonus_amount');
+  }
+  // production_mode picked here so the influencer sees it before signing.
+  // Optional on this endpoint to keep backward-compat — old approves without
+  // a mode default to 'remote' (the safest, no-coordination option) when
+  // the contract activates. New approves should pass it explicitly.
+  const VALID_MODES = ['visit', 'shipment', 'remote'];
+  let normalisedMode = null;
+  if (production_mode != null && production_mode !== '') {
+    if (!VALID_MODES.includes(production_mode)) {
+      throw new AppError('VALIDATION_ERROR',
+        `production_mode must be one of: ${VALID_MODES.join(', ')}`, 422, 'production_mode');
+    }
+    normalisedMode = production_mode;
   }
 
   // Persist clauses + bonus + content requirements. We deliberately do NOT
@@ -871,14 +899,16 @@ const approveContract = asyncHandler(async (req, res) => {
          custom_clauses       = $2,
          bonus_amount         = $3,
          content_requirements = COALESCE($4, content_requirements),
+         production_mode      = COALESCE($5, production_mode),
          approved_at          = now(),
-         approved_by          = $5
+         approved_by          = $6
      WHERE id = $1`,
     [
       contract.id,
       custom_clauses ? JSON.stringify(custom_clauses) : null,
       bonus,
       normalisedRequirements,
+      normalisedMode,
       req.user.sub,
     ]
   );
