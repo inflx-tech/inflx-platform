@@ -29,6 +29,9 @@ const productNoteRoutes     = require('./productNote.routes');
 // Production coordination (Phase P)
 const productionRoutes = require('./production.routes');
 
+// Influencer proposals (Phase Q)
+const proposalRoutes = require('./proposal.routes');
+
 // Media uploads
 const uploadRoutes = require('./upload.routes');
 
@@ -64,6 +67,7 @@ router.use('/negotiations',  negotiationRoutes);
 router.use('/contracts',     contractRoutes);
 router.use('/deliverables',  deliverableRoutes);
 router.use('/',              productionRoutes);   // /contracts/:id/production + /production-events/:id/*
+router.use('/',              proposalRoutes);     // /influencers/me/* + /brands/me/proposals* + /admin/proposals
 router.use('/uploads',       uploadRoutes);
 router.use('/ota',           otaRoutes);
 
