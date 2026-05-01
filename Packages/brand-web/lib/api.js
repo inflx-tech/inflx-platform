@@ -175,6 +175,19 @@ export const influencerApi = {
   search: (params) => api.get(`/influencers/search${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
+export const proposalApi = {
+  // Settings
+  getSettings: () => api.get('/brands/me/proposal-settings'),
+  updateSettings: (data) => api.patch('/brands/me/proposal-settings', data),
+  // Inbox
+  list: (status) => api.get(`/brands/me/proposals${status ? `?status=${status}` : ''}`),
+  get: (id) => api.get(`/brands/me/proposals/${id}`),
+  accept: (id) => api.post(`/brands/me/proposals/${id}/accept`),
+  reject: (id, message) => api.post(`/brands/me/proposals/${id}/reject`, { message }),
+  counter: (id, counterTerms, message) => api.post(`/brands/me/proposals/${id}/counter`, { counter_terms: counterTerms, message }),
+  flag: (id, reason) => api.post(`/brands/me/proposals/${id}/flag`, { reason }),
+};
+
 export const productionApi = {
   // GET — both parties see their own contract's production event + log
   get: (contractId) => api.get(`/contracts/${contractId}/production`),
