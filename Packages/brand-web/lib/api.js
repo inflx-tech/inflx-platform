@@ -175,6 +175,23 @@ export const influencerApi = {
   search: (params) => api.get(`/influencers/search${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
+export const productionApi = {
+  // GET — both parties see their own contract's production event + log
+  get: (contractId) => api.get(`/contracts/${contractId}/production`),
+  // Brand sets / updates visit details (also reschedules a confirmed event)
+  setVisitDetails: (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
+  // Influencer accepts proposed visit/shipment terms
+  accept: (eventId) => api.post(`/production-events/${eventId}/accept`),
+  // Influencer counter-proposes
+  counterPropose: (eventId, data) => api.post(`/production-events/${eventId}/counter-propose`, data),
+  // Brand: package shipped (with AWB + courier)
+  dispatch: (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
+  // Influencer: package received
+  confirmReceived: (eventId, data) => api.post(`/production-events/${eventId}/confirm-received`, data),
+  // Mark visit done (either party)
+  complete: (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
+};
+
 export const mediaGalleryApi = {
   // Asset library
   list: (params) => api.get(`/brands/me/media-assets${params ? '?' + new URLSearchParams(params) : ''}`),

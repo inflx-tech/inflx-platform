@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { campaignApi, brandApi, deliverableApi, negotiationApi, contractApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
+import { campaignApi, brandApi, deliverableApi, negotiationApi, contractApi, productionApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -329,6 +329,9 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
   const [extraNotes, setExtraNotes] = useState(initialNotes);
   const [bonusAmount, setBonusAmount] = useState(String(safeContract.bonus_amount || ''));
   const [contentReq, setContentReq] = useState(initialRequirements);
+  // Production mode picker — visit | shipment | remote. Defaults to whatever's
+  // saved (re-edit case) or 'remote' for first-time approval (the safe no-op).
+  const [productionMode, setProductionMode] = useState(safeContract.production_mode || 'remote');
   const [pdfSrc, setPdfSrc]       = useState(null);
   const [pdfError, setPdfError]   = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -574,10 +577,34 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
               </div>
             )}
 
+            {/* Production mode — how will the influencer actually create the
+                content? Locked once influencer signs; pickable here. */}
+            <div>
+              <div className="text-xs font-bold text-gray-700 mb-1.5">How will the content be produced?</div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { v: 'visit',    label: 'Visit',    icon: '🏬', sub: 'Influencer visits your store / location' },
+                  { v: 'shipment', label: 'Shipment', icon: '📦', sub: 'You ship product to influencer' },
+                  { v: 'remote',   label: 'Remote',   icon: '💻', sub: 'No physical exchange' },
+                ].map(opt => (
+                  <button key={opt.v} type="button" onClick={() => setProductionMode(opt.v)}
+                    className={`p-2 rounded-lg border-2 text-left transition-colors ${productionMode === opt.v ? 'border-navy bg-navy-pale/30' : 'border-gray-200 bg-white hover:border-navy/40'}`}>
+                    <div className="text-base">{opt.icon}</div>
+                    <div className="text-[11px] font-bold text-gray-800 mt-0.5">{opt.label}</div>
+                    <div className="text-[9px] text-gray-500 leading-snug mt-0.5">{opt.sub}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1.5">
+                You'll fill in address / time / shipping details after both parties sign.
+              </p>
+            </div>
+
             <button onClick={() => onApprove({
               custom_clauses:       { clauses, notes: extraNotes || null },
               bonus_amount:         parseFloat(bonusAmount) || 0,
               content_requirements: contentReq || null,
+              production_mode:      productionMode,
             })} disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50">
               {loading ? 'Sending…' : (isReApprove ? 'Update & Re-send to Influencer' : 'Approve & Send to Influencer')}
@@ -600,8 +627,248 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
             {contract.brand_signed_at ? `You signed on ${new Date(contract.brand_signed_at).toLocaleString('en-IN')}` : 'Waiting for influencer signature first.'}
           </div>
         )}
+
+        {/* Production coordination (only after contract is active). The
+            production mode picker on the approve form decides what shows
+            here — visit form, shipment dispatch form, or a "remote" notice. */}
+        {contract.status === 'active' && (
+          <ProductionPanel contractId={contract.id} />
+        )}
         </div>{/* /scrollable body */}
       </div>
+    </div>
+  );
+}
+
+// ─── Production Panel (visible after contract activates) ──────────────────────
+
+function ProductionPanel({ contractId }) {
+  const [event, setEvent] = useState(null);
+  const [mode, setMode] = useState(null);
+  const [log, setLog] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Visit form state
+  const [vAddress, setVAddress]     = useState('');
+  const [vCity, setVCity]           = useState('');
+  const [vPincode, setVPincode]     = useState('');
+  const [vScheduledAt, setVScheduledAt] = useState('');  // datetime-local
+  const [vWindow, setVWindow]       = useState(60);
+  const [vContactName, setVContactName] = useState('');
+  const [vContactPhone, setVContactPhone] = useState('');
+
+  // Shipment form state
+  const [courier, setCourier] = useState('');
+  const [awb, setAwb] = useState('');
+  const [expectedAt, setExpectedAt] = useState('');
+
+  async function load() {
+    setLoading(true);
+    const res = await productionApi.get(contractId);
+    setLoading(false);
+    if (res.success) {
+      setEvent(res.data?.production_event || null);
+      setMode(res.data?.production_mode || null);
+      setLog(res.data?.log || []);
+      const e = res.data?.production_event;
+      if (e) {
+        setVAddress(e.visit_address || '');
+        setVCity(e.visit_city || '');
+        setVPincode(e.visit_pincode || '');
+        setVScheduledAt(e.visit_scheduled_at ? new Date(e.visit_scheduled_at).toISOString().slice(0, 16) : '');
+        setVWindow(e.visit_window_minutes || 60);
+        setVContactName(e.visit_contact_name || '');
+        setVContactPhone(e.visit_contact_phone || '');
+        setCourier(e.shipment_courier || '');
+        setAwb(e.shipment_awb || '');
+        setExpectedAt(e.shipment_expected_at ? new Date(e.shipment_expected_at).toISOString().slice(0, 10) : '');
+      }
+    }
+  }
+
+  useEffect(() => { load(); }, [contractId]);
+
+  async function saveVisitDetails() {
+    setSaving(true); setError(null);
+    const res = await productionApi.setVisitDetails(contractId, {
+      visit_address: vAddress.trim(),
+      visit_city:    vCity.trim() || null,
+      visit_pincode: vPincode.trim() || null,
+      visit_scheduled_at: vScheduledAt ? new Date(vScheduledAt).toISOString() : null,
+      visit_window_minutes: Number(vWindow) || null,
+      visit_contact_name: vContactName.trim() || null,
+      visit_contact_phone: vContactPhone.trim() || null,
+    });
+    setSaving(false);
+    if (res.success) load();
+    else setError(res.error?.message || 'Save failed');
+  }
+
+  async function saveDispatch() {
+    if (!event) return;
+    setSaving(true); setError(null);
+    const res = await productionApi.dispatch(event.id, {
+      courier:     courier.trim(),
+      awb:         awb.trim(),
+      expected_at: expectedAt ? new Date(expectedAt).toISOString() : null,
+    });
+    setSaving(false);
+    if (res.success) load();
+    else setError(res.error?.message || 'Dispatch failed');
+  }
+
+  async function markVisitDone() {
+    if (!event) return;
+    setSaving(true); setError(null);
+    const res = await productionApi.complete(event.id, {});
+    setSaving(false);
+    if (res.success) load();
+    else setError(res.error?.message || 'Complete failed');
+  }
+
+  if (loading) return <div className="p-5 border-t border-gray-100 text-xs text-gray-400">Loading production…</div>;
+  if (mode === 'remote' || !event) {
+    return (
+      <div className="p-5 border-t border-gray-100">
+        <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500 text-center">
+          {mode === 'remote'
+            ? '💻 Remote mode — no physical coordination needed. Influencer will start content from the brief.'
+            : 'No production event yet. The influencer will see logistics here once you fill them in.'}
+        </div>
+      </div>
+    );
+  }
+
+  const STATUS_COLORS = {
+    proposed:     'bg-amber-100 text-amber-800',
+    confirmed:    'bg-blue-100 text-blue-800',
+    in_progress:  'bg-purple-100 text-purple-800',
+    completed:    'bg-teal-100 text-teal-800',
+    cancelled:    'bg-red-100 text-red-700',
+  };
+  const statusCls = STATUS_COLORS[event.status] || 'bg-gray-100 text-gray-700';
+
+  return (
+    <div className="p-5 border-t border-gray-100 bg-navy-pale/20">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-xs font-bold text-gray-700">
+            {event.mode === 'visit' ? '🏬 Visit Coordination' : '📦 Product Shipment'}
+          </div>
+          <div className="text-[10px] text-gray-500">
+            Influencer: {event.mode === 'visit'
+              ? (event.status === 'proposed' ? 'awaiting confirmation' : event.status === 'confirmed' ? 'will visit on schedule' : 'visit complete')
+              : (event.status === 'proposed' ? 'awaiting address confirmation' : event.status === 'confirmed' ? 'awaiting dispatch' : event.status === 'in_progress' ? 'package in transit' : 'package received')}
+          </div>
+        </div>
+        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${statusCls}`}>
+          {event.status.replace(/_/g, ' ')}
+        </span>
+      </div>
+
+      {error && <div className="mb-3 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
+
+      {event.mode === 'visit' && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <input value={vAddress} onChange={e => setVAddress(e.target.value)} placeholder="Address line"
+              className="col-span-2 border border-gray-200 rounded-lg p-2 text-xs" />
+            <input value={vCity} onChange={e => setVCity(e.target.value)} placeholder="City"
+              className="border border-gray-200 rounded-lg p-2 text-xs" />
+            <input value={vPincode} onChange={e => setVPincode(e.target.value)} placeholder="Pincode"
+              className="border border-gray-200 rounded-lg p-2 text-xs" />
+            <input type="datetime-local" value={vScheduledAt} onChange={e => setVScheduledAt(e.target.value)}
+              className="border border-gray-200 rounded-lg p-2 text-xs" />
+            <select value={vWindow} onChange={e => setVWindow(e.target.value)} className="border border-gray-200 rounded-lg p-2 text-xs">
+              <option value={30}>30 min window</option>
+              <option value={60}>1 hour window</option>
+              <option value={120}>2 hour window</option>
+              <option value={240}>Half day</option>
+            </select>
+            <input value={vContactName} onChange={e => setVContactName(e.target.value)} placeholder="Contact name"
+              className="border border-gray-200 rounded-lg p-2 text-xs" />
+            <input value={vContactPhone} onChange={e => setVContactPhone(e.target.value)} placeholder="Contact phone"
+              className="border border-gray-200 rounded-lg p-2 text-xs" />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={saveVisitDetails} disabled={saving || !vAddress.trim()}
+              className="flex-1 py-2 bg-navy text-white text-xs font-bold rounded-lg disabled:opacity-50">
+              {saving ? 'Saving…' : event.visit_address ? 'Update visit details' : 'Send to influencer'}
+            </button>
+            {event.status === 'confirmed' && (
+              <button onClick={markVisitDone} disabled={saving}
+                className="flex-1 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                Mark visit done
+              </button>
+            )}
+          </div>
+          {event.reschedule_count_brand > 0 && (
+            <div className="text-[10px] text-gray-500">Reschedules used: {event.reschedule_count_brand} of 2</div>
+          )}
+        </div>
+      )}
+
+      {event.mode === 'shipment' && (
+        <div className="space-y-2">
+          <div className="text-[11px] text-gray-600 bg-white border border-gray-200 rounded p-2">
+            <span className="font-semibold">Shipping to: </span>
+            {[event.shipment_to_address_line, event.shipment_to_city, event.shipment_to_state, event.shipment_to_pincode].filter(Boolean).join(', ') || 'Address not yet provided'}
+          </div>
+          {event.status === 'confirmed' && (
+            <>
+              <input value={courier} onChange={e => setCourier(e.target.value)} placeholder="Courier (e.g. Bluedart, Delhivery)"
+                list="courier-suggestions"
+                className="w-full border border-gray-200 rounded-lg p-2 text-xs" />
+              <datalist id="courier-suggestions">
+                <option value="Bluedart" /><option value="Delhivery" /><option value="Shiprocket" />
+                <option value="DTDC" /><option value="India Post" /><option value="Ekart" />
+                <option value="XpressBees" /><option value="Ecom Express" />
+              </datalist>
+              <input value={awb} onChange={e => setAwb(e.target.value)} placeholder="AWB / Tracking number"
+                className="w-full border border-gray-200 rounded-lg p-2 text-xs" />
+              <input type="date" value={expectedAt} onChange={e => setExpectedAt(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg p-2 text-xs" />
+              <button onClick={saveDispatch} disabled={saving || !courier.trim() || !awb.trim()}
+                className="w-full py-2 bg-navy text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                {saving ? 'Marking…' : 'Mark as dispatched'}
+              </button>
+            </>
+          )}
+          {event.status === 'in_progress' && (
+            <div className="text-[11px] bg-white border border-gray-200 rounded p-2">
+              <div><span className="font-semibold">Courier:</span> {event.shipment_courier || '—'}</div>
+              <div><span className="font-semibold">AWB:</span> {event.shipment_awb || '—'}</div>
+              {event.shipment_expected_at && <div><span className="font-semibold">Expected:</span> {new Date(event.shipment_expected_at).toLocaleDateString('en-IN')}</div>}
+              <div className="text-gray-500 mt-1">Awaiting influencer to confirm receipt.</div>
+            </div>
+          )}
+          {event.status === 'completed' && (
+            <div className="text-[11px] text-teal-700 bg-teal-50 border border-teal-200 rounded p-2">
+              ✓ Package received {event.shipment_received_confirmed_at ? `on ${new Date(event.shipment_received_confirmed_at).toLocaleDateString('en-IN')}` : ''}.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Audit log strip */}
+      {log.length > 0 && (
+        <details className="mt-3">
+          <summary className="text-[10px] text-gray-500 font-semibold cursor-pointer hover:text-gray-700">
+            History ({log.length} action{log.length !== 1 ? 's' : ''})
+          </summary>
+          <div className="mt-2 space-y-1">
+            {log.map(l => (
+              <div key={l.id} className="text-[10px] text-gray-600 flex gap-2">
+                <span className="text-gray-400 w-24 flex-shrink-0">{new Date(l.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-gray-400 w-16 flex-shrink-0 capitalize">{l.actor_role}</span>
+                <span>{(l.action || '').replace(/_/g, ' ')}{l.notes ? ` — ${l.notes}` : ''}</span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
     </div>
   );
 }
