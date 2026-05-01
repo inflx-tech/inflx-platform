@@ -556,9 +556,19 @@ export default function ProfileScreen({ navigation }) {
         </Text>
       </View>
 
-      {/* ── Documents ── */}
+      {/* ── Documents + Proposals ── */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Documents</Text>
+        <Text style={styles.cardTitle}>Brand Outreach</Text>
+        <TouchableOpacity
+          style={styles.docRow}
+          onPress={() => navigation.navigate('ProposalsHub')}>
+          <Text style={styles.docIcon}>📨</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.docLabel}>Brand Proposals</Text>
+            <Text style={styles.docHint}>Discover brands accepting pitches and track your sent proposals</Text>
+          </View>
+          <Text style={styles.docArrow}>›</Text>
+        </TouchableOpacity>
         <TouchableOpacity
           style={styles.docRow}
           onPress={() => navigation.navigate('MyContracts')}>

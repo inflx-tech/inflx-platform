@@ -244,6 +244,15 @@ export const influencerApi = {
   confirmProductionReceived:    (eventId, data)   => api.post(`/production-events/${eventId}/confirm-received`, data),
   completeProduction:           (eventId, data)   => api.post(`/production-events/${eventId}/complete`, data),
 
+  // Proposals (Phase Q)
+  discoverBrands:           (search) => api.get(`/influencers/me/discover-brands${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+  getBrandProposalCriteria: (brandId) => api.get(`/brands/${brandId}/proposal-criteria`),
+  createProposal:           (data) => api.post('/influencers/me/proposals', data),
+  listMyProposals:          (status) => api.get(`/influencers/me/proposals${status ? `?status=${status}` : ''}`),
+  getMyProposal:            (id) => api.get(`/influencers/me/proposals/${id}`),
+  withdrawProposal:         (id) => api.post(`/influencers/me/proposals/${id}/withdraw`),
+  respondCounter:           (id, action) => api.post(`/influencers/me/proposals/${id}/respond-counter`, { action }),
+
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),
 

@@ -24,6 +24,8 @@ import CampaignProductsScreen from '../screens/influencer/CampaignProductsScreen
 import MyStoreScreen from '../screens/influencer/MyStoreScreen';
 import TransactionFeedScreen from '../screens/influencer/TransactionFeedScreen';
 import InfluencerContractsScreen from '../screens/influencer/InfluencerContractsScreen';
+import ProposalsHubScreen from '../screens/influencer/ProposalsHubScreen';
+import SendProposalScreen from '../screens/influencer/SendProposalScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -38,6 +40,8 @@ function ProfileStackNav() {
       <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
       <ProfileStack.Screen name="MyContracts" component={InfluencerContractsScreen} />
       <ProfileStack.Screen name="ContractPdf" component={ContractPdfScreen} />
+      <ProfileStack.Screen name="ProposalsHub" component={ProposalsHubScreen} />
+      <ProfileStack.Screen name="SendProposal" component={SendProposalScreen} />
     </ProfileStack.Navigator>
   );
 }
