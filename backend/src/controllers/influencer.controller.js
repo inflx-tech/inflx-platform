@@ -440,11 +440,31 @@ const search = asyncHandler(async (req, res) => {
 // GET /influencers/:id  (brand + admin — public profile view)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Public profile detail. Resolves IDs from EITHER source:
+ *   1. influencers.id      (onboarded — legacy table)
+ *   2. creator_profiles.id (scraped — new table)
+ *
+ * Both produce the same response shape (legacy `influencer` object) so
+ * the existing brand-web detail page renders without changes. A few new
+ * fields are added (`is_inflx_verified`, `source`, `view_based_er`,
+ * `verification_status`) for the badge / future enhancements.
+ *
+ * UUID format guard prevents 22P02 errors when callers pass non-UUID strings.
+ */
 const getPublicById = asyncHandler(async (req, res) => {
-  const { rows } = await db.query(
+  const id = req.params.id;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!id || !uuidRegex.test(id)) {
+    throw new AppError('VALIDATION_ERROR', 'Invalid influencer id', 400);
+  }
+
+  // 1. Onboarded influencer (legacy)
+  const { rows: legacy } = await db.query(
     `SELECT
        i.id, i.instagram_handle, i.youtube_handle, i.full_name,
-       i.followers_count, i.engagement_rate, i.niche, i.secondary_niche,
+       i.followers_count, i.engagement_rate, i.engagement_rate AS view_based_er,
+       i.niche, i.secondary_niche,
        i.language, i.tier, i.city, i.state, i.gender, i.platform,
        i.avg_views, i.avg_likes, i.avg_comments, i.avg_shares, i.avg_saves,
        i.total_posts, i.verified,
@@ -452,14 +472,73 @@ const getPublicById = asyncHandler(async (req, res) => {
        i.price_per_post_min, i.price_per_post_max,
        i.past_brands_json, i.collaboration_types_json,
        i.profile_image_url, i.age,
-       u.name, u.id AS user_id, u.status AS user_status
+       u.name, u.id AS user_id, u.status AS user_status,
+       'onboarded'::text AS source,
+       TRUE AS is_inflx_verified,
+       'verified'::text AS verification_status
      FROM influencers i
      JOIN users u ON u.id = i.user_id
      WHERE i.id = $1`,
-    [req.params.id]
+    [id]
   );
-  if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
-  return success(res, { influencer: rows[0] });
+  if (legacy[0]) return success(res, { influencer: legacy[0] });
+
+  // 2. Scraped creator profile (new table) — shape into the legacy response
+  const { rows: scraped } = await db.query(
+    `SELECT
+       cp.id,
+       cp.ig_handle              AS instagram_handle,
+       cp.youtube_handle,
+       cp.full_name,
+       cp.followers_count,
+       cp.follower_based_er      AS engagement_rate,
+       cp.view_based_er,
+       ARRAY[cp.niche]            AS niche,
+       CASE WHEN cp.sub_niche IS NULL THEN NULL ELSE ARRAY[cp.sub_niche] END AS secondary_niche,
+       cp.languages              AS language,
+       cp.follower_tier          AS tier,
+       cp.city,
+       NULL::text                AS state,
+       NULL::text                AS gender,
+       'Instagram'::text         AS platform,
+       cp.avg_views,
+       cp.avg_likes,
+       cp.avg_comments,
+       0::int                    AS avg_shares,
+       0::int                    AS avg_saves,
+       cp.total_posts_lifetime   AS total_posts,
+       cp.is_verified            AS verified,
+       cp.bio,
+       cp.external_url           AS website,
+       cp.estimated_min_rate     AS price_per_post_min,
+       cp.estimated_max_rate     AS price_per_post_max,
+       cp.top_brand_partners     AS past_brands_json,
+       cp.recommended_use_cases  AS collaboration_types_json,
+       cp.profile_pic_url        AS profile_image_url,
+       NULL::int                 AS age,
+       cp.full_name              AS name,
+       cp.linked_influencer_id   AS user_id,
+       cp.activity_status        AS user_status,
+       'scraped'::text           AS source,
+       (cp.verification_status = 'verified') AS is_inflx_verified,
+       cp.verification_status,
+       -- Extra fields exposed for the new UI
+       cp.posting_frequency_per_week,
+       cp.total_posts_90d,
+       cp.total_brand_collaborations,
+       cp.unique_brands_count,
+       cp.commercial_post_rate,
+       cp.growth_potential_score,
+       cp.rank_score,
+       cp.recommended_use_cases,
+       cp.last_calculated_at
+     FROM creator_profiles cp
+     WHERE cp.id = $1`,
+    [id]
+  );
+  if (scraped[0]) return success(res, { influencer: scraped[0] });
+
+  throw new AppError('NOT_FOUND', 'Creator not found', 404);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

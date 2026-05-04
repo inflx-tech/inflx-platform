@@ -4,10 +4,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { api, fmtNum, fmtRupees } from '../../../../lib/api';
 
 const TIER_CFG = {
-  nano:  { label: 'Nano',  color: 'bg-green-100 text-green-700',   range: '1K–10K' },
-  micro: { label: 'Micro', color: 'bg-blue-100 text-blue-700',     range: '10K–100K' },
-  macro: { label: 'Macro', color: 'bg-purple-100 text-purple-700', range: '100K–1M' },
-  mega:  { label: 'Mega',  color: 'bg-orange-100 text-orange-700', range: '1M+' },
+  nano:      { label: 'Nano',      color: 'bg-green-100 text-green-700',  range: '1K–10K'  },
+  micro:     { label: 'Micro',     color: 'bg-blue-100 text-blue-700',    range: '10K–100K' },
+  mid:       { label: 'Mid',       color: 'bg-cyan-100 text-cyan-700',    range: '100K–500K' },
+  macro:     { label: 'Macro',     color: 'bg-purple-100 text-purple-700', range: '100K–1M'  },
+  mega:      { label: 'Mega',      color: 'bg-orange-100 text-orange-700', range: '1M+'      },
+  celebrity: { label: 'Celebrity', color: 'bg-pink-100 text-pink-700',    range: '1M+'      },
 };
 
 const PLATFORM_ICON = { Instagram: '📸', YouTube: '▶️', Both: '📸▶️' };
@@ -71,8 +73,18 @@ export default function InfluencerProfilePage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <h1 className="font-display text-2xl font-bold text-gray-900">{inf.full_name || inf.name}</h1>
-              {inf.verified && <span className="text-blue-500 text-lg" title="Verified">✓</span>}
+              {inf.is_inflx_verified && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wide" title="Verified by Inflx">
+                  ✓ Verified
+                </span>
+              )}
+              {inf.verified && !inf.is_inflx_verified && (
+                <span className="text-blue-500 text-lg" title="Verified on Instagram">✓</span>
+              )}
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${tier.color}`}>{tier.label}</span>
+              {inf.source === 'scraped' && (
+                <span className="text-[10px] text-gray-400 italic">Profile data via Inflx market scan</span>
+              )}
             </div>
 
             <div className="flex items-center gap-3 text-sm text-gray-500 mb-2 flex-wrap">

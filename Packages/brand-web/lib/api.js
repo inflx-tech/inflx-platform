@@ -172,7 +172,24 @@ export const campaignApi = {
 };
 
 export const influencerApi = {
+  // Brand search across the unified pool (scraped + onboarded creators).
+  // Params (all optional):
+  //   q, sort (rank|view_er|followers|active|growth|cheapest|most_collabs)
+  //   city, niche, tier, languages, use_case   (comma-separated multi-selects)
+  //   min_followers, max_followers, min_view_er, min_rate, max_rate, min_posts_per_week
+  //   has_brand_collabs, is_inflx_verified, is_business  (boolean strings)
+  //   brand_handle (creators who collabbed with @brand)
+  //   page, limit
   search: (params) => api.get(`/influencers/search${params ? '?' + new URLSearchParams(params) : ''}`),
+  // Market analytics — single aggregate response (all charts).
+  // Optional scope: city, niche, tier (each comma-separated).
+  analytics: (params) => api.get(`/influencers/analytics${params ? '?' + new URLSearchParams(params) : ''}`),
+};
+
+export const creatorInvitationApi = {
+  create: (body) => api.post('/brands/me/creator-invitations', body),
+  list: (status) => api.get(`/brands/me/creator-invitations${status ? `?status=${status}` : ''}`),
+  withdraw: (id) => api.delete(`/brands/me/creator-invitations/${id}`),
 };
 
 export const proposalApi = {
