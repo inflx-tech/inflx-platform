@@ -284,6 +284,11 @@ const CSS = `
 .btn-pub:disabled{opacity:.35;cursor:not-allowed}
 .step-ctr{font-size:11px;color:var(--t3);font-weight:700;letter-spacing:.3px}
 .err-msg{color:var(--red);font-size:12px;margin-top:8px}
+.field-err{color:var(--red);font-size:11px;margin-top:5px;line-height:1.4;font-weight:600}
+.field-warn{color:var(--gold);font-size:11px;margin-top:5px;line-height:1.4;font-weight:600}
+.inp-err{border-color:var(--red) !important;background:rgba(232,64,26,.04) !important}
+.inp-err:focus{border-color:var(--red) !important}
+.cc-error-summary{background:var(--red-l);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-top:10px;color:var(--red);font-size:12px;font-weight:700}
 .hint{font-size:10px;color:var(--t3);margin-top:5px;line-height:1.6}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
 .prod-modal{background:var(--s1);border:1px solid var(--border2);border-radius:24px 24px 0 0;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
@@ -579,6 +584,194 @@ function NewCampaignPageInner() {
   const setRem = si => Number(sets[si].set_budget || 0) - setInfSpent(si);
   const isBudgetOver = () => sets.some(s => needsBudget(s.goal)) && campRem() < 0;
 
+  // ── Validation ────────────────────────────────────────────────────────────────
+  // Inline, on-input. Returns a structured object the render code consults to
+  // decide whether to flash red on a specific field. Compute fresh each render
+  // (cheap) so we don't have to thread invalidation logic through every state
+  // setter.
+  //
+  // The user types freely — we don't intercept onChange. Bad values (negative,
+  // empty when required, sum > set_budget, commission > 100) are flagged
+  // visually as the user types, AND we block the Next button until clean.
+  const validation = (() => {
+    const v = {
+      campaign: {},                       // top-level field errors
+      sets: sets.map(() => ({              // per-set
+        fields: {},                       // { set_budget, name, goal, ... }
+        warnings: {},                     // soft warnings (e.g. commission > 25%)
+        group: {},                        // open-group-only
+        influencers: [],                  // [{ field: msg, ... }, ...]
+      })),
+      step1Errors: 0,
+      step2Errors: 0,
+    };
+
+    // Step 1 — campaign basics
+    if (!name.trim()) v.campaign.name = 'Campaign name is required';
+    if (!startDate) v.campaign.startDate = 'Start date is required';
+    if (!endDate)   v.campaign.endDate   = 'End date is required';
+    else if (startDate && endDate < startDate) v.campaign.endDate = 'End date must be on or after start date';
+
+    // Total budget required only if there's at least one engagement/hybrid set
+    const anyPaidSet = sets.some(s => needsBudget(s.goal));
+    if (anyPaidSet) {
+      const tb = Number(totalBudget);
+      if (totalBudget === '' || totalBudget == null) {
+        v.campaign.totalBudget = 'Required when any set is engagement or hybrid';
+      } else if (!Number.isFinite(tb)) {
+        v.campaign.totalBudget = 'Must be a valid number';
+      } else if (tb <= 0) {
+        v.campaign.totalBudget = 'Must be greater than 0';
+      }
+    }
+    v.step1Errors = Object.keys(v.campaign).length;
+
+    // Step 2 — per-set + per-influencer
+    sets.forEach((s, si) => {
+      const sv = v.sets[si];
+
+      if (!s.name || !s.name.trim()) sv.fields.name = 'Set name is required';
+      if (!s.goal) sv.fields.goal = 'Pick a goal (engagement / conversion / hybrid)';
+
+      // Window dates — required and inside campaign range
+      if (!s.window_start) sv.fields.window_start = 'Required';
+      if (!s.window_end)   sv.fields.window_end   = 'Required';
+      if (s.window_start && s.window_end && s.window_end < s.window_start) {
+        sv.fields.window_end = 'Window end must be on or after window start';
+      }
+      if (s.window_start && startDate && s.window_start < startDate) {
+        sv.fields.window_start = `Cannot be before campaign start (${startDate})`;
+      }
+      if (s.window_end && endDate && s.window_end > endDate) {
+        sv.fields.window_end = `Cannot be after campaign end (${endDate})`;
+      }
+
+      // Formats — at least one selected; counts must be ≥ 1 (toggleFormat
+      // already keeps count ≥ 1 but we double-check)
+      if (!Array.isArray(s.formats) || s.formats.length === 0) {
+        sv.fields.formats = 'Pick at least one content format';
+      }
+
+      // Coupon prefix — required for conversion + hybrid; allow alphanumeric only
+      if (needsCoupon(s.goal)) {
+        if (!s.coupon_prefix || !s.coupon_prefix.trim()) {
+          sv.fields.coupon_prefix = 'Required for conversion / hybrid';
+        } else if (!/^[A-Z0-9]{3,15}$/.test(s.coupon_prefix.trim())) {
+          sv.fields.coupon_prefix = '3-15 letters/digits, uppercase only';
+        }
+      }
+
+      // Set budget — required + > 0 + ≤ campaign remaining
+      if (needsBudget(s.goal) && s.influencer_mode === 'handpick') {
+        const sb = Number(s.set_budget);
+        if (s.set_budget === '' || s.set_budget == null) {
+          sv.fields.set_budget = 'Required for engagement / hybrid';
+        } else if (!Number.isFinite(sb)) {
+          sv.fields.set_budget = 'Must be a valid number';
+        } else if (sb <= 0) {
+          sv.fields.set_budget = 'Must be greater than 0';
+        } else if (Number(totalBudget) > 0 && totalSetBudget() > Number(totalBudget)) {
+          sv.fields.set_budget = `Total set budgets exceed campaign budget by ₹${fmtN(totalSetBudget() - Number(totalBudget))}`;
+        }
+        // Sum of handpick influencer budgets must not exceed set_budget
+        if (sb > 0 && setInfSpent(si) > sb) {
+          sv.fields.set_budget_overspent = `Influencers allocated ₹${fmtN(setInfSpent(si))} — exceeds set budget by ₹${fmtN(setInfSpent(si) - sb)}`;
+        }
+      }
+
+      // Open-group validation
+      if (s.influencer_mode === 'open_group') {
+        const cap = Number(s.group?.max_cap);
+        if (!s.group?.max_cap || !Number.isFinite(cap)) {
+          sv.group.max_cap = 'Required';
+        } else if (cap <= 0) {
+          sv.group.max_cap = 'Must be greater than 0';
+        } else if (!Number.isInteger(cap)) {
+          sv.group.max_cap = 'Must be a whole number';
+        } else if (cap > 1000) {
+          sv.group.max_cap = 'Max 1000 influencers per group';
+        }
+        if (needsBudget(s.goal)) {
+          const pib = Number(s.group?.per_influencer_budget);
+          if (s.group?.per_influencer_budget === '' || s.group?.per_influencer_budget == null) {
+            sv.group.per_influencer_budget = 'Required for engagement / hybrid';
+          } else if (!Number.isFinite(pib)) {
+            sv.group.per_influencer_budget = 'Must be a valid number';
+          } else if (pib <= 0) {
+            sv.group.per_influencer_budget = 'Must be greater than 0';
+          }
+          // Projected total (per × cap) must not exceed campaign remaining
+          if (pib > 0 && cap > 0) {
+            const projected = pib * cap;
+            const tb = Number(totalBudget) || 0;
+            if (tb > 0 && totalSetBudget() > tb) {
+              sv.group.projected = `Group could spend up to ₹${fmtN(projected)} — campaign budget over by ₹${fmtN(totalSetBudget() - tb)}`;
+            }
+          }
+        }
+        // For conversion + hybrid, group needs a commission_pct
+        if (needsOffer(s.goal)) {
+          const cp = Number(s.group?.commission_pct);
+          if (s.group?.commission_pct === '' || s.group?.commission_pct == null) {
+            sv.group.commission_pct = 'Required for conversion / hybrid';
+          } else if (!Number.isFinite(cp) || cp <= 0 || cp > 100) {
+            sv.group.commission_pct = 'Must be between 0 and 100';
+          } else if (cp > 25) {
+            sv.warnings.group_commission_pct = 'Commission above 25% is unusually high';
+          }
+        }
+      }
+
+      // Per-influencer rows (handpick only)
+      s.influencers.forEach((inf, ii) => {
+        const errs = {};
+        if (!inf.post_date) {
+          errs.post_date = 'Required';
+        } else if (s.window_start && inf.post_date < s.window_start) {
+          errs.post_date = `Must be on or after ${s.window_start}`;
+        } else if (s.window_end && inf.post_date > s.window_end) {
+          errs.post_date = `Must be on or before ${s.window_end}`;
+        }
+        if (needsBudget(s.goal)) {
+          const ib = Number(inf.influencer_budget);
+          if (inf.influencer_budget === '' || inf.influencer_budget == null) {
+            errs.influencer_budget = 'Required';
+          } else if (!Number.isFinite(ib)) {
+            errs.influencer_budget = 'Invalid number';
+          } else if (ib <= 0) {
+            errs.influencer_budget = 'Must be greater than 0';
+          }
+        }
+        if (needsOffer(s.goal)) {
+          const cp = Number(inf.commission_pct);
+          if (inf.commission_pct === '' || inf.commission_pct == null) {
+            errs.commission_pct = 'Required';
+          } else if (!Number.isFinite(cp) || cp <= 0 || cp > 100) {
+            errs.commission_pct = 'Must be between 0 and 100';
+          }
+        }
+        sv.influencers[ii] = errs;
+      });
+
+      // Roll set errors into step 2 count
+      v.step2Errors += Object.keys(sv.fields).length;
+      v.step2Errors += Object.keys(sv.group).length;
+      sv.influencers.forEach(e => { v.step2Errors += Object.keys(e).length; });
+    });
+
+    return v;
+  })();
+
+  // ── Touched-fields tracker ─────────────────────────────────────────────────────
+  // We don't want every required-field error to flash red on first render. Only
+  // show errors on a field once the user has either edited it OR the user has
+  // clicked Next/Publish (forceShowErrors flips on). Touched is accumulated
+  // automatically by every input via the markTouched helper.
+  const [touched, setTouched] = useState({});
+  const [forceShowErrors, setForceShowErrors] = useState(false);
+  const markTouched = (key) => setTouched(prev => prev[key] ? prev : { ...prev, [key]: true });
+  const showErr = (key, msg) => msg && (forceShowErrors || touched[key]) ? msg : null;
+
   // ── Set mutators ──────────────────────────────────────────────────────────────
   const updateSet = (idx, patch) => setSets(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
   const updateInf = (si, ii, patch) => setSets(prev => prev.map((s, i) => {
@@ -828,8 +1021,19 @@ function NewCampaignPageInner() {
     }
   };
 
-  const goToStep2 = async () => { const cid = await saveDraft(); if (cid) setStep(1); };
-  const goBack = () => setStep(s => s - 1);
+  const goToStep2 = async () => {
+    if (validation.step1Errors > 0) {
+      setForceShowErrors(true);
+      setError(`Please fix ${validation.step1Errors} field${validation.step1Errors !== 1 ? 's' : ''} before continuing.`);
+      return;
+    }
+    const cid = await saveDraft();
+    if (cid) {
+      setStep(1);
+      setForceShowErrors(false);
+    }
+  };
+  const goBack = () => { setStep(s => s - 1); setError(''); setForceShowErrors(false); };
 
   // ── Build offer_config from a row (inf slot or group) ────────────────────────
   const buildOfferConfig = (item) => {
@@ -929,12 +1133,19 @@ function NewCampaignPageInner() {
 
   // ── Navigate to Step 3 (save sets first) ─────────────────────────────────────
   const goToStep3 = async () => {
+    if (validation.step1Errors > 0 || validation.step2Errors > 0) {
+      setForceShowErrors(true);
+      const total = validation.step1Errors + validation.step2Errors;
+      setError(`Please fix ${total} field${total !== 1 ? 's' : ''} before reviewing.`);
+      return;
+    }
     let cid = campaignId;
     if (!cid) { cid = await saveDraft(); if (!cid) return; }
     setSaving(true); setError('');
     try {
       await saveSets(cid);
       setStep(2);
+      setForceShowErrors(false);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -944,6 +1155,13 @@ function NewCampaignPageInner() {
 
   // ── Publish ───────────────────────────────────────────────────────────────────
   const handlePublish = async () => {
+    if (validation.step1Errors > 0 || validation.step2Errors > 0) {
+      setForceShowErrors(true);
+      setStep(validation.step1Errors > 0 ? 0 : 1);
+      const total = validation.step1Errors + validation.step2Errors;
+      setError(`Cannot publish — fix ${total} field${total !== 1 ? 's' : ''} first.`);
+      return;
+    }
     let cid = campaignId;
     if (!cid) { cid = await saveDraft(); if (!cid) return; }
     setPublishing(true); setError('');
@@ -1085,7 +1303,10 @@ function NewCampaignPageInner() {
     const inf = set.influencers[ii];
     const dl = calcDeadline(inf.post_date);
     const code = inf.custom_code || autoCode(set.coupon_prefix, inf.name);
+    const infErrs = validation.sets[si]?.influencers[ii] || {};
     const onChg = (f, v) => updateInf(si, ii, { [f]: v });
+    const infTouchKey = (f) => `inf_${si}_${ii}_${f}`;
+    const infErr = (f) => showErr(infTouchKey(f), infErrs[f]);
     return (
       <div key={ii} className="ic">
         <div className="ic-head">
@@ -1101,20 +1322,51 @@ function NewCampaignPageInner() {
             <div className="post-date-row">
               <div className="post-date-lbl">Post date<small>Submission deadline: 24h before</small></div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <input className="post-date-inp" type="date" min={set.window_start || undefined} max={set.window_end || endDate || undefined} value={inf.post_date || ''} onChange={e => onChg('post_date', e.target.value)} />
+                <input
+                  className={`post-date-inp${infErr('post_date') ? ' inp-err' : ''}`}
+                  type="date"
+                  min={set.window_start || undefined}
+                  max={set.window_end || endDate || undefined}
+                  value={inf.post_date || ''}
+                  onChange={e => { onChg('post_date', e.target.value); markTouched(infTouchKey('post_date')); }}
+                  onBlur={() => markTouched(infTouchKey('post_date'))}
+                />
                 {dl && <span className="dl-chip">Submit by {dl}</span>}
               </div>
+              {infErr('post_date') && <div className="field-err">{infErrs.post_date}</div>}
             </div>
           </div>
           {needsBudget(set.goal) && (
             <div>
               <div className="ie-lbl">Budget (₹)</div>
-              <input className="ie-inp" type="number" placeholder="e.g. 15000" value={inf.influencer_budget || ''} onChange={e => onChg('influencer_budget', e.target.value)} />
-              {set.set_budget && <div className="hint">Set remaining: ₹{fmtN(setRem(si))}</div>}
+              <input
+                className={`ie-inp${infErr('influencer_budget') ? ' inp-err' : ''}`}
+                type="number"
+                placeholder="e.g. 15000"
+                value={inf.influencer_budget || ''}
+                onChange={e => { onChg('influencer_budget', e.target.value); markTouched(infTouchKey('influencer_budget')); }}
+                onBlur={() => markTouched(infTouchKey('influencer_budget'))}
+              />
+              {infErr('influencer_budget') && <div className="field-err">{infErrs.influencer_budget}</div>}
+              {set.set_budget && !infErr('influencer_budget') && <div className="hint">Set remaining: ₹{fmtN(setRem(si))}</div>}
             </div>
           )}
           {needsOffer(set.goal) && <>
-            <div><div className="ie-lbl">Commission %</div><input className="ie-inp" type="number" placeholder="e.g. 10" value={inf.commission_pct || ''} onChange={e => onChg('commission_pct', e.target.value)} /></div>
+            <div>
+              <div className="ie-lbl">Commission %</div>
+              <input
+                className={`ie-inp${infErr('commission_pct') ? ' inp-err' : ''}`}
+                type="number"
+                placeholder="e.g. 10"
+                value={inf.commission_pct || ''}
+                onChange={e => { onChg('commission_pct', e.target.value); markTouched(infTouchKey('commission_pct')); }}
+                onBlur={() => markTouched(infTouchKey('commission_pct'))}
+              />
+              {infErr('commission_pct') && <div className="field-err">{infErrs.commission_pct}</div>}
+              {!infErr('commission_pct') && Number(inf.commission_pct) > 25 && (
+                <div className="field-warn">Commission above 25% is unusually high</div>
+              )}
+            </div>
             <div>
               <div className="ie-lbl">Offer type</div>
               <div className="ot-grid">
@@ -1158,6 +1410,10 @@ function NewCampaignPageInner() {
     const onChg = (f, v) => updateGroup(si, { [f]: v });
     const toggleArr = (field, val) => { const arr = g[field] || []; onChg(field, arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]); };
     const estMax = Number(g.per_influencer_budget || 0) * Number(g.max_cap || 0);
+    const groupErrs = validation.sets[si]?.group || {};
+    const groupWarns = validation.sets[si]?.warnings || {};
+    const grpTouchKey = (f) => `group_${si}_${f}`;
+    const grpErr = (f) => showErr(grpTouchKey(f), groupErrs[f]);
     return (
       <div className="group-panel">
         <div className="group-panel-head"><div className="group-panel-title">🌐 Open group — broadcast to matched influencers</div></div>
@@ -1197,15 +1453,32 @@ function NewCampaignPageInner() {
           <div>
             <div className="filter-title">Max influencers to invite</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <input className="cap-inp" type="number" min="1" value={g.max_cap || ''} onChange={e => onChg('max_cap', e.target.value)} />
+              <input
+                className={`cap-inp${grpErr('max_cap') ? ' inp-err' : ''}`}
+                type="number"
+                min="1"
+                value={g.max_cap || ''}
+                onChange={e => { onChg('max_cap', e.target.value); markTouched(grpTouchKey('max_cap')); }}
+                onBlur={() => markTouched(grpTouchKey('max_cap'))}
+              />
               <span style={{ fontSize: 11, color: 'var(--t3)' }}>First to accept get the slot</span>
             </div>
+            {grpErr('max_cap') && <div className="field-err">{groupErrs.max_cap}</div>}
           </div>
           {needsBudget(set.goal) && (
             <div>
               <div className="filter-title">Budget per influencer (₹)</div>
-              <input className="filter-inp" type="number" placeholder="e.g. 5000" value={g.per_influencer_budget || ''} onChange={e => onChg('per_influencer_budget', e.target.value)} />
-              {g.per_influencer_budget && g.max_cap && (
+              <input
+                className={`filter-inp${grpErr('per_influencer_budget') ? ' inp-err' : ''}`}
+                type="number"
+                placeholder="e.g. 5000"
+                value={g.per_influencer_budget || ''}
+                onChange={e => { onChg('per_influencer_budget', e.target.value); markTouched(grpTouchKey('per_influencer_budget')); }}
+                onBlur={() => markTouched(grpTouchKey('per_influencer_budget'))}
+              />
+              {grpErr('per_influencer_budget') && <div className="field-err">{groupErrs.per_influencer_budget}</div>}
+              {grpErr('projected') && <div className="field-err">{groupErrs.projected}</div>}
+              {g.per_influencer_budget && g.max_cap && !grpErr('projected') && (
                 <div className="grp-est" style={{ marginTop: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase' }}>Est. max spend</span>
@@ -1217,7 +1490,21 @@ function NewCampaignPageInner() {
             </div>
           )}
           {needsOffer(set.goal) && <>
-            <div><div className="filter-title">Commission %</div><input className="filter-inp" type="number" placeholder="e.g. 10" value={g.commission_pct || ''} onChange={e => onChg('commission_pct', e.target.value)} /></div>
+            <div>
+              <div className="filter-title">Commission %</div>
+              <input
+                className={`filter-inp${grpErr('commission_pct') ? ' inp-err' : ''}`}
+                type="number"
+                placeholder="e.g. 10"
+                value={g.commission_pct || ''}
+                onChange={e => { onChg('commission_pct', e.target.value); markTouched(grpTouchKey('commission_pct')); }}
+                onBlur={() => markTouched(grpTouchKey('commission_pct'))}
+              />
+              {grpErr('commission_pct') && <div className="field-err">{groupErrs.commission_pct}</div>}
+              {!grpErr('commission_pct') && groupWarns.group_commission_pct && (
+                <div className="field-warn">{groupWarns.group_commission_pct}</div>
+              )}
+            </div>
             <div>
               <div className="filter-title">Offer type</div>
               <div className="ot-grid">{OFFER_TYPES.map(ot => <button key={ot} className={`ot${g.offer_type === ot ? ' sel' : ''}`} onClick={() => onChg('offer_type', g.offer_type === ot ? '' : ot)}>{ot}</button>)}</div>
@@ -1249,7 +1536,21 @@ function NewCampaignPageInner() {
           {/* Set name */}
           <div className="sec">
             <div className="sec-lbl">Set name</div>
-            <input className="inp" type="text" value={set.name} placeholder="e.g. Set A" onChange={e => updateSet(si, { name: e.target.value })} />
+            {(() => {
+              const errKey = `set_${si}_name`;
+              const errMsg = showErr(errKey, validation.sets[si]?.fields.name);
+              return <>
+                <input
+                  className={`inp${errMsg ? ' inp-err' : ''}`}
+                  type="text"
+                  value={set.name}
+                  placeholder="e.g. Set A"
+                  onChange={e => { updateSet(si, { name: e.target.value }); markTouched(errKey); }}
+                  onBlur={() => markTouched(errKey)}
+                />
+                {errMsg && <div className="field-err">{errMsg}</div>}
+              </>;
+            })()}
           </div>
           {/* Goal */}
           <div className="sec">
@@ -1272,54 +1573,87 @@ function NewCampaignPageInner() {
           </div>
           {set.goal && <>
             {/* Set budget */}
-            {needsBudget(set.goal) && (
-              <div className="sec">
-                <div className="sec-lbl">Set budget (₹){set.goal === 'hybrid' ? ' — engagement portion only' : ''}</div>
-                <input className="inp inp-mono" type="number" placeholder="e.g. 80000" value={set.set_budget || ''} onChange={e => updateSet(si, { set_budget: e.target.value })} />
-                {set.set_budget && (
-                  <div className="bstrip" style={{ marginTop: 8, marginBottom: 0 }}>
-                    <div className="bstrip-top">
-                      <span className="bstrip-lbl">Set allocation</span>
-                      <span className={`bstrip-val ${sr < 0 ? 'bv-over' : sp > 80 ? 'bv-warn' : 'bv-ok'}`}>₹{fmtN(sr)} remaining</span>
+            {needsBudget(set.goal) && set.influencer_mode === 'handpick' && (() => {
+              const errKey = `set_${si}_set_budget`;
+              const errMsg = showErr(errKey, validation.sets[si]?.fields.set_budget);
+              const overspentMsg = validation.sets[si]?.fields.set_budget_overspent;
+              return (
+                <div className="sec">
+                  <div className="sec-lbl">Set budget (₹){set.goal === 'hybrid' ? ' — engagement portion only' : ''}</div>
+                  <input
+                    className={`inp inp-mono${errMsg ? ' inp-err' : ''}`}
+                    type="number"
+                    placeholder="e.g. 80000"
+                    value={set.set_budget || ''}
+                    onChange={e => { updateSet(si, { set_budget: e.target.value }); markTouched(errKey); }}
+                    onBlur={() => markTouched(errKey)}
+                  />
+                  {errMsg && <div className="field-err">{errMsg}</div>}
+                  {overspentMsg && <div className="field-err">{overspentMsg}</div>}
+                  {set.set_budget && (
+                    <div className="bstrip" style={{ marginTop: 8, marginBottom: 0 }}>
+                      <div className="bstrip-top">
+                        <span className="bstrip-lbl">Set allocation</span>
+                        <span className={`bstrip-val ${sr < 0 ? 'bv-over' : sp > 80 ? 'bv-warn' : 'bv-ok'}`}>₹{fmtN(sr)} remaining</span>
+                      </div>
+                      <div className="bbar"><div className={`bfill ${sr < 0 ? 'over' : sp > 80 ? 'warn' : ''}`} style={{ width: `${sp}%` }} /></div>
+                      <div className="bstrip-note">₹{fmtN(su)} across {set.influencers.length} influencer(s)</div>
                     </div>
-                    <div className="bbar"><div className={`bfill ${sr < 0 ? 'over' : sp > 80 ? 'warn' : ''}`} style={{ width: `${sp}%` }} /></div>
-                    <div className="bstrip-note">₹{fmtN(su)} across {set.influencers.length} influencer(s)</div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              );
+            })()}
             {/* Window */}
             <div className="sec">
               <div className="sec-lbl">Content window — influencers pick their posting date within this range</div>
               <div className="g2">
                 <div className="f">
                   <label className="flbl">Window start</label>
-                  <input className="inp" type="date" value={set.window_start || ''} min={startDate || undefined} max={endDate || undefined} onChange={e => {
+                  <input
+                    className={`inp${showErr(`set_${si}_window_start`, validation.sets[si]?.fields.window_start) ? ' inp-err' : ''}`}
+                    type="date"
+                    value={set.window_start || ''}
+                    min={startDate || undefined}
+                    max={endDate || undefined}
+                    onBlur={() => markTouched(`set_${si}_window_start`)}
+                    onChange={e => {
+                    markTouched(`set_${si}_window_start`);
                     const v = e.target.value;
                     if (startDate && v < startDate) { updateSet(si, { window_start: startDate }); return; }
                     if (endDate && v > endDate) { updateSet(si, { window_start: endDate }); return; }
                     updateSet(si, { window_start: v });
                   }} />
-                  {set.window_start && startDate && set.window_start < startDate && <div className="err-msg">Start date cannot be before campaign start ({startDate})</div>}
-                  {set.window_start && endDate && set.window_start > endDate && <div className="err-msg">Start date cannot be after campaign end ({endDate})</div>}
+                  {showErr(`set_${si}_window_start`, validation.sets[si]?.fields.window_start) && (
+                    <div className="field-err">{validation.sets[si].fields.window_start}</div>
+                  )}
                 </div>
                 <div className="f">
                   <label className="flbl">Window end{set.goal === 'hybrid' ? ' (offer expiry)' : ''}</label>
-                  <input className="inp" type="date" value={set.window_end || ''} min={set.window_start || startDate || undefined} max={endDate || undefined} onChange={e => {
-                    const v = e.target.value;
-                    if (startDate && v < startDate) { updateSet(si, { window_end: startDate }); return; }
-                    if (endDate && v > endDate) { updateSet(si, { window_end: endDate }); return; }
-                    updateSet(si, { window_end: v });
-                  }} />
-                  {set.window_end && startDate && set.window_end < startDate && <div className="err-msg">End date cannot be before campaign start ({startDate})</div>}
-                  {set.window_end && endDate && set.window_end > endDate && <div className="err-msg">End date cannot be after campaign end ({endDate})</div>}
+                  <input
+                    className={`inp${showErr(`set_${si}_window_end`, validation.sets[si]?.fields.window_end) ? ' inp-err' : ''}`}
+                    type="date"
+                    value={set.window_end || ''}
+                    min={set.window_start || startDate || undefined}
+                    max={endDate || undefined}
+                    onBlur={() => markTouched(`set_${si}_window_end`)}
+                    onChange={e => {
+                      markTouched(`set_${si}_window_end`);
+                      const v = e.target.value;
+                      if (startDate && v < startDate) { updateSet(si, { window_end: startDate }); return; }
+                      if (endDate && v > endDate) { updateSet(si, { window_end: endDate }); return; }
+                      updateSet(si, { window_end: v });
+                    }}
+                  />
+                  {showErr(`set_${si}_window_end`, validation.sets[si]?.fields.window_end) && (
+                    <div className="field-err">{validation.sets[si].fields.window_end}</div>
+                  )}
                 </div>
               </div>
             </div>
             {/* Formats */}
             <div className="sec">
               <div className="sec-lbl">Content formats</div>
-              <div className="fmt-chips">{FORMATS.map(f => <div key={f} className={`fmt-chip${set.formats.some(x => x.name === f) ? ' sel' : ''}`} onClick={() => toggleFormat(si, f)}>{f}</div>)}</div>
+              <div className="fmt-chips">{FORMATS.map(f => <div key={f} className={`fmt-chip${set.formats.some(x => x.name === f) ? ' sel' : ''}`} onClick={() => { toggleFormat(si, f); markTouched(`set_${si}_formats`); }}>{f}</div>)}</div>
               {set.formats.length > 0 && set.formats.map(f => (
                 <div key={f.name} className="cnt-row">
                   <span className="cnt-name">{f.name}</span>
@@ -1330,6 +1664,9 @@ function NewCampaignPageInner() {
                   </div>
                 </div>
               ))}
+              {showErr(`set_${si}_formats`, validation.sets[si]?.fields.formats) && (
+                <div className="field-err">{validation.sets[si].fields.formats}</div>
+              )}
             </div>
             {/* Brief */}
             <div className="sec">
@@ -1366,13 +1703,24 @@ function NewCampaignPageInner() {
               </div>
             </div>
             {/* Coupon prefix */}
-            {needsCoupon(set.goal) && (
-              <div className="sec">
-                <div className="sec-lbl">Coupon prefix</div>
-                <input className="inp" placeholder="e.g. SALE25 → SALE25_PRIYA" value={set.coupon_prefix || ''} onChange={e => updateSet(si, { coupon_prefix: e.target.value.toUpperCase() })} />
-                <div className="hint">System appends influencer's first name: {set.coupon_prefix ? `${set.coupon_prefix}_PRIYA` : 'CODE_PRIYA'}</div>
-              </div>
-            )}
+            {needsCoupon(set.goal) && (() => {
+              const errKey = `set_${si}_coupon_prefix`;
+              const errMsg = showErr(errKey, validation.sets[si]?.fields.coupon_prefix);
+              return (
+                <div className="sec">
+                  <div className="sec-lbl">Coupon prefix</div>
+                  <input
+                    className={`inp${errMsg ? ' inp-err' : ''}`}
+                    placeholder="e.g. SALE25 → SALE25_PRIYA"
+                    value={set.coupon_prefix || ''}
+                    onChange={e => { updateSet(si, { coupon_prefix: e.target.value.toUpperCase() }); markTouched(errKey); }}
+                    onBlur={() => markTouched(errKey)}
+                  />
+                  {errMsg && <div className="field-err">{errMsg}</div>}
+                  <div className="hint">System appends influencer's first name: {set.coupon_prefix ? `${set.coupon_prefix}_PRIYA` : 'CODE_PRIYA'}</div>
+                </div>
+              );
+            })()}
             {/* Mode toggle */}
             <div className="sec">
               <div className="sec-lbl">Influencer assignment mode</div>
@@ -1718,18 +2066,56 @@ function NewCampaignPageInner() {
             <>
               <div className="cc-ct">Campaign basics</div>
               <div className="cc-cs">Set the top-level details. Budget covers engagement and hybrid sets only. Conversion sets run on commission — no budget needed.</div>
-              <div className="f"><label className="flbl">Campaign name</label><input className="inp" type="text" placeholder="e.g. Summer Collection 2025" value={name} onChange={e => setName(e.target.value)} /></div>
+              <div className="f">
+                <label className="flbl">Campaign name</label>
+                <input
+                  className={`inp${showErr('name', validation.campaign.name) ? ' inp-err' : ''}`}
+                  type="text"
+                  placeholder="e.g. Summer Collection 2025"
+                  value={name}
+                  onChange={e => { setName(e.target.value); markTouched('name'); }}
+                  onBlur={() => markTouched('name')}
+                />
+                {showErr('name', validation.campaign.name) && <div className="field-err">{validation.campaign.name}</div>}
+              </div>
               <div className="g2">
                 <div className="f">
                   <label className="flbl">Start date</label>
-                  <input className="inp" type="date" value={startDate} min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })()} onChange={e => setStartDate(e.target.value)} />
+                  <input
+                    className={`inp${showErr('startDate', validation.campaign.startDate) ? ' inp-err' : ''}`}
+                    type="date"
+                    value={startDate}
+                    min={(() => { const d = new Date(); d.setDate(d.getDate() + 7); return d.toISOString().split('T')[0]; })()}
+                    onChange={e => { setStartDate(e.target.value); markTouched('startDate'); }}
+                    onBlur={() => markTouched('startDate')}
+                  />
                   <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 4 }}>Campaign must start at least 7 days from today</div>
+                  {showErr('startDate', validation.campaign.startDate) && <div className="field-err">{validation.campaign.startDate}</div>}
                 </div>
-                <div className="f"><label className="flbl">End date</label><input className="inp" type="date" value={endDate} min={startDate || undefined} onChange={e => setEndDate(e.target.value)} /></div>
+                <div className="f">
+                  <label className="flbl">End date</label>
+                  <input
+                    className={`inp${showErr('endDate', validation.campaign.endDate) ? ' inp-err' : ''}`}
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={e => { setEndDate(e.target.value); markTouched('endDate'); }}
+                    onBlur={() => markTouched('endDate')}
+                  />
+                  {showErr('endDate', validation.campaign.endDate) && <div className="field-err">{validation.campaign.endDate}</div>}
+                </div>
               </div>
               <div className="f">
                 <label className="flbl">Total campaign budget (₹) <span className="note">— engagement + hybrid sets only</span></label>
-                <input className="inp inp-mono" type="number" placeholder="0" value={totalBudget} onChange={e => setTotalBudget(e.target.value)} />
+                <input
+                  className={`inp inp-mono${showErr('totalBudget', validation.campaign.totalBudget) ? ' inp-err' : ''}`}
+                  type="number"
+                  placeholder="0"
+                  value={totalBudget}
+                  onChange={e => { setTotalBudget(e.target.value); markTouched('totalBudget'); }}
+                  onBlur={() => markTouched('totalBudget')}
+                />
+                {showErr('totalBudget', validation.campaign.totalBudget) && <div className="field-err">{validation.campaign.totalBudget}</div>}
                 {totalBudget && Number(totalBudget) > 0 && (
                   <div className="bstrip" style={{ marginTop: 10, marginBottom: 0 }}>
                     <div className="bstrip-top"><span className="bstrip-lbl">Allocated to sets</span><span className={`bstrip-val ${rem < 0 ? 'bv-over' : pct > 80 ? 'bv-warn' : 'bv-ok'}`}>₹{fmtN(rem)} remaining</span></div>
@@ -1739,6 +2125,11 @@ function NewCampaignPageInner() {
                 )}
               </div>
               {error && <div className="err-msg">{error}</div>}
+              {forceShowErrors && validation.step1Errors > 0 && (
+                <div className="cc-error-summary">
+                  {validation.step1Errors} field{validation.step1Errors !== 1 ? 's' : ''} need{validation.step1Errors === 1 ? 's' : ''} attention. Highlighted in red above.
+                </div>
+              )}
               <div className="cc-actions">
                 <span className="step-ctr">STEP 1 / 3</span>
                 <button className="btn-next" onClick={goToStep2} disabled={saving}>{saving ? 'Saving…' : 'Build deliverable sets →'}</button>
@@ -1785,6 +2176,13 @@ function NewCampaignPageInner() {
               </div>
               {renderSetBody(activeSet)}
               {error && <div className="err-msg">{error}</div>}
+              {forceShowErrors && (validation.step1Errors + validation.step2Errors) > 0 && (
+                <div className="cc-error-summary">
+                  {validation.step1Errors + validation.step2Errors} field{(validation.step1Errors + validation.step2Errors) !== 1 ? 's' : ''} need{(validation.step1Errors + validation.step2Errors) === 1 ? 's' : ''} attention.
+                  {validation.step1Errors > 0 && ` ${validation.step1Errors} on Step 1.`}
+                  {validation.step2Errors > 0 && ` ${validation.step2Errors} across the sets below.`}
+                </div>
+              )}
               <div className="cc-actions">
                 <button className="btn-back" onClick={goBack}>← Back</button>
                 <div style={{ display: 'flex', gap: 8 }}>
