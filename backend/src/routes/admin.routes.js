@@ -3,6 +3,8 @@
 const { Router } = require('express');
 const { authenticate, requireAdminRole, requireAnyAdminRole } = require('../middleware/auth');
 const ctrl = require('../controllers/admin.controller');
+const verificationCtrl = require('../controllers/creatorVerification.controller');
+const invitationCtrl = require('../controllers/creatorInvitation.controller');
 
 const router = Router();
 
@@ -53,5 +55,16 @@ router.get('/analytics', authenticate, requireAnyAdminRole, ctrl.getAnalytics);
 router.get('/production/queue', authenticate, requireAnyAdminRole, ctrl.getProductionQueue);
 
 // Influencer Instagram rescrape — already in influencer.routes.js (/influencers/:id/rescrape)
+
+// ── Creator verification queue (claimed creator_profiles) — reviewer+ ────────
+router.get('/creator-verifications',                 authenticate, requireAdminRole('reviewer'), verificationCtrl.listQueue);
+router.post('/creator-verifications/:id/verify',     authenticate, requireAdminRole('reviewer'), verificationCtrl.verify);
+router.post('/creator-verifications/:id/reject',     authenticate, requireAdminRole('reviewer'), verificationCtrl.reject);
+router.post('/creator-verifications/:id/reset',      authenticate, requireAdminRole('reviewer'), verificationCtrl.reset);
+
+// ── Creator invitations (brand → unclaimed creators outreach queue) ──────────
+router.get('/creator-invitations',                   authenticate, requireAdminRole('reviewer'), invitationCtrl.adminListInvitations);
+router.post('/creator-invitations/:id/contacted',    authenticate, requireAdminRole('reviewer'), invitationCtrl.adminMarkContacted);
+router.post('/creator-invitations/:id/expire',       authenticate, requireAdminRole('reviewer'), invitationCtrl.adminExpire);
 
 module.exports = router;

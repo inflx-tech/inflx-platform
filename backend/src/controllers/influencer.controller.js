@@ -60,11 +60,73 @@ function sanitiseInfluencer(row) {
 // POST /influencers/register
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Normalise a social handle: trim, lowercase, strip leading '@'.
+ * Returns null for empty input.
+ */
+function normaliseHandle(value) {
+  if (!value) return null;
+  const trimmed = String(value).trim().replace(/^@+/, '').toLowerCase();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Try to claim an existing creator_profiles row for this user.
+ *
+ * Matching: row.ig_handle === instagram_handle  OR  row.youtube_handle === youtube_handle.
+ * If exactly one match → status='claimed', linked_influencer_id, single-claim path.
+ * If multiple matches  → all candidates flagged with same claim_user_id, status stays
+ *                        'unclaimed' on each; admin queue surfaces the conflict.
+ * If zero matches      → no-op, normal registration continues without a claim.
+ *
+ * Returns { match_count, conflict, claimed_profile_ids }.
+ */
+async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, youtubeHandle }) {
+  const { rows: matches } = await db.query(
+    `SELECT id FROM creator_profiles
+      WHERE ig_handle = $1
+         OR ($2::text IS NOT NULL AND youtube_handle = $2)`,
+    [instagramHandle, youtubeHandle]
+  );
+
+  if (matches.length === 0) {
+    return { match_count: 0, conflict: false, claimed_profile_ids: [] };
+  }
+
+  if (matches.length === 1) {
+    // Single, clean claim → mark claimed and link
+    await db.query(
+      `UPDATE creator_profiles
+          SET verification_status = 'claimed',
+              claim_user_id        = $1,
+              claim_requested_at   = COALESCE(claim_requested_at, NOW()),
+              linked_influencer_id = $2
+        WHERE id = $3`,
+      [userId, influencerId, matches[0].id]
+    );
+    return { match_count: 1, conflict: false, claimed_profile_ids: [matches[0].id] };
+  }
+
+  // Multiple matches → conflict. Tag all candidates with claim_user_id so admin sees the
+  // cluster, but keep status 'unclaimed' until admin picks the right one.
+  const ids = matches.map(r => r.id);
+  await db.query(
+    `UPDATE creator_profiles
+        SET claim_user_id      = $1,
+            claim_requested_at = COALESCE(claim_requested_at, NOW())
+      WHERE id = ANY($2::uuid[])`,
+    [userId, ids]
+  );
+  return { match_count: matches.length, conflict: true, claimed_profile_ids: ids };
+}
+
 const register = asyncHandler(async (req, res) => {
   const userId = req.user.sub;
-  const { instagram_handle } = req.body;
 
-  if (!instagram_handle || !instagram_handle.trim()) {
+  const instagramHandle = normaliseHandle(req.body.instagram_handle);
+  const youtubeHandle   = normaliseHandle(req.body.youtube_handle);
+
+  if (!instagramHandle) {
     throw new AppError('VALIDATION_ERROR', 'instagram_handle is required', 422, 'instagram_handle');
   }
 
@@ -74,17 +136,20 @@ const register = asyncHandler(async (req, res) => {
     throw new AppError('CONFLICT', 'Influencer profile already exists for this account', 409);
   }
 
-  // Run Apify scrape (mocked in dev)
-  const scraped = await apifyService.scrapeProfile(instagram_handle.trim());
+  // Run Apify scrape (mocked in dev). Kept as a fallback so brand-new
+  // creators not yet in creator_profiles still get baseline metrics.
+  const scraped = await apifyService.scrapeProfile(instagramHandle);
 
   const { rows } = await db.query(
     `INSERT INTO influencers
-       (user_id, instagram_handle, followers_count, engagement_rate, niche, scrape_data, scrape_last_run)
-     VALUES ($1, $2, $3, $4, $5, $6, now())
+       (user_id, instagram_handle, youtube_handle, followers_count, engagement_rate,
+        niche, scrape_data, scrape_last_run)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, now())
      RETURNING *`,
     [
       userId,
-      instagram_handle.trim().toLowerCase(),
+      instagramHandle,
+      youtubeHandle,
       scraped.followers_count,
       scraped.engagement_rate,
       scraped.niche,
@@ -93,9 +158,48 @@ const register = asyncHandler(async (req, res) => {
   );
 
   const influencer = rows[0];
+
+  // Attempt to link to an existing scraped creator_profile.
+  const claim = await tryClaimCreatorProfile({
+    userId,
+    influencerId: influencer.id,
+    instagramHandle,
+    youtubeHandle,
+  });
+
+  // If exactly one match, also auto-convert any pending creator_invitations
+  // for that profile into real campaign_influencers rows. (Phase 3b — funnel close.)
+  // Brand-side 'creator_invitations' rows exist only after Phase 3b ships;
+  // this no-ops gracefully if none exist.
+  if (claim.match_count === 1) {
+    try {
+      await db.query(
+        `UPDATE creator_invitations
+            SET status = 'converted',
+                converted_at = NOW()
+          WHERE creator_profile_id = $1
+            AND status IN ('pending','contacted')`,
+        [claim.claimed_profile_ids[0]]
+      );
+    } catch (e) {
+      // Table may not exist in older DBs — non-fatal
+      console.warn('[register] invitation auto-convert skipped:', e.message);
+    }
+  }
+
   const full = await getInfluencerById(influencer.id);
 
-  return success(res, { influencer: sanitiseInfluencer(full), user_status: full.user_status }, 201);
+  return success(res, {
+    influencer: sanitiseInfluencer(full),
+    user_status: full.user_status,
+    claim: {
+      match_count:        claim.match_count,
+      claimed:            claim.match_count === 1,
+      conflict:           claim.conflict,
+      requires_admin:     claim.match_count >= 1,           // single OR conflict — admin still confirms
+      profile_ids:        claim.claimed_profile_ids,
+    },
+  }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -184,69 +288,125 @@ const updateMe = asyncHandler(async (req, res) => {
 // GET /influencers/search  (brand + admin)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Helper: parse comma-separated query value into a string[].
+ * Accepts "a,b,c" or array form. Trims and lowercases. Empty returns null.
+ */
+function parseList(value) {
+  if (value == null) return null;
+  const arr = Array.isArray(value)
+    ? value
+    : String(value).split(',').map(s => s.trim()).filter(Boolean);
+  return arr.length > 0 ? arr : null;
+}
+
+/**
+ * Map a sort key from the brand UI to a SQL ORDER BY clause against the
+ * v_searchable_creators view. NULLS LAST so missing metrics don't poison
+ * sort order.
+ */
+const SORT_MAP = {
+  rank:          'rank_score DESC NULLS LAST',
+  view_er:       'view_based_er DESC NULLS LAST',
+  followers:     'followers_count DESC NULLS LAST',
+  active:        'posting_frequency_per_week DESC NULLS LAST',
+  growth:        'growth_potential_score DESC NULLS LAST',
+  cheapest:      'estimated_min_rate ASC NULLS LAST',
+  most_collabs:  'total_brand_collaborations DESC NULLS LAST',
+};
+const DEFAULT_SORT = SORT_MAP.rank;
+
 const search = asyncHandler(async (req, res) => {
   const {
     q,
-    niche,
-    city,
-    tier,
-    gender,
-    platform,
-    min_followers,
-    max_followers,
-    min_er,
+    sort,
     page  = '1',
     limit = '20',
   } = req.query;
 
-  const conditions = [`u.status = 'approved'`];
+  const cities       = parseList(req.query.city);
+  const niches       = parseList(req.query.niche);
+  const tiers        = parseList(req.query.tier);
+  const languages    = parseList(req.query.languages);
+  const useCases     = parseList(req.query.use_case);
+
+  const conditions = [`(is_active_creator IS DISTINCT FROM FALSE)`];
   const params = [];
 
   if (q) {
-    params.push(`%${q}%`);
-    conditions.push(`(u.name ILIKE $${params.length} OR i.instagram_handle ILIKE $${params.length} OR i.full_name ILIKE $${params.length})`);
+    params.push(`%${String(q).trim()}%`);
+    conditions.push(`(full_name ILIKE $${params.length} OR ig_handle ILIKE $${params.length})`);
   }
-  if (niche) {
-    params.push(niche);
-    conditions.push(`$${params.length} = ANY(i.niche)`);
+  if (cities) {
+    params.push(cities);
+    conditions.push(`city = ANY($${params.length}::text[])`);
   }
-  if (city) {
-    params.push(`%${city}%`);
-    conditions.push(`i.city ILIKE $${params.length}`);
+  if (niches) {
+    params.push(niches);
+    conditions.push(`niche = ANY($${params.length}::text[])`);
   }
-  if (tier) {
-    params.push(tier);
-    conditions.push(`i.tier = $${params.length}`);
+  if (tiers) {
+    params.push(tiers);
+    conditions.push(`tier = ANY($${params.length}::text[])`);
   }
-  if (gender) {
-    params.push(gender);
-    conditions.push(`i.gender = $${params.length}`);
+  if (languages) {
+    params.push(languages);
+    conditions.push(`languages && $${params.length}::text[]`);
   }
-  if (platform) {
-    params.push(platform);
-    conditions.push(`i.platform = $${params.length}`);
+  if (useCases) {
+    params.push(useCases);
+    conditions.push(`recommended_use_cases && $${params.length}::text[]`);
   }
-  if (min_followers) {
-    params.push(parseInt(min_followers, 10));
-    conditions.push(`i.followers_count >= $${params.length}`);
+  if (req.query.min_followers) {
+    params.push(parseInt(req.query.min_followers, 10));
+    conditions.push(`followers_count >= $${params.length}`);
   }
-  if (max_followers) {
-    params.push(parseInt(max_followers, 10));
-    conditions.push(`i.followers_count <= $${params.length}`);
+  if (req.query.max_followers) {
+    params.push(parseInt(req.query.max_followers, 10));
+    conditions.push(`followers_count <= $${params.length}`);
   }
-  if (min_er) {
-    params.push(parseFloat(min_er));
-    conditions.push(`i.engagement_rate >= $${params.length}`);
+  if (req.query.min_view_er) {
+    params.push(parseFloat(req.query.min_view_er));
+    conditions.push(`view_based_er >= $${params.length}`);
+  }
+  if (req.query.min_rate) {
+    params.push(parseFloat(req.query.min_rate));
+    conditions.push(`estimated_min_rate >= $${params.length}`);
+  }
+  if (req.query.max_rate) {
+    params.push(parseFloat(req.query.max_rate));
+    conditions.push(`estimated_max_rate <= $${params.length}`);
+  }
+  if (req.query.min_posts_per_week) {
+    params.push(parseFloat(req.query.min_posts_per_week));
+    conditions.push(`posting_frequency_per_week >= $${params.length}`);
+  }
+  if (req.query.has_brand_collabs === 'true') {
+    conditions.push(`total_brand_collaborations > 0`);
+  }
+  if (req.query.is_inflx_verified === 'true') {
+    conditions.push(`is_inflx_verified = TRUE`);
+  }
+  if (req.query.is_business === 'true') {
+    conditions.push(`is_business = TRUE`);
+  }
+  if (req.query.brand_handle) {
+    // top_brand_partners is a JSONB array of objects with a "handle" key
+    params.push(String(req.query.brand_handle).trim().toLowerCase());
+    conditions.push(`EXISTS (
+      SELECT 1 FROM jsonb_array_elements(COALESCE(top_brand_partners, '[]'::jsonb)) AS bp
+      WHERE LOWER(REPLACE(bp->>'handle', '@', '')) = $${params.length}
+    )`);
   }
 
-  const where = conditions.join(' AND ');
+  const where    = conditions.join(' AND ');
+  const orderBy  = SORT_MAP[String(sort || '').trim()] || DEFAULT_SORT;
 
-  const countFilterParams = [...params];
   const { rows: countRows } = await db.query(
-    `SELECT COUNT(*) FROM influencers i JOIN users u ON u.id = i.user_id WHERE ${where}`,
-    countFilterParams
+    `SELECT COUNT(*)::int AS c FROM v_searchable_creators WHERE ${where}`,
+    params
   );
-  const total = parseInt(countRows[0].count, 10);
+  const total = countRows[0].c;
 
   const pageNum  = Math.max(1, parseInt(page, 10));
   const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
@@ -255,25 +415,25 @@ const search = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT
-       i.id, i.instagram_handle, i.youtube_handle, i.full_name,
-       i.followers_count, i.engagement_rate, i.niche, i.secondary_niche,
-       i.language, i.tier, i.city, i.state, i.gender, i.platform,
-       i.avg_views, i.avg_likes, i.avg_comments, i.avg_shares, i.avg_saves,
-       i.total_posts, i.verified,
-       i.bio, i.website,
-       i.price_per_post_min, i.price_per_post_max,
-       i.past_brands_json, i.collaboration_types_json,
-       i.profile_image_url, i.age,
-       u.name, u.id AS user_id
-     FROM influencers i
-     JOIN users u ON u.id = i.user_id
+       row_id, source, ig_handle, full_name, profile_pic_url,
+       followers_count, view_based_er, follower_based_er,
+       tier, city, niche, sub_niche, languages,
+       ig_verified, is_business,
+       estimated_min_rate, estimated_max_rate,
+       rank_score, growth_potential_score, posting_frequency_per_week,
+       total_posts_90d, total_brand_collaborations, unique_brands_count,
+       commercial_post_rate, top_brand_partners, recommended_use_cases,
+       avg_views, avg_likes, avg_comments,
+       activity_status, linked_influencer_id,
+       is_inflx_verified, last_calculated_at
+     FROM v_searchable_creators
      WHERE ${where}
-     ORDER BY i.followers_count DESC
+     ORDER BY ${orderBy}, ig_handle
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
 
-  return success(res, { influencers: rows }, 200, { page: pageNum, limit: limitNum, total });
+  return success(res, { creators: rows }, 200, { page: pageNum, limit: limitNum, total });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

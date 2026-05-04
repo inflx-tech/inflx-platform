@@ -12,6 +12,7 @@ const transactionCtrl = require('../controllers/transaction.controller');
 const inboxCtrl = require('../controllers/brandInbox.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
 const linkCtrl = require('../controllers/referenceLink.controller');
+const invitationCtrl = require('../controllers/creatorInvitation.controller');
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
@@ -98,6 +99,12 @@ router.get('/me/store-preview', authenticate, requireRole('brand'), ctrl.storePr
 
 // Public brand profile (any authenticated user — influencers viewing brand info from offers)
 router.get('/:id/public', authenticate, ctrl.getPublicProfile);
+
+// ── Creator invitations (brand → unclaimed scraped creators) ────────────────
+// Brand invites a non-onboarded creator → admin queue picks it up and runs outreach.
+router.post('/me/creator-invitations',         authenticate, requireRole('brand'), requireApproved, invitationCtrl.createInvitation);
+router.get('/me/creator-invitations',          authenticate, requireRole('brand'), invitationCtrl.listMyInvitations);
+router.delete('/me/creator-invitations/:id',   authenticate, requireRole('brand'), invitationCtrl.withdrawInvitation);
 
 // Admin routes (reviewer+ can view, approve, reject)
 router.get('/:id',         authenticate, requireAdminRole('reviewer'), ctrl.getById);

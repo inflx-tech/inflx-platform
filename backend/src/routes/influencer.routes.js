@@ -6,12 +6,16 @@ const ctrl = require('../controllers/influencer.controller');
 const offerCtrl = require('../controllers/offer.controller');
 const withdrawalCtrl = require('../controllers/withdrawal.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
+const analyticsCtrl = require('../controllers/creatorAnalytics.controller');
 const { requireAnyAdminRole } = require('../middleware/auth');
 
 const router = Router();
 
 // ── Brand/Admin search endpoints (must come BEFORE /me/* to avoid shadowing) ─
-router.get('/search', authenticate, requireRole('brand', 'admin'), requireApproved, ctrl.search);
+router.get('/search',    authenticate, requireRole('brand', 'admin'), requireApproved, ctrl.search);
+
+// ── Brand-side market analytics dashboard data (one fat aggregate response) ─
+router.get('/analytics', authenticate, requireRole('brand', 'admin'), requireApproved, analyticsCtrl.getMarketAnalytics);
 
 // ── Influencer self-service routes ───────────────────────────────────────────
 router.post('/register',  authenticate, requireRole('influencer'), ctrl.register);
