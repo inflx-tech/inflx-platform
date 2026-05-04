@@ -1,8 +1,38 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { campaignApi, brandApi, influencerApi, fmtNum } from '../../../../lib/api';
+import { campaignApi, brandApi, influencerApi, creatorInvitationApi, fmtNum } from '../../../../lib/api';
 import GalleryPicker from '../../gallery/components/GalleryPicker';
+
+// ─── Creator response mapper ────────────────────────────────────────────────
+// The new GET /influencers/search returns rows from v_searchable_creators
+// with field names different from the legacy influencers row. This mapper
+// shapes them into the legacy form the wizard already understands, while
+// preserving the new flags (source, is_inflx_verified, is_unclaimed) on
+// the same object so card render + add-to-set logic can branch on them.
+function mapCreator(c) {
+  const isUnclaimed = c.source === 'scraped' && !c.linked_influencer_id;
+  return {
+    // Legacy-shape fields the existing UI reads
+    id:               c.linked_influencer_id || c.row_id,
+    instagram_handle: c.ig_handle,
+    full_name:        c.full_name,
+    niche:            c.niche ? [c.niche] : [],
+    secondary_niche:  c.sub_niche ? [c.sub_niche] : [],
+    tier:             c.tier,
+    city:             c.city,
+    followers_count:  c.followers_count,
+    engagement_rate:  c.view_based_er,
+    profile_image_url: c.profile_pic_url,
+    // New flags carried through for badge + branching
+    source:           c.source,
+    row_id:           c.row_id,
+    ig_handle:        c.ig_handle,
+    linked_influencer_id: c.linked_influencer_id,
+    is_inflx_verified: !!c.is_inflx_verified,
+    is_unclaimed:     isUnclaimed,
+  };
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const FORMATS = ['Instagram reel', 'Instagram stories', 'Instagram post', 'YouTube short', 'YouTube video'];
@@ -829,15 +859,16 @@ function NewCampaignPageInner() {
     if (browseNiche) params.niche = browseNiche;
     if (browseCity.trim()) params.city = browseCity.trim();
     if (browseTier) params.tier = browseTier;
-    if (browseGender) params.gender = browseGender;
+    // gender no longer supported — dropped from new search backend
     if (browseMinFollowers) params.min_followers = browseMinFollowers;
     if (browseMaxFollowers) params.max_followers = browseMaxFollowers;
-    if (browseMinEr) params.min_er = browseMinEr;
+    if (browseMinEr) params.min_view_er = browseMinEr;
     try {
       const res = await influencerApi.search(params);
       if (res.success || res.ok) {
-        setBrowseResults(res.data?.influencers || res.data || []);
-        setBrowseTotal(res.meta?.total || res.data?.length || 0);
+        const raw = res.data?.creators || res.data?.influencers || [];
+        setBrowseResults(raw.map(mapCreator));
+        setBrowseTotal(res.meta?.total || raw.length || 0);
       }
     } catch {}
     setBrowseLoading(false);
@@ -863,18 +894,49 @@ function NewCampaignPageInner() {
     });
   };
 
-  const addBrowseSelectedToSet = (si) => {
+  const addBrowseSelectedToSet = async (si) => {
     const usedIds = allUsedIds();
-    const newInfs = browseSelected.filter(inf => !usedIds.includes(inf.id)).map(inf => ({
-      ...mkInf(),
-      influencer_id: inf.id,
-      name: inf.full_name || '',
-      handle: inf.instagram_handle ? `@${inf.instagram_handle}` : '',
-      init: (inf.full_name || 'X').slice(0, 2).toUpperCase(),
-    }));
-    if (newInfs.length > 0) {
+
+    // Split: scraped (unclaimed) creators can't be added directly to handpick
+    // (campaign_influencers FK requires influencers.id). Route them to the
+    // creator_invitations table so an admin can run outreach.
+    const onboardedNew = browseSelected
+      .filter(inf => !inf.is_unclaimed && inf.id && !usedIds.includes(inf.id));
+    const scrapedToInvite = browseSelected.filter(inf => inf.is_unclaimed);
+
+    if (onboardedNew.length > 0) {
+      const newInfs = onboardedNew.map(inf => ({
+        ...mkInf(),
+        influencer_id: inf.id,
+        name: inf.full_name || '',
+        handle: inf.instagram_handle ? `@${inf.instagram_handle}` : '',
+        init: (inf.full_name || 'X').slice(0, 2).toUpperCase(),
+      }));
       updateSet(si, { influencers: [...sets[si].influencers, ...newInfs] });
     }
+
+    if (scrapedToInvite.length > 0) {
+      // Create invitations linked to this draft campaign + set. They
+      // auto-convert into campaign_influencers when the creator signs up.
+      const results = await Promise.allSettled(scrapedToInvite.map(inf =>
+        creatorInvitationApi.create({
+          ig_handle:    inf.ig_handle,
+          campaign_id:  campaignId || undefined,
+          set_id:       sets[si]?.id || undefined,
+        })
+      ));
+      const ok  = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
+      const dup = results.filter(r => r.status === 'fulfilled' && r.value?.error?.code === 'CONFLICT').length;
+      const err = results.length - ok - dup;
+      if (typeof window !== 'undefined') {
+        const lines = [];
+        if (ok)  lines.push(`✉ ${ok} invitation${ok === 1 ? '' : 's'} queued for Inflx admin outreach`);
+        if (dup) lines.push(`${dup} already invited (skipped)`);
+        if (err) lines.push(`${err} failed`);
+        alert(lines.join('\n'));
+      }
+    }
+
     setBrowseSelected([]);
   };
 
@@ -894,7 +956,12 @@ function NewCampaignPageInner() {
     groupSearchTimer.current = setTimeout(async () => {
       try {
         const res = await influencerApi.search({ q, limit: '30' });
-        if (res.success || res.ok) setGroupSearchResults(res.data?.influencers || res.data || []);
+        if (res.success || res.ok) {
+          const raw = res.data?.creators || res.data?.influencers || [];
+          // Groups can only contain onboarded influencers (need real influencers.id
+          // for the campaign_influencers FK). Filter scraped creators out.
+          setGroupSearchResults(raw.map(mapCreator).filter(c => !c.is_unclaimed));
+        }
       } catch {}
       setGroupSearchLoading(false);
     }, 300);
@@ -1784,13 +1851,8 @@ function NewCampaignPageInner() {
                             {TIERS.map(t => <option key={t.key} value={t.key}>{t.label} ({t.sub})</option>)}
                           </select>
                         </div>
-                        <div className="browse-ff">
-                          <label>Gender</label>
-                          <select value={browseGender} onChange={e => setBrowseGender(e.target.value)}>
-                            <option value="">All</option>
-                            {GENDERS.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
-                          </select>
-                        </div>
+                        {/* Gender filter removed — not supported by the unified search backend.
+                            browseGender state is retained so existing references stay valid. */}
                         <div className="browse-ff">
                           <label>City</label>
                           <input placeholder="e.g. Mumbai" value={browseCity} onChange={e => setBrowseCity(e.target.value)} />
@@ -1824,25 +1886,49 @@ function NewCampaignPageInner() {
                       <div className="browse-grid">
                         {browseResults.map(inf => {
                           const usedIds = allUsedIds();
-                          const alreadyInSet = usedIds.includes(inf.id);
-                          const isSelected = browseSelected.some(s => s.id === inf.id);
+                          // 'already in set' only applies to onboarded creators tracked by influencers.id
+                          const alreadyInSet = !inf.is_unclaimed && usedIds.includes(inf.id);
+                          const selKey = inf.is_unclaimed ? `u:${inf.row_id}` : `o:${inf.id}`;
+                          const isSelected = browseSelected.some(s => (s.is_unclaimed ? `u:${s.row_id}` : `o:${s.id}`) === selKey);
                           const niches = [...(inf.niche || []), ...(inf.secondary_niche || [])].slice(0, 2);
                           const initials = (inf.full_name || inf.instagram_handle || 'XX').slice(0, 2).toUpperCase();
-                          const er = inf.engagement_rate || 0;
+                          const er = Number(inf.engagement_rate || 0);
                           return (
                             <div
-                              key={inf.id}
+                              key={selKey}
                               className={`browse-card${isSelected ? ' sel' : ''}${alreadyInSet ? ' already' : ''}`}
                               onClick={() => !alreadyInSet && toggleBrowseSelect(inf)}
+                              title={inf.is_unclaimed ? 'Not on Inflx yet — selecting this creates an admin outreach invite' : ''}
                             >
                               <div className={`browse-check`}>{alreadyInSet ? '✓' : isSelected ? '✓' : ''}</div>
-                              <div className="browse-av">{initials}</div>
+                              {inf.profile_image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={inf.profile_image_url} alt={inf.instagram_handle}
+                                  className="browse-av" style={{ objectFit: 'cover' }}
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                              ) : (
+                                <div className="browse-av">{initials}</div>
+                              )}
                               <div className="browse-info">
-                                <div className="browse-name">{inf.full_name || inf.instagram_handle}</div>
+                                <div className="browse-name" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {inf.full_name || inf.instagram_handle}
+                                  </span>
+                                  {inf.is_inflx_verified && (
+                                    <span style={{ fontSize: 8, fontWeight: 800, padding: '1px 4px', borderRadius: 3, background: '#dbeafe', color: '#1d4ed8', whiteSpace: 'nowrap' }}>
+                                      ✓ VERIFIED
+                                    </span>
+                                  )}
+                                  {inf.is_unclaimed && (
+                                    <span style={{ fontSize: 8, fontWeight: 700, padding: '1px 4px', borderRadius: 3, background: 'rgba(168,85,247,.12)', color: '#7e22ce', whiteSpace: 'nowrap' }}>
+                                      ✉ INVITE
+                                    </span>
+                                  )}
+                                </div>
                                 <div className="browse-meta">@{inf.instagram_handle}{inf.city ? ` · ${inf.city}` : ''}{inf.tier ? ` · ${inf.tier}` : ''}</div>
                                 <div className="browse-stats">
                                   <span className="browse-stat">{fmtNum(inf.followers_count)}</span>
-                                  <span className={`browse-stat${er >= 5 ? ' er-high' : ''}`}>{er}% ER</span>
+                                  <span className={`browse-stat${er >= 5 ? ' er-high' : ''}`}>{er.toFixed(2)}% ER</span>
                                   {niches.map(n => <span key={n} className="browse-stat">{n}</span>)}
                                 </div>
                               </div>
@@ -1865,8 +1951,22 @@ function NewCampaignPageInner() {
                           className="browse-add-btn"
                           disabled={browseSelected.length === 0}
                           onClick={() => addBrowseSelectedToSet(si)}
+                          title={(() => {
+                            const u = browseSelected.filter(s => s.is_unclaimed).length;
+                            const o = browseSelected.length - u;
+                            if (u && o) return `${o} added directly · ${u} sent to Inflx admin for outreach`;
+                            if (u)      return `${u} sent to Inflx admin for outreach`;
+                            return `${o} added to set`;
+                          })()}
                         >
-                          Add {browseSelected.length > 0 ? `${browseSelected.length} selected` : 'selected'}
+                          {(() => {
+                            const u = browseSelected.filter(s => s.is_unclaimed).length;
+                            const o = browseSelected.length - u;
+                            if (browseSelected.length === 0) return 'Add selected';
+                            if (u && o) return `Add ${o} · Invite ${u}`;
+                            if (u)      return `Invite ${u}`;
+                            return `Add ${o} selected`;
+                          })()}
                         </button>
                       </div>
                     </div>
