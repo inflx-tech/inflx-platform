@@ -1,73 +1,129 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { colors } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
+/**
+ * Influencer registration screen.
+ *
+ * Asks for both Instagram handle (required) and YouTube handle (optional).
+ * The backend tries to match either against existing creator_profiles
+ * rows pushed in by the marketing-automation pipeline. If exactly one
+ * profile matches, that profile is "claimed" — the user lands on the
+ * Waiting screen with a clearer message that admin review is in flight.
+ *
+ * If multiple profiles match (handle conflict), the user is still
+ * Waiting — admin resolves the conflict manually from the verification
+ * queue. We surface this as a soft success ("we'll get you sorted")
+ * rather than an error since it's not the user's fault.
+ */
 export default function InfluencerRegisterScreen({ navigation }) {
-  const [handle, setHandle]   = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [igHandle,    setIgHandle]    = useState('');
+  const [ytHandle,    setYtHandle]    = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState('');
+
+  const cleanHandle = (raw) => raw.trim().replace(/^@+/, '').replace(/\s/g, '').toLowerCase();
 
   async function handleRegister() {
     setError('');
-    const clean = handle.trim().replace(/^@/, '');
-    if (!clean) { setError('Instagram handle is required'); return; }
+    const ig = cleanHandle(igHandle);
+    const yt = cleanHandle(ytHandle);
+    if (!ig) { setError('Instagram handle is required'); return; }
+
     setLoading(true);
-    const res = await influencerApi.register({ instagram_handle: clean });
+    const body = { instagram_handle: ig };
+    if (yt) body.youtube_handle = yt;
+    const res = await influencerApi.register(body);
     setLoading(false);
+
     if (!res.success) { setError(res.error?.message || 'Registration failed'); return; }
-    navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
+
+    // Backend returns { influencer, user_status, claim:{ match_count, claimed, conflict, ... }}.
+    // Decide which post-registration screen to show based on the outcome.
+    const claim = res.data?.claim || {};
+    const params = {
+      claimMatched:    !!claim.claimed,
+      claimConflict:   !!claim.conflict,
+      claimMatchCount: claim.match_count || 0,
+      handle:          ig,
+    };
+
+    navigation.reset({ index: 0, routes: [{ name: 'Waiting', params }] });
   }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
-        <Text style={styles.title}>Set up your profile</Text>
-        <Text style={styles.sub}>Enter your Instagram handle so we can verify your account</Text>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+        <View style={styles.container}>
+          <Text style={styles.title}>Set up your profile</Text>
+          <Text style={styles.sub}>
+            Enter your Instagram handle so we can verify your account.
+            YouTube is optional but helps us match you faster.
+          </Text>
 
-        <Text style={styles.label}>Instagram Handle</Text>
-        <View style={styles.inputRow}>
-          <Text style={styles.at}>@</Text>
-          <TextInput
-            style={styles.input}
-            value={handle}
-            onChangeText={t => setHandle(t.replace(/\s/g, '').replace(/^@/, ''))}
-            placeholder="yourhandle"
-            placeholderTextColor={colors.t3}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <Text style={styles.label}>Instagram Handle <Text style={styles.required}>*</Text></Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.at}>@</Text>
+            <TextInput
+              style={styles.input}
+              value={igHandle}
+              onChangeText={t => setIgHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
+              placeholder="yourhandle"
+              placeholderTextColor={colors.t3}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          <Text style={styles.label}>YouTube Channel Handle <Text style={styles.optional}>(optional)</Text></Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.at}>@</Text>
+            <TextInput
+              style={styles.input}
+              value={ytHandle}
+              onChangeText={t => setYtHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
+              placeholder="yourchannel"
+              placeholderTextColor={colors.t3}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TouchableOpacity
+            style={[styles.btn, (!igHandle.trim() || loading) && styles.btnDisabled]}
+            onPress={handleRegister}
+            disabled={!igHandle.trim() || loading}
+          >
+            <Text style={styles.btnText}>{loading ? 'Registering...' : 'Complete Registration'}</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.hint}>
+            We&apos;ll match your handle to our creator database and our team will review your profile.
+            You&apos;ll be notified once verified.
+          </Text>
         </View>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={[styles.btn, (!handle.trim() || loading) && styles.btnDisabled]}
-          onPress={handleRegister}
-          disabled={!handle.trim() || loading}
-        >
-          <Text style={styles.btnText}>{loading ? 'Registering...' : 'Complete Registration'}</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.hint}>
-          Your profile will be reviewed by our team. You'll be notified once approved.
-        </Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.navyDeep, padding: 24, justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: '800', color: colors.white, marginBottom: 10 },
-  sub: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 32, lineHeight: 21 },
-  label: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, marginBottom: 20 },
-  at: { fontSize: 18, color: colors.gold, fontWeight: '700', marginRight: 4 },
-  input: { flex: 1, paddingVertical: 14, fontSize: 16, color: colors.white },
-  error: { backgroundColor: colors.redPale, borderRadius: 10, padding: 10, fontSize: 12, color: colors.red, marginBottom: 16 },
-  btn: { backgroundColor: colors.orange, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 16 },
+  scroll:      { flexGrow: 1, backgroundColor: colors.navyDeep },
+  container:   { flex: 1, padding: 24, justifyContent: 'center', minHeight: '100%' },
+  title:       { fontSize: 26, fontWeight: '800', color: colors.white, marginBottom: 10 },
+  sub:         { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 28, lineHeight: 21 },
+  label:       { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
+  required:    { color: colors.orange },
+  optional:    { color: 'rgba(255,255,255,0.4)', textTransform: 'none', letterSpacing: 0 },
+  inputRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, marginBottom: 20 },
+  at:          { fontSize: 18, color: colors.gold, fontWeight: '700', marginRight: 4 },
+  input:       { flex: 1, paddingVertical: 14, fontSize: 16, color: colors.white },
+  error:       { backgroundColor: colors.redPale, borderRadius: 10, padding: 10, fontSize: 12, color: colors.red, marginBottom: 16 },
+  btn:         { backgroundColor: colors.orange, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 16 },
   btnDisabled: { opacity: 0.5 },
-  btnText: { fontSize: 16, fontWeight: '700', color: colors.white },
-  hint: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 18 },
+  btnText:     { fontSize: 16, fontWeight: '700', color: colors.white },
+  hint:        { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 18 },
 });
