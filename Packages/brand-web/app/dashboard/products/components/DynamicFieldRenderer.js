@@ -1,17 +1,50 @@
 'use client';
 
+import TeamMemberListEditor from './TeamMemberListEditor';
+
 /**
  * DynamicFieldRenderer — renders any field type from a business type config.
  *
- * Supports all existing types: text, url, number, textarea, select,
- * veg_toggle, duration_select, variant_builder
+ * Legacy types: text, url, number, textarea, select, veg_toggle,
+ *   duration_select, variant_builder, chip_group, toggle
  *
- * New listing engine types: chip_group, toggle, image_upload
+ * v1.3 contract types (PR-B step 3.1):
+ *   - string         (alias for text)
+ *   - boolean        (alias for toggle)
+ *   - multi_select   (alias for chip_group)
+ *   - team_member_list (sub-form via TeamMemberListEditor)
+ *
+ * Image / image[] / phone / email / date / time fall through to text-input
+ * fallback for now — wired when their consumers land in PR-B step 3.
  */
 
 export default function DynamicFieldRenderer({ field, value, onChange, error }) {
   const base = 'w-full border-2 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-orange-400';
   const borderCls = error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white';
+
+  // ── team_member_list (v1.3 — sub-form) ─────────────────────────────────────
+  if (field.type === 'team_member_list') {
+    return (
+      <TeamMemberListEditor
+        value={value}
+        onChange={(next) => onChange(field.key, next)}
+      />
+    );
+  }
+
+  // ── v1.3 type aliases — collapse to existing renderers below ───────────────
+  // Schemas authored against contracts-v1.3 use snake_case type names that
+  // map to the legacy renderers. Aliasing here (vs. duplicating the cases)
+  // keeps one rendering source per UX pattern.
+  const effectiveType =
+    field.type === 'string'       ? 'text' :
+    field.type === 'boolean'      ? 'toggle' :
+    field.type === 'multi_select' ? 'chip_group' :
+    field.type;
+  // Re-derive `field` with the aliased type for the legacy switch below.
+  if (effectiveType !== field.type) {
+    field = { ...field, type: effectiveType };
+  }
 
   // ── Text / URL ─────────────────────────────────────────────────────────────
   if (field.type === 'text' || field.type === 'url') {

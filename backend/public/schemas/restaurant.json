@@ -3,152 +3,504 @@
   "label": "Restaurant",
   "icon": "🍽️",
   "product_noun": "Menu Item",
-  "product_noun_plural": "Menu Items",
+  "product_noun_plural": "Menu",
+  "super_category": "eat",
+  "card_type": "menu_item",
+  "phase": 1,
+  "status": "active",
+
   "features": {
     "sections": true,
     "veg_flag": true,
     "duration_mins": false,
-    "variants": false,
+    "variants": true,
     "stock": true,
     "booking": true,
     "enquiry_only": false,
-    "availability": false
+    "availability": true,
+    "master_catalogue": false
   },
-  "sections": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"],
-  "booking_type": "table",
-  "availing_modes": ["pay_at_store", "online_order", "prebook"],
-  "fields": [
-    { "key": "name", "label": "Item Name", "type": "text", "required": true, "placeholder": "e.g. Butter Chicken" },
-    { "key": "section", "label": "Menu Section", "type": "select", "options": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"], "required": false },
-    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "299" },
-    { "key": "veg_flag", "label": "Type", "type": "veg_toggle", "required": true },
-    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
-    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
-    { "key": "stock", "label": "Daily Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" }
+
+  "sections": [
+    "Starters",
+    "Soups",
+    "Main Course",
+    "Breads",
+    "Rice & Biryani",
+    "Sides",
+    "Desserts",
+    "Beverages"
   ],
-  "buyer_config": {
-    "show_veg_filter": true,
-    "show_sections": true,
-    "cta_label": "Order Now"
-  },
 
-  "phase": 1,
-  "status": "active",
-  "super_category": "eat",
+  "availing_modes": ["online_order"],
+  "booking_type": null,
 
-  "action_types": {
-    "walkin_pay": {
-      "enabled": true,
-      "cta_label": "Walk-in & Pay",
-      "discount_levels": ["shop", "category", "product"]
+  "attributes_schema": {
+    "veg_flag": {
+      "key": "veg_flag",
+      "type": "veg_toggle",
+      "label": "Veg / Non-Veg",
+      "required": true
     },
-    "book_now": {
-      "enabled": true,
-      "type": "slot_based",
-      "cta_label": "Book Table",
-      "requires_date": true,
-      "requires_time_slot": true,
-      "requires_guest_count": true,
-      "payment_mode": "token_or_full",
-      "token_amount": null,
-      "cancellation": "configurable"
+    "section": {
+      "key": "section",
+      "type": "select",
+      "label": "Section",
+      "options": ["Starters","Soups","Main Course","Breads","Rice & Biryani","Sides","Desserts","Beverages"],
+      "required": true
     },
-    "online_order": {
-      "enabled": true,
-      "cta_label": "Order Online",
-      "delivery_supported": true
+    "spice_level": {
+      "key": "spice_level",
+      "type": "select",
+      "label": "Spice Level",
+      "options": ["Mild","Medium","Hot","Extra Hot"]
     },
-    "enquiry": {
-      "enabled": false
+    "portion_size": {
+      "key": "portion_size",
+      "type": "select",
+      "label": "Portion",
+      "options": ["Half","Full","Regular"]
+    },
+    "bestseller": {
+      "key": "bestseller",
+      "type": "boolean",
+      "label": "Bestseller"
+    },
+    "chef_special": {
+      "key": "chef_special",
+      "type": "boolean",
+      "label": "Chef's Special"
+    },
+    "contains_egg": {
+      "key": "contains_egg",
+      "type": "boolean",
+      "label": "Contains Egg"
+    },
+    "jain_available": {
+      "key": "jain_available",
+      "type": "boolean",
+      "label": "Jain Option Available"
+    },
+    "description": {
+      "key": "description",
+      "type": "string",
+      "label": "Description",
+      "max": 240
+    },
+    "stock": {
+      "key": "stock",
+      "type": "number",
+      "label": "Daily Stock"
     }
   },
 
+  "cart_scope": "brand",
+
   "listing_steps": [
     {
-      "id": "basics",
-      "title": "Restaurant Details",
-      "subtitle": "Basic info — followers see your restaurant name, location & hours",
-      "fields": [
-        { "key": "business_name", "type": "text", "label": "Restaurant Name", "required": true },
-        { "key": "city", "type": "select", "source": "cities_db", "required": true, "grid": "half" },
-        { "key": "locality", "type": "text", "label": "Area / Locality", "required": true, "grid": "half" },
-        { "key": "cuisine_type", "type": "chip_group", "multi": true, "label": "Cuisine Types",
-          "options": ["North Indian", "South Indian", "Chinese", "Continental", "Italian", "Mughlai", "Street Food", "Fast Food", "Biryani", "Seafood"] },
-        { "key": "dining_type", "type": "chip_group", "multi": true, "label": "Dining Style",
-          "options": ["🍽️ Dine-in", "📦 Takeaway", "🚚 Delivery", "☁️ Cloud Kitchen"] },
-        { "key": "veg_only", "type": "toggle", "label": "Pure vegetarian restaurant",
-          "follower_sync": { "target": "badge", "text": "🌿 Pure Veg" } },
-        { "key": "operating_hours", "type": "text", "label": "Operating Hours", "placeholder": "e.g. 11 AM – 11 PM" },
-        { "key": "phone", "type": "text", "label": "Contact Number" },
-        { "key": "whatsapp", "type": "text", "label": "WhatsApp Number" },
-        { "key": "address", "type": "textarea", "label": "Full Address" },
-        { "key": "google_maps_url", "type": "url", "label": "Google Maps Link" }
+      "id": "brand_basics",
+      "title": "Tell us about your restaurant",
+      "subtitle": "Cuisines, hours, and a short description",
+      "component": "brand_fields",
+      "writes_to": "brand",
+      "field_keys": [
+        "cuisines",
+        "restaurant_description",
+        "hours_json",
+        "average_cost_for_two"
       ]
     },
     {
+      "id": "brand_dining",
+      "title": "Dining setup",
+      "subtitle": "Tables, parking, and what you support",
+      "component": "brand_fields",
+      "writes_to": "brand",
+      "field_keys": [
+        "table_count",
+        "parking",
+        "dine_in_supported",
+        "takeaway_supported",
+        "accepts_table_booking",
+        "min_order_value",
+        "delivery_fee"
+      ]
+    },
+    {
+      "id": "brand_photos",
+      "title": "Restaurant photos",
+      "subtitle": "Show off your space — interior, exterior, signature spreads",
+      "component": "photo_upload",
+      "writes_to": "brand",
+      "min_photos": 3,
+      "max_photos": 12,
+      "recommended_photos": 6
+    },
+    {
       "id": "menu",
-      "title": "Menu & Pricing",
-      "subtitle": "Add your menu items — followers browse these when visiting your store",
-      "sections": [
+      "title": "Add your menu",
+      "subtitle": "Add items one at a time, or bulk upload via Excel",
+      "component": "repeatable_items",
+      "writes_to": "listing",
+      "group_by_section": true,
+      "min_items": 5,
+      "max_items": 500,
+      "item_fields": [
         {
-          "type": "repeatable_items",
-          "item_type": "menu_item",
-          "auto_suggest": { "source": "restaurant_items", "depends_on": "cuisine_type" },
-          "item_fields": [
-            { "key": "name", "type": "text", "label": "Item Name", "required": true },
-            { "key": "price", "type": "number", "label": "Price (₹)", "required": true, "market_benchmark": true },
-            { "key": "veg_flag", "type": "veg_toggle", "label": "Type", "required": true },
-            { "key": "section", "type": "select", "label": "Section", "options": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"] },
-            { "key": "description", "type": "textarea", "label": "Description", "placeholder": "Brief description" },
-            { "key": "stock", "type": "number", "label": "Daily Stock", "placeholder": "Leave blank = unlimited" }
-          ]
+          "key": "name",
+          "type": "string",
+          "label": "Item name",
+          "required": true,
+          "max": 80,
+          "placeholder": "e.g. Butter Chicken"
+        },
+        {
+          "key": "price",
+          "type": "number",
+          "label": "Price",
+          "unit": "₹",
+          "required": true
+        },
+        {
+          "key": "veg_flag",
+          "type": "veg_toggle",
+          "label": "Veg / Non-Veg",
+          "required": true
+        },
+        {
+          "key": "section",
+          "type": "select",
+          "label": "Section",
+          "required": true,
+          "options": ["Starters","Soups","Main Course","Breads","Rice & Biryani","Sides","Desserts","Beverages"]
+        },
+        {
+          "key": "description",
+          "type": "string",
+          "label": "Description",
+          "max": 240,
+          "placeholder": "Tender chicken simmered in rich tomato gravy"
+        },
+        {
+          "key": "image_url",
+          "type": "image",
+          "label": "Photo of this dish"
+        },
+        {
+          "key": "spice_level",
+          "type": "select",
+          "label": "Spice level",
+          "options": ["Mild","Medium","Hot","Extra Hot"]
+        },
+        {
+          "key": "portion_size",
+          "type": "select",
+          "label": "Portion",
+          "options": ["Half","Full","Regular"],
+          "default": "Full"
+        },
+        {
+          "key": "bestseller",
+          "type": "boolean",
+          "label": "Mark as Bestseller",
+          "default": false
+        },
+        {
+          "key": "chef_special",
+          "type": "boolean",
+          "label": "Chef's Special",
+          "default": false
+        },
+        {
+          "key": "contains_egg",
+          "type": "boolean",
+          "label": "Contains egg",
+          "default": false
+        },
+        {
+          "key": "jain_available",
+          "type": "boolean",
+          "label": "Jain option available",
+          "default": false
+        },
+        {
+          "key": "stock",
+          "type": "number",
+          "label": "Daily stock (optional)"
         }
       ]
     },
     {
       "id": "preview",
-      "title": "Preview & Publish",
-      "subtitle": "See how followers will discover your restaurant",
-      "sections": [
-        { "type": "photo_upload", "slots": ["Exterior", "Interior", "Food", "Menu Card"] },
-        { "type": "live_preview" },
-        { "type": "quality_score" },
-        { "type": "publish_button" }
+      "title": "Preview your store",
+      "subtitle": "How followers will see your restaurant",
+      "component": "preview",
+      "show_quality_score": true,
+      "show_live_preview": true
+    },
+    {
+      "id": "done",
+      "title": "You're live!",
+      "subtitle": "Your restaurant is now discoverable",
+      "component": "done",
+      "boost_tips": [
+        "Add 6+ ambience photos to feature in 'Highlighted Restaurants'",
+        "Mark at least 5 items as Bestsellers — they get priority on cards",
+        "Enable table booking to unlock the 'Reservations' badge",
+        "Fill descriptions for 80% of menu items to reach Standard quality",
+        "Add a delivery fee and minimum order value to enable online order"
       ]
     }
   ],
 
+  "fields": [],
+
   "product_config": {
     "enabled": true,
     "required": true,
-    "excel_upload": false,
-    "fields": [
-      { "key": "veg_flag", "type": "veg_toggle", "options": ["veg", "non_veg"] },
-      { "key": "section", "type": "select", "options": ["Starters", "Main Course", "Breads", "Rice & Biryani", "Desserts", "Beverages", "Snacks"] }
+    "excel_upload": true,
+    "master_catalogue": false,
+    "storage_format": {
+      "name": "wizard_state.name",
+      "price": "wizard_state.price",
+      "category": "wizard_state.section",
+      "description": "wizard_state.description",
+      "image_url": "wizard_state.image_url",
+      "variants_json": {
+        "veg_flag": "wizard_state.veg_flag",
+        "spice_level": "wizard_state.spice_level",
+        "portion_size": "wizard_state.portion_size",
+        "bestseller": "wizard_state.bestseller",
+        "chef_special": "wizard_state.chef_special",
+        "contains_egg": "wizard_state.contains_egg",
+        "jain_available": "wizard_state.jain_available"
+      },
+      "availability_json": {
+        "daily_stock": "wizard_state.stock"
+      }
+    },
+    "fields": [],
+    "excel_columns": [
+      { "column": "Item Name", "field": "name", "required": true, "example": "Butter Chicken" },
+      { "column": "Section", "field": "section", "required": true, "example": "Main Course" },
+      { "column": "Price (₹)", "field": "price", "required": true, "example": "320" },
+      { "column": "Veg/Non-Veg", "field": "veg_flag", "required": true, "example": "Non-Veg" },
+      { "column": "Description", "field": "description", "required": false, "example": "Tender chicken in rich tomato gravy" },
+      { "column": "Spice Level", "field": "spice_level", "required": false, "example": "Medium" },
+      { "column": "Portion", "field": "portion_size", "required": false, "example": "Full" },
+      { "column": "Bestseller", "field": "bestseller", "required": false, "example": "Yes" },
+      { "column": "Chef's Special", "field": "chef_special", "required": false, "example": "No" },
+      { "column": "Contains Egg", "field": "contains_egg", "required": false, "example": "No" },
+      { "column": "Jain Option", "field": "jain_available", "required": false, "example": "No" },
+      { "column": "Daily Stock", "field": "stock", "required": false, "example": "50" }
+    ]
+  },
+
+  "brand_config": {
+    "fields": {
+      "cuisines": {
+        "key": "cuisines",
+        "type": "multi_select",
+        "label": "Cuisines",
+        "options": [
+          "North Indian","South Indian","Chinese","Continental","Biryani","Tandoor",
+          "Mughlai","Andhra","Hyderabadi","Bengali","Gujarati","Punjabi",
+          "Italian","Mexican","Thai","Japanese","Desserts","Fast Food","Cafe","Beverages"
+        ],
+        "required": true,
+        "max": 4
+      },
+      "restaurant_description": {
+        "key": "restaurant_description",
+        "type": "string",
+        "label": "About your restaurant",
+        "max": 280,
+        "placeholder": "Two lines about your kitchen, your story, your specialty"
+      },
+      "hours_json": {
+        "key": "hours_json",
+        "type": "string",
+        "label": "Operating hours",
+        "required": true
+      },
+      "average_cost_for_two": {
+        "key": "average_cost_for_two",
+        "type": "number",
+        "label": "Average cost for two",
+        "unit": "₹",
+        "required": true
+      },
+      "table_count": {
+        "key": "table_count",
+        "type": "number",
+        "label": "Number of tables"
+      },
+      "parking": {
+        "key": "parking",
+        "type": "boolean",
+        "label": "Parking available",
+        "default": false
+      },
+      "dine_in_supported": {
+        "key": "dine_in_supported",
+        "type": "boolean",
+        "label": "Dine-in available",
+        "default": true
+      },
+      "takeaway_supported": {
+        "key": "takeaway_supported",
+        "type": "boolean",
+        "label": "Takeaway available",
+        "default": true
+      },
+      "accepts_table_booking": {
+        "key": "accepts_table_booking",
+        "type": "boolean",
+        "label": "Accept table bookings",
+        "default": false
+      },
+      "min_order_value": {
+        "key": "min_order_value",
+        "type": "number",
+        "label": "Minimum order value",
+        "unit": "₹",
+        "default": 0
+      },
+      "delivery_fee": {
+        "key": "delivery_fee",
+        "type": "number",
+        "label": "Delivery fee",
+        "unit": "₹",
+        "default": 0
+      }
+    },
+    "actions": [
+      {
+        "kind": "transactional",
+        "action": "book_slot",
+        "label": "Book Table",
+        "config": {
+          "booking_type": "table",
+          "fields": ["booking_date","time_slot","guest_count","special_requests"],
+          "payment_modes": ["token","full"],
+          "token_amount": 100,
+          "token_refundable": true,
+          "refund_policy": "100% refundable up to 2 hours before slot",
+          "balance_text": "Balance paid at the restaurant",
+          "endpoint": "/follower/prebook"
+        },
+        "visible_if": "brand_data.accepts_table_booking == true"
+      },
+      {
+        "kind": "transactional",
+        "action": "walkin_pay",
+        "label": "Pay Bill",
+        "config": {
+          "fields": ["amount","tip_amount"],
+          "payment_modes": ["full"],
+          "endpoint": "/follower/pay-at-store"
+        }
+      },
+      {
+        "kind": "contact",
+        "action": "call",
+        "label": "Call",
+        "source_fields": ["phone"]
+      },
+      {
+        "kind": "contact",
+        "action": "whatsapp",
+        "label": "WhatsApp",
+        "source_fields": ["whatsapp_phone"]
+      },
+      {
+        "kind": "contact",
+        "action": "directions",
+        "label": "Directions",
+        "source_fields": ["address_line","latitude","longitude"]
+      }
     ],
-    "excel_columns": ["Item Name", "Section", "Price", "Veg/Non-Veg", "Description"]
+    "photo_requirements": {
+      "cover_required": true,
+      "gallery_min": 3,
+      "gallery_max": 12
+    }
+  },
+
+  "buyer_config": {
+    "discovery_surface": "feed",
+    "filters": ["veg_flag", "section", "spice_level", "bestseller"],
+    "sort_options": ["distance", "price_low", "price_high", "rating"],
+    "default_sort": "distance"
   },
 
   "card_config": {
-    "accent": "#ef4444",
-    "accent_dim": "rgba(239,68,68,0.08)",
+    "accent": "#dc2626",
+    "accent_dim": "rgba(220,38,38,0.08)",
     "icon": "🍽️",
-    "cta_primary": { "label": "Order", "action": "walkin_pay", "color": "#ef4444" },
-    "cta_secondary": { "label": "Book Table", "action": "book_slot" },
-    "price_display": { "source": "cheapest_item", "unit": "onwards" },
-    "subtitle_template": "{cuisine_type} · {locality} · {distance}",
-    "tags": ["cuisine_type", "dining_type", "veg_only", "top_3_items"]
+    "card_type": "menu_item",
+
+    "cta_primary": {
+      "label": "Order Now",
+      "action": "online_order",
+      "color": "#dc2626"
+    },
+
+    "price_display": {
+      "source": "price.amount",
+      "unit": ""
+    },
+
+    "subtitle_template": "{section} · {brand_name}",
+
+    "tags": [
+      { "source": "veg_flag", "format": "{value}", "highlight_if": "value == 'Veg'" },
+      { "source": "bestseller", "text": "⭐ Bestseller", "show_if": true, "highlight": true },
+      { "source": "chef_special", "text": "👨‍🍳 Chef's Special", "show_if": true },
+      { "source": "spice_level", "format": "🌶 {value}", "show_if": true },
+      { "source": "portion_size", "format": "{value}" }
+    ],
+
+    "detail_sections": [
+      {
+        "type": "description",
+        "title": "About this dish",
+        "source": "description"
+      },
+      {
+        "type": "spec_grid",
+        "title": "Details",
+        "fields": ["veg_flag", "spice_level", "portion_size", "contains_egg", "jain_available"],
+        "emphasized_field": { "key": "bestseller", "color": "amber" }
+      }
+    ],
+
+    "booking_config": {
+      "type": "package",
+      "fields": [],
+      "payment_modes": ["full"],
+      "endpoint": "/follower/orders"
+    }
+  },
+
+  "action_types": {
+    "online_order": {
+      "endpoint": "/follower/orders",
+      "cart_scope": "brand",
+      "min_order_value_field": "min_order_value",
+      "delivery_fee_field": "delivery_fee"
+    }
   },
 
   "quality_rules": [
-    { "field": "business_name", "points": 15, "label": "Restaurant name & contact" },
-    { "field": "cuisine_type", "points": 10, "label": "Cuisine type set" },
-    { "field": "dining_type", "points": 5, "label": "Dining style set" },
-    { "items": "menu_item", "min": 5, "points": 20, "label": "5+ menu items" },
-    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
-    { "field": "operating_hours", "points": 10, "label": "Operating hours set" },
-    { "field": "address", "points": 10, "label": "Address provided" },
-    { "field": "google_maps_url", "points": 10, "label": "Google Maps link" },
-    { "field": "phone", "points": 5, "label": "Contact number" }
+    { "field": "restaurant_description", "scope": "brand", "points": 5, "label": "Add a restaurant description" },
+    { "field": "cuisines", "scope": "brand", "points": 5, "label": "Pick up to 4 cuisines" },
+    { "field": "hours_json", "scope": "brand", "points": 5, "label": "Set operating hours" },
+    { "field": "average_cost_for_two", "scope": "brand", "points": 5, "label": "Add average cost for two" },
+    { "field": "accepts_table_booking", "scope": "brand", "points": 5, "label": "Enable table booking" },
+    { "type": "photos", "scope": "brand", "min": 3, "points": 10, "label": "Add at least 3 ambience photos" },
+    { "type": "photos", "scope": "brand", "min": 6, "points": 5, "label": "Add 6+ ambience photos for full gallery" },
+    { "items": "menu_items", "min": 10, "points": 15, "label": "Add at least 10 menu items" },
+    { "items": "menu_items", "min": 25, "points": 10, "label": "Add 25+ items for a complete menu" }
   ]
 }

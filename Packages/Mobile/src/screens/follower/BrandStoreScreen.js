@@ -1,11 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
 import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
+import BrandActionRow from '../../components/BrandActionRow';
 
 export default function BrandStoreScreen({ navigation, route }) {
-  const { brandId, brandName } = route.params;
+  const { brandId, brandName, tracking: routeTracking } = route.params;
+
+  // ── Tracking propagation per contracts-v1 §5 (Path A + Path B) ──────────────
+  // Path A: direct influencer-link entry (/s/{handle} with no oid) — tracking
+  //   constructed upstream from URL query params and passed as route param.
+  // Path B: came from a listing detail screen ("View [brand]") — tracking
+  //   inherited from the listing entry, forwarded by SchemaDetailScreen's
+  //   onOpenBrandStore handler.
+  // Both arrive on route.params.tracking. If neither path applies (organic
+  // browse), tracking is undefined — brand actions still work, just no
+  // commission attribution. Existing platform-direct revenue model unchanged.
+  const tracking = routeTracking || null;
   const [store, setStore] = useState(null);
   const [tab, setTab] = useState('products');
   const [loading, setLoading] = useState(true);
@@ -42,6 +54,38 @@ export default function BrandStoreScreen({ navigation, route }) {
   const accent = getBusinessAccent(brand?.category);
   const icon = accent.icon;
 
+  // Schema-driven brand_config — surfaced when the store endpoint includes
+  // the template (PR-B step 3.5+). Defensive lookup: if the backend doesn't
+  // yet return template.brand_config, we render the legacy hardcoded
+  // contact buttons below as fallback.
+  const brandConfig = store?.template?.brand_config || null;
+  const brandData = brand?.listing_data || {};
+  const accentHex = accent?.accent || '#F59E0B';
+
+  function dispatchBrandAction(action, ctx) {
+    // Per contracts-v1 §6 + spec §8 — transactional actions route by
+    // action.action enum; tracking flows through to whatever endpoint is
+    // hit. Implementation defers to existing screens (PayAtStoreScreen,
+    // PreBookScreen, EnquiryScreen) for now — those screens accept tracking
+    // and route through the right /follower/* endpoints.
+    switch (action.action) {
+      case 'walkin_pay':
+        navigation.navigate('PayAtStore', { brand, brandId, tracking: ctx.tracking });
+        break;
+      case 'book_slot':
+        navigation.navigate('PreBook', { brand, brandId, tracking: ctx.tracking, action });
+        break;
+      case 'online_order':
+        navigation.navigate('OrderCart', { brandData });
+        break;
+      case 'enquiry':
+        navigation.navigate('Enquiry', { brand, brandId, tracking: ctx.tracking });
+        break;
+      default:
+        Alert.alert('Action not wired', action.action);
+    }
+  }
+
   // Group products by section
   const sections = {};
   for (const p of products) {
@@ -69,14 +113,26 @@ export default function BrandStoreScreen({ navigation, route }) {
         <Text style={s.storeName}>{brand?.business_name || brandName}</Text>
         <Text style={s.storeMeta}>{brand?.category?.replace(/_/g, ' ')} · {brand?.city || ''}</Text>
 
-        {/* Contact row */}
-        <View style={s.contactRow}>
-          {['📞 Call', '💬 WhatsApp', '📍 Map'].map(label => (
-            <TouchableOpacity key={label} style={[s.contactBtn, { borderColor: `${accent.accent}33` }]}>
-              <Text style={[s.contactBtnText, { color: accent.accent }]}>{label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Schema-driven brand action row when template surfaces brand_config.
+            Falls back to legacy hardcoded contact buttons when not. */}
+        {brandConfig ? (
+          <BrandActionRow
+            brandConfig={brandConfig}
+            brand={brand}
+            brandData={brandData}
+            tracking={tracking}
+            onAction={dispatchBrandAction}
+            accent={accentHex}
+          />
+        ) : (
+          <View style={s.contactRow}>
+            {['📞 Call', '💬 WhatsApp', '📍 Map'].map(label => (
+              <TouchableOpacity key={label} style={[s.contactBtn, { borderColor: `${accent.accent}33` }]}>
+                <Text style={[s.contactBtnText, { color: accent.accent }]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Active offers banner */}
         {bestOffer && (
