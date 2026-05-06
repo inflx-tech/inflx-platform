@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { fmtRupees } from '../../theme/tokens';
-import { evalExpr } from '../../../../shared/utils/exprEval';
+import { evalExpr } from '../../utils/exprEval';
 
 /**
  * SchemaCard — schema-driven follower discovery card.

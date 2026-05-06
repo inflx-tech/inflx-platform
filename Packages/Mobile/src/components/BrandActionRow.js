@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-native';
-import { evalExpr } from '../../../shared/utils/exprEval';
+import { evalExpr } from '../utils/exprEval';
 
 /**
  * BrandActionRow — schema-driven brand-level CTA row for BrandStoreScreen.
