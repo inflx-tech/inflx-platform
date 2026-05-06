@@ -1119,7 +1119,11 @@ const getMyTransactions = asyncHandler(async (req, res) => {
        c.name AS campaign_name,
        u_f.name AS follower_name,
        bp.name AS product_name,
-       fb.booking_date, fb.booking_time, fb.reference_code AS booking_ref
+       fb.booking_type,
+       fb.booking_date, fb.booking_time,
+       fb.pickup_date, fb.return_date, fb.duration_days, fb.pickup_type,
+       fb.stylist_id,
+       fb.reference_code AS booking_ref
      FROM follower_transactions ft
      JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
      JOIN brands b ON b.id = ft.brand_id

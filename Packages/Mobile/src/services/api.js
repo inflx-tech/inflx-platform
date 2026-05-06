@@ -391,7 +391,14 @@ export const followerApi = {
   verifyPayAtStore: (data) => api.post('/follower/pay-at-store/verify', data),
   prebook: (data) => api.post('/follower/prebook', data),
   prebookVerify: (data) => api.post('/follower/prebook/verify', data),
+  getSlots: (productId, date) => api.get(`/follower/slots?offer_id=${encodeURIComponent(productId)}&date=${encodeURIComponent(date)}`),
+  // Date-range pre-bookings (car_rental today; hotels/function_hall later).
+  // Body shape: { offer_id?, campaign_id, set_id, campaign_influencer_id,
+  //               pickup_date, return_date, duration_days, pickup_type }
+  prebookDateRange: (data) => api.post('/follower/prebook-daterange', data),
+  prebookDateRangeVerify: (data) => api.post('/follower/prebook-daterange/verify', data),
   createOrder: (data) => api.post('/follower/orders', data),
+  verifyOrder: (data) => api.post('/follower/orders/verify', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),
   getOrders: () => api.get('/follower/orders'),
 

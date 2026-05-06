@@ -615,7 +615,11 @@ const listAllTransactions = asyncHandler(async (req, res) => {
        u_i.name AS influencer_name, i.instagram_handle,
        u_f.name AS follower_name, u_f.phone AS follower_phone,
        bp.name AS product_name, bp.section AS product_section,
-       fb.booking_date, fb.booking_time, fb.reference_code AS booking_ref,
+       fb.booking_type,
+       fb.booking_date, fb.booking_time,
+       fb.pickup_date, fb.return_date, fb.duration_days, fb.pickup_type,
+       fb.stylist_id, fb.notes AS booking_notes,
+       fb.reference_code AS booking_ref,
        fo.order_status
      FROM follower_transactions ft
      LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id

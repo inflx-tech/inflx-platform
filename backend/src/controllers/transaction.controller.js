@@ -7,8 +7,10 @@
  * POST /follower/pay-at-store
  * POST /follower/pay-at-store/verify
  * GET  /follower/slots
- * POST /follower/prebook
+ * POST /follower/prebook                       (table / slot — booking_type optional, defaults 'table')
  * POST /follower/prebook/verify
+ * POST /follower/prebook-daterange             (date_range — car_rental, hotels)
+ * POST /follower/prebook-daterange/verify
  * POST /follower/orders
  * POST /follower/orders/verify
  * GET  /follower/orders
@@ -282,9 +284,32 @@ const verifyPrebook = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { razorpay_order_id, razorpay_payment_id } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, booking_type, stylist_id, notes } = req.body;
   if (!razorpay_order_id || !razorpay_payment_id) {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
+  }
+
+  // booking_type: client may declare 'table' | 'slot' | 'appointment'.
+  // Default 'table' matches today's de facto producer (restaurant) for old
+  // clients that don't send the field. New mobile clients should send the
+  // explicit value. date_range bookings go through the dedicated
+  // /prebook-daterange endpoint, not this one.
+  //
+  // Unrecognized values are coerced to 'table' but log a warning so buggy
+  // clients surface in observability rather than producing silently
+  // mislabeled rows. Common case to watch for: a client mistakenly posting
+  // booking_type='date_range' here instead of using /prebook-daterange.
+  let bookingTypeValue = 'table';
+  if (booking_type) {
+    if (['table', 'slot', 'appointment'].includes(booking_type)) {
+      bookingTypeValue = booking_type;
+    } else {
+      console.warn(
+        `[verifyPrebook] Unrecognized booking_type "${booking_type}" — ` +
+        `defaulting to "table". If this was intended as date_range, ` +
+        `use POST /follower/prebook-daterange instead.`
+      );
+    }
   }
 
   const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
@@ -330,11 +355,11 @@ const verifyPrebook = asyncHandler(async (req, res) => {
 
     const { rows: bookRows } = await client.query(
       `INSERT INTO follower_bookings
-         (transaction_id, booking_date, booking_time, guest_count, reference_code,
-          status, advance_paid, balance_due_at_venue)
-       VALUES ($1, $2, $3, $4, $5, 'confirmed', $6, 0)
+         (transaction_id, booking_type, booking_date, booking_time, guest_count, reference_code,
+          status, advance_paid, balance_due_at_venue, stylist_id, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, 0, $8, $9)
        RETURNING id`,
-      [transactionId, meta.booking_date, meta.booking_time, meta.guest_count, referenceCode, advanceAmount]
+      [transactionId, bookingTypeValue, meta.booking_date, meta.booking_time, meta.guest_count, referenceCode, advanceAmount, stylist_id || null, notes || null]
     );
     bookingId = bookRows[0].id;
 
@@ -362,6 +387,168 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     reference_code: referenceCode,
     booking_date: meta.booking_date,
     booking_time: meta.booking_time,
+    advance_paid: advanceAmount,
+    balance_due_at_venue: 0,
+    brand_name: brandRows[0]?.business_name,
+    brand_whatsapp: brandRows[0]?.brand_phone,
+  });
+});
+
+// ── POST /follower/prebook-daterange ──────────────────────────────────────────
+//
+// Date-range bookings (car_rental today; hotel/homestay/function_hall later).
+// Mirror of initiatePrebook + verifyPrebook but the booking has pickup_date /
+// return_date / duration_days / pickup_type instead of booking_date /
+// booking_time / guest_count. Replaces the legacy shoehorn through
+// /follower/prebook (which serialized duration + pickup into a `notes`
+// string). Reuses validateTracking, createOrder, verifyPaymentSignature,
+// creditInfluencerCommission unchanged.
+
+const initiatePrebookDateRange = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const {
+    offer_id, campaign_id, set_id, campaign_influencer_id,
+    pickup_date, return_date, duration_days, pickup_type,
+  } = req.body;
+
+  if (!campaign_id || !set_id || !campaign_influencer_id || !pickup_date || !return_date) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'campaign_id, set_id, campaign_influencer_id, pickup_date, return_date are required',
+      422
+    );
+  }
+
+  const record = await txService.validateTracking(
+    campaign_id, set_id, campaign_influencer_id, offer_id || null
+  );
+
+  // Resolve advance amount (token). Same fallback chain as initiatePrebook:
+  // campaign_offers.prebook_advance > campaign_influencers.offer_config_json.token_amount > default.
+  let advanceAmount = 200;
+  if (offer_id) {
+    const { rows: offerRows } = await db.query(
+      `SELECT prebook_advance FROM campaign_offers WHERE id = $1`,
+      [offer_id]
+    );
+    if (offerRows[0]?.prebook_advance) advanceAmount = parseFloat(offerRows[0].prebook_advance);
+  }
+  if (advanceAmount === 200) {
+    const tokenAmount = record.offer_config_json?.token_amount;
+    if (tokenAmount) advanceAmount = parseFloat(tokenAmount);
+  }
+
+  const discountPct = parseFloat(record.discount_value || 0);
+
+  const orderId = await txService.createOrder(advanceAmount, {
+    type: 'prebook_daterange',
+    offer_id: offer_id || null, campaign_id, set_id, campaign_influencer_id,
+    pickup_date, return_date,
+    duration_days: duration_days || null,
+    pickup_type: pickup_type || 'garage',
+    advance_amount: advanceAmount, discount_pct: discountPct,
+    follower_id: follower.id, brand_id: record.brand_id,
+    commission_pct: parseFloat(record.commission_pct || 0),
+  });
+
+  return success(res, {
+    razorpay_order_id: orderId,
+    razorpay_key_id: txService.getRazorpayKeyId(),
+    advance_amount: advanceAmount,
+  }, 201);
+});
+
+// ── POST /follower/prebook-daterange/verify ──────────────────────────────────
+
+const verifyPrebookDateRange = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const { razorpay_order_id, razorpay_payment_id } = req.body;
+  if (!razorpay_order_id || !razorpay_payment_id) {
+    throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
+  }
+
+  const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+
+  const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
+  const commissionAmount = parseFloat((advanceAmount * meta.commission_pct / 100).toFixed(2));
+  const platformFeeAmount = 0;
+  const brandNetAmount = parseFloat((advanceAmount - commissionAmount - platformFeeAmount).toFixed(2));
+
+  const { rows: ciRows } = await db.query(
+    `SELECT coupon_code FROM campaign_influencers WHERE id = $1`,
+    [meta.campaign_influencer_id]
+  );
+  const couponCode = ciRows[0]?.coupon_code || null;
+
+  const influencer = await getInfluencerByCiId(meta.campaign_influencer_id);
+
+  let transactionId, bookingId, referenceCode;
+
+  await db.withTransaction(async (client) => {
+    const { rows: txRows } = await client.query(
+      `INSERT INTO follower_transactions
+         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
+          transaction_type, gross_amount, discount_amount, net_amount,
+          influencer_commission, platform_fee, brand_net,
+          status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
+       VALUES ($1,$2,$3,$4,$5,$6,'prebook',$7,0,$7,$8,$9,$10,'completed',$11,$12,$13)
+       RETURNING id`,
+      [
+        meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
+        meta.campaign_influencer_id, meta.offer_id,
+        advanceAmount, commissionAmount, platformFeeAmount, brandNetAmount,
+        couponCode, returnWindowEndsAt, razorpay_payment_id,
+      ]
+    );
+    transactionId = txRows[0].id;
+
+    referenceCode = bookingService.generateReferenceCode();
+
+    const { rows: bookRows } = await client.query(
+      `INSERT INTO follower_bookings
+         (transaction_id, booking_type,
+          pickup_date, return_date, duration_days, pickup_type,
+          reference_code, status, advance_paid, balance_due_at_venue)
+       VALUES ($1, 'date_range', $2, $3, $4, $5, $6, 'confirmed', $7, 0)
+       RETURNING id`,
+      [
+        transactionId,
+        meta.pickup_date, meta.return_date, meta.duration_days, meta.pickup_type,
+        referenceCode, advanceAmount,
+      ]
+    );
+    bookingId = bookRows[0].id;
+
+    await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+  });
+
+  const { rows: brandRows } = await db.query(
+    `SELECT b.business_name, u.phone AS brand_phone
+     FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+    [meta.brand_id]
+  );
+
+  notificationService.send({
+    userId: req.user.sub,
+    type: 'booking.confirmed',
+    title: 'Booking confirmed!',
+    body: `Pickup ${meta.pickup_date}, return ${meta.return_date} at ${brandRows[0]?.business_name}. Ref: ${referenceCode}`,
+    sendSms: true,
+    phone: follower.phone,
+  }).catch(e => console.error('[NOTIFY] booking.confirmed (daterange) failed:', e.message));
+
+  return success(res, {
+    booking_id: bookingId,
+    reference_code: referenceCode,
+    booking_type: 'date_range',
+    pickup_date: meta.pickup_date,
+    return_date: meta.return_date,
+    duration_days: meta.duration_days,
+    pickup_type: meta.pickup_type,
     advance_paid: advanceAmount,
     balance_due_at_venue: 0,
     brand_name: brandRows[0]?.business_name,
@@ -635,6 +822,8 @@ module.exports = {
   getSlots,
   initiatePrebook,
   verifyPrebook,
+  initiatePrebookDateRange,
+  verifyPrebookDateRange,
   placeOrder,
   verifyOrder,
   listOrders,

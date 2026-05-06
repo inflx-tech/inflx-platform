@@ -47,16 +47,25 @@ export default function CarBookingScreen({ navigation, route }) {
 
     setLoading(true);
     try {
-      // Step 1: Create order on backend
-      const res = await followerApi.prebook({
+      // Compute pickup + return dates from local state. Pickup defaults to
+      // tomorrow (matches the legacy behavior); return is pickup + duration.
+      const pickupDateObj = new Date(Date.now() + 86400000);
+      const returnDateObj = new Date(pickupDateObj.getTime() + duration * 86400000);
+      const pickupDate = pickupDateObj.toISOString().split('T')[0];
+      const returnDate = returnDateObj.toISOString().split('T')[0];
+
+      // Step 1: Create order on backend via the date-range endpoint
+      // (replaces the legacy shoehorn that crammed duration + pickup into
+      // /follower/prebook's `notes` string — see contracts-v1.2.md §6).
+      const res = await followerApi.prebookDateRange({
         campaign_id: tracking?.campaign_id,
         set_id: tracking?.set_id,
         offer_id: tracking?.offer_id || null,
         campaign_influencer_id: tracking?.campaign_influencer_id,
-        booking_date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-        booking_time: '10:00 AM',
-        guest_count: 1,
-        notes: `${vehicle?.name} · ${duration} day(s) · ${pickupType} pickup`,
+        pickup_date: pickupDate,
+        return_date: returnDate,
+        duration_days: duration,
+        pickup_type: pickupType,
       });
 
       if (!res.success && !res.data) {
@@ -85,14 +94,20 @@ export default function CarBookingScreen({ navigation, route }) {
       }
 
       // Step 3: Verify payment on backend
-      const verifyRes = await followerApi.prebookVerify({
+      const verifyRes = await followerApi.prebookDateRangeVerify({
         razorpay_order_id: payResult.razorpay_order_id,
         razorpay_payment_id: payResult.razorpay_payment_id,
         razorpay_signature: payResult.razorpay_signature,
       });
 
       if (verifyRes.success || verifyRes.data) {
-        Alert.alert('Booking Confirmed! 🎉', `Token ${fmtRupees(tokenAmount)} paid. Balance ${fmtRupees(balance)} at ${pickupType}.`, [
+        // Use server's authoritative advance_paid from the verify response —
+        // local tokenAmount is the pre-payment estimate; the server's value is
+        // what was actually charged + recorded against the booking. Local
+        // `balance` (trip cost - token) is kept since the server doesn't
+        // compute trip-level cost.
+        const paidRupees = verifyRes.data?.advance_paid ?? tokenAmount;
+        Alert.alert('Booking Confirmed! 🎉', `Token ${fmtRupees(paidRupees)} paid. Balance ${fmtRupees(balance)} at ${pickupType}.`, [
           { text: 'Done', onPress: () => navigation.popToTop() },
         ]);
       } else {

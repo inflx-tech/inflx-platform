@@ -16,9 +16,13 @@ router.post('/pay-at-store/verify', ...followerAuth, ctrl.verifyPayAtStore);
 // ── Slots ─────────────────────────────────────────────────────────────────────
 router.get('/slots', ctrl.getSlots); // no auth — publicly accessible
 
-// ── Pre-booking ───────────────────────────────────────────────────────────────
+// ── Pre-booking (table / slot / appointment) ────────────────────────────────
 router.post('/prebook',        ...followerAuth, ctrl.initiatePrebook);
 router.post('/prebook/verify', ...followerAuth, ctrl.verifyPrebook);
+
+// ── Pre-booking (date_range — car_rental, hotels) ───────────────────────────
+router.post('/prebook-daterange',        ...followerAuth, ctrl.initiatePrebookDateRange);
+router.post('/prebook-daterange/verify', ...followerAuth, ctrl.verifyPrebookDateRange);
 
 // ── Online orders ─────────────────────────────────────────────────────────────
 router.post('/orders',        ...followerAuth, ctrl.placeOrder);

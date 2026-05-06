@@ -15,7 +15,13 @@ export function createFollowerApi(client) {
     // Transactions
     payAtStore: (data) => client.post('/follower/pay-at-store', data),
     prebook: (data) => client.post('/follower/prebook', data),
+    // Date-range pre-bookings (car_rental today; hotels/function_hall later).
+    // Body shape: { offer_id?, campaign_id, set_id, campaign_influencer_id,
+    //               pickup_date, return_date, duration_days, pickup_type }
+    prebookDateRange: (data) => client.post('/follower/prebook-daterange', data),
+    prebookDateRangeVerify: (data) => client.post('/follower/prebook-daterange/verify', data),
     createOrder: (data) => client.post('/follower/orders', data),
+    verifyOrder: (data) => client.post('/follower/orders/verify', data),
     getOrder: (id) => client.get(`/follower/orders/${id}`),
     getOrders: () => client.get('/follower/orders'),
     submitEnquiry: (data) => client.post('/follower/enquiry', data),
