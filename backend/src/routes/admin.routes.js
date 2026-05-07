@@ -5,6 +5,7 @@ const { authenticate, requireAdminRole, requireAnyAdminRole } = require('../midd
 const ctrl = require('../controllers/admin.controller');
 const verificationCtrl = require('../controllers/creatorVerification.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
+const masterDishCtrl = require('../controllers/adminMasterDish.controller');
 
 const router = Router();
 
@@ -66,5 +67,12 @@ router.post('/creator-verifications/:id/reset',      authenticate, requireAdminR
 router.get('/creator-invitations',                   authenticate, requireAdminRole('reviewer'), invitationCtrl.adminListInvitations);
 router.post('/creator-invitations/:id/contacted',    authenticate, requireAdminRole('reviewer'), invitationCtrl.adminMarkContacted);
 router.post('/creator-invitations/:id/expire',       authenticate, requireAdminRole('reviewer'), invitationCtrl.adminExpire);
+
+// ── Master dishes CRUD (restaurant catalogue admin tool) ─────────────────────
+router.get   ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.listMasterDishes);
+router.get   ('/master-dishes/cuisines',  authenticate, requireAdminRole('reviewer'), masterDishCtrl.listCuisines);
+router.post  ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.createMasterDish);
+router.patch ('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.updateMasterDish);
+router.delete('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.deleteMasterDish);
 
 module.exports = router;

@@ -122,6 +122,14 @@ export const adminApi = {
   getProductionQueue: () => api.get('/admin/production/queue'),
   getWithdrawals: (status, search, page) => api.get(`/admin/withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
+  // Master dishes — admin CRUD for the restaurant dish catalogue
+  listMasterDishes: (cuisine, section, search, page) =>
+    api.get(`/admin/master-dishes?cuisine=${encodeURIComponent(cuisine || '')}&section=${encodeURIComponent(section || '')}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  listCuisines:       () => api.get('/admin/master-dishes/cuisines'),
+  createMasterDish:   (data) => api.post('/admin/master-dishes', data),
+  updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
+  deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
+
   bulkUploadInfluencers: async (file) => {
     const token = getToken();
     const formData = new FormData();

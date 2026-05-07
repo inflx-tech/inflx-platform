@@ -13,6 +13,8 @@ const NAV = [
   { href: '/dashboard/brands', label: 'Brands', icon: '🏢' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '⭐' },
   { href: '/dashboard/production-queue', label: 'Production Queue', icon: '🚚' },
+  { section: 'CONTENT' },
+  { href: '/dashboard/master-dishes', label: 'Master Dishes', icon: '🍽️' },
   { section: 'FINANCE' },
   { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒' },
   { href: '/dashboard/payouts', label: 'Payouts', icon: '💸' },
