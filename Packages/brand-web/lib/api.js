@@ -13,8 +13,12 @@ export function getStoredUser() {
   try { return JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { return null; }
 }
 
-export function clearSession() {
+export function clearSession(reason) {
   if (typeof window !== 'undefined') {
+    // Diagnostic — keeps showing up in past sessions where admins were
+    // mysteriously kicked to /login. The 'reason' arg names the failing
+    // request so we can pin down which endpoint triggered the cascade.
+    console.error('[INFLX] clearSession invoked', reason ? `(reason: ${reason})` : '');
     localStorage.removeItem('inflx_token');
     localStorage.removeItem('inflx_user');
     document.cookie = 'inflx_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
@@ -62,19 +66,31 @@ async function request(method, path, body) {
   } catch {
     return { ok: false, success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
   }
-  // On 401, try refreshing the token once before clearing session
+  // On 401, try refreshing the token once before clearing session.
+  // Important: we only force-logout if the refresh ITSELF failed (refresh
+  // token is dead/missing). A 401 on a single endpoint while the refresh
+  // path still works means the access token rotated successfully and the
+  // retry below will resolve it — no logout needed.
   if (res.status === 401 && token) {
+    console.warn(`[INFLX] 401 from ${method} ${path} — attempting token refresh`);
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       const newToken = getToken();
       const retryHeaders = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${newToken}` };
       try {
         res = await fetch(`${API_BASE}${path}`, { method, headers: retryHeaders, credentials: 'include', body: body ? JSON.stringify(body) : undefined });
+        // If the retry STILL 401s, the access token is genuinely refused
+        // for this endpoint (role mismatch, etc.) — surface it but don't
+        // wipe the whole session.
+        if (res.status === 401) {
+          console.warn(`[INFLX] retry of ${method} ${path} also 401'd — leaving session intact, returning UNAUTHORIZED`);
+          return { ok: false, success: false, error: { code: 'UNAUTHORIZED', message: 'Not authorised for this resource' } };
+        }
       } catch {
         return { ok: false, success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
       }
     } else {
-      clearSession();
+      clearSession(`refresh failed during ${method} ${path}`);
       return { ok: false, success: false, error: { code: 'UNAUTHORIZED' } };
     }
   }
