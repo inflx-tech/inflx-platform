@@ -5,6 +5,7 @@ import { brandApi } from '../../../../lib/api';
 import { getTemplate } from './templateRegistry';
 import * as builtins from './builtinStepComponents';
 import { runPublish, canSkipBrandSteps } from './publishDriver';
+import BulkUploadCard from './BulkUploadCard';
 
 /**
  * ListingTemplateLayout — shared chrome for category-driven listing wizards.
@@ -279,12 +280,17 @@ export default function ListingTemplateLayout({
         )}
       </div>
 
-      {/* View tabs */}
+      {/* View tabs — Bulk Upload tab hidden when the template handles bulk
+          upload internally inside its wizard (restaurant's path-choice in
+          step 4). Per chat decision: two entry points to bulk is confusing;
+          per-template chrome divergence is justified. */}
       <div className="flex gap-2 mb-6 justify-center">
         {[
           { key: 'fleet',  label: `${labelPlural} (${myProducts?.length || 0})`, icon: template.icon || '📋' },
           { key: 'add',    label: `Add ${labelSingular}`, icon: '➕' },
-          { key: 'upload', label: 'Bulk Upload', icon: '📤' },
+          ...(tmpl?.hideUploadTab
+            ? []
+            : [{ key: 'upload', label: 'Bulk Upload', icon: '📤' }]),
         ].map(t => (
           <button key={t.key}
             onClick={() => { setView(t.key); if (t.key === 'add') resetWizard(); }}
@@ -403,56 +409,18 @@ function DefaultFleetRow({ product, icon, onRemove }) {
   );
 }
 
+// UploadView — thin wrapper around BulkUploadCard for back-compat with the
+// existing call site. PR-2 extracted the card body into BulkUploadCard so
+// RestaurantDishPicker's Bulk path can mount the same UI without duplication.
 function UploadView({ labelPlural, uploading, uploadResult, onDownload, onUpload }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-5">
-      <div>
-        <div className="text-base font-bold text-gray-900">Bulk Upload via Excel</div>
-        <p className="text-xs text-gray-500 mt-1">
-          Download our template, fill in your {labelPlural.toLowerCase()}, and upload to list them at once.
-        </p>
-      </div>
-
-      <div className="bg-orange-50 rounded-xl p-4">
-        <div className="text-sm font-bold text-orange-800 mb-1">Step 1: Download Template</div>
-        <p className="text-xs text-orange-700 mb-3">
-          Auto-generated for your category with the right columns.
-        </p>
-        <button onClick={onDownload}
-          className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl transition-colors">
-          📥 Download Excel Template
-        </button>
-      </div>
-
-      <div className="bg-blue-50 rounded-xl p-4">
-        <div className="text-sm font-bold text-blue-800 mb-1">Step 2: Upload Filled Sheet</div>
-        <p className="text-xs text-blue-700 mb-3">
-          Fill in the template. Delete the example rows first. Upload the .xlsx file below.
-        </p>
-        <label className="inline-block px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-bold rounded-xl cursor-pointer transition-colors">
-          {uploading ? 'Uploading...' : '📤 Upload Excel File'}
-          <input type="file" accept=".xlsx,.xls" onChange={onUpload} className="hidden" disabled={uploading} />
-        </label>
-      </div>
-
-      {uploadResult && (
-        <div className={`rounded-xl p-4 ${uploadResult.created > 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-          {uploadResult.created > 0 && (
-            <div className="text-sm font-bold text-green-700">
-              ✅ {uploadResult.created} item{uploadResult.created !== 1 ? 's' : ''} added!
-            </div>
-          )}
-          {uploadResult.errors?.length > 0 && (
-            <div className="mt-2">
-              <div className="text-sm font-bold text-red-700">Issues found:</div>
-              {uploadResult.errors.map((err, i) => (
-                <p key={i} className="text-xs text-red-600 mt-0.5">• {err}</p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <BulkUploadCard
+      labelPlural={labelPlural}
+      uploading={uploading}
+      uploadResult={uploadResult}
+      onDownload={onDownload}
+      onUpload={onUpload}
+    />
   );
 }
 

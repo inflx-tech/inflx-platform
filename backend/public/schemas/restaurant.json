@@ -106,8 +106,7 @@
       "field_keys": [
         "cuisines",
         "restaurant_description",
-        "hours_json",
-        "average_cost_for_two"
+        "hours_json"
       ]
     },
     {
@@ -139,11 +138,10 @@
     {
       "id": "menu",
       "title": "Add your menu",
-      "subtitle": "Add items one at a time, or bulk upload via Excel",
-      "component": "repeatable_items",
+      "subtitle": "Browse popular dishes by cuisine, or bulk-upload an Excel sheet",
+      "component": "restaurant_dish_picker",
       "writes_to": "listing",
       "group_by_section": true,
-      "min_items": 5,
       "max_items": 500,
       "item_fields": [
         {
@@ -319,16 +317,15 @@
       },
       "hours_json": {
         "key": "hours_json",
-        "type": "string",
+        "type": "weekly_schedule",
         "label": "Operating hours",
         "required": true
       },
-      "average_cost_for_two": {
-        "key": "average_cost_for_two",
-        "type": "number",
-        "label": "Average cost for two",
-        "unit": "₹",
-        "required": true
+      "photos": {
+        "key": "photos",
+        "type": "image[]",
+        "label": "Restaurant photos",
+        "max": 12
       },
       "table_count": {
         "key": "table_count",
@@ -496,7 +493,6 @@
     { "field": "restaurant_description", "scope": "brand", "points": 5, "label": "Add a restaurant description" },
     { "field": "cuisines", "scope": "brand", "points": 5, "label": "Pick up to 4 cuisines" },
     { "field": "hours_json", "scope": "brand", "points": 5, "label": "Set operating hours" },
-    { "field": "average_cost_for_two", "scope": "brand", "points": 5, "label": "Add average cost for two" },
     { "field": "accepts_table_booking", "scope": "brand", "points": 5, "label": "Enable table booking" },
     { "type": "photos", "scope": "brand", "min": 3, "points": 10, "label": "Add at least 3 ambience photos" },
     { "type": "photos", "scope": "brand", "min": 6, "points": 5, "label": "Add 6+ ambience photos for full gallery" },

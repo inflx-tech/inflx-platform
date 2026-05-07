@@ -1,0 +1,407 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import { brandApi } from '../../../../../lib/api';
+import GalleryPicker from '../../../gallery/components/GalleryPicker';
+import BulkUploadCard from '../BulkUploadCard';
+
+/**
+ * RestaurantDishPicker — step 4 component for restaurant authoring.
+ *
+ * Path-choice on entry: "Bulk Upload" or "Add Individually". Per chat
+ * decision (single component with internal toggle, not two-step):
+ *   - Bulk path mounts the shared BulkUploadCard. Backend endpoint is
+ *     the existing /brands/me/products/bulk-upload — bypasses the master
+ *     catalogue, accepts free-form rows.
+ *   - Individual path: cuisine top-nav (filtered to brand's selected
+ *     cuisines from step 1), section sub-nav, dish grid. Tap to add;
+ *     pre-fills name + image + suggested_price (mid-point of master
+ *     row's range). Inline edit for price; image swap mounts
+ *     GalleryPicker for replacement.
+ *
+ * Already-activated dishes (per brand_products.master_dish_id) are greyed
+ * with "Added at ₹X" — same pattern as SalonMasterPicker. Prevents
+ * accidental double-add.
+ *
+ * No min_items gate — chat removed the validation. Brand can publish a
+ * zero-item menu; admin moderation in next phase catches that.
+ */
+
+const PATH_CARDS = [
+  { key: 'individual', icon: '🧑‍🍳', title: 'Add individually', sub: 'Browse popular dishes from our catalogue and tap to add — pre-filled name, image, and suggested pricing' },
+  { key: 'bulk',       icon: '📤', title: 'Bulk upload via Excel', sub: 'Download our template, fill in your menu, upload — best for large existing menus' },
+];
+
+export default function RestaurantDishPicker({ step, template, brand, wizardState, wizardItems, onItemAdd, onItemRemove, onItemFieldChange, onRefreshProducts }) {
+  const [path, setPath] = useState(null);   // null = path-choice screen; 'individual' | 'bulk' once chosen
+  const [masterItems, setMasterItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Brand's selected cuisines from step 1's brand_basics step
+  const brandCuisines = useMemo(
+    () => Array.isArray(wizardState.cuisines) ? wizardState.cuisines : [],
+    [wizardState.cuisines]
+  );
+
+  const [activeCuisine, setActiveCuisine] = useState(null);
+  const [activeSection, setActiveSection] = useState(null);
+
+  // Bulk-upload state (mirrors layout's UploadView pattern)
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
+
+  // Image-swap state for inline edit on added items
+  const [swapTargetIdx, setSwapTargetIdx] = useState(null);
+
+  // ── Load master_dishes when entering Individual path ─────────────────────
+  useEffect(() => {
+    if (path !== 'individual' || masterItems.length > 0) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    (async () => {
+      try {
+        const res = await brandApi.get('/brands/me/master-catalogue');
+        if (cancelled) return;
+        if (res.success && res.data?.items) {
+          setMasterItems(res.data.items);
+        } else {
+          setError(res.error?.message || 'Failed to load dishes');
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message || 'Failed to load dishes');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [path, masterItems.length]);
+
+  // Filter master_items to brand's selected cuisines + group by cuisine → section
+  const cuisinesAvailable = useMemo(() => {
+    return brandCuisines.filter(c => masterItems.some(d => d.cuisine === c));
+  }, [brandCuisines, masterItems]);
+
+  // Auto-select first cuisine on load
+  useEffect(() => {
+    if (path === 'individual' && !activeCuisine && cuisinesAvailable.length > 0) {
+      setActiveCuisine(cuisinesAvailable[0]);
+    }
+  }, [path, activeCuisine, cuisinesAvailable]);
+
+  const sectionsForCuisine = useMemo(() => {
+    if (!activeCuisine) return [];
+    const set = new Set(masterItems.filter(d => d.cuisine === activeCuisine).map(d => d.section));
+    return Array.from(set);
+  }, [activeCuisine, masterItems]);
+
+  useEffect(() => {
+    if (sectionsForCuisine.length > 0) {
+      setActiveSection(prev => sectionsForCuisine.includes(prev) ? prev : sectionsForCuisine[0]);
+    } else {
+      setActiveSection(null);
+    }
+  }, [sectionsForCuisine]);
+
+  const dishesForSection = useMemo(() => {
+    if (!activeCuisine || !activeSection) return [];
+    return masterItems.filter(d => d.cuisine === activeCuisine && d.section === activeSection);
+  }, [activeCuisine, activeSection, masterItems]);
+
+  // ── Item operations ─────────────────────────────────────────────────────
+
+  function handleAddDish(masterRow) {
+    if (masterRow.is_activated) return;   // prevent double-add per chat lock-in
+
+    // Suggested price = mid-point of master row's range (rounded down to 5)
+    const min = Number(masterRow.suggested_price_min) || 0;
+    const max = Number(masterRow.suggested_price_max) || 0;
+    const suggested = max > min ? Math.floor((min + max) / 2 / 5) * 5 : (min || max || 0);
+
+    onItemAdd({
+      _master_row: masterRow,
+      name: masterRow.name,
+      price: suggested,
+      image_url: masterRow.default_image_url,
+      description: masterRow.default_description,
+      section: masterRow.section,
+    });
+  }
+
+  function isAddedFromMaster(masterRow) {
+    return wizardItems.some(item => item._master_row?.id === masterRow.id);
+  }
+
+  function handleSwapImage(picked) {
+    if (swapTargetIdx == null || picked.length === 0) return;
+    onItemFieldChange(swapTargetIdx, 'image_url', picked[0].download_url);
+    setSwapTargetIdx(null);
+  }
+
+  // ── Excel handlers (mirrors layout's pattern) ────────────────────────────
+  async function handleDownloadTemplate() {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('inflx_token') : null;
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1').replace(/\/+$/, '');
+      const res = await fetch(`${apiBase}/brands/me/listing-template/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `INFLX_${(template?.label || 'Restaurant').replace(/\s+/g, '_')}_Menu_Template.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Download failed: ' + e.message);
+    }
+  }
+
+  async function handleBulkUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadResult(null);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('inflx_token') : null;
+      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/v1').replace(/\/+$/, '');
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${apiBase}/brands/me/products/bulk-upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const json = await res.json();
+      setUploadResult(json.data || json);
+      if ((json.success || json.data?.created > 0) && onRefreshProducts) {
+        await onRefreshProducts();
+      }
+    } catch (e) {
+      setUploadResult({ errors: [e.message] });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  // ── Render: path-choice screen ────────────────────────────────────────────
+
+  if (!path) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">{step.title || 'Add your menu'}</h2>
+          {step.subtitle && <p className="text-sm text-gray-500 mt-1">{step.subtitle}</p>}
+        </div>
+
+        {wizardItems.length > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-800">
+            ✓ {wizardItems.length} dish{wizardItems.length === 1 ? '' : 'es'} added so far
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {PATH_CARDS.map(card => (
+            <button key={card.key} type="button" onClick={() => setPath(card.key)}
+              className="text-left p-5 rounded-2xl border-2 border-gray-200 bg-white hover:border-orange-500 hover:bg-orange-50/50 transition-all">
+              <div className="text-4xl mb-2">{card.icon}</div>
+              <div className="text-base font-bold text-gray-900 mb-1">{card.title}</div>
+              <div className="text-xs text-gray-500 leading-relaxed">{card.sub}</div>
+            </button>
+          ))}
+        </div>
+
+        {wizardItems.length > 0 && (
+          <button type="button" onClick={() => setPath('individual')}
+            className="text-xs text-orange-600 hover:underline">
+            View / edit added dishes ({wizardItems.length})
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  // ── Render: Bulk path ─────────────────────────────────────────────────────
+
+  if (path === 'bulk') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => setPath(null)}
+            className="text-xs text-gray-500 hover:text-gray-700">← Back to choices</button>
+          <h2 className="text-xl font-bold text-gray-900 flex-1">Bulk upload your menu</h2>
+        </div>
+        <BulkUploadCard
+          labelPlural="menu items"
+          uploading={uploading}
+          uploadResult={uploadResult}
+          onDownload={handleDownloadTemplate}
+          onUpload={handleBulkUpload}
+        />
+        <p className="text-[10px] text-gray-400 italic">
+          Bulk-uploaded rows are accepted as-is — they don't have to match the curated catalogue. (Admin moderation in a future phase will surface quality issues.)
+        </p>
+      </div>
+    );
+  }
+
+  // ── Render: Individual path ──────────────────────────────────────────────
+
+  if (loading) return <div className="py-8 text-center text-sm text-gray-400">Loading dishes…</div>;
+  if (error) return (
+    <div className="space-y-3">
+      <button type="button" onClick={() => setPath(null)} className="text-xs text-gray-500 hover:text-gray-700">← Back</button>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">{error}</div>
+    </div>
+  );
+
+  if (cuisinesAvailable.length === 0) {
+    return (
+      <div className="space-y-4">
+        <button type="button" onClick={() => setPath(null)} className="text-xs text-gray-500 hover:text-gray-700">← Back</button>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
+          No dishes available yet for the cuisines you picked
+          ({brandCuisines.join(', ') || 'none'}).
+          {' '}Use Bulk Upload, or go back to step 1 and add a cuisine like South Indian / North Indian / Chinese.
+        </div>
+        <button type="button" onClick={() => setPath('bulk')}
+          className="text-xs text-orange-600 hover:underline">Switch to Bulk Upload →</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => setPath(null)}
+          className="text-xs text-gray-500 hover:text-gray-700">← Back to choices</button>
+        <h2 className="text-xl font-bold text-gray-900 flex-1">Add dishes</h2>
+        <span className="text-xs text-gray-500">{wizardItems.length} added</span>
+      </div>
+
+      {/* Cuisine top-nav */}
+      <div>
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Cuisine</div>
+        <div className="flex gap-2 flex-wrap">
+          {cuisinesAvailable.map(c => (
+            <button key={c} type="button" onClick={() => setActiveCuisine(c)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all
+                ${activeCuisine === c
+                  ? 'border-orange-500 bg-orange-50 text-orange-700'
+                  : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Section sub-nav */}
+      {sectionsForCuisine.length > 0 && (
+        <div>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Category</div>
+          <div className="flex gap-2 flex-wrap">
+            {sectionsForCuisine.map(s => (
+              <button key={s} type="button" onClick={() => setActiveSection(s)}
+                className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-all
+                  ${activeSection === s
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dish grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {dishesForSection.map(dish => {
+          const added = isAddedFromMaster(dish);
+          const activated = !!dish.is_activated;
+          const disabled = activated;
+          const suggested = dish.suggested_price_min && dish.suggested_price_max
+            ? `₹${dish.suggested_price_min}–${dish.suggested_price_max}`
+            : null;
+
+          return (
+            <button key={dish.id} type="button" disabled={disabled} onClick={() => handleAddDish(dish)}
+              className={`text-left rounded-xl border-2 overflow-hidden transition-all
+                ${disabled
+                  ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                  : added
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 bg-white hover:border-orange-400'}`}>
+              <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
+                {dish.default_image_url
+                  ? <img src={dish.default_image_url} alt={dish.name} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-3xl">🍽️</div>}
+                {added && !activated && (
+                  <div className="absolute top-1 right-1 px-2 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold">
+                    ✓ Added
+                  </div>
+                )}
+              </div>
+              <div className="p-2.5">
+                <div className="text-xs font-bold text-gray-900 truncate">{dish.name}</div>
+                {activated ? (
+                  <div className="text-[10px] text-amber-600 font-semibold mt-0.5">
+                    Already on menu — ₹{Number(dish.activated_price || 0).toLocaleString('en-IN')}
+                  </div>
+                ) : suggested ? (
+                  <div className="text-[10px] text-gray-500 mt-0.5">Suggested {suggested}</div>
+                ) : null}
+              </div>
+            </button>
+          );
+        })}
+        {dishesForSection.length === 0 && (
+          <div className="col-span-full py-6 text-center text-sm text-gray-400">No dishes in this section.</div>
+        )}
+      </div>
+
+      {/* Added dishes — inline edit */}
+      {wizardItems.length > 0 && (
+        <div>
+          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2 mt-4">
+            Added dishes ({wizardItems.length})
+          </div>
+          <div className="space-y-2">
+            {wizardItems.map((item, idx) => (
+              <div key={idx} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+                <button type="button" onClick={() => setSwapTargetIdx(idx)}
+                  className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 hover:ring-2 hover:ring-orange-300">
+                  {item.image_url
+                    ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-xl">🍽️</div>}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-bold text-gray-900 truncate">{item.name}</div>
+                  <div className="text-[10px] text-gray-500">{item.section || item._master_row?.section}</div>
+                </div>
+                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                  <span className="px-2 text-xs text-gray-500 bg-gray-50 border-r border-gray-200">₹</span>
+                  <input type="number" value={item.price ?? ''}
+                    onChange={e => onItemFieldChange(idx, 'price', e.target.value === '' ? null : Number(e.target.value))}
+                    className="w-20 px-2 py-1 text-xs font-semibold outline-none" />
+                </div>
+                <button type="button" onClick={() => onItemRemove(idx)}
+                  className="text-red-400 hover:text-red-600 text-xs font-semibold">Remove</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Image-swap GalleryPicker */}
+      <GalleryPicker
+        open={swapTargetIdx != null}
+        onClose={() => setSwapTargetIdx(null)}
+        onSelect={handleSwapImage}
+        multiple={false}
+      />
+    </div>
+  );
+}
