@@ -1,6 +1,7 @@
 'use client';
 
 import TeamMemberListEditor from './TeamMemberListEditor';
+import WeeklyScheduleEditor from './WeeklyScheduleEditor';
 
 /**
  * DynamicFieldRenderer — renders any field type from a business type config.
@@ -14,8 +15,13 @@ import TeamMemberListEditor from './TeamMemberListEditor';
  *   - multi_select   (alias for chip_group)
  *   - team_member_list (sub-form via TeamMemberListEditor)
  *
+ * v1.4 contract types (restaurant rework PR-1):
+ *   - weekly_schedule (per-day open/close editor via WeeklyScheduleEditor —
+ *     used by restaurant.json's hours_json after the rework, replacing the
+ *     free-text "string" type that DynamicFieldRenderer was aliasing to text)
+ *
  * Image / image[] / phone / email / date / time fall through to text-input
- * fallback for now — wired when their consumers land in PR-B step 3.
+ * fallback for now — wired when their consumers land.
  */
 
 export default function DynamicFieldRenderer({ field, value, onChange, error }) {
@@ -26,6 +32,16 @@ export default function DynamicFieldRenderer({ field, value, onChange, error }) 
   if (field.type === 'team_member_list') {
     return (
       <TeamMemberListEditor
+        value={value}
+        onChange={(next) => onChange(field.key, next)}
+      />
+    );
+  }
+
+  // ── weekly_schedule (v1.4 — per-day open/close editor) ─────────────────────
+  if (field.type === 'weekly_schedule') {
+    return (
+      <WeeklyScheduleEditor
         value={value}
         onChange={(next) => onChange(field.key, next)}
       />

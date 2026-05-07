@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import WeeklyScheduleEditor, { defaultSchedule } from './WeeklyScheduleEditor';
 
 /**
  * TeamMemberListEditor — sub-form renderer for the `team_member_list` FieldType.
@@ -25,28 +26,11 @@ import { useState } from 'react';
 
 const ROLE_OPTIONS = ['Stylist', 'Senior Stylist', 'Manager', 'Apprentice'];
 const SPECIALITY_OPTIONS = ['Haircut', 'Color', 'Styling', 'Skin', 'Nails', 'Bridal', 'Spa', 'Massage'];
-const DAYS = [
-  { key: 'mon', label: 'Mon' },
-  { key: 'tue', label: 'Tue' },
-  { key: 'wed', label: 'Wed' },
-  { key: 'thu', label: 'Thu' },
-  { key: 'fri', label: 'Fri' },
-  { key: 'sat', label: 'Sat' },
-  { key: 'sun', label: 'Sun' },
-];
 
-// Default schedule: 9am-8pm Mon-Sat, Sun off. brand.hours_json is a free-form
-// string today (e.g., "Mon-Sat 9 AM - 8 PM"); not reliably parseable per-day,
-// so we use sensible defaults the brand can override per stylist.
-function defaultSchedule() {
-  const open = '09:00';
-  const close = '20:00';
-  return {
-    mon: { open, close }, tue: { open, close }, wed: { open, close },
-    thu: { open, close }, fri: { open, close }, sat: { open, close },
-    sun: null,
-  };
-}
+// Day-list, default schedule shape, and per-day open/close UI all extracted
+// to WeeklyScheduleEditor (PR-1). UX byte-identical, code dedupes between
+// stylist schedules here and the new weekly_schedule FieldType used by
+// restaurant.json's hours_json.
 
 function genId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -178,16 +162,8 @@ function TeamMemberForm({ draft, setDraft, onSave, onCancel }) {
     const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag];
     setField('speciality_tags', next);
   }
-  function setDayWorking(dayKey, working) {
-    const next = { ...draft.schedule_json };
-    next[dayKey] = working ? { open: '09:00', close: '20:00' } : null;
-    setField('schedule_json', next);
-  }
-  function setDayTime(dayKey, slot, value) {
-    const next = { ...draft.schedule_json };
-    next[dayKey] = { ...next[dayKey], [slot]: value };
-    setField('schedule_json', next);
-  }
+  // Schedule mutation handled by WeeklyScheduleEditor's onChange; no inline
+  // setDayWorking / setDayTime helpers needed.
 
   return (
     <div className="space-y-4">
@@ -244,34 +220,11 @@ function TeamMemberForm({ draft, setDraft, onSave, onCancel }) {
 
       {/* Schedule */}
       <Field label="Working schedule" hint="Default 9 AM – 8 PM. Toggle off any days they don't work.">
-        <div className="space-y-2">
-          {DAYS.map(d => {
-            const slot = draft.schedule_json?.[d.key];
-            const working = !!slot;
-            return (
-              <div key={d.key} className="flex items-center gap-3">
-                <button type="button" onClick={() => setDayWorking(d.key, !working)}
-                  className={`w-16 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0
-                    ${working
-                      ? 'bg-purple-500 text-white'
-                      : 'bg-gray-100 text-gray-400'}`}>
-                  {d.label}
-                </button>
-                {working ? (
-                  <div className="flex-1 flex items-center gap-2">
-                    <input type="time" value={slot.open} onChange={e => setDayTime(d.key, 'open', e.target.value)}
-                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-purple-400" />
-                    <span className="text-xs text-gray-400">to</span>
-                    <input type="time" value={slot.close} onChange={e => setDayTime(d.key, 'close', e.target.value)}
-                      className="border border-gray-200 rounded-lg px-2 py-1 text-xs outline-none focus:border-purple-400" />
-                  </div>
-                ) : (
-                  <span className="flex-1 text-xs text-gray-400 italic">Off</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <WeeklyScheduleEditor
+          value={draft.schedule_json}
+          onChange={(next) => setField('schedule_json', next)}
+          accent="#a855f7"
+        />
       </Field>
 
       {/* Actions */}

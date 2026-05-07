@@ -1,12 +1,12 @@
-# Contracts Specification (v1.3)
+# Contracts Specification (v1.4)
 
-> Status: **locked.** Supersedes [contracts-v0.md](contracts-v0.md). Q1 locked: **listing = item, brand = parent.** Four chat refinements + one wizard formalization in v1; three reality-alignment patches in v1.1; URL prefix correction in v1.2; runtime contract + master-catalogue truth + snake_case enumeration in v1.3.
+> Status: **locked.** Supersedes [contracts-v0.md](contracts-v0.md). Q1 locked: **listing = item, brand = parent.** Four chat refinements + one wizard formalization in v1; three reality-alignment patches in v1.1; URL prefix correction in v1.2; runtime contract + master-catalogue truth + snake_case enumeration in v1.3; `weekly_schedule` FieldType in v1.4 (restaurant rework PR-1).
 >
 > The contract is load-bearing for car_rental (existing) plus restaurant + salon (next). If either of those forces changes back into this doc, that's the signal to revise.
 
 ---
 
-## Patch notes (v1 → v1.3)
+## Patch notes (v1 → v1.4)
 
 Reality-alignment patches after backend recon revealed §9 and §6 were misaligned with the live code. Each patch was caught only after a verify-twice pass on the actual files (route mounts, migration history, mobile API client) — the verify-twice rule is now load-bearing for any future claim about backend wiring.
 
@@ -21,6 +21,7 @@ Reality-alignment patches after backend recon revealed §9 and §6 were misalign
 | **v1.3** | **Brand-step nav simplification documented** | When auto-skip elides brand steps on repeat-add, the only re-entry path is the "Edit business profile" header link. Deliberate v1 simplification, not an oversight. Inline navigation that bypasses the skip predicate would force every step component to handle a brand-mode toggle. Header link is one affordance, one route, one mental model. |
 | **v1.3** | **Repeatable-step header rule** | When brand steps are auto-skipped AND the current step is `repeatable_items`, the renderer prepends a small `for {brand_name}` header so the brand sees context they would otherwise have just walked through. Prevents the "orphaned Add menu item" feel surfaced during PR-A recon. |
 | **v1.3** | **Sketch examples normalized to snake_case** | The restaurant + salon JSON sketches in §1 used PascalCase TS interface names (`BrandFieldsStep`, `RepeatableItemStep`, etc.) for `component` values, contradicting the v1.3 enumeration table. Sketches updated to use the canonical snake_case (`brand_fields`, `repeatable_items`). The TS interface names remain as type definitions in §1's TypeScript blocks — they describe the *type*, not the JSON dispatch key. |
+| **v1.4** | **`weekly_schedule` FieldType added** | New typed editor for per-day open/close schedules. Storage shape: `{ mon: { open: "09:00", close: "20:00" } \| null, tue: ..., ..., sun: null }` — `null` means closed that day, time values are HH:MM 24-hour strings. Two callers: salon's stylist working-schedule (refactored from inline DAYS rendering inside TeamMemberListEditor; UX byte-identical, code dedupes) and restaurant's `hours_json` brand field (replacing the v1.3 `string` alias that rendered as a useless free-text input). Added to the §6.5 enumeration table as a built-in. Atomic with PR-1 of the restaurant authoring rework. |
 
 ---
 
@@ -1172,6 +1173,12 @@ Schema JSON uses **snake_case** for `component` values. The TS interface names (
 | `preview` | `PreviewStep` | built-in | every template's penultimate step |
 | `done` | `DoneStep` | built-in | every template's success step |
 | `basic_fields` | *(no formal interface)* | built-in **(deprecated v1.3)** | 35 legacy generic categories — **see sunset path below** |
+
+### v1.4 FieldType addition
+
+| JSON `type` value | TS interface (in §Shared types) | Source | Exercised by |
+|---|---|---|---|
+| `weekly_schedule` | extends `FieldType` union | built-in (PR-1 of restaurant rework) | salon's stylist `schedule_json` (refactored from inline DAYS rendering, UX byte-identical) + restaurant's brand `hours_json` (replacing v1.3 `string` alias) |
 
 ### `basic_fields` deprecation (sunset path)
 

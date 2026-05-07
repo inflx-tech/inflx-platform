@@ -515,6 +515,27 @@ const getMasterCatalogue = asyncHandler(async (req, res) => {
     return success(res, { category: 'salon', items: rows });
   }
 
+  if (cat === 'restaurant') {
+    // Phase-1 seed of 129 dishes across 8 cuisines (migration 035). Admin
+    // owns content forever via the admin-web CRUD UI landing in the next
+    // phase. Each row annotated with brand-specific activation status so the
+    // restaurant_dish_picker can grey out already-added dishes.
+    const { rows } = await db.query(`
+      SELECT
+        md.*,
+        bp.id           AS product_id,
+        bp.price        AS activated_price,
+        bp.is_active    AS is_active,
+        (bp.id IS NOT NULL) AS is_activated
+      FROM master_dishes md
+      LEFT JOIN brand_products bp
+        ON bp.master_dish_id = md.id AND bp.brand_id = $1
+      ORDER BY md.cuisine, md.section, md.sort_order, md.name
+    `, [brand.id]);
+
+    return success(res, { category: 'restaurant', items: rows });
+  }
+
   throw new AppError('NOT_FOUND', `Master catalogue not available for category: ${cat}`, 404);
 });
 
