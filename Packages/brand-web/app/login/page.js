@@ -55,6 +55,20 @@ const INDUSTRY_HIERARCHY = [
   ]},
 ];
 
+// Indian states + UTs — lifted from MoH&FW spelling. Kept in alpha order
+// so the dropdown is easy to scan.
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+  'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+  'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+  'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  // Union Territories
+  'Andaman & Nicobar', 'Chandigarh', 'Dadra & Nagar Haveli and Daman & Diu',
+  'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+];
+
 export default function LoginPage() {
   const router = useRouter();
   // Steps: phone -> otp -> register (name+business+category on one screen)
@@ -65,6 +79,12 @@ export default function LoginPage() {
   const [businessName, setBusinessName] = useState('');
   const [industry, setIndustry]       = useState('');
   const [category, setCategory]       = useState('');
+  // Location — collected at registration so the brand profile is complete
+  // by the time admin reviews the approval queue.
+  const [addressLine, setAddressLine] = useState('');
+  const [city, setCity]               = useState('');
+  const [state, setStateField]        = useState('');
+  const [pincode, setPincode]         = useState('');
   const [loading, setLoading]         = useState(false);
   const [resending, setResending]     = useState(false);
   const [error, setError]             = useState('');
@@ -140,23 +160,32 @@ export default function LoginPage() {
     setStep('register');
   }
 
-  // Step 3: Register brand (name + business name + category)
+  // Step 3: Register brand (name + business + category + location)
   async function handleRegister(e) {
     e.preventDefault();
     setError('');
     if (!name.trim()) { setError('Please enter your name'); return; }
     if (!businessName.trim()) { setError('Please enter your business name'); return; }
     if (!category) { setError('Please select a category'); return; }
+    if (!addressLine.trim()) { setError('Please enter your business address'); return; }
+    if (!city.trim()) { setError('Please enter your city'); return; }
+    if (!state.trim()) { setError('Please select your state'); return; }
+    if (!/^[0-9]{6}$/.test(pincode.trim())) { setError('Pincode must be 6 digits'); return; }
 
     setLoading(true);
 
-    // Update user name if needed
-    try {
-      await brandApi.patch('/users/me', { name: name.trim() });
-    } catch (e) { /* ignore — name might already be set */ }
-
-    // Register brand
-    const res = await brandApi.register({ business_name: businessName.trim(), category });
+    // Single round-trip — backend's /brands/register now accepts name +
+    // city + state and updates the users row, fixing the "Brand User"
+    // placeholder that admin used to see.
+    const res = await brandApi.register({
+      name:          name.trim(),
+      business_name: businessName.trim(),
+      category,
+      address_line:  addressLine.trim(),
+      city:          city.trim(),
+      state:         state.trim(),
+      pincode:       pincode.trim(),
+    });
     setLoading(false);
 
     if (!res.success) {
@@ -166,6 +195,14 @@ export default function LoginPage() {
 
     const brand = res.data?.brand || res.data;
     localStorage.setItem('inflx_brand', JSON.stringify(brand));
+
+    // Refresh the cached user too — the backend just updated users.name
+    // + city + state, so the next page load should reflect the real name.
+    const meRes = await brandApi.getMe().catch(() => null);
+    if (meRes?.success) {
+      const updatedUser = meRes.data?.user;
+      if (updatedUser) localStorage.setItem('inflx_user', JSON.stringify(updatedUser));
+    }
 
     // Go to dashboard — pending approval banner will show there
     router.push('/dashboard');
@@ -260,7 +297,7 @@ export default function LoginPage() {
               </select>
             </div>
             {industry && (
-              <div className="mb-4">
+              <div className="mb-3">
                 <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Type</label>
                 <select value={category} onChange={e => setCategory(e.target.value)}
                   className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
@@ -271,8 +308,42 @@ export default function LoginPage() {
                 </select>
               </div>
             )}
+
+            {/* Business location — required so admin sees a complete profile
+                in the approval queue. */}
+            <div className="mb-3">
+              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Address</label>
+              <input type="text" value={addressLine} onChange={e => setAddressLine(e.target.value)}
+                placeholder="Building, street, area"
+                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
+            </div>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">City</label>
+                <input type="text" value={city} onChange={e => setCity(e.target.value)}
+                  placeholder="e.g. Vijayawada"
+                  className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Pincode</label>
+                <input type="text" inputMode="numeric" maxLength={6} value={pincode}
+                  onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="6-digit"
+                  className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">State</label>
+              <select value={state} onChange={e => setStateField(e.target.value)}
+                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
+                <option value="">Select your state</option>
+                {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+
             {error && <div className="mb-3 p-2.5 bg-red-pale rounded-lg text-xs text-red">{error}</div>}
-            <button type="submit" disabled={loading || !name.trim() || !businessName.trim() || !category}
+            <button type="submit"
+              disabled={loading || !name.trim() || !businessName.trim() || !category || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
               className="w-full py-3 bg-gradient-to-r from-red to-orange text-white font-bold rounded-lg text-sm disabled:opacity-50">
               {loading ? 'Registering...' : 'Complete Registration'}
             </button>

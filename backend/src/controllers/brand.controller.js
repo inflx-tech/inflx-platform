@@ -101,13 +101,37 @@ function sanitiseBrand(brand) {
 
 const register = asyncHandler(async (req, res) => {
   const userId = req.user.sub;
-  const { business_name, category, gstin, address_line, pincode } = req.body;
+  const {
+    name,           // brand contact's real name; verify-otp wrote "Brand User" as a placeholder
+    business_name,
+    category,
+    gstin,
+    address_line,
+    pincode,
+    city,           // lives on users table
+    state,          // lives on users table
+  } = req.body;
 
   if (!business_name || !business_name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'business_name is required', 422, 'business_name');
   }
   if (!category || !category.trim()) {
     throw new AppError('VALIDATION_ERROR', 'category is required', 422, 'category');
+  }
+  if (!name || !name.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
+  }
+  if (!city || !city.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'city is required', 422, 'city');
+  }
+  if (!state || !state.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'state is required', 422, 'state');
+  }
+  if (!address_line || !address_line.trim()) {
+    throw new AppError('VALIDATION_ERROR', 'address_line is required', 422, 'address_line');
+  }
+  if (!pincode || !/^[0-9]{6}$/.test(String(pincode).trim())) {
+    throw new AppError('VALIDATION_ERROR', 'pincode must be a 6-digit number', 422, 'pincode');
   }
 
   // Idempotency: disallow duplicate registration
@@ -116,11 +140,19 @@ const register = asyncHandler(async (req, res) => {
     throw new AppError('CONFLICT', 'Brand profile already exists for this account', 409);
   }
 
+  // Update the users row first — name + city + state live there. We do this
+  // before the brand insert so a failed insert leaves the user's name updated
+  // (better UX than rolling back to "Brand User").
+  await db.query(
+    `UPDATE users SET name = $2, city = $3, state = $4 WHERE id = $1`,
+    [userId, name.trim(), city.trim(), state.trim()]
+  );
+
   const { rows } = await db.query(
     `INSERT INTO brands (user_id, business_name, category, gstin, address_line, pincode)
      VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING *`,
-    [userId, business_name.trim(), category.trim(), gstin || null, address_line || null, pincode || null]
+    [userId, business_name.trim(), category.trim(), gstin || null, address_line.trim(), String(pincode).trim()]
   );
 
   const brand = rows[0];
