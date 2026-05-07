@@ -388,10 +388,8 @@ export const adminApi = {
   },
 };
 
-export function getStoredUser() {
-  if (typeof window === 'undefined') return null;
-  try { return JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { return null; }
-}
+// (getStoredUser is already exported near the top of this file — duplicate
+//  removed here to avoid the webpack "redefined" error.)
 
 // Since migration 021 (paise→rupees) every monetary value is in rupees.
 // fmtMoney stays as an alias to fmtRupees so we don't have to rename 46
