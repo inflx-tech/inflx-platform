@@ -232,7 +232,12 @@ export default function BrandContractScreen({ route, navigation }) {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {/* Big draft / re-approve banner */}
         {isEditing && (
           <View style={styles.draftBanner}>

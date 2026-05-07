@@ -89,6 +89,16 @@ async function getContractByIdOrThrow(contractId) {
     [contractId]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Contract not found', 404);
+
+  // Tack the production_event onto the contract row so PDF generation +
+  // any other downstream consumers can render the production arrangement
+  // without a second query. Pre-activation contracts won't have one yet,
+  // and that's fine — the PDF/UI handles the null case.
+  const { rows: peRows } = await db.query(
+    `SELECT * FROM production_events WHERE contract_id = $1`,
+    [contractId]
+  );
+  rows[0].production_event = peRows[0] || null;
   return rows[0];
 }
 
@@ -172,6 +182,16 @@ const getContract = asyncHandler(async (req, res) => {
     [ciId]
   );
 
+  // Fetch production_event so influencer (and brand) can see the production
+  // arrangement on screen even before activation. The row exists from
+  // contract.brandSign onwards; before that we return null and the UI shows
+  // "to be confirmed after signing" using contract.production_mode alone.
+  const { rows: peRows } = await db.query(
+    `SELECT * FROM production_events WHERE contract_id = $1`,
+    [contract.id]
+  );
+  const production_event = peRows[0] || null;
+
   // Auto-compose the structured content-requirements starter text. If the
   // brand has already saved custom text, the client should prefer that.
   const suggested_content_requirements = _buildSuggestedContentRequirements({
@@ -188,7 +208,12 @@ const getContract = asyncHandler(async (req, res) => {
   // Strip internal join columns before returning
   const { influencer_user_id, brand_user_id, ...contractData } = contract;
 
-  return success(res, { contract: contractData, deliverables, suggested_content_requirements });
+  return success(res, {
+    contract: contractData,
+    deliverables,
+    production_event,
+    suggested_content_requirements,
+  });
 });
 
 /**

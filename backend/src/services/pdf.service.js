@@ -85,6 +85,79 @@ async function generateContractPDF(contract) {
     doc.text(`Revision Limit:    ${contract.revision_limit}`);
     doc.moveDown(1.5);
 
+    // ── Deliverables ───────────────────────────────────────────────────────
+    // Always shown. Pulled from formats_json (the campaign-set source of
+    // truth) so the contract memorialises exactly what was promised even
+    // before brandSign auto-creates the live deliverable rows. Format chips
+    // can be either ['Instagram reel', 'Instagram post'] or
+    // [{name: 'Instagram reel', count: 2}, ...] depending on legacy data —
+    // handled both shapes.
+    const formats = (() => {
+      let raw = contract.formats_json;
+      if (raw == null) return [];
+      if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch { return []; } }
+      if (!Array.isArray(raw)) return [];
+      return raw.map(f => typeof f === 'string'
+        ? { name: f, count: 1 }
+        : { name: f.name || f.type || 'Format', count: Number(f.count) || 1 });
+    })();
+    if (formats.length > 0) {
+      doc.fontSize(14).font('Helvetica-Bold').text('DELIVERABLES');
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica');
+      let n = 1;
+      for (const f of formats) {
+        const qty = f.count > 1 ? ` x${f.count}` : '';
+        doc.text(`${n}. ${f.name}${qty}`);
+        n++;
+      }
+      doc.moveDown(1.5);
+    }
+
+    // ── Production Arrangement ─────────────────────────────────────────────
+    // How the influencer will actually create the content. Three modes
+    // (visit / shipment / remote) — relevant to engagement, conversion,
+    // and hybrid alike. Falls back gracefully when production_event isn't
+    // populated yet (e.g. PDF generated at brand-approve time).
+    const mode = contract.production_mode || 'remote';
+    const pe   = contract.production_event || {};
+    doc.fontSize(14).font('Helvetica-Bold').text('PRODUCTION ARRANGEMENT');
+    doc.moveDown(0.5);
+    doc.fontSize(10).font('Helvetica');
+
+    if (mode === 'visit') {
+      doc.text('Mode:              Visit (Influencer at Brand Location)');
+      const addrParts = [
+        pe.visit_address, pe.visit_city, pe.visit_state, pe.visit_pincode,
+      ].filter(Boolean);
+      doc.text(`Address:           ${addrParts.length ? addrParts.join(', ') : 'To be confirmed by brand after both parties sign'}`);
+      if (pe.visit_scheduled_at) {
+        doc.text(`Scheduled:         ${fmtDate(pe.visit_scheduled_at)}`);
+      }
+      if (pe.visit_contact_name || pe.visit_contact_phone) {
+        const contact = [pe.visit_contact_name, pe.visit_contact_phone].filter(Boolean).join(' / ');
+        doc.text(`Contact:           ${contact}`);
+      }
+    } else if (mode === 'shipment') {
+      doc.text('Mode:              Product Shipment (Brand to Influencer)');
+      const addrParts = [
+        pe.shipment_to_address_line, pe.shipment_to_city,
+        pe.shipment_to_state, pe.shipment_to_pincode,
+      ].filter(Boolean);
+      doc.text(`Shipping Address:  ${addrParts.length ? addrParts.join(', ') : 'Influencer\'s registered address'}`);
+      if (pe.shipment_courier || pe.shipment_awb) {
+        const tracking = [pe.shipment_courier, pe.shipment_awb].filter(Boolean).join(' / ');
+        doc.text(`Tracking:          ${tracking}`);
+      }
+      if (pe.shipment_dispatched_at) {
+        doc.text(`Dispatched:        ${fmtDate(pe.shipment_dispatched_at)}`);
+      }
+    } else {
+      doc.text('Mode:              Remote (No Physical Exchange)');
+      doc.text('The influencer will create content directly from the campaign brief and brand assets. No on-site shoot or product shipment required.');
+    }
+    doc.moveDown(1.5);
+
     // ── Custom Clauses (only if brand selected any) ────────────────────────
     let clausesData = contract.custom_clauses;
     if (typeof clausesData === 'string') {

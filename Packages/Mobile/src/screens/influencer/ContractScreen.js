@@ -61,6 +61,8 @@ export default function ContractScreen({ navigation, route }) {
   const { campaignInfluencerId } = route.params || {};
   const [contract, setContract] = useState(null);
   const [deliverables, setDeliverables] = useState([]);
+  const [formatsJson, setFormatsJson] = useState([]);
+  const [productionEvent, setProductionEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
@@ -77,8 +79,18 @@ export default function ContractScreen({ navigation, route }) {
     setLoading(false);
     if (res.success) {
       const data = res.data || {};
-      setContract(data.contract || data);
+      const c = data.contract || data;
+      setContract(c);
       setDeliverables(data.deliverables || []);
+      setProductionEvent(data.production_event || null);
+      // formats_json lives on the campaign_set and gets included on the
+      // contract row by getContractByIdOrThrow. Used as the source for
+      // the Deliverables card before brandSign auto-creates real rows.
+      let fj = c.formats_json || c.set_formats_json || [];
+      if (typeof fj === 'string') {
+        try { fj = JSON.parse(fj); } catch { fj = []; }
+      }
+      setFormatsJson(Array.isArray(fj) ? fj : []);
     } else {
       Alert.alert('Error', res.error?.message || 'Failed to load contract');
     }
@@ -269,7 +281,12 @@ export default function ContractScreen({ navigation, route }) {
       )}
 
       {/* ── Body ────────────────────────────────────────────────────────── */}
-      <ScrollView ref={scrollRef} style={styles.body}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.body}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
 
         {/* Campaign & Brand Info */}
         <View style={styles.card}>
@@ -307,8 +324,11 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Deliverables */}
-        {deliverables.length > 0 && (
+        {/* Deliverables — show live deliverables once they exist (after both
+            sign), otherwise fall back to formats_json so the influencer
+            sees what they're agreeing to BEFORE signing. Critical for
+            informed consent across engagement / conversion / hybrid. */}
+        {deliverables.length > 0 ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Deliverables</Text>
             {deliverables.map((d, i) => (
@@ -329,7 +349,119 @@ export default function ContractScreen({ navigation, route }) {
               </View>
             ))}
           </View>
-        )}
+        ) : formatsJson.length > 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Deliverables to be Created</Text>
+            <Text style={[styles.paymentNote, { marginBottom: 6 }]}>
+              These will be auto-created as trackable items once both parties sign.
+            </Text>
+            {formatsJson.map((f, i) => {
+              const name = (typeof f === 'string') ? f : (f.name || f.type || 'Format');
+              const count = (typeof f === 'string') ? 1 : (Number(f.count) || 1);
+              return (
+                <View key={i} style={styles.deliverableRow}>
+                  <View style={styles.deliverableDot} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.deliverableType}>
+                      {name}{count > 1 ? ` x${count}` : ''}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
+
+        {/* Production Arrangement — what the influencer is signing up for
+            logistically. Shown from pending_influencer onwards (the mode is
+            picked at brand-approve time, well before influencer signs).
+            Visit address / shipping AWB only fill in after activation; pre-
+            activation we show a sensible placeholder. Applies to all goals. */}
+        {contract.status !== 'draft' && (() => {
+          const mode = contract.production_mode || 'remote';
+          const pe = productionEvent || {};
+          if (mode === 'remote') {
+            return (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Production Arrangement</Text>
+                <View style={[styles.briefBox, { backgroundColor: colors.surface2 }]}>
+                  <Text style={[styles.briefText, { fontWeight: '700', marginBottom: 4 }]}>💻 Remote</Text>
+                  <Text style={styles.briefText}>
+                    No physical exchange. You'll create content directly from the brand brief and any uploaded reference assets.
+                  </Text>
+                </View>
+              </View>
+            );
+          }
+          if (mode === 'visit') {
+            const addr = [pe.visit_address, pe.visit_city, pe.visit_state, pe.visit_pincode].filter(Boolean).join(', ');
+            return (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Production Arrangement</Text>
+                <View style={[styles.briefBox, { backgroundColor: colors.surface2 }]}>
+                  <Text style={[styles.briefText, { fontWeight: '700', marginBottom: 4 }]}>🏬 Visit Brand Location</Text>
+                  <Text style={styles.briefText}>
+                    You'll visit the brand's premises to shoot the content.
+                  </Text>
+                  <View style={{ height: 8 }} />
+                  <Text style={styles.infoLabel}>Address</Text>
+                  <Text style={styles.infoValue}>{addr || 'To be confirmed by brand after both parties sign.'}</Text>
+                  {pe.visit_scheduled_at && (
+                    <>
+                      <View style={{ height: 6 }} />
+                      <Text style={styles.infoLabel}>Scheduled</Text>
+                      <Text style={styles.infoValue}>
+                        {new Date(pe.visit_scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {pe.visit_window_minutes ? ` · ${pe.visit_window_minutes} min window` : ''}
+                      </Text>
+                    </>
+                  )}
+                  {(pe.visit_contact_name || pe.visit_contact_phone) && (
+                    <>
+                      <View style={{ height: 6 }} />
+                      <Text style={styles.infoLabel}>Contact</Text>
+                      <Text style={styles.infoValue}>
+                        {[pe.visit_contact_name, pe.visit_contact_phone].filter(Boolean).join(' · ')}
+                      </Text>
+                    </>
+                  )}
+                </View>
+              </View>
+            );
+          }
+          // shipment
+          const shipAddr = [pe.shipment_to_address_line, pe.shipment_to_city, pe.shipment_to_state, pe.shipment_to_pincode].filter(Boolean).join(', ');
+          return (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Production Arrangement</Text>
+              <View style={[styles.briefBox, { backgroundColor: colors.surface2 }]}>
+                <Text style={[styles.briefText, { fontWeight: '700', marginBottom: 4 }]}>📦 Product Shipment</Text>
+                <Text style={styles.briefText}>
+                  The brand will ship product samples to you for content creation.
+                </Text>
+                <View style={{ height: 8 }} />
+                <Text style={styles.infoLabel}>Shipping to</Text>
+                <Text style={styles.infoValue}>{shipAddr || 'Your registered address. Confirm or update after signing.'}</Text>
+                {(pe.shipment_courier || pe.shipment_awb) && (
+                  <>
+                    <View style={{ height: 6 }} />
+                    <Text style={styles.infoLabel}>Tracking</Text>
+                    <Text style={styles.infoValue}>
+                      {[pe.shipment_courier, pe.shipment_awb].filter(Boolean).join(' · ')}
+                    </Text>
+                  </>
+                )}
+                {pe.shipment_dispatched_at && (
+                  <>
+                    <View style={{ height: 6 }} />
+                    <Text style={styles.infoLabel}>Dispatched</Text>
+                    <Text style={styles.infoValue}>{formatDate(pe.shipment_dispatched_at)}</Text>
+                  </>
+                )}
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Payment Terms / Tranche Schedule — fee-bearing contracts only.
             Conversion contracts (no upfront fee) get Commission Schedule below. */}
