@@ -66,7 +66,16 @@ function isEmptyValue(v) {
 function resolveSource(spec, ctx) {
   if (typeof spec !== 'string') return spec;
 
-  if (spec.startsWith('literal:')) return spec.slice('literal:'.length);
+  if (spec.startsWith('literal:')) {
+    const rest = spec.slice('literal:'.length);
+    // Coerce common literal types so storage_format can express booleans/null
+    // without the consuming column receiving the string "true" / "null".
+    if (rest === 'true')  return true;
+    if (rest === 'false') return false;
+    if (rest === 'null')  return null;
+    if (/^-?\d+(\.\d+)?$/.test(rest)) return Number(rest);
+    return rest;
+  }
 
   if (spec.startsWith('master_row.')) {
     return readPath(ctx.masterRow, spec.slice('master_row.'.length));

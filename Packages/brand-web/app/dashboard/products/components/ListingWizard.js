@@ -3,28 +3,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { brandApi } from '../../../../lib/api';
 import ListingTemplateLayout from './ListingTemplateLayout';
 
-// Business-specific custom wizards (legacy path, kept until PR-C migration)
-import CarRentalWizard from './car-rental/CarRentalWizard';
-
 /**
  * ListingWizard — top-level orchestrator.
  *
- * Loads /brands/me/listing-config + products + quality-score, then either:
- *   (a) routes to a legacy CUSTOM_WIZARDS entry (car_rental today), OR
- *   (b) mounts <ListingTemplateLayout /> with the loaded template.
+ * Loads /brands/me/listing-config + products + quality-score, then mounts
+ * <ListingTemplateLayout /> with the loaded template. Every category
+ * (car_rental, restaurant, salon, future verticals) routes through the
+ * shared layout via templateRegistry.
  *
- * Path (a) preserves car_rental's existing production flow unchanged in PR-A.
- * Path (b) uses the new shared layout for everything else. Restaurant + salon
- * register their step components in templateRegistry.js (PR-B). Car_rental
- * migrates to path (b) in PR-C, at which point CarRentalWizard.js and the old
- * DynamicStepRenderer.js are deleted.
+ * PR-3 deleted the CUSTOM_WIZARDS escape hatch + the legacy
+ * CarRentalWizard.js + DynamicStepRenderer.js. Schema-driven layout is
+ * the only path forward.
  */
-
-// Map of category_key → custom wizard component (legacy path).
-// PR-C empties this and deletes CarRentalWizard.js per success criteria.
-const CUSTOM_WIZARDS = {
-  car_rental: CarRentalWizard,
-};
 
 export default function ListingWizard() {
   const [config, setConfig] = useState(null);
@@ -90,19 +80,6 @@ export default function ListingWizard() {
       </div>
     );
   }
-
-  // ── Custom wizard routing — MUST stay above the layout fallback ───────────
-  // Preserves production flow for car_rental (and any other entry in
-  // CUSTOM_WIZARDS) until PR-C migration.
-
-  const categoryKey = config?.category_key;
-  const CustomWizard = categoryKey ? CUSTOM_WIZARDS[categoryKey] : null;
-
-  if (CustomWizard) {
-    return <CustomWizard config={config} />;
-  }
-
-  // ── Default — schema-driven layout ─────────────────────────────────────────
 
   if (!config) {
     return (

@@ -30,9 +30,10 @@ import BulkUploadCard from './BulkUploadCard';
  * Built-in step components live in builtinStepComponents.js. Dispatch order:
  *   template.stepComponents[step.component] || builtins[step.component] || ErrorPlaceholder
  *
- * NOT used by car_rental in PR-A — car_rental keeps routing through
- * CarRentalWizard.js via CUSTOM_WIZARDS in ListingWizard.js. PR-C migrates
- * car_rental to this layout and deletes CarRentalWizard.js + DynamicStepRenderer.js.
+ * As of PR-3 (locked v1.3 success criteria), every category — car_rental
+ * included — routes through this layout via templateRegistry. The legacy
+ * CarRentalWizard.js + DynamicStepRenderer.js are deleted. CUSTOM_WIZARDS
+ * escape hatch is removed from ListingWizard.js.
  */
 
 export default function ListingTemplateLayout({

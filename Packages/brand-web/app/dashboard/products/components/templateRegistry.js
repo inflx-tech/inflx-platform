@@ -29,12 +29,12 @@
 
 import restaurantTemplate from './restaurant';
 import salonTemplate     from './salon';
+import carRentalTemplate from './car-rental';
 
 const REGISTRY = {
   restaurant: restaurantTemplate,
   salon:      salonTemplate,
-  // car_rental — routed via CUSTOM_WIZARDS in ListingWizard.js for now.
-  // Will move here in PR-C alongside CarRentalWizard.js deletion.
+  car_rental: carRentalTemplate,   // PR-3: migrated from CUSTOM_WIZARDS in ListingWizard.js
 };
 
 export function getTemplate(categoryKey) {
