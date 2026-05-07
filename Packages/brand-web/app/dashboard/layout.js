@@ -28,7 +28,11 @@ export default function DashboardLayout({ children }) {
       try {
         const u = JSON.parse(localStorage.getItem('inflx_user') || 'null');
         const token = localStorage.getItem('inflx_token');
-        if (!u || u.role !== 'brand' || !token) { router.push('/login'); return; }
+        if (!u || !token) { router.push('/login'); return; }
+        // Admin landing on /dashboard by accident — bounce them to /admin
+        // rather than kicking them out to /login.
+        if (u.role === 'admin') { router.push('/admin'); return; }
+        if (u.role !== 'brand') { router.push('/login'); return; }
         // Re-sync cookie so middleware doesn't expire it before localStorage does
         document.cookie = `inflx_token=${token}; path=/; max-age=2592000`;
         setUser(u);

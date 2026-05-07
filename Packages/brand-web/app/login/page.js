@@ -110,17 +110,33 @@ export default function LoginPage() {
     localStorage.setItem('inflx_user', JSON.stringify(user));
     document.cookie = `inflx_token=${access_token}; path=/; max-age=900; SameSite=Strict`;
 
-    // Check if brand profile already exists
-    const brandRes = await brandApi.getMe();
-    if (brandRes.success) {
-      // Existing brand — go to dashboard
-      const brand = brandRes.data?.brand || brandRes.data;
-      localStorage.setItem('inflx_brand', JSON.stringify(brand));
-      router.push('/dashboard');
+    // Branch by role. The web supports two roles — brand and admin —
+    // and the backend already returns the right role for existing users.
+    // For brand-new users, the verifyOtp call defaults to creating a
+    // brand row, so we send them through brand registration. Influencers
+    // and followers are mobile-only — kick them out with a clear error.
+    if (user.role === 'admin') {
+      router.push('/admin');
       return;
     }
+    if (user.role === 'influencer' || user.role === 'follower') {
+      setError(`This phone is registered as ${user.role}. Please use the ${user.role} mobile app.`);
+      localStorage.removeItem('inflx_token');
+      localStorage.removeItem('inflx_user');
+      document.cookie = 'inflx_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+      return;
+    }
+    if (user.role === 'brand') {
+      const brandRes = await brandApi.getMe();
+      if (brandRes.success) {
+        const brand = brandRes.data?.brand || brandRes.data;
+        localStorage.setItem('inflx_brand', JSON.stringify(brand));
+        router.push('/dashboard');
+        return;
+      }
+    }
 
-    // New user — show registration form
+    // No role matched OR brand role with no brand profile yet → register flow
     setStep('register');
   }
 

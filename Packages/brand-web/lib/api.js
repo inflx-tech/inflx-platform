@@ -336,6 +336,63 @@ export const notificationApi = {
   markAllRead: () => api.post('/notifications/read-all'),
 };
 
+// ─── Admin endpoints ────────────────────────────────────────────────────────
+// Used only by /admin/* pages. Keeping them on the same api client + auth
+// pipeline so admins benefit from the same proactive-refresh and 401-retry
+// machinery as brand users.
+export const adminApi = {
+  getStats: () => api.get('/admin/stats'),
+  getBrands: (status, search, page) => api.get(`/admin/brands?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  getBrandQueue: () => api.get('/admin/queue/brands'),
+  getInfluencerQueue: () => api.get('/admin/queue/influencers'),
+  updateBrandStatus: (id, data) => api.patch(`/admin/brands/${id}/status`, data),
+  updateInfluencerStatus: (id, data) => api.patch(`/admin/influencers/${id}/status`, data),
+  getBrandById: (id) => api.get(`/brands/${id}`),
+  getInfluencerById: (id) => api.get(`/influencers/${id}`),
+  getEscrow: (status) => api.get(`/admin/escrow?status=${status || 'all'}`),
+  releaseEscrow: (id, reason) => api.post(`/admin/escrow/${id}/release`, { override_reason: reason }),
+  getAdminUsers: () => api.get('/admin/users'),
+  createAdminUser: (data) => api.post('/admin/users', data),
+  getPaymentConfig: () => api.get('/admin/config/payments'),
+  updatePaymentConfig: (data) => api.patch('/admin/config/payments', data),
+  setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
+  rescrapeInfluencer: (id) => api.post(`/influencers/${id}/rescrape`),
+  getAnalytics: (days = 30) => api.get(`/admin/analytics?days=${days}`),
+  getProductionQueue: () => api.get('/admin/production/queue'),
+  getWithdrawals: (status, search, page) => api.get(`/admin/withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
+  // Master dishes — admin CRUD for the restaurant dish catalogue
+  listMasterDishes: (cuisine, section, search, page) =>
+    api.get(`/admin/master-dishes?cuisine=${encodeURIComponent(cuisine || '')}&section=${encodeURIComponent(section || '')}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  listCuisines:       () => api.get('/admin/master-dishes/cuisines'),
+  createMasterDish:   (data) => api.post('/admin/master-dishes', data),
+  updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
+  deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
+
+  bulkUploadInfluencers: async (file) => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/admin/influencers/bulk-upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch {
+      return { success: false, error: { code: 'NETWORK_ERROR', message: 'Cannot connect to server.' } };
+    }
+    if (res.status === 401 && token) { clearSession(); return { success: false, error: { code: 'UNAUTHORIZED' } }; }
+    try { return await res.json(); } catch { return { success: false, error: { code: 'PARSE_ERROR' } }; }
+  },
+};
+
+export function getStoredUser() {
+  if (typeof window === 'undefined') return null;
+  try { return JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { return null; }
+}
+
 // Since migration 021 (paise→rupees) every monetary value is in rupees.
 // fmtMoney stays as an alias to fmtRupees so we don't have to rename 46
 // call sites. Prefer fmtRupees in new code.
