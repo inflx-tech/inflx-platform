@@ -731,7 +731,11 @@ const getListingConfig = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  const config = listingService.getConfigForCategory(brand.category);
+  // Augmenting variant — for restaurant, merges admin-managed master_dishes
+  // cuisines into brand_config.fields.cuisines.options so admin additions
+  // surface in the wizard's step 1 multi-select on the next request. Other
+  // categories pass through unchanged.
+  const config = await listingService.getAugmentedConfigForBrand(brand);
   if (!config) throw new AppError('NOT_FOUND', `No config for category: ${brand.category}`, 404);
 
   const isActive = listingService.isCategoryActive(brand.category);

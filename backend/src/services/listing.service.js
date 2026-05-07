@@ -42,6 +42,77 @@ function getConfigForCategory(categoryKey) {
   return loadSchema(categoryKey);
 }
 
+/**
+ * Returns the brand's schema with dynamic options sourced from master
+ * tables merged in. For restaurant: brand_config.fields.cuisines.options
+ * gets union'd with distinct cuisines from master_dishes (admin-authored
+ * content via the admin master-dishes CRUD). This closes the autosync
+ * gap — admin can add a new cuisine + seed dishes for it, and brands
+ * see it in the wizard's step 1 cuisine multi-select on the very next
+ * /brands/me/listing-config request.
+ *
+ * Other categories pass through unchanged. Defensive: DB query failure
+ * falls back to the declared static list so the wizard still works.
+ *
+ * No cache mutation — returns a shallow copy with the merged options.
+ * The base schemaCache holds the on-disk file, untouched.
+ *
+ * Order: declared cuisines first (curated taxonomy from restaurant.json),
+ * admin-added cuisines append at the end. Declared cuisines that have no
+ * dishes seeded yet are preserved (per phase-1 decision: brands picking
+ * an unseeded cuisine see the "no dishes available yet" empty state in
+ * the picker, with a Bulk Upload fallback).
+ *
+ * Casing: matched verbatim. Admin-added "south indian" and declared
+ * "South Indian" coexist as distinct entries. Admin's responsibility to
+ * keep casing consistent.
+ */
+async function getAugmentedConfigForBrand(brand) {
+  const baseSchema = loadSchema(brand?.category);
+  if (!baseSchema) return null;
+
+  if (brand.category === 'restaurant') {
+    return await augmentRestaurantCuisines(baseSchema);
+  }
+  return baseSchema;
+}
+
+async function augmentRestaurantCuisines(schema) {
+  try {
+    const { rows } = await db.query(
+      `SELECT DISTINCT cuisine FROM master_dishes
+       WHERE cuisine IS NOT NULL AND cuisine != ''
+       ORDER BY cuisine`
+    );
+    const masterCuisines = rows.map(r => r.cuisine);
+    const declared = schema.brand_config?.fields?.cuisines?.options || [];
+
+    const declaredSet = new Set(declared);
+    const merged = [...declared];
+    for (const c of masterCuisines) {
+      if (!declaredSet.has(c)) merged.push(c);
+    }
+
+    // No mutation — the base schema in schemaCache stays as the on-disk file.
+    return {
+      ...schema,
+      brand_config: {
+        ...schema.brand_config,
+        fields: {
+          ...schema.brand_config.fields,
+          cuisines: {
+            ...schema.brand_config.fields.cuisines,
+            options: merged,
+          },
+        },
+      },
+    };
+  } catch (e) {
+    console.warn('[listing.service] master_dishes cuisine augmentation failed, falling back to declared options:', e.message);
+    return schema;
+  }
+}
+
 function getListingSteps(categoryKey) {
   const schema = loadSchema(categoryKey);
   return schema?.listing_steps || [];
@@ -207,6 +278,7 @@ module.exports = {
   loadSchema,
   clearSchemaCache,
   getConfigForCategory,
+  getAugmentedConfigForBrand,
   getListingSteps,
   getCardConfig,
   getActionTypes,
