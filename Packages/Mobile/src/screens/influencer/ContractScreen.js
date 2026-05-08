@@ -284,8 +284,14 @@ export default function ContractScreen({ navigation, route }) {
       <ScrollView
         ref={scrollRef}
         style={styles.body}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        // 'always' — keyboard NEVER auto-dismisses when tapping inside the
+        // ScrollView, including the surrounding whitespace around the
+        // signature input. Switched from 'handled' because Android was
+        // interpreting the very first tap on the input as a 1-pixel drag,
+        // dismissing the keyboard the instant it appeared.
+        // 'on-drag' explicitly removed for the same reason — tap micro-
+        // movements were being treated as drags on some Android builds.
+        keyboardShouldPersistTaps="always"
       >
 
         {/* Campaign & Brand Info */}

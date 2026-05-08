@@ -235,8 +235,9 @@ export default function BrandContractScreen({ route, navigation }) {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: 32 }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        // See ContractScreen.js for the rationale — 'always' is the safest
+        // setting on Android to keep the keyboard up when tapping inputs.
+        keyboardShouldPersistTaps="always"
       >
         {/* Big draft / re-approve banner */}
         {isEditing && (
