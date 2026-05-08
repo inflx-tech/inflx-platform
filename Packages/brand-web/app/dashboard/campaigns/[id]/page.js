@@ -299,7 +299,7 @@ const STANDARD_CLAUSES_WEB = [
   },
 ];
 
-function ContractModal({ inf, contract, suggestedContentRequirements, goal, loading, onClose, onSign, onApprove }) {
+function ContractModal({ inf, contract, suggestedContentRequirements, goal, loading, brandWalletBalance = 0, platformFeePct = 8, onClose, onSign, onApprove }) {
   // ── HOOKS MUST RUN UNCONDITIONALLY (Rules of Hooks). ──────────────────
   // Compute initial state from contract; fall back to safe defaults when
   // contract is null so we can still call useState on every render. The
@@ -565,17 +565,65 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
                 className="w-full border border-gray-200 rounded-lg p-2 text-xs" rows={2} />
             </div>
 
-            {showFee && (
-              <div>
-                <div className="text-xs font-bold text-gray-700 mb-1">Bonus on top of fee (optional)</div>
-                <div className="flex items-center border-2 border-navy rounded-lg overflow-hidden">
-                  <span className="px-3 text-base font-bold text-gray-500">₹</span>
-                  <input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)}
-                    placeholder="0"
-                    className="flex-1 py-2 px-2 text-base font-bold outline-none" />
+            {showFee && (() => {
+              // Live wallet check — bonus pushes total escrow lock past
+              // brand's wallet balance? Show running breakdown + warning,
+              // and the approve button below disables itself when over.
+              const baseFeeNum   = parseFloat(contract.influencer_fee || inf.influencer_budget || 0);
+              const bonusNum     = parseFloat(bonusAmount) || 0;
+              const totalFeeNum  = baseFeeNum + bonusNum;
+              const lockNeeded   = totalFeeNum * (1 + platformFeePct / 100);
+              const overByNum    = lockNeeded - brandWalletBalance;
+              const isOver       = overByNum > 0.01;
+              return (
+                <div>
+                  <div className="text-xs font-bold text-gray-700 mb-1">Bonus on top of fee (optional)</div>
+                  <div className={`flex items-center border-2 rounded-lg overflow-hidden ${isOver ? 'border-red-500' : 'border-navy'}`}>
+                    <span className="px-3 text-base font-bold text-gray-500">₹</span>
+                    <input type="number" value={bonusAmount} onChange={e => setBonusAmount(e.target.value)}
+                      placeholder="0" min="0"
+                      className="flex-1 py-2 px-2 text-base font-bold outline-none" />
+                  </div>
+                  {/* Live breakdown — shown whenever there's a bonus OR
+                      whenever the total exceeds the wallet, so the brand
+                      sees exactly why their approve might be blocked. */}
+                  {(bonusNum > 0 || isOver) && (
+                    <div className={`mt-2 rounded-lg p-2.5 text-[11px] ${isOver ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
+                      <div className="flex justify-between text-gray-600">
+                        <span>Base fee</span>
+                        <span>₹{baseFeeNum.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600 mt-0.5">
+                        <span>+ Bonus</span>
+                        <span>₹{bonusNum.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold text-gray-800 mt-1 pt-1 border-t border-gray-200">
+                        <span>Influencer total</span>
+                        <span>₹{totalFeeNum.toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-500 mt-0.5">
+                        <span>+ {platformFeePct}% platform fee</span>
+                        <span>₹{(lockNeeded - totalFeeNum).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-gray-900 mt-1 pt-1 border-t border-gray-300">
+                        <span>Wallet escrow at signing</span>
+                        <span>₹{lockNeeded.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-500 mt-1">
+                        <span>Wallet balance</span>
+                        <span>₹{brandWalletBalance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                      {isOver && (
+                        <div className="mt-2 pt-2 border-t border-red-200 text-red-700 font-semibold">
+                          Wallet short by ₹{overByNum.toLocaleString('en-IN', { maximumFractionDigits: 2 })}.{' '}
+                          <a href="/dashboard/wallet" className="underline">Top up wallet →</a>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Production mode — how will the influencer actually create the
                 content? Locked once influencer signs; pickable here. */}
@@ -600,15 +648,26 @@ function ContractModal({ inf, contract, suggestedContentRequirements, goal, load
               </p>
             </div>
 
-            <button onClick={() => onApprove({
-              custom_clauses:       { clauses, notes: extraNotes || null },
-              bonus_amount:         parseFloat(bonusAmount) || 0,
-              content_requirements: contentReq || null,
-              production_mode:      productionMode,
-            })} disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50">
-              {loading ? 'Sending…' : (isReApprove ? 'Update & Re-send to Influencer' : 'Approve & Send to Influencer')}
-            </button>
+            {(() => {
+              // Recompute the wallet check so we can disable the button
+              // when fee+bonus pushes past wallet. Backend also enforces
+              // this — frontend disable is just for UX clarity.
+              const baseFeeNum  = parseFloat(contract.influencer_fee || inf.influencer_budget || 0);
+              const bonusNum    = parseFloat(bonusAmount) || 0;
+              const lockNeeded  = (baseFeeNum + bonusNum) * (1 + platformFeePct / 100);
+              const isOver      = showFee && lockNeeded > brandWalletBalance + 0.01;
+              return (
+                <button onClick={() => onApprove({
+                  custom_clauses:       { clauses, notes: extraNotes || null },
+                  bonus_amount:         parseFloat(bonusAmount) || 0,
+                  content_requirements: contentReq || null,
+                  production_mode:      productionMode,
+                })} disabled={loading || isOver}
+                  className="w-full py-3 bg-gradient-to-r from-navy to-navy/80 text-white font-bold text-sm rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {loading ? 'Sending…' : isOver ? 'Top up wallet to send' : (isReApprove ? 'Update & Re-send to Influencer' : 'Approve & Send to Influencer')}
+                </button>
+              );
+            })()}
           </div>
         ) : contract.status === 'pending_brand' ? (
           <div className="p-5 border-t border-gray-100">
@@ -1027,16 +1086,25 @@ export default function CampaignDetailPage() {
   }
 
   async function openContractModal(inf, goal) {
-    const res = await contractApi.get(inf.id);
-    if (res.success) {
+    // Fetch contract + brand profile in parallel — we need wallet balance
+    // and platform fee % for the live "can the brand actually pay this?"
+    // check in the bonus row.
+    const [contractRes, brandRes] = await Promise.all([
+      contractApi.get(inf.id),
+      brandApi.getMe(),
+    ]);
+    if (contractRes.success) {
+      const brand = brandRes.data?.brand || brandRes.data || {};
       setContractModal({
         inf,
-        contract: res.data?.contract || res.data,
-        suggested_content_requirements: res.data?.suggested_content_requirements || '',
+        contract: contractRes.data?.contract || contractRes.data,
+        suggested_content_requirements: contractRes.data?.suggested_content_requirements || '',
         goal,
+        brand_wallet_balance: parseFloat(brand.wallet_balance || 0),
+        platform_fee_pct:     parseFloat(brand.platform_fee_pct || 8),
       });
     } else {
-      showToast(res.error?.message || 'Failed to load contract');
+      showToast(contractRes.error?.message || 'Failed to load contract');
     }
   }
 
@@ -1978,6 +2046,8 @@ export default function CampaignDetailPage() {
         suggestedContentRequirements={contractModal.suggested_content_requirements}
         goal={contractModal.goal}
         loading={contractLoading}
+        brandWalletBalance={contractModal.brand_wallet_balance}
+        platformFeePct={contractModal.platform_fee_pct}
         onClose={() => setContractModal(null)}
         onSign={handleBrandSign}
         onApprove={handleApproveContract}

@@ -876,10 +876,21 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     // Non-critical: return empty deliverables
   }
 
-  // Step 3: Contract (moved before Step 2b which depends on contract status)
+  // Step 3: Contract (moved before Step 2b which depends on contract status).
+  //
+  // Pull every field the influencer's CampaignDetailScreen renders. Earlier
+  // version selected only id/status/signatures/pdf_url, which made the
+  // screen fall back to campaign.agreed_fee for the total — losing any
+  // brand bonus and showing a stale figure (e.g. base ₹500 instead of
+  // ₹500 + ₹800 bonus). Tranches were correct because they come from
+  // escrow_entries, but the headline 'Total Fee' was wrong. This SELECT
+  // is the source of truth for everything the influencer sees.
   try {
     const { rows: contractRows } = await db.query(
-      `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at
+      `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at,
+              influencer_fee, bonus_amount, commission_pct, goal,
+              production_mode, content_requirements, custom_clauses,
+              posting_date, revision_limit, offer_type, offer_config_json
        FROM contracts
        WHERE campaign_influencer_id = $1`,
       [ciId]

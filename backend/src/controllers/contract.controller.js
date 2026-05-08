@@ -893,6 +893,35 @@ const approveContract = asyncHandler(async (req, res) => {
   if (bonus < 0) {
     throw new AppError('VALIDATION_ERROR', 'bonus_amount must be 0 or positive', 422, 'bonus_amount');
   }
+
+  // Wallet sufficiency check — bonus pushes contract total beyond the
+  // brand's current wallet balance? We can't let the contract go out to
+  // the influencer if the brand can't actually pay for it at sign time.
+  // Required = (base + bonus) × (1 + platform_fee_pct%). Conversion-only
+  // contracts have base = 0, so this reduces to bonus only — still
+  // checked because brand could attach a goodwill bonus to a conversion
+  // contract.
+  const baseFee        = parseFloat(contract.influencer_fee || 0);
+  const platformFeePct = parseFloat(contract.platform_fee_pct || 8);
+  const projectedLock  = (baseFee + bonus) * (1 + platformFeePct / 100);
+  const walletBalance  = parseFloat(contract.brand_wallet_balance || 0);
+
+  // Only enforce when there's an upfront fee component. Pure conversion
+  // contracts (base = 0, bonus = 0) skip escrow entirely. We also let a
+  // zero bonus through even if walletBalance < something, because the
+  // wallet was already validated at campaign-publish time for the base.
+  if (projectedLock > 0 && projectedLock > walletBalance) {
+    const shortfall = (projectedLock - walletBalance).toFixed(2);
+    throw new AppError(
+      'INSUFFICIENT_BUDGET',
+      `Wallet is short by Rs. ${shortfall}. Contract total Rs. ${(baseFee + bonus).toFixed(2)} ` +
+      `(base Rs. ${baseFee.toFixed(2)} + bonus Rs. ${bonus.toFixed(2)}) needs Rs. ${projectedLock.toFixed(2)} ` +
+      `to escrow at signing (including ${platformFeePct}% platform fee). ` +
+      `Top up your wallet or reduce the bonus.`,
+      409,
+      'bonus_amount'
+    );
+  }
   // production_mode picked here so the influencer sees it before signing.
   // Optional on this endpoint to keep backward-compat — old approves without
   // a mode default to 'remote' (the safest, no-coordination option) when

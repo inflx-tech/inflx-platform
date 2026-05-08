@@ -59,18 +59,31 @@ export default function BrandContractScreen({ route, navigation }) {
   const [extraNotes, setExtraNotes] = useState('');
   const [contentReq, setContentReq] = useState('');
   const [productionMode, setProductionMode] = useState('remote');
+  // Wallet snapshot — used for the live "can the brand actually pay this
+  // contract?" check next to the bonus input. Refreshed at mount.
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [platformFeePct, setPlatformFeePct] = useState(8);
 
   useEffect(() => { load(); }, []);
 
   async function load() {
     setLoading(true);
-    const res = await brandApi.getContract(campaignInfluencerId);
+    // Fetch contract + brand wallet in parallel.
+    const [contractRes, brandRes] = await Promise.all([
+      brandApi.getContract(campaignInfluencerId),
+      brandApi.getMe(),
+    ]);
     setLoading(false);
-    if (!res.success) {
-      Alert.alert('Error', res.error?.message || 'Could not load contract');
+    if (!contractRes.success) {
+      Alert.alert('Error', contractRes.error?.message || 'Could not load contract');
       return;
     }
-    const data = res.data || {};
+    if (brandRes.success) {
+      const b = brandRes.data?.brand || brandRes.data || {};
+      setWalletBalance(parseFloat(b.wallet_balance || 0));
+      if (b.platform_fee_pct != null) setPlatformFeePct(parseFloat(b.platform_fee_pct));
+    }
+    const data = contractRes.data || {};
     const c = data.contract || data;
     setContract(c);
     setDeliverables(data.deliverables || []);
@@ -366,23 +379,67 @@ export default function BrandContractScreen({ route, navigation }) {
               numberOfLines={3}
             />
 
-            {showFee && (
-              <>
-                <Text style={[styles.cardTitle, { marginTop: 16 }]}>Bonus (optional)</Text>
-                <Text style={styles.helpText}>Add a bonus on top of the agreed fee. Split across 3 tranches just like the base fee.</Text>
-                <View style={styles.bonusRow}>
-                  <Text style={styles.rupee}>₹</Text>
-                  <TextInput
-                    style={styles.bonusInput}
-                    value={bonusAmount}
-                    onChangeText={setBonusAmount}
-                    keyboardType="numeric"
-                    placeholder="0"
-                    placeholderTextColor={colors.t3}
-                  />
-                </View>
-              </>
-            )}
+            {showFee && (() => {
+              // Live wallet sufficiency. Lock = (base + bonus) × (1 + fee%).
+              // If brand wallet is short, surface the breakdown + block
+              // the approve button below. Backend also enforces this.
+              const baseFeeNum  = parseFloat(contract.influencer_fee || 0);
+              const bonusNum    = parseFloat(bonusAmount) || 0;
+              const totalFeeNum = baseFeeNum + bonusNum;
+              const lockNeeded  = totalFeeNum * (1 + platformFeePct / 100);
+              const isOver      = lockNeeded > walletBalance + 0.01;
+              return (
+                <>
+                  <Text style={[styles.cardTitle, { marginTop: 16 }]}>Bonus (optional)</Text>
+                  <Text style={styles.helpText}>Add a bonus on top of the agreed fee. Split across 3 tranches just like the base fee.</Text>
+                  <View style={[styles.bonusRow, isOver && { borderColor: colors.red }]}>
+                    <Text style={styles.rupee}>₹</Text>
+                    <TextInput
+                      style={styles.bonusInput}
+                      value={bonusAmount}
+                      onChangeText={setBonusAmount}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor={colors.t3}
+                    />
+                  </View>
+                  {(bonusNum > 0 || isOver) && (
+                    <View style={[walletStyles.breakdownBox, isOver && walletStyles.breakdownBoxOver]}>
+                      <View style={walletStyles.row}>
+                        <Text style={walletStyles.rowLabel}>Base fee</Text>
+                        <Text style={walletStyles.rowValue}>₹{baseFeeNum.toLocaleString('en-IN')}</Text>
+                      </View>
+                      <View style={walletStyles.row}>
+                        <Text style={walletStyles.rowLabel}>+ Bonus</Text>
+                        <Text style={walletStyles.rowValue}>₹{bonusNum.toLocaleString('en-IN')}</Text>
+                      </View>
+                      <View style={[walletStyles.row, walletStyles.divider]}>
+                        <Text style={walletStyles.rowStrong}>Influencer total</Text>
+                        <Text style={walletStyles.rowStrong}>₹{totalFeeNum.toLocaleString('en-IN')}</Text>
+                      </View>
+                      <View style={walletStyles.row}>
+                        <Text style={walletStyles.rowLabel}>+ {platformFeePct}% platform fee</Text>
+                        <Text style={walletStyles.rowValue}>₹{(lockNeeded - totalFeeNum).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
+                      </View>
+                      <View style={[walletStyles.row, walletStyles.divider]}>
+                        <Text style={walletStyles.rowStrong}>Wallet escrow at signing</Text>
+                        <Text style={walletStyles.rowStrong}>₹{lockNeeded.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
+                      </View>
+                      <View style={walletStyles.row}>
+                        <Text style={walletStyles.rowLabel}>Wallet balance</Text>
+                        <Text style={walletStyles.rowValue}>₹{walletBalance.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</Text>
+                      </View>
+                      {isOver && (
+                        <Text style={walletStyles.shortageText}>
+                          Wallet short by ₹{(lockNeeded - walletBalance).toLocaleString('en-IN', { maximumFractionDigits: 2 })}.
+                          Top up your wallet from the Wallet tab or reduce the bonus.
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Production mode — how will content actually get made? */}
             <Text style={[styles.cardTitle, { marginTop: 16 }]}>How will the content be produced?</Text>
@@ -469,19 +526,31 @@ export default function BrandContractScreen({ route, navigation }) {
         </View>
 
         {/* Primary action — Approve & Send (draft) or Update & Re-send (re-approve) */}
-        {isEditing && (
+        {isEditing && (() => {
+          // Same wallet check as the breakdown card above. Block button
+          // when over so the brand can't send a contract they can't pay
+          // for. Backend re-enforces, but this keeps the UX honest.
+          const baseFeeNum = parseFloat(contract.influencer_fee || 0);
+          const bonusNum   = parseFloat(bonusAmount) || 0;
+          const lockNeeded = (baseFeeNum + bonusNum) * (1 + platformFeePct / 100);
+          const walletShort = showFee && lockNeeded > walletBalance + 0.01;
+          const disabled = submitting || walletShort;
+          return (
           <TouchableOpacity
-            style={[styles.actionBtn, submitting && styles.actionBtnDisabled]}
+            style={[styles.actionBtn, disabled && styles.actionBtnDisabled]}
             onPress={handleApproveAndSend}
-            disabled={submitting}
+            disabled={disabled}
           >
             {submitting
               ? <ActivityIndicator color={colors.white} />
+              : walletShort
+              ? <Text style={styles.actionBtnText}>Top up wallet to send</Text>
               : <Text style={styles.actionBtnText}>
                   {isReApprove ? 'Update \u0026 Re-send to Influencer' : 'Approve \u0026 Send to Influencer'}
                 </Text>}
           </TouchableOpacity>
-        )}
+          );
+        })()}
         {isPendingBrand && (
           <TouchableOpacity
             style={[styles.actionBtn, submitting && styles.actionBtnDisabled]}
@@ -905,4 +974,39 @@ const pmStyles = StyleSheet.create({
   modeIcon:      { fontSize: 22 },
   modeLabel:     { fontSize: 11, fontWeight: '700', color: colors.t2, marginTop: 4 },
   modeLabelActive:{ color: colors.navy },
+});
+
+// Wallet-check breakdown shown next to the bonus input on approve.
+const walletStyles = StyleSheet.create({
+  breakdownBox: {
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: colors.surface2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  breakdownBoxOver: {
+    backgroundColor: '#FDEEE9',
+    borderColor: colors.red,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  rowLabel:  { fontSize: 12, color: colors.t2 },
+  rowValue:  { fontSize: 12, color: colors.t1 },
+  rowStrong: { fontSize: 12, color: colors.t1, fontWeight: '700' },
+  divider:   { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4, paddingTop: 6 },
+  shortageText: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(232,64,26,0.3)',
+    fontSize: 11,
+    color: colors.red,
+    fontWeight: '700',
+    lineHeight: 16,
+  },
 });
