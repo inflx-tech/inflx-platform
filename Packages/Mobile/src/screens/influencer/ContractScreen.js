@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, TextInput,
+  Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
@@ -67,6 +68,12 @@ export default function ContractScreen({ navigation, route }) {
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const [typedName, setTypedName] = useState('');
+  // Signing happens in a Modal — Modals render outside the parent
+  // ScrollView so the keyboard show/hide doesn't trigger any re-layout
+  // race that yanks focus from the input. Fixes MIUI/Redmi keyboard
+  // flicker bug where 'tap input → keyboard pops up → keyboard closes
+  // immediately' was happening on Redmi 13C 5G (Android 13).
+  const [signModalOpen, setSignModalOpen] = useState(false);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -104,7 +111,7 @@ export default function ContractScreen({ navigation, route }) {
     }
 
     Alert.alert(
-      'Sign Contract',
+      'Confirm signature',
       'This is legally binding. By signing, you agree to all terms stated in this contract including deliverables, payment schedule, and content requirements. This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -117,6 +124,7 @@ export default function ContractScreen({ navigation, route }) {
             });
             setSigning(false);
             if (res.success) {
+              setSignModalOpen(false);
               setSigned(true);
               // Update local contract state
               setContract(prev => ({
@@ -627,26 +635,19 @@ export default function ContractScreen({ navigation, route }) {
         </View>
 
         {/* ── Sign Section ──────────────────────────────────────────────── */}
+        {/* The actual TextInput lives inside a Modal (rendered below this
+            ScrollView's tree) so the keyboard show/hide doesn't trigger
+            ScrollView re-layout that races with focus on MIUI/Redmi. */}
         {needsInfluencerSignature && !signed && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Sign This Contract</Text>
             <Text style={styles.signHint}>
-              Type your full legal name below to sign this contract. This is legally binding.
+              Tap below and type your full legal name to sign. This is legally binding.
             </Text>
-            <View style={styles.nameInputWrap}>
-              <TextInput
-                style={styles.nameInput}
-                value={typedName}
-                onChangeText={setTypedName}
-                placeholder="Your full name"
-                placeholderTextColor={colors.t3}
-                autoCapitalize="words"
-              />
-            </View>
             <TouchableOpacity
-              style={[styles.signBtn, (signing || !typedName.trim()) && styles.signBtnDisabled]}
-              onPress={handleSign}
-              disabled={signing || !typedName.trim()}
+              style={[styles.signBtn, signing && styles.signBtnDisabled]}
+              onPress={() => { setTypedName(''); setSignModalOpen(true); }}
+              disabled={signing}
             >
               {signing ? (
                 <ActivityIndicator color={colors.white} />
@@ -676,6 +677,69 @@ export default function ContractScreen({ navigation, route }) {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ── Sign Modal ──────────────────────────────────────────────────────
+          Renders in its own root view, not inside the ScrollView, so the
+          keyboard appearing doesn't trigger ScrollView re-layout / focus
+          loss. Fixes the MIUI Redmi 13C "keyboard pops up and closes"
+          flicker. KeyboardAvoidingView pushes the form up on iOS; on
+          Android, AndroidManifest.xml's adjustResize handles it. */}
+      <Modal
+        visible={signModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSignModalOpen(false)}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Sign Contract</Text>
+            <Text style={styles.modalSub}>
+              Type your full legal name to sign. This is legally binding —
+              you agree to all terms in the contract above.
+            </Text>
+            <View style={styles.nameInputWrap}>
+              <TextInput
+                style={styles.nameInput}
+                value={typedName}
+                onChangeText={setTypedName}
+                placeholder="Your full name"
+                placeholderTextColor={colors.t3}
+                autoCapitalize="words"
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  if (typedName.trim()) handleSign();
+                }}
+              />
+            </View>
+            <View style={styles.modalBtnRow}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => setSignModalOpen(false)}
+                disabled={signing}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalSignBtn, (signing || !typedName.trim()) && styles.signBtnDisabled]}
+                onPress={() => {
+                  if (typedName.trim()) handleSign();
+                }}
+                disabled={signing || !typedName.trim()}
+              >
+                {signing ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.signBtnText}>Sign Now</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -1217,4 +1281,56 @@ const styles = StyleSheet.create({
   successCheck: { fontSize: 18, fontWeight: '800', color: colors.teal, marginBottom: 8 },
   successTitle: { fontSize: 16, fontWeight: '800', color: colors.t1, marginBottom: 8 },
   successDesc: { fontSize: 13, color: colors.t3, textAlign: 'center', lineHeight: 20 },
+
+  // Sign Modal — bottom-sheet-style card to keep input out of the
+  // ScrollView's resize-on-keyboard race.
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: colors.surface || '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 32,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: colors.t1,
+    marginBottom: 6,
+  },
+  modalSub: {
+    fontSize: 12,
+    color: colors.t3,
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.surface2 || '#F2F4F9',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.t2,
+  },
+  modalSignBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: colors.navy,
+    alignItems: 'center',
+  },
 });
