@@ -1,0 +1,4 @@
+tier_key,min_amount_inr,max_amount_inr,fee_pct,description
+small,0,500000,3.00,"Below ₹5 lakh — small brands, full hand-holding"
+mid,500001,2500000,2.00,"₹5-25 lakh — mid-volume discount"
+large,2500001,,1.00,"Above ₹25 lakh — big brands, low % but high rupee value"

@@ -117,6 +117,14 @@ export const adminApi = {
   getPaymentConfig: () => api.get('/admin/config/payments'),
   updatePaymentConfig: (data) => api.patch('/admin/config/payments', data),
   setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
+
+  // L2 Campaign Protection Fee tiers
+  listEscrowFeeTiers:   () => api.get('/admin/escrow-fee-tiers'),
+  createEscrowFeeTier:  (data) => api.post('/admin/escrow-fee-tiers', data),
+  updateEscrowFeeTier:  (tierKey, data) => api.patch(`/admin/escrow-fee-tiers/${encodeURIComponent(tierKey)}`, data),
+  deleteEscrowFeeTier:  (tierKey) => api.delete(`/admin/escrow-fee-tiers/${encodeURIComponent(tierKey)}`),
+  setBrandEscrowFeeOverride: (brandId, pct) =>
+    api.patch(`/admin/brands/${brandId}/escrow-fee-override`, { escrow_fee_override_pct: pct }),
   rescrapeInfluencer: (id) => api.post(`/influencers/${id}/rescrape`),
   getAnalytics: (days = 30) => api.get(`/admin/analytics?days=${days}`),
   getProductionQueue: () => api.get('/admin/production/queue'),

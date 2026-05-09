@@ -251,7 +251,7 @@ const getStats = asyncHandler(async (req, res) => {
     `SELECT
        (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions
         WHERE created_at >= $1 AND status = 'completed') +
-       (SELECT COALESCE(SUM(platform_fee_amount), 0) FROM escrow_entries
+       (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries
         WHERE released_at >= $1 AND status = 'released') AS platform_revenue_this_month`,
     [thisMonthStart.toISOString()]
   );
@@ -305,7 +305,7 @@ const getEscrowOverview = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT
        ee.id, ee.tranche_number, ee.amount, ee.net_to_influencer,
-       ee.platform_fee_amount, ee.status, ee.trigger_event,
+       ee.escrow_fee_amount, ee.status, ee.trigger_event,
        ee.triggered_at, ee.released_at, ee.razorpay_payout_id,
        c.name AS campaign_name,
        u_inf.name AS influencer_name,
@@ -626,6 +626,35 @@ const setBrandPlatformFee = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/brands/:id/escrow-fee-override  (finance+ : per-brand L2 override)
+// Body: { escrow_fee_override_pct: number | null }  — null clears the override.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const setBrandEscrowFeeOverride = asyncHandler(async (req, res) => {
+  const raw = req.body.escrow_fee_override_pct;
+  let value = null;
+  if (raw !== null && raw !== '' && raw !== undefined) {
+    const n = parseFloat(raw);
+    if (isNaN(n) || n < 0 || n > 50) {
+      throw new AppError('VALIDATION_ERROR', 'escrow_fee_override_pct must be 0–50 or null', 422, 'escrow_fee_override_pct');
+    }
+    value = n.toFixed(2);
+  }
+
+  const { rows } = await db.query(
+    `UPDATE brands SET escrow_fee_override_pct = $1 WHERE id = $2
+     RETURNING id, escrow_fee_override_pct`,
+    [value, req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
+
+  return success(res, {
+    brand_id: rows[0].id,
+    escrow_fee_override_pct: rows[0].escrow_fee_override_pct,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/withdrawals?status=all|initiated|processing|completed|failed
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -896,7 +925,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
        d::date AS day,
        (SELECT COUNT(*) FROM follower_transactions WHERE status = 'completed' AND created_at::date = d::date) AS transactions,
        (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed' AND created_at::date = d::date) +
-       (SELECT COALESCE(SUM(platform_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at::date = d::date) AS revenue
+       (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at::date = d::date) AS revenue
      FROM generate_series($1::date, CURRENT_DATE, '1 day') AS d
      ORDER BY d`,
     [sinceISO]
@@ -909,13 +938,13 @@ const getAnalytics = asyncHandler(async (req, res) => {
        (SELECT COUNT(*) FROM users WHERE created_at >= $1) AS current_users,
        (SELECT COUNT(*) FROM follower_transactions WHERE status = 'completed' AND created_at >= $1) AS current_transactions,
        (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed' AND created_at >= $1) +
-       (SELECT COALESCE(SUM(platform_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at >= $1) AS current_revenue,
+       (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at >= $1) AS current_revenue,
        (SELECT COUNT(*) FROM campaigns WHERE status IN ('active','live') AND created_at >= $1) AS current_active_campaigns,
        -- Previous period
        (SELECT COUNT(*) FROM users WHERE created_at >= $2 AND created_at < $1) AS prev_users,
        (SELECT COUNT(*) FROM follower_transactions WHERE status = 'completed' AND created_at >= $2 AND created_at < $1) AS prev_transactions,
        (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed' AND created_at >= $2 AND created_at < $1) +
-       (SELECT COALESCE(SUM(platform_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at >= $2 AND released_at < $1) AS prev_revenue,
+       (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at >= $2 AND released_at < $1) AS prev_revenue,
        (SELECT COUNT(*) FROM campaigns WHERE status IN ('active','live') AND created_at >= $2 AND created_at < $1) AS prev_active_campaigns`,
     [sinceISO, prevSinceISO]
   );
@@ -1011,7 +1040,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
        (SELECT COUNT(*) FROM users) AS total_users,
        (SELECT COUNT(*) FROM campaigns WHERE status IN ('active','live')) AS total_active_campaigns,
        (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed') +
-       (SELECT COALESCE(SUM(platform_fee_amount), 0) FROM escrow_entries WHERE status = 'released') AS total_revenue`
+       (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released') AS total_revenue`
   );
   const totals = totalsRows[0];
 
@@ -1131,6 +1160,7 @@ module.exports = {
   getPaymentConfig,
   updatePaymentConfig,
   setBrandPlatformFee,
+  setBrandEscrowFeeOverride,
   getWithdrawals,
   processWithdrawal,
   getBrands,

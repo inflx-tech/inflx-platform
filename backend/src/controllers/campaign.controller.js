@@ -2,6 +2,7 @@
 
 const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
+const pricingService      = require('../services/pricing.service');
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
@@ -808,12 +809,20 @@ const publish = asyncHandler(async (req, res) => {
     // per-influencer at the moment that influencer's contract gets fully
     // brand-signed (see contract.controller.brandSign). This avoids tying
     // up money for influencers who never sign / negotiate down / decline.
-    await db.query(
-      `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
-      [campaign.id]
-    );
+    //
+    // L2 (Campaign Protection Fee) is also locked here. The rate is chosen
+    // by tier (escrow_fee_tiers) using the engagement+hybrid base, or by
+    // brands.escrow_fee_override_pct if set. Captured on the campaigns row
+    // and stays for the life of the campaign — see M037.
+    await db.withTransaction(async (tx) => {
+      await pricingService.lockEscrowFeeAtPublish(tx, campaign.id, brand.id);
+      await tx.query(
+        `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
+        [campaign.id]
+      );
+    });
   } else {
-    // Conversion-only: no budget needed, just activate
+    // Conversion-only: no engagement budget, no L2 fee to lock — just activate
     await db.query(
       `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
       [campaign.id]
@@ -948,7 +957,7 @@ const cancel = asyncHandler(async (req, res) => {
   // All figures in RUPEES (migration 021).
   const { rows: lockedRows } = await db.query(
     `SELECT COALESCE(SUM(ee.amount), 0) AS locked_amount,
-            COALESCE(SUM(ee.platform_fee_amount), 0) AS locked_platform_fee
+            COALESCE(SUM(ee.escrow_fee_amount), 0) AS locked_platform_fee
      FROM escrow_entries ee
      JOIN campaign_influencers ci ON ci.id = ee.campaign_influencer_id
      JOIN campaign_sets cs ON cs.id = ci.set_id

@@ -6,6 +6,7 @@ const ctrl = require('../controllers/admin.controller');
 const verificationCtrl = require('../controllers/creatorVerification.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
 const masterDishCtrl = require('../controllers/adminMasterDish.controller');
+const escrowFeeTiersCtrl = require('../controllers/escrowFeeTiers.controller');
 
 const router = Router();
 
@@ -44,6 +45,15 @@ router.get('/brands', authenticate, requireAdminRole('reviewer'), ctrl.getBrands
 
 // Per-brand platform fee override — finance+
 router.patch('/brands/:id/platform-fee', authenticate, requireAdminRole('finance'), ctrl.setBrandPlatformFee);
+
+// L2 Campaign Protection Fee tiers — read by any admin, write by superadmin
+router.get   ('/escrow-fee-tiers',           authenticate, requireAnyAdminRole,           escrowFeeTiersCtrl.list);
+router.post  ('/escrow-fee-tiers',           authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.create);
+router.patch ('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.update);
+router.delete('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.remove);
+
+// Per-brand L2 escrow fee override — finance+
+router.patch('/brands/:id/escrow-fee-override', authenticate, requireAdminRole('finance'), ctrl.setBrandEscrowFeeOverride);
 
 // Withdrawal / payout management — finance+
 router.get('/withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getWithdrawals);

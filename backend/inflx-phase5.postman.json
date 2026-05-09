@@ -111,7 +111,7 @@
                 { "key": "status", "value": "all", "description": "queued | locked | released | all" }
               ]
             },
-            "description": "Returns all escrow_entries across all campaigns.\n\nAuth: Admin JWT required (finance or superadmin)\nQuery params: ?status=queued|locked|released|all (default: all)\n\nEach entry includes: campaign_name, influencer_name, brand_name, tranche_number, amount, net_to_influencer, platform_fee_amount, status, trigger_event, triggered_at, released_at, razorpay_payout_id",
+            "description": "Returns all escrow_entries across all campaigns.\n\nAuth: Admin JWT required (finance or superadmin)\nQuery params: ?status=queued|locked|released|all (default: all)\n\nEach entry includes: campaign_name, influencer_name, brand_name, tranche_number, amount, net_to_influencer, escrow_fee_amount, status, trigger_event, triggered_at, released_at, razorpay_payout_id",
             "header": [
               { "key": "Authorization", "value": "Bearer {{finance_admin_token}}" }
             ]

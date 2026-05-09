@@ -37,7 +37,7 @@ describe('Admin Escrow Management', () => {
     );
     const { rows: [escrowEntry] } = await query(
       `INSERT INTO escrow_entries
-         (campaign_influencer_id, tranche_number, amount, platform_fee_amount, net_to_influencer,
+         (campaign_influencer_id, tranche_number, amount, escrow_fee_amount, net_to_influencer,
           status, trigger_event, triggered_at)
        VALUES ($1, 3, 500000, 40000, 460000, 'queued', 'day_30_post_live', NOW() - INTERVAL '31 days')
        RETURNING *`,

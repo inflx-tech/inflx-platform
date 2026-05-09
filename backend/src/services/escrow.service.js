@@ -2,7 +2,7 @@
 
 /**
  * escrow.service.js
- * Phase 3 — Block B
+ * Phase 3 — Block B  •  L2 tiered (Phase B1, M037)
  *
  * createEscrowEntries  — creates 3 tranche rows (25/25/50) when contract activates
  * processTrancheRelease — releases a tranche: credits influencer wallet + audit tx
@@ -10,6 +10,7 @@
 
 const env               = require('../config/env');
 const paymentConfigSvc  = require('./paymentConfig.service');
+const pricingService    = require('./pricing.service');
 
 // Tranche schedule — percents loaded from payment_config table at runtime
 function buildTranches(cfg) {
@@ -21,34 +22,58 @@ function buildTranches(cfg) {
 }
 
 /**
+ * Resolve the escrow fee % to apply to a given campaign_influencer.
+ *
+ * Precedence (highest first):
+ *   1. campaigns.escrow_fee_pct_locked (M037+) — set at publish via pricing.service
+ *   2. caller-supplied platformFeePct (legacy contract.platform_fee_pct path)
+ *   3. payment_config.platform_fee_pct (final fallback)
+ *
+ * Returns rate as a decimal (0.03 = 3%).
+ */
+async function _resolveFeeRate(client, campaignInfluencerId, callerPct, cfg) {
+  const locked = await client.query(
+    `SELECT c.escrow_fee_pct_locked
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c     ON c.id = cs.campaign_id
+       WHERE ci.id = $1`,
+    [campaignInfluencerId]
+  );
+  const lockedPct = locked.rows[0]?.escrow_fee_pct_locked;
+  if (lockedPct != null) return parseFloat(lockedPct) / 100;
+  if (callerPct != null) return parseFloat(callerPct) / 100;
+  return cfg.platformFeePct / 100;
+}
+
+/**
  * Create 3 escrow_entries for a campaign_influencer inside an open transaction.
  *
  * @param {object} client              — transaction client { query }
  * @param {string} campaignInfluencerId
  * @param {number} influencerFee       — agreed_fee (full amount)
- * @param {number} platformFeePct      — e.g. 8 (means 8%)
+ * @param {number} platformFeePct      — legacy per-contract pct (used if campaign has no locked rate)
  * @returns {object[]} — 3 escrow_entry rows
  */
 async function createEscrowEntries(client, campaignInfluencerId, influencerFee, platformFeePct) {
   const fee    = parseFloat(influencerFee) || 0;
-  // Use per-brand fee if supplied, otherwise read from payment_config
   const cfg    = await paymentConfigSvc.getConfig();
-  const feePct = (platformFeePct != null ? parseFloat(platformFeePct) : cfg.platformFeePct) / 100;
+  const feePct = await _resolveFeeRate(client, campaignInfluencerId, platformFeePct, cfg);
   const TRANCHES = buildTranches(cfg);
 
   const entries = [];
   for (const t of TRANCHES) {
     const amount            = fee * t.pct;
-    const platformFeeAmount = parseFloat((amount * feePct).toFixed(2));
-    const netToInfluencer   = parseFloat((amount - platformFeeAmount).toFixed(2));
+    const escrowFeeAmount   = parseFloat((amount * feePct).toFixed(2));
+    const netToInfluencer   = parseFloat((amount - escrowFeeAmount).toFixed(2));
 
     const { rows } = await client.query(
       `INSERT INTO escrow_entries
-         (campaign_influencer_id, tranche_number, amount, platform_fee_amount,
+         (campaign_influencer_id, tranche_number, amount, escrow_fee_amount,
           net_to_influencer, status, trigger_event)
        VALUES ($1, $2, $3, $4, $5, 'locked', $6)
        RETURNING *`,
-      [campaignInfluencerId, t.tranche_number, amount, platformFeeAmount, netToInfluencer, t.trigger_event]
+      [campaignInfluencerId, t.tranche_number, amount, escrowFeeAmount, netToInfluencer, t.trigger_event]
     );
     entries.push(rows[0]);
   }

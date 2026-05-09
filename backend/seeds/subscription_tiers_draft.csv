@@ -1,0 +1,6 @@
+tier_key,name,monthly_price_inr,max_active_campaigns,max_sets_per_campaign,max_influencers_per_month,max_products_in_store,has_advanced_analytics,has_dedicated_csm,has_white_label,has_api_access,target_segment
+free,Free / Starter,0,1,1,5,10,FALSE,FALSE,FALSE,FALSE,Solo / home-based / single-shop
+growth,Growth,2499,3,3,25,100,FALSE,FALSE,FALSE,FALSE,Local 2-5 outlet / single-city boutique
+pro,Pro,9999,10,,100,500,FALSE,FALSE,FALSE,FALSE,Regional / state chains
+business,Business,29999,,,500,5000,TRUE,FALSE,FALSE,FALSE,Multi-state D2C brands
+enterprise,Enterprise,100000,,,,,TRUE,TRUE,TRUE,TRUE,National brands / FMCG giants (custom-priced ₹1L+)

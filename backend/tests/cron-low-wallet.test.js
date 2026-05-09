@@ -37,7 +37,7 @@ describe('Cron: low-wallet-alert', () => {
 
     // Queued escrow entry for 50000 — more than brand's 5000 wallet
     await query(
-      `INSERT INTO escrow_entries (campaign_influencer_id, tranche_number, amount, platform_fee_amount, net_to_influencer, status, trigger_event)
+      `INSERT INTO escrow_entries (campaign_influencer_id, tranche_number, amount, escrow_fee_amount, net_to_influencer, status, trigger_event)
        VALUES ($1, 3, 50000, 4000, 46000, 'queued', 'day_30_post_live')`,
       [ci.id]
     );
@@ -80,7 +80,7 @@ describe('Cron: low-wallet-alert', () => {
     );
 
     await query(
-      `INSERT INTO escrow_entries (campaign_influencer_id, tranche_number, amount, platform_fee_amount, net_to_influencer, status, trigger_event)
+      `INSERT INTO escrow_entries (campaign_influencer_id, tranche_number, amount, escrow_fee_amount, net_to_influencer, status, trigger_event)
        VALUES ($1, 3, 50000, 4000, 46000, 'queued', 'day_30_post_live')`,
       [ci.id]
     );

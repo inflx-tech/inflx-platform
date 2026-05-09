@@ -19,8 +19,9 @@ const NAV = [
   { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒' },
   { href: '/dashboard/payouts', label: 'Payouts', icon: '💸' },
   { section: 'SETTINGS' },
-  { href: '/dashboard/settings/payments', label: 'Payment Config', icon: '⚙️' },
-  { href: '/dashboard/users',             label: 'Admin Users',    icon: '👥' },
+  { href: '/dashboard/settings/payments',     label: 'Payment Config',     icon: '⚙️' },
+  { href: '/dashboard/settings/escrow-fees',  label: 'Escrow Fee Tiers',   icon: '🛡️' },
+  { href: '/dashboard/users',                 label: 'Admin Users',        icon: '👥' },
 ];
 
 export default function DashboardLayout({ children }) {
