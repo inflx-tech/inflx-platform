@@ -104,15 +104,30 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
   const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
   const influencerCount = campaign.influencer_count || 0;
 
+  const goToDetail = () => {
+    if (isDraft) router.push(`/dashboard/campaigns/new?id=${campaign.id}`);
+    else router.push(`/dashboard/campaigns/${campaign.id}`);
+  };
+
   return (
-    <div className={`bg-white rounded-xl border p-4 hover:shadow-md transition-all flex flex-col gap-3 ${selected ? 'border-navy ring-2 ring-navy/20' : 'border-border hover:border-navy/20'}`}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={goToDetail}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail(); } }}
+      className={`bg-white rounded-xl border p-4 hover:shadow-md transition-all flex flex-col gap-3 cursor-pointer ${selected ? 'border-navy ring-2 ring-navy/20' : 'border-border hover:border-navy/20'}`}
+    >
       {/* Header with checkbox */}
       <div className="flex items-start gap-2.5">
-        <label className="flex items-center mt-0.5 cursor-pointer" onClick={e => e.stopPropagation()}>
+        <label
+          className="flex items-center mt-0.5 cursor-pointer"
+          onClick={e => e.stopPropagation()}
+        >
           <input
             type="checkbox"
             checked={selected}
             onChange={() => onToggleSelect(campaign.id)}
+            onClick={e => e.stopPropagation()}
             className="w-4 h-4 rounded border-border2 text-navy focus:ring-navy/30 cursor-pointer"
           />
         </label>
@@ -142,18 +157,9 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
       {/* Footer */}
       <div className="flex items-center justify-between text-[10px] text-t3 mt-auto">
         <span>{influencerCount} influencer{influencerCount !== 1 ? 's' : ''}</span>
-        {isDraft ? (
-          <button
-            onClick={() => router.push(`/dashboard/campaigns/new?id=${campaign.id}`)}
-            className="text-[11px] font-bold text-orange border border-orange/30 rounded-lg px-2.5 py-1 hover:bg-orange/10 transition-colors"
-          >
-            Continue draft
-          </button>
-        ) : (
-          <Link href={`/dashboard/campaigns/${campaign.id}`} className="text-navy font-semibold hover:underline">
-            View details
-          </Link>
-        )}
+        <span className={isDraft ? 'text-[11px] font-bold text-orange' : 'text-navy font-semibold'}>
+          {isDraft ? 'Continue draft →' : 'View details →'}
+        </span>
       </div>
     </div>
   );

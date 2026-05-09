@@ -442,10 +442,11 @@ export default function OfferDetailScreen({ navigation, route }) {
       </View>
 
       {/* ── What you're promoting ────────────────────────────────────────
-          Shows the actual offer the influencer's followers will see:
-          discount type/value, BOGO config, bundle, free gift, plus the
-          product list and physical-delivery info if applicable. */}
-      {(offer.offer_config_json || offer.offer_type || products.length > 0 || offer.physical_delivery) && (
+          Only relevant for conversion/hybrid campaigns — engagement
+          campaigns don't have offers/products to promote. Shows discount
+          type/value, BOGO config, bundle, free gift, product list and
+          physical-delivery info. */}
+      {(isConversion || isHybrid) && (offer.offer_config_json || offer.offer_type || products.length > 0 || offer.physical_delivery) && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>What You're Promoting</Text>
 
@@ -694,22 +695,27 @@ export default function OfferDetailScreen({ navigation, route }) {
             </TouchableOpacity>
 
             <View style={styles.actionSecondaryRow}>
-              <TouchableOpacity
-                style={[styles.negotiateBtn, actionLoading && styles.disabledBtn]}
-                onPress={() => { setShowNegotiate(!showNegotiate); setShowDeclineReasons(false); }}
-                disabled={actionLoading}
-              >
-                <Text style={styles.negotiateText}>Negotiate</Text>
-              </TouchableOpacity>
+              {offer.allow_negotiation !== false && (
+                <TouchableOpacity
+                  style={[styles.negotiateBtn, actionLoading && styles.disabledBtn]}
+                  onPress={() => { setShowNegotiate(!showNegotiate); setShowDeclineReasons(false); }}
+                  disabled={actionLoading}
+                >
+                  <Text style={styles.negotiateText}>Negotiate</Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity
-                style={[styles.declineBtn, actionLoading && styles.disabledBtn]}
+                style={[styles.declineBtn, actionLoading && styles.disabledBtn, offer.allow_negotiation === false && { flex: 1 }]}
                 onPress={() => { setShowDeclineReasons(!showDeclineReasons); setShowNegotiate(false); }}
                 disabled={actionLoading}
               >
                 <Text style={styles.declineText}>Decline</Text>
               </TouchableOpacity>
             </View>
+            {offer.allow_negotiation === false && (
+              <Text style={styles.fixedTermsHint}>This brand has set fixed terms — Accept or Decline only.</Text>
+            )}
           </View>
         </View>
       )}
@@ -1049,6 +1055,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   declineText: { fontSize: 14, fontWeight: '700', color: colors.red },
+  fixedTermsHint: { fontSize: 11, color: colors.t3, textAlign: 'center', marginTop: 10, fontStyle: 'italic' },
   disabledBtn: { opacity: 0.5 },
 
   // Next-step CTA rows (View Contract / Submit Content)

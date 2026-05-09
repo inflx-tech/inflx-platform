@@ -51,7 +51,8 @@ async function getCampaignInfluencer(id) {
             cs.campaign_id,
             cs.name AS set_name,
             cs.goal,
-            c.brand_id
+            c.brand_id,
+            c.allow_negotiation
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c ON c.id = cs.campaign_id
@@ -104,6 +105,7 @@ const getMyOffers = asyncHandler(async (req, res) => {
             cs.budget AS set_budget,
             cs.per_influencer_budget,
             c.name AS campaign_name,
+            c.allow_negotiation,
             b.business_name AS brand_name
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
@@ -299,6 +301,15 @@ const negotiate = asyncHandler(async (req, res) => {
       'VALIDATION_ERROR',
       `Can only negotiate offers in 'invited' status. Current: '${ci.status}'`,
       422
+    );
+  }
+
+  // Brand can disable negotiation per-campaign — fixed terms, take-it-or-leave-it.
+  if (ci.allow_negotiation === false) {
+    throw new AppError(
+      'FORBIDDEN',
+      'This brand has set fixed terms — please Accept or Decline.',
+      403
     );
   }
 

@@ -68,7 +68,7 @@ async function generateUniqueCouponCode(prefix, firstName) {
 
 const create = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
-  const { name, total_budget, start_date, end_date, brief } = req.body;
+  const { name, total_budget, start_date, end_date, brief, allow_negotiation } = req.body;
 
   if (!name || !name.trim()) {
     throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
@@ -84,8 +84,8 @@ const create = asyncHandler(async (req, res) => {
   }
 
   const { rows } = await db.query(
-    `INSERT INTO campaigns (brand_id, name, total_budget, start_date, end_date, brief)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO campaigns (brand_id, name, total_budget, start_date, end_date, brief, allow_negotiation)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
     [
       brand.id,
@@ -94,6 +94,7 @@ const create = asyncHandler(async (req, res) => {
       start_date,
       end_date,
       brief || null,
+      allow_negotiation === false ? false : true,
     ]
   );
 
@@ -219,7 +220,7 @@ const update = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', `Only draft campaigns can be edited. Current status: ${campaign.status}`, 422);
   }
 
-  const allowed = ['name', 'total_budget', 'start_date', 'end_date', 'brief'];
+  const allowed = ['name', 'total_budget', 'start_date', 'end_date', 'brief', 'allow_negotiation'];
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];

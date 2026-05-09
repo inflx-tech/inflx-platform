@@ -28,6 +28,23 @@ const productionService   = require('../services/production.service');
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
+// Wizard sometimes sends formats as full names ("Instagram reel"), sometimes
+// as short types ("reel"). Both single + bulk brand-sign go through the same
+// normalisation so deliverables.type lands canonical.
+const FORMAT_ALIAS = {
+  'instagram reel':   'reel',
+  'instagram post':   'post',
+  'instagram story':  'story',
+  'instagram stories':'story',
+  'youtube short':    'youtube_short',
+  'youtube video':    'youtube_video',
+};
+function toCanonicalFormatType(raw) {
+  if (!raw) return 'reel';
+  const key = String(raw).toLowerCase().trim();
+  return FORMAT_ALIAS[key] || key.replace(/\s+/g, '_');
+}
+
 async function getBrandOrThrow(userId) {
   const { rows } = await db.query(
     `SELECT id, user_id, wallet_balance, platform_fee_pct FROM brands WHERE user_id = $1`,
@@ -389,6 +406,153 @@ const sign = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Internal: per-contract brand-sign transaction body. Used by both single and
+// bulk handlers. Caller is responsible for the OUTSIDE wallet pre-flight check
+// and for providing a transaction client.
+//
+// Returns { updatedContract, t1Result, t1EntryId, lockAmount, effectiveFee }.
+// Throws AppError with WALLET_INSUFFICIENT on race-condition wallet exhaustion
+// (another contract grabbed funds first).
+// ─────────────────────────────────────────────────────────────────────────────
+async function _signOneContractInTx(client, contract, signedByUserId) {
+  const baseFee     = parseFloat(contract.influencer_fee || contract.agreed_fee || contract.influencer_budget || contract.per_influencer_budget || 0);
+  const bonusOnTop  = parseFloat(contract.bonus_amount || 0);
+  const effectiveFee = baseFee + bonusOnTop;
+  const platformFeePct  = parseFloat(contract.platform_fee_pct || 8);
+  const lockAmount      = parseFloat((effectiveFee * (1 + platformFeePct / 100)).toFixed(2));
+  const needsWalletLock = effectiveFee > 0;
+
+  // 0. Backfill base fee if missing
+  if (!contract.influencer_fee && baseFee > 0) {
+    await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [baseFee, contract.id]);
+    await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [baseFee, contract.campaign_influencer_id]);
+  }
+
+  // 0.5 Lock per-contract funds in brand wallet (engagement/hybrid only)
+  if (needsWalletLock) {
+    const { rows: walletRows } = await client.query(
+      `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
+      [contract.brand_id]
+    );
+    const currentBalance = parseFloat(walletRows[0].wallet_balance);
+    const newBalance = parseFloat((currentBalance - lockAmount).toFixed(2));
+    if (newBalance < 0) {
+      throw new AppError('WALLET_INSUFFICIENT', 'Wallet balance changed; please retry.', 422);
+    }
+    await client.query(
+      `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
+      [newBalance, contract.brand_id]
+    );
+    await client.query(
+      `INSERT INTO wallet_transactions
+         (brand_id, type, amount, direction, balance_after, campaign_id, notes)
+       VALUES ($1, 'escrow_lock', $2, 'debit', $3, $4, $5)`,
+      [
+        contract.brand_id,
+        lockAmount,
+        newBalance,
+        contract.campaign_id,
+        `Escrow lock for contract: ${contract.influencer_name || contract.influencer_id} (${contract.campaign_name})`,
+      ]
+    );
+  }
+
+  // 1. Mark contract as active
+  const { rows: contractRows } = await client.query(
+    `UPDATE contracts
+     SET status = 'active', brand_signed_at = now(), brand_signed_by = $2
+     WHERE id = $1
+     RETURNING *`,
+    [contract.id, signedByUserId]
+  );
+  const updatedContract = contractRows[0];
+
+  // 2. Mark campaign_influencer as contracted
+  await client.query(
+    `UPDATE campaign_influencers SET status = 'contracted' WHERE id = $1`,
+    [contract.campaign_influencer_id]
+  );
+
+  // 2b. Auto-create production_event row (mode from contracts.production_mode)
+  try {
+    await productionService.autoCreateForContract(client, updatedContract);
+  } catch (peErr) {
+    console.error('[CONTRACT] production_event auto-create failed:', peErr.message);
+  }
+
+  // 3. Create 3 escrow entries + 4. Release T1 (engagement/hybrid only)
+  let t1EntryId = null;
+  let t1Result  = null;
+  if (effectiveFee > 0) {
+    const entries = await escrowService.createEscrowEntries(
+      client,
+      contract.campaign_influencer_id,
+      effectiveFee,
+      contract.platform_fee_pct
+    );
+    t1EntryId = entries[0].id;
+    t1Result = await escrowService.processTrancheRelease(
+      client,
+      t1EntryId,
+      contract.influencer_id,
+      contract.brand_id,
+      contract.campaign_id
+    );
+  }
+
+  // 5. Auto-create deliverables from formats_json
+  const raw = contract.formats_json;
+  if (raw == null || raw === '') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Cannot create contract: campaign set has no deliverable formats configured. ' +
+      'Edit the set in the campaign wizard and add at least one format (reel/post/story/...).',
+      422
+    );
+  }
+  let formats;
+  try {
+    formats = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (parseErr) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot create contract: campaign set's formats_json is malformed (${parseErr.message}).`,
+      422
+    );
+  }
+  if (!Array.isArray(formats) || formats.length === 0) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'Cannot create contract: campaign set has no deliverable formats. ' +
+      'Add at least one format (reel/post/story/...) before signing.',
+      422
+    );
+  }
+  const normalised = formats.map(f => {
+    if (typeof f === 'string') return { type: toCanonicalFormatType(f), count: 1 };
+    const rawType = f.type || f.name || f.label || 'reel';
+    return { type: toCanonicalFormatType(rawType), count: Math.max(1, parseInt(f.count, 10) || 1) };
+  });
+  for (const fmt of normalised) {
+    for (let i = 0; i < fmt.count; i++) {
+      await client.query(
+        `INSERT INTO deliverables
+           (campaign_influencer_id, type, quantity, status, submission_deadline, revision_limit)
+         VALUES ($1, $2, 1, 'pending', $3, $4)`,
+        [
+          contract.campaign_influencer_id,
+          fmt.type,
+          updatedContract.posting_date || null,
+          updatedContract.revision_limit,
+        ]
+      );
+    }
+  }
+
+  return { updatedContract, t1Result, t1EntryId, lockAmount, effectiveFee };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // POST /v1/contracts/:id/brand-sign  (brand countersigns)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -466,179 +630,10 @@ const brandSign = asyncHandler(async (req, res) => {
   // Everything in one transaction for atomicity
   try {
     await db.withTransaction(async (client) => {
-      // 0. Backfill base fee only — keep influencer_fee = base. Bonus stays
-      //    in its own column. effectiveFee (base+bonus) is what's used for
-      //    escrow + wallet, but we don't write the inflated number back.
-      if (!contract.influencer_fee && baseFee > 0) {
-        await client.query(`UPDATE contracts SET influencer_fee = $1 WHERE id = $2`, [baseFee, contract.id]);
-        await client.query(`UPDATE campaign_influencers SET agreed_fee = COALESCE(agreed_fee, $1) WHERE id = $2`, [baseFee, contract.campaign_influencer_id]);
-      }
-
-      // 0.5 NEW: Lock per-contract funds in brand wallet (engagement/hybrid only)
-      if (needsWalletLock) {
-        const { rows: walletRows } = await client.query(
-          `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
-          [contract.brand_id]
-        );
-        const currentBalance = parseFloat(walletRows[0].wallet_balance);
-        const newBalance = parseFloat((currentBalance - lockAmount).toFixed(2));
-        if (newBalance < 0) {
-          // Race condition guard — another contract grabbed funds first
-          throw new AppError('WALLET_INSUFFICIENT', 'Wallet balance changed; please retry.', 422);
-        }
-        await client.query(
-          `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
-          [newBalance, contract.brand_id]
-        );
-        await client.query(
-          `INSERT INTO wallet_transactions
-             (brand_id, type, amount, direction, balance_after, campaign_id, notes)
-           VALUES ($1, 'escrow_lock', $2, 'debit', $3, $4, $5)`,
-          [
-            contract.brand_id,
-            lockAmount,
-            newBalance,
-            contract.campaign_id,
-            `Escrow lock for contract: ${contract.influencer_name || contract.influencer_id} (${contract.campaign_name})`,
-          ]
-        );
-      }
-
-      // 1. Mark contract as active
-      const { rows: contractRows } = await client.query(
-        `UPDATE contracts
-         SET status = 'active', brand_signed_at = now(), brand_signed_by = $2
-         WHERE id = $1
-         RETURNING *`,
-        [contract.id, req.user.sub]
-      );
-      updatedContract = contractRows[0];
-
-      // 2. Mark campaign_influencer as contracted
-      await client.query(
-        `UPDATE campaign_influencers SET status = 'contracted' WHERE id = $1`,
-        [contract.campaign_influencer_id]
-      );
-
-      // 2b. Auto-create the production_event row so the post-signing
-      //     coordination phase has a place to land. Mode comes from
-      //     contracts.production_mode (set during approve). Falls back
-      //     to 'remote' when missing — that mode is a no-op so it's the
-      //     safest default for legacy contracts approved before the
-      //     production-mode picker existed.
-      try {
-        await productionService.autoCreateForContract(client, updatedContract);
-      } catch (peErr) {
-        console.error('[CONTRACT] production_event auto-create failed:', peErr.message);
-        // Don't roll back — the contract is signed, money is locked.
-        // Admin can manually patch production_events later if needed.
-      }
-
-      // 3. Create 3 escrow entries — engagement / hybrid only. Conversion-only
-      //    contracts (effectiveFee == 0) get no tranches: the influencer is
-      //    paid on commission via the follower-transaction pipeline instead.
-      if (effectiveFee > 0) {
-        const entries = await escrowService.createEscrowEntries(
-          client,
-          contract.campaign_influencer_id,
-          effectiveFee,
-          contract.platform_fee_pct
-        );
-        t1EntryId = entries[0].id; // T1 is first
-
-        // 4. Release T1 immediately
-        t1Result = await escrowService.processTrancheRelease(
-          client,
-          t1EntryId,
-          contract.influencer_id,
-          contract.brand_id,
-          contract.campaign_id
-        );
-      }
-
-      // 5. Auto-create deliverables from formats_json. Strict — if formats_json
-      //    is missing/invalid we fail loudly rather than silently creating a
-      //    single reel and losing the brand's other deliverables (post/story/etc).
-      const raw = contract.formats_json;
-      let formats;
-      if (raw == null || raw === '') {
-        throw new AppError(
-          'VALIDATION_ERROR',
-          'Cannot create contract: campaign set has no deliverable formats configured. ' +
-          'Edit the set in the campaign wizard and add at least one format (reel/post/story/...).',
-          422
-        );
-      }
-      try {
-        formats = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      } catch (parseErr) {
-        throw new AppError(
-          'VALIDATION_ERROR',
-          `Cannot create contract: campaign set's formats_json is malformed (${parseErr.message}).`,
-          422
-        );
-      }
-      if (!Array.isArray(formats) || formats.length === 0) {
-        throw new AppError(
-          'VALIDATION_ERROR',
-          'Cannot create contract: campaign set has no deliverable formats. ' +
-          'Add at least one format (reel/post/story/...) before signing.',
-          422
-        );
-      }
-
-      // formats_json may be EITHER an array of strings ("Instagram reel", "Instagram post")
-      // from the wizard, OR an array of objects [{ type, count }] from older campaigns.
-      // Normalise both shapes.
-      const FORMAT_ALIAS = {
-        'instagram reel':   'reel',
-        'instagram post':   'post',
-        'instagram story':  'story',
-        'instagram stories':'story',
-        'youtube short':    'youtube_short',
-        'youtube video':    'youtube_video',
-      };
-      // Helper: turn any format identifier (string or object field) into the
-      // canonical short type ('reel' / 'post' / 'story' / 'youtube_short' /
-      // 'youtube_video') stored in the deliverables.type column.
-      const toCanonicalType = (raw) => {
-        if (!raw) return 'reel';
-        const key = String(raw).toLowerCase().trim();
-        return FORMAT_ALIAS[key] || key.replace(/\s+/g, '_');
-      };
-
-      const normalised = formats.map(f => {
-        if (typeof f === 'string') {
-          // Wizard often sends just strings: ["Instagram reel", "Instagram post"]
-          return { type: toCanonicalType(f), count: 1 };
-        }
-        // Wizard ALSO sends objects with a `name` field, NOT `type`. The old
-        // code only checked `f.type`, so every format defaulted to 'reel' and
-        // an influencer with reel + post + story ended up with three reels.
-        // Fix: try `f.type` first (legacy), then `f.name` (current wizard
-        // shape), then fall back to 'reel'.
-        const rawType = f.type || f.name || f.label || 'reel';
-        return {
-          type:  toCanonicalType(rawType),
-          count: Math.max(1, parseInt(f.count, 10) || 1),
-        };
-      });
-
-      for (const fmt of normalised) {
-        for (let i = 0; i < fmt.count; i++) {
-          await client.query(
-            `INSERT INTO deliverables
-               (campaign_influencer_id, type, quantity, status, submission_deadline, revision_limit)
-             VALUES ($1, $2, 1, 'pending', $3, $4)`,
-            [
-              contract.campaign_influencer_id,
-              fmt.type,
-              updatedContract.posting_date || null,
-              updatedContract.revision_limit,
-            ]
-          );
-        }
-      }
+      const result = await _signOneContractInTx(client, contract, req.user.sub);
+      updatedContract = result.updatedContract;
+      t1Result        = result.t1Result;
+      t1EntryId       = result.t1EntryId;
     });
   } catch (txErr) {
     console.error('[brandSign] Transaction failed:', txErr.message, txErr.code || '');
@@ -683,6 +678,126 @@ const brandSign = asyncHandler(async (req, res) => {
     contract:    finalRows[0],
     t1_released: !!t1Result,
     t1_amount:   t1Result?.netAmount || 0,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /v1/contracts/bulk-sign  (brand mass countersigns multiple contracts)
+//
+// Body: { ids: ['<contract_uuid>', ...] }
+//
+// Atomic — either all selected contracts get signed or none do. Validates
+// ownership + state for each, computes total wallet lock, fails the whole
+// batch if wallet is short of the sum. PDF generation + push notifications
+// run after the transaction (parallel, best-effort).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const bulkBrandSign = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'brand') {
+    throw new AppError('FORBIDDEN', 'Only brands can countersign contracts', 403);
+  }
+
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+  if (!ids || ids.length === 0) {
+    throw new AppError('VALIDATION_ERROR', 'ids must be a non-empty array of contract IDs', 422, 'ids');
+  }
+  if (ids.length > 100) {
+    throw new AppError('VALIDATION_ERROR', 'Cannot bulk-sign more than 100 contracts at once', 422, 'ids');
+  }
+
+  // Load all contracts with the same joined fields brandSign uses.
+  const contracts = [];
+  for (const id of ids) {
+    const c = await getContractByIdOrThrow(id);
+    if (c.brand_user_id !== req.user.sub) {
+      throw new AppError('FORBIDDEN', `Contract ${id}: not yours`, 403);
+    }
+    if (c.status !== 'pending_brand') {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        `Contract for ${c.influencer_name || c.influencer_id} is in '${c.status}' status — only pending_brand contracts can be bulk-signed.`,
+        422
+      );
+    }
+    contracts.push(c);
+  }
+
+  // Compute total wallet lock across all contracts
+  let totalLock = 0;
+  for (const c of contracts) {
+    const baseFee = parseFloat(c.influencer_fee || c.agreed_fee || c.influencer_budget || c.per_influencer_budget || 0);
+    const bonus   = parseFloat(c.bonus_amount || 0);
+    const eff     = baseFee + bonus;
+    const fee     = parseFloat(c.platform_fee_pct || 8);
+    totalLock += eff * (1 + fee / 100);
+  }
+  totalLock = parseFloat(totalLock.toFixed(2));
+
+  // Single wallet pre-flight against total
+  if (totalLock > 0) {
+    const brandId = contracts[0].brand_id;
+    const { rows: walletRows } = await db.query(
+      `SELECT wallet_balance FROM brands WHERE id = $1`,
+      [brandId]
+    );
+    const walletBalance = parseFloat(walletRows[0]?.wallet_balance || 0);
+    if (walletBalance < totalLock) {
+      const shortfall = (totalLock - walletBalance).toFixed(2);
+      throw new AppError(
+        'WALLET_INSUFFICIENT',
+        `Insufficient wallet to sign all ${contracts.length} contracts. ` +
+        `Need ₹${totalLock.toFixed(2)}, available ₹${walletBalance.toFixed(2)}. ` +
+        `Top up at least ₹${shortfall} or unselect some contracts.`,
+        422
+      );
+    }
+  }
+
+  // Atomic — sign every contract in a single transaction.
+  const results = [];
+  try {
+    await db.withTransaction(async (client) => {
+      for (const c of contracts) {
+        const r = await _signOneContractInTx(client, c, req.user.sub);
+        results.push({ contract: c, ...r });
+      }
+    });
+  } catch (txErr) {
+    console.error('[bulkBrandSign] Transaction failed:', txErr.message, txErr.code || '');
+    if (txErr instanceof AppError) throw txErr;
+    throw new AppError('INTERNAL_ERROR', `Bulk sign failed: ${txErr.message}`, 500);
+  }
+
+  // Post-tx: PDFs + notifications in parallel, best-effort.
+  await Promise.allSettled(results.map(r => _generateAndStorePdf(r.contract.id)));
+
+  await Promise.allSettled(results.map(r => {
+    const c = r.contract;
+    const netAmt = r.t1Result?.netAmount || 0;
+    const body = r.t1Result
+      ? `Your contract for campaign "${c.campaign_name}" is now active. Tranche 1 payment of ₹${netAmt.toFixed(2)} has been initiated.`
+      : `Your contract for campaign "${c.campaign_name}" is now active. Time to start creating content!`;
+    return notificationService.send({
+      userId:   c.influencer_user_id,
+      type:     'contract.active',
+      title:    r.t1Result ? 'Contract Active — Payment Initiated' : 'Contract Active',
+      body,
+      data:     { screen: 'contract_detail', campaign_influencer_id: c.campaign_influencer_id },
+      fcmToken: c.influencer_fcm_token,
+      sendSms:  true,
+      phone:    c.influencer_phone,
+    });
+  }));
+
+  return success(res, {
+    signed_count: results.length,
+    total_locked: totalLock,
+    contracts: results.map(r => ({
+      id:           r.contract.id,
+      status:       'active',
+      t1_released:  !!r.t1Result,
+      t1_amount:    r.t1Result?.netAmount || 0,
+    })),
   });
 });
 
@@ -999,10 +1114,54 @@ const approveContract = asyncHandler(async (req, res) => {
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/brands/me/contracts/pending  (list all pending_brand contracts for
+// the brand inbox / mass-sign UI). Includes joined campaign + influencer +
+// fee fields so the UI can render the row + total summary without per-row
+// follow-up calls.
+// ─────────────────────────────────────────────────────────────────────────────
+const listBrandPending = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'brand') {
+    throw new AppError('FORBIDDEN', 'Only brands can list contracts', 403);
+  }
+  const brand = await getBrandOrThrow(req.user.sub);
+
+  const { rows } = await db.query(
+    `SELECT
+        con.id,
+        con.status,
+        con.influencer_fee,
+        con.bonus_amount,
+        con.influencer_signed_at,
+        con.created_at,
+        con.production_mode,
+        cs.formats_json,
+        cs.goal,
+        c.id   AS campaign_id,
+        c.name AS campaign_name,
+        inf.instagram_handle,
+        inf.followers_count,
+        b.platform_fee_pct
+     FROM contracts con
+     JOIN campaign_influencers ci ON ci.id  = con.campaign_influencer_id
+     JOIN campaign_sets        cs ON cs.id  = ci.set_id
+     JOIN campaigns            c  ON c.id   = cs.campaign_id
+     JOIN brands               b  ON b.id   = c.brand_id
+     JOIN influencers          inf ON inf.id = ci.influencer_id
+     WHERE c.brand_id = $1 AND con.status = 'pending_brand'
+     ORDER BY con.influencer_signed_at DESC NULLS LAST, con.created_at DESC`,
+    [brand.id]
+  );
+
+  return success(res, { contracts: rows });
+});
+
 module.exports = {
   getContract,
   sign,
   brandSign,
+  bulkBrandSign,
+  listBrandPending,
   getContractPdf,
   getContractPdfUrl,
   regeneratePdf,

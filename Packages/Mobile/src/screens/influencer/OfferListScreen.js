@@ -139,18 +139,10 @@ export default function OfferListScreen({ navigation }) {
           </View>
         )}
 
-        {/* Action buttons only for active/invited offers */}
+        {/* Tap card to open full details + actions */}
         {offer.status === 'invited' && isActive && (
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.acceptBtn} onPress={async () => { await influencerApi.acceptOffer(offer.id); loadTab('active'); }}>
-              <Text style={styles.acceptBtnText}>Accept</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.declineBtn} onPress={() => navigation.navigate('OfferDetail', { offer })}>
-              <Text style={styles.declineBtnText}>Decline</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.negotiateBtn} onPress={() => navigation.navigate('OfferDetail', { offer })}>
-              <Text style={styles.negotiateBtnText}>Negotiate</Text>
-            </TouchableOpacity>
+          <View style={styles.tapHintRow}>
+            <Text style={styles.tapHintText}>Tap to view details →</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -220,6 +212,8 @@ const styles = StyleSheet.create({
   offerStatLabel: { fontSize: 9, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', letterSpacing: 0.5 },
   offerStatVal: { fontSize: 14, fontWeight: '700', color: colors.t1, marginTop: 2 },
   actionRow: { flexDirection: 'row', gap: 8 },
+  tapHintRow: { marginTop: 4, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, alignItems: 'flex-end' },
+  tapHintText: { fontSize: 11, fontWeight: '700', color: colors.navy },
   acceptBtn: { flex: 1, backgroundColor: colors.teal, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
   acceptBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
   declineBtn: { flex: 1, backgroundColor: colors.redPale, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },

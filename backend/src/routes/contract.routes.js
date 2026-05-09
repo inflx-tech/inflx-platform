@@ -12,12 +12,29 @@
 const { Router } = require('express');
 const { authenticate, authenticateWithQuery, requireRole } = require('../middleware/auth');
 const {
-  getContract, sign, brandSign,
+  getContract, sign, brandSign, bulkBrandSign, listBrandPending,
   getContractPdf, getContractPdfUrl, regeneratePdf, retryContractCreate,
   approveContract,
 } = require('../controllers/contract.controller');
 
 const router = Router();
+
+// Brand inbox: list all pending_brand contracts across all campaigns.
+// Declared BEFORE the wildcard /:campaign_influencer_id route.
+router.get(
+  '/brand/pending',
+  authenticate,
+  requireRole('brand'),
+  listBrandPending
+);
+
+// Brand mass-countersign multiple contracts atomically. Body: { ids: [...] }.
+router.post(
+  '/bulk-sign',
+  authenticate,
+  requireRole('brand'),
+  bulkBrandSign
+);
 
 // Stream contract PDF — must be declared BEFORE the wildcard /:campaign_influencer_id.
 // Uses authenticateWithQuery so brand-web can embed it in an <iframe> using

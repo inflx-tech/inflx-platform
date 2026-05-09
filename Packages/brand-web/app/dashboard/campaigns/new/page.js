@@ -451,6 +451,7 @@ function NewCampaignPageInner() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [totalBudget, setTotalBudget] = useState('');
+  const [allowNegotiation, setAllowNegotiation] = useState(true);
 
   // Sets
   const [sets, setSets] = useState([mkSet(0)]);
@@ -528,6 +529,7 @@ function NewCampaignPageInner() {
       setStartDate(c.start_date ? c.start_date.split('T')[0] : '');
       setEndDate(c.end_date ? c.end_date.split('T')[0] : '');
       setTotalBudget(c.total_budget != null ? String(c.total_budget) : '');
+      setAllowNegotiation(c.allow_negotiation !== false);
 
       if (c.sets && c.sets.length > 0) {
         const hydratedSets = c.sets.map((s, idx) => {
@@ -1072,12 +1074,12 @@ function NewCampaignPageInner() {
     try {
       let cid = campaignId;
       if (!cid) {
-        const res = await campaignApi.create({ name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null });
+        const res = await campaignApi.create({ name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null, allow_negotiation: allowNegotiation });
         if (!res.ok) { setError(res.error?.message || 'Failed to save campaign'); return null; }
         cid = res.data.campaign.id;
         setCampaignId(cid);
       } else {
-        await campaignApi.update(cid, { name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null });
+        await campaignApi.update(cid, { name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null, allow_negotiation: allowNegotiation });
       }
       return cid;
     } catch (e) {
@@ -2223,6 +2225,25 @@ function NewCampaignPageInner() {
                     <div className="bstrip-note">₹{fmtN(used)} across {sets.filter(s => needsBudget(s.goal)).length} paid set(s)</div>
                   </div>
                 )}
+              </div>
+              <div className="f">
+                <label className="flbl">Negotiation</label>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: 12, border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={allowNegotiation}
+                    onChange={e => setAllowNegotiation(e.target.checked)}
+                    style={{ marginTop: 2 }}
+                  />
+                  <span style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>Allow influencers to negotiate fee/terms</div>
+                    <div style={{ fontSize: 11, color: 'var(--t3)', marginTop: 2 }}>
+                      {allowNegotiation
+                        ? 'Influencers can Accept, Decline, or Negotiate. Best for individual deals.'
+                        : 'Influencers can only Accept or Decline — fixed terms. Best for large rosters where you want consistent pricing.'}
+                    </div>
+                  </span>
+                </label>
               </div>
               {error && <div className="err-msg">{error}</div>}
               {forceShowErrors && validation.step1Errors > 0 && (

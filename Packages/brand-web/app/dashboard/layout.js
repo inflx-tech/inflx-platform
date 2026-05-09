@@ -7,6 +7,7 @@ import { notificationApi, brandApi, authApi, tryRefreshToken } from '../../lib/a
 const NAV = [
   { href: '/dashboard',             label: 'Dashboard',   icon: '🏠' },
   { href: '/dashboard/campaigns',   label: 'Campaigns',   icon: '📣' },
+  { href: '/dashboard/contracts',   label: 'Contracts',   icon: '📝' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '⭐' },
   { href: '/dashboard/products',    label: 'Listings',    icon: '🏪' },
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '🖼️' },
