@@ -73,6 +73,41 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
+  async function handleApproveApplication(ci) {
+    setActionLoading(ci.id);
+    const res = await brandApi.approveApplication(campaignId, ci.id);
+    setActionLoading(null);
+    if (!res.success) {
+      Alert.alert('Approve failed', res.error?.message || 'Could not approve this application.');
+      return;
+    }
+    const slotsMsg = res.data?.slots_filled
+      ? `\n\nSlots are now full — ${res.data.closed_out_count || 0} other applicant${(res.data.closed_out_count || 0) !== 1 ? 's were' : ' was'} notified that the campaign is closed.`
+      : '';
+    Alert.alert('Approved', `Contract draft sent to @${ci.instagram_handle || 'influencer'}.${slotsMsg}`);
+    load();
+  }
+
+  async function handleRejectApplication(ci) {
+    Alert.alert(
+      'Reject application',
+      `Reject @${ci.instagram_handle || 'this influencer'}? They'll be notified.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reject', style: 'destructive', onPress: async () => {
+          setActionLoading(ci.id);
+          const res = await brandApi.rejectApplication(campaignId, ci.id);
+          setActionLoading(null);
+          if (!res.success) {
+            Alert.alert('Reject failed', res.error?.message || 'Could not reject this application.');
+            return;
+          }
+          load();
+        } },
+      ]
+    );
+  }
+
   async function handleCancelInfluencer(ci) {
     Alert.alert(
       'Cancel Influencer',
@@ -189,7 +224,42 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
   // ── Derived data ─────────────────────────────────────────────────────────
 
   const sets = campaign.sets || [];
-  const allInfluencers = sets.flatMap(s => (s.influencers || []).map(ci => ({ ...ci, set_name: s.name, set_goal: s.goal })));
+
+  // Status filtering for the roster:
+  //   handpick — show every CI row (brand invited each one individually).
+  //   open_group — only show influencers who actually made it through to the
+  //     contract pipeline. Hide pre-contract chatter (invited/applied/etc.)
+  //     because at scale the broadcast can match hundreds of profiles, and
+  //     the brand just cares about who they ended up working with.
+  const OPEN_GROUP_HIDDEN = ['invited', 'applied', 'declined', 'rejected_by_brand', 'slots_filled', 'expired'];
+  const allInfluencers = sets.flatMap(s => {
+    const mode = s.influencer_mode || 'handpick';
+    return (s.influencers || [])
+      .filter(ci => mode !== 'open_group' || !OPEN_GROUP_HIDDEN.includes(ci.status))
+      .map(ci => ({ ...ci, set_name: s.name, set_goal: s.goal, set_mode: mode }));
+  });
+
+  // Pending applications across open-group sets — surface inline so the brand
+  // can approve/reject without going to the Action Required hub.
+  const pendingApplications = sets.flatMap(s => {
+    if (s.influencer_mode !== 'open_group') return [];
+    return (s.influencers || [])
+      .filter(ci => ci.status === 'applied')
+      .map(ci => ({ ...ci, set_name: s.name, set_id: s.id, max_cap: s.max_cap }));
+  });
+
+  // Per-open-group-set funnel: how many matched, how many applied, how many approved.
+  const openGroupFunnels = sets.filter(s => s.influencer_mode === 'open_group').map(s => {
+    const all = s.influencers || [];
+    return {
+      set_id: s.id,
+      set_name: s.name,
+      max_cap: s.max_cap,
+      broadcast: all.length,
+      applied: all.filter(ci => ci.status === 'applied').length,
+      approved: all.filter(ci => ['accepted','contracted','active','completed'].includes(ci.status)).length,
+    };
+  });
   const totalBudget = Number(campaign.total_budget) || 0;
 
   // Calculate allocated from sets or influencer agreed fees
@@ -333,11 +403,77 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         )}
       </View>
 
+      {/* ── Open-group funnel (counts only — broadcast list stays hidden) ── */}
+      {openGroupFunnels.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Open Calls</Text>
+          {openGroupFunnels.map(f => (
+            <View key={f.set_id} style={styles.funnelRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.funnelSetName}>{f.set_name || 'Set'}</Text>
+                <Text style={styles.funnelMeta}>
+                  Broadcast to {f.broadcast} · {f.applied} applied · {f.approved}/{f.max_cap || '—'} approved
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* ── Applications waiting on brand approval ─────────────────────── */}
+      {pendingApplications.length > 0 && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Applications ({pendingApplications.length})</Text>
+          <Text style={styles.noDataText}>Tap to view full profile, then approve or reject.</Text>
+          {pendingApplications.map(ci => {
+            const isBusy = actionLoading === ci.id;
+            return (
+              <View key={ci.id} style={styles.applicationRow}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (ci.influencer_id) navigation.navigate('BrandInfluencerProfile', { influencerId: ci.influencer_id });
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  <Text style={styles.applicationName}>
+                    {ci.influencer_name || 'Influencer'} <Text style={styles.applicationHandle}>@{ci.instagram_handle || '—'}</Text>
+                  </Text>
+                  <Text style={styles.applicationMeta}>
+                    {ci.set_name}{ci.influencer_budget != null ? ` · ${fmtRupees(ci.influencer_budget)}` : ''}
+                  </Text>
+                  <Text style={styles.applicationLink}>View profile →</Text>
+                </TouchableOpacity>
+                <View style={styles.applicationActions}>
+                  <TouchableOpacity
+                    style={[styles.appRejectBtn, isBusy && { opacity: 0.4 }]}
+                    onPress={() => handleRejectApplication(ci)}
+                    disabled={isBusy}
+                  >
+                    <Text style={styles.appRejectText}>Reject</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.appApproveBtn, isBusy && { opacity: 0.4 }]}
+                    onPress={() => handleApproveApplication(ci)}
+                    disabled={isBusy}
+                  >
+                    <Text style={styles.appApproveText}>{isBusy ? '…' : 'Approve'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
       {/* ── Influencers Section ─────────────────────────────────────────── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Influencers ({allInfluencers.length})</Text>
         {allInfluencers.length === 0 ? (
-          <Text style={styles.noDataText}>No influencers assigned yet.</Text>
+          <Text style={styles.noDataText}>
+            {openGroupFunnels.length > 0
+              ? 'No influencers shortlisted yet. Review applications above.'
+              : 'No influencers assigned yet.'}
+          </Text>
         ) : (
           allInfluencers.map(ci => {
             const CANCELLABLE = ['invited', 'accepted', 'negotiating'];
@@ -913,4 +1049,22 @@ const styles = StyleSheet.create({
   backBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
 
   noDataText: { fontSize: 13, color: colors.t3, lineHeight: 18 },
+
+  funnelRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+  funnelSetName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  funnelMeta: { fontSize: 11, color: colors.t3, marginTop: 2 },
+
+  applicationRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  applicationName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  applicationHandle: { fontSize: 12, color: colors.t3, fontWeight: '500' },
+  applicationMeta: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  applicationLink: { fontSize: 11, fontWeight: '700', color: colors.navy, marginTop: 4 },
+  applicationActions: { flexDirection: 'column', gap: 6, alignItems: 'flex-end' },
+  appApproveBtn: { backgroundColor: colors.navy, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6 },
+  appApproveText: { fontSize: 11, fontWeight: '700', color: colors.white },
+  appRejectBtn: { backgroundColor: colors.redPale, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6, borderWidth: 1, borderColor: colors.red },
+  appRejectText: { fontSize: 11, fontWeight: '700', color: colors.red },
 });

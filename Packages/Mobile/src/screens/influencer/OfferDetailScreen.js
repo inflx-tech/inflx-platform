@@ -108,24 +108,37 @@ export default function OfferDetailScreen({ navigation, route }) {
   async function accept() {
     const goalLc = (offer.goal || 'engagement').toLowerCase();
     const isConversionAccept = goalLc === 'conversion';
-    Alert.alert(
-      'Accept Offer',
-      isConversionAccept
+    // Open-group is an "application" — copy reflects that the brand still
+    // has to pick, no contract is generated yet.
+    const openGroup = offer.influencer_mode === 'open_group';
+
+    const confirmTitle = openGroup ? 'Apply to this offer?' : 'Accept Offer';
+    const confirmBody  = openGroup
+      ? "You'll be added to the applicants list for this campaign. The brand will review applications and pick up to their cap of influencers."
+      : isConversionAccept
         ? "You'll get a contract covering the agreed commission terms. No upfront fee — you earn on every sale or booking driven by your tracking link once signed."
-        : 'Are you sure you want to accept this offer? A contract will be generated for signing.',
+        : 'Are you sure you want to accept this offer? A contract will be generated for signing.';
+    const confirmAction = openGroup ? 'Apply' : 'Accept';
+    const successBody = openGroup
+      ? "Thanks for applying! The brand will review your application and let you know if you're selected."
+      : 'Offer accepted! A contract will be ready for signing.';
+
+    Alert.alert(
+      confirmTitle,
+      confirmBody,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Accept',
+          text: confirmAction,
           onPress: async () => {
             setActionLoading(true);
             const res = await influencerApi.acceptOffer(offer.id);
             setActionLoading(false);
             if (res.success) {
-              Alert.alert('Success', 'Offer accepted! A contract will be ready for signing.');
+              Alert.alert(openGroup ? 'Application submitted' : 'Success', successBody);
               navigation.goBack();
             } else {
-              Alert.alert('Failed', res.error?.message || 'Could not accept offer');
+              Alert.alert('Failed', res.error?.message || (openGroup ? 'Could not submit application' : 'Could not accept offer'));
             }
           },
         },

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { campaignApi, brandApi, deliverableApi, negotiationApi, contractApi, productionApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
+import { campaignApi, brandApi, deliverableApi, negotiationApi, contractApi, productionApi, applicationApi, fmtRupees, fmtMoney, fmtNum } from '../../../../lib/api';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1443,7 +1443,20 @@ export default function CampaignDetailPage() {
             </div>
           ) : (
             sets.map((set, si) => {
-              const setInfs = set.influencers || [];
+              const allRows = set.influencers || [];
+              const mode = set.influencer_mode || 'handpick';
+              const isOpenGroup = mode === 'open_group';
+              // For open-group sets, hide the broadcast list and pre-contract
+              // statuses — only show influencers who are actually in the
+              // contract pipeline. Handpick keeps the full list.
+              const OPEN_GROUP_HIDDEN = ['invited','applied','declined','rejected_by_brand','slots_filled','expired'];
+              const setInfs = isOpenGroup
+                ? allRows.filter(r => !OPEN_GROUP_HIDDEN.includes(r.status))
+                : allRows;
+              const applied = isOpenGroup ? allRows.filter(r => r.status === 'applied') : [];
+              const approvedCount = isOpenGroup
+                ? allRows.filter(r => ['accepted','contracted','active','completed'].includes(r.status)).length
+                : 0;
               return (
                 <div key={set.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                   {/* Set header */}
@@ -1451,7 +1464,7 @@ export default function CampaignDetailPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm text-gray-800">{set.name}</span>
                       <GoalBadge goal={set.goal} />
-                      <span className="text-[10px] text-gray-400 capitalize">{set.influencer_mode || 'handpick'}</span>
+                      <span className="text-[10px] text-gray-400 capitalize">{mode}</span>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-400">
                       {set.set_budget > 0 && <span className="font-semibold text-gray-700">{fmtRupees(set.set_budget)}</span>}
@@ -1473,10 +1486,84 @@ export default function CampaignDetailPage() {
                     {set.brief && <span className="truncate max-w-xs">📝 {set.brief}</span>}
                   </div>
 
+                  {/* Open-group funnel summary: broadcast → applied → approved */}
+                  {isOpenGroup && (
+                    <div className="px-4 py-2.5 bg-blue-50/50 border-b border-blue-100 text-xs text-blue-800 flex items-center gap-4 flex-wrap">
+                      <span><strong>{allRows.length}</strong> broadcast</span>
+                      <span>·</span>
+                      <span><strong>{applied.length}</strong> applied</span>
+                      <span>·</span>
+                      <span><strong>{approvedCount}</strong>/{set.max_cap || '—'} approved</span>
+                    </div>
+                  )}
+
+                  {/* Open-group applications waiting on brand approval */}
+                  {isOpenGroup && applied.length > 0 && (
+                    <div className="border-b border-gray-100">
+                      <div className="px-4 py-2.5 bg-amber-50 text-xs font-bold text-amber-900">
+                        Applications ({applied.length}) — pending your review
+                      </div>
+                      <div className="divide-y divide-gray-50">
+                        {applied.map(app => (
+                          <div key={app.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <Avatar handle={app.instagram_handle} />
+                              <div className="min-w-0">
+                                <div className="font-semibold text-sm text-gray-800 truncate">@{app.instagram_handle}</div>
+                                <div className="text-[11px] text-gray-500 truncate">
+                                  {app.influencer_name || ''}
+                                  {app.influencer_budget != null ? ` · ${fmtRupees(app.influencer_budget)}` : ''}
+                                </div>
+                                {app.influencer_id && (
+                                  <a
+                                    href={`/dashboard/influencers/${app.influencer_id}`}
+                                    className="text-[11px] font-bold text-navy hover:underline"
+                                  >
+                                    View profile →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={async () => {
+                                  if (!confirm(`Reject @${app.instagram_handle}? They'll be notified.`)) return;
+                                  const r = await applicationApi.reject(id, app.id);
+                                  if (!r.success) { alert(r.error?.message || 'Reject failed'); return; }
+                                  campaignApi.get(id).then(res => { if (res.success) setCampaign(res.data?.campaign || res.data); });
+                                }}
+                                className="px-3 py-1.5 bg-red-50 border border-red-300 text-red-700 font-bold text-[11px] rounded-lg hover:bg-red-100 transition-colors"
+                              >
+                                Reject
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  const r = await applicationApi.approve(id, app.id);
+                                  if (!r.success) { alert(r.error?.message || 'Approve failed'); return; }
+                                  if (r.data?.slots_filled) {
+                                    alert(`Approved. Slots are now full — ${r.data.closed_out_count || 0} other applicant(s) were notified.`);
+                                  }
+                                  campaignApi.get(id).then(res => { if (res.success) setCampaign(res.data?.campaign || res.data); });
+                                }}
+                                className="px-3 py-1.5 bg-navy text-white font-bold text-[11px] rounded-lg hover:bg-navy-dark transition-colors"
+                              >
+                                Approve
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Influencers */}
                   {setInfs.length === 0 ? (
                     <div className="px-4 py-6 text-center text-xs text-gray-400">
-                      No influencers assigned to this set
+                      {isOpenGroup
+                        ? (applied.length > 0
+                            ? 'No influencers approved yet. Review applications above.'
+                            : 'No applications yet. The campaign is broadcasting to matched influencers.')
+                        : 'No influencers assigned to this set'}
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-50">
