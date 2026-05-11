@@ -608,13 +608,33 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
           only. Likes + comments land reliably from Apify; Views is the
           video-view count on reels (stored in the impressions column).
           Reach / saves / shares aren't fetchable from public scraping
-          so we don't show them. */}
+          so we don't show them.
+
+          Filter the per-influencer rows to the same shortlist the
+          Influencers section uses. Without this, slots_filled /
+          rejected_by_brand applicants stay visible here even though
+          they never produced content for the campaign. */}
       {(() => {
-        const totals = engagement?.totals || {};
-        const likes    = totals.total_likes;
-        const comments = totals.total_comments;
-        const views    = totals.total_views;
-        const er       = totals.avg_er;
+        const visibleIds = new Set(allInfluencers.map(ci => ci.influencer_id).filter(Boolean));
+        const byInfRaw = engagement?.by_influencer || [];
+        const byInf = byInfRaw.filter(x => !x.influencer_id || visibleIds.has(x.influencer_id));
+        // Recompute totals from the filtered list so the headline numbers
+        // match the rows below them. Falls back to the server-provided
+        // totals when by_influencer is empty (e.g. legacy payloads).
+        let likes, comments, views, er;
+        if (byInf.length > 0) {
+          likes    = byInf.reduce((s, x) => s + Number(x.likes || 0), 0);
+          comments = byInf.reduce((s, x) => s + Number(x.comments || 0), 0);
+          views    = byInf.reduce((s, x) => s + Number(x.views || 0), 0);
+          const erValues = byInf.map(x => Number(x.engagement_rate || 0)).filter(v => !isNaN(v));
+          er = erValues.length > 0 ? erValues.reduce((s, v) => s + v, 0) / erValues.length : 0;
+        } else {
+          const totals = engagement?.totals || {};
+          likes    = totals.total_likes;
+          comments = totals.total_comments;
+          views    = totals.total_views;
+          er       = totals.avg_er;
+        }
         if (likes == null && comments == null && views == null && er == null) return null;
         return (
           <View style={styles.card}>
@@ -639,10 +659,10 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
                 <Text style={[styles.summaryStatValue, { color: colors.orange }]}>{er != null ? `${Number(er).toFixed(1)}%` : '—'}</Text>
               </View>
             </View>
-            {(engagement?.by_influencer || []).length > 0 && (
+            {byInf.length > 0 && (
               <View style={{ marginTop: 10 }}>
                 <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 6 }]}>Per Influencer</Text>
-                {engagement.by_influencer.map(inf => (
+                {byInf.map(inf => (
                   <View key={inf.influencer_id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomColor: colors.borderLight || '#F0F0F0', borderBottomWidth: 1 }}>
                     <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy, flex: 1 }} numberOfLines={1}>
                       {inf.handle || `@${inf.instagram_handle || ''}`}
