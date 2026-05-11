@@ -886,13 +886,29 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
   // escrow_entries, but the headline 'Total Fee' was wrong. This SELECT
   // is the source of truth for everything the influencer sees.
   try {
+    // Pulls contract row + the few fields the influencer's CampaignDetailScreen
+    // expects but which actually live on adjacent tables:
+    //   - goal              → campaign_sets.goal
+    //   - commission_pct    → campaign_influencers.commission_pct
+    //   - offer_type        → campaign_influencers.offer_type
+    //   - offer_config_json → campaign_influencers.offer_config_json
+    // Selecting these directly off `contracts` (as an earlier version did)
+    // throws "column does not exist", which the catch below swallowed,
+    // leaving `contract` null. That made the CampaignDetailScreen render
+    // its "Contract is being created. Pull to refresh in a few seconds."
+    // fallback even when the contract row was already in the DB.
     const { rows: contractRows } = await db.query(
-      `SELECT id, status, influencer_signed_at, brand_signed_at, pdf_url, created_at,
-              influencer_fee, bonus_amount, commission_pct, goal,
-              production_mode, content_requirements, custom_clauses,
-              posting_date, revision_limit, offer_type, offer_config_json
-       FROM contracts
-       WHERE campaign_influencer_id = $1`,
+      `SELECT con.id, con.status, con.influencer_signed_at, con.brand_signed_at,
+              con.pdf_url, con.created_at,
+              con.influencer_fee, con.bonus_amount,
+              con.production_mode, con.content_requirements, con.custom_clauses,
+              con.posting_date, con.revision_limit,
+              cs.goal,
+              ci.commission_pct, ci.offer_type, ci.offer_config_json
+         FROM contracts con
+         JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+         JOIN campaign_sets cs        ON cs.id = ci.set_id
+        WHERE con.campaign_influencer_id = $1`,
       [ciId]
     );
     contract = contractRows[0] || null;

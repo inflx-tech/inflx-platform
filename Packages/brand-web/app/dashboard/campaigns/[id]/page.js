@@ -1332,7 +1332,14 @@ export default function CampaignDetailPage() {
               </div>
               {/* Sets */}
               {sets.map(set => {
-                const setInfs = set.influencers || [];
+                // Open-group sets broadcast to many; only show pipeline rows.
+                const allRows = set.influencers || [];
+                const mode = set.influencer_mode || 'handpick';
+                const isOpenGroup = mode === 'open_group';
+                const OPEN_GROUP_HIDDEN = ['invited','applied','declined','rejected_by_brand','slots_filled','expired'];
+                const setInfs = isOpenGroup
+                  ? allRows.filter(r => !OPEN_GROUP_HIDDEN.includes(r.status))
+                  : allRows;
                 const setKey = `set-${set.id}`;
                 const isSetOpen = expandedSets[setKey];
                 return (
