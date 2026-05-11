@@ -1006,16 +1006,21 @@ function NewCampaignPageInner() {
   };
 
   // ── Open group matches ────────────────────────────────────────────────────────
-  const fetchMatches = (si) => {
+  // Optionally accept the group inline. Without it the closure reads
+  // sets[si].group, which can be stale when fetchMatches is invoked from
+  // an onClick that has just queued (but not yet flushed) a setState. The
+  // chip-toggle handlers pass the post-toggle group directly so the count
+  // refreshes against the user's latest selection.
+  const fetchMatches = (si, groupOverride) => {
     if (!campaignId) return;
     clearTimeout(matchTimer.current);
     matchTimer.current = setTimeout(async () => {
-      const g = sets[si].group;
+      const g = groupOverride || sets[si].group;
       try {
         const params = new URLSearchParams();
-        if (g.tiers.length) g.tiers.forEach(t => params.append('tiers', t));
-        if (g.niches.length) g.niches.forEach(n => params.append('niches', n));
-        if (g.cities.length) g.cities.forEach(c => params.append('cities', c));
+        if (g.tiers?.length)  g.tiers.forEach(t => params.append('tiers', t));
+        if (g.niches?.length) g.niches.forEach(n => params.append('niches', n));
+        if (g.cities?.length) g.cities.forEach(c => params.append('cities', c));
         if (g.min_er) params.set('min_er', g.min_er);
         if (g.gender) params.set('gender', g.gender);
         const res = await campaignApi.getOpenGroupMatches(campaignId, si, params);
@@ -1477,7 +1482,15 @@ function NewCampaignPageInner() {
     const set = sets[si];
     const g = set.group;
     const onChg = (f, v) => updateGroup(si, { [f]: v });
-    const toggleArr = (field, val) => { const arr = g[field] || []; onChg(field, arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]); };
+    const toggleArr = (field, val) => {
+      const arr = g[field] || [];
+      const nextArr = arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
+      onChg(field, nextArr);
+      // Refresh the live match count so the brand sees how many influencers
+      // their selection matches. Pass the new group directly because the
+      // setState hasn't flushed by the time fetchMatches reads its closure.
+      fetchMatches(si, { ...g, [field]: nextArr });
+    };
     const estMax = Number(g.per_influencer_budget || 0) * Number(g.max_cap || 0);
     const groupErrs = validation.sets[si]?.group || {};
     const groupWarns = validation.sets[si]?.warnings || {};
