@@ -56,7 +56,21 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
 
     const res = await brandApi.searchInfluencers(params);
     setLoading(false);
-    if (res?.success) setInfluencers(res.data?.influencers || []);
+    if (!res?.success) return;
+    // The /influencers/search endpoint now queries v_searchable_creators and
+    // returns { creators: [...] } with view-shape field names. Older code
+    // expected { influencers: [...] } with legacy field names. Normalise so
+    // the card render keeps working in both worlds — and the profile screen
+    // can resolve the id either way.
+    const raw = res.data?.creators || res.data?.influencers || [];
+    setInfluencers(raw.map(r => ({
+      ...r,
+      id:                r.id || r.row_id,
+      instagram_handle:  r.instagram_handle || r.ig_handle,
+      verified:          r.verified != null ? r.verified : r.ig_verified,
+      engagement_rate:   r.engagement_rate != null ? r.engagement_rate
+                          : (r.view_based_er != null ? r.view_based_er : r.follower_based_er),
+    })));
   }
 
   useFocusEffect(
