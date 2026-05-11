@@ -43,6 +43,118 @@ async function getSetOrThrow(setId, campaignId) {
   return rows[0];
 }
 
+// Safety bound on how many influencers a single open_group set can broadcast
+// to. The brand's slot cap (set.max_cap) is enforced separately at accept
+// time; this is just a runaway guard.
+const OPEN_GROUP_BROADCAST_LIMIT = 1000;
+
+/**
+ * Materialise `campaign_influencers` rows for every open_group set in this
+ * campaign. Called inside the publish transaction so any SQL failure rolls
+ * back the status update.
+ *
+ * For each open_group set:
+ *   - Resolve open_group_filters → SQL WHERE clauses via the shared helper
+ *   - Exclude influencers already attached to any set in this campaign
+ *   - INSERT one CI row per match with status='invited' and a 48h offer expiry
+ *
+ * Handpick sets are skipped here — those CI rows are inserted at wizard save
+ * time and are already in 'invited' state by the time we get here.
+ */
+async function materialiseOpenGroupInvites(tx, campaign, sets) {
+  for (const set of sets) {
+    if (set.influencer_mode !== 'open_group') continue;
+
+    const { conditions, params, nextIdx } = buildOpenGroupMatchClauses(set.open_group_filters || {}, 1);
+    // Exclude anyone already on another set in this campaign.
+    conditions.push(
+      `NOT EXISTS (SELECT 1 FROM campaign_influencers ci2 JOIN campaign_sets cs2 ON cs2.id = ci2.set_id
+                    WHERE cs2.campaign_id = $${nextIdx} AND ci2.influencer_id = i.id)`
+    );
+    params.push(campaign.id);
+
+    const { rows: matches } = await tx.query(
+      `SELECT i.id
+         FROM influencers i
+         JOIN users u ON u.id = i.user_id
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY i.followers_count DESC NULLS LAST, i.created_at ASC
+        LIMIT $${nextIdx + 1}`,
+      [...params, OPEN_GROUP_BROADCAST_LIMIT]
+    );
+
+    console.log(`[publish] open_group set ${set.id}: broadcasting to ${matches.length} matches (slot cap ${set.max_cap || 'unset'})`);
+
+    const perBudget = set.per_influencer_budget != null ? parseFloat(set.per_influencer_budget) : null;
+    for (const m of matches) {
+      await tx.query(
+        `INSERT INTO campaign_influencers
+           (set_id, influencer_id, status, influencer_budget, offer_expires_at)
+         VALUES ($1, $2, 'invited', $3, now() + interval '48 hours')`,
+        [set.id, m.id, perBudget]
+      );
+    }
+  }
+}
+
+/**
+ * Build SQL WHERE conditions + bound params for open-group influencer matching.
+ * Shared by openGroupMatches (count preview) and publish (materialise CI rows)
+ * so both endpoints agree on who is "matching".
+ *
+ * - i.niche is varchar[], not text[] — comparisons need an explicit cast to
+ *   avoid "operator does not exist: character varying[] && text[]".
+ * - Niches and cities are matched case-insensitively (wizard sends 'fashion',
+ *   DB stores 'Fashion'); tier comparison is exact (both lowercase).
+ * - secondary_niche is OR'd with primary niche so an influencer matches if
+ *   either column contains the requested niche.
+ *
+ * Returns { conditions: string[], params: any[], nextIdx: number }.
+ */
+function buildOpenGroupMatchClauses(filters, startIdx) {
+  const conditions = [`u.status = 'approved'`];
+  const params = [];
+  let idx = startIdx;
+
+  const f = (filters && typeof filters === 'object') ? filters
+          : (typeof filters === 'string' ? (() => { try { return JSON.parse(filters); } catch { return {}; } })() : {});
+
+  const tiers   = Array.isArray(f.tiers)  && f.tiers.length  ? f.tiers  : null;
+  const niches  = Array.isArray(f.niches) && f.niches.length ? f.niches : null;
+  const cities  = Array.isArray(f.cities) && f.cities.length ? f.cities : null;
+  const minEr   = f.min_er != null && f.min_er !== '' ? parseFloat(f.min_er) : null;
+  const gender  = f.gender && f.gender !== 'any' ? String(f.gender) : null;
+
+  if (tiers) {
+    conditions.push(`i.tier = ANY($${idx}::text[])`);
+    params.push(tiers); idx++;
+  }
+  if (niches) {
+    conditions.push(
+      `(EXISTS (SELECT 1 FROM unnest(i.niche) n WHERE lower(n) = ANY(SELECT lower(x) FROM unnest($${idx}::text[]) x))` +
+      ` OR EXISTS (SELECT 1 FROM unnest(i.secondary_niche) n WHERE lower(n) = ANY(SELECT lower(x) FROM unnest($${idx}::text[]) x)))`
+    );
+    params.push(niches); idx++;
+  }
+  if (cities) {
+    conditions.push(
+      `(lower(i.city) = ANY(SELECT lower(x) FROM unnest($${idx}::text[]) x)` +
+      ` OR lower(u.city) = ANY(SELECT lower(x) FROM unnest($${idx}::text[]) x))`
+    );
+    params.push(cities); idx++;
+  }
+  if (minEr != null && !Number.isNaN(minEr)) {
+    conditions.push(`i.engagement_rate >= $${idx}`);
+    params.push(minEr); idx++;
+  }
+  if (gender) {
+    conditions.push(`lower(i.gender) = lower($${idx})`);
+    params.push(gender); idx++;
+  }
+
+  return { conditions, params, nextIdx: idx };
+}
+
 /**
  * Auto-generate a coupon code from prefix + influencer first name.
  * Checks uniqueness; appends numeric suffix if collision.
@@ -814,113 +926,57 @@ const publish = asyncHandler(async (req, res) => {
     // by tier (escrow_fee_tiers) using the engagement+hybrid base, or by
     // brands.escrow_fee_override_pct if set. Captured on the campaigns row
     // and stays for the life of the campaign — see M037.
+    //
+    // open_group materialisation is part of the SAME transaction so a SQL
+    // failure rolls back status='active'. Otherwise an open-group SQL bug
+    // would leave the campaign half-published and unable to retry.
     await db.withTransaction(async (tx) => {
       await pricingService.lockEscrowFeeAtPublish(tx, campaign.id, brand.id);
       await tx.query(
         `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
         [campaign.id]
       );
+      await materialiseOpenGroupInvites(tx, campaign, sets);
     });
   } else {
-    // Conversion-only: no engagement budget, no L2 fee to lock — just activate
-    await db.query(
-      `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
-      [campaign.id]
-    );
+    // Conversion-only: no engagement budget, no L2 fee to lock — wrap status
+    // update + open_group materialisation together for the same atomicity.
+    await db.withTransaction(async (tx) => {
+      await tx.query(
+        `UPDATE campaigns SET status = 'active', published_at = now() WHERE id = $1`,
+        [campaign.id]
+      );
+      await materialiseOpenGroupInvites(tx, campaign, sets);
+    });
   }
 
-  // Fire invites for all handpicked influencers, AND materialise CI rows for
-  // open_group sets so matching influencers see the campaign in their inbox.
-  //
-  // Two distinct concepts for open_group:
-  //   - BROADCAST: every approved influencer matching the filters gets a CI
-  //     row + push. Capped only by OPEN_GROUP_BROADCAST_LIMIT below as a
-  //     runaway-protection guard.
-  //   - SLOT (set.max_cap): how many influencers the brand actually plans to
-  //     work with. Enforced at accept time in offer.controller.accept, not
-  //     here — see SLOT_FULL gate.
-  const OPEN_GROUP_BROADCAST_LIMIT = 1000;
-  for (const set of sets) {
-    if (set.influencer_mode === 'handpick') {
-      const { rows: influencers } = await db.query(
-        `SELECT ci.*, u.fcm_token, u.phone, u.id AS user_id
-         FROM campaign_influencers ci
-         JOIN influencers inf ON inf.id = ci.influencer_id
-         JOIN users u ON u.id = inf.user_id
-         WHERE ci.set_id = $1 AND ci.status = 'invited'`,
-        [set.id]
-      );
-      for (const inf of influencers) {
-        await notificationService.send({
-          userId: inf.user_id,
-          type: 'offer.invited',
-          title: 'New Campaign is Live!',
-          body: 'A campaign you were invited to is now active.',
-          data: { screen: 'offer_inbox', campaign_influencer_id: inf.id },
-          fcmToken: inf.fcm_token,
-          sendSms: false,
-          phone: inf.phone,
-        });
-      }
-    } else if (set.influencer_mode === 'open_group') {
-      // Parse open_group_filters (jsonb on the row already).
-      const f = set.open_group_filters || {};
-      const tiers   = Array.isArray(f.tiers)  && f.tiers.length  ? f.tiers  : null;
-      const niches  = Array.isArray(f.niches) && f.niches.length ? f.niches : null;
-      const cities  = Array.isArray(f.cities) && f.cities.length ? f.cities : null;
-      const minEr   = f.min_er != null && f.min_er !== '' ? parseFloat(f.min_er) : null;
-      const gender  = f.gender && f.gender !== 'any' ? String(f.gender) : null;
-      const perBudget = set.per_influencer_budget != null ? parseFloat(set.per_influencer_budget) : null;
-
-      // Match influencers, skipping anyone already on this campaign (any set,
-      // any status). Highest-followers first so the brand gets the strongest
-      // matches when capped.
-      const { rows: matches } = await db.query(
-        `SELECT i.id, u.id AS user_id, u.fcm_token, u.phone
-           FROM influencers i
-           JOIN users u ON u.id = i.user_id
-          WHERE u.status = 'approved'
-            AND i.id IS NOT NULL
-            AND ( $2::text[] IS NULL OR i.tier = ANY($2) )
-            AND ( $3::text[] IS NULL OR i.niche && $3 OR i.secondary_niche && $3 )
-            AND ( $4::text[] IS NULL OR i.city = ANY($4) OR u.city = ANY($4) )
-            AND ( $5::numeric IS NULL OR i.engagement_rate >= $5 )
-            AND ( $6::text IS NULL OR i.gender = $6 )
-            AND NOT EXISTS (
-              SELECT 1 FROM campaign_influencers ci2
-              JOIN campaign_sets cs2 ON cs2.id = ci2.set_id
-              WHERE cs2.campaign_id = $1 AND ci2.influencer_id = i.id
-            )
-          ORDER BY i.followers_count DESC NULLS LAST, i.created_at ASC
-          LIMIT $7`,
-        [campaign.id, tiers, niches, cities, minEr, gender, OPEN_GROUP_BROADCAST_LIMIT]
-      );
-
-      console.log(`[publish] open_group set ${set.id}: broadcasting to ${matches.length} matches (slot cap ${set.max_cap || 'unset'})`);
-
-      // Insert CI rows + notify in parallel-but-bounded loops.
-      for (const m of matches) {
-        const { rows: insertedRows } = await db.query(
-          `INSERT INTO campaign_influencers
-             (set_id, influencer_id, status, influencer_budget, offer_expires_at)
-           VALUES ($1, $2, 'invited', $3, now() + interval '48 hours')
-           RETURNING id`,
-          [set.id, m.id, perBudget]
-        );
-        const ciId = insertedRows[0]?.id;
-        if (ciId) {
-          await notificationService.send({
-            userId: m.user_id,
-            type: 'offer.invited',
-            title: 'New Campaign is Live!',
-            body: 'A brand has invited you to a new campaign.',
-            data: { screen: 'offer_inbox', campaign_influencer_id: ciId },
-            fcmToken: m.fcm_token,
-            sendSms: false,
-            phone: m.phone,
-          });
-        }
-      }
+  // Post-publish: notify every invited influencer (handpick + open_group)
+  // in one pass. Notifications run outside the tx — a failed push must not
+  // roll back the campaign state, and we don't want SMS retries inside the
+  // critical path.
+  const { rows: invited } = await db.query(
+    `SELECT ci.id, u.id AS user_id, u.fcm_token, u.phone
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN influencers inf ON inf.id = ci.influencer_id
+       JOIN users u ON u.id = inf.user_id
+      WHERE cs.campaign_id = $1 AND ci.status = 'invited'`,
+    [campaign.id]
+  );
+  for (const inv of invited) {
+    try {
+      await notificationService.send({
+        userId:   inv.user_id,
+        type:     'offer.invited',
+        title:    'New Campaign is Live!',
+        body:     'A brand has invited you to a new campaign.',
+        data:     { screen: 'offer_inbox', campaign_influencer_id: inv.id },
+        fcmToken: inv.fcm_token,
+        sendSms:  false,
+        phone:    inv.phone,
+      });
+    } catch (e) {
+      console.error('[publish] notification send failed:', e.message);
     }
   }
 
@@ -1258,50 +1314,24 @@ const openGroupMatches = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   await getCampaignOrThrow(req.params.id, brand.id);
 
-  const { tiers, niches, cities, min_er, gender } = req.query;
+  const toArr = (v) => v == null || v === '' ? null : (Array.isArray(v) ? v : String(v).split(','));
+  const filters = {
+    tiers:  toArr(req.query.tiers),
+    niches: toArr(req.query.niches),
+    cities: toArr(req.query.cities),
+    min_er: req.query.min_er,
+    gender: req.query.gender,
+  };
+  const { conditions, params } = buildOpenGroupMatchClauses(filters, 1);
 
-  const conditions = [`u.status = 'approved'`];
-  const params = [];
-  let idx = 1;
-
-  if (tiers) {
-    const tierArr = Array.isArray(tiers) ? tiers : tiers.split(',');
-    conditions.push(`i.tier = ANY($${idx}::text[])`);
-    params.push(tierArr);
-    idx++;
-  }
-  if (niches) {
-    const nicheArr = Array.isArray(niches) ? niches : niches.split(',');
-    conditions.push(`i.niche && $${idx}::text[]`);
-    params.push(nicheArr);
-    idx++;
-  }
-  if (cities) {
-    const cityArr = Array.isArray(cities) ? cities : cities.split(',');
-    conditions.push(`i.city = ANY($${idx}::text[])`);
-    params.push(cityArr);
-    idx++;
-  }
-  if (min_er) {
-    conditions.push(`i.engagement_rate >= $${idx}`);
-    params.push(parseFloat(min_er));
-    idx++;
-  }
-  if (gender && gender !== 'any') {
-    conditions.push(`i.gender = $${idx}`);
-    params.push(gender);
-    idx++;
-  }
-
-  const where = conditions.join(' AND ');
   const { rows } = await db.query(
     `SELECT i.id, i.instagram_handle, i.followers_count, i.tier,
             u.name AS full_name
-     FROM influencers i
-     JOIN users u ON u.id = i.user_id
-     WHERE ${where}
-     ORDER BY i.followers_count DESC
-     LIMIT 50`,
+       FROM influencers i
+       JOIN users u ON u.id = i.user_id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY i.followers_count DESC
+      LIMIT 200`,
     params
   );
 
