@@ -829,7 +829,9 @@ const publish = asyncHandler(async (req, res) => {
     );
   }
 
-  // Fire invites for all handpicked influencers
+  // Fire invites for all handpicked influencers, AND materialise CI rows for
+  // open_group sets so matching influencers see the campaign in their inbox.
+  const OPEN_GROUP_DEFAULT_CAP = 100;
   for (const set of sets) {
     if (set.influencer_mode === 'handpick') {
       const { rows: influencers } = await db.query(
@@ -851,6 +853,66 @@ const publish = asyncHandler(async (req, res) => {
           sendSms: false,
           phone: inf.phone,
         });
+      }
+    } else if (set.influencer_mode === 'open_group') {
+      // Parse open_group_filters (jsonb on the row already).
+      const f = set.open_group_filters || {};
+      const tiers   = Array.isArray(f.tiers)  && f.tiers.length  ? f.tiers  : null;
+      const niches  = Array.isArray(f.niches) && f.niches.length ? f.niches : null;
+      const cities  = Array.isArray(f.cities) && f.cities.length ? f.cities : null;
+      const minEr   = f.min_er != null && f.min_er !== '' ? parseFloat(f.min_er) : null;
+      const gender  = f.gender && f.gender !== 'any' ? String(f.gender) : null;
+      const cap     = parseInt(set.max_cap, 10) || OPEN_GROUP_DEFAULT_CAP;
+      const perBudget = set.per_influencer_budget != null ? parseFloat(set.per_influencer_budget) : null;
+
+      // Match influencers, skipping anyone already on this campaign (any set,
+      // any status). Highest-followers first so the brand gets the strongest
+      // matches when capped.
+      const { rows: matches } = await db.query(
+        `SELECT i.id, u.id AS user_id, u.fcm_token, u.phone
+           FROM influencers i
+           JOIN users u ON u.id = i.user_id
+          WHERE u.status = 'approved'
+            AND i.id IS NOT NULL
+            AND ( $2::text[] IS NULL OR i.tier = ANY($2) )
+            AND ( $3::text[] IS NULL OR i.niche && $3 OR i.secondary_niche && $3 )
+            AND ( $4::text[] IS NULL OR i.city = ANY($4) OR u.city = ANY($4) )
+            AND ( $5::numeric IS NULL OR i.engagement_rate >= $5 )
+            AND ( $6::text IS NULL OR i.gender = $6 )
+            AND NOT EXISTS (
+              SELECT 1 FROM campaign_influencers ci2
+              JOIN campaign_sets cs2 ON cs2.id = ci2.set_id
+              WHERE cs2.campaign_id = $1 AND ci2.influencer_id = i.id
+            )
+          ORDER BY i.followers_count DESC NULLS LAST, i.created_at ASC
+          LIMIT $7`,
+        [campaign.id, tiers, niches, cities, minEr, gender, cap]
+      );
+
+      console.log(`[publish] open_group set ${set.id}: matched ${matches.length} influencers (cap ${cap})`);
+
+      // Insert CI rows + notify in parallel-but-bounded loops.
+      for (const m of matches) {
+        const { rows: insertedRows } = await db.query(
+          `INSERT INTO campaign_influencers
+             (set_id, influencer_id, status, influencer_budget, offer_expires_at)
+           VALUES ($1, $2, 'invited', $3, now() + interval '48 hours')
+           RETURNING id`,
+          [set.id, m.id, perBudget]
+        );
+        const ciId = insertedRows[0]?.id;
+        if (ciId) {
+          await notificationService.send({
+            userId: m.user_id,
+            type: 'offer.invited',
+            title: 'New Campaign is Live!',
+            body: 'A brand has invited you to a new campaign.',
+            data: { screen: 'offer_inbox', campaign_influencer_id: ciId },
+            fcmToken: m.fcm_token,
+            sendSms: false,
+            phone: m.phone,
+          });
+        }
       }
     }
   }
