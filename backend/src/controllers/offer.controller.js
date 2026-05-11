@@ -51,6 +51,8 @@ async function getCampaignInfluencer(id) {
             cs.campaign_id,
             cs.name AS set_name,
             cs.goal,
+            cs.influencer_mode,
+            cs.max_cap,
             c.brand_id,
             c.allow_negotiation
      FROM campaign_influencers ci
@@ -143,13 +145,34 @@ const accept = asyncHandler(async (req, res) => {
   // contract state machine: invited → accepted → draft contract →
   // pending_influencer → pending_brand → active. Conversion contracts simply
   // skip tranches inside brandSign because effectiveFee is 0.
-  await db.query(
-    `UPDATE campaign_influencers
-     SET status = 'accepted',
-         agreed_fee = COALESCE(agreed_fee, influencer_budget)
-     WHERE id = $1`,
-    [ci.id]
-  );
+  //
+  // open_group sets gate acceptance by `max_cap` — the brand broadcasts to
+  // everyone matching the filters but only signs `max_cap` of them. Lock the
+  // set row so two influencers can't both grab the final seat in a race.
+  await db.withTransaction(async (client) => {
+    if (ci.influencer_mode === 'open_group' && ci.max_cap) {
+      await client.query(`SELECT 1 FROM campaign_sets WHERE id = $1 FOR UPDATE`, [ci.set_id]);
+      const { rows: takenRows } = await client.query(
+        `SELECT COUNT(*)::int AS n FROM campaign_influencers
+         WHERE set_id = $1 AND status IN ('accepted','contracted','active','completed')`,
+        [ci.set_id]
+      );
+      if (takenRows[0].n >= parseInt(ci.max_cap, 10)) {
+        throw new AppError(
+          'SLOT_FULL',
+          'This campaign is fully booked. The brand has already filled all available slots.',
+          422
+        );
+      }
+    }
+    await client.query(
+      `UPDATE campaign_influencers
+       SET status = 'accepted',
+           agreed_fee = COALESCE(agreed_fee, influencer_budget)
+       WHERE id = $1`,
+      [ci.id]
+    );
+  });
 
   const { rows } = await db.query(
     `SELECT * FROM campaign_influencers WHERE id = $1`,

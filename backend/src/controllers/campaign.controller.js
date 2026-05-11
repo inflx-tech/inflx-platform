@@ -831,7 +831,15 @@ const publish = asyncHandler(async (req, res) => {
 
   // Fire invites for all handpicked influencers, AND materialise CI rows for
   // open_group sets so matching influencers see the campaign in their inbox.
-  const OPEN_GROUP_DEFAULT_CAP = 100;
+  //
+  // Two distinct concepts for open_group:
+  //   - BROADCAST: every approved influencer matching the filters gets a CI
+  //     row + push. Capped only by OPEN_GROUP_BROADCAST_LIMIT below as a
+  //     runaway-protection guard.
+  //   - SLOT (set.max_cap): how many influencers the brand actually plans to
+  //     work with. Enforced at accept time in offer.controller.accept, not
+  //     here — see SLOT_FULL gate.
+  const OPEN_GROUP_BROADCAST_LIMIT = 1000;
   for (const set of sets) {
     if (set.influencer_mode === 'handpick') {
       const { rows: influencers } = await db.query(
@@ -862,7 +870,6 @@ const publish = asyncHandler(async (req, res) => {
       const cities  = Array.isArray(f.cities) && f.cities.length ? f.cities : null;
       const minEr   = f.min_er != null && f.min_er !== '' ? parseFloat(f.min_er) : null;
       const gender  = f.gender && f.gender !== 'any' ? String(f.gender) : null;
-      const cap     = parseInt(set.max_cap, 10) || OPEN_GROUP_DEFAULT_CAP;
       const perBudget = set.per_influencer_budget != null ? parseFloat(set.per_influencer_budget) : null;
 
       // Match influencers, skipping anyone already on this campaign (any set,
@@ -886,10 +893,10 @@ const publish = asyncHandler(async (req, res) => {
             )
           ORDER BY i.followers_count DESC NULLS LAST, i.created_at ASC
           LIMIT $7`,
-        [campaign.id, tiers, niches, cities, minEr, gender, cap]
+        [campaign.id, tiers, niches, cities, minEr, gender, OPEN_GROUP_BROADCAST_LIMIT]
       );
 
-      console.log(`[publish] open_group set ${set.id}: matched ${matches.length} influencers (cap ${cap})`);
+      console.log(`[publish] open_group set ${set.id}: broadcasting to ${matches.length} matches (slot cap ${set.max_cap || 'unset'})`);
 
       // Insert CI rows + notify in parallel-but-bounded loops.
       for (const m of matches) {
