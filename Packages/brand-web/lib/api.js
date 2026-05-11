@@ -347,6 +347,12 @@ export const brandInboxApi = {
   summary:        ()      => api.get('/brands/me/inbox-summary'),
   negotiations:   (status = 'awaiting_brand') => api.get(`/brands/me/negotiations?status=${status}`),
   deliverables:   (status = 'submitted')      => api.get(`/brands/me/deliverables?status=${status}`),
+  applications:   ()      => api.get('/brands/me/applications'),
+};
+
+export const applicationApi = {
+  approve: (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/approve-application`),
+  reject:  (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/reject-application`),
 };
 
 export const notificationApi = {

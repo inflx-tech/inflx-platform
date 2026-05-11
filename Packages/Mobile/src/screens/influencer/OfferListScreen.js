@@ -5,9 +5,12 @@ import { influencerApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
 const TABS = [
-  { key: 'active',   label: 'Active',   statusFilter: 'invited,negotiating', emptyIcon: '📩', emptyMsg: 'No active offers right now' },
+  // 'applied' belongs in Active: the influencer is waiting on brand decision.
+  // 'rejected_by_brand' + 'slots_filled' are open-group closed states — show
+  // in Declined so the user knows they didn't get the gig but the offer is over.
+  { key: 'active',   label: 'Active',   statusFilter: 'invited,negotiating,applied', emptyIcon: '📩', emptyMsg: 'No active offers right now' },
   { key: 'accepted', label: 'Accepted', statusFilter: 'accepted',           emptyIcon: '✅', emptyMsg: 'No accepted offers yet' },
-  { key: 'declined', label: 'Declined', statusFilter: 'declined',           emptyIcon: '🚫', emptyMsg: 'No declined offers' },
+  { key: 'declined', label: 'Declined', statusFilter: 'declined,rejected_by_brand,slots_filled', emptyIcon: '🚫', emptyMsg: 'No declined offers' },
   { key: 'expired',  label: 'Expired',  statusFilter: 'expired',            emptyIcon: '⏰', emptyMsg: 'No expired offers' },
   { key: 'all',      label: 'All',      statusFilter: null,                 emptyIcon: '📋', emptyMsg: 'No offers found' },
 ];

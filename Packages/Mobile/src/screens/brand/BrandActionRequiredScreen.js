@@ -8,6 +8,7 @@ import { brandApi } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 
 const TABS = [
+  { key: 'applications',  label: 'Applications',  emptyIcon: '📥', emptyMsg: 'No applications waiting on you' },
   { key: 'negotiations',  label: 'Negotiations',  emptyIcon: '💬', emptyMsg: 'No negotiations waiting on you' },
   { key: 'reviews',       label: 'Content',       emptyIcon: '📹', emptyMsg: 'No content to review' },
   { key: 'signatures',    label: 'Contracts',     emptyIcon: '📝', emptyMsg: 'No contracts to sign' },
@@ -35,8 +36,9 @@ function lockAmount(c) {
 }
 
 export default function BrandActionRequiredScreen({ navigation }) {
-  const [activeTab, setActiveTab] = useState('negotiations');
+  const [activeTab, setActiveTab] = useState('applications');
   const [tabData, setTabData] = useState({
+    applications: { items: [], loading: false, loaded: false },
     negotiations: { items: [], loading: false, loaded: false },
     reviews:      { items: [], loading: false, loaded: false },
     signatures:   { items: [], loading: false, loaded: false },
@@ -50,6 +52,9 @@ export default function BrandActionRequiredScreen({ navigation }) {
   const [signing, setSigning] = useState(false);
   const [retrying, setRetrying] = useState(new Set());
 
+  // Applications tab: per-row pending action so the right card spins
+  const [appBusy, setAppBusy] = useState(new Set());
+
   const loadSummary = useCallback(async () => {
     const r = await brandApi.getInboxSummary();
     if (r.success) setSummary(r.data?.summary || r.data);
@@ -58,17 +63,18 @@ export default function BrandActionRequiredScreen({ navigation }) {
   const loadTab = useCallback(async (key, isRefresh = false) => {
     setTabData(p => ({ ...p, [key]: { ...p[key], loading: !isRefresh } }));
     let r;
-    if (key === 'negotiations') r = await brandApi.listInboxNegotiations('awaiting_brand');
+    if (key === 'applications') r = await brandApi.listInboxApplications();
+    else if (key === 'negotiations') r = await brandApi.listInboxNegotiations('awaiting_brand');
     else if (key === 'reviews') r = await brandApi.listInboxDeliverables('submitted');
     else if (key === 'signatures') r = await brandApi.listPendingContracts();
     else if (key === 'failures') r = await brandApi.listInboxFailures();
     const items = r?.success
-      ? (r.data?.negotiations || r.data?.deliverables || r.data?.contracts || r.data?.failures || [])
+      ? (r.data?.applications || r.data?.negotiations || r.data?.deliverables || r.data?.contracts || r.data?.failures || [])
       : [];
     setTabData(p => ({ ...p, [key]: { items, loading: false, loaded: true } }));
   }, []);
 
-  useEffect(() => { loadSummary(); loadTab('negotiations'); }, [loadSummary, loadTab]);
+  useEffect(() => { loadSummary(); loadTab('applications'); }, [loadSummary, loadTab]);
   useEffect(() => {
     if (!tabData[activeTab].loaded && !tabData[activeTab].loading) loadTab(activeTab);
   }, [activeTab, tabData, loadTab]);
@@ -142,12 +148,50 @@ export default function BrandActionRequiredScreen({ navigation }) {
   const currentData = tabData[activeTab];
   const tabCount = (k) => {
     if (!summary) return null;
+    if (k === 'applications') return summary.pending_applications;
     if (k === 'negotiations') return summary.pending_negotiations;
     if (k === 'reviews')      return summary.pending_reviews;
     if (k === 'signatures')   return summary.pending_signatures;
     if (k === 'failures')     return (summary.contracts_failed || 0) + (summary.pdf_failed || 0);
     return null;
   };
+
+  // ── Applications: approve / reject ─────────────────────────────────────────
+  async function approveApp(a) {
+    setAppBusy(prev => new Set(prev).add(a.campaign_influencer_id));
+    const res = await brandApi.approveApplication(a.campaign_id, a.campaign_influencer_id);
+    setAppBusy(prev => { const n = new Set(prev); n.delete(a.campaign_influencer_id); return n; });
+    if (!res.success) {
+      Alert.alert('Approve failed', res.error?.message || 'Could not approve this application.');
+      return;
+    }
+    const slotsMsg = res.data?.slots_filled
+      ? `\n\nSlots are now full — ${res.data.closed_out_count || 0} other applicant${(res.data.closed_out_count || 0) !== 1 ? 's were' : ' was'} notified that the campaign is closed.`
+      : '';
+    Alert.alert('Approved', `Contract draft sent to @${a.instagram_handle || 'influencer'}.${slotsMsg}`);
+    loadSummary();
+    loadTab('applications', true);
+  }
+  async function rejectApp(a) {
+    Alert.alert(
+      'Reject application',
+      `Reject @${a.instagram_handle || 'this influencer'}? They'll be notified.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Reject', style: 'destructive', onPress: async () => {
+          setAppBusy(prev => new Set(prev).add(a.campaign_influencer_id));
+          const res = await brandApi.rejectApplication(a.campaign_id, a.campaign_influencer_id);
+          setAppBusy(prev => { const n = new Set(prev); n.delete(a.campaign_influencer_id); return n; });
+          if (!res.success) {
+            Alert.alert('Reject failed', res.error?.message || 'Could not reject this application.');
+            return;
+          }
+          loadSummary();
+          loadTab('applications', true);
+        } },
+      ]
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -219,6 +263,52 @@ export default function BrandActionRequiredScreen({ navigation }) {
           </View>
         ) : (
           currentData.items.map((item) => {
+            if (activeTab === 'applications') {
+              const busy = appBusy.has(item.campaign_influencer_id);
+              const followers = item.followers_count ? Number(item.followers_count).toLocaleString('en-IN') : '—';
+              const er = item.engagement_rate != null ? `${parseFloat(item.engagement_rate).toFixed(1)}% ER` : '';
+              return (
+                <View key={item.campaign_influencer_id} style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.cardTitle}>@{item.instagram_handle || '—'}</Text>
+                    <Text style={styles.tierTag}>{item.tier || '—'}</Text>
+                  </View>
+                  <Text style={styles.cardMeta}>
+                    {item.influencer_name ? `${item.influencer_name} · ` : ''}{item.campaign_name}
+                  </Text>
+                  <Text style={styles.cardLine}>
+                    {followers} followers{er ? ` · ${er}` : ''}{item.city ? ` · ${item.city}` : ''}
+                  </Text>
+                  {Array.isArray(item.niche) && item.niche.length > 0 && (
+                    <Text style={styles.cardLine}>Niche: {item.niche.join(', ')}</Text>
+                  )}
+                  <View style={styles.appActions}>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('BrandInfluencerProfile', { influencerId: item.influencer_profile_id })}
+                      style={styles.appProfileLink}
+                    >
+                      <Text style={styles.appProfileLinkText}>View full profile →</Text>
+                    </TouchableOpacity>
+                    <View style={styles.appButtonsRow}>
+                      <TouchableOpacity
+                        style={[styles.appRejectBtn, busy && { opacity: 0.4 }]}
+                        onPress={() => rejectApp(item)}
+                        disabled={busy}
+                      >
+                        <Text style={styles.appRejectText}>Reject</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.appApproveBtn, busy && { opacity: 0.4 }]}
+                        onPress={() => approveApp(item)}
+                        disabled={busy}
+                      >
+                        <Text style={styles.appApproveText}>{busy ? 'Working…' : 'Approve'}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              );
+            }
             if (activeTab === 'negotiations') {
               return (
                 <TouchableOpacity
@@ -387,6 +477,15 @@ const styles = StyleSheet.create({
   cardHint: { fontSize: 11, fontWeight: '700', color: colors.navy, marginTop: 8, textAlign: 'right' },
   cardReviewLink: { fontSize: 11, fontWeight: '700', color: colors.navy, marginTop: 10, textAlign: 'right' },
 
+  tierTag: { fontSize: 10, fontWeight: '700', color: colors.navy, backgroundColor: colors.surface2, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, textTransform: 'uppercase' },
+  appActions: { marginTop: 10, flexDirection: 'column', gap: 8 },
+  appProfileLink: { paddingVertical: 4 },
+  appProfileLinkText: { fontSize: 11, fontWeight: '700', color: colors.navy },
+  appButtonsRow: { flexDirection: 'row', gap: 8 },
+  appApproveBtn: { flex: 1, backgroundColor: colors.navy, paddingVertical: 10, borderRadius: 8, alignItems: 'center' },
+  appApproveText: { fontSize: 12, fontWeight: '700', color: colors.white },
+  appRejectBtn: { flex: 1, backgroundColor: colors.redPale, paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: colors.red },
+  appRejectText: { fontSize: 12, fontWeight: '700', color: colors.red },
   failureTag: { fontSize: 10, fontWeight: '700', color: colors.red, backgroundColor: colors.redPale || '#fee', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, textTransform: 'uppercase' },
   failureError: { fontSize: 12, color: colors.red, marginTop: 6, fontFamily: 'monospace' },
   retryBtn: { backgroundColor: colors.navy, padding: 10, borderRadius: 8, alignItems: 'center', marginTop: 10 },

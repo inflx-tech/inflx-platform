@@ -22,6 +22,10 @@ router.post('/:id/cancel',  ...brandAuth, ctrl.cancel);
 // ── Cancel individual influencer assignment ──────────────────────────────────
 router.post('/:id/influencers/:ciid/cancel', ...brandAuth, ctrl.cancelInfluencer);
 
+// ── Open-group application review (status='applied' → accepted | rejected) ───
+router.post('/:id/influencers/:ciid/approve-application', ...brandAuth, ctrl.approveApplication);
+router.post('/:id/influencers/:ciid/reject-application',  ...brandAuth, ctrl.rejectApplication);
+
 // ── Campaign Sets CRUD ───────────────────────────────────────────────────────
 router.get('/:id/sets',                     ...brandAuth, ctrl.getSets);
 router.post('/:id/sets',                    ...brandAuth, ctrl.createSet);

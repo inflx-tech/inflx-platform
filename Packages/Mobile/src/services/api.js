@@ -167,11 +167,15 @@ export const brandApi = {
   // Mass counter-sign and pending-contracts inbox feed
   listPendingContracts:  () => api.get('/contracts/brand/pending'),
   bulkSignContracts:     (ids) => api.post('/contracts/bulk-sign', { ids }),
-  // Action-Required inbox feeds (one summary + 4 list endpoints)
+  // Action-Required inbox feeds (one summary + 5 list endpoints)
   getInboxSummary:       () => api.get('/brands/me/inbox-summary'),
   listInboxNegotiations: (status = 'awaiting_brand') => api.get(`/brands/me/negotiations?status=${status}`),
   listInboxDeliverables: (status = 'submitted') => api.get(`/brands/me/deliverables?status=${status}`),
   listInboxFailures:     () => api.get('/brands/me/failures'),
+  listInboxApplications: () => api.get('/brands/me/applications'),
+  // Open-group application review (brand picks from applicants)
+  approveApplication:    (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/approve-application`),
+  rejectApplication:     (campaignId, ciId) => api.post(`/campaigns/${campaignId}/influencers/${ciId}/reject-application`),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   // Enquiry leads (follower-submitted enquiries, attributed to influencers)

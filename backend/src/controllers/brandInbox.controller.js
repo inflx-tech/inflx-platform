@@ -167,11 +167,59 @@ const getSummary = asyncHandler(async (req, res) => {
           JOIN campaign_sets cs ON cs.id = ci.set_id
           JOIN campaigns c ON c.id = cs.campaign_id
           WHERE c.brand_id = $1
-            AND con.pdf_generation_error IS NOT NULL) AS pdf_failed`,
+            AND con.pdf_generation_error IS NOT NULL) AS pdf_failed,
+
+       (SELECT COUNT(*)::int FROM campaign_influencers ci
+          JOIN campaign_sets cs ON cs.id = ci.set_id
+          JOIN campaigns c ON c.id = cs.campaign_id
+          WHERE c.brand_id = $1 AND ci.status = 'applied') AS pending_applications`,
     [brandId]
   );
 
   return success(res, { summary: rows[0] });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/brands/me/applications
+// Open-group applications waiting on brand approval. Returned with the
+// influencer's headline analytics so the brand can decide without leaving
+// the inbox. Tap-to-view-full-profile still works via the existing
+// /influencers/:id endpoint.
+// ─────────────────────────────────────────────────────────────────────────────
+const listApplications = asyncHandler(async (req, res) => {
+  const brandId = await getBrandIdOrThrow(req.user.sub);
+
+  const { rows } = await db.query(
+    `SELECT ci.id                AS campaign_influencer_id,
+            ci.influencer_id,
+            ci.influencer_budget,
+            ci.updated_at        AS applied_at,
+            cs.id                AS set_id,
+            cs.name              AS set_name,
+            cs.goal,
+            cs.max_cap,
+            cs.per_influencer_budget,
+            c.id                 AS campaign_id,
+            c.name               AS campaign_name,
+            inf.id               AS influencer_profile_id,
+            inf.instagram_handle,
+            inf.full_name        AS influencer_name,
+            inf.followers_count,
+            inf.engagement_rate,
+            inf.tier,
+            inf.city,
+            inf.niche,
+            inf.profile_image_url
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+       JOIN campaigns c             ON c.id  = cs.campaign_id
+       JOIN influencers inf         ON inf.id = ci.influencer_id
+      WHERE c.brand_id = $1 AND ci.status = 'applied'
+      ORDER BY ci.updated_at DESC`,
+    [brandId]
+  );
+
+  return success(res, { applications: rows });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -238,4 +286,4 @@ const listFailures = asyncHandler(async (req, res) => {
   return success(res, { failures });
 });
 
-module.exports = { listNegotiations, listDeliverables, getSummary, listFailures };
+module.exports = { listNegotiations, listDeliverables, getSummary, listFailures, listApplications };

@@ -236,6 +236,13 @@ export default function OfferDetailScreen({ navigation, route }) {
   const showTranches   = isEngagement || isHybrid;   // No fee → no tranches.
   const allowCommissionNegotiation = offer.allow_commission_negotiation !== false;
 
+  // Open-group flow: influencer applies, brand picks. No negotiation allowed.
+  // Apply button replaces Accept; status='applied' surfaces a waiting state.
+  const isOpenGroup    = offer.influencer_mode === 'open_group';
+  const hasApplied     = offer.status === 'applied';
+  const wasRejected    = offer.status === 'rejected_by_brand';
+  const slotsFilled    = offer.status === 'slots_filled';
+
   // Tranche breakdown (spec defaults: 25/25/50)
   const t1Pct = 25;
   const t2Pct = 25;
@@ -733,20 +740,50 @@ export default function OfferDetailScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* ── Application waiting state (open-group, status='applied') ─────── */}
+      {isOpenGroup && hasApplied && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Application submitted ✓</Text>
+          <Text style={styles.fixedTermsHint}>
+            You've applied to this open call. The brand will review applications and select up to {offer.max_cap || 'their cap of'} influencer{(offer.max_cap || 0) !== 1 ? 's' : ''}. You'll be notified when they decide.
+          </Text>
+        </View>
+      )}
+
+      {/* ── Application closed states ──────────────────────────────────── */}
+      {isOpenGroup && wasRejected && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Not selected this time</Text>
+          <Text style={styles.fixedTermsHint}>
+            The brand chose other applicants for this campaign. Look out for similar opportunities — you can still apply to other open calls.
+          </Text>
+        </View>
+      )}
+      {isOpenGroup && slotsFilled && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Campaign filled</Text>
+          <Text style={styles.fixedTermsHint}>
+            All slots for this campaign were filled by other applicants. We'll surface similar campaigns when they go live.
+          </Text>
+        </View>
+      )}
+
       {/* ── Action Buttons ─────────────────────────────────────────────── */}
       {isActionable && countdown !== 'Expired' && (
         <View style={styles.card}>
           <View style={styles.actions}>
+            {/* Primary action: Apply (open-group) vs Accept Offer (handpick) */}
             <TouchableOpacity
               style={[styles.acceptBtn, actionLoading && styles.disabledBtn]}
               onPress={accept}
               disabled={actionLoading}
             >
-              <Text style={styles.acceptText}>Accept Offer</Text>
+              <Text style={styles.acceptText}>{isOpenGroup ? 'Apply for this offer' : 'Accept Offer'}</Text>
             </TouchableOpacity>
 
             <View style={styles.actionSecondaryRow}>
-              {offer.allow_negotiation !== false && (
+              {/* Negotiate hidden when open-group OR when brand disabled negotiation */}
+              {!isOpenGroup && offer.allow_negotiation !== false && (
                 <TouchableOpacity
                   style={[styles.negotiateBtn, actionLoading && styles.disabledBtn]}
                   onPress={() => { setShowNegotiate(!showNegotiate); setShowDeclineReasons(false); }}
@@ -757,14 +794,23 @@ export default function OfferDetailScreen({ navigation, route }) {
               )}
 
               <TouchableOpacity
-                style={[styles.declineBtn, actionLoading && styles.disabledBtn, offer.allow_negotiation === false && { flex: 1 }]}
+                style={[
+                  styles.declineBtn,
+                  actionLoading && styles.disabledBtn,
+                  (isOpenGroup || offer.allow_negotiation === false) && { flex: 1 },
+                ]}
                 onPress={() => { setShowDeclineReasons(!showDeclineReasons); setShowNegotiate(false); }}
                 disabled={actionLoading}
               >
-                <Text style={styles.declineText}>Decline</Text>
+                <Text style={styles.declineText}>{isOpenGroup ? 'Pass' : 'Decline'}</Text>
               </TouchableOpacity>
             </View>
-            {offer.allow_negotiation === false && (
+            {isOpenGroup && (
+              <Text style={styles.fixedTermsHint}>
+                Open call: apply if interested. Brand picks up to {offer.max_cap || 'their cap of'} influencer{(offer.max_cap || 0) !== 1 ? 's' : ''} from applicants.
+              </Text>
+            )}
+            {!isOpenGroup && offer.allow_negotiation === false && (
               <Text style={styles.fixedTermsHint}>This brand has set fixed terms — Accept or Decline only.</Text>
             )}
           </View>

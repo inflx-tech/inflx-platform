@@ -1244,6 +1244,204 @@ const cancelInfluencer = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Approve / reject an open-group APPLICATION (status='applied' → 'accepted'
+// or 'rejected_by_brand'). Approving triggers the same contract auto-create
+// the handpick accept flow uses. When the brand's approval count for a set
+// hits max_cap, every remaining 'applied' or 'invited' row in that set is
+// moved to 'slots_filled' so the offer disappears from those influencers'
+// inboxes and they get a closing notification.
+//
+// POST /campaigns/:id/influencers/:ciid/approve-application
+// POST /campaigns/:id/influencers/:ciid/reject-application
+// ─────────────────────────────────────────────────────────────────────────────
+
+const approveApplication = asyncHandler(async (req, res) => {
+  const brand    = await getBrandOrThrow(req.user.sub);
+  const campaign = await getCampaignOrThrow(req.params.id, brand.id);
+  const ciid     = req.params.ciid;
+
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.*, cs.campaign_id, cs.influencer_mode, cs.max_cap,
+            i.user_id AS influencer_user_id, u.name AS influencer_name,
+            i.instagram_handle, u.fcm_token AS influencer_fcm_token, u.phone AS influencer_phone
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN influencers i ON i.id = ci.influencer_id
+       JOIN users u ON u.id = i.user_id
+      WHERE ci.id = $1 AND cs.campaign_id = $2`,
+    [ciid, campaign.id]
+  );
+  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Application not found', 404);
+  const ci = ciRows[0];
+
+  if (ci.influencer_mode !== 'open_group') {
+    throw new AppError('VALIDATION_ERROR', 'This action only applies to open-group campaigns.', 422);
+  }
+  if (ci.status !== 'applied') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot approve application in '${ci.status}' status. Must be 'applied'.`,
+      422
+    );
+  }
+
+  let slotsFilled = false;
+  let closedOutCount = 0;
+
+  await db.withTransaction(async (client) => {
+    // Lock the set so concurrent approvals can't overshoot max_cap.
+    await client.query(`SELECT 1 FROM campaign_sets WHERE id = $1 FOR UPDATE`, [ci.set_id]);
+
+    const { rows: takenRows } = await client.query(
+      `SELECT COUNT(*)::int AS n FROM campaign_influencers
+        WHERE set_id = $1 AND status IN ('accepted','contracted','active','completed')`,
+      [ci.set_id]
+    );
+    const cap = parseInt(ci.max_cap, 10) || 0;
+    if (cap > 0 && takenRows[0].n >= cap) {
+      throw new AppError(
+        'SLOT_FULL',
+        `All ${cap} slots are already filled. Revoke an existing approval first if you want to swap.`,
+        422
+      );
+    }
+
+    await client.query(
+      `UPDATE campaign_influencers
+         SET status = 'accepted',
+             agreed_fee = COALESCE(agreed_fee, influencer_budget)
+       WHERE id = $1`,
+      [ci.id]
+    );
+
+    // If THIS approval just filled the cap, auto-close remaining applicants
+    // in the same set. Brand keeps a clean roster, applicants stop seeing
+    // the offer in their active inbox.
+    if (cap > 0 && takenRows[0].n + 1 >= cap) {
+      const { rows: closed } = await client.query(
+        `UPDATE campaign_influencers
+            SET status = 'slots_filled'
+          WHERE set_id = $1 AND status IN ('applied', 'invited')
+          RETURNING id, influencer_id`,
+        [ci.set_id]
+      );
+      closedOutCount = closed.length;
+      slotsFilled = true;
+    }
+  });
+
+  // Approved influencer → contract auto-create (same as handpick accept).
+  let contractError = null;
+  try {
+    const contractService = require('../services/contract.service');
+    await contractService.autoCreate(ci.id);
+  } catch (e) {
+    console.error('[CONTRACT] Auto-create failed on application approval:', e.message);
+    contractError = e.message;
+  }
+
+  // Notify the approved influencer.
+  try {
+    await notificationService.send({
+      userId:   ci.influencer_user_id,
+      type:     'application.approved',
+      title:    'Application approved!',
+      body:     `${campaign.name} approved your application. Review and sign the contract.`,
+      data:     { screen: 'contract_review', campaign_influencer_id: ci.id, campaign_id: campaign.id },
+      fcmToken: ci.influencer_fcm_token,
+      sendSms:  false,
+      phone:    ci.influencer_phone,
+    });
+  } catch (e) { console.error('[NOTIFICATION] application.approved failed:', e.message); }
+
+  // If slots just filled, notify the other applicants.
+  if (slotsFilled && closedOutCount > 0) {
+    try {
+      const { rows: closedUsers } = await db.query(
+        `SELECT u.id AS user_id, u.fcm_token, u.phone
+           FROM campaign_influencers ci
+           JOIN influencers i ON i.id = ci.influencer_id
+           JOIN users u ON u.id = i.user_id
+          WHERE ci.set_id = $1 AND ci.status = 'slots_filled'`,
+        [ci.set_id]
+      );
+      for (const u of closedUsers) {
+        notificationService.send({
+          userId:   u.user_id,
+          type:     'application.slots_filled',
+          title:    'Campaign filled',
+          body:     `"${campaign.name}" filled all positions. We'll surface similar campaigns soon.`,
+          data:     { screen: 'offer_inbox' },
+          fcmToken: u.fcm_token,
+          sendSms:  false,
+          phone:    u.phone,
+        }).catch(() => {});
+      }
+    } catch (e) { console.error('[NOTIFICATION] slots_filled fanout failed:', e.message); }
+  }
+
+  return success(res, {
+    campaign_influencer_id: ci.id,
+    status: 'accepted',
+    slots_filled: slotsFilled,
+    closed_out_count: closedOutCount,
+    contract_pending: !!contractError,
+    contract_error: contractError,
+  });
+});
+
+const rejectApplication = asyncHandler(async (req, res) => {
+  const brand    = await getBrandOrThrow(req.user.sub);
+  const campaign = await getCampaignOrThrow(req.params.id, brand.id);
+  const ciid     = req.params.ciid;
+
+  const { rows: ciRows } = await db.query(
+    `SELECT ci.*, cs.influencer_mode,
+            i.user_id AS influencer_user_id, u.fcm_token AS influencer_fcm_token,
+            u.phone AS influencer_phone, i.instagram_handle
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN influencers i ON i.id = ci.influencer_id
+       JOIN users u ON u.id = i.user_id
+      WHERE ci.id = $1 AND cs.campaign_id = $2`,
+    [ciid, campaign.id]
+  );
+  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Application not found', 404);
+  const ci = ciRows[0];
+
+  if (ci.influencer_mode !== 'open_group') {
+    throw new AppError('VALIDATION_ERROR', 'This action only applies to open-group campaigns.', 422);
+  }
+  if (ci.status !== 'applied') {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Cannot reject application in '${ci.status}' status. Must be 'applied'.`,
+      422
+    );
+  }
+
+  await db.query(
+    `UPDATE campaign_influencers SET status = 'rejected_by_brand' WHERE id = $1`,
+    [ci.id]
+  );
+
+  try {
+    await notificationService.send({
+      userId:   ci.influencer_user_id,
+      type:     'application.rejected',
+      title:    'Application not selected',
+      body:     `The brand chose other applicants for "${campaign.name}". Thanks for applying.`,
+      data:     { screen: 'offer_inbox', campaign_influencer_id: ci.id },
+      fcmToken: ci.influencer_fcm_token,
+      sendSms:  false,
+      phone:    ci.influencer_phone,
+    });
+  } catch (e) { console.error('[NOTIFICATION] application.rejected failed:', e.message); }
+
+  return success(res, { campaign_influencer_id: ci.id, status: 'rejected_by_brand' });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Influencer search for handpick
 // GET /campaigns/:id/influencer-search
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1517,6 +1715,8 @@ module.exports = {
   remove,
   cancel,
   cancelInfluencer,
+  approveApplication,
+  rejectApplication,
   getSets,
   createSet,
   updateSet,

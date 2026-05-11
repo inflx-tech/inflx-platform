@@ -107,6 +107,8 @@ const getMyOffers = asyncHandler(async (req, res) => {
             cs.budget AS set_budget,
             cs.per_influencer_budget,
             cs.formats_json,
+            cs.influencer_mode,
+            cs.max_cap,
             c.name AS campaign_name,
             c.allow_negotiation,
             b.business_name AS brand_name
@@ -142,45 +144,33 @@ const accept = asyncHandler(async (req, res) => {
     );
   }
 
-  // Every goal (engagement / conversion / hybrid) now flows through the
-  // contract state machine: invited → accepted → draft contract →
-  // pending_influencer → pending_brand → active. Conversion contracts simply
-  // skip tranches inside brandSign because effectiveFee is 0.
+  // Two flows diverge here:
   //
-  // open_group sets gate acceptance by `max_cap` — the brand broadcasts to
-  // everyone matching the filters but only signs `max_cap` of them. Lock the
-  // set row so two influencers can't both grab the final seat in a race.
-  await db.withTransaction(async (client) => {
-    if (ci.influencer_mode === 'open_group' && ci.max_cap) {
-      await client.query(`SELECT 1 FROM campaign_sets WHERE id = $1 FOR UPDATE`, [ci.set_id]);
-      const { rows: takenRows } = await client.query(
-        `SELECT COUNT(*)::int AS n FROM campaign_influencers
-         WHERE set_id = $1 AND status IN ('accepted','contracted','active','completed')`,
-        [ci.set_id]
-      );
-      if (takenRows[0].n >= parseInt(ci.max_cap, 10)) {
-        throw new AppError(
-          'SLOT_FULL',
-          'This campaign is fully booked. The brand has already filled all available slots.',
-          422
-        );
-      }
-    }
-    await client.query(
-      `UPDATE campaign_influencers
-       SET status = 'accepted',
-           agreed_fee = COALESCE(agreed_fee, influencer_budget)
-       WHERE id = $1`,
-      [ci.id]
-    );
-  });
+  // 1) handpick — invited → accepted → draft contract → pending_influencer
+  //    → pending_brand → active. Brand picked the influencer up front, so
+  //    accept commits them straight into the contract pipeline.
+  //
+  // 2) open_group — invited → applied → (brand reviews) → accepted →
+  //    contract pipeline as above. Influencer is expressing interest, not
+  //    committing. Brand approves up to max_cap applications; the rest
+  //    get auto-closed to 'slots_filled'.
+  const isOpenGroup = ci.influencer_mode === 'open_group';
+  const nextStatus  = isOpenGroup ? 'applied' : 'accepted';
+
+  await db.query(
+    `UPDATE campaign_influencers
+     SET status = $2,
+         agreed_fee = COALESCE(agreed_fee, influencer_budget)
+     WHERE id = $1`,
+    [ci.id, nextStatus]
+  );
 
   const { rows } = await db.query(
     `SELECT * FROM campaign_influencers WHERE id = $1`,
     [ci.id]
   );
 
-  // Notify brand that influencer accepted the offer
+  // Notify brand. Copy differs by flow so it's clear what's expected next.
   try {
     const { rows: brandNotifRows } = await db.query(
       `SELECT u.id AS user_id, u.fcm_token, c.name AS campaign_name,
@@ -196,29 +186,32 @@ const accept = asyncHandler(async (req, res) => {
       const handle = brandNotifRows[0].instagram_handle || 'An influencer';
       await notificationService.send({
         userId:   brandNotifRows[0].user_id,
-        type:     'offer.accepted',
-        title:    'Offer Accepted!',
-        body:     `@${handle} accepted your offer for ${brandNotifRows[0].campaign_name}`,
+        type:     isOpenGroup ? 'application.received' : 'offer.accepted',
+        title:    isOpenGroup ? 'New application' : 'Offer Accepted!',
+        body:     isOpenGroup
+          ? `@${handle} applied to your campaign "${brandNotifRows[0].campaign_name}"`
+          : `@${handle} accepted your offer for ${brandNotifRows[0].campaign_name}`,
         data:     { screen: 'campaign_detail', campaign_id: ci.campaign_id },
         fcmToken: brandNotifRows[0].fcm_token,
         sendSms:  false,
       });
     }
   } catch (notifErr) {
-    console.error('[NOTIFICATION] offer.accepted send failed:', notifErr.message);
+    console.error('[NOTIFICATION] accept/apply send failed:', notifErr.message);
   }
 
-  // Auto-create the draft contract. Non-fatal — the failure is persisted on
-  // the CI (contract.service.autoCreate) so the UI can show a "contract
-  // pending — retry" banner. Runs for every goal; conversion contracts just
-  // end up with effectiveFee = 0 so brandSign skips tranches.
+  // Auto-create the draft contract ONLY for handpick. Open-group applications
+  // wait for brand approval before a contract is drafted — otherwise we'd be
+  // creating contract rows for every applicant and tearing most of them down.
   let contractError = null;
-  try {
-    const contractService = require('../services/contract.service');
-    await contractService.autoCreate(ci.id);
-  } catch (contractErr) {
-    console.error('[CONTRACT] Auto-create failed on accept:', contractErr.message);
-    contractError = contractErr.message;
+  if (!isOpenGroup) {
+    try {
+      const contractService = require('../services/contract.service');
+      await contractService.autoCreate(ci.id);
+    } catch (contractErr) {
+      console.error('[CONTRACT] Auto-create failed on accept:', contractErr.message);
+      contractError = contractErr.message;
+    }
   }
 
   return success(res, {
@@ -333,6 +326,17 @@ const negotiate = asyncHandler(async (req, res) => {
     throw new AppError(
       'FORBIDDEN',
       'This brand has set fixed terms — please Accept or Decline.',
+      403
+    );
+  }
+
+  // Open-group flow has no negotiation step. Influencer either applies and
+  // the brand picks them, or they reject. Negotiation would muddle the
+  // brand's selection process.
+  if (ci.influencer_mode === 'open_group') {
+    throw new AppError(
+      'FORBIDDEN',
+      'This is an open call. Influencers apply or pass — there is no negotiation step.',
       403
     );
   }
@@ -882,6 +886,8 @@ const getOfferDetail = asyncHandler(async (req, res) => {
             cs.per_influencer_budget,
             cs.coupon_prefix,
             cs.formats_json,
+            cs.influencer_mode,
+            cs.max_cap,
             cs.content_start_date,
             cs.content_end_date,
             c.allow_negotiation,

@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { brandInboxApi, contractApi, fmtRupees } from '../../../lib/api';
+import Link from 'next/link';
+import { brandInboxApi, applicationApi, contractApi, fmtRupees } from '../../../lib/api';
 
 const TABS = [
+  { key: 'applications', label: 'Applications',     desc: 'Open-group applicants waiting on your approve / reject' },
   { key: 'negotiations', label: 'Negotiations',     desc: 'Counter-offers waiting for your response' },
   { key: 'reviews',      label: 'Content reviews',  desc: 'Submitted deliverables to approve / revise' },
   { key: 'signatures',   label: 'Contract signs',   desc: 'Contracts the influencer signed; needs you to countersign' },
@@ -13,6 +15,93 @@ const TABS = [
 function fmtDate(s) {
   if (!s) return '—';
   return new Date(s).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+function ApplicationsTab() {
+  const router = useRouter();
+  const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState({});
+
+  function load() {
+    setLoading(true);
+    brandInboxApi.applications().then(r => {
+      setLoading(false);
+      if (r.success) setRows(r.data?.applications || []);
+    });
+  }
+  useEffect(() => { load(); }, []);
+
+  async function act(a, action) {
+    if (action === 'reject' && !confirm(`Reject @${a.instagram_handle}? They'll be notified.`)) return;
+    setBusy(p => ({ ...p, [a.campaign_influencer_id]: action }));
+    const fn = action === 'approve' ? applicationApi.approve : applicationApi.reject;
+    const res = await fn(a.campaign_id, a.campaign_influencer_id);
+    setBusy(p => { const n = { ...p }; delete n[a.campaign_influencer_id]; return n; });
+    if (!res.success) {
+      alert(res.error?.message || `Could not ${action} application.`);
+      return;
+    }
+    if (action === 'approve' && res.data?.slots_filled) {
+      alert(`Approved. Slots now full — ${res.data.closed_out_count || 0} other applicant(s) were notified.`);
+    }
+    load();
+  }
+
+  if (loading) return <div className="text-sm text-gray-400 p-8 text-center">Loading…</div>;
+  if (rows.length === 0) return <div className="text-sm text-gray-400 p-8 text-center">No applications waiting on you.</div>;
+  return (
+    <div className="space-y-2">
+      {rows.map(a => {
+        const isBusy = !!busy[a.campaign_influencer_id];
+        return (
+          <div key={a.campaign_influencer_id} className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-sm font-bold text-gray-900">@{a.instagram_handle || '—'}</span>
+                  {a.tier && <span className="text-[10px] font-bold uppercase text-navy bg-surface2 px-2 py-0.5 rounded">{a.tier}</span>}
+                  <span className="text-xs text-gray-400">·</span>
+                  <span className="text-xs text-gray-500 truncate">{a.campaign_name} · {a.set_name}</span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {a.influencer_name ? `${a.influencer_name} · ` : ''}
+                  {a.followers_count != null ? `${Number(a.followers_count).toLocaleString('en-IN')} followers` : ''}
+                  {a.engagement_rate != null ? ` · ${parseFloat(a.engagement_rate).toFixed(1)}% ER` : ''}
+                  {a.city ? ` · ${a.city}` : ''}
+                </div>
+                {Array.isArray(a.niche) && a.niche.length > 0 && (
+                  <div className="text-[11px] text-gray-500 mt-0.5">Niche: {a.niche.join(', ')}</div>
+                )}
+              </div>
+              <Link
+                href={`/dashboard/influencers/${a.influencer_profile_id}`}
+                className="text-xs font-bold text-navy whitespace-nowrap"
+              >
+                View profile →
+              </Link>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => act(a, 'reject')}
+                disabled={isBusy}
+                className="flex-1 text-xs font-bold text-red-600 border border-red-300 bg-red-50 rounded-lg py-2 disabled:opacity-40"
+              >
+                {isBusy === 'reject' ? 'Rejecting…' : 'Reject'}
+              </button>
+              <button
+                onClick={() => act(a, 'approve')}
+                disabled={isBusy}
+                className="flex-1 text-xs font-bold text-white bg-navy rounded-lg py-2 disabled:opacity-40"
+              >
+                {isBusy === 'approve' ? 'Approving…' : 'Approve'}
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function NegotiationsTab() {
@@ -136,6 +225,7 @@ function InboxPageInner() {
   const tab = TABS.find(t => t.key === params.get('tab')) || TABS[0];
 
   const Body = {
+    applications: ApplicationsTab,
     negotiations: NegotiationsTab,
     reviews:      ReviewsTab,
     signatures:   SignaturesTab,

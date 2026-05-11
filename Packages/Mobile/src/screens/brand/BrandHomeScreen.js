@@ -119,6 +119,7 @@ export default function BrandHomeScreen({ navigation }) {
       {(() => {
         if (!inboxSummary) return null;
         const totals =
+          (inboxSummary.pending_applications || 0) +
           (inboxSummary.pending_negotiations || 0) +
           (inboxSummary.pending_reviews || 0) +
           (inboxSummary.pending_signatures || 0) +
@@ -126,6 +127,7 @@ export default function BrandHomeScreen({ navigation }) {
           (inboxSummary.pdf_failed || 0);
         if (totals === 0) return null;
         const parts = [];
+        if (inboxSummary.pending_applications) parts.push(`${inboxSummary.pending_applications} application${inboxSummary.pending_applications !== 1 ? 's' : ''}`);
         if (inboxSummary.pending_negotiations) parts.push(`${inboxSummary.pending_negotiations} negotiation${inboxSummary.pending_negotiations !== 1 ? 's' : ''}`);
         if (inboxSummary.pending_reviews)      parts.push(`${inboxSummary.pending_reviews} review${inboxSummary.pending_reviews !== 1 ? 's' : ''}`);
         if (inboxSummary.pending_signatures)   parts.push(`${inboxSummary.pending_signatures} contract${inboxSummary.pending_signatures !== 1 ? 's' : ''}`);
