@@ -174,4 +174,68 @@ const getSummary = asyncHandler(async (req, res) => {
   return success(res, { summary: rows[0] });
 });
 
-module.exports = { listNegotiations, listDeliverables, getSummary };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/brands/me/failures
+// Unified list of two failure kinds the brand can retry from the inbox UI:
+//   - contract_create_failed: campaign_influencer accepted, but auto-contract
+//     row was never created (retry via POST /contracts/by-ci/:ciId/retry)
+//   - pdf_failed: contract exists but PDF generation errored (retry via
+//     POST /contracts/:id/regenerate-pdf)
+// Each row carries `kind`, a stable `id` to call retry against, and the
+// failure message so the UI can show why it failed.
+// ─────────────────────────────────────────────────────────────────────────────
+const listFailures = asyncHandler(async (req, res) => {
+  const brandId = await getBrandIdOrThrow(req.user.sub);
+
+  const { rows: createFails } = await db.query(
+    `SELECT 'contract_create_failed' AS kind,
+            ci.id                AS id,
+            ci.contract_create_error AS error_message,
+            ci.updated_at        AS occurred_at,
+            cs.name              AS set_name,
+            c.id                 AS campaign_id,
+            c.name               AS campaign_name,
+            inf.instagram_handle AS influencer_handle,
+            inf.full_name        AS influencer_name
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c     ON c.id  = cs.campaign_id
+       JOIN influencers inf ON inf.id = ci.influencer_id
+      WHERE c.brand_id = $1
+        AND ci.contract_create_error IS NOT NULL
+        AND ci.status = 'accepted'
+      ORDER BY ci.updated_at DESC`,
+    [brandId]
+  );
+
+  const { rows: pdfFails } = await db.query(
+    `SELECT 'pdf_failed' AS kind,
+            con.id               AS id,
+            con.pdf_generation_error AS error_message,
+            con.pdf_generated_at AS occurred_at,
+            cs.name              AS set_name,
+            c.id                 AS campaign_id,
+            c.name               AS campaign_name,
+            inf.instagram_handle AS influencer_handle,
+            inf.full_name        AS influencer_name
+       FROM contracts con
+       JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c     ON c.id  = cs.campaign_id
+       JOIN influencers inf ON inf.id = ci.influencer_id
+      WHERE c.brand_id = $1
+        AND con.pdf_generation_error IS NOT NULL
+      ORDER BY con.pdf_generated_at DESC NULLS LAST`,
+    [brandId]
+  );
+
+  const failures = [...createFails, ...pdfFails].sort((a, b) => {
+    const at = new Date(a.occurred_at || 0).getTime();
+    const bt = new Date(b.occurred_at || 0).getTime();
+    return bt - at;
+  });
+
+  return success(res, { failures });
+});
+
+module.exports = { listNegotiations, listDeliverables, getSummary, listFailures };

@@ -29,6 +29,7 @@ router.post('/resubmit',  authenticate, requireRole('brand'), ctrl.resubmit);
 router.get('/me/inbox-summary',  authenticate, requireRole('brand'), inboxCtrl.getSummary);
 router.get('/me/negotiations',   authenticate, requireRole('brand'), inboxCtrl.listNegotiations);
 router.get('/me/deliverables',   authenticate, requireRole('brand'), inboxCtrl.listDeliverables);
+router.get('/me/failures',       authenticate, requireRole('brand'), inboxCtrl.listFailures);
 
 // Escrow overview (Phase 3 — Block E)
 router.get('/me/escrow', authenticate, requireRole('brand'), getBrandEscrow);

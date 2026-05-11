@@ -162,6 +162,15 @@ export const brandApi = {
   approveContract:   (id, data) => api.post(`/contracts/${id}/approve`, data),
   getContractPdfUrl: (id) => api.get(`/contracts/${id}/pdf-url`),
   regenerateContractPdf: (id) => api.post(`/contracts/${id}/regenerate-pdf`),
+  retryContractCreate:   (ciId) => api.post(`/contracts/by-ci/${ciId}/retry`),
+  // Mass counter-sign and pending-contracts inbox feed
+  listPendingContracts:  () => api.get('/contracts/brand/pending'),
+  bulkSignContracts:     (ids) => api.post('/contracts/bulk-sign', { ids }),
+  // Action-Required inbox feeds (one summary + 4 list endpoints)
+  getInboxSummary:       () => api.get('/brands/me/inbox-summary'),
+  listInboxNegotiations: (status = 'awaiting_brand') => api.get(`/brands/me/negotiations?status=${status}`),
+  listInboxDeliverables: (status = 'submitted') => api.get(`/brands/me/deliverables?status=${status}`),
+  listInboxFailures:     () => api.get('/brands/me/failures'),
   getNotifications: () => api.get('/notifications'),
   markAllNotificationsRead: () => api.post('/notifications/read-all'),
   // Enquiry leads (follower-submitted enquiries, attributed to influencers)

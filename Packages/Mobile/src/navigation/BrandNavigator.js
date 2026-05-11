@@ -18,6 +18,7 @@ import BrandEnquiriesScreen from '../screens/brand/BrandEnquiriesScreen';
 import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
 import BrandInfluencerBrowseScreen from '../screens/brand/BrandInfluencerBrowseScreen';
 import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfileScreen';
+import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 
 const Tab = createBottomTabNavigator();
@@ -27,6 +28,7 @@ function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="BrandHome" component={BrandHomeScreen} />
+      <Stack.Screen name="BrandActionRequired" component={BrandActionRequiredScreen} />
       <Stack.Screen name="CampaignDetail" component={BrandCampaignDetailScreen} />
       <Stack.Screen name="BrandNegotiation" component={BrandNegotiationScreen} />
       <Stack.Screen name="BrandContract" component={BrandContractScreen} />

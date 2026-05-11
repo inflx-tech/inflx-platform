@@ -11,17 +11,20 @@ import { openWebDashboard } from '../../utils/openWebDashboard';
 export default function BrandHomeScreen({ navigation }) {
   const [brand, setBrand]       = useState(null);
   const [campaigns, setCampaigns] = useState([]);
+  const [inboxSummary, setInboxSummary] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   async function load() {
-    const [brandRes, campRes] = await Promise.all([
+    const [brandRes, campRes, inboxRes] = await Promise.all([
       brandApi.getMe(),
       brandApi.getCampaigns(),
+      brandApi.getInboxSummary().catch(() => null),
     ]);
     setLoading(false);
     if (brandRes.success) setBrand(brandRes.data?.brand || brandRes.data);
     if (campRes.success) setCampaigns(campRes.data?.campaigns || []);
+    if (inboxRes?.success) setInboxSummary(inboxRes.data?.summary || inboxRes.data);
   }
 
   useFocusEffect(
@@ -110,6 +113,39 @@ export default function BrandHomeScreen({ navigation }) {
           <Text style={styles.topupBtnText}>+ Top Up Wallet</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Action Required — counts of items waiting on the brand. Hidden when
+          nothing is pending. Tap → opens the unified Action Required hub. */}
+      {(() => {
+        if (!inboxSummary) return null;
+        const totals =
+          (inboxSummary.pending_negotiations || 0) +
+          (inboxSummary.pending_reviews || 0) +
+          (inboxSummary.pending_signatures || 0) +
+          (inboxSummary.contracts_failed || 0) +
+          (inboxSummary.pdf_failed || 0);
+        if (totals === 0) return null;
+        const parts = [];
+        if (inboxSummary.pending_negotiations) parts.push(`${inboxSummary.pending_negotiations} negotiation${inboxSummary.pending_negotiations !== 1 ? 's' : ''}`);
+        if (inboxSummary.pending_reviews)      parts.push(`${inboxSummary.pending_reviews} review${inboxSummary.pending_reviews !== 1 ? 's' : ''}`);
+        if (inboxSummary.pending_signatures)   parts.push(`${inboxSummary.pending_signatures} contract${inboxSummary.pending_signatures !== 1 ? 's' : ''}`);
+        const failures = (inboxSummary.contracts_failed || 0) + (inboxSummary.pdf_failed || 0);
+        if (failures)                          parts.push(`${failures} failure${failures !== 1 ? 's' : ''}`);
+        return (
+          <TouchableOpacity
+            style={styles.actionRequiredCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('BrandActionRequired')}
+          >
+            <Text style={styles.actionRequiredIcon}>⚠️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.actionRequiredTitle}>Action Required ({totals})</Text>
+              <Text style={styles.actionRequiredBody}>{parts.join(' · ')}</Text>
+            </View>
+            <Text style={styles.actionRequiredArrow}>›</Text>
+          </TouchableOpacity>
+        );
+      })()}
 
       {/* Context-aware wallet alert — only shown when a campaign is actually
           blocked on funds. Tapping opens the wallet top-up flow directly. */}
@@ -230,6 +266,16 @@ const styles = StyleSheet.create({
   alertTitle: { fontSize: 13, color: colors.orange, fontWeight: '800', marginBottom: 3 },
   alertBody:  { fontSize: 11, color: colors.orange, opacity: 0.9, lineHeight: 15, marginBottom: 6 },
   alertCta:   { fontSize: 12, color: colors.orange, fontWeight: '800' },
+  actionRequiredCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.white, borderRadius: 14, padding: 14,
+    marginHorizontal: 16, marginTop: 12,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  actionRequiredIcon: { fontSize: 24 },
+  actionRequiredTitle: { fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 2 },
+  actionRequiredBody:  { fontSize: 11, color: colors.t3 },
+  actionRequiredArrow: { fontSize: 22, color: colors.t3 },
   statusBanner: { margin: 16, marginBottom: 0, padding: 12, borderRadius: 12, borderWidth: 1 },
   statusBannerWarn:  { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
   statusBannerError: { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
