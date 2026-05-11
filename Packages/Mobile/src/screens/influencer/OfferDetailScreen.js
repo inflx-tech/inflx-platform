@@ -384,7 +384,14 @@ export default function OfferDetailScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* Deliverables list */}
+        {/* Deliverables list ─────────────────────────────────────────────
+            Three states:
+            1. Post-sign: deliverables table has rows (one per item). Use those.
+            2. Pre-sign: no deliverable rows yet, but the campaign set's
+               formats_json defines what you'll be asked to produce after
+               signing. Parse it and show counts so the influencer can size
+               up the work before accepting.
+            3. Neither (legacy/broken row): single deliverable_type fallback. */}
         {deliverables.length > 0 ? (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Deliverables Required</Text>
@@ -405,14 +412,58 @@ export default function OfferDetailScreen({ navigation, route }) {
               </View>
             ))}
           </View>
-        ) : (
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Deliverable</Text>
-            <Text style={styles.infoValue}>
-              {DELIVERABLE_LABELS[offer.deliverable_type] || offer.deliverable_type || 'To be confirmed'}
-            </Text>
-          </View>
-        )}
+        ) : (() => {
+          // Parse formats_json (string-or-object array). Normalise to
+          // [{ type: canonical, count }] then aggregate counts per type.
+          const FORMAT_ALIAS = {
+            'instagram reel':   'reel',
+            'instagram post':   'post',
+            'instagram story':  'story',
+            'instagram stories':'story',
+            'youtube short':    'youtube_short',
+            'youtube video':    'youtube_video',
+          };
+          const toCanonical = (raw) => {
+            if (!raw) return 'reel';
+            const key = String(raw).toLowerCase().trim();
+            return FORMAT_ALIAS[key] || key.replace(/\s+/g, '_');
+          };
+          let formats = offer.formats_json;
+          if (typeof formats === 'string') { try { formats = JSON.parse(formats); } catch { formats = null; } }
+          if (Array.isArray(formats) && formats.length > 0) {
+            const counts = {};
+            for (const f of formats) {
+              let type, count;
+              if (typeof f === 'string') { type = toCanonical(f); count = 1; }
+              else { type = toCanonical(f.type || f.name || f.label); count = Math.max(1, parseInt(f.count, 10) || 1); }
+              counts[type] = (counts[type] || 0) + count;
+            }
+            return (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>What You'll Deliver</Text>
+                <Text style={styles.deliverableHint}>For the fee shown above, you'll create:</Text>
+                {Object.entries(counts).map(([type, n]) => (
+                  <View key={type} style={styles.deliverableRow}>
+                    <View style={styles.deliverableDot} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.deliverableType}>
+                        {DELIVERABLE_LABELS[type] || type} {n > 1 ? `x${n}` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          }
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Deliverable</Text>
+              <Text style={styles.infoValue}>
+                {DELIVERABLE_LABELS[offer.deliverable_type] || offer.deliverable_type || 'To be confirmed'}
+              </Text>
+            </View>
+          );
+        })()}
 
         {/* Posting date / deadlines */}
         <View style={styles.infoGrid}>
@@ -983,6 +1034,7 @@ const styles = StyleSheet.create({
   },
   deliverableType: { fontSize: 13, fontWeight: '600', color: colors.t1 },
   deliverableDeadline: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  deliverableHint: { fontSize: 12, color: colors.t3, marginBottom: 8 },
 
   // Brief
   briefBox: {
