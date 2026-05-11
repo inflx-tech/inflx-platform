@@ -108,6 +108,13 @@ export default function BrandWalletScreen({ navigation }) {
   const [verifying, setVerifying]       = useState(false);
   const pendingOrderRef = useRef(null);
 
+  // Payout bank details — stored under brand.listing_data.bank_details
+  const [brand, setBrand]                = useState(null);
+  const [bank, setBank]                  = useState({
+    account_holder_name: '', bank_name: '', account_number: '', ifsc_code: '', upi_id: '',
+  });
+  const [savingBank, setSavingBank]      = useState(false);
+
   // ── Data loading ────────────────────────────────────────────────────────────
 
   async function load() {
@@ -122,9 +129,10 @@ export default function BrandWalletScreen({ navigation }) {
       return;
     }
 
-    const [walletRes, txRes] = await Promise.all([
+    const [walletRes, txRes, brandRes] = await Promise.all([
       brandApi.getWallet(),
       brandApi.getWalletTransactions(),
+      brandApi.getMe().catch(() => null),
     ]);
     setLoading(false);
 
@@ -142,6 +150,53 @@ export default function BrandWalletScreen({ navigation }) {
     if (txRes.success) {
       setTxns(txRes.data?.transactions || []);
     }
+
+    if (brandRes?.success) {
+      const b = brandRes.data?.brand || brandRes.data;
+      setBrand(b);
+      const bd = b?.listing_data?.bank_details || {};
+      setBank({
+        account_holder_name: bd.account_holder_name || '',
+        bank_name:           bd.bank_name || '',
+        account_number:      bd.account_number || '',
+        ifsc_code:           bd.ifsc_code || '',
+        upi_id:              bd.upi_id || '',
+      });
+    }
+  }
+
+  // ── Bank details (payout) ──────────────────────────────────────────────────
+
+  async function saveBankDetails() {
+    const holder = bank.account_holder_name.trim();
+    const acct   = bank.account_number.trim();
+    const ifsc   = bank.ifsc_code.trim().toUpperCase();
+    if (!holder)  { Alert.alert('Required', 'Account holder name is required.'); return; }
+    if (!acct)    { Alert.alert('Required', 'Account number is required.'); return; }
+    if (!ifsc)    { Alert.alert('Required', 'IFSC code is required.'); return; }
+
+    setSavingBank(true);
+    const currentLd = brand?.listing_data || {};
+    const payload = {
+      listing_data: {
+        ...currentLd,
+        bank_details: {
+          account_holder_name: holder,
+          bank_name:           bank.bank_name.trim(),
+          account_number:      acct,
+          ifsc_code:           ifsc,
+          upi_id:              bank.upi_id.trim(),
+        },
+      },
+    };
+    const res = await brandApi.updateMe(payload);
+    setSavingBank(false);
+    if (!res.success) {
+      Alert.alert('Save failed', res.error?.message || 'Could not save payout details.');
+      return;
+    }
+    Alert.alert('Saved', 'Payout details saved. You can now receive payouts to this account.');
+    setBrand(prev => ({ ...prev, listing_data: payload.listing_data }));
   }
 
   useEffect(() => { load(); }, []);
@@ -346,6 +401,84 @@ export default function BrandWalletScreen({ navigation }) {
           )}
         </View>
 
+        {/* ── Payout details ─────────────────────────────────────────────
+            Bank account the brand will receive payouts into. Mirrors the
+            web wallet page — stored under brand.listing_data.bank_details. */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payout Details</Text>
+          <Text style={styles.bankHint}>Where refunds and payouts will land.</Text>
+
+          <View style={styles.bankField}>
+            <Text style={styles.bankLabel}>Account holder name *</Text>
+            <TextInput
+              style={styles.bankInput}
+              value={bank.account_holder_name}
+              onChangeText={(v) => setBank(p => ({ ...p, account_holder_name: v }))}
+              placeholder="As on bank account"
+              placeholderTextColor={colors.t3}
+            />
+          </View>
+
+          <View style={styles.bankField}>
+            <Text style={styles.bankLabel}>Bank name</Text>
+            <TextInput
+              style={styles.bankInput}
+              value={bank.bank_name}
+              onChangeText={(v) => setBank(p => ({ ...p, bank_name: v }))}
+              placeholder="e.g. HDFC Bank"
+              placeholderTextColor={colors.t3}
+            />
+          </View>
+
+          <View style={styles.bankField}>
+            <Text style={styles.bankLabel}>Account number *</Text>
+            <TextInput
+              style={styles.bankInput}
+              value={bank.account_number}
+              onChangeText={(v) => setBank(p => ({ ...p, account_number: v.replace(/\D/g, '') }))}
+              placeholder="Digits only"
+              placeholderTextColor={colors.t3}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.bankField}>
+            <Text style={styles.bankLabel}>IFSC code *</Text>
+            <TextInput
+              style={styles.bankInput}
+              value={bank.ifsc_code}
+              onChangeText={(v) => setBank(p => ({ ...p, ifsc_code: v.toUpperCase() }))}
+              placeholder="e.g. HDFC0001234"
+              placeholderTextColor={colors.t3}
+              autoCapitalize="characters"
+              maxLength={11}
+            />
+          </View>
+
+          <View style={styles.bankField}>
+            <Text style={styles.bankLabel}>UPI ID</Text>
+            <TextInput
+              style={styles.bankInput}
+              value={bank.upi_id}
+              onChangeText={(v) => setBank(p => ({ ...p, upi_id: v }))}
+              placeholder="e.g. brand@hdfc"
+              placeholderTextColor={colors.t3}
+              autoCapitalize="none"
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.bankSaveBtn, savingBank && { opacity: 0.5 }]}
+            onPress={saveBankDetails}
+            disabled={savingBank}
+          >
+            {savingBank
+              ? <ActivityIndicator color={colors.white} size="small" />
+              : <Text style={styles.bankSaveBtnText}>Save Payout Details</Text>
+            }
+          </TouchableOpacity>
+        </View>
+
         {/* ── Recent Transactions ──────────────────────────────────────── */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Transactions</Text>
@@ -471,6 +604,20 @@ const styles = StyleSheet.create({
   // Verifying state
   verifyingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.navyPale, borderRadius: 8 },
   verifyingText: { fontSize: 12, fontWeight: '600', color: colors.navy },
+
+  bankHint:        { fontSize: 11, color: colors.t3, marginTop: -4, marginBottom: 12 },
+  bankField:       { marginBottom: 10 },
+  bankLabel:       { fontSize: 11, fontWeight: '700', color: colors.t2, marginBottom: 4 },
+  bankInput:       {
+    borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.t1,
+    backgroundColor: colors.white,
+  },
+  bankSaveBtn:     {
+    marginTop: 8, backgroundColor: colors.navy, borderRadius: 10,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  bankSaveBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
 
   // Transactions
   emptyTx: { paddingVertical: 24, alignItems: 'center' },

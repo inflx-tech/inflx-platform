@@ -16,6 +16,18 @@ const TIERS  = [
   { key: 'mega',  label: 'Mega' },
 ];
 
+// Sort modes match the brand-web influencer search dropdown. The backend
+// /influencers/search endpoint accepts these keys via ?sort=...
+const SORTS = [
+  { key: 'rank',         label: 'Best fit' },
+  { key: 'view_er',      label: 'Best ER' },
+  { key: 'followers',    label: 'Most followers' },
+  { key: 'active',       label: 'Most active' },
+  { key: 'growth',       label: 'Highest growth' },
+  { key: 'cheapest',     label: 'Lowest rate' },
+  { key: 'most_collabs', label: 'Most collabs' },
+];
+
 export default function BrandInfluencerBrowseScreen({ navigation }) {
   const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -29,9 +41,10 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
   const [minFollowers, setMinFollowers] = useState('');
   const [minER, setMinER]         = useState('');
   const [city, setCity]           = useState('');
+  const [sort, setSort]           = useState('rank');
 
-  async function load() {
-    const params = { limit: 50 };
+  async function load(overrides = {}) {
+    const params = { limit: 50, sort: overrides.sort != null ? overrides.sort : sort };
     if (q.trim()) params.q = q.trim();
     if (niche)   params.niche = niche;
     if (tier)    params.tier = tier;
@@ -55,6 +68,14 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
   function handleSearchSubmit() {
     setLoading(true);
     load();
+  }
+
+  function changeSort(newSort) {
+    if (newSort === sort) return;
+    setSort(newSort);
+    setLoading(true);
+    // Pass the new sort directly so we don't race React's state batching.
+    load({ sort: newSort });
   }
 
   function clearFilters() {
@@ -96,6 +117,26 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
           <Text style={styles.searchBtnText}>Search</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Sort chips — server-side via /influencers/search?sort=... */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.sortRow}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
+      >
+        {SORTS.map(s => (
+          <TouchableOpacity
+            key={s.key}
+            style={[styles.sortChip, sort === s.key && styles.sortChipActive]}
+            onPress={() => changeSort(s.key)}
+          >
+            <Text style={[styles.sortChipText, sort === s.key && styles.sortChipTextActive]}>
+              {s.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
       {/* Filter toggle */}
       <TouchableOpacity style={styles.filterToggle} onPress={() => setExpandFilters(!expandFilters)}>
@@ -265,6 +306,11 @@ const styles = StyleSheet.create({
   searchBtn:  { backgroundColor: colors.navy, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   searchBtnText: { color: colors.white, fontWeight: '800', fontSize: 12 },
 
+  sortRow:           { backgroundColor: colors.bg, paddingTop: 6, paddingBottom: 4, flexGrow: 0 },
+  sortChip:          { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
+  sortChipActive:    { backgroundColor: colors.t1, borderColor: colors.t1 },
+  sortChipText:      { fontSize: 11, fontWeight: '600', color: colors.t3 },
+  sortChipTextActive:{ color: colors.white },
   filterToggle:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: colors.bg },
   filterToggleText: { fontSize: 12, fontWeight: '700', color: colors.t2 },
   filterToggleArrow:{ fontSize: 10, color: colors.t3 },

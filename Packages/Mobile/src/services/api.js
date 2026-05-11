@@ -145,6 +145,7 @@ export const brandApi = {
   getCampaign: (id) => api.get(`/campaigns/${id}`),
   getCampaignLive: (id) => api.get(`/campaigns/${id}/live`),
   cancelCampaign: (id) => api.post(`/campaigns/${id}/cancel`),
+  deleteCampaign: (id) => api.delete(`/campaigns/${id}`),
   reviewDeliverable: (id, data) => api.post(`/deliverables/${id}/review`, data),
   confirmLive: (id) => api.post(`/deliverables/${id}/confirm-live`),
   getNegotiation: (id) => api.get(`/negotiations/${id}`),
