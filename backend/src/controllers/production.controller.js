@@ -20,6 +20,11 @@ const asyncHandler = require('../utils/asyncHandler');
 // Look up the contract + the parties; we need both user_ids to authorise
 // + later to push notifications to the OTHER party.
 async function getContractParties(contractId) {
+  // campaign_influencers has set_id, not campaign_id — go through
+  // campaign_sets to reach the campaign. The old JOIN `ci.campaign_id`
+  // didn't exist as a column and silently 500'd every production endpoint
+  // call. (Phase P shipped with this SQL; it never got exercised end-to-end
+  // until the user hit it in the new flow.)
   const { rows } = await db.query(
     `SELECT c.id, c.production_mode, c.campaign_influencer_id,
             inf_u.id  AS influencer_user_id, inf_u.fcm_token AS influencer_fcm,
@@ -31,7 +36,8 @@ async function getContractParties(contractId) {
             b.business_name AS brand_name
      FROM contracts c
      JOIN campaign_influencers ci ON ci.id = c.campaign_influencer_id
-     JOIN campaigns        camp ON camp.id = ci.campaign_id
+     JOIN campaign_sets    cs   ON cs.id  = ci.set_id
+     JOIN campaigns        camp ON camp.id = cs.campaign_id
      JOIN brands           b   ON b.id   = camp.brand_id
      JOIN users            b_u ON b_u.id = b.user_id
      JOIN influencers      inf ON inf.id = ci.influencer_id
