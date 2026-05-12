@@ -857,14 +857,42 @@ function ProductionPanel({ contractId }) {
     );
   }
   if (!event) {
+    // No event yet — let the brand initialise one directly. Same flow for
+    // legacy contracts (pre-Phase P) and for cases where auto-create at
+    // brand-sign didn't fire.
+    async function initialiseAs(m) {
+      if (m === 'remote' && !confirm('Switch to remote? No coordination needed — content is created from your brief alone.')) return;
+      setSaving(true); setError(null);
+      const res = await productionApi.initialise(contractId, m);
+      setSaving(false);
+      if (res.success) load();
+      else setError(res.error?.message || 'Could not initialise');
+    }
     return (
       <div className="p-5 border-t border-gray-100">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-          <div className="font-bold mb-1">
-            {mode === 'visit' ? '🏬 Visit production' : mode === 'shipment' ? '📦 Shipment production' : 'Production'}
-          </div>
-          Coordination setup hasn't initialised for this contract yet. This usually means it's a legacy contract from before the production-coordination flow was deployed. Brand-sign once more to trigger setup, or contact support.
+        <div className="text-xs font-bold text-gray-700 mb-1">Set up production</div>
+        <div className="text-[11px] text-gray-500 mb-3">
+          Pick how the influencer will get what they need for the shoot.
         </div>
+        <div className="grid grid-cols-3 gap-2">
+          <button onClick={() => initialiseAs('visit')} disabled={saving}
+            className="py-4 px-3 bg-white border-2 border-gray-200 hover:border-navy rounded-xl text-center disabled:opacity-50">
+            <div className="text-2xl mb-1">🏬</div>
+            <div className="text-xs font-bold text-gray-700">Visit</div>
+          </button>
+          <button onClick={() => initialiseAs('shipment')} disabled={saving}
+            className="py-4 px-3 bg-white border-2 border-gray-200 hover:border-navy rounded-xl text-center disabled:opacity-50">
+            <div className="text-2xl mb-1">📦</div>
+            <div className="text-xs font-bold text-gray-700">Shipment</div>
+          </button>
+          <button onClick={() => initialiseAs('remote')} disabled={saving}
+            className="py-4 px-3 bg-white border-2 border-gray-200 hover:border-navy rounded-xl text-center disabled:opacity-50">
+            <div className="text-2xl mb-1">💻</div>
+            <div className="text-xs font-bold text-gray-700">Remote</div>
+          </button>
+        </div>
+        {error && <div className="mt-2 text-[11px] text-red-700">{error}</div>}
+        {saving && <div className="mt-2 text-[11px] text-gray-500">Setting up…</div>}
       </div>
     );
   }

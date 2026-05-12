@@ -83,6 +83,36 @@ function notify(targetUser, fcmToken, phone, type, title, body, data) {
 
 // ─── Endpoints ──────────────────────────────────────────────────────────────
 
+// POST /v1/contracts/:id/production/initialise  (brand only)
+// Manual escape hatch when the production_event row is missing — usually
+// because the contract was signed before Phase P shipped, or the brand
+// picked production_mode after activation. Forces:
+//   1. contracts.production_mode = body.mode (one of visit / shipment / remote)
+//   2. production_event auto-created via autoCreateForContract
+// Idempotent — re-calling with the same mode is a no-op past initial create.
+const initialiseProduction = asyncHandler(async (req, res) => {
+  const contract = await getContractParties(req.params.id);
+  await ensureParty(contract, req, 'brand');
+
+  const { mode } = req.body || {};
+  if (!productionService.VALID_MODES.includes(mode)) {
+    throw new AppError('VALIDATION_ERROR',
+      `mode must be one of: ${productionService.VALID_MODES.join(', ')}`, 422, 'mode');
+  }
+
+  // Update production_mode on the contract row first so autoCreateForContract
+  // sees the right mode when it reads the full row.
+  await db.query(`UPDATE contracts SET production_mode = $1 WHERE id = $2`, [mode, contract.id]);
+  const { rows: full } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
+  let event;
+  try {
+    event = await productionService.autoCreateForContract(db, full[0]);
+  } catch (e) {
+    throw new AppError('INTERNAL_ERROR', `Could not initialise production: ${e.message}`, 500);
+  }
+  return success(res, { production_event: event, production_mode: mode });
+});
+
 // GET /v1/contracts/:id/production
 //
 // Auto-heals legacy contracts: if the contract is active with a non-remote
@@ -420,6 +450,7 @@ const adminCancel = asyncHandler(async (req, res) => {
 module.exports = {
   getProduction,
   getDateRange,
+  initialiseProduction,
   setVisitDetails,
   proposeSlot,
   acceptEvent,

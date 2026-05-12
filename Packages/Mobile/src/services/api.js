@@ -193,6 +193,7 @@ export const brandApi = {
   // Production Coordination (Phase P) — brand side
   getProduction:               (contractId) => api.get(`/contracts/${contractId}/production`),
   getProductionDateRange:      (contractId) => api.get(`/contracts/${contractId}/production/date-range`),
+  initialiseProduction:        (contractId, mode) => api.post(`/contracts/${contractId}/production/initialise`, { mode }),
   setProductionVisitDetails:   (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
   acceptProduction:            (eventId)         => api.post(`/production-events/${eventId}/accept`),
   counterProposeProduction:    (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),

@@ -31,6 +31,11 @@ router.get(
   ctrl.getDateRange
 );
 router.post(
+  '/contracts/:id/production/initialise',
+  authenticate, requireRole('brand'),
+  ctrl.initialiseProduction
+);
+router.post(
   '/contracts/:id/production/visit-details',
   authenticate, requireRole('brand'),
   ctrl.setVisitDetails

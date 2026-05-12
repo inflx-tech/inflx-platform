@@ -226,6 +226,8 @@ export const productionApi = {
   get: (contractId) => api.get(`/contracts/${contractId}/production`),
   // Valid date range for the visit (today+1 to posting_date−2 / content_end_date−3)
   getDateRange: (contractId) => api.get(`/contracts/${contractId}/production/date-range`),
+  // Force-initialise the production event when it didn't auto-create (legacy)
+  initialise: (contractId, mode) => api.post(`/contracts/${contractId}/production/initialise`, { mode }),
   // Brand sets / updates visit details (location-only or with slot)
   setVisitDetails: (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
   // Influencer-only: pick a slot when brand has set only the location

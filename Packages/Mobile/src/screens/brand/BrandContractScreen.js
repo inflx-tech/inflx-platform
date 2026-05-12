@@ -890,19 +890,66 @@ function BrandProductionPanel({ contractId }) {
       </View>
     );
   }
+  // No event yet — give the brand a clear way to initialise one. This is the
+  // escape hatch for legacy contracts (signed before Phase P) AND for cases
+  // where the auto-create at brand-sign didn't fire for any reason.
   if (!event) {
-    // Production_mode is 'visit' or 'shipment' but the event row hasn't been
-    // auto-created yet — almost always means a legacy contract from before
-    // Phase P. Tell the brand what's going on instead of falsely showing
-    // "Remote production".
     return (
-      <View style={pmStyles.remoteBox}>
-        <Text style={pmStyles.remoteTitle}>
-          {mode === 'visit' ? '🏬 Visit production' : mode === 'shipment' ? '📦 Shipment production' : 'Production'}
+      <View style={pmStyles.panel}>
+        <Text style={pmStyles.panelTitle}>Set up production</Text>
+        <Text style={[pmStyles.helpHeader, { marginTop: 4 }]}>
+          Pick how the influencer will get what they need for the shoot.
         </Text>
-        <Text style={pmStyles.remoteBody}>
-          Coordination setup hasn't initialised for this contract yet. Pull to refresh — or this may be a legacy contract.
-        </Text>
+        <View style={pmStyles.modeRow}>
+          <TouchableOpacity
+            style={[pmStyles.modeCard, mode === 'visit' && pmStyles.modeCardActive]}
+            disabled={saving}
+            onPress={async () => {
+              setSave(true);
+              const res = await brandApi.initialiseProduction(contractId, 'visit');
+              setSave(false);
+              if (res.success) load();
+              else Alert.alert('Failed', res.error?.message || 'Could not initialise');
+            }}
+          >
+            <Text style={pmStyles.modeIcon}>🏬</Text>
+            <Text style={pmStyles.modeLabel}>Visit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[pmStyles.modeCard, mode === 'shipment' && pmStyles.modeCardActive]}
+            disabled={saving}
+            onPress={async () => {
+              setSave(true);
+              const res = await brandApi.initialiseProduction(contractId, 'shipment');
+              setSave(false);
+              if (res.success) load();
+              else Alert.alert('Failed', res.error?.message || 'Could not initialise');
+            }}
+          >
+            <Text style={pmStyles.modeIcon}>📦</Text>
+            <Text style={pmStyles.modeLabel}>Shipment</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[pmStyles.modeCard, mode === 'remote' && pmStyles.modeCardActive]}
+            disabled={saving}
+            onPress={async () => {
+              Alert.alert('Switch to remote?', 'No coordination needed — content is created from your brief alone.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Confirm', onPress: async () => {
+                  setSave(true);
+                  const res = await brandApi.initialiseProduction(contractId, 'remote');
+                  setSave(false);
+                  if (res.success) load();
+                  else Alert.alert('Failed', res.error?.message || 'Could not initialise');
+                }},
+              ]);
+            }}
+          >
+            <Text style={pmStyles.modeIcon}>💻</Text>
+            <Text style={pmStyles.modeLabel}>Remote</Text>
+          </TouchableOpacity>
+        </View>
+        {saving && <Text style={pmStyles.smallNote}>Setting up…</Text>}
       </View>
     );
   }
