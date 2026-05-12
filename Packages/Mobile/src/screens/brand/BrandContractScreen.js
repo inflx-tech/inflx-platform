@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { colors, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import DateTimeChipPicker from '../../components/DateTimeChipPicker';
 
 function formatDateTime(s) {
   if (!s) return '—';
@@ -725,15 +726,13 @@ function BrandProductionPanel({ contractId }) {
   const [vPhone, setVPhone]     = useState('');
 
   // Counter-propose form (only shown when influencer proposed a slot brand
-  // wants to push back on)
+  // wants to push back on). Single Date value sourced from DateTimeChipPicker.
   const [showCounter, setShowCounter] = useState(false);
-  const [cDate, setCDate] = useState('');
-  const [cTime, setCTime] = useState('11:00');
+  const [counterDate, setCounterDate] = useState(null);
 
   // Reschedule form (only after confirmed — counts against brand limit)
   const [showReschedule, setShowReschedule] = useState(false);
-  const [rDate, setRDate] = useState('');
-  const [rTime, setRTime] = useState('11:00');
+  const [rescheduleDate, setRescheduleDate] = useState(null);
 
   const [courier, setCourier] = useState('');
   const [awb, setAwb]         = useState('');
@@ -801,34 +800,32 @@ function BrandProductionPanel({ contractId }) {
 
   // Counter-propose a different slot.
   async function sendCounter() {
-    if (!cDate) { Alert.alert('Missing', 'Pick a date'); return; }
+    if (!counterDate) { Alert.alert('Missing', 'Pick a date and time'); return; }
     setSave(true);
-    const scheduled = new Date(`${cDate}T${cTime || '11:00'}:00`).toISOString();
     const res = await brandApi.counterProposeProduction(event.id, {
-      visit_scheduled_at: scheduled,
+      visit_scheduled_at: counterDate.toISOString(),
       visit_window_minutes: Number(vWindow) || null,
     });
     setSave(false);
     if (res.success) {
       Alert.alert('Counter sent', 'Influencer will see your suggested slot.');
-      setShowCounter(false); setCDate(''); setCTime('11:00');
+      setShowCounter(false); setCounterDate(null);
       load();
     } else Alert.alert('Failed', res.error?.message || 'Counter failed.');
   }
 
   // Reschedule after confirmed (counts toward brand's 2-counter limit).
   async function sendReschedule() {
-    if (!rDate) { Alert.alert('Missing', 'Pick a date'); return; }
+    if (!rescheduleDate) { Alert.alert('Missing', 'Pick a date and time'); return; }
     setSave(true);
-    const scheduled = new Date(`${rDate}T${rTime || '11:00'}:00`).toISOString();
     const res = await brandApi.setProductionVisitDetails(contractId, {
-      visit_scheduled_at: scheduled,
+      visit_scheduled_at: rescheduleDate.toISOString(),
       visit_window_minutes: Number(vWindow) || null,
     });
     setSave(false);
     if (res.success) {
       Alert.alert('Reschedule sent', 'Influencer will confirm the new slot.');
-      setShowReschedule(false); setRDate(''); setRTime('11:00');
+      setShowReschedule(false); setRescheduleDate(null);
       load();
     } else Alert.alert('Failed', res.error?.message || 'Reschedule failed.');
   }
@@ -1075,11 +1072,12 @@ function BrandProductionPanel({ contractId }) {
                   </>
                 ) : (
                   <>
-                    <View style={pmStyles.row2}>
-                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={cDate} onChangeText={setCDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
-                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={cTime} onChangeText={setCTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
-                    </View>
-                    {dateHint && <Text style={pmStyles.dateHint}>{dateHint}</Text>}
+                    <DateTimeChipPicker
+                      minDate={dateRange?.earliest ? new Date(dateRange.earliest) : null}
+                      maxDate={dateRange?.latest ? new Date(dateRange.latest) : null}
+                      value={counterDate}
+                      onChange={setCounterDate}
+                    />
                     <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={sendCounter}>
                       <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Sending…' : 'Send counter-proposal'}</Text>
                     </TouchableOpacity>
@@ -1135,11 +1133,12 @@ function BrandProductionPanel({ contractId }) {
                   </TouchableOpacity>
                 ) : (
                   <>
-                    <View style={pmStyles.row2}>
-                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={rDate} onChangeText={setRDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
-                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={rTime} onChangeText={setRTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
-                    </View>
-                    {dateHint && <Text style={pmStyles.dateHint}>{dateHint}</Text>}
+                    <DateTimeChipPicker
+                      minDate={dateRange?.earliest ? new Date(dateRange.earliest) : null}
+                      maxDate={dateRange?.latest ? new Date(dateRange.latest) : null}
+                      value={rescheduleDate}
+                      onChange={setRescheduleDate}
+                    />
                     <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={sendReschedule}>
                       <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Sending…' : 'Propose new slot'}</Text>
                     </TouchableOpacity>

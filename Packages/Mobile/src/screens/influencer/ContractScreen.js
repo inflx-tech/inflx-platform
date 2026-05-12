@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
+import DateTimeChipPicker from '../../components/DateTimeChipPicker';
 import StatusBadge from '../../components/StatusBadge';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -754,9 +755,10 @@ function InfluencerProductionPanel({ contractId }) {
   const [busy, setBusy]    = useState(false);
   const [dateRange, setDateRange] = useState(null);
 
-  // Slot proposal form (influencer's primary input)
-  const [slotDate, setSlotDate]   = useState('');
-  const [slotTime, setSlotTime]   = useState('');
+  // Slot proposal form (influencer's primary input). slotDateTime is a single
+  // Date value populated by DateTimeChipPicker — replaced the old separate
+  // YYYY-MM-DD / HH:MM text inputs to avoid hand-typed dates.
+  const [slotDateTime, setSlotDateTime] = useState(null);
   const [slotWindow, setSlotWindow] = useState(60);
   const [slotNotes, setSlotNotes] = useState('');
   const [slotFormOpen, setSlotFormOpen] = useState(false);
@@ -799,19 +801,17 @@ function InfluencerProductionPanel({ contractId }) {
 
   // Influencer first-time slot proposal OR re-proposal (counts as reschedule).
   async function handleProposeSlot() {
-    if (!slotDate) { Alert.alert('Missing', 'Pick a date'); return; }
-    if (!slotTime) { Alert.alert('Missing', 'Pick a time'); return; }
+    if (!slotDateTime) { Alert.alert('Missing', 'Pick a date and time'); return; }
     setBusy(true);
-    const scheduled = new Date(`${slotDate}T${slotTime}:00`).toISOString();
     const res = await influencerApi.proposeProductionSlot(event.id, {
-      visit_scheduled_at: scheduled,
+      visit_scheduled_at: slotDateTime.toISOString(),
       visit_window_minutes: Number(slotWindow) || null,
       notes: slotNotes.trim() || undefined,
     });
     setBusy(false);
     if (res.success) {
       Alert.alert('Slot sent', 'Brand will accept or counter your proposed slot.');
-      setSlotFormOpen(false); setSlotDate(''); setSlotTime(''); setSlotNotes('');
+      setSlotFormOpen(false); setSlotDateTime(null); setSlotNotes('');
       load();
     } else {
       Alert.alert('Failed', res.error?.message || 'Could not propose slot.');
@@ -820,19 +820,17 @@ function InfluencerProductionPanel({ contractId }) {
 
   // Counter brand's proposed slot OR brand's counter-of-influencer's slot.
   async function handleCounterSlot() {
-    if (!slotDate) { Alert.alert('Missing', 'Pick a date'); return; }
-    if (!slotTime) { Alert.alert('Missing', 'Pick a time'); return; }
+    if (!slotDateTime) { Alert.alert('Missing', 'Pick a date and time'); return; }
     setBusy(true);
-    const scheduled = new Date(`${slotDate}T${slotTime}:00`).toISOString();
     const res = await influencerApi.counterProposeProduction(event.id, {
-      visit_scheduled_at: scheduled,
+      visit_scheduled_at: slotDateTime.toISOString(),
       visit_window_minutes: Number(slotWindow) || null,
       notes: slotNotes.trim() || undefined,
     });
     setBusy(false);
     if (res.success) {
       Alert.alert('Counter sent', 'Brand will see your suggestion.');
-      setSlotFormOpen(false); setSlotDate(''); setSlotTime(''); setSlotNotes('');
+      setSlotFormOpen(false); setSlotDateTime(null); setSlotNotes('');
       load();
     } else {
       Alert.alert('Failed', res.error?.message || 'Counter failed.');
@@ -1004,11 +1002,12 @@ function InfluencerProductionPanel({ contractId }) {
             {hasLocation && !hasSlot && !isCompleted && (
               <>
                 <Text style={ipStyles.helpHeader}>Pick a date + time when you can visit. Brand will confirm.</Text>
-                <View style={ipStyles.row2}>
-                  <TextInput style={[ipStyles.input, { flex: 1 }]} value={slotDate} onChangeText={setSlotDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
-                  <TextInput style={[ipStyles.input, { flex: 1 }]} value={slotTime} onChangeText={setSlotTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
-                </View>
-                {dateHint && <Text style={ipStyles.dateHint}>{dateHint}</Text>}
+                <DateTimeChipPicker
+                  minDate={dateRange?.earliest ? new Date(dateRange.earliest) : null}
+                  maxDate={dateRange?.latest ? new Date(dateRange.latest) : null}
+                  value={slotDateTime}
+                  onChange={setSlotDateTime}
+                />
                 <Text style={[ipStyles.label, { marginTop: 8 }]}>Notes (optional)</Text>
                 <TextInput style={[ipStyles.input, { height: 50 }]} multiline value={slotNotes} onChangeText={setSlotNotes} placeholder="Anything the brand should know…" placeholderTextColor={colors.t3} />
                 <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleProposeSlot}>
@@ -1050,11 +1049,12 @@ function InfluencerProductionPanel({ contractId }) {
                   </>
                 ) : (
                   <>
-                    <View style={ipStyles.row2}>
-                      <TextInput style={[ipStyles.input, { flex: 1 }]} value={slotDate} onChangeText={setSlotDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
-                      <TextInput style={[ipStyles.input, { flex: 1 }]} value={slotTime} onChangeText={setSlotTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
-                    </View>
-                    {dateHint && <Text style={ipStyles.dateHint}>{dateHint}</Text>}
+                    <DateTimeChipPicker
+                      minDate={dateRange?.earliest ? new Date(dateRange.earliest) : null}
+                      maxDate={dateRange?.latest ? new Date(dateRange.latest) : null}
+                      value={slotDateTime}
+                      onChange={setSlotDateTime}
+                    />
                     <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleCounterSlot}>
                       <Text style={ipStyles.primaryTxt}>{busy ? 'Sending…' : 'Send counter'}</Text>
                     </TouchableOpacity>
