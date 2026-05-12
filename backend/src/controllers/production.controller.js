@@ -84,10 +84,31 @@ function notify(targetUser, fcmToken, phone, type, title, body, data) {
 // ─── Endpoints ──────────────────────────────────────────────────────────────
 
 // GET /v1/contracts/:id/production
+//
+// Auto-heals legacy contracts: if the contract is active with a non-remote
+// production_mode but the production_event row is missing (pre-Phase-P
+// brand-sign), create it on read. Brand-sign normally handles this via
+// autoCreateForContract, but old contracts signed before that code shipped
+// never got an event. Without this heal, those contracts show "Remote
+// production" misleadingly even when the contract row says visit/shipment.
 const getProduction = asyncHandler(async (req, res) => {
   const contract = await getContractParties(req.params.id);
   await ensureParty(contract, req, 'either');
-  const event = await productionService.getByContractId(contract.id);
+  let event = await productionService.getByContractId(contract.id);
+
+  if (!event && contract.production_mode && contract.production_mode !== 'remote') {
+    // Fetch the full contract row (production.service.autoCreateForContract
+    // reads formats from it). getContractParties only returns a thin slice.
+    const { rows: full } = await db.query(`SELECT * FROM contracts WHERE id = $1`, [contract.id]);
+    if (full[0]) {
+      try {
+        event = await productionService.autoCreateForContract(db, full[0]);
+      } catch (e) {
+        console.error('[production] auto-heal failed for contract', contract.id, e.message);
+      }
+    }
+  }
+
   if (!event) {
     return success(res, {
       production_event: null,

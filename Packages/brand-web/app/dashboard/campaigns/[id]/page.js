@@ -847,13 +847,23 @@ function ProductionPanel({ contractId }) {
   }
 
   if (loading) return <div className="p-5 border-t border-gray-100 text-xs text-gray-400">Loading production…</div>;
-  if (mode === 'remote' || !event) {
+  if (mode === 'remote') {
     return (
       <div className="p-5 border-t border-gray-100">
         <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500 text-center">
-          {mode === 'remote'
-            ? '💻 Remote mode — no physical coordination needed. Influencer will start content from the brief.'
-            : 'No production event yet. The influencer will see logistics here once you fill them in.'}
+          💻 Remote mode — no physical coordination needed. Influencer will start content from the brief.
+        </div>
+      </div>
+    );
+  }
+  if (!event) {
+    return (
+      <div className="p-5 border-t border-gray-100">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+          <div className="font-bold mb-1">
+            {mode === 'visit' ? '🏬 Visit production' : mode === 'shipment' ? '📦 Shipment production' : 'Production'}
+          </div>
+          Coordination setup hasn't initialised for this contract yet. This usually means it's a legacy contract from before the production-coordination flow was deployed. Brand-sign once more to trigger setup, or contact support.
         </div>
       </div>
     );

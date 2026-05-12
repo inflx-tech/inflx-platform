@@ -707,11 +707,6 @@ function formatDay(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
-function formatDateTime(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-}
 
 function BrandProductionPanel({ contractId }) {
   const [event, setEvent]   = useState(null);
@@ -887,11 +882,27 @@ function BrandProductionPanel({ contractId }) {
   }
 
   if (loading) return <View style={pmStyles.loadingBox}><ActivityIndicator color={colors.navy} /></View>;
-  if (mode === 'remote' || !event) {
+  if (mode === 'remote') {
     return (
       <View style={pmStyles.remoteBox}>
         <Text style={pmStyles.remoteTitle}>💻 Remote production</Text>
         <Text style={pmStyles.remoteBody}>No physical exchange needed. The influencer will create content directly from your brief.</Text>
+      </View>
+    );
+  }
+  if (!event) {
+    // Production_mode is 'visit' or 'shipment' but the event row hasn't been
+    // auto-created yet — almost always means a legacy contract from before
+    // Phase P. Tell the brand what's going on instead of falsely showing
+    // "Remote production".
+    return (
+      <View style={pmStyles.remoteBox}>
+        <Text style={pmStyles.remoteTitle}>
+          {mode === 'visit' ? '🏬 Visit production' : mode === 'shipment' ? '📦 Shipment production' : 'Production'}
+        </Text>
+        <Text style={pmStyles.remoteBody}>
+          Coordination setup hasn't initialised for this contract yet. Pull to refresh — or this may be a legacy contract.
+        </Text>
       </View>
     );
   }

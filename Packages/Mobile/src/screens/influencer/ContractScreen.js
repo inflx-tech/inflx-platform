@@ -903,11 +903,23 @@ function InfluencerProductionPanel({ contractId }) {
   }
 
   if (loading) return <View style={ipStyles.loading}><ActivityIndicator color={colors.navy} /></View>;
-  if (mode === 'remote' || !event) {
+  if (mode === 'remote') {
     return (
       <View style={ipStyles.remoteBox}>
         <Text style={ipStyles.remoteTitle}>💻 Remote production</Text>
         <Text style={ipStyles.remoteBody}>No coordination needed — you can start creating content directly from the brief.</Text>
+      </View>
+    );
+  }
+  if (!event) {
+    return (
+      <View style={ipStyles.remoteBox}>
+        <Text style={ipStyles.remoteTitle}>
+          {mode === 'visit' ? '🏬 Visit production' : mode === 'shipment' ? '📦 Shipment production' : 'Production'}
+        </Text>
+        <Text style={ipStyles.remoteBody}>
+          The brand is setting up coordination. Pull to refresh — details will appear here once they've shared them.
+        </Text>
       </View>
     );
   }
