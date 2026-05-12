@@ -224,11 +224,15 @@ export const proposalApi = {
 export const productionApi = {
   // GET — both parties see their own contract's production event + log
   get: (contractId) => api.get(`/contracts/${contractId}/production`),
-  // Brand sets / updates visit details (also reschedules a confirmed event)
+  // Valid date range for the visit (today+1 to posting_date−2 / content_end_date−3)
+  getDateRange: (contractId) => api.get(`/contracts/${contractId}/production/date-range`),
+  // Brand sets / updates visit details (location-only or with slot)
   setVisitDetails: (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
-  // Influencer accepts proposed visit/shipment terms
+  // Influencer-only: pick a slot when brand has set only the location
+  proposeSlot: (eventId, data) => api.post(`/production-events/${eventId}/propose-slot`, data),
+  // Accept proposed visit/shipment terms (whichever side didn't propose)
   accept: (eventId) => api.post(`/production-events/${eventId}/accept`),
-  // Influencer counter-proposes
+  // Counter-propose a different slot/address (either party)
   counterPropose: (eventId, data) => api.post(`/production-events/${eventId}/counter-propose`, data),
   // Brand: package shipped (with AWB + courier)
   dispatch: (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
@@ -236,6 +240,8 @@ export const productionApi = {
   confirmReceived: (eventId, data) => api.post(`/production-events/${eventId}/confirm-received`, data),
   // Mark visit done (either party)
   complete: (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
+  // Mutual flip to remote — either side requests, the other confirms
+  flipToRemote: (eventId, data) => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
 };
 
 export const mediaGalleryApi = {

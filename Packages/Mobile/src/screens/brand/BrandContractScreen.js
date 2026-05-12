@@ -703,28 +703,52 @@ const styles = StyleSheet.create({
 
 // ─── Production Panel ─────────────────────────────────────────────────────────
 
+function formatDay(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function formatDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+}
+
 function BrandProductionPanel({ contractId }) {
   const [event, setEvent]   = useState(null);
   const [mode, setMode]     = useState(null);
   const [log, setLog]       = useState([]);
   const [loading, setLoad]  = useState(true);
   const [saving, setSave]   = useState(false);
+  const [dateRange, setDateRange] = useState(null);  // { earliest, latest } ISO
 
+  // Location form (sent without date/time on first save)
   const [vAddress, setVAddress] = useState('');
   const [vCity, setVCity]       = useState('');
   const [vPincode, setVPincode] = useState('');
-  const [vDate, setVDate]       = useState('');     // ISO yyyy-mm-dd
-  const [vTime, setVTime]       = useState('11:00');
   const [vWindow, setVWindow]   = useState(60);
   const [vName, setVName]       = useState('');
   const [vPhone, setVPhone]     = useState('');
+
+  // Counter-propose form (only shown when influencer proposed a slot brand
+  // wants to push back on)
+  const [showCounter, setShowCounter] = useState(false);
+  const [cDate, setCDate] = useState('');
+  const [cTime, setCTime] = useState('11:00');
+
+  // Reschedule form (only after confirmed — counts against brand limit)
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [rDate, setRDate] = useState('');
+  const [rTime, setRTime] = useState('11:00');
 
   const [courier, setCourier] = useState('');
   const [awb, setAwb]         = useState('');
 
   async function load() {
     setLoad(true);
-    const res = await brandApi.getProduction(contractId);
+    const [res, rangeRes] = await Promise.all([
+      brandApi.getProduction(contractId),
+      brandApi.getProductionDateRange(contractId).catch(() => null),
+    ]);
     setLoad(false);
     if (res.success) {
       setEvent(res.data?.production_event || null);
@@ -735,11 +759,6 @@ function BrandProductionPanel({ contractId }) {
         setVAddress(e.visit_address || '');
         setVCity(e.visit_city || '');
         setVPincode(e.visit_pincode || '');
-        if (e.visit_scheduled_at) {
-          const d = new Date(e.visit_scheduled_at);
-          setVDate(d.toISOString().slice(0, 10));
-          setVTime(d.toTimeString().slice(0, 5));
-        }
         if (e.visit_window_minutes) setVWindow(e.visit_window_minutes);
         setVName(e.visit_contact_name || '');
         setVPhone(e.visit_contact_phone || '');
@@ -747,26 +766,98 @@ function BrandProductionPanel({ contractId }) {
         setAwb(e.shipment_awb || '');
       }
     }
+    if (rangeRes?.success) setDateRange(rangeRes.data?.range || null);
   }
   useEffect(() => { load(); }, [contractId]);
 
-  async function saveVisitDetails() {
+  // Pretty date hint shown to the brand in the form footer.
+  const dateHint = dateRange
+    ? `Visit must be between ${formatDay(dateRange.earliest)} and ${formatDay(dateRange.latest)}`
+    : null;
+
+  // Save location only (no date/time). First-send hands the ball to influencer.
+  async function saveLocationOnly() {
     if (!vAddress.trim()) { Alert.alert('Missing', 'Address is required'); return; }
-    if (!vDate) { Alert.alert('Missing', 'Pick a date for the visit'); return; }
     setSave(true);
-    const scheduled = new Date(`${vDate}T${vTime || '11:00'}:00`).toISOString();
     const res = await brandApi.setProductionVisitDetails(contractId, {
       visit_address: vAddress.trim(),
       visit_city: vCity.trim() || null,
       visit_pincode: vPincode.trim() || null,
-      visit_scheduled_at: scheduled,
       visit_window_minutes: Number(vWindow) || null,
       visit_contact_name:  vName.trim() || null,
       visit_contact_phone: vPhone.trim() || null,
     });
     setSave(false);
-    if (res.success) load();
-    else Alert.alert('Failed', res.error?.message || 'Save failed');
+    if (res.success) {
+      Alert.alert('Sent', 'Influencer can now pick their available slot.');
+      load();
+    } else Alert.alert('Save failed', res.error?.message || 'Could not save location.');
+  }
+
+  // Accept influencer's proposed slot.
+  async function acceptSlot() {
+    if (!event) return;
+    setSave(true);
+    const res = await brandApi.acceptProduction(event.id);
+    setSave(false);
+    if (res.success) { Alert.alert('Confirmed', 'Visit slot confirmed.'); load(); }
+    else Alert.alert('Failed', res.error?.message || 'Could not accept slot.');
+  }
+
+  // Counter-propose a different slot.
+  async function sendCounter() {
+    if (!cDate) { Alert.alert('Missing', 'Pick a date'); return; }
+    setSave(true);
+    const scheduled = new Date(`${cDate}T${cTime || '11:00'}:00`).toISOString();
+    const res = await brandApi.counterProposeProduction(event.id, {
+      visit_scheduled_at: scheduled,
+      visit_window_minutes: Number(vWindow) || null,
+    });
+    setSave(false);
+    if (res.success) {
+      Alert.alert('Counter sent', 'Influencer will see your suggested slot.');
+      setShowCounter(false); setCDate(''); setCTime('11:00');
+      load();
+    } else Alert.alert('Failed', res.error?.message || 'Counter failed.');
+  }
+
+  // Reschedule after confirmed (counts toward brand's 2-counter limit).
+  async function sendReschedule() {
+    if (!rDate) { Alert.alert('Missing', 'Pick a date'); return; }
+    setSave(true);
+    const scheduled = new Date(`${rDate}T${rTime || '11:00'}:00`).toISOString();
+    const res = await brandApi.setProductionVisitDetails(contractId, {
+      visit_scheduled_at: scheduled,
+      visit_window_minutes: Number(vWindow) || null,
+    });
+    setSave(false);
+    if (res.success) {
+      Alert.alert('Reschedule sent', 'Influencer will confirm the new slot.');
+      setShowReschedule(false); setRDate(''); setRTime('11:00');
+      load();
+    } else Alert.alert('Failed', res.error?.message || 'Reschedule failed.');
+  }
+
+  // Request mutual flip to remote (no shoot). Other side confirms via same endpoint.
+  async function flipToRemote() {
+    if (!event) return;
+    Alert.alert(
+      'Switch to remote?',
+      'This skips the in-person shoot. The influencer will create content from your brief alone. The other side has to confirm before it takes effect.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: event.remote_flip_requested_by && event.remote_flip_requested_by !== 'brand'
+            ? 'Confirm flip' : 'Request flip',
+          onPress: async () => {
+            setSave(true);
+            const res = await brandApi.flipProductionToRemote(event.id);
+            setSave(false);
+            if (res.success) load();
+            else Alert.alert('Failed', res.error?.message || 'Flip failed.');
+          },
+        },
+      ]
+    );
   }
 
   async function saveDispatch() {
@@ -824,47 +915,203 @@ function BrandProductionPanel({ contractId }) {
         </View>
       </View>
 
-      {event.mode === 'visit' && (
-        <>
-          <Text style={pmStyles.fieldLabel}>Address</Text>
-          <TextInput style={pmStyles.input} value={vAddress} onChangeText={setVAddress} placeholder="Plot 42, Silicon Valley..." placeholderTextColor={colors.t3} />
-          <View style={pmStyles.row2}>
-            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vCity} onChangeText={setVCity} placeholder="City" placeholderTextColor={colors.t3} />
-            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPincode} onChangeText={setVPincode} placeholder="Pincode" keyboardType="numeric" placeholderTextColor={colors.t3} />
-          </View>
-          <View style={pmStyles.row2}>
-            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vDate} onChangeText={setVDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
-            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vTime} onChangeText={setVTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
-          </View>
-          <View style={pmStyles.windowRow}>
-            {[30, 60, 120, 240].map(m => (
-              <TouchableOpacity key={m} style={[pmStyles.windowChip, vWindow === m && pmStyles.windowChipActive]} onPress={() => setVWindow(m)}>
-                <Text style={[pmStyles.windowChipTxt, vWindow === m && pmStyles.windowChipTxtActive]}>
-                  {m < 60 ? `${m} min` : m === 240 ? 'Half day' : `${m / 60} hr`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={pmStyles.row2}>
-            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vName} onChangeText={setVName} placeholder="Contact name" placeholderTextColor={colors.t3} />
-            <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPhone} onChangeText={setVPhone} placeholder="Contact phone" keyboardType="phone-pad" placeholderTextColor={colors.t3} />
-          </View>
+      {event.mode === 'visit' && (() => {
+        const hasLocation  = !!event.visit_address;
+        const hasSlot      = !!event.visit_scheduled_at;
+        const isConfirmed  = event.status === 'confirmed';
+        const isCompleted  = event.status === 'completed';
+        const influencerProposed = event.slot_proposed_by === 'influencer';
+        const brandProposed      = event.slot_proposed_by === 'brand';
+        const flipPending  = !!event.remote_flip_requested_by;
+        const flipByMe     = event.remote_flip_requested_by === 'brand';
 
-          <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={saveVisitDetails}>
-            <Text style={pmStyles.primaryBtnTxt}>
-              {saving ? 'Saving…' : event.visit_address ? 'Update visit details' : 'Send to influencer'}
-            </Text>
-          </TouchableOpacity>
-          {event.status === 'confirmed' && (
-            <TouchableOpacity style={[pmStyles.primaryBtnAlt, saving && { opacity: 0.6 }]} disabled={saving} onPress={markVisitDone}>
-              <Text style={pmStyles.primaryBtnAltTxt}>Mark visit done</Text>
-            </TouchableOpacity>
-          )}
-          {event.reschedule_count_brand > 0 && (
-            <Text style={pmStyles.smallNote}>Reschedules used: {event.reschedule_count_brand} of 2</Text>
-          )}
-        </>
-      )}
+        return (
+          <>
+            {/* Remote-flip pending banner (when other side requested) */}
+            {flipPending && !flipByMe && !isCompleted && (
+              <View style={pmStyles.flipBanner}>
+                <Text style={pmStyles.flipBannerTxt}>
+                  Influencer wants to switch this to remote (no shoot, content from brief alone). Confirm?
+                </Text>
+                <TouchableOpacity style={pmStyles.flipConfirmBtn} disabled={saving} onPress={flipToRemote}>
+                  <Text style={pmStyles.flipConfirmBtnTxt}>Confirm flip</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* STATE 1: no location yet — brand fills the form */}
+            {!hasLocation && !isCompleted && (
+              <>
+                <Text style={pmStyles.helpHeader}>
+                  Tell the influencer WHERE to come. They'll then pick a time that works for them.
+                </Text>
+                <Text style={pmStyles.fieldLabel}>Address *</Text>
+                <TextInput style={pmStyles.input} value={vAddress} onChangeText={setVAddress} placeholder="Plot 42, Silicon Valley..." placeholderTextColor={colors.t3} />
+                <View style={pmStyles.row2}>
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vCity} onChangeText={setVCity} placeholder="City" placeholderTextColor={colors.t3} />
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPincode} onChangeText={setVPincode} placeholder="Pincode" keyboardType="numeric" placeholderTextColor={colors.t3} />
+                </View>
+                <Text style={pmStyles.fieldLabel}>How long the visit will take</Text>
+                <View style={pmStyles.windowRow}>
+                  {[30, 60, 120, 240].map(m => (
+                    <TouchableOpacity key={m} style={[pmStyles.windowChip, vWindow === m && pmStyles.windowChipActive]} onPress={() => setVWindow(m)}>
+                      <Text style={[pmStyles.windowChipTxt, vWindow === m && pmStyles.windowChipTxtActive]}>
+                        {m < 60 ? `${m} min` : m === 240 ? 'Half day' : `${m / 60} hr`}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={pmStyles.row2}>
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vName} onChangeText={setVName} placeholder="Contact name" placeholderTextColor={colors.t3} />
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPhone} onChangeText={setVPhone} placeholder="Contact phone" keyboardType="phone-pad" placeholderTextColor={colors.t3} />
+                </View>
+                <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={saveLocationOnly}>
+                  <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Sending…' : 'Send to influencer for scheduling'}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* STATE 2: location set, no slot yet — waiting on influencer */}
+            {hasLocation && !hasSlot && !isCompleted && (
+              <>
+                <View style={pmStyles.addrBox}>
+                  <Text style={pmStyles.addrLabel}>Visit location</Text>
+                  <Text style={pmStyles.addrText}>
+                    {[event.visit_address, event.visit_city, event.visit_pincode].filter(Boolean).join(', ')}
+                  </Text>
+                </View>
+                <Text style={pmStyles.smallNote}>Waiting for influencer to pick their visit slot.</Text>
+                {dateHint && <Text style={pmStyles.dateHint}>{dateHint}</Text>}
+                {!flipPending && (
+                  <TouchableOpacity style={pmStyles.linkBtn} disabled={saving} onPress={flipToRemote}>
+                    <Text style={pmStyles.linkBtnTxt}>Or skip the visit — switch to remote</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+
+            {/* STATE 3: influencer proposed a slot — brand can accept or counter */}
+            {hasLocation && hasSlot && influencerProposed && event.status === 'proposed' && (
+              <>
+                <View style={pmStyles.slotCard}>
+                  <Text style={pmStyles.slotLabel}>Influencer wants to come on</Text>
+                  <Text style={pmStyles.slotTime}>{formatDateTime(event.visit_scheduled_at)}</Text>
+                  <Text style={pmStyles.slotMeta}>
+                    {event.visit_window_minutes ? `${event.visit_window_minutes} min slot · ` : ''}
+                    at {event.visit_address || '—'}
+                  </Text>
+                </View>
+                {!showCounter ? (
+                  <>
+                    <TouchableOpacity style={[pmStyles.primaryBtnAlt, saving && { opacity: 0.6 }]} disabled={saving} onPress={acceptSlot}>
+                      <Text style={pmStyles.primaryBtnAltTxt}>Accept slot</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={pmStyles.secondaryBtn} disabled={saving} onPress={() => setShowCounter(true)}>
+                      <Text style={pmStyles.secondaryBtnTxt}>Suggest another time</Text>
+                    </TouchableOpacity>
+                    {!flipPending && (
+                      <TouchableOpacity style={pmStyles.linkBtn} disabled={saving} onPress={flipToRemote}>
+                        <Text style={pmStyles.linkBtnTxt}>Skip the visit — switch to remote</Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <View style={pmStyles.row2}>
+                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={cDate} onChangeText={setCDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
+                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={cTime} onChangeText={setCTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
+                    </View>
+                    {dateHint && <Text style={pmStyles.dateHint}>{dateHint}</Text>}
+                    <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={sendCounter}>
+                      <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Sending…' : 'Send counter-proposal'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={pmStyles.linkBtn} disabled={saving} onPress={() => setShowCounter(false)}>
+                      <Text style={pmStyles.linkBtnTxt}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {event.reschedule_count_brand > 0 && (
+                  <Text style={pmStyles.smallNote}>Reschedules used: {event.reschedule_count_brand} of 2</Text>
+                )}
+              </>
+            )}
+
+            {/* STATE 4: brand proposed/countered — waiting on influencer */}
+            {hasLocation && hasSlot && brandProposed && event.status === 'proposed' && (
+              <>
+                <View style={pmStyles.slotCard}>
+                  <Text style={pmStyles.slotLabel}>Your proposed slot</Text>
+                  <Text style={pmStyles.slotTime}>{formatDateTime(event.visit_scheduled_at)}</Text>
+                  <Text style={pmStyles.slotMeta}>
+                    {event.visit_window_minutes ? `${event.visit_window_minutes} min slot · ` : ''}
+                    at {event.visit_address || '—'}
+                  </Text>
+                </View>
+                <Text style={pmStyles.smallNote}>Waiting for influencer to accept or counter.</Text>
+                {event.reschedule_count_brand > 0 && (
+                  <Text style={pmStyles.smallNote}>Reschedules used: {event.reschedule_count_brand} of 2</Text>
+                )}
+              </>
+            )}
+
+            {/* STATE 5: confirmed — mark visit done + optional reschedule */}
+            {isConfirmed && (
+              <>
+                <View style={pmStyles.slotCard}>
+                  <Text style={pmStyles.slotLabel}>✓ Confirmed visit</Text>
+                  <Text style={pmStyles.slotTime}>{formatDateTime(event.visit_scheduled_at)}</Text>
+                  <Text style={pmStyles.slotMeta}>
+                    {event.visit_window_minutes ? `${event.visit_window_minutes} min slot · ` : ''}
+                    at {event.visit_address || '—'}
+                  </Text>
+                  {event.visit_contact_name && (
+                    <Text style={pmStyles.slotMeta}>Contact: {event.visit_contact_name}{event.visit_contact_phone ? ` (${event.visit_contact_phone})` : ''}</Text>
+                  )}
+                </View>
+                <TouchableOpacity style={[pmStyles.primaryBtnAlt, saving && { opacity: 0.6 }]} disabled={saving} onPress={markVisitDone}>
+                  <Text style={pmStyles.primaryBtnAltTxt}>Mark visit done</Text>
+                </TouchableOpacity>
+                {!showReschedule ? (
+                  <TouchableOpacity style={pmStyles.linkBtn} disabled={saving} onPress={() => setShowReschedule(true)}>
+                    <Text style={pmStyles.linkBtnTxt}>Reschedule the visit</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <>
+                    <View style={pmStyles.row2}>
+                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={rDate} onChangeText={setRDate} placeholder="YYYY-MM-DD" placeholderTextColor={colors.t3} />
+                      <TextInput style={[pmStyles.input, { flex: 1 }]} value={rTime} onChangeText={setRTime} placeholder="HH:MM (24h)" placeholderTextColor={colors.t3} />
+                    </View>
+                    {dateHint && <Text style={pmStyles.dateHint}>{dateHint}</Text>}
+                    <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={sendReschedule}>
+                      <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Sending…' : 'Propose new slot'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={pmStyles.linkBtn} disabled={saving} onPress={() => setShowReschedule(false)}>
+                      <Text style={pmStyles.linkBtnTxt}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {event.reschedule_count_brand > 0 && (
+                  <Text style={pmStyles.smallNote}>Reschedules used: {event.reschedule_count_brand} of 2</Text>
+                )}
+              </>
+            )}
+
+            {/* STATE 6: completed */}
+            {isCompleted && (
+              <View style={pmStyles.completeBox}>
+                <Text style={pmStyles.completeTxt}>
+                  ✓ Visit complete{event.visit_completed_at ? ` on ${formatDay(event.visit_completed_at)}` : ''}.
+                </Text>
+              </View>
+            )}
+
+            {/* Pending request banner from this side (info-only) */}
+            {flipPending && flipByMe && !isCompleted && (
+              <Text style={pmStyles.smallNote}>You requested a switch to remote. Waiting for influencer to confirm.</Text>
+            )}
+          </>
+        );
+      })()}
 
       {event.mode === 'shipment' && (
         <>
@@ -951,7 +1198,23 @@ const pmStyles = StyleSheet.create({
   primaryBtnTxt: { color: colors.white, fontSize: 13, fontWeight: '800' },
   primaryBtnAlt: { marginTop: 8, paddingVertical: 12, backgroundColor: colors.teal, borderRadius: 10, alignItems: 'center' },
   primaryBtnAltTxt: { color: colors.white, fontSize: 13, fontWeight: '800' },
+  secondaryBtn:  { marginTop: 8, paddingVertical: 11, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.navy, alignItems: 'center' },
+  secondaryBtnTxt: { color: colors.navy, fontSize: 12, fontWeight: '700' },
+  linkBtn:       { marginTop: 8, paddingVertical: 8, alignItems: 'center' },
+  linkBtnTxt:    { color: colors.t3, fontSize: 11, fontWeight: '600', textDecorationLine: 'underline' },
   smallNote:     { fontSize: 10, color: colors.t3, marginTop: 6, textAlign: 'center' },
+  helpHeader:    { fontSize: 11, color: colors.t3, marginBottom: 4, lineHeight: 16 },
+  dateHint:      { fontSize: 10, color: colors.orange, marginTop: 4, marginBottom: 4, textAlign: 'center', fontWeight: '700' },
+
+  slotCard:      { padding: 12, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.teal, marginVertical: 4 },
+  slotLabel:     { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
+  slotTime:      { fontSize: 15, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  slotMeta:      { fontSize: 11, color: colors.t3 },
+
+  flipBanner:    { backgroundColor: colors.orange + '20', borderRadius: 10, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: colors.orange },
+  flipBannerTxt: { fontSize: 11, color: colors.t1, lineHeight: 15, marginBottom: 8 },
+  flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.orange, borderRadius: 8 },
+  flipConfirmBtnTxt: { color: colors.white, fontSize: 11, fontWeight: '800' },
 
   addrBox:       { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },
   addrLabel:     { fontSize: 9, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },

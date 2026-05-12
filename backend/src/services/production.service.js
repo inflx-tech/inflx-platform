@@ -14,6 +14,60 @@ const VALID_MODES = ['visit', 'shipment', 'remote'];
 const VALID_STATUSES = ['proposed', 'confirmed', 'in_progress', 'completed', 'cancelled'];
 
 const RESCHEDULE_LIMIT_PER_SIDE = 2;
+const PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING = 2;   // visit must end ≥ 2 days before posting_date
+const PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW  = 3;   // …or ≥ 3 days before content_end_date / campaign.end_date
+
+// Resolve the [earliest, latest] window the visit must fall inside for the
+// given contract. Used by both brand setVisitDetails and influencer
+// proposeSlot so they agree on the constraint. Returns ISO strings.
+async function getVisitDateRange(contractId) {
+  const { rows } = await db.query(
+    `SELECT con.posting_date,
+            cs.content_end_date,
+            c.end_date AS campaign_end_date
+       FROM contracts con
+       JOIN campaign_influencers ci ON ci.id = con.campaign_influencer_id
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+       JOIN campaigns c             ON c.id  = cs.campaign_id
+      WHERE con.id = $1`,
+    [contractId]
+  );
+  const r = rows[0];
+  if (!r) throw new Error('Contract not found for visit date range');
+
+  // Minimum: tomorrow (gives the receiving side a day to prep / commute).
+  const earliest = new Date();
+  earliest.setUTCDate(earliest.getUTCDate() + 1);
+  earliest.setUTCHours(0, 0, 0, 0);
+
+  // Latest: posting_date − 2d if set, else content_end_date − 3d, else
+  // campaign.end_date − 3d. Visit has to leave enough room for the
+  // influencer to shoot + edit + post.
+  let latest;
+  if (r.posting_date) {
+    latest = new Date(r.posting_date);
+    latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_POSTING);
+  } else if (r.content_end_date) {
+    latest = new Date(r.content_end_date);
+    latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
+  } else if (r.campaign_end_date) {
+    latest = new Date(r.campaign_end_date);
+    latest.setUTCDate(latest.getUTCDate() - PRE_VISIT_BUFFER_DAYS_AGAINST_WINDOW);
+  } else {
+    // Should never happen — campaign always has an end_date — but be safe.
+    latest = new Date();
+    latest.setUTCFullYear(latest.getUTCFullYear() + 1);
+  }
+  latest.setUTCHours(23, 59, 59, 999);
+
+  return { earliest: earliest.toISOString(), latest: latest.toISOString() };
+}
+
+function isWithinRange(iso, range) {
+  if (!iso) return true;
+  const d = new Date(iso).getTime();
+  return d >= new Date(range.earliest).getTime() && d <= new Date(range.latest).getTime();
+}
 
 // ─── Auto-create at contract activation ─────────────────────────────────────
 //
@@ -116,14 +170,30 @@ async function getLog(eventId) {
 
 // ─── Updates / transitions ──────────────────────────────────────────────────
 
-// Brand fills in visit details (address, time, contact) on a 'proposed' event.
-// Status stays 'proposed' until influencer accepts.
+// Brand fills in visit details. Location-only (address + contact + window) is
+// supported now — date/time are optional. If brand provides visit_scheduled_at,
+// it counts as a brand-proposed slot (slot_proposed_by='brand'); if they
+// don't, the influencer fills the slot in the next step via proposeSlot().
+//
+// Date validation enforces "visit must finish before posting_date − 2d" (or
+// content_end_date − 3d fallback) so the influencer has shoot/edit/post
+// runway. See getVisitDateRange() for the exact window.
 async function setVisitDetails(eventId, fields, actor) {
   const event = await getById(eventId);
   if (!event) throw new Error('NOT_FOUND');
   if (event.mode !== 'visit') throw new Error('WRONG_MODE');
   if (!['proposed', 'confirmed'].includes(event.status)) {
     throw new Error(`Cannot edit visit details in status "${event.status}"`);
+  }
+
+  // Validate date range if brand actually proposed one. Skip when omitted.
+  if (fields.visit_scheduled_at) {
+    const range = await getVisitDateRange(event.contract_id);
+    if (!isWithinRange(fields.visit_scheduled_at, range)) {
+      const err = new Error('VISIT_DATE_OUT_OF_RANGE');
+      err.range = range;
+      throw err;
+    }
   }
 
   const setClauses = [];
@@ -147,15 +217,19 @@ async function setVisitDetails(eventId, fields, actor) {
   }
   if (!setClauses.length) return event;
 
+  // Record who proposed the slot when brand sets one. If brand only updates
+  // location fields (no scheduled_at), leave slot_proposed_by untouched.
+  if (fields.visit_scheduled_at) {
+    setClauses.push(`slot_proposed_by = 'brand'`);
+  }
+
   // Brand changing details on a confirmed event = reschedule by brand.
-  let newStatus = event.status;
   let action = 'visit_details_set';
   if (event.status === 'confirmed') {
     if (event.reschedule_count_brand >= RESCHEDULE_LIMIT_PER_SIDE) {
       throw new Error('RESCHEDULE_LIMIT_REACHED');
     }
     setClauses.push(`reschedule_count_brand = reschedule_count_brand + 1`);
-    newStatus = 'proposed';   // back to influencer for re-confirm
     setClauses.push(`status = 'proposed'`);
     action = 'rescheduled_by_brand';
   }
@@ -172,15 +246,135 @@ async function setVisitDetails(eventId, fields, actor) {
   return rows[0];
 }
 
-// Influencer accepts the proposed details (visit) or confirms the address (shipment).
+// Influencer picks an availability slot for a visit. First proposal from the
+// influencer's side after brand has set the location. Does NOT count as a
+// reschedule — it's the first slot, not a counter. Subsequent influencer
+// changes go through counterPropose.
+async function proposeSlot(eventId, fields, actor, notes) {
+  const event = await getById(eventId);
+  if (!event) throw new Error('NOT_FOUND');
+  if (event.mode !== 'visit') throw new Error('WRONG_MODE');
+  if (actor.role !== 'influencer') throw new Error('Only influencer can propose a slot');
+  if (event.status !== 'proposed') {
+    throw new Error(`Cannot propose slot in status "${event.status}"`);
+  }
+  if (!fields.visit_scheduled_at) throw new Error('visit_scheduled_at is required');
+
+  const range = await getVisitDateRange(event.contract_id);
+  if (!isWithinRange(fields.visit_scheduled_at, range)) {
+    const err = new Error('VISIT_DATE_OUT_OF_RANGE');
+    err.range = range;
+    throw err;
+  }
+
+  // If influencer is proposing AGAIN (slot already set by them previously),
+  // count as a reschedule.
+  const isReschedule = event.slot_proposed_by === 'influencer' && event.visit_scheduled_at;
+  if (isReschedule && event.reschedule_count_influencer >= RESCHEDULE_LIMIT_PER_SIDE) {
+    throw new Error('RESCHEDULE_LIMIT_REACHED');
+  }
+
+  const setClauses = [
+    `visit_scheduled_at = $1`,
+    `visit_window_minutes = COALESCE($2, visit_window_minutes)`,
+    `slot_proposed_by = 'influencer'`,
+    `status = 'proposed'`,
+    `updated_at = NOW()`,
+  ];
+  if (isReschedule) setClauses.push(`reschedule_count_influencer = reschedule_count_influencer + 1`);
+
+  const { rows } = await db.query(
+    `UPDATE production_events SET ${setClauses.join(', ')}
+     WHERE id = $3
+     RETURNING *`,
+    [fields.visit_scheduled_at, fields.visit_window_minutes || null, eventId]
+  );
+  await logAction(null, eventId, actor.user_id, actor.role, 'slot_proposed', notes || null, fields);
+  return rows[0];
+}
+
+// Mutual remote flip — either party requests, the other party confirms. On
+// confirm: production_mode on contract → 'remote', event auto-completes.
+async function requestRemoteFlip(eventId, actor, notes) {
+  const event = await getById(eventId);
+  if (!event) throw new Error('NOT_FOUND');
+  if (event.mode === 'remote') throw new Error('ALREADY_REMOTE');
+  if (event.status === 'completed') throw new Error('Already completed');
+
+  if (event.remote_flip_requested_by && event.remote_flip_requested_by !== actor.role) {
+    // The OTHER side already requested — this call is the confirmation.
+    return confirmRemoteFlip(eventId, actor, notes);
+  }
+  if (event.remote_flip_requested_by === actor.role) {
+    return event; // idempotent — already requested by this side
+  }
+  const { rows } = await db.query(
+    `UPDATE production_events
+        SET remote_flip_requested_by = $1,
+            remote_flip_requested_at = NOW(),
+            updated_at = NOW()
+      WHERE id = $2
+      RETURNING *`,
+    [actor.role, eventId]
+  );
+  await logAction(null, eventId, actor.user_id, actor.role, 'remote_flip_requested', notes || null, null);
+  return rows[0];
+}
+
+async function confirmRemoteFlip(eventId, actor, notes) {
+  const event = await getById(eventId);
+  if (!event) throw new Error('NOT_FOUND');
+  if (!event.remote_flip_requested_by) throw new Error('No pending remote flip request');
+  if (event.remote_flip_requested_by === actor.role) throw new Error('Cannot confirm your own request');
+
+  // Two-step: flip the contract's production_mode to 'remote' AND auto-complete
+  // the event. Both inside one transaction.
+  const client = await require('../config/db').pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE contracts SET production_mode = 'remote' WHERE id = $1`,
+      [event.contract_id]
+    );
+    const { rows } = await client.query(
+      `UPDATE production_events
+          SET mode = 'remote',
+              status = 'completed',
+              updated_at = NOW()
+        WHERE id = $1
+        RETURNING *`,
+      [eventId]
+    );
+    await client.query('COMMIT');
+    await logAction(null, eventId, actor.user_id, actor.role, 'remote_flip_confirmed', notes || null, null);
+    return rows[0];
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// Accept the OTHER side's slot proposal (visit) or address (shipment).
+// Either side may call; the rule is: you can't accept your own proposal.
+// For shipment: only influencer accepts (it's their delivery address).
 async function accept(eventId, actor) {
   const event = await getById(eventId);
   if (!event) throw new Error('NOT_FOUND');
   if (event.status !== 'proposed') {
     throw new Error(`Cannot accept event in status "${event.status}"`);
   }
-  if (actor.role !== 'influencer') {
-    throw new Error('Only influencer can accept');
+
+  if (event.mode === 'shipment') {
+    if (actor.role !== 'influencer') throw new Error('Only influencer confirms shipment address');
+  } else if (event.mode === 'visit') {
+    if (!event.slot_proposed_by) {
+      throw new Error('No slot has been proposed yet — fill the slot first');
+    }
+    if (event.slot_proposed_by === actor.role) {
+      throw new Error("You can't accept your own proposal — wait for the other side.");
+    }
   }
 
   const { rows } = await db.query(
@@ -194,18 +388,40 @@ async function accept(eventId, actor) {
   return rows[0];
 }
 
-// Influencer counter-proposes a shipment address change (or visit time alt).
+// Counter-propose a different slot (visit) or address (shipment). Either
+// party may counter. Increments that side's reschedule counter; capped at 2.
 async function counterPropose(eventId, fields, actor, notes) {
   const event = await getById(eventId);
   if (!event) throw new Error('NOT_FOUND');
   if (!['proposed', 'confirmed'].includes(event.status)) {
     throw new Error(`Cannot counter-propose on status "${event.status}"`);
   }
-  if (actor.role !== 'influencer') {
-    throw new Error('Only influencer can counter-propose');
+  // Shipment counter is influencer-only (address belongs to them).
+  if (event.mode === 'shipment' && actor.role !== 'influencer') {
+    throw new Error('Only influencer can counter shipment address');
   }
-  if (event.reschedule_count_influencer >= RESCHEDULE_LIMIT_PER_SIDE) {
+  // Visit counter requires there to be a slot to counter against.
+  if (event.mode === 'visit' && !event.slot_proposed_by) {
+    throw new Error('Nothing to counter — pick a slot first');
+  }
+  // Can't counter your own proposal — counter only makes sense against the other side.
+  if (event.mode === 'visit' && event.slot_proposed_by === actor.role) {
+    throw new Error("You can't counter your own proposal — let the other side respond.");
+  }
+
+  const countCol = actor.role === 'brand' ? 'reschedule_count_brand' : 'reschedule_count_influencer';
+  if (event[countCol] >= RESCHEDULE_LIMIT_PER_SIDE) {
     throw new Error('RESCHEDULE_LIMIT_REACHED');
+  }
+
+  // Date validation when countering a visit time.
+  if (event.mode === 'visit' && fields.visit_scheduled_at) {
+    const range = await getVisitDateRange(event.contract_id);
+    if (!isWithinRange(fields.visit_scheduled_at, range)) {
+      const err = new Error('VISIT_DATE_OUT_OF_RANGE');
+      err.range = range;
+      throw err;
+    }
   }
 
   const setClauses = [];
@@ -229,7 +445,8 @@ async function counterPropose(eventId, fields, actor, notes) {
   if (!setClauses.length) {
     throw new Error('No fields to counter-propose');
   }
-  setClauses.push(`reschedule_count_influencer = reschedule_count_influencer + 1`);
+  setClauses.push(`${countCol} = ${countCol} + 1`);
+  if (event.mode === 'visit') setClauses.push(`slot_proposed_by = '${actor.role}'`);
   setClauses.push(`status = 'proposed'`);
   setClauses.push(`updated_at = NOW()`);
   params.push(eventId);
@@ -357,11 +574,15 @@ module.exports = {
   getByContractId,
   getById,
   getLog,
+  getVisitDateRange,
   setVisitDetails,
+  proposeSlot,
   accept,
   counterPropose,
   dispatchShipment,
   confirmReceived,
   completeVisit,
   cancel,
+  requestRemoteFlip,
+  confirmRemoteFlip,
 };

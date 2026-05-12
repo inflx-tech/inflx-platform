@@ -25,6 +25,11 @@ router.get(
   authenticate, requireRole('brand', 'influencer'),
   ctrl.getProduction
 );
+router.get(
+  '/contracts/:id/production/date-range',
+  authenticate, requireRole('brand', 'influencer'),
+  ctrl.getDateRange
+);
 router.post(
   '/contracts/:id/production/visit-details',
   authenticate, requireRole('brand'),
@@ -32,11 +37,13 @@ router.post(
 );
 
 // Event-scoped state transitions
-router.post('/production-events/:id/accept',           authenticate, requireRole('influencer'), ctrl.acceptEvent);
-router.post('/production-events/:id/counter-propose',  authenticate, requireRole('influencer'), ctrl.counterPropose);
+router.post('/production-events/:id/propose-slot',     authenticate, requireRole('influencer'), ctrl.proposeSlot);
+router.post('/production-events/:id/accept',           authenticate, requireRole('brand', 'influencer'), ctrl.acceptEvent);
+router.post('/production-events/:id/counter-propose',  authenticate, requireRole('brand', 'influencer'), ctrl.counterPropose);
 router.post('/production-events/:id/dispatch',         authenticate, requireRole('brand'),       ctrl.dispatch);
 router.post('/production-events/:id/confirm-received', authenticate, requireRole('influencer'), ctrl.confirmReceived);
 router.post('/production-events/:id/complete',         authenticate, requireRole('brand', 'influencer'), ctrl.complete);
+router.post('/production-events/:id/flip-to-remote',   authenticate, requireRole('brand', 'influencer'), ctrl.flipToRemote);
 router.post('/production-events/:id/cancel',           authenticate, requireAnyAdminRole, ctrl.adminCancel);
 
 module.exports = router;

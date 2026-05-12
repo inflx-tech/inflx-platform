@@ -192,7 +192,11 @@ export const brandApi = {
 
   // Production Coordination (Phase P) — brand side
   getProduction:               (contractId) => api.get(`/contracts/${contractId}/production`),
+  getProductionDateRange:      (contractId) => api.get(`/contracts/${contractId}/production/date-range`),
   setProductionVisitDetails:   (contractId, data) => api.post(`/contracts/${contractId}/production/visit-details`, data),
+  acceptProduction:            (eventId)         => api.post(`/production-events/${eventId}/accept`),
+  counterProposeProduction:    (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),
+  flipProductionToRemote:      (eventId, data)   => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
   dispatchProduction:          (eventId, data) => api.post(`/production-events/${eventId}/dispatch`, data),
   completeProduction:          (eventId, data) => api.post(`/production-events/${eventId}/complete`, data),
 
@@ -262,10 +266,13 @@ export const influencerApi = {
 
   // Production Coordination (Phase P) — influencer side
   getProduction:                (contractId) => api.get(`/contracts/${contractId}/production`),
+  getProductionDateRange:       (contractId) => api.get(`/contracts/${contractId}/production/date-range`),
+  proposeProductionSlot:        (eventId, data)   => api.post(`/production-events/${eventId}/propose-slot`, data),
   acceptProduction:             (eventId)         => api.post(`/production-events/${eventId}/accept`),
   counterProposeProduction:     (eventId, data)   => api.post(`/production-events/${eventId}/counter-propose`, data),
   confirmProductionReceived:    (eventId, data)   => api.post(`/production-events/${eventId}/confirm-received`, data),
   completeProduction:           (eventId, data)   => api.post(`/production-events/${eventId}/complete`, data),
+  flipProductionToRemote:       (eventId, data)   => api.post(`/production-events/${eventId}/flip-to-remote`, data || {}),
 
   // Proposals (Phase Q)
   discoverBrands:           (search) => api.get(`/influencers/me/discover-brands${search ? `?search=${encodeURIComponent(search)}` : ''}`),

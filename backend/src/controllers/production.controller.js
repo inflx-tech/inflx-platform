@@ -121,14 +121,106 @@ const setVisitDetails = asyncHandler(async (req, res) => {
         `Reschedule limit (${productionService.RESCHEDULE_LIMIT_PER_SIDE}) reached for the brand side. Contact admin to reset.`,
         409);
     }
+    if (err.message === 'VISIT_DATE_OUT_OF_RANGE') {
+      throw new AppError('VALIDATION_ERROR',
+        `Visit date must fall between ${new Date(err.range.earliest).toDateString()} and ${new Date(err.range.latest).toDateString()}.`,
+        422, 'visit_scheduled_at');
+    }
     throw err;
   }
 
+  const body = req.body?.visit_scheduled_at
+    ? `${contract.brand_name} proposed a visit slot for "${contract.campaign_name}". Review and confirm.`
+    : `${contract.brand_name} set the visit location for "${contract.campaign_name}". Pick your available slot.`;
   notify(
     contract.influencer_user_id, contract.influencer_fcm, contract.influencer_phone,
     'production.visit_proposed',
     'Visit details updated',
-    `${contract.brand_name} updated the visit details for "${contract.campaign_name}". Review and confirm.`,
+    body,
+    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
+  );
+
+  return success(res, { production_event: updated });
+});
+
+// GET /v1/contracts/:id/production/date-range
+// Returns the [earliest, latest] window the visit can be scheduled within.
+// Used by both brand and influencer UIs to show valid date hints.
+const getDateRange = asyncHandler(async (req, res) => {
+  const contract = await getContractParties(req.params.id);
+  await ensureParty(contract, req, 'either');
+  const range = await productionService.getVisitDateRange(contract.id);
+  return success(res, { range });
+});
+
+// POST /v1/production-events/:id/propose-slot  (influencer)
+// Body: { visit_scheduled_at, visit_window_minutes?, notes? }
+const proposeSlot = asyncHandler(async (req, res) => {
+  const event = await getEventOrThrow(req.params.id);
+  const contract = await getContractByEvent(event);
+  await ensureParty(contract, req, 'influencer');
+  if (event.mode !== 'visit') {
+    throw new AppError('VALIDATION_ERROR', 'propose-slot only applies to visit-mode events', 422);
+  }
+
+  let updated;
+  try {
+    const { notes, ...fields } = req.body || {};
+    updated = await productionService.proposeSlot(event.id, fields, actorFromReq(req), notes);
+  } catch (err) {
+    if (err.message === 'VISIT_DATE_OUT_OF_RANGE') {
+      throw new AppError('VALIDATION_ERROR',
+        `Visit must be between ${new Date(err.range.earliest).toDateString()} and ${new Date(err.range.latest).toDateString()}.`,
+        422, 'visit_scheduled_at');
+    }
+    if (err.message === 'RESCHEDULE_LIMIT_REACHED') {
+      throw new AppError('VALIDATION_ERROR',
+        `Reschedule limit (${productionService.RESCHEDULE_LIMIT_PER_SIDE}) reached for the influencer side.`,
+        409);
+    }
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+
+  notify(
+    contract.brand_user_id, contract.brand_fcm, contract.brand_phone,
+    'production.slot_proposed',
+    'Influencer picked a visit slot',
+    `${contract.influencer_name} proposed a visit slot for "${contract.campaign_name}". Accept or counter.`,
+    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
+  );
+
+  return success(res, { production_event: updated });
+});
+
+// POST /v1/production-events/:id/flip-to-remote  (brand OR influencer)
+// Either party can request; the other confirms. On confirm, contracts.production_mode → 'remote'
+// and the event auto-completes (no shoot needed).
+const flipToRemote = asyncHandler(async (req, res) => {
+  const event = await getEventOrThrow(req.params.id);
+  const contract = await getContractByEvent(event);
+  await ensureParty(contract, req, 'either');
+
+  let updated;
+  try {
+    updated = await productionService.requestRemoteFlip(event.id, actorFromReq(req), req.body?.notes);
+  } catch (err) {
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+
+  // Whether this call was the request or the confirmation is decided in the
+  // service (auto-confirms if other side already requested). Notify the
+  // appropriate party.
+  const isConfirmed = updated.mode === 'remote' && updated.status === 'completed';
+  const target = req.user.sub === contract.brand_user_id
+    ? { uid: contract.influencer_user_id, fcm: contract.influencer_fcm, phone: contract.influencer_phone }
+    : { uid: contract.brand_user_id, fcm: contract.brand_fcm, phone: contract.brand_phone };
+  notify(
+    target.uid, target.fcm, target.phone,
+    isConfirmed ? 'production.remote_flip_confirmed' : 'production.remote_flip_requested',
+    isConfirmed ? 'Switched to remote production' : 'Other side wants to switch to remote',
+    isConfirmed
+      ? `Production mode for "${contract.campaign_name}" is now remote. Create content from the brief — no shoot needed.`
+      : `The other side asked to switch "${contract.campaign_name}" to remote (no shoot). Confirm to proceed.`,
     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
   );
 
@@ -136,10 +228,12 @@ const setVisitDetails = asyncHandler(async (req, res) => {
 });
 
 // POST /v1/production-events/:id/accept
+// Shipment: influencer-only (confirms address). Visit: either side (whoever
+// didn't propose the slot accepts it).
 const acceptEvent = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
-  await ensureParty(contract, req, 'influencer');
+  await ensureParty(contract, req, event.mode === 'shipment' ? 'influencer' : 'either');
 
   let updated;
   try {
@@ -148,28 +242,27 @@ const acceptEvent = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', err.message, 422);
   }
 
-  const title = event.mode === 'shipment'
-    ? 'Influencer confirmed shipping address'
-    : 'Influencer confirmed visit details';
-  const body = event.mode === 'shipment'
-    ? `${contract.influencer_name} confirmed the shipping address. Ready to dispatch.`
-    : `${contract.influencer_name} confirmed the visit. Awaiting visit completion.`;
-  notify(
-    contract.brand_user_id, contract.brand_fcm, contract.brand_phone,
-    'production.confirmed', title, body,
-    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
-  );
+  // Notify the OTHER party that the slot/address was accepted.
+  const target = req.user.sub === contract.brand_user_id
+    ? { uid: contract.influencer_user_id, fcm: contract.influencer_fcm, phone: contract.influencer_phone, who: contract.brand_name }
+    : { uid: contract.brand_user_id, fcm: contract.brand_fcm, phone: contract.brand_phone, who: contract.influencer_name };
+  const title = event.mode === 'shipment' ? 'Shipping address confirmed' : 'Visit slot confirmed';
+  const body  = event.mode === 'shipment'
+    ? `${target.who === contract.brand_name ? contract.influencer_name : contract.brand_name} confirmed the shipping address.`
+    : `${target.who === contract.brand_name ? contract.influencer_name : contract.brand_name} accepted the visit slot for "${contract.campaign_name}".`;
+  notify(target.uid, target.fcm, target.phone, 'production.confirmed', title, body,
+    { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id });
 
   return success(res, { production_event: updated });
 });
 
-// POST /v1/production-events/:id/counter-propose
+// POST /v1/production-events/:id/counter-propose  (brand OR influencer)
 // Body: { visit_scheduled_at?, visit_window_minutes?, visit_address?,
 //         shipment_to_*, notes? }
 const counterPropose = asyncHandler(async (req, res) => {
   const event = await getEventOrThrow(req.params.id);
   const contract = await getContractByEvent(event);
-  await ensureParty(contract, req, 'influencer');
+  await ensureParty(contract, req, 'either');
 
   let updated;
   try {
@@ -177,18 +270,28 @@ const counterPropose = asyncHandler(async (req, res) => {
     updated = await productionService.counterPropose(event.id, fields, actorFromReq(req), notes);
   } catch (err) {
     if (err.message === 'RESCHEDULE_LIMIT_REACHED') {
+      const side = req.user.sub === contract.brand_user_id ? 'brand' : 'influencer';
       throw new AppError('VALIDATION_ERROR',
-        `Reschedule limit (${productionService.RESCHEDULE_LIMIT_PER_SIDE}) reached for the influencer side. Contact admin to reset.`,
+        `Reschedule limit (${productionService.RESCHEDULE_LIMIT_PER_SIDE}) reached for the ${side} side. Contact admin to reset.`,
         409);
+    }
+    if (err.message === 'VISIT_DATE_OUT_OF_RANGE') {
+      throw new AppError('VALIDATION_ERROR',
+        `Visit must be between ${new Date(err.range.earliest).toDateString()} and ${new Date(err.range.latest).toDateString()}.`,
+        422, 'visit_scheduled_at');
     }
     throw new AppError('VALIDATION_ERROR', err.message, 422);
   }
 
+  // Notify the OTHER party (whoever didn't make this call).
+  const target = req.user.sub === contract.brand_user_id
+    ? { uid: contract.influencer_user_id, fcm: contract.influencer_fcm, phone: contract.influencer_phone, who: contract.brand_name }
+    : { uid: contract.brand_user_id, fcm: contract.brand_fcm, phone: contract.brand_phone, who: contract.influencer_name };
   notify(
-    contract.brand_user_id, contract.brand_fcm, contract.brand_phone,
+    target.uid, target.fcm, target.phone,
     'production.counter_proposed',
-    'Influencer suggested changes',
-    `${contract.influencer_name} suggested an alternative for "${contract.campaign_name}". Review and confirm.`,
+    'Counter-proposal received',
+    `${target.who} suggested an alternative for "${contract.campaign_name}". Review and confirm.`,
     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id }
   );
 
@@ -295,11 +398,14 @@ const adminCancel = asyncHandler(async (req, res) => {
 
 module.exports = {
   getProduction,
+  getDateRange,
   setVisitDetails,
+  proposeSlot,
   acceptEvent,
   counterPropose,
   dispatch,
   confirmReceived,
   complete,
+  flipToRemote,
   adminCancel,
 };

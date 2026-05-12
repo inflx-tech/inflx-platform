@@ -708,15 +708,20 @@ function ProductionPanel({ contractId }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
 
-  // Visit form state
+  // Visit location form (brand fills initially)
   const [vAddress, setVAddress]     = useState('');
   const [vCity, setVCity]           = useState('');
   const [vPincode, setVPincode]     = useState('');
-  const [vScheduledAt, setVScheduledAt] = useState('');  // datetime-local
   const [vWindow, setVWindow]       = useState(60);
   const [vContactName, setVContactName] = useState('');
   const [vContactPhone, setVContactPhone] = useState('');
+
+  // Counter / reschedule form (slot)
+  const [cScheduledAt, setCScheduledAt] = useState('');
+  const [showCounter, setShowCounter]   = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
 
   // Shipment form state
   const [courier, setCourier] = useState('');
@@ -725,7 +730,10 @@ function ProductionPanel({ contractId }) {
 
   async function load() {
     setLoading(true);
-    const res = await productionApi.get(contractId);
+    const [res, rangeRes] = await Promise.all([
+      productionApi.get(contractId),
+      productionApi.getDateRange(contractId).catch(() => null),
+    ]);
     setLoading(false);
     if (res.success) {
       setEvent(res.data?.production_event || null);
@@ -736,7 +744,6 @@ function ProductionPanel({ contractId }) {
         setVAddress(e.visit_address || '');
         setVCity(e.visit_city || '');
         setVPincode(e.visit_pincode || '');
-        setVScheduledAt(e.visit_scheduled_at ? new Date(e.visit_scheduled_at).toISOString().slice(0, 16) : '');
         setVWindow(e.visit_window_minutes || 60);
         setVContactName(e.visit_contact_name || '');
         setVContactPhone(e.visit_contact_phone || '');
@@ -745,17 +752,22 @@ function ProductionPanel({ contractId }) {
         setExpectedAt(e.shipment_expected_at ? new Date(e.shipment_expected_at).toISOString().slice(0, 10) : '');
       }
     }
+    if (rangeRes?.success) setDateRange(rangeRes.data?.range || null);
   }
 
   useEffect(() => { load(); }, [contractId]);
 
-  async function saveVisitDetails() {
+  const dateHint = dateRange
+    ? `Visit must be between ${new Date(dateRange.earliest).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} and ${new Date(dateRange.latest).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`
+    : null;
+
+  // Save location only (no date) — sends ball to influencer.
+  async function saveLocationOnly() {
     setSaving(true); setError(null);
     const res = await productionApi.setVisitDetails(contractId, {
       visit_address: vAddress.trim(),
       visit_city:    vCity.trim() || null,
       visit_pincode: vPincode.trim() || null,
-      visit_scheduled_at: vScheduledAt ? new Date(vScheduledAt).toISOString() : null,
       visit_window_minutes: Number(vWindow) || null,
       visit_contact_name: vContactName.trim() || null,
       visit_contact_phone: vContactPhone.trim() || null,
@@ -763,6 +775,48 @@ function ProductionPanel({ contractId }) {
     setSaving(false);
     if (res.success) load();
     else setError(res.error?.message || 'Save failed');
+  }
+
+  async function acceptSlot() {
+    setSaving(true); setError(null);
+    const res = await productionApi.accept(event.id);
+    setSaving(false);
+    if (res.success) load();
+    else setError(res.error?.message || 'Could not accept slot');
+  }
+
+  async function sendCounter() {
+    if (!cScheduledAt) { setError('Pick a date/time'); return; }
+    setSaving(true); setError(null);
+    const res = await productionApi.counterPropose(event.id, {
+      visit_scheduled_at: new Date(cScheduledAt).toISOString(),
+      visit_window_minutes: Number(vWindow) || null,
+    });
+    setSaving(false);
+    if (res.success) { setShowCounter(false); setCScheduledAt(''); load(); }
+    else setError(res.error?.message || 'Counter failed');
+  }
+
+  async function sendReschedule() {
+    if (!cScheduledAt) { setError('Pick a date/time'); return; }
+    setSaving(true); setError(null);
+    const res = await productionApi.setVisitDetails(contractId, {
+      visit_scheduled_at: new Date(cScheduledAt).toISOString(),
+      visit_window_minutes: Number(vWindow) || null,
+    });
+    setSaving(false);
+    if (res.success) { setShowReschedule(false); setCScheduledAt(''); load(); }
+    else setError(res.error?.message || 'Reschedule failed');
+  }
+
+  async function flipToRemote() {
+    if (!event) return;
+    if (!confirm('Switch to remote production? No in-person shoot. The other side has to confirm before it takes effect.')) return;
+    setSaving(true); setError(null);
+    const res = await productionApi.flipToRemote(event.id);
+    setSaving(false);
+    if (res.success) load();
+    else setError(res.error?.message || 'Flip failed');
   }
 
   async function saveDispatch() {
@@ -785,6 +839,11 @@ function ProductionPanel({ contractId }) {
     setSaving(false);
     if (res.success) load();
     else setError(res.error?.message || 'Complete failed');
+  }
+
+  function fmtSlot(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   if (loading) return <div className="p-5 border-t border-gray-100 text-xs text-gray-400">Loading production…</div>;
@@ -829,45 +888,217 @@ function ProductionPanel({ contractId }) {
 
       {error && <div className="mb-3 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded p-2">{error}</div>}
 
-      {event.mode === 'visit' && (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <input value={vAddress} onChange={e => setVAddress(e.target.value)} placeholder="Address line"
-              className="col-span-2 border border-gray-200 rounded-lg p-2 text-xs" />
-            <input value={vCity} onChange={e => setVCity(e.target.value)} placeholder="City"
-              className="border border-gray-200 rounded-lg p-2 text-xs" />
-            <input value={vPincode} onChange={e => setVPincode(e.target.value)} placeholder="Pincode"
-              className="border border-gray-200 rounded-lg p-2 text-xs" />
-            <input type="datetime-local" value={vScheduledAt} onChange={e => setVScheduledAt(e.target.value)}
-              className="border border-gray-200 rounded-lg p-2 text-xs" />
-            <select value={vWindow} onChange={e => setVWindow(e.target.value)} className="border border-gray-200 rounded-lg p-2 text-xs">
-              <option value={30}>30 min window</option>
-              <option value={60}>1 hour window</option>
-              <option value={120}>2 hour window</option>
-              <option value={240}>Half day</option>
-            </select>
-            <input value={vContactName} onChange={e => setVContactName(e.target.value)} placeholder="Contact name"
-              className="border border-gray-200 rounded-lg p-2 text-xs" />
-            <input value={vContactPhone} onChange={e => setVContactPhone(e.target.value)} placeholder="Contact phone"
-              className="border border-gray-200 rounded-lg p-2 text-xs" />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={saveVisitDetails} disabled={saving || !vAddress.trim()}
-              className="flex-1 py-2 bg-navy text-white text-xs font-bold rounded-lg disabled:opacity-50">
-              {saving ? 'Saving…' : event.visit_address ? 'Update visit details' : 'Send to influencer'}
-            </button>
-            {event.status === 'confirmed' && (
-              <button onClick={markVisitDone} disabled={saving}
-                className="flex-1 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg disabled:opacity-50">
-                Mark visit done
-              </button>
+      {event.mode === 'visit' && (() => {
+        const hasLocation = !!event.visit_address;
+        const hasSlot     = !!event.visit_scheduled_at;
+        const isConfirmed = event.status === 'confirmed';
+        const isCompleted = event.status === 'completed';
+        const proposedByInfluencer = event.slot_proposed_by === 'influencer';
+        const proposedByBrand      = event.slot_proposed_by === 'brand';
+        const flipPending = !!event.remote_flip_requested_by;
+        const flipByMe    = event.remote_flip_requested_by === 'brand';
+
+        return (
+          <div className="space-y-2">
+            {/* Other-side flip request banner */}
+            {flipPending && !flipByMe && !isCompleted && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                <div className="text-xs text-gray-700 mb-2">
+                  Influencer wants to switch to remote (no shoot, content from brief alone). Confirm?
+                </div>
+                <button onClick={flipToRemote} disabled={saving}
+                  className="px-3 py-1 bg-orange-500 text-white text-[11px] font-bold rounded-md disabled:opacity-50">
+                  Confirm flip
+                </button>
+              </div>
+            )}
+
+            {/* STATE 1: no location yet — brand fills location-only */}
+            {!hasLocation && !isCompleted && (
+              <>
+                <div className="text-[11px] text-gray-500 mb-1">
+                  Tell the influencer WHERE to come. They'll then pick a time that works.
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={vAddress} onChange={e => setVAddress(e.target.value)} placeholder="Address line *"
+                    className="col-span-2 border border-gray-200 rounded-lg p-2 text-xs" />
+                  <input value={vCity} onChange={e => setVCity(e.target.value)} placeholder="City"
+                    className="border border-gray-200 rounded-lg p-2 text-xs" />
+                  <input value={vPincode} onChange={e => setVPincode(e.target.value)} placeholder="Pincode"
+                    className="border border-gray-200 rounded-lg p-2 text-xs" />
+                  <select value={vWindow} onChange={e => setVWindow(e.target.value)} className="border border-gray-200 rounded-lg p-2 text-xs">
+                    <option value={30}>30 min window</option>
+                    <option value={60}>1 hour window</option>
+                    <option value={120}>2 hour window</option>
+                    <option value={240}>Half day</option>
+                  </select>
+                  <div /> {/* spacer */}
+                  <input value={vContactName} onChange={e => setVContactName(e.target.value)} placeholder="Contact name"
+                    className="border border-gray-200 rounded-lg p-2 text-xs" />
+                  <input value={vContactPhone} onChange={e => setVContactPhone(e.target.value)} placeholder="Contact phone"
+                    className="border border-gray-200 rounded-lg p-2 text-xs" />
+                </div>
+                <button onClick={saveLocationOnly} disabled={saving || !vAddress.trim()}
+                  className="w-full py-2 bg-navy text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                  {saving ? 'Sending…' : 'Send to influencer for scheduling'}
+                </button>
+              </>
+            )}
+
+            {/* STATE 2: location set, no slot — waiting on influencer */}
+            {hasLocation && !hasSlot && !isCompleted && (
+              <>
+                <div className="bg-white border border-gray-200 rounded-lg p-3 text-xs">
+                  <div className="font-semibold text-gray-700 mb-1">Visit location</div>
+                  <div className="text-gray-600">
+                    {[event.visit_address, event.visit_city, event.visit_pincode].filter(Boolean).join(', ')}
+                  </div>
+                </div>
+                <div className="text-[11px] text-gray-500">Waiting for influencer to pick a slot.</div>
+                {dateHint && <div className="text-[11px] text-orange-700 font-bold">{dateHint}</div>}
+                {!flipPending && (
+                  <button onClick={flipToRemote} disabled={saving}
+                    className="text-[11px] text-gray-500 underline hover:text-gray-700">
+                    Skip the visit — switch to remote
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* STATE 3: influencer proposed slot — accept or counter */}
+            {hasLocation && hasSlot && proposedByInfluencer && event.status === 'proposed' && (
+              <>
+                <div className="bg-white border-2 border-teal-300 rounded-lg p-3">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">Influencer wants to come on</div>
+                  <div className="text-base font-bold text-gray-900">{fmtSlot(event.visit_scheduled_at)}</div>
+                  <div className="text-[11px] text-gray-500 mt-1">
+                    {event.visit_window_minutes ? `${event.visit_window_minutes} min slot · ` : ''}
+                    at {event.visit_address}
+                  </div>
+                </div>
+                {!showCounter ? (
+                  <div className="flex gap-2">
+                    <button onClick={acceptSlot} disabled={saving}
+                      className="flex-1 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                      Accept slot
+                    </button>
+                    <button onClick={() => setShowCounter(true)} disabled={saving}
+                      className="flex-1 py-2 bg-white border border-navy text-navy text-xs font-bold rounded-lg disabled:opacity-50">
+                      Suggest another time
+                    </button>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
+                    <input type="datetime-local" value={cScheduledAt} onChange={e => setCScheduledAt(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg p-2 text-xs" />
+                    {dateHint && <div className="text-[11px] text-orange-700 font-bold">{dateHint}</div>}
+                    <div className="flex gap-2">
+                      <button onClick={sendCounter} disabled={saving || !cScheduledAt}
+                        className="flex-1 py-2 bg-navy text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                        {saving ? 'Sending…' : 'Send counter'}
+                      </button>
+                      <button onClick={() => setShowCounter(false)} disabled={saving}
+                        className="py-2 px-3 text-[11px] text-gray-500 underline">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!flipPending && (
+                  <button onClick={flipToRemote} disabled={saving}
+                    className="text-[11px] text-gray-500 underline hover:text-gray-700">
+                    Skip the visit — switch to remote
+                  </button>
+                )}
+                {event.reschedule_count_brand > 0 && (
+                  <div className="text-[10px] text-gray-500">Reschedules used: {event.reschedule_count_brand} of 2</div>
+                )}
+              </>
+            )}
+
+            {/* STATE 4: brand proposed/countered — waiting on influencer */}
+            {hasLocation && hasSlot && proposedByBrand && event.status === 'proposed' && (
+              <>
+                <div className="bg-white border-2 border-amber-300 rounded-lg p-3">
+                  <div className="text-[10px] font-bold text-gray-500 uppercase mb-1">Your proposed slot</div>
+                  <div className="text-base font-bold text-gray-900">{fmtSlot(event.visit_scheduled_at)}</div>
+                  <div className="text-[11px] text-gray-500 mt-1">
+                    {event.visit_window_minutes ? `${event.visit_window_minutes} min slot · ` : ''}
+                    at {event.visit_address}
+                  </div>
+                </div>
+                <div className="text-[11px] text-gray-500">Waiting for influencer to accept or counter.</div>
+                {event.reschedule_count_brand > 0 && (
+                  <div className="text-[10px] text-gray-500">Reschedules used: {event.reschedule_count_brand} of 2</div>
+                )}
+              </>
+            )}
+
+            {/* STATE 5: confirmed — mark done + reschedule */}
+            {isConfirmed && (
+              <>
+                <div className="bg-white border-2 border-teal-400 rounded-lg p-3">
+                  <div className="text-[10px] font-bold text-teal-700 uppercase mb-1">✓ Confirmed visit</div>
+                  <div className="text-base font-bold text-gray-900">{fmtSlot(event.visit_scheduled_at)}</div>
+                  <div className="text-[11px] text-gray-500 mt-1">
+                    {event.visit_window_minutes ? `${event.visit_window_minutes} min slot · ` : ''}
+                    at {event.visit_address}
+                  </div>
+                  {event.visit_contact_name && (
+                    <div className="text-[11px] text-gray-500 mt-1">
+                      Contact: {event.visit_contact_name}{event.visit_contact_phone ? ` (${event.visit_contact_phone})` : ''}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={markVisitDone} disabled={saving}
+                    className="flex-1 py-2 bg-teal-600 text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                    Mark visit done
+                  </button>
+                  {!showReschedule && (
+                    <button onClick={() => setShowReschedule(true)} disabled={saving}
+                      className="py-2 px-3 text-[11px] text-gray-500 underline">
+                      Reschedule
+                    </button>
+                  )}
+                </div>
+                {showReschedule && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 space-y-2">
+                    <input type="datetime-local" value={cScheduledAt} onChange={e => setCScheduledAt(e.target.value)}
+                      className="w-full border border-gray-200 rounded-lg p-2 text-xs" />
+                    {dateHint && <div className="text-[11px] text-orange-700 font-bold">{dateHint}</div>}
+                    <div className="flex gap-2">
+                      <button onClick={sendReschedule} disabled={saving || !cScheduledAt}
+                        className="flex-1 py-2 bg-navy text-white text-xs font-bold rounded-lg disabled:opacity-50">
+                        {saving ? 'Sending…' : 'Propose new slot'}
+                      </button>
+                      <button onClick={() => setShowReschedule(false)} disabled={saving}
+                        className="py-2 px-3 text-[11px] text-gray-500 underline">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {event.reschedule_count_brand > 0 && (
+                  <div className="text-[10px] text-gray-500">Reschedules used: {event.reschedule_count_brand} of 2</div>
+                )}
+              </>
+            )}
+
+            {/* STATE 6: completed */}
+            {isCompleted && (
+              <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-xs text-teal-800">
+                ✓ Visit complete{event.visit_completed_at ? ` on ${new Date(event.visit_completed_at).toLocaleDateString('en-IN')}` : ''}.
+              </div>
+            )}
+
+            {/* Self-initiated flip pending */}
+            {flipPending && flipByMe && !isCompleted && (
+              <div className="text-[11px] text-gray-500">You requested a switch to remote. Waiting for influencer to confirm.</div>
             )}
           </div>
-          {event.reschedule_count_brand > 0 && (
-            <div className="text-[10px] text-gray-500">Reschedules used: {event.reschedule_count_brand} of 2</div>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {event.mode === 'shipment' && (
         <div className="space-y-2">
