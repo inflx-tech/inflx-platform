@@ -186,7 +186,11 @@ const COLLAB_MAP_COLUMNS = [
   'collab_type',
   'detected_signals',
   'confidence',
-  'detected_at',
+  // detected_at intentionally omitted — the column is NOT NULL DEFAULT NOW()
+  // in migration 041. If listed here, valueFor returns null for payloads
+  // that don't set it (n8n's A3 v2 doesn't), which overrides the DEFAULT
+  // and trips the NOT NULL constraint. Leaving the column out lets the
+  // database default fill it in.
 ];
 
 const POST_COLUMNS = [

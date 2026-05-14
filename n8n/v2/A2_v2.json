@@ -166,7 +166,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $vars.INFLX_INGEST_API_BASE }}{{ $('Build INGEST Payload').item.json.__endpoint }}",
+        "url": "={{ $vars.INFLX_INGEST_API_BASE + $('Build INGEST Payload').item.json.__endpoint }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
