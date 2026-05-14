@@ -1,0 +1,86 @@
+{
+  "name": "A6 v2 — Daily Refresh (via /refresh-due)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 3 * * *" }
+          ]
+        }
+      },
+      "id": "a6v2-cron",
+      "name": "Schedule (03:00 UTC daily)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a6-refresh-now",
+        "options": {}
+      },
+      "id": "a6v2-manual",
+      "name": "Manual Trigger Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 180],
+      "webhookId": "a6-refresh-now-v2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.INFLX_INGEST_API_BASE }}/refresh-due?limit=500&target_type=all",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "a6v2-fetch",
+      "name": "GET /refresh-due",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 90]
+    },
+    {
+      "parameters": {
+        "jsCode": "const w = $input.item.json.data || $input.item.json;\nconst inf = w.influencers || [];\nconst br = w.brands || [];\nconst out = [];\nfor (const r of inf) {\n  if (r.ig_handle) out.push({ json: { username: r.ig_handle, target_type: 'influencer', scrape_mode: 'refresh' } });\n}\nfor (const r of br) {\n  if (r.instagram_handle) out.push({ json: { username: r.instagram_handle, target_type: 'brand', scrape_mode: 'refresh' } });\n}\nreturn out;"
+      },
+      "id": "a6v2-flatten",
+      "name": "Flatten to Targets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 90]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.N8N_BASE_URL }}/webhook/a2-profile-scraper",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: $json.username, target_type: $json.target_type, scrape_mode: $json.scrape_mode }) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "a6v2-trigger-a2",
+      "name": "Trigger A2 v2 per target",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 90],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Schedule (03:00 UTC daily)": { "main": [[{ "node": "GET /refresh-due", "type": "main", "index": 0 }]] },
+    "Manual Trigger Webhook": { "main": [[{ "node": "GET /refresh-due", "type": "main", "index": 0 }]] },
+    "GET /refresh-due": { "main": [[{ "node": "Flatten to Targets", "type": "main", "index": 0 }]] },
+    "Flatten to Targets": { "main": [[{ "node": "Trigger A2 v2 per target", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "marketing-v2" }, { "name": "refresh" }]
+}

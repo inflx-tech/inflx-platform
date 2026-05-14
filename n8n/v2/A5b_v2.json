@@ -1,0 +1,148 @@
+{
+  "name": "A5b v2 — Brand Scoring (Claude)",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "a5b-brand-scoring", "options": {} },
+      "id": "a5bv2-webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "a5b-brand-scoring-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body || {};\nconst handle = (body.instagram_handle || '').trim().toLowerCase().replace(/^@/, '');\nif (!handle) throw new Error('Missing instagram_handle');\nreturn { json: { instagram_handle: handle } };"
+      },
+      "id": "a5bv2-parse",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $vars.INFLX_INGEST_API_BASE }}/brand-profile/{{ $('Parse Input').item.json.instagram_handle }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "a5bv2-fetch",
+      "name": "GET /brand-profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const wrapper = $input.item.json.data || $input.item.json;\nconst b = wrapper.profile || {};\nif (!b.id) throw new Error('Brand profile not found');\n\nconst lean = {\n  instagram_handle: b.instagram_handle,\n  business_name: b.business_name,\n  followers_count: b.followers_count,\n  bio: (b.bio || '').slice(0, 500),\n  city: b.city || b.inferred_city,\n  industry: b.industry || b.inferred_industry,\n  sub_industry: b.sub_industry || b.inferred_sub_industry,\n  has_email: !!(b.manual_email || b.bio_email),\n  has_phone: !!(b.manual_phone || b.bio_phone),\n  has_whatsapp: !!(b.manual_whatsapp || b.bio_whatsapp),\n  website: b.website || b.external_url,\n  is_verified: b.is_verified,\n  influencer_collab_count: b.influencer_collab_count || 0,\n  unique_influencer_partners: b.unique_influencer_partners || 0,\n  marketing_intensity: b.marketing_intensity,\n  reachability_score: b.reachability_score\n};\n\nconst prompt = 'Score this brand for outreach suitability.\\n\\nBrand: ' + JSON.stringify(lean) + '\\n\\nScoring criteria (each 0-100, weighted):\\n1. Instagram Activity (30%): follower count, verification, engagement signals.\\n2. Collab History (25%): number of detected influencer collabs, variety of partners, marketing intensity.\\n3. Reachability (20%): has bio email, website, phone, WhatsApp.\\n4. Market Fit (25%): sub-industry, city presence, realistic outreach.\\n\\nTier: small (<5K), mid (5K-50K), large (50K-200K), enterprise (>200K).\\n\\nReturn ONLY valid JSON:\\n{\"priority_score\": 0-100 number, \"tier\": \"small|mid|large|enterprise\", \"scores\": {\"instagram_activity\": 0, \"collab_history\": 0, \"reachability\": 0, \"market_fit\": 0}, \"strengths\": [], \"concerns\": [], \"summary\": \"one paragraph\"}';\n\nreturn { json: {\n  instagram_handle: b.instagram_handle,\n  claude_body: {\n    model: 'claude-sonnet-4-20250514',\n    max_tokens: 2048,\n    messages: [{ role: 'user', content: prompt }]\n  }\n} };"
+      },
+      "id": "a5bv2-prompt",
+      "name": "Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Claude Prompt').item.json.claude_body }}",
+        "options": { "timeout": 60000 },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "a5bv2-claude",
+      "name": "Claude Score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 0],
+      "credentials": {
+        "httpHeaderAuth": { "id": "4uCI4iu5uUCAM4mj", "name": "Anthropic API (topped-up account)" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let data = {};\ntry {\n  const txt = $input.item.json.content[0].text;\n  const m = txt.match(/\\{[\\s\\S]*\\}/);\n  if (m) data = JSON.parse(m[0]);\n} catch (e) { data = { priority_score: 0, tier: 'small', summary: 'Scoring failed' }; }\nconst instagram_handle = $('Build Claude Prompt').item.json.instagram_handle;\nconst priority_score = Math.max(0, Math.min(100, Number(data.priority_score) || 0));\nconst tier_raw = String(data.tier || '').toLowerCase();\nconst tier = ['small','mid','large','enterprise'].includes(tier_raw) ? tier_raw : 'small';\n\nreturn { json: {\n  instagram_handle, priority_score, tier,\n  scoring_summary: String(data.summary || '').slice(0, 2000),\n  scoring_strengths: Array.isArray(data.strengths) ? data.strengths : [],\n  scoring_concerns: Array.isArray(data.concerns) ? data.concerns : [],\n  insight_body: {\n    insight_type: 'brand_fit',\n    instagram_handle,\n    title: 'Brand Score: ' + priority_score + '/100',\n    body: String(data.summary || ''),\n    score: priority_score,\n    model_used: 'claude-sonnet-4',\n    metadata: { tier, scores: data.scores || {}, strengths: data.strengths || [], concerns: data.concerns || [] }\n  }\n} };"
+      },
+      "id": "a5bv2-parse",
+      "name": "Parse Score",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.INFLX_INGEST_API_BASE }}/brand-metrics",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ instagram_handle: $json.instagram_handle, priority_score: $json.priority_score, tier: $json.tier, scoring_summary: $json.scoring_summary, scoring_strengths: $json.scoring_strengths, scoring_concerns: $json.scoring_concerns }) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "a5bv2-post-score",
+      "name": "POST /brand-metrics (score)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, -60]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.INFLX_INGEST_API_BASE }}/insight-log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Parse Score').item.json.insight_body) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "a5bv2-post-insight",
+      "name": "POST /insight-log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, 60]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
+    "Parse Input": { "main": [[{ "node": "GET /brand-profile", "type": "main", "index": 0 }]] },
+    "GET /brand-profile": { "main": [[{ "node": "Build Claude Prompt", "type": "main", "index": 0 }]] },
+    "Build Claude Prompt": { "main": [[{ "node": "Claude Score", "type": "main", "index": 0 }]] },
+    "Claude Score": { "main": [[{ "node": "Parse Score", "type": "main", "index": 0 }]] },
+    "Parse Score": {
+      "main": [[
+        { "node": "POST /brand-metrics (score)", "type": "main", "index": 0 },
+        { "node": "POST /insight-log", "type": "main", "index": 0 }
+      ]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
+  "tags": [{ "name": "marketing-v2" }, { "name": "scoring" }]
+}

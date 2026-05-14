@@ -750,6 +750,25 @@ const profileBundle = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /v1/internal/ingest/brand-profile/:handle
+// Returns one brand_profile row. Symmetric to /profile-bundle but lighter
+// (no posts/insights for brands).
+// ─────────────────────────────────────────────────────────────────────────────
+const brandProfile = asyncHandler(async (req, res) => {
+  const handle = normaliseHandle(req.params.handle);
+  if (!handle) {
+    throw new AppError('INVALID_PAYLOAD', 'handle is required', 422, 'handle');
+  }
+  const { rows } = await db.query(
+    `SELECT * FROM brand_profiles WHERE instagram_handle = $1`, [handle]
+  );
+  if (!rows[0]) {
+    throw new AppError('NOT_FOUND', `No brand_profile for handle="${handle}"`, 404);
+  }
+  return success(res, { ok: true, profile: rows[0] });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /v1/internal/ingest/refresh-due
 // Returns handles due for refresh per tier cadence from system_settings.
 // Used by the A6 daily refresh workflow.
@@ -833,6 +852,7 @@ module.exports = {
   upsertCollabMap,
   insertInsightLog,
   profileBundle,
+  brandProfile,
   refreshDue,
   getSettings,
 };

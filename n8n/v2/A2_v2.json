@@ -1,0 +1,221 @@
+{
+  "name": "A2 v2 — Profile Scraper (Apify + Claude Intel → Inflx INGEST)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a2-profile-scraper",
+        "options": {}
+      },
+      "id": "a2v2-webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "a2-profile-scraper-v2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = ($input.item.json && $input.item.json.body) || {};\nconst username = String(body.username || '').trim().toLowerCase().replace(/^@/, '').replace(/\\/+$/, '');\nconst target_type = (body.target_type || 'influencer') === 'brand' ? 'brand' : 'influencer';\nconst scrape_mode = body.scrape_mode === 'refresh' ? 'refresh' : 'deep';\nif (!username) throw new Error('Missing username');\nreturn { json: { username, target_type, scrape_mode } };"
+      },
+      "id": "a2v2-parse",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.apify.com/v2/acts/apify~instagram-profile-scraper/runs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"usernames\": [\"{{ $('Parse Input').item.json.username }}\"],\n  \"resultsLimit\": 1\n}",
+        "options": { "timeout": 120000 },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth"
+      },
+      "id": "a2v2-apify-start",
+      "name": "Start Apify Profile Scrape",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "credentials": {
+        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+      }
+    },
+    {
+      "parameters": { "amount": 30 },
+      "id": "a2v2-wait",
+      "name": "Wait for Scrape",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [640, 0],
+      "webhookId": "a2v2-wait-webhook"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/actor-runs/{{ $('Start Apify Profile Scrape').item.json.data.id }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth"
+      },
+      "id": "a2v2-status",
+      "name": "Check Run Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [840, 0],
+      "credentials": {
+        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "succeeded",
+              "leftValue": "={{ $json.data.status }}",
+              "rightValue": "SUCCEEDED",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a2v2-if-success",
+      "name": "Succeeded?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1040, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.apify.com/v2/datasets/{{ $('Start Apify Profile Scrape').item.json.data.defaultDatasetId }}/items?limit=1",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth"
+      },
+      "id": "a2v2-results",
+      "name": "Get Scrape Results",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, 0],
+      "credentials": {
+        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $input.item.json;\nconst targetType = $('Parse Input').item.json.target_type;\nconst inputUsername = $('Parse Input').item.json.username;\n\nconst facts = {\n  username: p.username || inputUsername,\n  full_name: p.fullName || '',\n  bio: p.biography || '',\n  business_address: p.businessAddress || null,\n  business_category: p.businessCategoryName || null,\n  is_business_account: !!p.isBusinessAccount,\n  external_url: p.externalUrl || null,\n  followers: p.followersCount || 0,\n  posts: p.postsCount || 0,\n  is_verified: !!p.verified,\n  target_type: targetType\n};\n\nconst prompt = 'You are an Instagram profile analyst for an Indian influencer marketing platform. Extract structured intelligence from this profile.\\n\\nProfile facts:\\n' + JSON.stringify(facts, null, 2) + '\\n\\nReturn ONLY this JSON (no markdown, no commentary). Use null for fields you cannot infer:\\n{\\n  \"contact_phone\": \"10-digit Indian mobile if found in bio (digits only, no +91)\",\\n  \"contact_email\": \"email if found, else null\",\\n  \"whatsapp_number\": \"if bio mentions WhatsApp/WA/DM with a number, else same as contact_phone if unclear, else null\",\\n  \"city\": \"city in India inferred from bio/handle, else null\",\\n  \"business_type\": \"high-level type (restaurant | cafe | salon | gym | clothing_brand | beauty_brand | food_blogger | fashion_creator | comedy_creator | educator | fitness_creator | other)\",\\n  \"sub_industry\": \"specific niche (mandi | biryani | haircut | makeup | yoga | sarees | streetwear etc.)\",\\n  \"primary_offering\": \"one short sentence: what they sell or post about\",\\n  \"tone\": \"casual | professional | playful | salesy | aspirational\",\\n  \"languages_used\": [\"english\", \"telugu\", \"hindi\"],\\n  \"reachability_score\": 0-100 integer\\n}\\n\\nIMPORTANT: contact_phone is exactly 10 digits if Indian mobile (starts 6-9). Strip +91 / 91- prefix. If no real phone, null. Do not invent.';\n\nconst claudeBody = {\n  model: 'claude-sonnet-4-20250514',\n  max_tokens: 1024,\n  messages: [{ role: 'user', content: prompt }]\n};\n\nreturn { json: { claude_body: claudeBody, _facts: facts, _raw: p } };"
+      },
+      "id": "a2v2-claude-prompt",
+      "name": "Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "anthropic-version", "value": "2023-06-01" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Claude Prompt').item.json.claude_body }}",
+        "options": { "timeout": 30000 },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "id": "a2v2-claude-call",
+      "name": "Extract Profile Intel",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1640, 0],
+      "credentials": {
+        "httpHeaderAuth": { "id": "4uCI4iu5uUCAM4mj", "name": "Anthropic API (topped-up account)" }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let intel = {};\ntry {\n  const resp = $input.item.json;\n  const txt = resp && resp.content && resp.content[0] && resp.content[0].text || '';\n  const m = txt.match(/\\{[\\s\\S]*\\}/);\n  if (m) intel = JSON.parse(m[0]);\n} catch (e) { intel = { _parse_error: e.message }; }\nreturn { json: {\n  contact_phone: intel.contact_phone || null,\n  contact_email: intel.contact_email || null,\n  whatsapp_number: intel.whatsapp_number || null,\n  city: intel.city || null,\n  business_type: intel.business_type || null,\n  sub_industry: intel.sub_industry || null,\n  primary_offering: intel.primary_offering || null,\n  tone: intel.tone || null,\n  languages_used: Array.isArray(intel.languages_used) ? intel.languages_used : [],\n  reachability_score: typeof intel.reachability_score === 'number' ? intel.reachability_score : 0,\n  _parse_error: intel._parse_error || null\n} };"
+      },
+      "id": "a2v2-parse-intel",
+      "name": "Parse Profile Intel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $('Get Scrape Results').item.json;\nconst targetType = $('Parse Input').item.json.target_type;\nconst inputUsername = $('Parse Input').item.json.username;\nconst intel = $('Parse Profile Intel').item.json;\n\nconst f = p.followersCount || 0;\nlet tier = 'nano';\nif (targetType === 'influencer') {\n  if (f >= 5000000) tier = 'celebrity';\n  else if (f >= 1000000) tier = 'mega';\n  else if (f >= 200000) tier = 'macro';\n  else if (f >= 50000) tier = 'mid';\n  else if (f >= 10000) tier = 'micro';\n} else {\n  if (f >= 200000) tier = 'enterprise';\n  else if (f >= 50000) tier = 'large';\n  else if (f >= 5000) tier = 'mid';\n  else tier = 'small';\n}\n\nlet er = 0;\nif (p.latestPosts && p.latestPosts.length > 0 && f > 0) {\n  const totalEng = p.latestPosts.reduce((s, post) => s + (post.likesCount || 0) + (post.commentsCount || 0), 0);\n  er = Number(((totalEng / p.latestPosts.length) / f * 100).toFixed(4));\n}\nif (er > 99.99) er = 99.99;\n\nconst cleanUsername = (p.username || inputUsername || '').trim().toLowerCase();\n\n// IMPORTANT: NEVER write to admin-manual fields:\n//   city, niche/industry, sub_niche/sub_industry, manual_phone/email/whatsapp\n// Claude data goes ONLY to inferred_* and bio_* columns.\nconst common = {\n  followers_count: f,\n  following_count: p.followsCount || 0,\n  total_posts_lifetime: p.postsCount || 0,\n  bio: p.biography || '',\n  profile_pic_url: p.profilePicUrlHD || p.profilePicUrl || '',\n  external_url: p.externalUrl || null,\n  is_verified: !!p.verified,\n  is_business: !!p.isBusinessAccount,\n  is_private: !!p.private,\n  ig_category: p.businessCategoryName || null,\n  full_name: p.fullName || cleanUsername,\n  // Claude-inferred\n  bio_phone: intel.contact_phone,\n  bio_email: intel.contact_email,\n  bio_whatsapp: intel.whatsapp_number,\n  primary_offering: intel.primary_offering,\n  tone: intel.tone,\n  bio_business_type: intel.business_type,\n  reachability_score: intel.reachability_score,\n  contact_intel_extracted_at: new Date().toISOString(),\n  raw_profile_data: p,\n  last_scraped_at: new Date().toISOString(),\n  scrape_count: 1\n};\n\nif (targetType === 'brand') {\n  return { json: {\n    __target_type: 'brand',\n    __username: cleanUsername,\n    __endpoint: '/brand-metrics',\n    __body: {\n      instagram_handle: cleanUsername,\n      business_name: p.fullName || p.username || cleanUsername,\n      tier,\n      inferred_city: intel.city,\n      inferred_industry: intel.business_type,\n      inferred_sub_industry: intel.sub_industry,\n      languages_used: intel.languages_used,\n      ...common\n    }\n  } };\n}\n\nreturn { json: {\n  __target_type: 'influencer',\n  __username: cleanUsername,\n  __endpoint: '/creator-metrics',\n  __body: {\n    ig_handle: cleanUsername,\n    follower_tier: tier,\n    follower_based_er: er,\n    inferred_city: intel.city,\n    inferred_niche: intel.business_type,\n    inferred_sub_niche: intel.sub_industry,\n    languages: intel.languages_used,\n    ...common\n  }\n} };"
+      },
+      "id": "a2v2-build-payload",
+      "name": "Build INGEST Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2040, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.INFLX_INGEST_API_BASE }}{{ $('Build INGEST Payload').item.json.__endpoint }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Build INGEST Payload').item.json.__body) }}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "a2v2-ingest",
+      "name": "POST to INGEST API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2240, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.N8N_BASE_URL }}/webhook/a3-collab-extractor",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"username\": \"{{ $('Build INGEST Payload').item.json.__username }}\",\n  \"target_type\": \"{{ $('Build INGEST Payload').item.json.__target_type }}\",\n  \"scrape_mode\": \"{{ $('Parse Input').item.json.scrape_mode }}\"\n}",
+        "options": {}
+      },
+      "id": "a2v2-trigger-a3",
+      "name": "Trigger A3 v2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2440, 0]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
+    "Parse Input": { "main": [[{ "node": "Start Apify Profile Scrape", "type": "main", "index": 0 }]] },
+    "Start Apify Profile Scrape": { "main": [[{ "node": "Wait for Scrape", "type": "main", "index": 0 }]] },
+    "Wait for Scrape": { "main": [[{ "node": "Check Run Status", "type": "main", "index": 0 }]] },
+    "Check Run Status": { "main": [[{ "node": "Succeeded?", "type": "main", "index": 0 }]] },
+    "Succeeded?": { "main": [[{ "node": "Get Scrape Results", "type": "main", "index": 0 }], []] },
+    "Get Scrape Results": { "main": [[{ "node": "Build Claude Prompt", "type": "main", "index": 0 }]] },
+    "Build Claude Prompt": { "main": [[{ "node": "Extract Profile Intel", "type": "main", "index": 0 }]] },
+    "Extract Profile Intel": { "main": [[{ "node": "Parse Profile Intel", "type": "main", "index": 0 }]] },
+    "Parse Profile Intel": { "main": [[{ "node": "Build INGEST Payload", "type": "main", "index": 0 }]] },
+    "Build INGEST Payload": { "main": [[{ "node": "POST to INGEST API", "type": "main", "index": 0 }]] },
+    "POST to INGEST API": { "main": [[{ "node": "Trigger A3 v2", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
+  "tags": [{ "name": "marketing-v2" }, { "name": "scraping" }]
+}

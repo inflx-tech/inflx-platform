@@ -20,6 +20,7 @@ router.post('/caption-insights',      ingestCtrl.upsertCaptionInsights);
 router.post('/collab-map',            ingestCtrl.upsertCollabMap);
 router.post('/insight-log',           ingestCtrl.insertInsightLog);
 router.get( '/profile-bundle/:ig_handle', ingestCtrl.profileBundle);
+router.get( '/brand-profile/:handle',     ingestCtrl.brandProfile);
 router.get( '/refresh-due',           ingestCtrl.refreshDue);
 router.get( '/settings',              ingestCtrl.getSettings);
 
