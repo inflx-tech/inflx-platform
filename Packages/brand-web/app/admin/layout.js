@@ -16,11 +16,12 @@ const NAV = [
   { section: 'CONTENT' },
   { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️' },
   { section: 'MARKETING' },
-  { href: '/admin/marketing/leads',    label: 'Triage',     icon: '🎯' },
-  { href: '/admin/marketing/add',      label: 'Add Lead',   icon: '➕' },
-  { href: '/admin/marketing/inbox',    label: 'Inbox',      icon: '📥' },
-  { href: '/admin/marketing/funnel',   label: 'Funnel',     icon: '📊' },
-  { href: '/admin/marketing/settings', label: 'M-Settings', icon: '🛠️' },
+  { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯' },
+  { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕' },
+  { href: '/admin/marketing/verifications', label: 'Verifications', icon: '🔍', badge: 'verifications' },
+  { href: '/admin/marketing/inbox',         label: 'Inbox',         icon: '📥' },
+  { href: '/admin/marketing/funnel',        label: 'Funnel',        icon: '📊' },
+  { href: '/admin/marketing/settings',      label: 'M-Settings',    icon: '🛠️' },
   { section: 'FINANCE' },
   { href: '/admin/escrow', label: 'Escrow', icon: '🔒' },
   { href: '/admin/payouts', label: 'Payouts', icon: '💸' },
@@ -34,6 +35,7 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
+  const [verificationCount, setVerificationCount] = useState(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -67,6 +69,7 @@ export default function DashboardLayout({ children }) {
         if (res.success) {
           const p = res.data;
           setPendingCount((p.pending_approvals?.brands || 0) + (p.pending_approvals?.influencers || 0));
+          setVerificationCount(p.pending_verifications || 0);
         }
       } catch {}
     }
@@ -113,6 +116,9 @@ export default function DashboardLayout({ children }) {
                 <span className="flex-1">{item.label}</span>
                 {item.badge === 'pending' && pendingCount > 0 && (
                   <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{pendingCount}</span>
+                )}
+                {item.badge === 'verifications' && verificationCount > 0 && (
+                  <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{verificationCount}</span>
                 )}
               </Link>
             );

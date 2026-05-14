@@ -401,6 +401,16 @@ export const adminApi = {
   updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
   deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
 
+  // Creator verification queue (claimed → verified / rejected / reset).
+  // Backed by /v1/admin/creator-verifications/* — admin queue surfaces
+  // creator_profiles rows in 'claimed' state (either auto-claimed from a
+  // 1-match at signup, or stub rows created when signup IG handle wasn't
+  // in our scraped pool yet).
+  listVerifications:   (status) => api.get(`/admin/creator-verifications${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  verifyCreator:       (id)         => api.post(`/admin/creator-verifications/${id}/verify`),
+  rejectCreator:       (id, reason) => api.post(`/admin/creator-verifications/${id}/reject`, { reason }),
+  resetCreator:        (id)         => api.post(`/admin/creator-verifications/${id}/reset`),
+
   bulkUploadInfluencers: async (file) => {
     const token = getToken();
     const formData = new FormData();

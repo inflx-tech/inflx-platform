@@ -237,7 +237,10 @@ const getStats = asyncHandler(async (req, res) => {
       (SELECT COALESCE(SUM(influencer_commission), 0) FROM follower_transactions
        WHERE status = 'completed' AND commission_confirmed_at IS NOT NULL)                               AS total_commission_paid,
       (SELECT COALESCE(SUM(amount), 0) FROM escrow_entries WHERE status = 'locked')                     AS escrow_locked,
-      (SELECT COALESCE(SUM(amount), 0) FROM escrow_entries WHERE status = 'queued')                     AS escrow_queued
+      (SELECT COALESCE(SUM(amount), 0) FROM escrow_entries WHERE status = 'queued')                     AS escrow_queued,
+      -- Marketing verification queue: creator_profiles in 'claimed' state
+      -- (signup linked them but admin hasn't confirmed identity yet).
+      (SELECT COUNT(*) FROM creator_profiles WHERE verification_status = 'claimed')                     AS pending_verifications
   `);
 
   const r = counts[0];
@@ -272,6 +275,7 @@ const getStats = asyncHandler(async (req, res) => {
       brands: parseInt(r.pending_brands),
       influencers: parseInt(r.pending_influencers),
     },
+    pending_verifications: parseInt(r.pending_verifications || 0),
     active_brands:   parseInt(r.active_brands),
     active_influencers: parseInt(r.active_influencers),
     active_campaigns: parseInt(r.active_campaigns),
