@@ -35,9 +35,13 @@ module.exports = function errorHandler(err, req, res, next) {
     return error(res, 'VALIDATION_ERROR', 'Invalid ID format', 400);
   }
 
-  // Unexpected error — log full details server-side, return generic message to client
+  // Unexpected error — log full details server-side, return generic message to client.
+  // Temporary debug: for the marketing admin routes, return the actual error message
+  // in production too. Helps diagnose the intake 500 without Render log access. Remove
+  // this branch once the bug is identified.
   console.error('[INFLX] Unhandled error:', err);
-  const message = process.env.NODE_ENV === 'development'
+  const isMarketingDebug = req.originalUrl && req.originalUrl.includes('/admin/marketing/');
+  const message = (process.env.NODE_ENV === 'development' || isMarketingDebug)
     ? `${err.message} (${err.code || err.name})`
     : 'Internal server error. Please try again.';
   return error(res, 'INTERNAL_ERROR', message, 500);
