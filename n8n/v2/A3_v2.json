@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "a3-collab-extractor",
+        "responseMode": "onReceived",
         "options": {}
       },
       "id": "a3v2-webhook",
@@ -45,7 +46,7 @@
       }
     },
     {
-      "parameters": { "amount": 60 },
+      "parameters": { "amount": 180 },
       "id": "a3v2-wait",
       "name": "Wait for Post Scrape",
       "type": "n8n-nodes-base.wait",

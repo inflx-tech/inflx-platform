@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "a2-profile-scraper",
+        "responseMode": "onReceived",
         "options": {}
       },
       "id": "a2v2-webhook",
@@ -45,7 +46,7 @@
       }
     },
     {
-      "parameters": { "amount": 30 },
+      "parameters": { "amount": 60 },
       "id": "a2v2-wait",
       "name": "Wait for Scrape",
       "type": "n8n-nodes-base.wait",

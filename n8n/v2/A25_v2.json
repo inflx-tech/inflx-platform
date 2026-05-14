@@ -5,6 +5,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "a25-metrics-calculator",
+        "responseMode": "onReceived",
         "options": {}
       },
       "id": "a25v2-webhook",

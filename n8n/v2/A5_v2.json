@@ -2,7 +2,8 @@
   "name": "A5 v2 — Influencer Scoring (Claude)",
   "nodes": [
     {
-      "parameters": { "httpMethod": "POST", "path": "a5-scoring", "options": {} },
+      "parameters": { "httpMethod": "POST", "path": "a5-scoring",
+        "responseMode": "onReceived", "options": {} },
       "id": "a5v2-webhook",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",

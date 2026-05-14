@@ -19,6 +19,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "a6-refresh-now",
+        "responseMode": "onReceived",
         "options": {}
       },
       "id": "a6v2-manual",

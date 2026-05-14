@@ -2,7 +2,8 @@
   "name": "A5b v2 — Brand Scoring (Claude)",
   "nodes": [
     {
-      "parameters": { "httpMethod": "POST", "path": "a5b-brand-scoring", "options": {} },
+      "parameters": { "httpMethod": "POST", "path": "a5b-brand-scoring",
+        "responseMode": "onReceived", "options": {} },
       "id": "a5bv2-webhook",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
