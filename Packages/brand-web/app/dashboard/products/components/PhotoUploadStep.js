@@ -1,29 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import GalleryPicker from '../../../gallery/components/GalleryPicker';
+import GalleryPicker from '../../gallery/components/GalleryPicker';
 
 /**
- * RestaurantPhotoStep — overrides the built-in `photo_upload` step for
- * restaurants. Mounts the existing brand-web GalleryPicker modal so the
- * brand selects from already-uploaded assets OR uploads new ones (which
- * also land in the brand's gallery for reuse elsewhere).
+ * PhotoUploadStep — the working `photo_upload` step component, schema-driven.
  *
- * Selected asset IDs persist into wizardState.photos (the new
- * brand_config.fields.photos field, declared as image[] per v1.3
- * FieldType enum). publishDriver routes the array through to
- * brand.listing_data.photos via the brand-write path on Publish.
+ * Replaces the visual placeholder that used to live in builtinStepComponents.
+ * Mounts the brand-web GalleryPicker modal: brand picks from already-uploaded
+ * assets OR uploads new ones (which also land in the brand's gallery for
+ * reuse across listings).
  *
- * Per v1.4 contract patch: photo_upload step component for restaurant is
- * a TEMPLATE OVERRIDE (registered in restaurant/index.js's stepComponents)
- * — salon and car_rental keep the built-in placeholder until their own
- * gallery integration lands.
+ * Selected asset OBJECTS persist into wizardState.photos (the brand_config
+ * `photos` field, declared as image[]). publishDriver's brand-write path
+ * routes them into brand.listing_data.photos on Publish.
  *
- * Quality rule honored: brand_config.photo_requirements.gallery_min/max
- * read by canProceed (in restaurant/index.js) to gate Next.
+ * Reads gating thresholds in priority order:
+ *   1. template.brand_config.photo_requirements.{gallery_min,gallery_max,gallery_recommended}
+ *   2. step.{min_photos,max_photos,recommended_photos}
+ *   3. sensible defaults
+ *
+ * The canProceed hook in each template's registry module enforces the minimum
+ * (restaurant gates on photos.length >= 3; salon should do the same after
+ * Phase Salon-1).
+ *
+ * Generalized in Phase Salon-1 from the prior restaurant-only RestaurantPhotoStep.
+ * Salon now picks this up automatically via the layout's built-in dispatch
+ * because salon's `photo_upload` step has no template override.
  */
 
-export default function RestaurantPhotoStep({ step, template, wizardState, onFieldChange }) {
+export default function PhotoUploadStep({ step, template, wizardState, onFieldChange }) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
   const photos = Array.isArray(wizardState.photos) ? wizardState.photos : [];
@@ -32,13 +38,11 @@ export default function RestaurantPhotoStep({ step, template, wizardState, onFie
   const max = photoReq.gallery_max || step.max_photos || 99;
   const recommended = photoReq.gallery_recommended || step.recommended_photos || min;
 
-  // wizardState stores asset IDs. We need the full asset objects for
-  // thumbnail rendering — GalleryPicker returns {id, download_url, ...}
-  // on select. We persist the full objects to wizardState (id is what
-  // the publishDriver writes to brand.listing_data; the rest is for
-  // re-render).
+  const labelNoun = template?.label || 'Listing';
+  const defaultTitle = `${labelNoun} photos`;
+
   function handlePickerDone(picked) {
-    onFieldChange('photos', picked);  // store full asset objects
+    onFieldChange('photos', picked);  // full asset objects so we can re-render thumbnails
   }
 
   function removePhoto(assetId) {
@@ -47,10 +51,15 @@ export default function RestaurantPhotoStep({ step, template, wizardState, onFie
 
   const initialSelectedIds = photos.map(p => p.id);
 
+  // Accent — pulled from card_config so the CTA matches the category color
+  // (orange for restaurant, purple for salon, blue for car_rental).
+  const accent = template?.card_config?.accent || '#F97316'; // orange-500 default
+  const accentHover = template?.card_config?.accent_hover || accent;
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{step.title || 'Restaurant photos'}</h2>
+        <h2 className="text-xl font-bold text-gray-900">{step.title || defaultTitle}</h2>
         {step.subtitle && <p className="text-sm text-gray-500 mt-1">{step.subtitle}</p>}
       </div>
 
@@ -71,7 +80,8 @@ export default function RestaurantPhotoStep({ step, template, wizardState, onFie
           )}
         </div>
         <button type="button" onClick={() => setPickerOpen(true)}
-          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl">
+          style={{ backgroundColor: accent }}
+          className="px-4 py-2 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity">
           {photos.length === 0 ? '+ Add photos' : '+ Add or change'}
         </button>
       </div>
@@ -85,7 +95,8 @@ export default function RestaurantPhotoStep({ step, template, wizardState, onFie
             Pick from your gallery or upload from your device
           </p>
           <button type="button" onClick={() => setPickerOpen(true)}
-            className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl">
+            style={{ backgroundColor: accent }}
+            className="px-5 py-2 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity">
             Open Gallery
           </button>
         </div>

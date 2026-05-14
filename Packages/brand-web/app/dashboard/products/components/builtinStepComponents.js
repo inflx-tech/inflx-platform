@@ -3,6 +3,7 @@
 import DynamicFieldRenderer from './DynamicFieldRenderer';
 import LivePreview from './LivePreview';
 import QualityScore from './QualityScore';
+import PhotoUploadStep from './PhotoUploadStep';
 
 /**
  * builtinStepComponents.js — fallback step components for snake_case
@@ -109,28 +110,12 @@ export function repeatable_items({ step, wizardItems, onItemAdd, onItemRemove, o
 }
 
 // ── photo_upload ────────────────────────────────────────────────────────────
-// Scaffold only — actual R2 upload pipeline is platform-level work
-// (deferred per contracts-v1.2.md §9). For PR-A this renders the slot grid;
-// click handlers no-op.
+// Working built-in: mounts GalleryPicker via the generalized PhotoUploadStep.
+// Phase Salon-1 replaced the prior placeholder scaffold. Templates may still
+// register an override in templateRegistry.js, but no longer need to — the
+// default behavior is now correct for every category.
 
-export function photo_upload({ step, wizardState, onFieldChange }) {
-  const slots = step.slots || ['Photo'];
-  return (
-    <div className="space-y-3">
-      <StepHeader title={step.title} subtitle={step.subtitle} />
-      <div className="grid grid-cols-2 gap-3">
-        {slots.map(slot => (
-          <div key={slot}
-            className="aspect-video bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-orange-300 transition-colors">
-            <span className="text-2xl">📷</span>
-            <span className="text-xs text-gray-400 font-medium">{slot}</span>
-          </div>
-        ))}
-      </div>
-      <p className="text-xs text-gray-400 italic">Photo upload pipeline pending (platform work item).</p>
-    </div>
-  );
-}
+export const photo_upload = PhotoUploadStep;
 
 // ── preview ─────────────────────────────────────────────────────────────────
 // Renders LivePreview + QualityScore + a publish-readiness summary.

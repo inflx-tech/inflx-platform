@@ -132,20 +132,13 @@
       "recommended_photos": 5
     },
     {
-      "id": "service_picker",
-      "title": "Pick a service",
-      "subtitle": "Choose from our list — we'll preload typical durations and price ranges",
-      "component": "master_picker",
+      "id": "service_authoring",
+      "title": "Pick & price your services",
+      "subtitle": "Tap a service to add it. Tap again to set price, duration, stylists & photos — all in one place.",
+      "component": "salon_service_inline",
       "writes_to": "listing",
       "master_source": "master_services",
-      "filter_by": "section"
-    },
-    {
-      "id": "service_specs",
-      "title": "Service details",
-      "subtitle": "Confirm what's included and any options",
-      "component": "spec_confirmation",
-      "writes_to": "listing",
+      "filter_by": "section",
       "auto_fill_from": "master_services",
       "spec_fields": [
         "description",
@@ -156,14 +149,7 @@
         "requires_stylist_choice",
         "available_stylist_ids",
         "before_after_images"
-      ]
-    },
-    {
-      "id": "service_pricing",
-      "title": "Set your price",
-      "subtitle": "We'll show you what other salons charge",
-      "component": "pricing",
-      "writes_to": "listing",
+      ],
       "price_fields": [
         {
           "key": "price",
@@ -252,7 +238,7 @@
       },
       "hours_json": {
         "key": "hours_json",
-        "type": "string",
+        "type": "weekly_schedule",
         "label": "Operating hours",
         "required": true
       },

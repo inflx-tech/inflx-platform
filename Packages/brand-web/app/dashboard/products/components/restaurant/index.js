@@ -2,27 +2,24 @@
 
 import RestaurantFleetRow from './RestaurantFleetRow';
 import RestaurantDishPicker from './RestaurantDishPicker';
-import RestaurantPhotoStep from './RestaurantPhotoStep';
 
 /**
  * restaurant template module — registered in templateRegistry.js.
  *
- * Step components (PR-2 of restaurant rework):
+ * Step components:
  *   - restaurant_dish_picker → RestaurantDishPicker
  *       Step 4 component with internal Bulk/Individual path-choice.
  *       Bulk path mounts shared BulkUploadCard. Individual path browses
  *       master_dishes by cuisine→section, tap-to-add with inline price
  *       edit + image swap (mounts GalleryPicker).
  *
- *   - photo_upload → RestaurantPhotoStep (TEMPLATE OVERRIDE of built-in)
- *       Step 3 component mounting GalleryPicker for the brand's existing
- *       brand-asset gallery + new uploads. Selected asset objects persist
- *       into wizardState.photos (image[] FieldType).
- *
- * Salon and car_rental keep using the built-in `photo_upload` placeholder
- * until their own gallery integration lands. The override pattern is the
- * registry's by-design behavior: tmpl.stepComponents[name] takes precedence
- * over builtins[name] when both define a component for the same name.
+ * The prior `photo_upload → RestaurantPhotoStep` template override was
+ * removed in Phase Salon-1: the built-in `photo_upload` in
+ * builtinStepComponents.js now mounts the same GalleryPicker integration
+ * (via the generalized PhotoUploadStep), so every category — restaurant,
+ * salon, car_rental, and any future schema — gets working photo authoring
+ * with zero per-template wiring. The override pattern remains available
+ * for genuine category-specific UX divergence.
  *
  * Layout configuration:
  *   - hideUploadTab: true — restaurant handles bulk upload INSIDE step 4's
@@ -47,7 +44,7 @@ import RestaurantPhotoStep from './RestaurantPhotoStep';
 const restaurantTemplate = {
   stepComponents: {
     restaurant_dish_picker: RestaurantDishPicker,
-    photo_upload:           RestaurantPhotoStep,   // overrides built-in for restaurant only
+    // photo_upload now flows through the built-in (which mounts GalleryPicker)
   },
 
   FleetRowComponent: RestaurantFleetRow,

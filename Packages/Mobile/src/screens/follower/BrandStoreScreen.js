@@ -110,8 +110,30 @@ export default function BrandStoreScreen({ navigation, route }) {
 
       {/* Store info */}
       <View style={s.storeInfo}>
-        <Text style={s.storeName}>{brand?.business_name || brandName}</Text>
+        {/* Brand name + verified check.
+            Phase Salon-1: any brand returned by /store/:handle is admin-approved
+            (the endpoint filters on users.status). We render the verified mark
+            unconditionally when `brand` is present, and gate behind
+            brand.is_verified === false ONLY if the backend explicitly opts out
+            later. */}
+        <View style={s.nameRow}>
+          <Text style={s.storeName} numberOfLines={1}>{brand?.business_name || brandName}</Text>
+          {brand && brand?.is_verified !== false && (
+            <View style={s.verifiedBadge}>
+              <Text style={s.verifiedCheck}>✓</Text>
+            </View>
+          )}
+        </View>
         <Text style={s.storeMeta}>{brand?.category?.replace(/_/g, ' ')} · {brand?.city || ''}</Text>
+
+        {/* Trust chips — pay-at-salon + free-cancel signals.
+            Derived from template metadata so no per-brand opt-in needed:
+              · "Pay at salon"      ← brand_config has a walkin_pay action OR
+                                       availing_modes contains walkin_pay/pay_at_store
+              · "Free cancellation" ← card_config.booking_config.refund_policy exists
+            Borrowed from Luzo's trust-signal pattern; adapted to surface only
+            when the schema actually supports them. */}
+        {renderTrustChips(store?.template, accent.accent)}
 
         {/* Schema-driven brand action row when template surfaces brand_config.
             Falls back to legacy hardcoded contact buttons when not. */}
@@ -240,6 +262,51 @@ export default function BrandStoreScreen({ navigation, route }) {
   );
 }
 
+// ── Trust-chip helpers ────────────────────────────────────────────────────
+// Phase Salon-1 — derives the brand-level trust signals from template metadata
+// rather than per-brand opt-ins. Returns a small chip strip beneath the brand
+// name + category line.
+
+function renderTrustChips(template, accentColor) {
+  if (!template) return null;
+
+  const availingModes = template.availing_modes || [];
+  const brandActions = template.brand_config?.actions || [];
+  const refundPolicy = template.card_config?.booking_config?.refund_policy;
+
+  const chips = [];
+
+  // Pay-at-salon — surface if walkin_pay / pay_at_store is supported at the
+  // brand level OR per-item.
+  const hasPayAtSalon =
+    availingModes.includes('walkin_pay') ||
+    availingModes.includes('pay_at_store') ||
+    brandActions.some(a => a.action === 'walkin_pay');
+
+  if (hasPayAtSalon) {
+    chips.push({ key: 'pay_at_salon', icon: '💸', text: 'Pay at salon' });
+  }
+
+  // Free cancellation — surface if a refund policy exists on the booking_config.
+  // The presence of any refund_policy string is treated as "cancellation supported."
+  if (refundPolicy) {
+    chips.push({ key: 'free_cancel', icon: '✕', text: 'Free cancellation' });
+  }
+
+  if (chips.length === 0) return null;
+
+  return (
+    <View style={s.trustRow}>
+      {chips.map(c => (
+        <View key={c.key} style={[s.trustChip, { borderColor: `${accentColor}55` }]}>
+          <Text style={s.trustChipIcon}>{c.icon}</Text>
+          <Text style={[s.trustChipText, { color: accentColor }]}>{c.text}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: darkColors.bg2 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkColors.bg2 },
@@ -255,8 +322,23 @@ const s = StyleSheet.create({
   },
   logoText: { fontSize: 18, fontWeight: '800', color: '#fff' },
   storeInfo: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12 },
-  storeName: { fontSize: 18, fontWeight: '800', color: darkColors.text },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  storeName: { fontSize: 18, fontWeight: '800', color: darkColors.text, flexShrink: 1 },
+  verifiedBadge: {
+    width: 18, height: 18, borderRadius: 9,
+    backgroundColor: '#22C55E',                  // green-500
+    alignItems: 'center', justifyContent: 'center',
+  },
+  verifiedCheck: { fontSize: 10, fontWeight: '900', color: '#fff', lineHeight: 11 },
   storeMeta: { fontSize: 11, color: darkColors.textSecondary, marginTop: 2 },
+  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  trustChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 10, borderWidth: 1,
+  },
+  trustChipIcon: { fontSize: 10 },
+  trustChipText: { fontSize: 10, fontWeight: '700' },
   contactRow: { flexDirection: 'row', gap: 6, marginTop: 12 },
   contactBtn: {
     flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1,

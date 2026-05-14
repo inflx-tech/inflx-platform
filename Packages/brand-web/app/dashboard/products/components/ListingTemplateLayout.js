@@ -84,8 +84,12 @@ export default function ListingTemplateLayout({
     });
   }, []);
 
-  const handleItemAdd = useCallback(() => {
-    setWizardItems(prev => [...prev, {}]);
+  // Adjacent fix (Phase Salon-1): accept an optional initial item state so
+  // pickers like RestaurantDishPicker + SalonServiceInlinePicker can append
+  // a populated item in one call. Default `{}` preserves the original
+  // signature for any caller that invoked onItemAdd() with no args.
+  const handleItemAdd = useCallback((initial = {}) => {
+    setWizardItems(prev => [...prev, initial]);
   }, []);
 
   const handleItemRemove = useCallback((idx) => {
