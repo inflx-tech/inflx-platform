@@ -129,10 +129,62 @@ export default function MarketingSettingsPage() {
         </div>
       )}
 
+      {canEdit && <MaintenancePanel onToast={(t) => { setToast(t); setTimeout(() => setToast(''), 6000); }} />}
+
       {toast && (
         <div className="fixed bottom-4 right-4 bg-teal-deep text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-lg z-50">
           {toast}
         </div>
+      )}
+    </div>
+  );
+}
+
+function MaintenancePanel({ onToast }) {
+  const [running, setRunning] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+
+  async function runBackfill(type) {
+    if (running) return;
+    if (!confirm(`Re-cache all ${type === 'all' ? 'creator + brand' : type} profile pictures to R2? Takes ~30s per 50 rows.`)) return;
+    setRunning(true);
+    setLastResult(null);
+    const res = await marketingApi.backfillProfilePics({ type, force: true });
+    setRunning(false);
+    if (res.success) {
+      setLastResult(res.data);
+      onToast(`Backfill done — ${res.data.ok} ok · ${res.data.failed} failed · ${res.data.skipped} skipped`);
+    } else {
+      onToast(res.error?.message || 'Backfill failed');
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-border p-4 space-y-2">
+      <h2 className="font-display text-sm font-bold text-t1">🧰 Maintenance</h2>
+      <p className="text-[11px] text-t3">
+        Re-cache profile pictures from Instagram to our R2 bucket. Instagram URLs expire ~14 days
+        after a scrape; the cache prevents the admin queues + campaign wizard from showing broken
+        images. Use after a fresh re-scrape if some pics weren't updated automatically.
+      </p>
+      <div className="flex gap-2 pt-1">
+        <button onClick={() => runBackfill('creator')} disabled={running}
+          className="text-xs font-bold bg-surface2 text-t1 hover:bg-gold/15 hover:text-gold px-3 py-1.5 rounded-lg disabled:opacity-40">
+          {running ? 'Running…' : '↻ Re-cache creators'}
+        </button>
+        <button onClick={() => runBackfill('brand')} disabled={running}
+          className="text-xs font-bold bg-surface2 text-t1 hover:bg-gold/15 hover:text-gold px-3 py-1.5 rounded-lg disabled:opacity-40">
+          ↻ Re-cache brands
+        </button>
+        <button onClick={() => runBackfill('all')} disabled={running}
+          className="text-xs font-bold bg-orange text-white hover:bg-orange/90 px-3 py-1.5 rounded-lg disabled:opacity-40">
+          ↻ Re-cache everything
+        </button>
+      </div>
+      {lastResult && (
+        <pre className="text-[10px] text-t3 bg-surface2 rounded-lg p-2 mt-2 overflow-x-auto">
+{JSON.stringify(lastResult, null, 2)}
+        </pre>
       )}
     </div>
   );

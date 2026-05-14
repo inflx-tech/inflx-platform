@@ -24,6 +24,7 @@
 
 const db = require('../config/db');
 const marketingAutomation = require('../services/marketingAutomation.service');
+const imageProxy = require('../services/imageProxy.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -880,6 +881,65 @@ const updateSettings = asyncHandler(async (req, res) => {
   return success(res, rows[0]);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/marketing/backfill-profile-pics  (superadmin)
+// One-shot job: walks creator_profiles + brand_profiles and caches each
+// profile_pic_url to R2. Use after a re-scrape if some IG URLs were stale.
+// Body (all optional): { type: 'creator'|'brand'|'all', limit, force }
+// ─────────────────────────────────────────────────────────────────────────────
+
+const backfillProfilePics = asyncHandler(async (req, res) => {
+  const type   = String(req.body?.type || req.query?.type || 'all').toLowerCase();
+  const limit  = Number(req.body?.limit || req.query?.limit) || null;
+  const force  = !!(req.body?.force || req.query?.force);
+
+  const ranges = [];
+  if (type === 'all' || type === 'creator') {
+    ranges.push({ targetType: 'creator', table: 'creator_profiles',  handleCol: 'ig_handle' });
+  }
+  if (type === 'all' || type === 'brand') {
+    ranges.push({ targetType: 'brand',   table: 'brand_profiles',    handleCol: 'instagram_handle' });
+  }
+  if (ranges.length === 0) {
+    throw new AppError('VALIDATION_ERROR', 'type must be creator | brand | all', 422, 'type');
+  }
+
+  const summary = { ok: 0, skipped: 0, failed: 0, by_type: {} };
+
+  for (const r of ranges) {
+    const where = force ? '' : 'AND profile_pic_r2_key IS NULL';
+    const limitClause = limit ? `LIMIT ${parseInt(limit, 10)}` : '';
+    const { rows } = await db.query(
+      `SELECT ${r.handleCol} AS handle, profile_pic_url
+         FROM ${r.table}
+        WHERE profile_pic_url IS NOT NULL AND profile_pic_url <> ''
+          ${where}
+        ORDER BY ${r.handleCol}
+        ${limitClause}`
+    );
+
+    const typeSummary = { rows: rows.length, ok: 0, skipped: 0, failed: 0, failures: [] };
+    for (const row of rows) {
+      const result = await imageProxy.cacheProfilePic({
+        targetType: r.targetType,
+        handle: row.handle,
+        igUrl: row.profile_pic_url,
+      });
+      if (result.ok) { typeSummary.ok++; summary.ok++; }
+      else if (result.skipped) { typeSummary.skipped++; summary.skipped++; }
+      else {
+        typeSummary.failed++; summary.failed++;
+        if (typeSummary.failures.length < 20) {
+          typeSummary.failures.push({ handle: row.handle, error: result.error });
+        }
+      }
+    }
+    summary.by_type[r.targetType] = typeSummary;
+  }
+
+  return success(res, summary);
+});
+
 module.exports = {
   intakeLead,
   intakeLeadBulk,
@@ -892,4 +952,5 @@ module.exports = {
   getSettings,
   updateSettings,
   getFilterOptions,
+  backfillProfilePics,
 };

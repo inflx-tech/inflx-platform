@@ -43,4 +43,10 @@ router.patch('/settings',  authenticate, requireAdminRole('superadmin'), ctrl.up
 // ── Filter options for the Triage page dropdowns ───────────────────────────
 router.get('/filter-options', authenticate, requireAnyAdminRole, ctrl.getFilterOptions);
 
+// ── One-shot maintenance: cache profile pics to R2 — superadmin only ────────
+// Walks creator_profiles + brand_profiles and pushes every profile_pic_url
+// through imageProxy.cacheProfilePic. Use after a re-scrape if IG URLs were
+// stale. Body: { type?: 'creator'|'brand'|'all', limit?: number, force?: bool }
+router.post('/backfill-profile-pics', authenticate, requireAdminRole('superadmin'), ctrl.backfillProfilePics);
+
 module.exports = router;

@@ -455,6 +455,10 @@ export const marketingApi = {
   getSettings: () => api.get('/admin/marketing/settings'),
   updateSettings: (data) => api.patch('/admin/marketing/settings', data),
   getFilterOptions: () => api.get('/admin/marketing/filter-options'),
+
+  // Maintenance: re-cache all profile pictures to R2. Superadmin only.
+  // Returns { ok, skipped, failed, by_type: { creator: {...}, brand: {...} } }
+  backfillProfilePics: (payload = {}) => api.post('/admin/marketing/backfill-profile-pics', payload),
 };
 
 // (getStoredUser is already exported near the top of this file — duplicate
