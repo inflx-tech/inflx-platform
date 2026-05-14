@@ -80,6 +80,11 @@ module.exports = {
   INFLX_INGEST_TOKEN: process.env.INFLX_INGEST_TOKEN ||
     (process.env.NODE_ENV === 'production' ? '' : 'dev-ingest-token'),
 
+  // n8n base URL — used by the marketing admin controller to trigger the
+  // A2 scrape workflow webhook after a new lead is inserted via admin intake.
+  // If unset, the intake endpoint succeeds but no scrape is fired (dev mode).
+  N8N_BASE_URL: process.env.N8N_BASE_URL || '',
+
   // External-only ingest mode disables the in-platform Apify cron
   // (apify-engagement-scrape). Set to 'external' once the marketing
   // automation pipeline is the source of truth. Default 'internal' keeps

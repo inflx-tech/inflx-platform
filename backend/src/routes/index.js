@@ -44,6 +44,9 @@ const webhookRoutes = require('./webhook.routes');
 // Internal ingest (token-authenticated push from Marketing Automation)
 const ingestRoutes = require('./ingest.routes');
 
+// Marketing Engine admin API (admin-only, JWT-authenticated)
+const marketingAdminRoutes = require('./marketingAdmin.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional } = require('../middleware/auth');
@@ -55,6 +58,9 @@ router.use('/webhooks', webhookRoutes);
 
 // ── Internal ingest (X-Ingest-Token authenticated; not for end-users) ────────
 router.use('/internal/ingest', ingestRoutes);
+
+// ── Marketing Engine admin API (JWT-authenticated, admin only) ───────────────
+router.use('/admin/marketing', marketingAdminRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
