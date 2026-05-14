@@ -411,6 +411,14 @@ export const adminApi = {
   rejectCreator:       (id, reason) => api.post(`/admin/creator-verifications/${id}/reject`, { reason }),
   resetCreator:        (id)         => api.post(`/admin/creator-verifications/${id}/reset`),
 
+  // Creator-invitations queue (brand-driven outreach to unclaimed creators).
+  // When a brand picks an unverified creator in the campaign wizard the row
+  // lands here for admin to run cold outreach ("brand X wants you, sign up").
+  // Backed by /v1/admin/creator-invitations/*.
+  listInvitations:        (status) => api.get(`/admin/creator-invitations${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  markInvitationContacted: (id)    => api.post(`/admin/creator-invitations/${id}/contacted`),
+  expireInvitation:       (id)     => api.post(`/admin/creator-invitations/${id}/expire`),
+
   bulkUploadInfluencers: async (file) => {
     const token = getToken();
     const formData = new FormData();

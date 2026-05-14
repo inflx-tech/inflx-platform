@@ -240,7 +240,12 @@ const getStats = asyncHandler(async (req, res) => {
       (SELECT COALESCE(SUM(amount), 0) FROM escrow_entries WHERE status = 'queued')                     AS escrow_queued,
       -- Marketing verification queue: creator_profiles in 'claimed' state
       -- (signup linked them but admin hasn't confirmed identity yet).
-      (SELECT COUNT(*) FROM creator_profiles WHERE verification_status = 'claimed')                     AS pending_verifications
+      (SELECT COUNT(*) FROM creator_profiles WHERE verification_status = 'claimed')                     AS pending_verifications,
+      -- Creator-invitation queue: brands invited unverified creators via the
+      -- campaign wizard; admin needs to run cold outreach. Pending = not yet
+      -- contacted; contacted = outreach run but creator hasn't signed up yet.
+      (SELECT COUNT(*) FROM creator_invitations WHERE status = 'pending')                               AS pending_invitations,
+      (SELECT COUNT(*) FROM creator_invitations WHERE status IN ('pending','contacted'))                AS open_invitations
   `);
 
   const r = counts[0];
@@ -276,6 +281,8 @@ const getStats = asyncHandler(async (req, res) => {
       influencers: parseInt(r.pending_influencers),
     },
     pending_verifications: parseInt(r.pending_verifications || 0),
+    pending_invitations:   parseInt(r.pending_invitations || 0),
+    open_invitations:      parseInt(r.open_invitations || 0),
     active_brands:   parseInt(r.active_brands),
     active_influencers: parseInt(r.active_influencers),
     active_campaigns: parseInt(r.active_campaigns),

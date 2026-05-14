@@ -19,6 +19,7 @@ const NAV = [
   { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯' },
   { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕' },
   { href: '/admin/marketing/verifications', label: 'Verifications', icon: '🔍', badge: 'verifications' },
+  { href: '/admin/marketing/invitations',   label: 'Invitations',   icon: '📨', badge: 'invitations' },
   { href: '/admin/marketing/inbox',         label: 'Inbox',         icon: '📥' },
   { href: '/admin/marketing/funnel',        label: 'Funnel',        icon: '📊' },
   { href: '/admin/marketing/settings',      label: 'M-Settings',    icon: '🛠️' },
@@ -36,6 +37,7 @@ export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [verificationCount, setVerificationCount] = useState(0);
+  const [invitationCount, setInvitationCount] = useState(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -70,6 +72,7 @@ export default function DashboardLayout({ children }) {
           const p = res.data;
           setPendingCount((p.pending_approvals?.brands || 0) + (p.pending_approvals?.influencers || 0));
           setVerificationCount(p.pending_verifications || 0);
+          setInvitationCount(p.pending_invitations || 0);
         }
       } catch {}
     }
@@ -119,6 +122,9 @@ export default function DashboardLayout({ children }) {
                 )}
                 {item.badge === 'verifications' && verificationCount > 0 && (
                   <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{verificationCount}</span>
+                )}
+                {item.badge === 'invitations' && invitationCount > 0 && (
+                  <span className="bg-orange text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{invitationCount}</span>
                 )}
               </Link>
             );
