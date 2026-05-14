@@ -125,9 +125,14 @@ const register = asyncHandler(async (req, res) => {
 
   const instagramHandle = normaliseHandle(req.body.instagram_handle);
   const youtubeHandle   = normaliseHandle(req.body.youtube_handle);
+  const fullName        = (req.body.name || '').trim();
+  const city            = (req.body.city || '').trim();
 
   if (!instagramHandle) {
     throw new AppError('VALIDATION_ERROR', 'instagram_handle is required', 422, 'instagram_handle');
+  }
+  if (!fullName) {
+    throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   }
 
   // Prevent duplicate registration
@@ -135,6 +140,14 @@ const register = asyncHandler(async (req, res) => {
   if (existing) {
     throw new AppError('CONFLICT', 'Influencer profile already exists for this account', 409);
   }
+
+  // Update users.name + users.city with the real values supplied at registration.
+  // verify-otp inserted a "Pending (1234)" placeholder so the row would satisfy
+  // the NOT NULL constraint. We overwrite it here once the user fills the form.
+  await db.query(
+    `UPDATE users SET name = $1, city = COALESCE(NULLIF($2, ''), city) WHERE id = $3`,
+    [fullName, city, userId]
+  );
 
   // Run Apify scrape (mocked in dev). Kept as a fallback so brand-new
   // creators not yet in creator_profiles still get baseline metrics.

@@ -11,8 +11,6 @@ export default function OTPScreen({ navigation, route }) {
   const { phone, role } = route.params;
   const { setRole: setAppRole } = useContext(AuthContext);
   const [otp, setOtp]             = useState(['', '', '', '', '', '']);
-  const [name, setName]           = useState('');
-  const [needsName, setNeedsName] = useState(false);
   const [loading, setLoading]     = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError]         = useState('');
@@ -53,7 +51,7 @@ export default function OTPScreen({ navigation, route }) {
   // ── Auto-verify when all 6 digits filled ─────────────────────
   useEffect(() => {
     const otpStr = otp.join('');
-    if (otpStr.length === 6 && !hasAutoVerified.current && !needsName && !loading) {
+    if (otpStr.length === 6 && !hasAutoVerified.current && !loading) {
       // Short delay so user can see the filled OTP before submission
       autoVerifyTimer.current = setTimeout(() => {
         hasAutoVerified.current = true;
@@ -63,7 +61,7 @@ export default function OTPScreen({ navigation, route }) {
     return () => {
       if (autoVerifyTimer.current) clearTimeout(autoVerifyTimer.current);
     };
-  }, [otp, needsName, loading]);
+  }, [otp, loading]);
 
   function handleChange(index, value) {
     // Support pasting a full OTP into any box
@@ -90,7 +88,6 @@ export default function OTPScreen({ navigation, route }) {
   async function handleResend() {
     setError('');
     setOtp(['', '', '', '', '', '']);
-    setNeedsName(false);
     hasAutoVerified.current = false; // allow auto-verify again after resend
     setResending(true);
     const res = await authApi.sendOtp(phone);
@@ -102,16 +99,12 @@ export default function OTPScreen({ navigation, route }) {
     const otpStr = otp.join('');
     if (otpStr.length < 6) return;
     setError('');
-    if (needsName && !name.trim()) { setError('Please enter your full name'); return; }
     setLoading(true);
-    const res = await authApi.verifyOtp(phone, otpStr, role, name.trim() || undefined);
+    // No name passed — for new users the backend creates a placeholder user
+    // row and the next screen (InfluencerRegister) collects real name + city
+    // + handles in one shot. Avoids the double-verify-OTP bug.
+    const res = await authApi.verifyOtp(phone, otpStr, role);
     setLoading(false);
-    // New user — backend requires name; reveal the field and let them retry
-    if (!res.success && res.error?.field === 'name') {
-      setNeedsName(true);
-      setError('Please enter your full name to create your account');
-      return;
-    }
     if (!res.success) { setError(res.error?.message || 'Invalid OTP'); return; }
 
     const { access_token, refresh_token, user } = res.data;
@@ -194,20 +187,6 @@ export default function OTPScreen({ navigation, route }) {
         </View>
 
         {clipboardHint ? <Text style={styles.clipboardHint}>{clipboardHint}</Text> : null}
-
-        {needsName && (
-          <View style={styles.nameWrap}>
-            <Text style={styles.nameLabel}>Full Name</Text>
-            <TextInput
-              style={styles.nameInput}
-              value={name}
-              onChangeText={setName}
-              placeholder="Your full name"
-              placeholderTextColor={colors.t3}
-              autoFocus
-            />
-          </View>
-        )}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 

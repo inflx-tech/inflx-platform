@@ -89,18 +89,29 @@ const verifyOtp = asyncHandler(async (req, res) => {
   let user;
 
   if (rows.length === 0) {
-    // New user — role and name are required
+    // New user — only role is required at this stage. Name + city + handles
+    // are collected on the next screen (the profile-setup form) and posted
+    // to the role-specific /register endpoint, which then updates this row.
+    //
+    // Why name is no longer required here: previously the OTPScreen would
+    // submit verify-otp twice (once to discover the name was missing, once
+    // with the name). The OTP service marks codes as used on first verify,
+    // so the second call always failed with "Invalid OTP". Moving name
+    // out of this step removes the double-verify entirely.
     if (!role) throw new AppError('VALIDATION_ERROR', 'role is required for new users', 422, 'role');
     if (!VALID_ROLES.includes(role)) {
       throw new AppError('VALIDATION_ERROR', `role must be one of: ${VALID_ROLES.join(', ')}`, 422, 'role');
     }
-    if (!name || !name.trim()) throw new AppError('VALIDATION_ERROR', 'name is required for new users', 422, 'name');
+
+    // users.name is NOT NULL — use a placeholder until /register fills the
+    // real one. Last 4 digits of the phone make it scannable in admin queues.
+    const placeholderName = (name && name.trim()) || `Pending (${phone.slice(-4)})`;
 
     const created = await db.query(
       `INSERT INTO users (phone, role, name, status)
        VALUES ($1, $2, $3, 'pending')
        RETURNING *`,
-      [phone, role, name.trim()]
+      [phone, role, placeholderName]
     );
     user = created.rows[0];
 

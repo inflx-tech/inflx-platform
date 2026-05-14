@@ -18,6 +18,8 @@ import { influencerApi } from '../../services/api';
  * rather than an error since it's not the user's fault.
  */
 export default function InfluencerRegisterScreen({ navigation }) {
+  const [fullName,    setFullName]    = useState('');
+  const [city,        setCity]        = useState('');
   const [igHandle,    setIgHandle]    = useState('');
   const [ytHandle,    setYtHandle]    = useState('');
   const [loading,     setLoading]     = useState(false);
@@ -27,12 +29,16 @@ export default function InfluencerRegisterScreen({ navigation }) {
 
   async function handleRegister() {
     setError('');
+    const nm = fullName.trim();
+    const ct = city.trim();
     const ig = cleanHandle(igHandle);
     const yt = cleanHandle(ytHandle);
+    if (!nm) { setError('Please enter your full name'); return; }
     if (!ig) { setError('Instagram handle is required'); return; }
 
     setLoading(true);
-    const body = { instagram_handle: ig };
+    const body = { name: nm, instagram_handle: ig };
+    if (ct) body.city = ct;
     if (yt) body.youtube_handle = yt;
     const res = await influencerApi.register(body);
     setLoading(false);
@@ -58,9 +64,33 @@ export default function InfluencerRegisterScreen({ navigation }) {
         <View style={styles.container}>
           <Text style={styles.title}>Set up your profile</Text>
           <Text style={styles.sub}>
-            Enter your Instagram handle so we can verify your account.
-            YouTube is optional but helps us match you faster.
+            Just a few quick details so we can verify your account and match
+            you with brands.
           </Text>
+
+          <Text style={styles.label}>Full Name <Text style={styles.required}>*</Text></Text>
+          <View style={styles.inputRowPlain}>
+            <TextInput
+              style={styles.input}
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Your full name"
+              placeholderTextColor={colors.t3}
+              autoCorrect={false}
+            />
+          </View>
+
+          <Text style={styles.label}>City</Text>
+          <View style={styles.inputRowPlain}>
+            <TextInput
+              style={styles.input}
+              value={city}
+              onChangeText={setCity}
+              placeholder="Hyderabad / Nellore / …"
+              placeholderTextColor={colors.t3}
+              autoCorrect={false}
+            />
+          </View>
 
           <Text style={styles.label}>Instagram Handle <Text style={styles.required}>*</Text></Text>
           <View style={styles.inputRow}>
@@ -93,9 +123,9 @@ export default function InfluencerRegisterScreen({ navigation }) {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <TouchableOpacity
-            style={[styles.btn, (!igHandle.trim() || loading) && styles.btnDisabled]}
+            style={[styles.btn, (!fullName.trim() || !igHandle.trim() || loading) && styles.btnDisabled]}
             onPress={handleRegister}
-            disabled={!igHandle.trim() || loading}
+            disabled={!fullName.trim() || !igHandle.trim() || loading}
           >
             <Text style={styles.btnText}>{loading ? 'Registering...' : 'Complete Registration'}</Text>
           </TouchableOpacity>
@@ -119,6 +149,7 @@ const styles = StyleSheet.create({
   required:    { color: colors.orange },
   optional:    { color: 'rgba(255,255,255,0.4)', textTransform: 'none', letterSpacing: 0 },
   inputRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, marginBottom: 20 },
+  inputRowPlain: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, marginBottom: 20 },
   at:          { fontSize: 18, color: colors.gold, fontWeight: '700', marginRight: 4 },
   input:       { flex: 1, paddingVertical: 14, fontSize: 16, color: colors.white },
   error:       { backgroundColor: colors.redPale, borderRadius: 10, padding: 10, fontSize: 12, color: colors.red, marginBottom: 16 },
