@@ -129,7 +129,7 @@ export default function MarketingSettingsPage() {
         </div>
       )}
 
-      {canEdit && <MaintenancePanel onToast={(t) => { setToast(t); setTimeout(() => setToast(''), 6000); }} />}
+      <MaintenancePanel onToast={(t) => { setToast(t); setTimeout(() => setToast(''), 6000); }} />
 
       {toast && (
         <div className="fixed bottom-4 right-4 bg-teal-deep text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-lg z-50">
