@@ -3,6 +3,7 @@
 const db = require('../config/db');
 const apifyService = require('../services/apify.service');
 const notificationService = require('../services/notification.service');
+const marketingAutomation = require('../services/marketingAutomation.service');
 const pdfService = require('../services/pdf.service');
 const { encrypt } = require('../utils/encrypt');
 const { success } = require('../utils/response');
@@ -71,15 +72,19 @@ function normaliseHandle(value) {
 }
 
 /**
- * Try to claim an existing creator_profiles row for this user.
+ * Try to claim (or create-and-claim) a creator_profiles row for this user.
  *
  * Matching: row.ig_handle === instagram_handle  OR  row.youtube_handle === youtube_handle.
- * If exactly one match → status='claimed', linked_influencer_id, single-claim path.
- * If multiple matches  → all candidates flagged with same claim_user_id, status stays
- *                        'unclaimed' on each; admin queue surfaces the conflict.
- * If zero matches      → no-op, normal registration continues without a claim.
  *
- * Returns { match_count, conflict, claimed_profile_ids }.
+ *   1-match  → status='claimed', linked_influencer_id set on the existing row.
+ *   N>1      → all candidates flagged with same claim_user_id, status stays
+ *              'unclaimed' on each; admin queue surfaces the conflict.
+ *   0-match  → create a STUB row (claimed + linked), fire n8n A2 scrape in the
+ *              background. When n8n eventually upserts back via INGEST, the
+ *              CREATOR_COLUMNS allow-list excludes the linkage columns so the
+ *              claim survives the upsert untouched.
+ *
+ * Returns { match_count, conflict, claimed_profile_ids, scrape_fired }.
  */
 async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, youtubeHandle }) {
   const { rows: matches } = await db.query(
@@ -88,10 +93,6 @@ async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, y
          OR ($2::text IS NOT NULL AND youtube_handle = $2)`,
     [instagramHandle, youtubeHandle]
   );
-
-  if (matches.length === 0) {
-    return { match_count: 0, conflict: false, claimed_profile_ids: [] };
-  }
 
   if (matches.length === 1) {
     // Single, clean claim → mark claimed and link
@@ -104,20 +105,88 @@ async function tryClaimCreatorProfile({ userId, influencerId, instagramHandle, y
         WHERE id = $3`,
       [userId, influencerId, matches[0].id]
     );
-    return { match_count: 1, conflict: false, claimed_profile_ids: [matches[0].id] };
+    return {
+      match_count: 1, conflict: false,
+      claimed_profile_ids: [matches[0].id], scrape_fired: false,
+    };
   }
 
-  // Multiple matches → conflict. Tag all candidates with claim_user_id so admin sees the
-  // cluster, but keep status 'unclaimed' until admin picks the right one.
-  const ids = matches.map(r => r.id);
-  await db.query(
-    `UPDATE creator_profiles
-        SET claim_user_id      = $1,
-            claim_requested_at = COALESCE(claim_requested_at, NOW())
-      WHERE id = ANY($2::uuid[])`,
-    [userId, ids]
+  if (matches.length > 1) {
+    // Multiple matches → conflict. Tag all candidates with claim_user_id so admin sees
+    // the cluster, but keep status 'unclaimed' until admin picks the right one.
+    const ids = matches.map(r => r.id);
+    await db.query(
+      `UPDATE creator_profiles
+          SET claim_user_id      = $1,
+              claim_requested_at = COALESCE(claim_requested_at, NOW())
+        WHERE id = ANY($2::uuid[])`,
+      [userId, ids]
+    );
+    return {
+      match_count: matches.length, conflict: true,
+      claimed_profile_ids: ids, scrape_fired: false,
+    };
+  }
+
+  // ── 0-match: create a stub row pre-claimed to this signup, and fire an
+  // async A2 v2 scrape so the marketing engine fills in the data. The user
+  // explicitly typed their handle at signup, so 'claimed' is correct; admin
+  // still has to verify by calling them, just like the 1-match case.
+  //
+  // INSERT ... ON CONFLICT DO NOTHING guards against a race where the same
+  // handle is being scraped concurrently from the admin side. If the row
+  // somehow appeared between the SELECT and the INSERT, we re-read it.
+  let stubRow;
+  const { rows: inserted } = await db.query(
+    `INSERT INTO creator_profiles
+       (ig_handle, youtube_handle, verification_status,
+        claim_user_id, claim_requested_at, linked_influencer_id, source)
+     VALUES ($1, $2, 'claimed', $3, NOW(), $4, 'signup')
+     ON CONFLICT (ig_handle) DO NOTHING
+     RETURNING id`,
+    [instagramHandle, youtubeHandle, userId, influencerId]
   );
-  return { match_count: matches.length, conflict: true, claimed_profile_ids: ids };
+
+  if (inserted[0]) {
+    stubRow = inserted[0];
+  } else {
+    // Race: a row appeared. Re-fetch and treat it as a 1-match claim.
+    const { rows: existing } = await db.query(
+      `SELECT id FROM creator_profiles WHERE ig_handle = $1`,
+      [instagramHandle]
+    );
+    if (existing[0]) {
+      await db.query(
+        `UPDATE creator_profiles
+            SET verification_status = 'claimed',
+                claim_user_id        = $1,
+                claim_requested_at   = COALESCE(claim_requested_at, NOW()),
+                linked_influencer_id = $2
+          WHERE id = $3`,
+        [userId, influencerId, existing[0].id]
+      );
+      stubRow = existing[0];
+    }
+  }
+
+  // Fire-and-forget scrape — don't await, don't fail register if n8n is down.
+  // The marketingAutomation service logs errors internally.
+  marketingAutomation.triggerScrape({
+    handle: instagramHandle,
+    target_type: 'influencer',
+    scrape_mode: 'deep',
+    source: 'signup',
+    signup_user_id: userId,
+    signup_influencer_id: influencerId,
+  }).catch(e => {
+    console.error('[register] signup scrape trigger failed:', e.message);
+  });
+
+  return {
+    match_count: 0, conflict: false,
+    claimed_profile_ids: stubRow ? [stubRow.id] : [],
+    scrape_fired: true,
+  };
 }
 
 const register = asyncHandler(async (req, res) => {
@@ -207,9 +276,18 @@ const register = asyncHandler(async (req, res) => {
     user_status: full.user_status,
     claim: {
       match_count:        claim.match_count,
-      claimed:            claim.match_count === 1,
+      // True when exactly one creator_profile is linked to this user
+      // (either a pre-existing single match, or the stub we just created
+      // when no scraped data was found).
+      claimed:            !claim.conflict && claim.claimed_profile_ids.length === 1,
       conflict:           claim.conflict,
-      requires_admin:     claim.match_count >= 1,           // single OR conflict — admin still confirms
+      // Every signup now produces or links to a creator_profile row, so admin
+      // verification is always the next step — left as a stable field for the
+      // mobile client which already keys off it.
+      requires_admin:     true,
+      // True when no pre-existing creator_profile matched and we kicked off
+      // a fresh A2 scrape. The scraped data lands asynchronously via INGEST.
+      scrape_fired:       !!claim.scrape_fired,
       profile_ids:        claim.claimed_profile_ids,
     },
   }, 201);

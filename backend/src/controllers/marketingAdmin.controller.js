@@ -23,7 +23,7 @@
  */
 
 const db = require('../config/db');
-const env = require('../config/env');
+const marketingAutomation = require('../services/marketingAutomation.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -72,32 +72,9 @@ function isAllowedTransition(from, to, force) {
   return STATUS_TRANSITIONS[from].has(to);
 }
 
-/**
- * Trigger the n8n A2 profile-scraper webhook. Best-effort — does not
- * throw if it fails. Returns { ok, status, skipped?, error? }.
- */
-async function triggerScrape({ handle, target_type, scrape_mode = 'deep' }) {
-  if (!env.N8N_BASE_URL) {
-    console.warn('[marketing] N8N_BASE_URL not configured; skipping scrape trigger');
-    return { skipped: true, reason: 'n8n_not_configured' };
-  }
-  const url = env.N8N_BASE_URL.replace(/\/+$/, '') + '/webhook/a2-profile-scraper';
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 10000);
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: handle, target_type, scrape_mode }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    return { ok: r.ok, status: r.status };
-  } catch (e) {
-    console.error('[marketing] A2 webhook trigger failed:', e.message);
-    return { ok: false, error: e.message };
-  }
-}
+// triggerScrape moved to services/marketingAutomation.service.js so it can be
+// shared between admin intake and the signup-side scrape-on-miss flow.
+const triggerScrape = marketingAutomation.triggerScrape;
 
 /**
  * Lookup helper — find a handle in either creator_profiles or brand_profiles.
