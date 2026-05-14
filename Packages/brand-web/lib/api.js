@@ -420,6 +420,24 @@ export const adminApi = {
   },
 };
 
+// Marketing engine admin API (Phase 5 — /admin/marketing/*)
+export const marketingApi = {
+  listLeads: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/marketing/leads?${q.toString()}`);
+  },
+  getLeadDetail: (type, id) => api.get(`/admin/marketing/leads/${type}/${id}`),
+  intakeLead: (payload) => api.post('/admin/marketing/leads/intake', payload),
+  intakeLeadBulk: (rows) => api.post('/admin/marketing/leads/intake/bulk', { rows }),
+  logActivity: (type, id, payload) => api.post(`/admin/marketing/leads/${type}/${id}/activity`, payload),
+  updateStatus: (type, id, payload) => api.patch(`/admin/marketing/leads/${type}/${id}/status`, payload),
+  getInbox: () => api.get('/admin/marketing/inbox'),
+  getFunnel: () => api.get('/admin/marketing/funnel'),
+  getSettings: () => api.get('/admin/marketing/settings'),
+  updateSettings: (data) => api.patch('/admin/marketing/settings', data),
+};
+
 // (getStoredUser is already exported near the top of this file — duplicate
 //  removed here to avoid the webpack "redefined" error.)
 
