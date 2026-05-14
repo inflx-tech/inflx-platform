@@ -157,6 +157,30 @@ export const adminApi = {
   },
 };
 
+// Marketing engine admin API (Phase 5 — /admin/marketing/*)
+export const marketingApi = {
+  // Triage list
+  listLeads: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/marketing/leads?${q.toString()}`);
+  },
+  // Detail
+  getLeadDetail: (type, id) => api.get(`/admin/marketing/leads/${type}/${id}`),
+  // Intake
+  intakeLead: (payload) => api.post('/admin/marketing/leads/intake', payload),
+  intakeLeadBulk: (rows) => api.post('/admin/marketing/leads/intake/bulk', { rows }),
+  // Activity + status
+  logActivity: (type, id, payload) => api.post(`/admin/marketing/leads/${type}/${id}/activity`, payload),
+  updateStatus: (type, id, payload) => api.patch(`/admin/marketing/leads/${type}/${id}/status`, payload),
+  // Inbox / funnel
+  getInbox: () => api.get('/admin/marketing/inbox'),
+  getFunnel: () => api.get('/admin/marketing/funnel'),
+  // Settings
+  getSettings: () => api.get('/admin/marketing/settings'),
+  updateSettings: (data) => api.patch('/admin/marketing/settings', data),
+};
+
 export function getStoredUser() {
   if (typeof window === 'undefined') return null;
   try { return JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { return null; }
