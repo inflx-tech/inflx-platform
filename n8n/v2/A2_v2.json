@@ -12,7 +12,10 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "webhookId": "a2-profile-scraper-v2"
     },
     {
@@ -23,7 +26,10 @@
       "name": "Parse Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 0]
+      "position": [
+        220,
+        0
+      ]
     },
     {
       "parameters": {
@@ -32,7 +38,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"usernames\": [\"{{ $('Parse Input').item.json.username }}\"],\n  \"resultsLimit\": 1\n}",
-        "options": { "timeout": 120000 },
+        "options": {
+          "timeout": 120000
+        },
         "authentication": "genericCredentialType",
         "genericAuthType": "httpQueryAuth"
       },
@@ -40,18 +48,29 @@
       "name": "Start Apify Profile Scrape",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 0],
+      "position": [
+        440,
+        0
+      ],
       "credentials": {
-        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+        "httpQueryAuth": {
+          "id": "tCio2iHD9IUy2eeY",
+          "name": "Apify Query Auth (aveen account)"
+        }
       }
     },
     {
-      "parameters": { "amount": 60 },
+      "parameters": {
+        "amount": 60
+      },
       "id": "a2v2-wait",
       "name": "Wait for Scrape",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [640, 0],
+      "position": [
+        640,
+        0
+      ],
       "webhookId": "a2v2-wait-webhook"
     },
     {
@@ -65,21 +84,32 @@
       "name": "Check Run Status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [840, 0],
+      "position": [
+        840,
+        0
+      ],
       "credentials": {
-        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+        "httpQueryAuth": {
+          "id": "tCio2iHD9IUy2eeY",
+          "name": "Apify Query Auth (aveen account)"
+        }
       }
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true },
+          "options": {
+            "caseSensitive": true
+          },
           "conditions": [
             {
               "id": "succeeded",
               "leftValue": "={{ $json.data.status }}",
               "rightValue": "SUCCEEDED",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
         },
@@ -89,7 +119,10 @@
       "name": "Succeeded?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1040, 0]
+      "position": [
+        1040,
+        0
+      ]
     },
     {
       "parameters": {
@@ -102,9 +135,15 @@
       "name": "Get Scrape Results",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1240, 0],
+      "position": [
+        1240,
+        0
+      ],
       "credentials": {
-        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+        "httpQueryAuth": {
+          "id": "tCio2iHD9IUy2eeY",
+          "name": "Apify Query Auth (aveen account)"
+        }
       }
     },
     {
@@ -115,7 +154,10 @@
       "name": "Build Claude Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1440, 0]
+      "position": [
+        1440,
+        0
+      ]
     },
     {
       "parameters": {
@@ -124,14 +166,22 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Build Claude Prompt').item.json.claude_body }}",
-        "options": { "timeout": 30000 },
+        "options": {
+          "timeout": 30000
+        },
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
       },
@@ -139,9 +189,15 @@
       "name": "Extract Profile Intel",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1640, 0],
+      "position": [
+        1640,
+        0
+      ],
       "credentials": {
-        "httpHeaderAuth": { "id": "4uCI4iu5uUCAM4mj", "name": "Anthropic API (topped-up account)" }
+        "httpHeaderAuth": {
+          "id": "4uCI4iu5uUCAM4mj",
+          "name": "Anthropic API (topped-up account)"
+        }
       }
     },
     {
@@ -152,7 +208,10 @@
       "name": "Parse Profile Intel",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1840, 0]
+      "position": [
+        1840,
+        0
+      ]
     },
     {
       "parameters": {
@@ -162,7 +221,10 @@
       "name": "Build INGEST Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2040, 0]
+      "position": [
+        2040,
+        0
+      ]
     },
     {
       "parameters": {
@@ -171,20 +233,31 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Ingest-Token",
+              "value": "={{ $vars.INFLX_INGEST_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($('Build INGEST Payload').item.json.__body) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "a2v2-ingest",
       "name": "POST to INGEST API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 0]
+      "position": [
+        2240,
+        0
+      ]
     },
     {
       "parameters": {
@@ -193,30 +266,167 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"username\": \"{{ $('Build INGEST Payload').item.json.__username }}\",\n  \"target_type\": \"{{ $('Build INGEST Payload').item.json.__target_type }}\",\n  \"scrape_mode\": \"{{ $('Parse Input').item.json.scrape_mode }}\"\n}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "id": "a2v2-trigger-a3",
       "name": "Trigger A3 v2",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2440, 0]
+      "position": [
+        2440,
+        0
+      ],
+      "continueOnFail": true
     }
   ],
   "connections": {
-    "Webhook Trigger": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
-    "Parse Input": { "main": [[{ "node": "Start Apify Profile Scrape", "type": "main", "index": 0 }]] },
-    "Start Apify Profile Scrape": { "main": [[{ "node": "Wait for Scrape", "type": "main", "index": 0 }]] },
-    "Wait for Scrape": { "main": [[{ "node": "Check Run Status", "type": "main", "index": 0 }]] },
-    "Check Run Status": { "main": [[{ "node": "Succeeded?", "type": "main", "index": 0 }]] },
-    "Succeeded?": { "main": [[{ "node": "Get Scrape Results", "type": "main", "index": 0 }], []] },
-    "Get Scrape Results": { "main": [[{ "node": "Build Claude Prompt", "type": "main", "index": 0 }]] },
-    "Build Claude Prompt": { "main": [[{ "node": "Extract Profile Intel", "type": "main", "index": 0 }]] },
-    "Extract Profile Intel": { "main": [[{ "node": "Parse Profile Intel", "type": "main", "index": 0 }]] },
-    "Parse Profile Intel": { "main": [[{ "node": "Build INGEST Payload", "type": "main", "index": 0 }]] },
-    "Build INGEST Payload": { "main": [[{ "node": "POST to INGEST API", "type": "main", "index": 0 }]] },
-    "POST to INGEST API": { "main": [[{ "node": "Trigger A3 v2", "type": "main", "index": 0 }]] }
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Start Apify Profile Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Apify Profile Scrape": {
+      "main": [
+        [
+          {
+            "node": "Wait for Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Scrape": {
+      "main": [
+        [
+          {
+            "node": "Check Run Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Run Status": {
+      "main": [
+        [
+          {
+            "node": "Succeeded?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Succeeded?": {
+      "main": [
+        [
+          {
+            "node": "Get Scrape Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Scrape Results": {
+      "main": [
+        [
+          {
+            "node": "Build Claude Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude Prompt": {
+      "main": [
+        [
+          {
+            "node": "Extract Profile Intel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Profile Intel": {
+      "main": [
+        [
+          {
+            "node": "Parse Profile Intel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Profile Intel": {
+      "main": [
+        [
+          {
+            "node": "Build INGEST Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build INGEST Payload": {
+      "main": [
+        [
+          {
+            "node": "POST to INGEST API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST to INGEST API": {
+      "main": [
+        [
+          {
+            "node": "Trigger A3 v2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
-  "tags": [{ "name": "marketing-v2" }, { "name": "scraping" }]
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": [
+    {
+      "name": "marketing-v2"
+    },
+    {
+      "name": "scraping"
+    }
+  ]
 }

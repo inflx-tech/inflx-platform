@@ -12,7 +12,10 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 0],
+      "position": [
+        0,
+        0
+      ],
       "webhookId": "a3-collab-extractor-v2"
     },
     {
@@ -23,7 +26,10 @@
       "name": "Parse Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [220, 0]
+      "position": [
+        220,
+        0
+      ]
     },
     {
       "parameters": {
@@ -32,7 +38,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"username\": [\"{{ $('Parse Input').item.json.username }}\"],\n  \"resultsLimit\": {{ $('Parse Input').item.json.results_limit }},\n  \"onlyPostsNewerThan\": \"{{ $('Parse Input').item.json.window_days }} days\"\n}",
-        "options": { "timeout": 120000 },
+        "options": {
+          "timeout": 120000
+        },
         "authentication": "genericCredentialType",
         "genericAuthType": "httpQueryAuth"
       },
@@ -40,18 +48,29 @@
       "name": "Start Apify Post Scrape",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [440, 0],
+      "position": [
+        440,
+        0
+      ],
       "credentials": {
-        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+        "httpQueryAuth": {
+          "id": "tCio2iHD9IUy2eeY",
+          "name": "Apify Query Auth (aveen account)"
+        }
       }
     },
     {
-      "parameters": { "amount": 180 },
+      "parameters": {
+        "amount": 180
+      },
       "id": "a3v2-wait",
       "name": "Wait for Post Scrape",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [640, 0],
+      "position": [
+        640,
+        0
+      ],
       "webhookId": "a3v2-wait-webhook"
     },
     {
@@ -65,9 +84,15 @@
       "name": "Check Status",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [840, 0],
+      "position": [
+        840,
+        0
+      ],
       "credentials": {
-        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+        "httpQueryAuth": {
+          "id": "tCio2iHD9IUy2eeY",
+          "name": "Apify Query Auth (aveen account)"
+        }
       }
     },
     {
@@ -79,7 +104,10 @@
               "id": "succeeded",
               "leftValue": "={{ $json.data.status }}",
               "rightValue": "SUCCEEDED",
-              "operator": { "type": "string", "operation": "equals" }
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
             }
           ]
         },
@@ -89,7 +117,10 @@
       "name": "Posts Scraped?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1040, 0]
+      "position": [
+        1040,
+        0
+      ]
     },
     {
       "parameters": {
@@ -102,9 +133,15 @@
       "name": "Get Post Results",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1240, 0],
+      "position": [
+        1240,
+        0
+      ],
       "credentials": {
-        "httpQueryAuth": { "id": "tCio2iHD9IUy2eeY", "name": "Apify Query Auth (aveen account)" }
+        "httpQueryAuth": {
+          "id": "tCio2iHD9IUy2eeY",
+          "name": "Apify Query Auth (aveen account)"
+        }
       }
     },
     {
@@ -115,7 +152,10 @@
       "name": "Transform Posts",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1440, 0]
+      "position": [
+        1440,
+        0
+      ]
     },
     {
       "parameters": {
@@ -124,20 +164,31 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Ingest-Token",
+              "value": "={{ $vars.INFLX_INGEST_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ ig_handle: $('Transform Posts').item.json.handle, posts: $('Transform Posts').item.json.posts_for_db }) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "a3v2-save-posts",
       "name": "POST /posts (influencer only — brands skip)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1640, -100]
+      "position": [
+        1640,
+        -100
+      ]
     },
     {
       "parameters": {
@@ -146,14 +197,22 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "anthropic-version", "value": "2023-06-01" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ $('Transform Posts').item.json.claude_body }}",
-        "options": { "timeout": 60000 },
+        "options": {
+          "timeout": 60000
+        },
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth"
       },
@@ -161,12 +220,18 @@
       "name": "Claude Analyze",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1640, 100],
+      "position": [
+        1640,
+        100
+      ],
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
       "credentials": {
-        "httpHeaderAuth": { "id": "4uCI4iu5uUCAM4mj", "name": "Anthropic API (topped-up account)" }
+        "httpHeaderAuth": {
+          "id": "4uCI4iu5uUCAM4mj",
+          "name": "Anthropic API (topped-up account)"
+        }
       }
     },
     {
@@ -177,7 +242,10 @@
       "name": "Shape Payloads",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1840, 100]
+      "position": [
+        1840,
+        100
+      ]
     },
     {
       "parameters": {
@@ -188,7 +256,10 @@
               "id": "is-inf",
               "leftValue": "={{ $json.is_influencer }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "equals" }
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
             }
           ]
         },
@@ -198,7 +269,10 @@
       "name": "Is Influencer?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2040, 100]
+      "position": [
+        2040,
+        100
+      ]
     },
     {
       "parameters": {
@@ -207,20 +281,31 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Ingest-Token",
+              "value": "={{ $vars.INFLX_INGEST_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ ig_handle: $('Shape Payloads').item.json.handle, insights: $('Shape Payloads').item.json.insights }) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "a3v2-post-insights",
       "name": "POST /caption-insights",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 0]
+      "position": [
+        2240,
+        0
+      ]
     },
     {
       "parameters": {
@@ -229,20 +314,31 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Ingest-Token",
+              "value": "={{ $vars.INFLX_INGEST_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ ig_handle: $('Shape Payloads').item.json.handle, collabs: $('Shape Payloads').item.json.collabs }) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "a3v2-post-collabs",
       "name": "POST /collab-map",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 120]
+      "position": [
+        2240,
+        120
+      ]
     },
     {
       "parameters": {
@@ -251,20 +347,31 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Ingest-Token",
+              "value": "={{ $vars.INFLX_INGEST_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($('Shape Payloads').item.json.creator_metrics_update) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "a3v2-update-counts",
       "name": "POST /creator-metrics (counts)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 240]
+      "position": [
+        2240,
+        240
+      ]
     },
     {
       "parameters": {
@@ -273,13 +380,19 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"username\": \"{{ $('Shape Payloads').item.json.handle }}\",\n  \"target_type\": \"influencer\"\n}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "id": "a3v2-trigger-metrics",
       "name": "Trigger A2.5 v2",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2440, 120]
+      "position": [
+        2440,
+        120
+      ],
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -288,20 +401,31 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "X-Ingest-Token", "value": "={{ $vars.INFLX_INGEST_TOKEN }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "X-Ingest-Token",
+              "value": "={{ $vars.INFLX_INGEST_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($('Shape Payloads').item.json.brand_metrics_update) }}",
-        "options": { "timeout": 30000 }
+        "options": {
+          "timeout": 30000
+        }
       },
       "id": "a3v2-brand-collabs",
       "name": "POST /brand-collabs",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2240, 360]
+      "position": [
+        2240,
+        360
+      ]
     },
     {
       "parameters": {
@@ -310,47 +434,200 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"instagram_handle\": \"{{ $('Shape Payloads').item.json.handle }}\"\n}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "id": "a3v2-trigger-a5b",
       "name": "Trigger A5b v2",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2440, 360]
+      "position": [
+        2440,
+        360
+      ],
+      "continueOnFail": true
     }
   ],
   "connections": {
-    "Webhook Trigger": { "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]] },
-    "Parse Input": { "main": [[{ "node": "Start Apify Post Scrape", "type": "main", "index": 0 }]] },
-    "Start Apify Post Scrape": { "main": [[{ "node": "Wait for Post Scrape", "type": "main", "index": 0 }]] },
-    "Wait for Post Scrape": { "main": [[{ "node": "Check Status", "type": "main", "index": 0 }]] },
-    "Check Status": { "main": [[{ "node": "Posts Scraped?", "type": "main", "index": 0 }]] },
-    "Posts Scraped?": { "main": [[{ "node": "Get Post Results", "type": "main", "index": 0 }], []] },
-    "Get Post Results": { "main": [[{ "node": "Transform Posts", "type": "main", "index": 0 }]] },
-    "Transform Posts": {
-      "main": [[
-        { "node": "POST /posts (influencer only — brands skip)", "type": "main", "index": 0 },
-        { "node": "Claude Analyze", "type": "main", "index": 0 }
-      ]]
-    },
-    "Claude Analyze": { "main": [[{ "node": "Shape Payloads", "type": "main", "index": 0 }]] },
-    "Shape Payloads": { "main": [[{ "node": "Is Influencer?", "type": "main", "index": 0 }]] },
-    "Is Influencer?": {
+    "Webhook Trigger": {
       "main": [
         [
-          { "node": "POST /caption-insights", "type": "main", "index": 0 },
-          { "node": "POST /collab-map", "type": "main", "index": 0 },
-          { "node": "POST /creator-metrics (counts)", "type": "main", "index": 0 }
-        ],
-        [
-          { "node": "POST /brand-collabs", "type": "main", "index": 0 }
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     },
-    "POST /creator-metrics (counts)": { "main": [[{ "node": "Trigger A2.5 v2", "type": "main", "index": 0 }]] },
-    "POST /brand-collabs": { "main": [[{ "node": "Trigger A5b v2", "type": "main", "index": 0 }]] }
+    "Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Start Apify Post Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start Apify Post Scrape": {
+      "main": [
+        [
+          {
+            "node": "Wait for Post Scrape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Post Scrape": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Status": {
+      "main": [
+        [
+          {
+            "node": "Posts Scraped?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Posts Scraped?": {
+      "main": [
+        [
+          {
+            "node": "Get Post Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Post Results": {
+      "main": [
+        [
+          {
+            "node": "Transform Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Posts": {
+      "main": [
+        [
+          {
+            "node": "POST /posts (influencer only — brands skip)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Claude Analyze",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Analyze": {
+      "main": [
+        [
+          {
+            "node": "Shape Payloads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Payloads": {
+      "main": [
+        [
+          {
+            "node": "Is Influencer?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Influencer?": {
+      "main": [
+        [
+          {
+            "node": "POST /caption-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "POST /collab-map",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "POST /creator-metrics (counts)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "POST /brand-collabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /creator-metrics (counts)": {
+      "main": [
+        [
+          {
+            "node": "Trigger A2.5 v2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /brand-collabs": {
+      "main": [
+        [
+          {
+            "node": "Trigger A5b v2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
-  "tags": [{ "name": "marketing-v2" }, { "name": "scraping" }]
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "tags": [
+    {
+      "name": "marketing-v2"
+    },
+    {
+      "name": "scraping"
+    }
+  ]
 }
