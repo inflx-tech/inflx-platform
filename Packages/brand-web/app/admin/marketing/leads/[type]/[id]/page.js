@@ -223,8 +223,16 @@ export default function LeadDetailPage() {
           {type === 'influencer' && (
             <div className="bg-white rounded-xl border border-border p-3 space-y-1.5 text-xs">
               <div className="text-[10px] font-bold uppercase tracking-wider text-t3 mb-1">Metrics (90d)</div>
-              <Row label="Engagement (view-based)" value={`${p.view_based_er || 0}%`} />
-              <Row label="Engagement (follower-based)" value={`${p.follower_based_er || 0}%`} />
+              <Row
+                label="Engagement rate"
+                value={`${p.view_based_er || 0}%`}
+                hint="View-based — industry standard. Engagement ÷ actual reach (views). Use this when judging real performance."
+              />
+              <Row
+                label="ER (follower-based, diagnostic)"
+                value={`${p.follower_based_er || 0}%`}
+                hint="Engagement ÷ follower count. Runs naturally high (5–15%) for nano/micro creators because their followers are tight-knit. Don't compare against the 2% industry benchmark — that's for macro/mega tier."
+              />
               <Row label="Avg likes" value={(p.avg_likes || 0).toLocaleString()} />
               <Row label="Avg views" value={(p.avg_views || 0).toLocaleString()} />
               <Row label="Posts (90d)" value={p.total_posts_90d || 0} />
@@ -396,10 +404,13 @@ export default function LeadDetailPage() {
   );
 }
 
-function Row({ label, value }) {
+function Row({ label, value, hint }) {
   return (
-    <div className="flex justify-between gap-2">
-      <span className="text-t3">{label}</span>
+    <div className="flex justify-between gap-2" title={hint || undefined}>
+      <span className="text-t3 flex items-center gap-1">
+        {label}
+        {hint && <span className="text-[9px] text-t3/60 cursor-help">ⓘ</span>}
+      </span>
       <span className="font-semibold tabular-nums text-t1">{value}</span>
     </div>
   );

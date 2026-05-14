@@ -170,4 +170,33 @@ function _getR2Client() {
   return _r2Client;
 }
 
-module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, getUploadDir };
+// ─── Avatar URL resolver ────────────────────────────────────────────────────
+// Profile pictures cached by the imageProxy service live at R2 keys like
+// `creator-avatars/<handle>.jpg`. The DB stores the key, not the URL. This
+// helper turns the key into a working browser-loadable URL.
+//
+//   Mock mode → /uploads/avatars/<handle>.jpg (served by express.static from
+//               the saveFile UPLOAD_DIR — see app.js).
+//   Prod      → presigned R2 GET URL valid for 6h. Plenty for a session; the
+//               next page load gets a fresh one. If R2 bucket is later
+//               promoted to public-read with a custom domain, swap this for
+//               a static URL builder and we never need to presign again.
+async function getAvatarUrl(key, { expiresIn = 21600 } = {}) {
+  if (!key) return null;
+  if (env.R2_MOCK) {
+    const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${env.PORT}`;
+    return `${baseUrl}/uploads/${key}`;
+  }
+  try {
+    const { GetObjectCommand } = require('@aws-sdk/client-s3');
+    const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+    const client = _getR2Client();
+    const command = new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key });
+    return await getSignedUrl(client, command, { expiresIn });
+  } catch (e) {
+    console.error('[storage] avatar URL presign failed:', e.message);
+    return null;
+  }
+}
+
+module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, getUploadDir, getAvatarUrl };

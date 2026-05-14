@@ -20,6 +20,7 @@ const db = require('../config/db');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { resolveAvatars } = require('../utils/avatarResolver');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /v1/admin/creator-verifications
@@ -33,7 +34,8 @@ const listQueue = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT
        cp.id, cp.ig_handle, cp.youtube_handle, cp.full_name,
-       cp.profile_pic_url, cp.followers_count, cp.follower_tier,
+       cp.profile_pic_url, cp.profile_pic_r2_key,
+       cp.followers_count, cp.follower_tier,
        cp.verification_status, cp.claim_requested_at, cp.rejection_reason,
        cp.bio_email, cp.bio_phone,
        cp.linked_influencer_id,
@@ -53,6 +55,7 @@ const listQueue = asyncHandler(async (req, res) => {
      ORDER BY cp.claim_requested_at ASC NULLS LAST, cp.ig_handle ASC`,
     [statuses]
   );
+  await resolveAvatars(rows);
   return success(res, { verifications: rows });
 });
 

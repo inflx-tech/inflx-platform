@@ -1,6 +1,7 @@
 'use strict';
 
 const db = require('../config/db');
+const imageProxy = require('../services/imageProxy.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -310,6 +311,18 @@ const upsertCreatorMetrics = asyncHandler(async (req, res) => {
   const { rows } = await db.query(sql, values);
   const out = rows[0];
 
+  // Fire-and-forget: cache the Instagram-signed profile pic to R2 so
+  // it doesn't 403 in two weeks. Failure is logged inside the service
+  // and never blocks the INGEST response. Only runs when the payload
+  // actually carried a profile_pic_url.
+  if (body.profile_pic_url) {
+    imageProxy.cacheProfilePic({
+      targetType: 'creator',
+      handle: out.ig_handle,
+      igUrl: body.profile_pic_url,
+    }).catch(e => console.error('[ingest] avatar cache failed:', e.message));
+  }
+
   return success(res, {
     ok: true,
     ig_handle: out.ig_handle,
@@ -486,6 +499,15 @@ const upsertBrandMetrics = asyncHandler(async (req, res) => {
   `;
   const { rows } = await db.query(sql, values);
   const out = rows[0];
+
+  // Same R2-cache fire-and-forget as the creator path.
+  if (body.profile_pic_url) {
+    imageProxy.cacheProfilePic({
+      targetType: 'brand',
+      handle: out.instagram_handle,
+      igUrl: body.profile_pic_url,
+    }).catch(e => console.error('[ingest] avatar cache failed:', e.message));
+  }
 
   return success(res, {
     ok: true,

@@ -9,6 +9,7 @@ const { encrypt } = require('../utils/encrypt');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { resolveAvatars } = require('../utils/avatarResolver');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -506,7 +507,7 @@ const search = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT
-       row_id, source, ig_handle, full_name, profile_pic_url,
+       row_id, source, ig_handle, full_name, profile_pic_url, profile_pic_r2_key,
        followers_count, view_based_er, follower_based_er,
        tier, city, niche, sub_niche, languages,
        ig_verified, is_business,
@@ -523,6 +524,7 @@ const search = asyncHandler(async (req, res) => {
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
+  await resolveAvatars(rows);
 
   return success(res, { creators: rows }, 200, { page: pageNum, limit: limitNum, total });
 });

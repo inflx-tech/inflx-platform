@@ -27,6 +27,7 @@ const marketingAutomation = require('../services/marketingAutomation.service');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { resolveAvatars } = require('../utils/avatarResolver');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -552,6 +553,7 @@ const getLeadDetail = asyncHandler(async (req, res) => {
       `SELECT * FROM creator_profiles WHERE id = $1`, [id]
     );
     if (!cp[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
+    await resolveAvatars(cp);
 
     const [postsRes, collabsRes, insightsRes, activityRes] = await Promise.all([
       db.query(`SELECT * FROM posts WHERE creator_profile_id = $1 ORDER BY posted_at DESC LIMIT 30`, [id]),
@@ -574,6 +576,7 @@ const getLeadDetail = asyncHandler(async (req, res) => {
       `SELECT * FROM brand_profiles WHERE id = $1`, [id]
     );
     if (!bp[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
+    await resolveAvatars(bp);
 
     const [insightsRes, activityRes] = await Promise.all([
       db.query(`SELECT * FROM insights WHERE brand_profile_id = $1 ORDER BY created_at DESC LIMIT 10`, [id]),

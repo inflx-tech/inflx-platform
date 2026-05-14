@@ -16,6 +16,7 @@
 const db = require('../config/db');
 const { success } = require('../utils/response');
 const asyncHandler = require('../utils/asyncHandler');
+const { resolveAvatars } = require('../utils/avatarResolver');
 
 function parseList(value) {
   if (value == null) return null;
@@ -154,7 +155,7 @@ const getMarketAnalytics = asyncHandler(async (req, res) => {
 
     // Top 10 by rank_score
     db.query(`
-      SELECT ig_handle, full_name, profile_pic_url, tier, city, niche,
+      SELECT ig_handle, full_name, profile_pic_url, profile_pic_r2_key, tier, city, niche,
              followers_count, view_based_er, rank_score, is_inflx_verified
       FROM v_searchable_creators
       WHERE ${where} AND rank_score IS NOT NULL
@@ -164,7 +165,7 @@ const getMarketAnalytics = asyncHandler(async (req, res) => {
 
     // Top 10 by growth potential
     db.query(`
-      SELECT ig_handle, full_name, profile_pic_url, tier, city, niche,
+      SELECT ig_handle, full_name, profile_pic_url, profile_pic_r2_key, tier, city, niche,
              followers_count, growth_potential_score, is_inflx_verified
       FROM v_searchable_creators
       WHERE ${where} AND growth_potential_score IS NOT NULL
@@ -174,7 +175,7 @@ const getMarketAnalytics = asyncHandler(async (req, res) => {
 
     // Cheapest creators (best for limited budgets)
     db.query(`
-      SELECT ig_handle, full_name, profile_pic_url, tier, city, niche,
+      SELECT ig_handle, full_name, profile_pic_url, profile_pic_r2_key, tier, city, niche,
              followers_count, view_based_er, estimated_min_rate, estimated_max_rate, is_inflx_verified
       FROM v_searchable_creators
       WHERE ${where} AND estimated_min_rate IS NOT NULL
@@ -184,7 +185,7 @@ const getMarketAnalytics = asyncHandler(async (req, res) => {
 
     // Cost-efficient creators — best avg_views / estimated_min_rate × 1000
     db.query(`
-      SELECT ig_handle, full_name, profile_pic_url, tier, city, niche,
+      SELECT ig_handle, full_name, profile_pic_url, profile_pic_r2_key, tier, city, niche,
              avg_views, estimated_min_rate,
              ROUND((avg_views::numeric * 1000 / NULLIF(estimated_min_rate, 0))::numeric, 2) AS views_per_1k_inr,
              is_inflx_verified
@@ -217,6 +218,14 @@ const getMarketAnalytics = asyncHandler(async (req, res) => {
         SUM(CASE WHEN NOT is_inflx_verified THEN 1 ELSE 0 END)::int AS unverified
       FROM v_searchable_creators WHERE ${where}
     `, params),
+  ]);
+
+  // Resolve avatars on every "top X" array — each row has profile_pic_url + profile_pic_r2_key.
+  await Promise.all([
+    resolveAvatars(topRank.rows),
+    resolveAvatars(topGrowth.rows),
+    resolveAvatars(cheapest.rows),
+    resolveAvatars(costEfficient.rows),
   ]);
 
   return success(res, {

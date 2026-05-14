@@ -22,6 +22,7 @@ const db = require('../config/db');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const { resolveAvatars } = require('../utils/avatarResolver');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // POST /v1/brands/me/creator-invitations
@@ -159,7 +160,8 @@ const adminListInvitations = asyncHandler(async (req, res) => {
     `SELECT
        ci.id, ci.status, ci.brand_message, ci.proposed_fee,
        ci.invited_at, ci.contacted_at, ci.expires_at, ci.contacted_by,
-       cp.ig_handle, cp.full_name, cp.profile_pic_url, cp.followers_count,
+       cp.ig_handle, cp.full_name, cp.profile_pic_url, cp.profile_pic_r2_key,
+       cp.followers_count,
        cp.follower_tier, cp.bio_email, cp.bio_phone,
        b.business_name AS brand_name, b.id AS brand_id
      FROM creator_invitations ci
@@ -169,6 +171,7 @@ const adminListInvitations = asyncHandler(async (req, res) => {
      ORDER BY ci.invited_at ASC`,
     [statuses]
   );
+  await resolveAvatars(rows);
   return success(res, { invitations: rows });
 });
 
