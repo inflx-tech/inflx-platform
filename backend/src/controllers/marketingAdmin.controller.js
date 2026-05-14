@@ -424,6 +424,9 @@ const listLeads = asyncHandler(async (req, res) => {
   const status = req.query.status;
   const min_score = parseFloat(req.query.min_score);
   const city = req.query.city;
+  const category = req.query.category;       // niche (inf) / industry (brand)
+  const sub_category = req.query.sub_category; // sub_niche (inf) / sub_industry (brand)
+  const tier = req.query.tier;
   const search = req.query.search; // searches handle + name
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
@@ -459,8 +462,16 @@ const listLeads = asyncHandler(async (req, res) => {
       params.push(min_score); w.push(`priority_score >= $${params.length}`);
     }
     if (city) {
-      params.push(city); w.push(`COALESCE(city, inferred_city) ILIKE $${params.length}`);
-      params[params.length - 1] = `%${city}%`;
+      params.push(city); w.push(`COALESCE(city, inferred_city) = $${params.length}`);
+    }
+    if (category) {
+      params.push(category); w.push(`COALESCE(niche, inferred_niche) = $${params.length}`);
+    }
+    if (sub_category) {
+      params.push(sub_category); w.push(`COALESCE(sub_niche, inferred_sub_niche) = $${params.length}`);
+    }
+    if (tier) {
+      params.push(tier); w.push(`follower_tier = $${params.length}`);
     }
     if (search) {
       params.push(`%${search}%`);
@@ -495,7 +506,16 @@ const listLeads = asyncHandler(async (req, res) => {
       params.push(min_score); w.push(`priority_score >= $${params.length}`);
     }
     if (city) {
-      params.push(`%${city}%`); w.push(`COALESCE(city, inferred_city) ILIKE $${params.length}`);
+      params.push(city); w.push(`COALESCE(city, inferred_city) = $${params.length}`);
+    }
+    if (category) {
+      params.push(category); w.push(`COALESCE(industry, inferred_industry) = $${params.length}`);
+    }
+    if (sub_category) {
+      params.push(sub_category); w.push(`COALESCE(sub_industry, inferred_sub_industry) = $${params.length}`);
+    }
+    if (tier) {
+      params.push(tier); w.push(`tier = $${params.length}`);
     }
     if (search) {
       params.push(`%${search}%`);
@@ -828,6 +848,37 @@ const getSettings = asyncHandler(async (req, res) => {
   return success(res, rows[0] || null);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/marketing/filter-options
+// Returns distinct values for filter dropdowns: cities, niches, sub_niches,
+// industries, sub_industries, tiers. Pulled from real data so dropdowns
+// match what's actually in the DB. Empty/null values are filtered out.
+// ─────────────────────────────────────────────────────────────────────────────
+const getFilterOptions = asyncHandler(async (req, res) => {
+  const [cpCities, bpCities, cpNiches, cpSubNiches, bpIndustries, bpSubIndustries, cpTiers, bpTiers] = await Promise.all([
+    db.query(`SELECT DISTINCT COALESCE(city, inferred_city) AS v FROM creator_profiles WHERE COALESCE(city, inferred_city) IS NOT NULL AND COALESCE(city, inferred_city) <> '' ORDER BY v`),
+    db.query(`SELECT DISTINCT COALESCE(city, inferred_city) AS v FROM brand_profiles WHERE COALESCE(city, inferred_city) IS NOT NULL AND COALESCE(city, inferred_city) <> '' ORDER BY v`),
+    db.query(`SELECT DISTINCT COALESCE(niche, inferred_niche) AS v FROM creator_profiles WHERE COALESCE(niche, inferred_niche) IS NOT NULL AND COALESCE(niche, inferred_niche) <> '' ORDER BY v`),
+    db.query(`SELECT DISTINCT COALESCE(sub_niche, inferred_sub_niche) AS v FROM creator_profiles WHERE COALESCE(sub_niche, inferred_sub_niche) IS NOT NULL AND COALESCE(sub_niche, inferred_sub_niche) <> '' ORDER BY v`),
+    db.query(`SELECT DISTINCT COALESCE(industry, inferred_industry) AS v FROM brand_profiles WHERE COALESCE(industry, inferred_industry) IS NOT NULL AND COALESCE(industry, inferred_industry) <> '' ORDER BY v`),
+    db.query(`SELECT DISTINCT COALESCE(sub_industry, inferred_sub_industry) AS v FROM brand_profiles WHERE COALESCE(sub_industry, inferred_sub_industry) IS NOT NULL AND COALESCE(sub_industry, inferred_sub_industry) <> '' ORDER BY v`),
+    db.query(`SELECT DISTINCT follower_tier AS v FROM creator_profiles WHERE follower_tier IS NOT NULL ORDER BY v`),
+    db.query(`SELECT DISTINCT tier AS v FROM brand_profiles WHERE tier IS NOT NULL ORDER BY v`),
+  ]);
+
+  const dedupSorted = (arrs) => [...new Set(arrs.flat().map(r => r.v).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  return success(res, {
+    cities:        dedupSorted([cpCities.rows, bpCities.rows]),
+    niches:        cpNiches.rows.map(r => r.v),
+    sub_niches:    cpSubNiches.rows.map(r => r.v),
+    industries:    bpIndustries.rows.map(r => r.v),
+    sub_industries: bpSubIndustries.rows.map(r => r.v),
+    creator_tiers: cpTiers.rows.map(r => r.v),  // nano/micro/mid/macro/mega/celebrity
+    brand_tiers:   bpTiers.rows.map(r => r.v),  // small/mid/large/enterprise
+  });
+});
+
 const updateSettings = asyncHandler(async (req, res) => {
   const body = req.body || {};
   const allowed = [
@@ -860,4 +911,5 @@ module.exports = {
   getFunnel,
   getSettings,
   updateSettings,
+  getFilterOptions,
 };

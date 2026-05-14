@@ -40,4 +40,7 @@ router.get('/funnel', authenticate, requireAnyAdminRole, ctrl.getFunnel);
 router.get('/settings',    authenticate, requireAnyAdminRole,           ctrl.getSettings);
 router.patch('/settings',  authenticate, requireAdminRole('superadmin'), ctrl.updateSettings);
 
+// ── Filter options for the Triage page dropdowns ───────────────────────────
+router.get('/filter-options', authenticate, requireAnyAdminRole, ctrl.getFilterOptions);
+
 module.exports = router;

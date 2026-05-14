@@ -436,6 +436,7 @@ export const marketingApi = {
   getFunnel: () => api.get('/admin/marketing/funnel'),
   getSettings: () => api.get('/admin/marketing/settings'),
   updateSettings: (data) => api.patch('/admin/marketing/settings', data),
+  getFilterOptions: () => api.get('/admin/marketing/filter-options'),
 };
 
 // (getStoredUser is already exported near the top of this file — duplicate
