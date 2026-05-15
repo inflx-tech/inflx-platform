@@ -312,7 +312,7 @@ const getById = asyncHandler(async (req, res) => {
   // they don't drive an action button so the row body isn't needed.
   const { rows: actionDelivRows } = await db.query(
     `SELECT d.id, d.campaign_influencer_id, d.type, d.status,
-            d.content_url, d.live_url, d.submitted_at
+            d.submitted_url AS content_url, d.live_url, d.submitted_at
      FROM   deliverables d
      JOIN   campaign_influencers ci ON ci.id = d.campaign_influencer_id
      JOIN   campaign_sets cs        ON cs.id = ci.set_id
