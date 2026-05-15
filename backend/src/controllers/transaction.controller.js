@@ -26,6 +26,99 @@ const asyncHandler = require('../utils/asyncHandler');
 const txService = require('../services/transaction.service');
 const bookingService = require('../services/booking.service');
 const notificationService = require('../services/notification.service');
+const offerService = require('../services/offer.service');
+
+// ── Conversion-flow helpers (Tier-1) ─────────────────────────────────────────
+
+/**
+ * Fetch base prices for a list of product IDs and return a Map<id, rupees>.
+ * Used by the offer parser. Skips inactive products.
+ */
+async function fetchPriceMap(productIds) {
+  const map = new Map();
+  if (!productIds || productIds.length === 0) return map;
+  const { rows } = await db.query(
+    `SELECT id, price FROM brand_products WHERE id = ANY($1::uuid[]) AND is_active = true`,
+    [productIds]
+  );
+  for (const r of rows) map.set(r.id, parseFloat(r.price || 0));
+  return map;
+}
+
+/**
+ * Fetch variant override prices for items that include variant_id.
+ * Returns Map<variant_id, override_price_rupees | base_resolved>.
+ * Used by the offer parser via lineItemPrice() so variant-level pricing
+ * (fashion's size×color matrix) is honored at checkout — not just the base
+ * brand_products.price.
+ */
+async function fetchVariantPriceMap(variantIds) {
+  const map = new Map();
+  if (!variantIds || variantIds.length === 0) return map;
+  const { rows } = await db.query(
+    `SELECT pv.id, pv.price_override, bp.price AS product_price
+       FROM product_variants pv
+       JOIN brand_products bp ON bp.id = pv.product_id
+      WHERE pv.id = ANY($1::uuid[]) AND pv.is_active = true`,
+    [variantIds]
+  );
+  for (const r of rows) {
+    map.set(r.id, r.price_override != null ? parseFloat(r.price_override) : parseFloat(r.product_price || 0));
+  }
+  return map;
+}
+
+/**
+ * Build the resolveOfferDiscount() input from a validateTracking record + items.
+ * Centralizes the "validateTracking returns rich record → offer parser input"
+ * translation so all 4 transaction sites use the same shape.
+ */
+async function computeOfferDiscount({ trackingRecord, items, billAmount }) {
+  // Item set: validate, gather variant_ids
+  const safeItems = (items || []).map(i => ({
+    product_id: i.product_id,
+    variant_id: i.variant_id || null,
+    quantity: Number(i.quantity || 1),
+  }));
+
+  // Build price maps if items are present
+  let priceMap = new Map();
+  let variantPriceMap = new Map();
+  if (safeItems.length > 0) {
+    const productIds = [...new Set(safeItems.map(i => i.product_id).filter(Boolean))];
+    const variantIds = [...new Set(safeItems.map(i => i.variant_id).filter(Boolean))];
+    [priceMap, variantPriceMap] = await Promise.all([
+      fetchPriceMap(productIds),
+      fetchVariantPriceMap(variantIds),
+    ]);
+  }
+
+  return offerService.resolveOfferDiscount({
+    offerType: trackingRecord.ci_offer_type,
+    offerConfig: trackingRecord.offer_config_json,
+    items: safeItems,
+    priceMap,
+    variantPriceMap,
+    billAmount,
+  });
+}
+
+/**
+ * Resolve the at-venue discount % when a prebook is created against a
+ * percentage-style offer. This is what the customer "earns" at the venue;
+ * the new "Pay Balance via INFLX" flow re-applies it.
+ *
+ * Returns 0 when offer isn't a simple percentage (Volume/BOGO/Bundle/Free
+ * gift get applied at checkout instead, not at the venue).
+ */
+function resolveAtVenueDiscountPct(trackingRecord) {
+  const t = offerService.normalizeOfferType(trackingRecord.ci_offer_type);
+  if (t !== 'discount') return 0;
+  const cfg = trackingRecord.offer_config_json || {};
+  if ((cfg.sub_type || 'pct') !== 'pct') return 0;
+  const v = Number(cfg.value || 0);
+  return v > 0 ? v : 0;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -103,7 +196,11 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { offer_id, campaign_id, set_id, campaign_influencer_id, bill_amount, product_id } = req.body;
+  const {
+    offer_id, campaign_id, set_id, campaign_influencer_id, bill_amount,
+    product_id, variant_id,
+    prebook_booking_id,                         // Q2 flow — balance-pay against an existing prebook
+  } = req.body;
 
   if (!bill_amount || parseFloat(bill_amount) <= 0) {
     throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive number (rupees)', 422, 'bill_amount');
@@ -115,56 +212,94 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
   // Validate tracking IDs (offer_id is optional — may not exist for CI-based offers)
   const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
-  // Get discount — from campaign_offers if exists, otherwise from campaign_influencers
-  let discountPct = 0;
-  let platformFeePct = parseFloat(env.PLATFORM_FEE_PCT);
+  const billAmount = parseFloat(bill_amount);
 
-  if (offer_id) {
-    const { rows: offerRows } = await db.query(
-      `SELECT co.*, b.platform_fee_pct FROM campaign_offers co
-       JOIN campaigns c ON c.id = co.campaign_id
-       JOIN brands b ON b.id = c.brand_id
-       WHERE co.id = $1`,
-      [offer_id]
+  // Q2 flow — pay-at-store linked to a prebook. Look up the booking + token
+  // already paid; this txn covers the balance.
+  let tokenPaid = 0;
+  let bookingForLink = null;
+  if (prebook_booking_id) {
+    const { rows: bookRows } = await db.query(
+      `SELECT fb.id, fb.advance_paid, fb.transaction_id,
+              ft.follower_id AS booking_follower_id,
+              ft.campaign_influencer_id AS booking_ci_id
+         FROM follower_bookings fb
+         JOIN follower_transactions ft ON ft.id = fb.transaction_id
+        WHERE fb.id = $1`,
+      [prebook_booking_id]
     );
-    if (offerRows[0]) {
-      discountPct = parseFloat(offerRows[0].discount_value || 0);
-      platformFeePct = parseFloat(offerRows[0].platform_fee_pct || env.PLATFORM_FEE_PCT);
+    bookingForLink = bookRows[0];
+    if (!bookingForLink) {
+      throw new AppError('NOT_FOUND', 'Prebook booking not found', 404);
     }
+    if (bookingForLink.booking_follower_id !== follower.id) {
+      throw new AppError('FORBIDDEN', 'This booking does not belong to you', 403);
+    }
+    if (bookingForLink.booking_ci_id !== campaign_influencer_id) {
+      throw new AppError('VALIDATION_ERROR', 'Tracking does not match the prebook', 422);
+    }
+    tokenPaid = parseFloat(bookingForLink.advance_paid || 0);
   }
 
-  // Fallback: use campaign_influencer discount
-  if (discountPct === 0 && record.discount_value) {
-    discountPct = parseFloat(record.discount_value);
-  }
-  if (record.platform_fee_pct) {
-    platformFeePct = parseFloat(record.platform_fee_pct);
-  }
+  // Tier-1 fix: discount via offer.service.js parser, not raw discount_value.
+  // For pay-at-store: items array is empty; the offer parser falls back to
+  // billAmount-based calc (only Discount type with sub_type pct/flat applies).
+  // Volume/BOGO/Bundle/Free-gift offers can't be applied to a free-form bill;
+  // they need cart items. Brand should pair those with online_order availing
+  // mode, not pay_at_store.
+  const offerResult = await computeOfferDiscount({
+    trackingRecord: record,
+    items: [],
+    billAmount,
+  });
+  const discountAmount = parseFloat(offerResult.discount_amount || 0);
+
+  const platformFeePct = parseFloat(record.platform_fee_pct || env.PLATFORM_FEE_PCT);
   const commissionPct = parseFloat(record.commission_pct || 0);
 
-  // bill_amount is in RUPEES (migration 021). calcPayAtStore now returns
-  // rupees too; paise only exists at the Razorpay createOrder boundary.
-  const billAmount = parseFloat(bill_amount);
-  const { discountAmount, netAmount, influencerCommission, platformFee, brandNet } =
-    txService.calcPayAtStore(billAmount, discountPct, commissionPct, platformFeePct);
+  // Q3 corrected math:
+  //   discountedTotal = bill - discount
+  //   amountToCharge  = discountedTotal - tokenPaid (when linked to prebook)
+  // gross_amount on the txn record = bill - tokenPaid (the portion this txn
+  // covers pre-discount); discount allocated entirely here since token was
+  // full-price.
+  const discountedTotal = parseFloat((billAmount - discountAmount).toFixed(2));
+  const amountToCharge = parseFloat((discountedTotal - tokenPaid).toFixed(2));
+  if (amountToCharge < 0) {
+    throw new AppError('VALIDATION_ERROR', 'Token already covers the discounted total — nothing to charge', 422);
+  }
+  const grossForTxn = parseFloat((billAmount - tokenPaid).toFixed(2));
+  const netAmount = amountToCharge;
+  const influencerCommission = parseFloat((netAmount * commissionPct / 100).toFixed(2));
+  const platformFee          = parseFloat((netAmount * platformFeePct / 100).toFixed(2));
+  const brandNet             = parseFloat((netAmount - influencerCommission - platformFee).toFixed(2));
 
   // Create Razorpay order
-  const orderId = await txService.createOrder(netAmount, {
+  const orderId = await txService.createOrder(amountToCharge, {
     type: 'pay_at_store',
     offer_id, campaign_id, set_id, campaign_influencer_id,
-    bill_amount: billAmount, discount_amount: discountAmount,
+    bill_amount: billAmount,
+    gross_for_txn: grossForTxn,
+    discount_amount: discountAmount,
     influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet,
     follower_id: follower.id, brand_id: record.brand_id,
-    product_id: product_id || null,   // Phase Salon-3 Q3 attribution
+    product_id: product_id || null,
+    variant_id: variant_id || null,             // Tier-1 fashion attribution
+    offer_type: record.ci_offer_type || null,   // denormalized analytics dim
+    prebook_booking_id: prebook_booking_id || null,
+    token_paid: tokenPaid,
   });
 
   return success(res, {
     razorpay_order_id: orderId,
     razorpay_key_id: txService.getRazorpayKeyId(),
-    net_amount: netAmount,
+    bill_amount: billAmount,
     discount_amount: discountAmount,
-    original_amount: billAmount,
-    discount_pct: discountPct,
+    discounted_total: discountedTotal,
+    token_paid: tokenPaid,
+    amount_to_charge: amountToCharge,
+    discount_reason: offerResult.reason,
+    net_amount: netAmount,
     breakdown: { influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet },
   }, 201);
 });
@@ -199,20 +334,27 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   // Phase Salon-3 Q3 — resolve product_id (mobile-provided or single-product offer)
   const productId = await resolveProductId(db, meta.offer_id, meta.product_id);
 
+  // Tier-1 conversion fix: gross is the portion this txn covers pre-discount
+  // (bill - token_paid); when there's no linked prebook, gross = bill_amount.
+  // The Razorpay-charged amount is netAmount.
+  const txGross = meta.gross_for_txn != null ? meta.gross_for_txn : meta.bill_amount;
+
   await db.withTransaction(async (client) => {
     // Create follower_transaction — all money columns in rupees
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
+          variant_id, offer_type, prebook_booking_id,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'pay_at_store',$8,$9,$10,$11,$12,$13,'completed',$14,$15,$16)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pay_at_store',$11,$12,$13,$14,$15,$16,'completed',$17,$18,$19)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id, productId,
-        meta.bill_amount, meta.discount_amount, netAmount,
+        meta.variant_id || null, meta.offer_type || null, meta.prebook_booking_id || null,
+        txGross, meta.discount_amount, netAmount,
         meta.influencer_commission, meta.platform_fee, meta.brand_net,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
@@ -308,19 +450,30 @@ const initiatePrebook = asyncHandler(async (req, res) => {
     }
   }
 
-  const discountPct = parseFloat(record.discount_value || 0);
+  // Tier-1: at_venue_discount_pct captures the % the customer earned to
+  // re-apply via the new "Pay Balance via INFLX" flow at venue. Returns 0
+  // for non-percentage offers (those would need cart items to compute, which
+  // a prebook doesn't have at booking time).
+  const atVenueDiscountPct = resolveAtVenueDiscountPct(record);
 
   const orderId = await txService.createOrder(advanceAmount, {
     type: 'prebook',
     offer_id: offer_id || null, campaign_id, set_id, campaign_influencer_id,
     booking_date, booking_time, guest_count: guest_count || 1,
-    advance_amount: advanceAmount, discount_pct: discountPct,
+    advance_amount: advanceAmount,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: parseFloat(record.commission_pct || 0),
-    product_id: product_id || null,   // Phase Salon-3 Q3 attribution
+    product_id: product_id || null,
+    offer_type: record.ci_offer_type || null,
+    at_venue_discount_pct: atVenueDiscountPct,
   });
 
-  return success(res, { razorpay_order_id: orderId, razorpay_key_id: txService.getRazorpayKeyId(), advance_amount: advanceAmount }, 201);
+  return success(res, {
+    razorpay_order_id: orderId,
+    razorpay_key_id: txService.getRazorpayKeyId(),
+    advance_amount: advanceAmount,
+    at_venue_discount_pct: atVenueDiscountPct,
+  }, 201);
 });
 
 // ── POST /follower/prebook/verify ─────────────────────────────────────────────
@@ -385,14 +538,16 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
+          variant_id, offer_type,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'prebook',$8,0,$8,$9,$10,$11,'completed',$12,$13,$14)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'prebook',$10,0,$10,$11,$12,$13,'completed',$14,$15,$16)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id, productId,
+        meta.variant_id || null, meta.offer_type || null,
         advanceAmount, commissionAmount, platformFeeAmount, brandNetAmount,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
@@ -404,10 +559,15 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     const { rows: bookRows } = await client.query(
       `INSERT INTO follower_bookings
          (transaction_id, booking_type, booking_date, booking_time, guest_count, reference_code,
-          status, advance_paid, balance_due_at_venue, stylist_id, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, 0, $8, $9)
+          status, advance_paid, balance_due_at_venue, stylist_id, notes,
+          at_venue_discount_pct)
+       VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, 0, $8, $9, $10)
        RETURNING id`,
-      [transactionId, bookingTypeValue, meta.booking_date, meta.booking_time, meta.guest_count, referenceCode, advanceAmount, stylist_id || null, notes || null]
+      [
+        transactionId, bookingTypeValue, meta.booking_date, meta.booking_time, meta.guest_count,
+        referenceCode, advanceAmount, stylist_id || null, notes || null,
+        meta.at_venue_discount_pct || 0,
+      ]
     );
     bookingId = bookRows[0].id;
 
@@ -497,7 +657,9 @@ const initiatePrebookDateRange = asyncHandler(async (req, res) => {
     if (tokenAmount) advanceAmount = parseFloat(tokenAmount);
   }
 
-  const discountPct = parseFloat(record.discount_value || 0);
+  // Tier-1: at_venue_discount_pct captures the % the customer earned for
+  // the new "Pay Balance via INFLX" flow at pickup.
+  const atVenueDiscountPct = resolveAtVenueDiscountPct(record);
 
   const orderId = await txService.createOrder(advanceAmount, {
     type: 'prebook_daterange',
@@ -505,16 +667,19 @@ const initiatePrebookDateRange = asyncHandler(async (req, res) => {
     pickup_date, return_date,
     duration_days: duration_days || null,
     pickup_type: pickup_type || 'garage',
-    advance_amount: advanceAmount, discount_pct: discountPct,
+    advance_amount: advanceAmount,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: parseFloat(record.commission_pct || 0),
-    product_id: product_id || null,   // Phase Salon-3 Q3 attribution (the vehicle being booked)
+    product_id: product_id || null,
+    offer_type: record.ci_offer_type || null,
+    at_venue_discount_pct: atVenueDiscountPct,
   });
 
   return success(res, {
     razorpay_order_id: orderId,
     razorpay_key_id: txService.getRazorpayKeyId(),
     advance_amount: advanceAmount,
+    at_venue_discount_pct: atVenueDiscountPct,
   }, 201);
 });
 
@@ -553,14 +718,16 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
+          variant_id, offer_type,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'prebook',$8,0,$8,$9,$10,$11,'completed',$12,$13,$14)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'prebook',$10,0,$10,$11,$12,$13,'completed',$14,$15,$16)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id, productId,
+        meta.variant_id || null, meta.offer_type || null,
         advanceAmount, commissionAmount, platformFeeAmount, brandNetAmount,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
@@ -573,13 +740,15 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
       `INSERT INTO follower_bookings
          (transaction_id, booking_type,
           pickup_date, return_date, duration_days, pickup_type,
-          reference_code, status, advance_paid, balance_due_at_venue)
-       VALUES ($1, 'date_range', $2, $3, $4, $5, $6, 'confirmed', $7, 0)
+          reference_code, status, advance_paid, balance_due_at_venue,
+          at_venue_discount_pct)
+       VALUES ($1, 'date_range', $2, $3, $4, $5, $6, 'confirmed', $7, 0, $8)
        RETURNING id`,
       [
         transactionId,
         meta.pickup_date, meta.return_date, meta.duration_days, meta.pickup_type,
         referenceCode, advanceAmount,
+        meta.at_venue_discount_pct || 0,
       ]
     );
     bookingId = bookRows[0].id;
@@ -639,44 +808,51 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
-  // Get offer + brand fee
-  const { rows: offerRows } = await db.query(
-    `SELECT co.*, b.platform_fee_pct FROM campaign_offers co
-     JOIN campaigns c ON c.id = co.campaign_id
-     JOIN brands b ON b.id = c.brand_id
-     WHERE co.id = $1`,
-    [offer_id]
-  );
-  const offer = offerRows[0];
-  const discountPct = parseFloat(offer.discount_value || 0);
-  const platformFeePct = parseFloat(offer.platform_fee_pct || env.PLATFORM_FEE_PCT);
-  const commissionPct = parseFloat(record.commission_pct || 0);
-  const deliveryFee   = parseFloat(delivery_fee || 0);   // rupees from client
+  // Build base + variant price maps (Tier-1: variant.price_override now
+  // honored at checkout — not just brand_products.price).
+  const productIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
+  const variantIds = [...new Set(items.map(i => i.variant_id).filter(Boolean))];
+  const [priceMap, variantPriceMap] = await Promise.all([
+    fetchPriceMap(productIds),
+    fetchVariantPriceMap(variantIds),
+  ]);
 
-  // Fetch product prices (brand_products.price is already rupees)
-  const productIds = items.map(i => i.product_id);
-  const { rows: products } = await db.query(
-    `SELECT id, price FROM brand_products WHERE id = ANY($1::uuid[])`,
-    [productIds]
-  );
-  const priceMap = {};
-  for (const p of products) {
-    priceMap[p.id] = parseFloat(p.price || 0);
-  }
-
-  const orderItems = items.map(i => ({
-    price: priceMap[i.product_id] || 0,
-    quantity: parseInt(i.quantity, 10),
+  const safeItems = items.map(i => ({
     product_id: i.product_id,
+    variant_id: i.variant_id || null,
+    quantity: parseInt(i.quantity, 10),
   }));
 
-  const { itemsTotal, discountAmount, netAmount, influencerCommission, platformFee, brandNet } =
-    txService.calcOnlineOrder(orderItems, discountPct, commissionPct, platformFeePct, deliveryFee);
+  // Tier-1: discount via offer.service.js parser. Handles all 5 offer
+  // mechanics (Discount / Volume / BOGO / Bundle / Free gift) — replaces
+  // the broken percentage-only math in calcOnlineOrder.
+  const offerResult = offerService.resolveOfferDiscount({
+    offerType: record.ci_offer_type,
+    offerConfig: record.offer_config_json,
+    items: safeItems,
+    priceMap,
+    variantPriceMap,
+  });
 
-  const itemsJson = items.map(i => ({
+  const discountAmount = parseFloat(offerResult.discount_amount || 0);
+  const platformFeePct = parseFloat(record.platform_fee_pct || env.PLATFORM_FEE_PCT);
+  const commissionPct  = parseFloat(record.commission_pct || 0);
+  const deliveryFee    = parseFloat(delivery_fee || 0);
+
+  const itemsTotal = offerService.itemsTotal(safeItems, priceMap, variantPriceMap);
+  const discountedItems = parseFloat((itemsTotal - discountAmount).toFixed(2));
+  const netAmount = parseFloat((discountedItems + deliveryFee).toFixed(2));
+  const influencerCommission = parseFloat((discountedItems * commissionPct / 100).toFixed(2));
+  const platformFee          = parseFloat((discountedItems * platformFeePct / 100).toFixed(2));
+  const brandNet             = parseFloat((discountedItems - influencerCommission - platformFee).toFixed(2));
+
+  // items_json: per-item snapshot for follower_orders. Now carries variant_id
+  // so returns + per-variant analytics work end-to-end.
+  const itemsJson = safeItems.map(i => ({
     product_id: i.product_id,
+    variant_id: i.variant_id,
     quantity: i.quantity,
-    price: priceMap[i.product_id] || 0,
+    price: offerService.lineItemPrice(i, priceMap, variantPriceMap),
   }));
 
   const orderId = await txService.createOrder(netAmount, {
@@ -687,6 +863,9 @@ const placeOrder = asyncHandler(async (req, res) => {
     delivery_fee: deliveryFee, address_id, items_json: itemsJson,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: commissionPct,
+    offer_type: record.ci_offer_type || null,
+    discount_reason: offerResult.reason,
+    adjustments: offerResult.adjustments || null,
   });
 
   return success(res, {
@@ -695,6 +874,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     breakdown: {
       items_total: itemsTotal,
       discount_amount: discountAmount,
+      discount_reason: offerResult.reason,
       delivery_fee: deliveryFee,
       influencer_commission: influencerCommission,
       platform_fee: platformFee,
@@ -743,18 +923,27 @@ const verifyOrder = asyncHandler(async (req, res) => {
     ? meta.items_json[0].product_id
     : null;
 
+  // Tier-1: pull primary variant_id from items_json[0] alongside primary
+  // product_id, so single-row analytics can answer "Size M, Black T-shirt
+  // — how much revenue?".
+  const primaryVariantId = Array.isArray(meta.items_json) && meta.items_json[0]?.variant_id
+    ? meta.items_json[0].variant_id
+    : null;
+
   await db.withTransaction(async (client) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
+          variant_id, offer_type,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'online_order',$8,$9,$10,$11,$12,$13,'completed',$14,$15,$16)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'online_order',$10,$11,$12,$13,$14,$15,'completed',$16,$17,$18)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id, primaryProductId,
+        primaryVariantId, meta.offer_type || null,
         meta.items_total, meta.discount_amount, netAmount,
         commissionAmount, meta.platform_fee, meta.brand_net,
         couponCode, returnWindowEndsAt, razorpay_payment_id,

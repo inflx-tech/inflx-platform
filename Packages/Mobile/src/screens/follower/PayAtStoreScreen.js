@@ -16,23 +16,44 @@ import { processPayment } from '../../services/payment';
  */
 
 export default function PayAtStoreScreen({ navigation, route }) {
-  const { offer, store, trackingParams, brand, tracking, influencer, product, prefillAmount } = route.params || {};
+  const {
+    offer, store, trackingParams, brand, tracking, influencer, product, prefillAmount,
+    // Q2 flow — when launched from a prebook booking ("Pay Balance via INFLX"),
+    // these params come pre-filled. PayAtStoreScreen branches its UX:
+    //   · token banner ("you already paid ₹100")
+    //   · discount % already known (from booking.at_venue_discount_pct)
+    //   · amount_to_pay = (bill − discount) − token
+    prebookBookingId,
+    tokenPaid,
+    atVenueDiscountPct,
+  } = route.params || {};
 
   const storeName = store?.brand_name || brand?.name || 'Store';
   const infName = influencer?.name || store?.instagram_handle || '';
-  const discountPct = offer?.discount_value || 0;
-  const isKnownAmount = !!prefillAmount;
+  const isPrebookBalance = !!prebookBookingId;
 
-  // prefillAmount, when supplied, is now in RUPEES (post-migration 021).
+  // Discount %: when balance-paying from a prebook, use the captured at_venue
+  // discount (already validated at booking time). Else use the offer's value.
+  const discountPct = isPrebookBalance
+    ? Number(atVenueDiscountPct || 0)
+    : Number(offer?.discount_value || 0);
+  const tokenPaidRupees = isPrebookBalance ? Number(tokenPaid || 0) : 0;
+
+  const isKnownAmount = !!prefillAmount && !isPrebookBalance;
+
   const [billAmount, setBillAmount] = useState(isKnownAmount ? String(prefillAmount) : '');
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState('enter'); // 'enter' | 'confirm' | 'processing' | 'success'
+  const [step, setStep] = useState('enter');
   const [receipt, setReceipt] = useState(null);
 
-  // All amounts in RUPEES. We only convert to paise at the Razorpay SDK call.
-  const billRupees     = parseFloat(billAmount || '0');
-  const discountRupees = parseFloat((billRupees * (discountPct / 100)).toFixed(2));
-  const youPay         = parseFloat((billRupees - discountRupees).toFixed(2));
+  // Q3 corrected math (the user's clarification):
+  //   discount_amount  = bill × discountPct / 100   (applied to FULL bill, not remaining)
+  //   discounted_total = bill − discount
+  //   you_pay          = discounted_total − tokenPaid  (₹0 if no prebook link)
+  const billRupees       = parseFloat(billAmount || '0');
+  const discountRupees   = parseFloat((billRupees * (discountPct / 100)).toFixed(2));
+  const discountedTotal  = parseFloat((billRupees - discountRupees).toFixed(2));
+  const youPay           = parseFloat((discountedTotal - tokenPaidRupees).toFixed(2));
 
   async function handlePay() {
     if (!youPay || youPay < 1) { Alert.alert('Enter a valid amount'); return; }
@@ -58,16 +79,17 @@ export default function PayAtStoreScreen({ navigation, route }) {
       const trackingData = trackingParams || tracking || {};
 
       // Step 1: Create order on backend (amounts in RUPEES)
+      // Backend re-computes discount + net independently using offer.service
+      // so we don't trust client values — we just send the bill.
       const orderRes = await followerApi.payAtStore({
         campaign_id: trackingData.cid || trackingData.campaign_id,
         set_id: trackingData.sid || trackingData.set_id,
         offer_id: trackingData.oid || trackingData.offer_id || offer?.id,
         campaign_influencer_id: trackingData.iid || trackingData.campaign_influencer_id,
-        original_bill_amount: billRupees,
-        discount_applied: discountRupees,
-        net_amount: youPay,
-        transaction_type: 'pay_at_store',
+        bill_amount: billRupees,
         product_id: product?.id || null,
+        variant_id: product?.variant_id || null,    // fashion attribution
+        prebook_booking_id: prebookBookingId || null,   // Q2 flow link
       });
 
       if (!orderRes.success && !orderRes.data) {
@@ -184,7 +206,18 @@ export default function PayAtStoreScreen({ navigation, route }) {
             <Text style={s.dealBadgeText}>{discountPct}% OFF</Text>
           </View>
           <Text style={s.dealInfo}>
-            {infName ? `${infName}'s deal` : 'Influencer deal'} · {isKnownAmount ? 'Pre-book' : 'Walk-in & pay'}
+            {infName ? `${infName}'s deal` : 'Influencer deal'}
+            {isPrebookBalance ? ' · Balance pay' : (isKnownAmount ? ' · Pre-book' : ' · Walk-in & pay')}
+          </Text>
+        </View>
+      )}
+
+      {/* Q2 — Token-paid banner (when launched from a prebook booking) */}
+      {isPrebookBalance && (
+        <View style={s.tokenBanner}>
+          <Text style={s.tokenBannerIcon}>✓</Text>
+          <Text style={s.tokenBannerText}>
+            You already paid <Text style={{ fontWeight: '800' }}>₹{tokenPaidRupees.toFixed(0)}</Text> as booking token. Enter the full bill below — we'll apply your discount and subtract the token.
           </Text>
         </View>
       )}
@@ -205,11 +238,12 @@ export default function PayAtStoreScreen({ navigation, route }) {
           />
         </View>
 
-        {/* Breakdown */}
+        {/* Breakdown \u2014 Q3 corrected math:
+              Total bill \u2192 Discount \u2192 Discounted total \u2192 Already paid (if linked) \u2192 You pay */}
         {billRupees > 0 && (
           <View style={s.breakdown}>
             <View style={s.breakdownRow}>
-              <Text style={s.breakdownLabel}>{isKnownAmount ? 'Service Price' : 'Bill Amount'}</Text>
+              <Text style={s.breakdownLabel}>{isPrebookBalance ? 'Total Bill' : (isKnownAmount ? 'Service Price' : 'Bill Amount')}</Text>
               <Text style={s.breakdownVal}>{fmtMoney(billRupees)}</Text>
             </View>
             {discountPct > 0 && (
@@ -218,13 +252,23 @@ export default function PayAtStoreScreen({ navigation, route }) {
                   <Text style={s.breakdownLabel}>Discount ({discountPct}%)</Text>
                   <Text style={[s.breakdownVal, { color: darkColors.green }]}>- {fmtMoney(discountRupees)}</Text>
                 </View>
+                <View style={s.breakdownRow}>
+                  <Text style={[s.breakdownLabel, { fontWeight: '700', color: darkColors.text }]}>Discounted Total</Text>
+                  <Text style={[s.breakdownVal, { fontWeight: '700' }]}>{fmtMoney(discountedTotal)}</Text>
+                </View>
+                {isPrebookBalance && tokenPaidRupees > 0 && (
+                  <View style={s.breakdownRow}>
+                    <Text style={s.breakdownLabel}>Token already paid</Text>
+                    <Text style={[s.breakdownVal, { color: darkColors.amber }]}>- {fmtMoney(tokenPaidRupees)}</Text>
+                  </View>
+                )}
                 <View style={s.savingsRow}>
-                  <Text style={s.savingsText}>\u2713 You save {fmtMoney(discountRupees)}</Text>
+                  <Text style={s.savingsText}>\u2713 You save {fmtMoney(discountRupees)} on this bill</Text>
                 </View>
               </>
             )}
             <View style={[s.breakdownRow, s.totalRow]}>
-              <Text style={s.totalLabel}>You Pay</Text>
+              <Text style={s.totalLabel}>You Pay Now</Text>
               <Text style={s.totalVal}>{fmtMoney(youPay)}</Text>
             </View>
           </View>
@@ -288,6 +332,15 @@ const s = StyleSheet.create({
   dealBadge: { backgroundColor: darkColors.amber, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   dealBadgeText: { fontSize: 12, fontWeight: '800', color: '#000' },
   dealInfo: { fontSize: 11, color: darkColors.amber, fontWeight: '600' },
+  // Q2 token banner
+  tokenBanner: {
+    marginHorizontal: 16, marginTop: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: 'rgba(34,197,94,0.10)', borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)',
+  },
+  tokenBannerIcon: { fontSize: 22, color: darkColors.green, fontWeight: '900' },
+  tokenBannerText: { flex: 1, fontSize: 11, color: darkColors.text, lineHeight: 15 },
   card: {
     margin: 16, backgroundColor: darkColors.card, borderRadius: 20,
     padding: 20, borderWidth: 1, borderColor: darkColors.border,

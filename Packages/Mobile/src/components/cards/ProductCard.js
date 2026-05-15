@@ -25,11 +25,17 @@ export default function ProductCard({
   const icon = getBusinessAccent(brand?.category).icon;
 
   const mrp = product?.price || 0;
-  const discountPct = discount?.type === 'percentage' ? discount.value : 0;
+
+  // Tier-1 conversion fix: render the right badge per the 5 wizard offer
+  // types \u2014 Discount, Volume, BOGO, Bundle, Free gift. The `discount` prop
+  // shape varies; type-specific subtypes win when present.
+  const offerBadge = computeOfferBadge(discount);
+  const discountLabel = offerBadge.label;
+  // Card-side strikethrough only applies for known % discount (badge-as-pct).
+  // Other mechanics (Bundle / BOGO / Volume / Free gift) need cart context to
+  // compute final price \u2014 show MRP only.
+  const discountPct = offerBadge.kind === 'pct' ? Number(offerBadge.value) : 0;
   const offerPrice = discountPct > 0 ? Math.floor(mrp * (1 - discountPct / 100)) : mrp;
-  const discountLabel = discount?.value
-    ? (discount.type === 'flat' ? `\u20B9${fmtMoney(discount.value).replace('\u20B9', '')} OFF` : `${discount.value}% OFF`)
-    : null;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
@@ -107,6 +113,47 @@ export default function ProductCard({
 // template). Trade-off: keeps the card lightweight + no backend change at
 // the cost of mobile knowing which categories support which trust signals.
 // Acceptable: only 3 active categories today.
+
+/**
+ * Tier-1 helper — derive the offer badge label + kind from a `discount` prop.
+ * Handles the 5 brand-wizard offer types plus the legacy `percentage` / `flat`
+ * shapes. Returns { label, kind } where kind is 'pct' | 'flat' | 'volume' |
+ * 'bogo' | 'bundle' | 'free_gift' | 'none'.
+ */
+function computeOfferBadge(discount) {
+  if (!discount) return { label: null, kind: 'none' };
+  const type = String(discount.type || '').toLowerCase();
+  // Legacy/simple shapes — passed by older feed surfaces
+  if (type === 'percentage' && discount.value) {
+    return { label: `${discount.value}% OFF`, kind: 'pct', value: discount.value };
+  }
+  if (type === 'flat' && discount.value) {
+    return { label: `₹${discount.value} OFF`, kind: 'flat', value: discount.value };
+  }
+  // New wizard shapes (raw offer_type from campaign_influencers)
+  if (type === 'discount') {
+    const subType = discount.sub_type || (discount.value > 100 ? 'flat' : 'pct');
+    if (subType === 'flat') return { label: `₹${discount.value} OFF`, kind: 'flat', value: discount.value };
+    return { label: `${discount.value}% OFF`, kind: 'pct', value: discount.value };
+  }
+  if (type === 'volume' || type === 'volume discount' || type === 'volume_discount') {
+    return { label: 'VOLUME DEAL', kind: 'volume' };
+  }
+  if (type === 'bogo') {
+    return { label: 'BOGO', kind: 'bogo' };
+  }
+  if (type === 'bundle') {
+    return { label: 'BUNDLE', kind: 'bundle' };
+  }
+  if (type === 'free gift' || type === 'free_gift' || type === 'gift') {
+    return { label: '+ FREE GIFT', kind: 'free_gift' };
+  }
+  // Numeric-only fallback (older callers pass raw value as discount.value)
+  if (typeof discount.value === 'number' && discount.value > 0) {
+    return { label: `${discount.value}% OFF`, kind: 'pct', value: discount.value };
+  }
+  return { label: null, kind: 'none' };
+}
 
 const TRUST_CHIPS_BY_CATEGORY = {
   salon:       [{ icon: '💸', text: 'Pay at salon' }, { icon: '✕', text: 'Free cancel' }],

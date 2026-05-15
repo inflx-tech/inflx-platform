@@ -167,6 +167,42 @@ export default function OrderDetailScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* Tier-1 conversion fix — Q2 flow. "Pay Balance via INFLX" surfaces
+          for prebook bookings in confirmed status. The customer arrives at
+          the salon/garage, opens INFLX, taps this button, enters the salon's
+          full bill, and pays the discounted balance via UPI. The pay-at-store
+          screen knows the booking link → applies the captured discount % →
+          subtracts the token already paid. */}
+      {(order.transaction_type === 'prebook' || order.booking_type) && order.booking_id && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>At the venue?</Text>
+          <Text style={styles.returnSub}>
+            {order.at_venue_discount_pct > 0
+              ? `Show this booking to claim your ${order.at_venue_discount_pct}% off. Or pay the balance through INFLX — discount auto-applied.`
+              : 'Pay your balance through INFLX for instant confirmation and credit to the creator.'}
+          </Text>
+          <TouchableOpacity
+            style={styles.payBalanceBtn}
+            onPress={() => navigation.navigate('PayAtStore', {
+              prebookBookingId: order.booking_id,
+              tokenPaid: order.advance_paid || 0,
+              atVenueDiscountPct: order.at_venue_discount_pct || 0,
+              brand: { name: order.brand_name },
+              tracking: {
+                campaign_id: order.campaign_id,
+                set_id: order.set_id,
+                offer_id: order.offer_id,
+                campaign_influencer_id: order.campaign_influencer_id,
+                influencer_id: order.influencer_id,
+              },
+              influencer: { name: order.influencer_name },
+              offer: { discount_value: order.at_venue_discount_pct || 0, id: order.offer_id },
+            })}>
+            <Text style={styles.payBalanceBtnText}>💸  Pay Balance via INFLX</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <TouchableOpacity
         style={styles.myReturnsLink}
         onPress={() => navigation.navigate('MyReturns')}>
@@ -222,6 +258,9 @@ const styles = StyleSheet.create({
   returnBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
   myReturnsLink: { padding: 18, alignItems: 'center' },
   myReturnsText: { fontSize: 13, color: '#ec4899', fontWeight: '600' },
+  // Tier-1 Q2 — Pay Balance via INFLX
+  payBalanceBtn: { backgroundColor: colors.amber || '#f59e0b', paddingVertical: 12, borderRadius: 11, alignItems: 'center' },
+  payBalanceBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
   itemName: { fontSize: 13, color: colors.t1, fontWeight: '500', flex: 1 },
   itemDetail: { fontSize: 13, color: colors.t2 },

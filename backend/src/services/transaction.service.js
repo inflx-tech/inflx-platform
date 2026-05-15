@@ -105,7 +105,11 @@ function verifyPaymentSignature(orderId, paymentId, signature) {
  * @param {string} offerId
  */
 async function validateTracking(campaignId, setId, campaignInfluencerId, offerId) {
-  // Support both campaign_offers-based and campaign_influencers-based offers
+  // Tier-1 conversion fix: stop using commission_pct as a customer-facing
+  // discount fallback. Discount is now resolved exclusively from
+  // ci.offer_type + ci.offer_config_json via offer.service.js's parser.
+  // The legacy co.discount_value is exposed for back-compat but treated
+  // as a typed offer (controllers can opt-in via legacy_offer_*).
   const { rows } = await db.query(
     `SELECT
        ci.id, ci.status AS ci_status, ci.commission_pct, ci.coupon_code,
@@ -113,7 +117,8 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
        cs.id AS set_id, cs.campaign_id,
        c.brand_id, c.status AS campaign_status, c.end_date,
        co.id AS offer_id,
-       COALESCE(co.discount_value, NULLIF(ci.offer_config_json->>'value','')::numeric, ci.commission_pct) AS discount_value,
+       co.discount_value AS legacy_offer_discount_value,
+       co.products_json  AS legacy_offer_products_json,
        b.platform_fee_pct
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
