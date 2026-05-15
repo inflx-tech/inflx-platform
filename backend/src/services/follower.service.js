@@ -158,14 +158,30 @@ async function resolveStore(handle) {
       );
       products = rows;
     } else {
-      // No published products — show brand catalog as preview
-      const { rows } = await db.query(
-        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
-         FROM brand_products WHERE brand_id = $1 AND is_active = true
-         ORDER BY section, name LIMIT 10`,
-        [r.brand_id]
-      );
-      products = rows;
+      // Creator hasn't published anything for this offer yet. The offer card
+      // stays visible (followers know the deal exists) but the products array
+      // is empty so the UI can render a "still curating" empty state. The
+      // brand-catalogue preview fallback was removed because it leaked
+      // products through before the creator approved them, contradicting the
+      // creator-curation gate.
+      products = [];
+    }
+
+    // Does this offer have brand-assigned products? If yes and the creator
+    // hasn't published any yet, the mobile UI shows a "still curating" empty
+    // state instead of treating it as a brand-level (storefront-wide) deal.
+    const ciCfg = r.ci_offer_config || {};
+    const setProductsJson = r.products_json;
+    let hasAssignedProducts = false;
+    if (Array.isArray(ciCfg.products)   && ciCfg.products.length   > 0) hasAssignedProducts = true;
+    if (Array.isArray(ciCfg.d_prods)    && ciCfg.d_prods.length    > 0) hasAssignedProducts = true;
+    if (Array.isArray(ciCfg.v_prods)    && ciCfg.v_prods.length    > 0) hasAssignedProducts = true;
+    if (Array.isArray(ciCfg.bnd_prods)  && ciCfg.bnd_prods.length  > 0) hasAssignedProducts = true;
+    if (setProductsJson) {
+      try {
+        const pj = typeof setProductsJson === 'string' ? JSON.parse(setProductsJson) : setProductsJson;
+        if (Array.isArray(pj) && pj.length > 0) hasAssignedProducts = true;
+      } catch {}
     }
 
     offersWithProducts.push({
@@ -185,6 +201,7 @@ async function resolveStore(handle) {
       prebook_advance: r.prebook_advance,
       start_date: r.start_date,
       end_date: r.end_date,
+      has_assigned_products: hasAssignedProducts,
       products: products.map(p => ({
         id: p.id,
         name: p.name,

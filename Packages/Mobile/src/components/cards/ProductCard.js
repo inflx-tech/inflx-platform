@@ -11,12 +11,13 @@ import { darkColors, fmtMoney, getBusinessAccent, fonts } from '../../theme/toke
  */
 
 export default function ProductCard({
-  product,       // { name, price (paise), image_url, description }
+  product,       // { name, price (paise), image_url, description, influencer_note }
   brand,         // { name, category, locality }
   discount,      // { type, value, label } e.g. { type: 'percentage', value: 25, label: "Meena's Saree Deal" }
   influencer,    // { name, avatar_initial, gradient } or null
   accentColor,   // override accent or derived from brand.category
   onPress,
+  onPressBrand,  // optional — when set, brand line becomes a tappable link (→ BrandStore)
   onPressHeart,
   isSaved,
 }) {
@@ -70,19 +71,45 @@ export default function ProductCard({
       <View style={styles.body}>
         <Text style={styles.productName} numberOfLines={2}>{product?.name}</Text>
 
-        {/* Brand line with inline verified check.
+        {/* Creator's "vibe" — the influencer's personal note on this product
+            (from influencer_product_notes). Quoted, italic, capped at 2 lines
+            so the card stays tight. Hidden when the surface doesn't ship a
+            note (organic browse, brand-store grid). */}
+        {product?.influencer_note ? (
+          <Text style={styles.creatorNote} numberOfLines={2}>
+            "{product.influencer_note}"
+          </Text>
+        ) : null}
+
+        {/* Brand line with inline verified check + optional tap-to-brand-store.
             Phase Salon-3 — every visible brand is admin-approved (the feed
             and category endpoints filter on users.status). We render the
             green ✓ by default and gate on brand.is_verified === false only
-            when callers explicitly opt out. */}
-        <View style={styles.brandRow}>
-          <Text style={styles.brandLine} numberOfLines={1}>
-            {brand?.name}{brand?.locality ? ` · ${brand.locality}` : ''}
-          </Text>
-          {brand?.is_verified !== false && (
-            <Text style={styles.brandVerified}>✓</Text>
-          )}
-        </View>
+            when callers explicitly opt out. The whole row becomes a
+            TouchableOpacity when `onPressBrand` is provided; the chevron
+            communicates the affordance. Without onPressBrand it stays a
+            passive label. stopPropagation isn't needed in RN — onPress on a
+            nested TouchableOpacity short-circuits the parent. */}
+        {onPressBrand ? (
+          <TouchableOpacity style={styles.brandRow} onPress={onPressBrand} activeOpacity={0.7}>
+            <Text style={styles.brandLine} numberOfLines={1}>
+              from {brand?.name}{brand?.locality ? ` · ${brand.locality}` : ''}
+            </Text>
+            {brand?.is_verified !== false && (
+              <Text style={styles.brandVerified}>✓</Text>
+            )}
+            <Text style={styles.brandChevron}>{'›'}</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.brandRow}>
+            <Text style={styles.brandLine} numberOfLines={1}>
+              {brand?.name}{brand?.locality ? ` · ${brand.locality}` : ''}
+            </Text>
+            {brand?.is_verified !== false && (
+              <Text style={styles.brandVerified}>✓</Text>
+            )}
+          </View>
+        )}
 
         {/* Phase Salon-3 trust chips — derived from category. Compact strip
             so the card doesn't bloat. Salon and car_rental show two chips;
@@ -257,6 +284,13 @@ const styles = StyleSheet.create({
     color: darkColors.text,
     lineHeight: 16,
   },
+  creatorNote: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    color: darkColors.textSecondary,
+    marginTop: 3,
+    lineHeight: 14,
+  },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   brandLine: {
     fontSize: 9,
@@ -267,6 +301,12 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     color: '#22C55E',                          // green-500, same as BrandStoreScreen verified badge
+  },
+  brandChevron: {
+    fontSize: 12,
+    color: darkColors.textMuted,
+    fontWeight: '300',
+    marginLeft: 'auto',
   },
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   trustChip: {

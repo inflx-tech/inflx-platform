@@ -1073,11 +1073,68 @@ const getMyCampaignDetail = asyncHandler(async (req, res) => {
     // Non-critical: tranches may not exist yet
   }
 
+  // Step 5: Product counts for the "Publish to Store (X/Y)" badge on
+  // CampaignDetailScreen. Total mirrors the resolution order used by
+  // getCampaignProducts: per-influencer offer_config first, then set-level
+  // campaign_offers.products_json, then full brand catalogue. Published
+  // count is just the rows in influencer_product_notes for this campaign +
+  // influencer pair. Both are non-critical — failures log and leave the
+  // counts as null so the UI hides the badge.
+  let productsTotal = null;
+  let productsPublished = null;
+  try {
+    if (campaign?.campaign_id) {
+      // Pull the CI's offer config + set's offer rows + brand id in one go.
+      const { rows: ctxRows } = await db.query(
+        `SELECT ci.set_id, c.brand_id, ci.offer_config_json,
+                (SELECT COALESCE(SUM(jsonb_array_length(COALESCE(co.products_json, '[]'::jsonb))), 0)
+                 FROM   campaign_offers co
+                 WHERE  co.set_id = ci.set_id AND co.is_active = true) AS set_products_count
+         FROM   campaign_influencers ci
+         JOIN   campaign_sets cs ON cs.id = ci.set_id
+         JOIN   campaigns c ON c.id = cs.campaign_id
+         WHERE  ci.id = $1`,
+        [ciId]
+      );
+      if (ctxRows[0]) {
+        const cfg = ctxRows[0].offer_config_json || {};
+        const ciProducts =
+          (Array.isArray(cfg.products)   ? cfg.products.length   : 0) +
+          (Array.isArray(cfg.d_prods)    ? cfg.d_prods.length    : 0) +
+          (Array.isArray(cfg.v_prods)    ? cfg.v_prods.length    : 0) +
+          (Array.isArray(cfg.bnd_prods)  ? cfg.bnd_prods.length  : 0);
+        if (ciProducts > 0) {
+          productsTotal = ciProducts;
+        } else if (Number(ctxRows[0].set_products_count) > 0) {
+          productsTotal = Number(ctxRows[0].set_products_count);
+        } else {
+          const { rows: brandCount } = await db.query(
+            `SELECT COUNT(*)::int AS n FROM brand_products WHERE brand_id = $1 AND is_active = true`,
+            [ctxRows[0].brand_id]
+          );
+          productsTotal = brandCount[0]?.n || 0;
+        }
+
+        const { rows: pubCount } = await db.query(
+          `SELECT COUNT(*)::int AS n
+           FROM   influencer_product_notes
+           WHERE  influencer_id = $1 AND campaign_id = $2`,
+          [inf.id, campaign.campaign_id]
+        );
+        productsPublished = pubCount[0]?.n || 0;
+      }
+    }
+  } catch (e) {
+    console.error('[getMyCampaignDetail] Step 5 (product counts) failed:', e.message);
+  }
+
   return success(res, {
     campaign,
     deliverables,
     contract,
     tranches,
+    products_total:     productsTotal,
+    products_published: productsPublished,
   });
 });
 

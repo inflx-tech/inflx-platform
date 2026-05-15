@@ -92,14 +92,23 @@ export default function InfluencerStoreScreen({ navigation, route }) {
   const inf = store?.influencer;
   const offers = store?.offers || [];
 
-  // Extract products from all offers
+  // Extract products from all offers. Three buckets:
+  //   - allProducts: products the creator has published (note exists)
+  //   - pendingCuration: brand assigned products to creator but they haven't
+  //     published any yet → render an explicit "still picking favourites"
+  //     empty state per offer so followers know to come back.
+  //   - storeDeals: brand-level offers with no specific products (e.g.
+  //     salon "20% off all services") → render as deal cards as before.
   const allProducts = [];
   const storeDeals = [];
+  const pendingCuration = [];
   for (const offer of offers) {
     if (offer.products && offer.products.length > 0) {
       for (const product of offer.products) {
         allProducts.push({ product, offer, brand: { id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city } });
       }
+    } else if (offer.has_assigned_products) {
+      pendingCuration.push(offer);
     } else {
       storeDeals.push(offer);
     }
@@ -196,11 +205,52 @@ export default function InfluencerStoreScreen({ navigation, route }) {
                         });
                       }
                     }}
+                    // Brand-name link → BrandStore. Distinct from card tap
+                    // (which goes to product detail or CarDetail). Both routes
+                    // thread tracking so commission attribution survives.
+                    onPressBrand={() => navigation.navigate('BrandStore', {
+                      brandId: item.brand.id,
+                      brandName: item.brand.name,
+                      tracking: buildTrackingFromOffer(item.offer, inf),
+                    })}
                   />
                 </View>
               );
             })}
           </View>
+        </>
+      )}
+
+      {/* Pending-curation cards — brand assigned products but creator hasn't
+          published any yet. Follower sees the brand and discount % so they
+          know the relationship exists; the body says to come back. Tapping
+          opens the brand's full store so the follower can still browse if
+          they want. */}
+      {(filter === 'all' || filter === 'products') && pendingCuration.length > 0 && (
+        <>
+          {pendingCuration.map((offer, i) => (
+            <TouchableOpacity
+              key={`pc_${offer.offer_id || i}`}
+              style={s.pendingCard}
+              onPress={() => navigation.navigate('BrandStore', {
+                brandId: offer.brand_id,
+                brandName: offer.brand_name,
+                tracking: buildTrackingFromOffer(offer, inf),
+              })}
+              activeOpacity={0.85}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={s.pendingTitle} numberOfLines={1}>{offer.brand_name}</Text>
+                <Text style={s.pendingBody}>
+                  @{inf?.instagram_handle} is still picking her favourites — check back soon
+                </Text>
+                {offer.discount_value > 0 && (
+                  <Text style={s.pendingDiscount}>{offer.discount_value}% off coming</Text>
+                )}
+              </View>
+              <Text style={s.pendingChevron}>{'›'}</Text>
+            </TouchableOpacity>
+          ))}
         </>
       )}
 
@@ -291,4 +341,23 @@ const s = StyleSheet.create({
   gridItem: { width: '48%' },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyText: { fontSize: 14, color: darkColors.textSecondary, marginTop: 8 },
+
+  // Pending-curation card — creator hasn't published the brand's products yet
+  pendingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    padding: 14,
+    backgroundColor: darkColors.card,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    borderRadius: 12,
+    borderStyle: 'dashed',
+  },
+  pendingTitle:    { fontSize: 13, fontWeight: '700', color: darkColors.text },
+  pendingBody:     { fontSize: 11, color: darkColors.textSecondary, marginTop: 4, lineHeight: 16 },
+  pendingDiscount: { fontSize: 10, fontWeight: '700', color: darkColors.amber, marginTop: 6 },
+  pendingChevron:  { fontSize: 22, color: darkColors.textMuted, fontWeight: '300', marginLeft: 10 },
 });

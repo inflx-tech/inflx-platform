@@ -1,10 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput,
+  View, Text, ScrollView, TouchableOpacity, TextInput, Image,
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
 import { colors, spacing, radius, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
+
+// Category fallback emoji when a product has no image_url. Keeps cards
+// scannable instead of an empty grey box.
+const CATEGORY_EMOJI = {
+  restaurant:     '🍽️',
+  salon:          '💇',
+  car_rental:     '🚗',
+  bike_rental:    '🏍️',
+  fashion:        '👗',
+  fashion_walkin: '👗',
+  fashion_online: '👕',
+  bakery:         '🧁',
+  florist:        '💐',
+};
 
 /**
  * CampaignProductsScreen — influencer views assigned products and publishes to store.
@@ -136,7 +150,17 @@ export default function CampaignProductsScreen({ navigation, route }) {
             {/* Product info */}
             <View style={s.productHeader}>
               <View style={s.productEmoji}>
-                <Text style={{ fontSize: 28 }}>🚗</Text>
+                {product.image_url ? (
+                  <Image
+                    source={{ uri: product.image_url }}
+                    style={s.productImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={{ fontSize: 28 }}>
+                    {CATEGORY_EMOJI[brand?.category] || '📦'}
+                  </Text>
+                )}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={s.productName}>{product.name}</Text>
@@ -267,8 +291,9 @@ const s = StyleSheet.create({
   },
   productEmoji: {
     width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.surface2,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
+  productImage: { width: 56, height: 56 },
   productName: { fontSize: 14, fontWeight: '700', color: colors.t1 },
   productDesc: { fontSize: 11, color: colors.t3, marginTop: 2 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },

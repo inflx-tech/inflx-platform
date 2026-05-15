@@ -647,19 +647,67 @@ const brandSign = asyncHandler(async (req, res) => {
     console.error('[CONTRACT] PDF generation failed:', err.message);
   });
 
-  // 7. Notify influencer that contract is now active. T1 payment line is only
-  //    included when a tranche was actually released (effectiveFee > 0).
+  // 7. Notify influencer that contract is now active. Three flavors:
+  //    - Engagement / hybrid with fee → tranche-1 payment line included
+  //    - Conversion (no fee, no tranche) → nudge to publish products
+  //    - Conversion with no products assigned → generic "start creating"
   try {
     const netAmt = t1Result?.netAmount || 0;
-    const body = t1Result
-      ? `Your contract for campaign "${contract.campaign_name}" is now active. Tranche 1 payment of ₹${netAmt.toFixed(2)} has been initiated.`
-      : `Your contract for campaign "${contract.campaign_name}" is now active. Time to start creating content!`;
+    let title;
+    let body;
+    let screen;
+    if (t1Result) {
+      title  = 'Contract Active — Payment Initiated';
+      body   = `Your contract for campaign "${contract.campaign_name}" is now active. Tranche 1 payment of ₹${netAmt.toFixed(2)} has been initiated.`;
+      screen = 'contract_detail';
+    } else {
+      // Conversion contract. Check whether any products are assigned to this
+      // influencer (per-influencer offer_config or set-level products_json).
+      // If yes, nudge them to publish; otherwise fall back to the generic
+      // "start creating content" copy.
+      let hasAssignedProducts = false;
+      try {
+        const { rows: prodCheck } = await db.query(
+          `SELECT 1
+           FROM   campaign_influencers ci
+           WHERE  ci.id = $1
+             AND  (
+               (ci.offer_config_json IS NOT NULL AND (
+                 jsonb_array_length(COALESCE(ci.offer_config_json->'d_prods',  '[]'::jsonb)) > 0 OR
+                 jsonb_array_length(COALESCE(ci.offer_config_json->'v_prods',  '[]'::jsonb)) > 0 OR
+                 jsonb_array_length(COALESCE(ci.offer_config_json->'bnd_prods','[]'::jsonb)) > 0
+               ))
+               OR EXISTS (
+                 SELECT 1 FROM campaign_offers co
+                 WHERE  co.set_id = ci.set_id
+                   AND  co.products_json IS NOT NULL
+                   AND  jsonb_array_length(COALESCE(co.products_json, '[]'::jsonb)) > 0
+               )
+             )`,
+          [contract.campaign_influencer_id]
+        );
+        hasAssignedProducts = prodCheck.length > 0;
+      } catch (checkErr) {
+        console.error('[CONTRACT] product-assignment check failed (non-fatal):', checkErr.message);
+      }
+
+      if (hasAssignedProducts) {
+        title  = 'Contract Active — Publish Products';
+        body   = `Your contract for "${contract.campaign_name}" is live. Publish products to your store so your followers can see them.`;
+        screen = 'campaign_products';
+      } else {
+        title  = 'Contract Active';
+        body   = `Your contract for campaign "${contract.campaign_name}" is now active. Time to start creating content!`;
+        screen = 'contract_detail';
+      }
+    }
+
     await notificationService.send({
       userId:   contract.influencer_user_id,
       type:     'contract.active',
-      title:    t1Result ? 'Contract Active — Payment Initiated' : 'Contract Active',
+      title,
       body,
-      data:     { screen: 'contract_detail', campaign_influencer_id: contract.campaign_influencer_id },
+      data:     { screen, campaign_influencer_id: contract.campaign_influencer_id },
       fcmToken: contract.influencer_fcm_token,
       sendSms:  true,
       phone:    contract.influencer_phone,

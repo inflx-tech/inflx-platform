@@ -139,6 +139,12 @@ export default function CampaignDetailScreen({ navigation, route }) {
   const deliverables = data.deliverables || [];
   const contract = data.contract || null;
   const tranches = data.tranches || [];
+  // Product counts for the "Publish to Store" badge + CTA banner. Backend
+  // populates these on /influencers/me/campaigns/:ci_id; absent on older
+  // payloads, in which case the badge hides cleanly.
+  const productsTotal     = Number(data.products_total     || 0);
+  const productsPublished = Number(data.products_published || 0);
+  const productsPending   = Math.max(0, productsTotal - productsPublished);
 
   // contracts.influencer_fee is the BASE agreed fee (after the F.2 backend fix
   // that stopped overwriting it with base+bonus). Total payout = base + bonus.
@@ -512,6 +518,38 @@ export default function CampaignDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
 
+        {/* ── Publish-products CTA (conversion/hybrid only, after contract
+            activation, when at least one product is still unpublished). The
+            yellow banner is the primary nudge so the creator knows publishing
+            is the next step — without it the "Publish to Store" grid button
+            blends in with the others. */}
+        {showCommission &&
+         contract?.status === 'active' &&
+         productsTotal > 0 &&
+         productsPending > 0 && (
+          <TouchableOpacity
+            style={styles.publishCtaCard}
+            onPress={() => navigation.navigate('CampaignProducts', {
+              campaignInfluencerId: campaignInfluencerId,
+              campaignName: campaign?.campaign_name || 'Campaign',
+            })}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.publishCtaTitle}>
+                {productsPublished === 0
+                  ? 'Publish products so followers can see them'
+                  : `${productsPending} more product${productsPending === 1 ? '' : 's'} to publish`}
+              </Text>
+              <Text style={styles.publishCtaSub}>
+                {productsPublished === 0
+                  ? `${productsTotal} product${productsTotal === 1 ? '' : 's'} waiting on your store`
+                  : `${productsPublished} of ${productsTotal} live · tap to publish the rest`}
+              </Text>
+            </View>
+            <Text style={styles.publishCtaArrow}>{'›'}</Text>
+          </TouchableOpacity>
+        )}
+
         {/* ── Quick Actions (TOP) ────────────────────────────────────────── */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Quick Actions</Text>
@@ -544,7 +582,10 @@ export default function CampaignDetailScreen({ navigation, route }) {
               </TouchableOpacity>
             )}
 
-            {/* Products button only for conversion/hybrid campaigns. */}
+            {/* Publish-to-Store button — only for conversion/hybrid campaigns.
+                Label changed from "Products" so creators understand this is
+                where they push items to followers, not a passive viewer. The
+                (X/Y) counter renders when backend populated the counts. */}
             {showCommission && (
               <TouchableOpacity
                 style={styles.gridBtn}
@@ -554,7 +595,12 @@ export default function CampaignDetailScreen({ navigation, route }) {
                 })}
               >
                 <Text style={styles.gridBtnIcon}>{'[P]'}</Text>
-                <Text style={styles.gridBtnLabel}>Products</Text>
+                <Text style={styles.gridBtnLabel}>Publish to Store</Text>
+                {productsTotal > 0 && (
+                  <Text style={styles.publishCount}>
+                    {productsPublished}/{productsTotal}
+                  </Text>
+                )}
               </TouchableOpacity>
             )}
 
@@ -1023,9 +1069,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   gridBtnIcon: { fontSize: 20, marginBottom: 6 },
-  gridBtnLabel: { fontSize: 11, fontWeight: '700', color: colors.t1 },
+  gridBtnLabel: { fontSize: 11, fontWeight: '700', color: colors.t1, textAlign: 'center' },
+  publishCount: { fontSize: 12, fontWeight: '800', color: colors.orange, marginTop: 4 },
   couponCode: { fontSize: 12, fontWeight: '700', color: colors.tealDeep, marginTop: 4, fontFamily: 'monospace' },
   commissionRate: { fontSize: 14, fontWeight: '800', color: colors.tealDeep, marginTop: 4 },
+
+  // Publish-products CTA banner (above Quick Actions when contract active +
+  // unpublished products remain).
+  publishCtaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FFF8E0',
+    borderWidth: 1,
+    borderColor: '#E8D590',
+    borderRadius: 12,
+  },
+  publishCtaTitle: { fontSize: 13, fontWeight: '800', color: '#7A5500' },
+  publishCtaSub:   { fontSize: 11, color: '#7A5500', marginTop: 2 },
+  publishCtaArrow: { fontSize: 22, color: '#7A5500', marginLeft: 8, fontWeight: '300' },
 
   // Completion banner
   completionBanner: {
