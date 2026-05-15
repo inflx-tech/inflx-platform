@@ -832,7 +832,15 @@ const downloadListingTemplate = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
-  const wb = await excelService.generateTemplate(brand.category, brand.business_name);
+  let wb;
+  try {
+    wb = await excelService.generateTemplate(brand.category, brand.business_name);
+  } catch (err) {
+    if (err.code === 'EXCEL_UPLOAD_DISABLED') {
+      throw new AppError('EXCEL_UPLOAD_DISABLED', err.message, 422);
+    }
+    throw err;
+  }
   const schema = listingService.getConfigForCategory(brand.category);
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -843,37 +851,107 @@ const downloadListingTemplate = asyncHandler(async (req, res) => {
 });
 
 // POST /brands/me/products/bulk-upload — parse Excel and create products
+//
+// Per-category behaviors layered on the parsed rows:
+//   · restaurant — try findMasterMatch(name, section) → set master_dish_id
+//                  on the product so it inherits the catalogue's photo +
+//                  cross-brand analytics
+//   · salon      — same; sets master_service_id
+//   · fashion    — for rows with sizes/colors, post-create one
+//                  product_variants row per (size × color) with the row's
+//                  stock_per_variant
+//   · car_rental — endpoint blocked at parseUpload (schema's
+//                  excel_upload: false) — surfaces clean error
 const bulkUploadProducts = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   if (!req.file) throw new AppError('VALIDATION_ERROR', 'No file uploaded', 400);
 
-  const { rows, errors, totalParsed } = await excelService.parseUpload(req.file.buffer, brand.category);
+  let parseResult;
+  try {
+    parseResult = await excelService.parseUpload(req.file.buffer, brand.category);
+  } catch (err) {
+    if (err.code === 'EXCEL_UPLOAD_DISABLED') {
+      throw new AppError('EXCEL_UPLOAD_DISABLED', err.message, 422);
+    }
+    throw err;
+  }
+  const { rows, errors, totalParsed } = parseResult;
 
   if (errors.length > 0 && rows.length === 0) {
     return success(res, { created: 0, errors, totalParsed }, 400);
   }
 
-  // Convert parsed rows to product payloads and insert
   const products = excelService.rowsToProducts(rows, brand.category);
   const created = [];
+  let mastersLinked = 0;
+  let variantsCreated = 0;
 
   for (const product of products) {
+    // Pull out the post-insert payloads (handled separately so the
+    // brand_products INSERT signature stays stable).
+    const fashionVariantSpec = product._fashion_variants;
+    delete product._fashion_variants;
+
+    // Master-catalogue linking — restaurant + salon
+    let masterDishId = null;
+    let masterServiceId = null;
+    if (brand.category === 'restaurant') {
+      masterDishId = await excelService.findMasterMatch('restaurant', product.name, product.section);
+      if (masterDishId) mastersLinked++;
+    } else if (brand.category === 'salon') {
+      masterServiceId = await excelService.findMasterMatch('salon', product.name, product.section);
+      if (masterServiceId) mastersLinked++;
+    }
+
     const { rows: [newProd] } = await db.query(
-      `INSERT INTO brand_products (brand_id, name, price, section, description, image_url, veg_flag,
-        variants_json, is_active, is_bookable, category_key)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10)
-       RETURNING id, name, price, section`,
-      [brand.id, product.name, product.price, product.section, product.description || '',
-       product.image_url || '', product.veg_flag || 'na',
-       product.variants_json || null, product.is_bookable || false, brand.category]
+      `INSERT INTO brand_products (
+         brand_id, name, price, section, description, image_url, veg_flag,
+         variants_json, stock, duration_mins,
+         is_active, is_bookable, category_key,
+         master_dish_id, master_service_id, return_policy_days
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11, $12, $13, $14, $15)
+       RETURNING id, name, price, section, master_dish_id, master_service_id`,
+      [
+        brand.id,
+        product.name,
+        product.price,
+        product.section,
+        product.description || '',
+        product.image_url || '',
+        product.veg_flag || 'na',
+        product.variants_json ? JSON.stringify(product.variants_json) : null,
+        product.stock,
+        product.duration_mins || null,
+        product.is_bookable || false,
+        brand.category,
+        masterDishId,
+        masterServiceId,
+        product.return_policy_days || null,
+      ]
     );
     created.push(newProd);
+
+    // Fashion variant decomposition — one product_variants row per (size × color)
+    if (fashionVariantSpec && (fashionVariantSpec.sizes?.length || fashionVariantSpec.colors?.length)) {
+      const variantRows = excelService.buildFashionVariantRows(newProd.id, fashionVariantSpec);
+      for (const v of variantRows) {
+        await db.query(
+          `INSERT INTO product_variants (product_id, size, color, stock)
+           VALUES ($1, $2, $3, $4)`,
+          [v.product_id, v.size, v.color, v.stock]
+        );
+        variantsCreated++;
+      }
+    }
   }
 
   return success(res, {
     created: created.length,
+    masters_linked: mastersLinked,
+    variants_created: variantsCreated,
     products: created,
     errors,
     totalParsed,
