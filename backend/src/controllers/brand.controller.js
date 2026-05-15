@@ -491,12 +491,30 @@ const deleteProduct = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
+  // Soft-delete: a hard DELETE fails the moment a product has been booked,
+  // ordered, returned, or referenced by an influencer/lookbook. follower_*
+  // tables hold FKs without ON DELETE SET NULL by design (we want to
+  // preserve attribution + analytics history). Soft-delete (is_active=false)
+  // hides the product from every active query (brand listing + follower
+  // discovery + master_catalog joins all filter on is_active=true) while
+  // keeping the row intact for the historical record.
   const { rows } = await db.query(
-    `DELETE FROM brand_products WHERE id = $1 AND brand_id = $2 RETURNING id`,
+    `UPDATE brand_products SET is_active = false
+      WHERE id = $1 AND brand_id = $2 AND is_active = true
+      RETURNING id`,
     [req.params.pid, brand.id]
   );
-  if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
-  return success(res, { message: 'Product deleted' });
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found or already removed', 404);
+
+  // Cascade soft-delete to product_variants (fashion SKUs). Variants stay
+  // inactive so any pending returns referencing them keep their FK valid.
+  await db.query(
+    `UPDATE product_variants SET is_active = false
+      WHERE product_id = $1 AND is_active = true`,
+    [req.params.pid]
+  );
+
+  return success(res, { message: 'Product removed', soft_deleted: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -772,10 +790,19 @@ const getListingConfig = asyncHandler(async (req, res) => {
 
   const isActive = listingService.isCategoryActive(brand.category);
 
+  // Bug fix (issue 2 of brand-wizard skip): the response was missing the
+  // brand's stored profile fields, so canSkipBrandSteps() in the brand-web
+  // client always saw an empty listing_data and re-rendered the brand-info
+  // steps on every "Add" tap. We now surface listing_data + the few brand
+  // fields the wizard needs to reason about skipping + identity.
   return success(res, {
     config,
     listing_engine_active: isActive,
     current_phase: listingService.LISTING_ENGINE_PHASE,
+    brand_id: brand.id,
+    business_name: brand.business_name,
+    category: brand.category,
+    listing_data: brand.listing_data || {},
   });
 });
 

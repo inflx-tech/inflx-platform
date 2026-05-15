@@ -52,12 +52,20 @@ export default function ListingWizard() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  // After a publish, three things change: products[], the quality score,
+  // AND brand.listing_data (when the publish updated brand fields). We
+  // refresh all three so the next "Add" tap correctly skips brand steps
+  // (canSkipBrandSteps reads brand.listing_data).
   const refreshProducts = useCallback(async () => {
     try {
-      const res = await brandApi.get('/brands/me/products');
-      if (res.data?.products) setProducts(res.data.products);
-      const scoreRes = await brandApi.get('/brands/me/quality-score').catch(() => null);
+      const [productsRes, scoreRes, configRes] = await Promise.all([
+        brandApi.get('/brands/me/products'),
+        brandApi.get('/brands/me/quality-score').catch(() => null),
+        brandApi.get('/brands/me/listing-config').catch(() => null),
+      ]);
+      if (productsRes.data?.products) setProducts(productsRes.data.products);
       if (scoreRes?.data) setScoreData(scoreRes.data);
+      if (configRes?.data) setBrand(configRes.data);
     } catch (e) {
       console.error('refreshProducts failed:', e);
     }
