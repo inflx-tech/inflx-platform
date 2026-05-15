@@ -5,6 +5,7 @@ import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import NewOfferCard from '../../components/cards/NewOfferCard';
 import ServiceCard from '../../components/cards/ServiceCard';
+import { buildTracking } from '../../utils/tracking';
 
 const TABS = [
   { key: 'products', label: '🛍️ Products' },
@@ -84,7 +85,10 @@ export default function DealsScreen({ navigation, route }) {
         influencer={item.influencer}
         isSaved={item.is_saved}
         onPressHeart={() => handleSave(item)}
-        onPress={() => navigation.navigate('BrandStore', { brandId: item.brand?.id || item.brand_id })}
+        onPress={() => navigation.navigate('BrandStore', {
+          brandId: item.brand?.id || item.brand_id,
+          tracking: buildTracking(item),
+        })}
       />
     </View>
   ), [handleSave, navigation]);
@@ -98,7 +102,10 @@ export default function DealsScreen({ navigation, route }) {
       tags={item.tags || []}
       influencer={item.influencer}
       validTill={item.valid_till}
-      onPress={() => navigation.navigate('BrandStore', { brandId: item.brand?.id || item.brand_id })}
+      onPress={() => navigation.navigate('BrandStore', {
+        brandId: item.brand?.id || item.brand_id,
+        tracking: buildTracking(item),
+      })}
     />
   ), [navigation]);
 
@@ -112,7 +119,10 @@ export default function DealsScreen({ navigation, route }) {
         priceUnit="onwards"
         discount={item.discount || (item.discount_value ? { type: 'percentage', value: item.discount_value } : null)}
         influencer={item.influencer}
-        onPress={() => navigation.navigate('BrandStore', { brandId: item.brand?.id || item.brand_id })}
+        onPress={() => navigation.navigate('BrandStore', {
+          brandId: item.brand?.id || item.brand_id,
+          tracking: buildTracking(item),
+        })}
       />
     </View>
   ), [navigation]);

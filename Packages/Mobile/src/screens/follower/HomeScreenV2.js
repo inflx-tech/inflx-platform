@@ -10,6 +10,7 @@ import ServiceCard from '../../components/cards/ServiceCard';
 import InfluencerStoryRow from '../../components/InfluencerStoryRow';
 import CategoryGrid from '../../components/CategoryGrid';
 import { followerApi } from '../../services/api';
+import { buildTracking } from '../../utils/tracking';
 import useLocation from '../../hooks/useLocation';
 
 /**
@@ -146,7 +147,10 @@ export default function HomeScreenV2({ navigation }) {
                           tracking: item.tracking,
                         });
                       } else {
-                        navigation.navigate('BrandStore', { brandId: item.brand_id || item.brand?.id });
+                        navigation.navigate('BrandStore', {
+                          brandId: item.brand_id || item.brand?.id,
+                          tracking: buildTracking(item),
+                        });
                       }
                     }}
                   />
@@ -166,7 +170,10 @@ export default function HomeScreenV2({ navigation }) {
           discountValue={`${offerItems[0].discount_value || 15}%`}
           tags={[]}
           influencer={offerItems[0].influencer}
-          onPress={() => navigation.navigate('BrandStore', { brandId: offerItems[0].brand_id })}
+          onPress={() => navigation.navigate('BrandStore', {
+            brandId: offerItems[0].brand_id,
+            tracking: buildTracking(offerItems[0]),
+          })}
         />
       )}
 
@@ -182,7 +189,10 @@ export default function HomeScreenV2({ navigation }) {
                   brand={item.brand || { name: item.brand_name, category: item.brand_category }}
                   discount={item.discount || (item.discount_value ? { type: 'percentage', value: item.discount_value } : null)}
                   influencer={item.influencer}
-                  onPress={() => navigation.navigate('BrandStore', { brandId: item.brand_id })}
+                  onPress={() => navigation.navigate('BrandStore', {
+                    brandId: item.brand_id,
+                    tracking: buildTracking(item),
+                  })}
                 />
               </View>
             ))}
@@ -205,7 +215,10 @@ export default function HomeScreenV2({ navigation }) {
                   priceUnit={item.price_unit || 'onwards'}
                   discount={item.discount || (item.discount_value ? { type: 'percentage', value: item.discount_value } : null)}
                   influencer={item.influencer}
-                  onPress={() => navigation.navigate('BrandStore', { brandId: item.brand_id })}
+                  onPress={() => navigation.navigate('BrandStore', {
+                    brandId: item.brand_id,
+                    tracking: buildTracking(item),
+                  })}
                 />
               </View>
             ))}

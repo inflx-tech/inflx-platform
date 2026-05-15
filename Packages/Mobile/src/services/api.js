@@ -396,7 +396,12 @@ export const followerApi = {
   // Store
   getStore: (handle) => api.get(`/store/${handle}`),
   getStoreProducts: (handle, offerId) => api.get(`/store/${handle}/products${offerId ? `?offer_id=${offerId}` : ''}`),
-  getBrandStore: (brandId) => api.get(`/business/${brandId}/store`),
+  // Phase Salon-2 — accepts an optional viaInfluencerId so the response
+  // embeds a `creator` object the BrandStoreScreen sticky header renders.
+  getBrandStore: (brandId, viaInfluencerId = null) => {
+    const qs = viaInfluencerId ? `?via=${encodeURIComponent(viaInfluencerId)}` : '';
+    return api.get(`/business/${brandId}/store${qs}`);
+  },
 
   // Follow
   follow: (id) => api.post('/followers/follows', { influencer_id: id }),

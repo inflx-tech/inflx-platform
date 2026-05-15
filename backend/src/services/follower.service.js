@@ -83,6 +83,7 @@ const FEED_QUERY = `
     i.instagram_handle,
     i.followers_count,
     i.engagement_rate,
+    i.profile_image_url   AS profile_pic_url,
     u_i.name              AS influencer_name
   FROM campaign_influencers ci
   JOIN campaign_sets cs          ON cs.id = ci.set_id
@@ -211,9 +212,21 @@ async function resolveStore(handle) {
 }
 
 /**
- * Resolve brand store — full product catalog + active offers by influencers
+ * Resolve brand store — full product catalog + active offers by influencers.
+ *
+ * Phase Salon-2: accepts an optional `viaInfluencerId` (the influencer the
+ * follower came in through, derived from tracking on the entry URL). When
+ * present, the response embeds a top-level `creator` object that the
+ * mobile sticky "Brought to you by [creator]" header renders.
+ *
+ * Lookup strategy for `creator`:
+ *   1. If the via-influencer currently has active offers with this brand,
+ *      reuse the row already loaded into `byInfluencer` — zero extra query.
+ *   2. Else fall back to a direct influencers+users join. Tracking is
+ *      attribution-of-entry; we credit the creator even when their offer
+ *      with this brand has since ended.
  */
-async function resolveBusinessStore(brandId) {
+async function resolveBusinessStore(brandId, viaInfluencerId = null) {
   const { rows: brandRows } = await db.query(
     `SELECT b.*, u.name, u.city FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
     [brandId]
@@ -242,6 +255,7 @@ async function resolveBusinessStore(brandId) {
         name: r.influencer_name,
         instagram_handle: r.instagram_handle,
         followers_count: r.followers_count,
+        profile_pic_url: r.profile_pic_url,
         offers: [],
       };
     }
@@ -256,6 +270,42 @@ async function resolveBusinessStore(brandId) {
       coupon_code: r.coupon_code,
       commission_pct: r.commission_pct,
     });
+  }
+
+  // Phase Salon-2 — resolve the via-creator for the sticky header.
+  let creator = null;
+  if (viaInfluencerId) {
+    const fromOffers = byInfluencer[viaInfluencerId];
+    if (fromOffers) {
+      creator = {
+        id: fromOffers.influencer_id,
+        name: fromOffers.name,
+        instagram_handle: fromOffers.instagram_handle,
+        profile_pic_url: fromOffers.profile_pic_url || null,
+        has_active_offer: true,
+      };
+    } else {
+      // Defensive — influencer no longer has active offers with this brand,
+      // but tracking still credits them. Fetch profile directly.
+      // Column is `profile_image_url` on the influencers table (aliased as
+      // profile_pic_url everywhere downstream to match FEED_QUERY shape).
+      const { rows: pRows } = await db.query(
+        `SELECT i.id, i.instagram_handle, i.profile_image_url AS profile_pic_url, u.name
+           FROM influencers i
+           JOIN users u ON u.id = i.user_id
+          WHERE i.id = $1`,
+        [viaInfluencerId]
+      );
+      if (pRows[0]) {
+        creator = {
+          id: pRows[0].id,
+          name: pRows[0].name,
+          instagram_handle: pRows[0].instagram_handle,
+          profile_pic_url: pRows[0].profile_pic_url || null,
+          has_active_offer: false,
+        };
+      }
+    }
   }
 
   return {
@@ -276,6 +326,7 @@ async function resolveBusinessStore(brandId) {
       is_bookable: p.is_bookable,
     })),
     influencers: Object.values(byInfluencer),
+    creator,                                              // null when no via param or unknown influencer
   };
 }
 

@@ -4,6 +4,7 @@ import { colors, spacing, radius } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import OfferCard from '../../components/OfferCard';
 import CategoryPills from '../../components/CategoryPills';
+import { buildTracking } from '../../utils/tracking';
 
 export default function HomeScreen({ navigation }) {
   const [feed, setFeed] = useState([]);
@@ -107,7 +108,13 @@ export default function HomeScreen({ navigation }) {
       }}
       onPressBrand={() => {
         if (item.brand?.id) {
-          navigation.navigate('BrandStore', { brandId: item.brand.id, brandName: item.brand.name });
+          // Phase Salon-2 — thread tracking so BrandStoreScreen can render the
+          // "Brought to you by [creator]" sticky header + creator-trust badge.
+          navigation.navigate('BrandStore', {
+            brandId: item.brand.id,
+            brandName: item.brand.name,
+            tracking: buildTracking(item),
+          });
         }
       }}
       onPressCard={() => {

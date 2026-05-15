@@ -4,6 +4,7 @@ import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import NewOfferCard from '../../components/cards/NewOfferCard';
+import { buildTrackingFromOffer } from '../../utils/tracking';
 
 const FILTER_TABS = [
   { key: 'all', label: 'All' },
@@ -150,7 +151,12 @@ export default function InfluencerStoreScreen({ navigation, route }) {
                           tracking: { campaign_id: item.offer.campaign_id, set_id: item.offer.set_id, offer_id: item.offer.offer_id, campaign_influencer_id: item.offer.campaign_influencer_id },
                         });
                       } else {
-                        navigation.navigate('BrandStore', { brandId: item.brand.id });
+                        // Phase Salon-2 — thread tracking. influencer is the
+                        // current store's owner (`inf`), spliced as fallback.
+                        navigation.navigate('BrandStore', {
+                          brandId: item.brand.id,
+                          tracking: buildTrackingFromOffer(item.offer, inf),
+                        });
                       }
                     }}
                   />
@@ -175,7 +181,10 @@ export default function InfluencerStoreScreen({ navigation, route }) {
               dealLabel={`${offer.brand_name} · All ${offer.brand_category?.replace(/_/g, ' ')}`}
               discountValue={`${offer.discount_value}%`}
               tags={[]}
-              onPress={() => navigation.navigate('BrandStore', { brandId: offer.brand_id })}
+              onPress={() => navigation.navigate('BrandStore', {
+                brandId: offer.brand_id,
+                tracking: buildTrackingFromOffer(offer, inf),
+              })}
             />
           ))}
         </>

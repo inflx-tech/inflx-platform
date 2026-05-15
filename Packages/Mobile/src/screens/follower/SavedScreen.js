@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { darkColors, spacing } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import OfferCard from '../../components/OfferCard';
+import { buildTracking } from '../../utils/tracking';
 
 export default function SavedScreen({ navigation }) {
   const [saved, setSaved] = useState([]);
@@ -73,7 +74,11 @@ export default function SavedScreen({ navigation }) {
           if (item.influencer?.handle) navigation.navigate('InfluencerStore', { handle: item.influencer.handle });
         }}
         onPressBrand={() => {
-          if (item.brand?.id) navigation.navigate('BrandStore', { brandId: item.brand.id, brandName: item.brand.name });
+          if (item.brand?.id) navigation.navigate('BrandStore', {
+            brandId: item.brand.id,
+            brandName: item.brand.name,
+            tracking: buildTracking(item),
+          });
         }}
       />
     );

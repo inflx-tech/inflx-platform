@@ -23,15 +23,23 @@ export default function BrandStoreScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Phase Salon-2 — pass the entry-creator's influencer_id to the backend so
+  // the response embeds a `creator` object the sticky header renders. Most
+  // entry surfaces now thread tracking through (see Phase Salon-2 navigation
+  // fixes in HomeScreen / HomeScreenV2 / DealsScreen / CategoryListScreen /
+  // SavedScreen / InfluencerStoreScreen). For purely organic browse (no
+  // tracking), viaInfluencerId stays null and the header doesn't render.
+  const viaInfluencerId = tracking?.influencer_id || null;
+
   const fetchStore = useCallback(async () => {
     try {
-      const res = await followerApi.getBrandStore(brandId);
+      const res = await followerApi.getBrandStore(brandId, viaInfluencerId);
       const data = res.data || res;
       setStore(data);
     } catch (e) {
       console.error('[BrandStore] Error:', e.message);
     }
-  }, [brandId]);
+  }, [brandId, viaInfluencerId]);
 
   useEffect(() => {
     setLoading(true);
@@ -51,6 +59,7 @@ export default function BrandStoreScreen({ navigation, route }) {
   const brand = store?.brand;
   const products = store?.products || [];
   const influencers = store?.influencers || [];
+  const creator = store?.creator || null;   // Phase Salon-2: via-influencer for sticky header
   const accent = getBusinessAccent(brand?.category);
   const icon = accent.icon;
 
@@ -99,7 +108,39 @@ export default function BrandStoreScreen({ navigation, route }) {
   const bestOffer = influencers.flatMap(i => i.offers || []).sort((a, b) => (b.discount_value || 0) - (a.discount_value || 0))[0];
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}>
+    <View style={s.container}>
+      {/* Phase Salon-2 — sticky "Brought to you by [creator]" header.
+          Lives OUTSIDE the ScrollView so it never scrolls away. Renders only
+          when the follower came in through a creator share-link (tracking
+          carried an influencer_id). Tap → navigate to creator's store. */}
+      {creator && (
+        <TouchableOpacity
+          style={[s.creatorBar, { backgroundColor: accent.accent }]}
+          activeOpacity={0.85}
+          onPress={() => {
+            if (creator.instagram_handle) {
+              navigation.navigate('InfluencerStore', { handle: creator.instagram_handle });
+            }
+          }}>
+          <View style={s.creatorAvatar}>
+            {creator.profile_pic_url
+              ? <Text style={s.creatorAvatarFallback}>{(creator.name || '?')[0]}</Text>
+              : <Text style={s.creatorAvatarFallback}>{(creator.name || '?')[0]}</Text>}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={s.creatorBarLabel} numberOfLines={1}>
+              Brought to you by {creator.name}
+            </Text>
+            <Text style={s.creatorBarSub} numberOfLines={1}>
+              @{creator.instagram_handle}
+              {creator.has_active_offer ? ' · Your booking credits them' : ''}
+            </Text>
+          </View>
+          <Text style={s.creatorBarChevron}>›</Text>
+        </TouchableOpacity>
+      )}
+
+      <ScrollView style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}>
       {/* Banner */}
       <View style={[s.banner, { backgroundColor: accent.dim }]}>
         <Text style={s.bannerIcon}>{icon}</Text>
@@ -125,6 +166,49 @@ export default function BrandStoreScreen({ navigation, route }) {
           )}
         </View>
         <Text style={s.storeMeta}>{brand?.category?.replace(/_/g, ' ')} · {brand?.city || ''}</Text>
+
+        {/* Creator-trust strip — Phase Salon-2 progressive disclosure.
+              · 0 creators  → nothing here (the green ✓ next to name already
+                              signals admin-verification)
+              · 1-2 creators → chip "✓ Trusted by N creator(s)"
+              · 3+ creators  → overlapping avatar cluster + count
+            Different signal from `is_verified` (the green ✓): that's
+            admin-approval; this is creator endorsement. Both can coexist;
+            this is the creator-economy moat. */}
+        {influencers.length > 0 && (
+          influencers.length >= 3 ? (
+            <View style={s.creatorClusterRow}>
+              <View style={[s.avatarCluster, { width: 14 + 18 * Math.min(3, influencers.length) }]}>
+                {influencers.slice(0, 3).map((inf, i) => (
+                  <View
+                    key={inf.influencer_id || i}
+                    style={[
+                      s.clusterAvatar,
+                      {
+                        left: i * 14,
+                        backgroundColor: accent.accent,
+                        borderColor: darkColors.bg2,
+                        zIndex: 3 - i,
+                      },
+                    ]}>
+                    {inf.profile_pic_url
+                      ? <Text style={s.clusterAvatarInitial}>{(inf.name || '?')[0]}</Text>
+                      : <Text style={s.clusterAvatarInitial}>{(inf.name || '?')[0]}</Text>}
+                  </View>
+                ))}
+              </View>
+              <Text style={[s.creatorTrustText, { color: accent.accent }]}>
+                Trusted by {influencers.length} creators
+              </Text>
+            </View>
+          ) : (
+            <View style={[s.creatorChip, { backgroundColor: `${accent.accent}15`, borderColor: `${accent.accent}55` }]}>
+              <Text style={[s.creatorChipText, { color: accent.accent }]}>
+                ✓ Trusted by {influencers.length} creator{influencers.length > 1 ? 's' : ''}
+              </Text>
+            </View>
+          )
+        )}
 
         {/* Trust chips — pay-at-salon + free-cancel signals.
             Derived from template metadata so no per-brand opt-in needed:
@@ -258,7 +342,8 @@ export default function BrandStoreScreen({ navigation, route }) {
       </View>
 
       <View style={{ height: 80 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -339,6 +424,45 @@ const s = StyleSheet.create({
   },
   trustChipIcon: { fontSize: 10 },
   trustChipText: { fontSize: 10, fontWeight: '700' },
+
+  // Phase Salon-2 — creator-trust progressive variants
+  creatorChip: {
+    alignSelf: 'flex-start',
+    marginTop: 8,
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 12, borderWidth: 1,
+  },
+  creatorChipText: { fontSize: 11, fontWeight: '800' },
+  creatorClusterRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    marginTop: 8,
+  },
+  avatarCluster: { height: 22, position: 'relative' },
+  clusterAvatar: {
+    position: 'absolute', top: 0,
+    width: 22, height: 22, borderRadius: 11,
+    borderWidth: 2,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  clusterAvatarInitial: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  creatorTrustText: { fontSize: 11, fontWeight: '700' },
+
+  // Phase Salon-2 — sticky "Brought to you by [creator]" header
+  creatorBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 16, paddingVertical: 10,
+    paddingTop: 12,
+  },
+  creatorAvatar: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)',
+  },
+  creatorAvatarFallback: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  creatorBarLabel: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  creatorBarSub: { fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.85)', marginTop: 1 },
+  creatorBarChevron: { fontSize: 22, fontWeight: '300', color: 'rgba(255,255,255,0.9)' },
   contactRow: { flexDirection: 'row', gap: 6, marginTop: 12 },
   contactBtn: {
     flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1,

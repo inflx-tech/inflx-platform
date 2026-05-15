@@ -186,7 +186,14 @@ const getInfluencerStore = asyncHandler(async (req, res) => {
 // ── GET /business/:brand_id ───────────────────────────────────────────────────
 
 const getBusinessStore = asyncHandler(async (req, res) => {
-  const storeData = await followerService.resolveBusinessStore(req.params.brand_id);
+  // Phase Salon-2: optional `?via=<influencer_id>` lets the mobile client
+  // render a "Brought to you by [creator]" header. The query param is
+  // user-supplied so we validate the shape (UUID-ish) but the service
+  // returns null `creator` for any unresolvable value — never errors.
+  const viaRaw = typeof req.query.via === 'string' ? req.query.via.trim() : null;
+  const via = viaRaw && /^[0-9a-fA-F-]{8,}$/.test(viaRaw) ? viaRaw : null;
+
+  const storeData = await followerService.resolveBusinessStore(req.params.brand_id, via);
   if (!storeData) throw new AppError('NOT_FOUND', 'Brand not found', 404);
   return success(res, storeData);
 });

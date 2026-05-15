@@ -7,6 +7,7 @@ import { darkColors, fmtMoney, getBusinessAccent } from '../../theme/tokens';
 import ProductCard from '../../components/cards/ProductCard';
 import NewOfferCard from '../../components/cards/NewOfferCard';
 import { followerApi } from '../../services/api';
+import { buildTrackingFromOffer } from '../../utils/tracking';
 
 /**
  * CategoryListScreen — stores within a super-category with products shown inline.
@@ -92,7 +93,12 @@ export default function CategoryListScreen({ route, navigation }) {
                 <Text style={styles.storeName}>{store.business_name}</Text>
                 <Text style={styles.storeMeta}>{store.city} · {store.deal_count || 0} deals · 🟢 Open</Text>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('BrandStore', { brandId: store.id })}>
+              <TouchableOpacity onPress={() => navigation.navigate('BrandStore', {
+                brandId: store.id,
+                // Best offer drives the discount badge above; same offer
+                // attributes attribution so commission credits the right creator.
+                tracking: buildTrackingFromOffer(store.offers?.[0]),
+              })}>
                 <Text style={styles.viewStore}>View Store →</Text>
               </TouchableOpacity>
             </View>
@@ -135,7 +141,10 @@ export default function CategoryListScreen({ route, navigation }) {
                             discount: store.offers?.[0] ? { value: store.offers[0].discount_value, influencer_name: store.offers[0].influencer_name } : null,
                           });
                         } else {
-                          navigation.navigate('BrandStore', { brandId: store.id });
+                          navigation.navigate('BrandStore', {
+                            brandId: store.id,
+                            tracking: buildTrackingFromOffer(store.offers?.[0]),
+                          });
                         }
                       }}
                     />
