@@ -62,6 +62,11 @@ export default function CarBookingScreen({ navigation, route }) {
         set_id: tracking?.set_id,
         offer_id: tracking?.offer_id || null,
         campaign_influencer_id: tracking?.campaign_influencer_id,
+        // Phase Salon-3 Q3 — explicit product attribution. Forwarded when the
+        // upstream screen (CarDetailScreen, HomeScreenV2 car tile) included
+        // vehicle.id in the route param; null otherwise. Backend falls back
+        // to offer.products_json single-product resolution either way.
+        product_id: vehicle?.id || vehicle?.product_id || null,
         pickup_date: pickupDate,
         return_date: returnDate,
         duration_days: duration,

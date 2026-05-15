@@ -66,13 +66,44 @@ function requireFollowerProfile(follower) {
 // Return window in ms
 const RETURN_WINDOW_MS = (env.RETURN_WINDOW_DAYS || 30) * 24 * 60 * 60 * 1000;
 
+/**
+ * Phase Salon-3 Q3 — resolve product_id for a follower_transactions row.
+ *
+ * Priority order:
+ *   1. Mobile-provided product_id (user/screen-level intent — SlotPickerScreen
+ *      passes service.id, CarBookingScreen passes vehicle.id).
+ *   2. Single-product offer (campaign_offers.products_json has exactly 1 ID).
+ *   3. null — brand-level offer, multi-product offer, restaurant table prebook,
+ *      or pay-at-store without a product picked. Null is honest, not a failure.
+ *
+ * Handles two products_json shapes defensively: array of UUID strings, OR
+ * array of objects with .product_id / .id keys.
+ *
+ * Caller passes either the global `db` module or a withTransaction client —
+ * both expose .query() so the helper is agnostic.
+ */
+async function resolveProductId(queryRunner, offerId, providedProductId) {
+  if (providedProductId) return providedProductId;
+  if (!offerId) return null;
+  const { rows } = await queryRunner.query(
+    `SELECT products_json FROM campaign_offers WHERE id = $1`,
+    [offerId]
+  );
+  const pj = rows[0]?.products_json;
+  if (!Array.isArray(pj)) return null;
+  const ids = pj
+    .map(x => typeof x === 'string' ? x : (x?.product_id || x?.id))
+    .filter(Boolean);
+  return ids.length === 1 ? ids[0] : null;
+}
+
 // ── POST /follower/pay-at-store ───────────────────────────────────────────────
 
 const initiatePayAtStore = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { offer_id, campaign_id, set_id, campaign_influencer_id, bill_amount } = req.body;
+  const { offer_id, campaign_id, set_id, campaign_influencer_id, bill_amount, product_id } = req.body;
 
   if (!bill_amount || parseFloat(bill_amount) <= 0) {
     throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive number (rupees)', 422, 'bill_amount');
@@ -124,6 +155,7 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     bill_amount: billAmount, discount_amount: discountAmount,
     influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet,
     follower_id: follower.id, brand_id: record.brand_id,
+    product_id: product_id || null,   // Phase Salon-3 Q3 attribution
   });
 
   return success(res, {
@@ -164,19 +196,22 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   let transactionId;
   const influencer = await getInfluencerByCiId(meta.campaign_influencer_id);
 
+  // Phase Salon-3 Q3 — resolve product_id (mobile-provided or single-product offer)
+  const productId = await resolveProductId(db, meta.offer_id, meta.product_id);
+
   await db.withTransaction(async (client) => {
     // Create follower_transaction — all money columns in rupees
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
-         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
+         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,'pay_at_store',$7,$8,$9,$10,$11,$12,'completed',$13,$14,$15)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'pay_at_store',$8,$9,$10,$11,$12,$13,'completed',$14,$15,$16)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
-        meta.campaign_influencer_id, meta.offer_id,
+        meta.campaign_influencer_id, meta.offer_id, productId,
         meta.bill_amount, meta.discount_amount, netAmount,
         meta.influencer_commission, meta.platform_fee, meta.brand_net,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
@@ -238,7 +273,7 @@ const initiatePrebook = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { offer_id, campaign_id, set_id, campaign_influencer_id, booking_date, booking_time, guest_count } = req.body;
+  const { offer_id, campaign_id, set_id, campaign_influencer_id, booking_date, booking_time, guest_count, product_id } = req.body;
   if (!campaign_id || !set_id || !campaign_influencer_id || !booking_date || !booking_time) {
     throw new AppError('VALIDATION_ERROR', 'campaign_id, set_id, campaign_influencer_id, booking_date, booking_time are required', 422);
   }
@@ -282,6 +317,7 @@ const initiatePrebook = asyncHandler(async (req, res) => {
     advance_amount: advanceAmount, discount_pct: discountPct,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: parseFloat(record.commission_pct || 0),
+    product_id: product_id || null,   // Phase Salon-3 Q3 attribution
   });
 
   return success(res, { razorpay_order_id: orderId, razorpay_key_id: txService.getRazorpayKeyId(), advance_amount: advanceAmount }, 201);
@@ -340,20 +376,23 @@ const verifyPrebook = asyncHandler(async (req, res) => {
 
   const influencer = await getInfluencerByCiId(meta.campaign_influencer_id);
 
+  // Phase Salon-3 Q3 — resolve product_id (mobile-provided or single-product offer)
+  const productId = await resolveProductId(db, meta.offer_id, meta.product_id);
+
   let transactionId, bookingId, referenceCode;
 
   await db.withTransaction(async (client) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
-         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
+         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,'prebook',$7,0,$7,$8,$9,$10,'completed',$11,$12,$13)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'prebook',$8,0,$8,$9,$10,$11,'completed',$12,$13,$14)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
-        meta.campaign_influencer_id, meta.offer_id,
+        meta.campaign_influencer_id, meta.offer_id, productId,
         advanceAmount, commissionAmount, platformFeeAmount, brandNetAmount,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
@@ -428,7 +467,7 @@ const initiatePrebookDateRange = asyncHandler(async (req, res) => {
 
   const {
     offer_id, campaign_id, set_id, campaign_influencer_id,
-    pickup_date, return_date, duration_days, pickup_type,
+    pickup_date, return_date, duration_days, pickup_type, product_id,
   } = req.body;
 
   if (!campaign_id || !set_id || !campaign_influencer_id || !pickup_date || !return_date) {
@@ -469,6 +508,7 @@ const initiatePrebookDateRange = asyncHandler(async (req, res) => {
     advance_amount: advanceAmount, discount_pct: discountPct,
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: parseFloat(record.commission_pct || 0),
+    product_id: product_id || null,   // Phase Salon-3 Q3 attribution (the vehicle being booked)
   });
 
   return success(res, {
@@ -506,18 +546,21 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
 
   let transactionId, bookingId, referenceCode;
 
+  // Phase Salon-3 Q3 — resolve product_id (mobile-provided or single-product offer)
+  const productId = await resolveProductId(db, meta.offer_id, meta.product_id);
+
   await db.withTransaction(async (client) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
-         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
+         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,'prebook',$7,0,$7,$8,$9,$10,'completed',$11,$12,$13)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'prebook',$8,0,$8,$9,$10,$11,'completed',$12,$13,$14)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
-        meta.campaign_influencer_id, meta.offer_id,
+        meta.campaign_influencer_id, meta.offer_id, productId,
         advanceAmount, commissionAmount, platformFeeAmount, brandNetAmount,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
       ]
@@ -692,18 +735,26 @@ const verifyOrder = asyncHandler(async (req, res) => {
 
   let transactionId, orderRowId;
 
+  // Phase Salon-3 Q3 — for online_order, the "primary" product is the first
+  // (highest-priced) item in the cart. Per-item attribution lives in
+  // follower_orders.items_json — this denormalizes one row for single-JOIN
+  // analytics.
+  const primaryProductId = Array.isArray(meta.items_json) && meta.items_json[0]?.product_id
+    ? meta.items_json[0].product_id
+    : null;
+
   await db.withTransaction(async (client) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
-         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
+         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, platform_fee, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,'online_order',$7,$8,$9,$10,$11,$12,'completed',$13,$14,$15)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,'online_order',$8,$9,$10,$11,$12,$13,'completed',$14,$15,$16)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
-        meta.campaign_influencer_id, meta.offer_id,
+        meta.campaign_influencer_id, meta.offer_id, primaryProductId,
         meta.items_total, meta.discount_amount, netAmount,
         commissionAmount, meta.platform_fee, meta.brand_net,
         couponCode, returnWindowEndsAt, razorpay_payment_id,

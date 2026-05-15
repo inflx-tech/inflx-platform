@@ -118,6 +118,11 @@ export default function SlotPickerScreen({ navigation, route }) {
         set_id: tracking?.set_id,
         offer_id: tracking?.offer_id || null,
         campaign_influencer_id: tracking?.campaign_influencer_id,
+        // Phase Salon-3 Q3 — explicit product attribution. The `service`
+        // route param IS the brand_products row; service.id resolves directly.
+        // Backend's resolveProductId() prefers this over offer.products_json
+        // fallback when both are available.
+        product_id: service?.id || null,
         // Existing /follower/prebook payload shape (per Code's isolated
         // decision #3 — adapts spec's wrapper to the wire format).
         booking_date: selectedDate,
