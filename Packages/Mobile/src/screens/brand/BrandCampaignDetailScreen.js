@@ -327,21 +327,53 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
       </View>
 
       {/* ── Budget Section (only meaningful when fees are involved) ────── */}
-      {isConversionOnly ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Payment Model</Text>
-          <View style={[styles.budgetHighlight, { backgroundColor: colors.tealPale }]}>
-            <Text style={[styles.budgetLabel, { color: colors.tealDeep }]}>Commission per Conversion</Text>
-            <Text style={[styles.budgetValue, { color: colors.tealDeep, fontSize: 18 }]}>
-              No upfront fee
+      {isConversionOnly ? (() => {
+        // Average + per-influencer commission rates across all contracted/
+        // active influencers on this campaign. Fall back to "—" when no
+        // influencer has been signed yet (commission_pct still 0 on the row).
+        const commRows = allInfluencers
+          .map(ci => ({ name: ci.influencer_name || 'Influencer', handle: ci.instagram_handle, pct: parseFloat(ci.commission_pct || 0) }))
+          .filter(r => r.pct > 0);
+        const avgPct = commRows.length > 0
+          ? commRows.reduce((s, r) => s + r.pct, 0) / commRows.length
+          : 0;
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Payment Model</Text>
+            <View style={[styles.budgetHighlight, { backgroundColor: colors.tealPale }]}>
+              <Text style={[styles.budgetLabel, { color: colors.tealDeep }]}>Commission per Conversion</Text>
+              <Text style={[styles.budgetValue, { color: colors.tealDeep }]}>
+                {avgPct > 0 ? `${avgPct.toFixed(avgPct % 1 === 0 ? 0 : 1)}% avg` : 'No upfront fee'}
+              </Text>
+              <Text style={[styles.budgetLabel, { color: colors.tealDeep, marginTop: 4, fontSize: 9 }]}>
+                No upfront fee — paid only on confirmed conversions
+              </Text>
+            </View>
+            {commRows.length > 0 && (
+              <View style={styles.commListBox}>
+                {commRows.map((r, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.commListRow,
+                      i < commRows.length - 1 && styles.commListRowBorder,
+                    ]}
+                  >
+                    <Text style={styles.commListName} numberOfLines={1}>
+                      {r.handle ? `@${r.handle}` : r.name}
+                    </Text>
+                    <Text style={styles.commListPct}>{r.pct % 1 === 0 ? r.pct : r.pct.toFixed(1)}%</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            <Text style={[styles.briefText, { marginTop: 10 }]}>
+              Influencers earn commission only when their tracking link drives a conversion.
+              Earnings hold for 30 days, then move to their wallet.
             </Text>
           </View>
-          <Text style={[styles.briefText, { marginTop: 10 }]}>
-            Influencers earn commission only when their tracking link drives a conversion.
-            Earnings hold for 30 days, then move to their wallet.
-          </Text>
-        </View>
-      ) : (
+        );
+      })() : (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Budget Overview</Text>
           <View style={styles.budgetHighlight}>
@@ -936,6 +968,28 @@ const styles = StyleSheet.create({
     height: 6, backgroundColor: colors.navy, borderRadius: 3,
   },
   progressText: { fontSize: 10, color: colors.t3, marginTop: 4, textAlign: 'right' },
+
+  // Per-influencer commission list (conversion-only campaigns)
+  commListBox: {
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 4,
+  },
+  commListRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  commListRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  commListName: { fontSize: 12, color: colors.t2, flex: 1, marginRight: 8 },
+  commListPct: { fontSize: 13, fontWeight: '700', color: colors.tealDeep },
 
   // Brief
   briefText: { fontSize: 13, color: colors.t2, lineHeight: 20 },

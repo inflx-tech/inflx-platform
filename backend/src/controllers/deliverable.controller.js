@@ -383,15 +383,17 @@ const confirmLive = asyncHandler(async (req, res) => {
 
     // 4. All deliverables live — release T2 if still locked. FOR UPDATE guards
     //    against a race when two confirm-live calls land concurrently.
+    //    Conversion-only contracts have no escrow entries at all (no upfront
+    //    fee → brandSign skipped wallet-lock and tranche creation). In that
+    //    case there's nothing to release; the live confirmation itself is the
+    //    end state for the deliverable.
     const { rows: t2Rows } = await client.query(
       `SELECT id, status FROM escrow_entries
        WHERE campaign_influencer_id = $1 AND tranche_number = 2
        FOR UPDATE`,
       [d.ci_id]
     );
-    if (!t2Rows[0]) {
-      throw new AppError('INTERNAL_ERROR', 'T2 escrow entry missing for this contract', 500);
-    }
+    if (!t2Rows[0]) return; // conversion-only contract — no tranche to release
     if (t2Rows[0].status !== 'locked') return; // already released (idempotent)
 
     t2Result = await escrowService.processTrancheRelease(
@@ -403,14 +405,19 @@ const confirmLive = asyncHandler(async (req, res) => {
     );
   });
 
-  // 5. Notify influencer — only when T2 actually released on this call
-  if (t2Result) {
+  // 5. Notify influencer when all deliverables on this contract are now live.
+  //    For engagement/hybrid → also mention the T2 payment that just released.
+  //    For conversion-only → just confirm the live state (no tranche exists).
+  if (liveCount === totalCount && totalCount > 0) {
     try {
+      const hasTranche = !!t2Result;
       await notificationService.send({
         userId:   d.influencer_user_id,
         type:     'deliverable.live_confirmed',
-        title:    'All Content Confirmed Live — T2 Payment Initiated',
-        body:     `Your content has been confirmed live. Tranche 2 payment of ₹${t2Result.netAmount.toFixed(2)} has been initiated.`,
+        title:    hasTranche ? 'All Content Confirmed Live — T2 Payment Initiated' : 'All Content Confirmed Live',
+        body:     hasTranche
+          ? `Your content has been confirmed live. Tranche 2 payment of ₹${t2Result.netAmount.toFixed(2)} has been initiated.`
+          : `Your content has been confirmed live. Your tracking link is active — commissions will land in your pending balance as conversions come in.`,
         data:     { screen: 'deliverable_detail', deliverable_id: d.id },
         fcmToken: d.influencer_fcm_token,
         sendSms:  true,

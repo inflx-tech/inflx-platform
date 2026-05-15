@@ -158,9 +158,12 @@ export default function BrandContractScreen({ route, navigation }) {
   }
 
   async function handleBrandSign() {
+    const isConversion = (goal || '').toLowerCase() === 'conversion';
     Alert.alert(
       'Sign Contract',
-      'By signing, you commit to all terms shown above. Tranche 1 will be released to the influencer.',
+      isConversion
+        ? 'By signing, you commit to commission-only terms. The influencer’s tracking link goes live — they earn commission on confirmed conversions.'
+        : 'By signing, you commit to all terms shown above. Tranche 1 will be released to the influencer.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Sign', onPress: async () => {
@@ -168,9 +171,13 @@ export default function BrandContractScreen({ route, navigation }) {
           const res = await brandApi.brandSign(contract.id);
           setSubmitting(false);
           if (res.success) {
-            Alert.alert('Signed!', 'Contract is now active. Tranche 1 has been released.', [
-              { text: 'OK', onPress: () => navigation.goBack() },
-            ]);
+            Alert.alert(
+              'Signed!',
+              isConversion
+                ? 'Contract is now active. The influencer can start sharing their tracking link.'
+                : 'Contract is now active. Tranche 1 has been released.',
+              [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
           } else {
             Alert.alert('Failed', res.error?.message || 'Could not sign');
           }
@@ -575,7 +582,9 @@ export default function BrandContractScreen({ route, navigation }) {
           <View style={[styles.card, { backgroundColor: colors.tealPale }]}>
             <Text style={[styles.cardTitle, { color: colors.tealDeep }]}>✓ Contract Active</Text>
             <Text style={styles.helpText}>
-              Both parties have signed. Tranche 1 has been released. The influencer will now create and submit content for review.
+              {(goal || '').toLowerCase() === 'conversion'
+                ? 'Both parties have signed. The influencer’s tracking link is active — they earn commission on confirmed conversions. Content will be submitted for your review.'
+                : 'Both parties have signed. Tranche 1 has been released. The influencer will now create and submit content for review.'}
             </Text>
           </View>
         )}

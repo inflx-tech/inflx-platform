@@ -257,14 +257,18 @@ export default function CampaignDetailScreen({ navigation, route }) {
             {isPendingBrand && (
               <View style={[styles.preparingBox, { backgroundColor: colors.navyPale, borderColor: colors.navy }]}>
                 <Text style={[styles.preparingText, { color: colors.navy, fontWeight: '700' }]}>
-                  You signed. Waiting for brand counter-signature to release Tranche 1.
+                  {isConversion
+                    ? 'You signed. Waiting for brand counter-signature to activate your tracking link.'
+                    : 'You signed. Waiting for brand counter-signature to release Tranche 1.'}
                 </Text>
               </View>
             )}
             {isFullyActive && (
               <View style={[styles.preparingBox, { backgroundColor: colors.tealPale, borderColor: colors.teal }]}>
                 <Text style={[styles.preparingText, { color: colors.tealDeep, fontWeight: '700' }]}>
-                  Contract active — both parties signed. Tranche 1 released.
+                  {isConversion
+                    ? 'Contract active — both parties signed. Your tracking link is live.'
+                    : 'Contract active — both parties signed. Tranche 1 released.'}
                 </Text>
               </View>
             )}

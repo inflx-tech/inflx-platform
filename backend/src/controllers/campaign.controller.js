@@ -306,6 +306,28 @@ const getById = asyncHandler(async (req, res) => {
     txnMap[r.campaign_influencer_id] = r.transaction_count;
   }
 
+  // Actionable deliverable rows for the brand UI: submitted / under_review
+  // need review, approved-with-live_url need confirm-live. Other states (live,
+  // pending, revision_requested) are surfaced via deliverable_counts only —
+  // they don't drive an action button so the row body isn't needed.
+  const { rows: actionDelivRows } = await db.query(
+    `SELECT d.id, d.campaign_influencer_id, d.type, d.status,
+            d.content_url, d.live_url, d.submitted_at
+     FROM   deliverables d
+     JOIN   campaign_influencers ci ON ci.id = d.campaign_influencer_id
+     JOIN   campaign_sets cs        ON cs.id = ci.set_id
+     WHERE  cs.campaign_id = $1
+       AND  (d.status IN ('submitted', 'under_review')
+             OR (d.status = 'approved' AND d.live_url IS NOT NULL))
+     ORDER  BY d.submitted_at ASC NULLS LAST, d.id ASC`,
+    [campaign.id]
+  );
+  const actionDelivMap = {};
+  for (const r of actionDelivRows) {
+    if (!actionDelivMap[r.campaign_influencer_id]) actionDelivMap[r.campaign_influencer_id] = [];
+    actionDelivMap[r.campaign_influencer_id].push(r);
+  }
+
   // Merge aggregates onto each influencer. Transaction count is only surfaced
   // for sets whose goal is conversion or hybrid (engagement has no buyer
   // transactions, so the field stays undefined and the UI can hide it).
@@ -318,6 +340,7 @@ const getById = asyncHandler(async (req, res) => {
         total: 0, pending: 0, submitted: 0, under_review: 0,
         revision_requested: 0, approved: 0, live: 0,
       };
+      ci.deliverables = actionDelivMap[ci.id] || [];
       if (hasTransactions) ci.transaction_count = txnMap[ci.id] || 0;
     }
   }

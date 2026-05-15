@@ -666,8 +666,9 @@ export default function ContractScreen({ navigation, route }) {
               <Text style={styles.successCheck}>Signed</Text>
               <Text style={styles.successTitle}>Contract Signed Successfully</Text>
               <Text style={styles.successDesc}>
-                The brand will be notified to countersign. Once both parties have signed,
-                Tranche 1 will be released automatically.
+                {isConversion
+                  ? 'The brand will be notified to countersign. Once both parties have signed, your tracking link goes live and you start earning commission on confirmed conversions.'
+                  : 'The brand will be notified to countersign. Once both parties have signed, Tranche 1 will be released automatically.'}
               </Text>
             </View>
           </View>
