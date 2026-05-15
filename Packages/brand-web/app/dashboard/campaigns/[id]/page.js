@@ -2022,7 +2022,16 @@ export default function CampaignDetailPage() {
                   })
                   .map(p => (
                   <div key={p.id} className="bg-white rounded-xl border border-gray-200 p-3 flex items-center gap-3">
-                    <div className="w-14 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">🚗</div>
+                    {/* Render the product's actual photo when present. The
+                        hardcoded car emoji that used to be here showed
+                        🚗 for restaurant / salon / fashion products too —
+                        wrong for everyone except car_rental. Now: real
+                        photo wins; neutral 📦 fallback only when no image. */}
+                    <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center text-2xl flex-shrink-0">
+                      {p.image_url
+                        ? <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+                        : <span>📦</span>}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-bold text-gray-900 truncate">{p.name}</div>
                       <div className="text-xs text-gray-500">{p.section || 'General'} · {fmtRupees(p.price)}</div>
