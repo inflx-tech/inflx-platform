@@ -33,6 +33,9 @@ import OrderDetailScreen from '../screens/follower/OrderDetailScreen';
 import EnquiryScreen from '../screens/follower/EnquiryScreen';
 import OrderHistoryScreen from '../screens/follower/OrderHistoryScreen';
 import AddressScreen from '../screens/follower/AddressScreen';
+// Fashion-1b + Fashion-2 — returns + lookbooks
+import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
+import LookbookDetailScreen from '../screens/follower/LookbookDetailScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -54,6 +57,9 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
+    {/* Fashion-1b + Fashion-2 */}
+    <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
+    <Stack.Screen name="LookbookDetail" component={LookbookDetailScreen} />
   </>
 );
 

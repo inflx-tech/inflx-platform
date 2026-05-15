@@ -240,6 +240,34 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
     [brandId]
   );
 
+  // Fashion-1b — variants per product, fetched in one batch query so the
+  // /business/:brand_id/store endpoint can render the variant_selector
+  // section without an N+1 fetch. Each variant row is the SKU-level
+  // {id, size, color, sku, price_override, stock, image_url}.
+  const productIds = products.map(p => p.id);
+  const variantsByProduct = {};
+  if (productIds.length > 0) {
+    const { rows: variants } = await db.query(
+      `SELECT id, product_id, size, color, sku, price_override, stock, image_url
+         FROM product_variants
+        WHERE product_id = ANY($1::uuid[]) AND is_active = true
+        ORDER BY product_id, size NULLS LAST, color NULLS LAST`,
+      [productIds]
+    );
+    for (const v of variants) {
+      if (!variantsByProduct[v.product_id]) variantsByProduct[v.product_id] = [];
+      variantsByProduct[v.product_id].push({
+        id: v.id,
+        size: v.size,
+        color: v.color,
+        sku: v.sku,
+        price_override: v.price_override != null ? parseFloat(v.price_override) : null,
+        stock: v.stock,
+        image_url: v.image_url,
+      });
+    }
+  }
+
   // Active campaign offers for this brand
   const { rows } = await db.query(
     FEED_QUERY + ` AND c.brand_id = $1`,
@@ -324,6 +352,10 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
       veg_flag: p.veg_flag,
       description: p.description,
       is_bookable: p.is_bookable,
+      // Fashion-1b — return policy + variants surfaced for the new
+      // detail-screen return_policy_notice + variant_selector sections
+      return_policy_days: p.return_policy_days || 0,
+      variants: variantsByProduct[p.id] || [],
     })),
     influencers: Object.values(byInfluencer),
     creator,                                              // null when no via param or unknown influencer

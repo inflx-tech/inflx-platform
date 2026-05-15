@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
+import ReturnRequestModal from '../../components/ReturnRequestModal';
 
 const STATUS_STEPS = ['pending', 'confirmed', 'dispatched', 'delivered'];
 
@@ -20,6 +21,7 @@ export default function OrderDetailScreen({ navigation, route }) {
   const { orderId } = route.params || {};
   const [order, setOrder]   = useState(null);
   const [loading, setLoading] = useState(true);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -147,7 +149,43 @@ export default function OrderDetailScreen({ navigation, route }) {
         </View>
       )}
 
+      {/* Fashion-1b — Request Return CTA. Only surfaces for online_order
+          transactions in 'delivered' status (mirrors industry pattern; salon
+          prebooks and pay-at-store walk-ins don't carry physical goods).
+          Server validates the return window per product. */}
+      {order.transaction_type === 'online_order' && order.order_status === 'delivered' && order.transaction_id && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Need to return something?</Text>
+          <Text style={styles.returnSub}>
+            Within the return window? Request a return — we'll review and refund per the brand's policy.
+          </Text>
+          <TouchableOpacity
+            style={styles.returnBtn}
+            onPress={() => setReturnModalOpen(true)}>
+            <Text style={styles.returnBtnText}>↩  Request Return</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={styles.myReturnsLink}
+        onPress={() => navigation.navigate('MyReturns')}>
+        <Text style={styles.myReturnsText}>View my returns →</Text>
+      </TouchableOpacity>
+
       <View style={{ height: 40 }} />
+
+      <ReturnRequestModal
+        visible={returnModalOpen}
+        onClose={() => setReturnModalOpen(false)}
+        onSuccess={() => navigation.navigate('MyReturns')}
+        transactionId={order.transaction_id}
+        orderItems={items.map(it => ({
+          product_id: it.product_id,
+          name: it.name || it.product_name,
+          image_url: it.image_url || it.product_image_url,
+        }))}
+      />
     </ScrollView>
   );
 }
@@ -177,6 +215,13 @@ const styles = StyleSheet.create({
   stepLabelActive: { color: colors.teal },
   stepLine: { flex: 1, height: 2, backgroundColor: colors.border2, alignSelf: 'center', marginTop: -11 },
   stepLineActive: { backgroundColor: colors.teal },
+
+  // Fashion-1b return CTA styles
+  returnSub: { fontSize: 12, color: colors.t2, marginBottom: 12, lineHeight: 17 },
+  returnBtn: { backgroundColor: '#ec4899', paddingVertical: 12, borderRadius: 11, alignItems: 'center' },
+  returnBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  myReturnsLink: { padding: 18, alignItems: 'center' },
+  myReturnsText: { fontSize: 13, color: '#ec4899', fontWeight: '600' },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
   itemName: { fontSize: 13, color: colors.t1, fontWeight: '500', flex: 1 },
   itemDetail: { fontSize: 13, color: colors.t2 },

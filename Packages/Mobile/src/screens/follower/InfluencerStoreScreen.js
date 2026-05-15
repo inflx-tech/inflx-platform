@@ -4,6 +4,7 @@ import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import NewOfferCard from '../../components/cards/NewOfferCard';
+import LookbookCard from '../../components/cards/LookbookCard';
 import { buildTrackingFromOffer } from '../../utils/tracking';
 
 const FILTER_TABS = [
@@ -16,6 +17,7 @@ const FILTER_TABS = [
 export default function InfluencerStoreScreen({ navigation, route }) {
   const { handle } = route.params;
   const [store, setStore] = useState(null);
+  const [lookbooks, setLookbooks] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,10 +33,22 @@ export default function InfluencerStoreScreen({ navigation, route }) {
     }
   }, [handle]);
 
+  // Fashion-2 — fetch lookbooks in parallel. Non-blocking: empty list is
+  // a valid state (most creators won't have lookbooks at launch).
+  const fetchLookbooks = useCallback(async () => {
+    try {
+      const res = await followerApi.getCreatorLookbooks(handle);
+      const data = res.data || res;
+      setLookbooks(data.lookbooks || []);
+    } catch (e) {
+      // Silent — lookbook absence is not an error state for the screen.
+    }
+  }, [handle]);
+
   useEffect(() => {
     setLoading(true);
-    fetchStore().finally(() => setLoading(false));
-  }, [fetchStore]);
+    Promise.all([fetchStore(), fetchLookbooks()]).finally(() => setLoading(false));
+  }, [fetchStore, fetchLookbooks]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -125,6 +139,29 @@ export default function InfluencerStoreScreen({ navigation, route }) {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Fashion-2 — creator lookbooks (curated outfit collections).
+          Surfaced always, above product deals, because it's the most
+          editorial / creator-led moment on the screen. Horizontal scroll
+          when ≥ 2 lookbooks. */}
+      {lookbooks.length > 0 && (
+        <>
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>👗 Curated Looks ({lookbooks.length})</Text>
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 6 }}>
+            {lookbooks.map(lb => (
+              <View key={lb.id} style={{ width: 230 }}>
+                <LookbookCard
+                  lookbook={lb}
+                  creatorName={inf?.name}
+                  onPress={() => navigation.navigate('LookbookDetail', { handle, lookbookId: lb.id })}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </>
+      )}
 
       {/* Products FIRST */}
       {(filter === 'all' || filter === 'products') && allProducts.length > 0 && (

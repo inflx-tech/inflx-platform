@@ -418,6 +418,10 @@ export const followerApi = {
   listMyReturns: () => api.get('/follower/returns'),
   getMyReturn: (id) => api.get(`/follower/returns/${id}`),
 
+  // Fashion-2 — Creator lookbooks (public viewing on follower side)
+  getCreatorLookbooks: (handle) => api.get(`/store/${handle}/lookbooks`),
+  getLookbook: (handle, id) => api.get(`/store/${handle}/lookbooks/${id}`),
+
   // Transactions
   payAtStore: (data) => api.post('/follower/pay-at-store', data),
   verifyPayAtStore: (data) => api.post('/follower/pay-at-store/verify', data),

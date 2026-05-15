@@ -51,6 +51,9 @@ const marketingAdminRoutes = require('./marketingAdmin.routes');
 const productVariantsRoutes = require('./productVariants.routes');
 const returnsRoutes         = require('./returns.routes');
 
+// Fashion-2 — creator-curated lookbooks (outfit collections)
+const lookbooksRoutes       = require('./lookbooks.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional } = require('../middleware/auth');
@@ -120,5 +123,9 @@ router.get('/category/:super_category/stores',    authenticateOptional, follower
 router.use('/brands/me', productVariantsRoutes);
 router.use('/follower',  returnsRoutes.followerRouter);
 router.use('/admin',     returnsRoutes.adminRouter);
+
+// ── Fashion-2 — creator lookbooks (creator authoring + public viewing) ───────
+router.use('/',           lookbooksRoutes.publicRouter);    // /store/:handle/lookbooks
+router.use('/influencer', lookbooksRoutes.creatorRouter);   // /influencer/lookbooks*
 
 module.exports = router;
