@@ -413,6 +413,11 @@ export const followerApi = {
   unsaveOffer: (offer_id) => api.delete(`/follower/saved/${offer_id}`),
   getSavedOffers: () => api.get('/follower/saved'),
 
+  // Fashion-1 — Returns workflow (customer side)
+  initiateReturn: (data) => api.post('/follower/returns', data),
+  listMyReturns: () => api.get('/follower/returns'),
+  getMyReturn: (id) => api.get(`/follower/returns/${id}`),
+
   // Transactions
   payAtStore: (data) => api.post('/follower/pay-at-store', data),
   verifyPayAtStore: (data) => api.post('/follower/pay-at-store/verify', data),

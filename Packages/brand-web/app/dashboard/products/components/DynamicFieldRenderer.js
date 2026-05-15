@@ -2,6 +2,7 @@
 
 import TeamMemberListEditor from './TeamMemberListEditor';
 import WeeklyScheduleEditor from './WeeklyScheduleEditor';
+import VariantMatrixEditor from './VariantMatrixEditor';
 
 /**
  * DynamicFieldRenderer — renders any field type from a business type config.
@@ -42,6 +43,16 @@ export default function DynamicFieldRenderer({ field, value, onChange, error }) 
   if (field.type === 'weekly_schedule') {
     return (
       <WeeklyScheduleEditor
+        value={value}
+        onChange={(next) => onChange(field.key, next)}
+      />
+    );
+  }
+
+  // ── variant_matrix (Fashion-1 — size × color SKU grid) ─────────────────────
+  if (field.type === 'variant_matrix') {
+    return (
+      <VariantMatrixEditor
         value={value}
         onChange={(next) => onChange(field.key, next)}
       />

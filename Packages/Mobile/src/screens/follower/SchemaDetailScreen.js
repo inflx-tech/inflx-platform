@@ -231,6 +231,77 @@ function SectionRenderer({ section, item, template, accent, accentDim }) {
     return null;
   }
 
+  // ── Fashion-1 section types ────────────────────────────────────────────────
+
+  if (section.type === 'variant_selector') {
+    // Reads from item.variants[] which the brand store endpoint emits for
+    // fashion products. Each variant: { id, size, color, stock, price_override }.
+    const variants = Array.isArray(item?.variants) ? item.variants : [];
+    if (variants.length === 0) return null;
+
+    const sizes = Array.from(new Set(variants.map(v => v.size).filter(Boolean)));
+    const colors = Array.from(new Set(variants.map(v => v.color).filter(Boolean)));
+
+    return (
+      <View style={styles.section}>
+        {section.title && <Text style={styles.sectionLabel}>{section.title}</Text>}
+        {sizes.length > 0 && (
+          <View style={{ marginBottom: 8 }}>
+            <Text style={styles.variantGroupLabel}>Size</Text>
+            <View style={styles.variantChipsRow}>
+              {sizes.map(s => {
+                const inStock = variants.some(v => v.size === s && (v.stock == null || v.stock > 0));
+                return (
+                  <View key={s} style={[styles.variantChip, !inStock && styles.variantChipOOS]}>
+                    <Text style={[styles.variantChipText, !inStock && { color: 'rgba(255,255,255,0.3)' }]}>
+                      {s}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+        {colors.length > 0 && (
+          <View>
+            <Text style={styles.variantGroupLabel}>Color</Text>
+            <View style={styles.variantChipsRow}>
+              {colors.map(c => {
+                const inStock = variants.some(v => v.color === c && (v.stock == null || v.stock > 0));
+                return (
+                  <View key={c} style={[styles.variantChip, !inStock && styles.variantChipOOS]}>
+                    <Text style={[styles.variantChipText, !inStock && { color: 'rgba(255,255,255,0.3)' }]}>
+                      {c}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+        <Text style={styles.variantHint}>
+          Tap the primary button below to add this item to cart — you'll pick size/color there.
+        </Text>
+      </View>
+    );
+  }
+
+  if (section.type === 'return_policy_notice') {
+    const days = readPath(attrs, section.source) ?? item?.return_policy_days;
+    if (!days || days <= 0) return null;
+    return (
+      <View style={[styles.section, styles.returnNotice, { borderColor: accent + '40' }]}>
+        <Text style={[styles.returnIcon, { color: accent }]}>↩</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.returnTitle}>{section.title || 'Return policy'}</Text>
+          <Text style={styles.returnBody}>
+            {days}-day return window. Open Order History after purchase to request a return.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return null;
 }
 
@@ -293,4 +364,16 @@ const styles = StyleSheet.create({
   unavailBanner: { fontSize: 11, color: 'rgba(255,180,90,0.85)', textAlign: 'center', marginBottom: 8, fontStyle: 'italic' },
   ctaBtn: { borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   ctaBtnText: { fontSize: 15, fontWeight: '800', color: '#000' },
+
+  // Fashion-1 variant selector + return policy notice
+  variantGroupLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 5 },
+  variantChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  variantChip: { backgroundColor: '#142438', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  variantChipOOS: { backgroundColor: 'rgba(20,36,56,0.4)', borderColor: 'rgba(255,255,255,0.05)' },
+  variantChipText: { fontSize: 11, fontWeight: '700', color: '#fff' },
+  variantHint: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 8, fontStyle: 'italic' },
+  returnNotice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, backgroundColor: 'rgba(236,72,153,0.05)' },
+  returnIcon: { fontSize: 22, fontWeight: '800' },
+  returnTitle: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  returnBody: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
 });

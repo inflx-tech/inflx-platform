@@ -98,8 +98,14 @@ export const darkColors = {
 export const businessAccents = {
   restaurant:      { accent: '#ef4444', dim: 'rgba(239,68,68,0.08)',  icon: '🍽️' },
   bakery:          { accent: '#f97316', dim: 'rgba(249,115,22,0.1)',  icon: '🎂' },
-  fashion_walkin:  { accent: '#f59e0b', dim: 'rgba(245,158,11,0.1)', icon: '👗' },
-  fashion_online:  { accent: '#f59e0b', dim: 'rgba(245,158,11,0.1)', icon: '🛍️' },
+  // Fashion-1: unified fashion category. Pink/magenta accent ties to the
+  // creator-vibe pitch (salon/beauty/lifestyle creators); the schema picks
+  // walkin_pay + online_order based on the brand's offers_online_delivery flag.
+  fashion:         { accent: '#ec4899', dim: 'rgba(236,72,153,0.1)', icon: '👗' },
+  // Legacy aliases retained — brands still rolling out under the old keys
+  // will continue to theme correctly until they migrate to `fashion`.
+  fashion_walkin:  { accent: '#ec4899', dim: 'rgba(236,72,153,0.1)', icon: '👗' },
+  fashion_online:  { accent: '#ec4899', dim: 'rgba(236,72,153,0.1)', icon: '🛍️' },
   salon:           { accent: '#ec4899', dim: 'rgba(236,72,153,0.1)', icon: '💇' },
   car_rental:      { accent: '#f59e0b', dim: 'rgba(245,158,11,0.1)', icon: '🚗' },
   packaged_food:   { accent: '#10b981', dim: 'rgba(16,185,129,0.1)', icon: '🛒' },

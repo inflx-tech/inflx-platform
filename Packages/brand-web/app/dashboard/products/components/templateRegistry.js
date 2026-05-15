@@ -30,11 +30,13 @@
 import restaurantTemplate from './restaurant';
 import salonTemplate     from './salon';
 import carRentalTemplate from './car-rental';
+import fashionTemplate   from './fashion';
 
 const REGISTRY = {
   restaurant: restaurantTemplate,
   salon:      salonTemplate,
   car_rental: carRentalTemplate,   // PR-3: migrated from CUSTOM_WIZARDS in ListingWizard.js
+  fashion:    fashionTemplate,     // Fashion-1: unified walkin+online apparel
 };
 
 export function getTemplate(categoryKey) {

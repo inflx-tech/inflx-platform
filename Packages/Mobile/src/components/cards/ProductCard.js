@@ -112,6 +112,10 @@ const TRUST_CHIPS_BY_CATEGORY = {
   salon:       [{ icon: '💸', text: 'Pay at salon' }, { icon: '✕', text: 'Free cancel' }],
   restaurant:  [{ icon: '💸', text: 'Pay at venue' }],
   car_rental:  [{ icon: '✕', text: 'Free cancel' }, { icon: '💸', text: 'Pay at pickup' }],
+  // Fashion-1 — applies to the unified fashion category and the legacy aliases
+  fashion:        [{ icon: '↩', text: '7-day returns' }, { icon: '💸', text: 'Pay at store' }],
+  fashion_walkin: [{ icon: '↩', text: '7-day returns' }, { icon: '💸', text: 'Pay at store' }],
+  fashion_online: [{ icon: '↩', text: '7-day returns' }, { icon: '💸', text: 'COD available' }],
 };
 
 function renderTrustChips(category, accent) {

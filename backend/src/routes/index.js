@@ -47,6 +47,10 @@ const ingestRoutes = require('./ingest.routes');
 // Marketing Engine admin API (admin-only, JWT-authenticated)
 const marketingAdminRoutes = require('./marketingAdmin.routes');
 
+// Fashion-1 — product variants (brand-side SKU CRUD) + returns workflow
+const productVariantsRoutes = require('./productVariants.routes');
+const returnsRoutes         = require('./returns.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional } = require('../middleware/auth');
@@ -111,5 +115,10 @@ router.get('/category/:category_key',             authenticateOptional, follower
 
 // ── Listing Engine — category stores with inline products ────────────────────
 router.get('/category/:super_category/stores',    authenticateOptional, followerCtrl.getCategoryStores);
+
+// ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
+router.use('/brands/me', productVariantsRoutes);
+router.use('/follower',  returnsRoutes.followerRouter);
+router.use('/admin',     returnsRoutes.adminRouter);
 
 module.exports = router;

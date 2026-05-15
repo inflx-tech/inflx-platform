@@ -188,8 +188,23 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
     }
 
     try {
-      await brandApi.post('/brands/me/products', payload);
+      const productRes = await brandApi.post('/brands/me/products', payload);
       productsCreated += 1;
+
+      // Fashion-1: if the item carries `_variants`, write them via the
+      // dedicated variants endpoint after the product is created. The
+      // variants endpoint is opt-in per product — categories without
+      // variants (restaurant/salon/car_rental) simply don't populate
+      // `_variants` on wizardItems and this branch is skipped.
+      const variants = Array.isArray(item?._variants) ? item._variants : null;
+      const newProductId = productRes?.data?.product?.id || productRes?.data?.id || productRes?.product?.id;
+      if (variants && variants.length > 0 && newProductId) {
+        try {
+          await brandApi.post(`/brands/me/products/${newProductId}/variants`, { variants });
+        } catch (varErr) {
+          errors.push(`Variants for "${payload.name}" failed: ${varErr.message || varErr}`);
+        }
+      }
     } catch (err) {
       errors.push(`Product "${payload.name}" failed: ${err.message || err}`);
     }
