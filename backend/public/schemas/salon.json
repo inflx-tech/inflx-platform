@@ -216,7 +216,8 @@
       { "column": "Description", "field": "description", "required": false, "example": "Includes wash, cut, blow-dry" },
       { "column": "Gender", "field": "gender", "required": false, "example": "Women" },
       { "column": "Premium", "field": "premium", "required": false, "example": "No" },
-      { "column": "Stylist Choice Required", "field": "requires_stylist_choice", "required": false, "example": "Yes" }
+      { "column": "Stylist Choice Required", "field": "requires_stylist_choice", "required": false, "example": "Yes" },
+      { "column": "Image URL", "field": "image_url", "required": false, "example": "https://example.com/service.jpg" }
     ]
   },
 

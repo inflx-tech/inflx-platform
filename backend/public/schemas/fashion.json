@@ -220,7 +220,8 @@
       { "column": "Sizes (comma-separated)", "field": "sizes", "required": false, "example": "S, M, L, XL" },
       { "column": "Colors (comma-separated)", "field": "colors", "required": false, "example": "Black, White, Navy" },
       { "column": "Stock per Variant", "field": "stock_per_variant", "required": false, "example": "5" },
-      { "column": "Return Window (days)", "field": "return_policy_days", "required": false, "example": "7" }
+      { "column": "Return Window (days)", "field": "return_policy_days", "required": false, "example": "7" },
+      { "column": "Image URL", "field": "image_url", "required": false, "example": "https://example.com/item.jpg" }
     ]
   },
 

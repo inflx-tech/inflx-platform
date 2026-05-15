@@ -921,15 +921,37 @@ const bulkUploadProducts = asyncHandler(async (req, res) => {
     const fashionVariantSpec = product._fashion_variants;
     delete product._fashion_variants;
 
-    // Master-catalogue linking — restaurant + salon
+    // Master-catalogue linking — restaurant + salon.
+    // When a row auto-links to a master row AND the row didn't provide its
+    // own image_url, inherit the master's default photo. This is what
+    // makes "bulk upload + auto-link" feel like a real onboarding shortcut
+    // for brands without their own product photography.
     let masterDishId = null;
     let masterServiceId = null;
     if (brand.category === 'restaurant') {
       masterDishId = await excelService.findMasterMatch('restaurant', product.name, product.section);
-      if (masterDishId) mastersLinked++;
+      if (masterDishId) {
+        mastersLinked++;
+        if (!product.image_url) {
+          const { rows: mdRows } = await db.query(
+            `SELECT default_image_url FROM master_dishes WHERE id = $1`,
+            [masterDishId]
+          );
+          if (mdRows[0]?.default_image_url) product.image_url = mdRows[0].default_image_url;
+        }
+      }
     } else if (brand.category === 'salon') {
       masterServiceId = await excelService.findMasterMatch('salon', product.name, product.section);
-      if (masterServiceId) mastersLinked++;
+      if (masterServiceId) {
+        mastersLinked++;
+        if (!product.image_url) {
+          const { rows: msRows } = await db.query(
+            `SELECT image_url FROM master_salon_services WHERE id = $1`,
+            [masterServiceId]
+          );
+          if (msRows[0]?.image_url) product.image_url = msRows[0].image_url;
+        }
+      }
     }
 
     const { rows: [newProd] } = await db.query(

@@ -290,7 +290,8 @@
       { "column": "Chef's Special", "field": "chef_special", "required": false, "example": "No" },
       { "column": "Contains Egg", "field": "contains_egg", "required": false, "example": "No" },
       { "column": "Jain Option", "field": "jain_available", "required": false, "example": "No" },
-      { "column": "Daily Stock", "field": "stock", "required": false, "example": "50" }
+      { "column": "Daily Stock", "field": "stock", "required": false, "example": "50" },
+      { "column": "Image URL", "field": "image_url", "required": false, "example": "https://example.com/dish.jpg" }
     ]
   },
 
