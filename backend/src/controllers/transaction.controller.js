@@ -46,6 +46,23 @@ async function fetchPriceMap(productIds) {
 }
 
 /**
+ * Fetch product metadata (section/category) for category-scoped offers.
+ * Returns Map<product_id, { section }>. Used by offer.service.js scope
+ * filtering when an offer is scoped to a specific category like
+ * "Main Course" or "Hair Women".
+ */
+async function fetchProductMetaMap(productIds) {
+  const map = new Map();
+  if (!productIds || productIds.length === 0) return map;
+  const { rows } = await db.query(
+    `SELECT id, section FROM brand_products WHERE id = ANY($1::uuid[]) AND is_active = true`,
+    [productIds]
+  );
+  for (const r of rows) map.set(r.id, { section: r.section });
+  return map;
+}
+
+/**
  * Fetch variant override prices for items that include variant_id.
  * Returns Map<variant_id, override_price_rupees | base_resolved>.
  * Used by the offer parser via lineItemPrice() so variant-level pricing
@@ -808,13 +825,15 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
 
-  // Build base + variant price maps (Tier-1: variant.price_override now
-  // honored at checkout — not just brand_products.price).
+  // Build base + variant price maps + product metadata.
+  // productMetaMap surfaces brand_products.section so category-scoped
+  // discounts (e.g. "10% off Main Course") can filter the cart correctly.
   const productIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
   const variantIds = [...new Set(items.map(i => i.variant_id).filter(Boolean))];
-  const [priceMap, variantPriceMap] = await Promise.all([
+  const [priceMap, variantPriceMap, productMetaMap] = await Promise.all([
     fetchPriceMap(productIds),
     fetchVariantPriceMap(variantIds),
+    fetchProductMetaMap(productIds),
   ]);
 
   const safeItems = items.map(i => ({
@@ -823,15 +842,16 @@ const placeOrder = asyncHandler(async (req, res) => {
     quantity: parseInt(i.quantity, 10),
   }));
 
-  // Tier-1: discount via offer.service.js parser. Handles all 5 offer
-  // mechanics (Discount / Volume / BOGO / Bundle / Free gift) — replaces
-  // the broken percentage-only math in calcOnlineOrder.
+  // Discount via offer.service.js parser. Handles all 5 offer mechanics
+  // (Discount / Volume / BOGO / Bundle / Free gift) with the 3-tier scope
+  // model (store / category / products) for Discount + Volume.
   const offerResult = offerService.resolveOfferDiscount({
     offerType: record.ci_offer_type,
     offerConfig: record.offer_config_json,
     items: safeItems,
     priceMap,
     variantPriceMap,
+    productMetaMap,
   });
 
   const discountAmount = parseFloat(offerResult.discount_amount || 0);

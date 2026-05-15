@@ -68,8 +68,8 @@ const autoCode = (prefix, name) => `${(prefix || 'CODE').toUpperCase()}_${(name 
 const mkInf = () => ({
   influencer_id: null, name: '', handle: '', init: '',
   post_date: '', influencer_budget: '', offer_type: '',
-  d_sub: 'pct', d_val: '', d_prods: [],
-  v_prods: [], v_tiers: [{min_spend:'', pct_off:''}],
+  d_sub: 'pct', d_val: '', d_prods: [], d_scope: 'store', d_category: '',
+  v_prods: [], v_tiers: [{min_spend:'', pct_off:''}], v_scope: 'store', v_category: '',
   bogo_buy: null, bogo_get: null,
   bnd_prods: [], bnd_price: '',
   gift_offers: [{ main: null, gift: null }],
@@ -80,8 +80,8 @@ const mkInf = () => ({
 const mkGroup = () => ({
   tiers: [], niches: [], cities: [], min_er: '', gender: '',
   max_cap: '10', per_influencer_budget: '',
-  offer_type: '', d_sub: 'pct', d_val: '', d_prods: [],
-  v_prods: [], v_tiers: [{min_spend:'', pct_off:''}],
+  offer_type: '', d_sub: 'pct', d_val: '', d_prods: [], d_scope: 'store', d_category: '',
+  v_prods: [], v_tiers: [{min_spend:'', pct_off:''}], v_scope: 'store', v_category: '',
   bogo_buy: null, bogo_get: null, bnd_prods: [], bnd_price: '',
   gift_offers: [{ main: null, gift: null }],
   commission_pct: '', physical_delivery: false,
@@ -561,8 +561,8 @@ function NewCampaignPageInner() {
               physical_delivery: ci.physical_delivery || false,
               delivery_address: ci.delivery_address || '',
               custom_code: ci.coupon_code || '',
-              ...((ci.offer_type || '').toLowerCase().includes('discount') && { d_sub: cfg.sub_type || 'pct', d_val: String(cfg.value || ''), d_prods: cfg.products || [] }),
-              ...((ci.offer_type || '').toLowerCase().includes('volume')   && { v_tiers: cfg.tiers || [{min_spend:'',pct_off:''}], v_prods: cfg.products || [] }),
+              ...((ci.offer_type || '').toLowerCase().includes('discount') && { d_sub: cfg.sub_type || 'pct', d_val: String(cfg.value || ''), d_prods: cfg.products || [], d_scope: cfg.scope || (cfg.products?.length ? 'products' : 'store'), d_category: cfg.category || '' }),
+              ...((ci.offer_type || '').toLowerCase().includes('volume')   && { v_tiers: cfg.tiers || [{min_spend:'',pct_off:''}], v_prods: cfg.products || [], v_scope: cfg.scope || (cfg.products?.length ? 'products' : 'store'), v_category: cfg.category || '' }),
               ...((ci.offer_type || '').toLowerCase() === 'bogo'           && { bogo_buy: cfg.buy_product || null, bogo_get: cfg.get_product || null }),
               ...((ci.offer_type || '').toLowerCase().includes('bundle')   && { bnd_prods: cfg.products || [], bnd_price: String(cfg.bundle_price || '') }),
               ...((ci.offer_type || '').toLowerCase().includes('gift')     && { gift_offers: cfg.offers || [{main:null,gift:null}] }),
@@ -1113,9 +1113,20 @@ function NewCampaignPageInner() {
   const buildOfferConfig = (item) => {
     const t = (item.offer_type || '').toLowerCase().trim();
     switch (t) {
-      case 'discount':          return { sub_type: item.d_sub, value: Number(item.d_val) || 0, products: item.d_prods };
-      case 'volume discount':   return { tiers: item.v_tiers, products: item.v_prods };
-      case 'volume':            return { tiers: item.v_tiers, products: item.v_prods };
+      case 'discount':          return {
+        sub_type: item.d_sub,
+        value: Number(item.d_val) || 0,
+        scope: item.d_scope || 'store',
+        category: item.d_scope === 'category' ? (item.d_category || null) : null,
+        products: item.d_scope === 'products' ? (item.d_prods || []) : [],
+      };
+      case 'volume discount':
+      case 'volume':            return {
+        tiers: item.v_tiers,
+        scope: item.v_scope || 'store',
+        category: item.v_scope === 'category' ? (item.v_category || null) : null,
+        products: item.v_scope === 'products' ? (item.v_prods || []) : [],
+      };
       case 'bogo':              return { buy_product: item.bogo_buy, get_product: item.bogo_get };
       case 'bundle':            return { products: item.bnd_prods, bundle_price: Number(item.bnd_price) || 0 };
       case 'free gift':         return { offers: item.gift_offers };
@@ -1298,13 +1309,26 @@ function NewCampaignPageInner() {
   // ── Offer config renderer ─────────────────────────────────────────────────────
   const offerSummary = (o) => {
     if (!o.offer_type) return '—';
-    if (o.offer_type === 'Discount') return o.d_sub === 'flat' ? `₹${o.d_val || '?'} off` : `${o.d_val || '?'}% off`;
-    if (o.offer_type === 'Volume discount') return `Volume: ${(o.v_tiers || []).length} tier(s)`;
+    if (o.offer_type === 'Discount') {
+      const base = o.d_sub === 'flat' ? `₹${o.d_val || '?'} off` : `${o.d_val || '?'}% off`;
+      const scope = o.d_scope === 'category' ? ` on ${o.d_category || '?'}` : o.d_scope === 'products' ? ` on ${(o.d_prods || []).length} product(s)` : ' on entire store';
+      return base + scope;
+    }
+    if (o.offer_type === 'Volume discount') {
+      const base = `Volume: ${(o.v_tiers || []).length} tier(s)`;
+      const scope = o.v_scope === 'category' ? ` · ${o.v_category || '?'}` : o.v_scope === 'products' ? ` · ${(o.v_prods || []).length} product(s)` : ' · entire store';
+      return base + scope;
+    }
     if (o.offer_type === 'BOGO') return `Buy ${o.bogo_buy?.name || '?'} → get ${o.bogo_get?.name || '?'} free`;
     if (o.offer_type === 'Bundle') return `Bundle ${(o.bnd_prods || []).length} products @ ₹${o.bnd_price || '?'}`;
     if (o.offer_type === 'Free gift') return `Free gift — ${(o.gift_offers || []).length} offer(s)`;
     return o.offer_type;
   };
+
+  // Brand's sections — derived from the products already added by the brand.
+  // Used for the "Specific category" scope option in Discount + Volume offers.
+  // Empty when brand hasn't added products yet; UI will surface a gentle hint.
+  const brandSections = [...new Set((products || []).map(p => p.section).filter(Boolean))].sort();
 
   const renderOfferConfig = (o, onChg, si, ii, isGroup) => {
     if (!o.offer_type) return null;
@@ -1328,10 +1352,58 @@ function NewCampaignPageInner() {
         {o.offer_type === 'Discount' && <>
           <div><div className="ie-lbl">Type</div><div className="sub-tog"><button className={o.d_sub === 'pct' ? 'act' : ''} onClick={() => onChg('d_sub', 'pct')}>% Off</button><button className={o.d_sub === 'flat' ? 'act' : ''} onClick={() => onChg('d_sub', 'flat')}>₹ Flat</button></div></div>
           <div><div className="ie-lbl">Value</div><input className="ie-inp" type="number" placeholder={o.d_sub === 'pct' ? 'e.g. 20' : 'e.g. 200'} value={o.d_val || ''} onChange={e => onChg('d_val', e.target.value)} /></div>
-          <div><div className="ie-lbl">Products</div>{prodChips(o.d_prods, 'd_prods')}</div>
+          {/* 3-tier scope picker */}
+          <div>
+            <div className="ie-lbl">Apply to</div>
+            <div className="sub-tog">
+              <button className={o.d_scope === 'store' ? 'act' : ''} onClick={() => onChg('d_scope', 'store')}>Entire store</button>
+              <button className={o.d_scope === 'category' ? 'act' : ''} onClick={() => onChg('d_scope', 'category')}>Specific category</button>
+              <button className={o.d_scope === 'products' ? 'act' : ''} onClick={() => onChg('d_scope', 'products')}>Specific products</button>
+            </div>
+          </div>
+          {o.d_scope === 'category' && (
+            <div>
+              <div className="ie-lbl">Category</div>
+              {brandSections.length === 0 ? (
+                <div style={{ fontSize: 11, color: 'var(--t3)', fontStyle: 'italic' }}>Add products to your catalogue first — categories show here once you have items.</div>
+              ) : (
+                <select className="ie-inp" value={o.d_category || ''} onChange={e => onChg('d_category', e.target.value)}>
+                  <option value="">— pick a category —</option>
+                  {brandSections.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
+            </div>
+          )}
+          {o.d_scope === 'products' && (
+            <div><div className="ie-lbl">Products</div>{prodChips(o.d_prods, 'd_prods')}</div>
+          )}
         </>}
         {o.offer_type === 'Volume discount' && <>
-          <div><div className="ie-lbl">Products</div>{prodChips(o.v_prods, 'v_prods')}</div>
+          {/* 3-tier scope picker */}
+          <div>
+            <div className="ie-lbl">Apply to</div>
+            <div className="sub-tog">
+              <button className={o.v_scope === 'store' ? 'act' : ''} onClick={() => onChg('v_scope', 'store')}>Entire store</button>
+              <button className={o.v_scope === 'category' ? 'act' : ''} onClick={() => onChg('v_scope', 'category')}>Specific category</button>
+              <button className={o.v_scope === 'products' ? 'act' : ''} onClick={() => onChg('v_scope', 'products')}>Specific products</button>
+            </div>
+          </div>
+          {o.v_scope === 'category' && (
+            <div>
+              <div className="ie-lbl">Category</div>
+              {brandSections.length === 0 ? (
+                <div style={{ fontSize: 11, color: 'var(--t3)', fontStyle: 'italic' }}>Add products to your catalogue first — categories show here once you have items.</div>
+              ) : (
+                <select className="ie-inp" value={o.v_category || ''} onChange={e => onChg('v_category', e.target.value)}>
+                  <option value="">— pick a category —</option>
+                  {brandSections.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              )}
+            </div>
+          )}
+          {o.v_scope === 'products' && (
+            <div><div className="ie-lbl">Products</div>{prodChips(o.v_prods, 'v_prods')}</div>
+          )}
           <div><div className="ie-lbl">Spend tiers</div>
             {(o.v_tiers || []).map((t, ti) => (
               <div key={ti} className="vt-row">

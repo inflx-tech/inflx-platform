@@ -86,14 +86,68 @@ function extractProductIds(rawProducts) {
 
 // ── Per-type resolvers ───────────────────────────────────────────────────────
 
-function resolveDiscount({ offerConfig, items, priceMap, variantPriceMap, billAmount }) {
+/**
+ * Resolve the scope of a Discount/Volume offer.
+ *
+ * The 3-tier scope model (per user spec):
+ *   · 'store'    — applies to entire cart (or entire bill at pay-at-store)
+ *   · 'category' — applies only to items whose brand_products.section
+ *                  matches offerConfig.category
+ *   · 'products' — applies only to items whose product_id is in
+ *                  offerConfig.products (current behavior; the default
+ *                  legacy shape)
+ *
+ * Legacy back-compat: when offerConfig has no `scope` field, infer from
+ * the products array — non-empty products array → 'products' scope, empty
+ * → 'store' scope. So pre-existing campaigns keep working.
+ */
+function resolveScope(offerConfig) {
+  if (offerConfig?.scope) return offerConfig.scope;
+  const productIds = extractProductIds(offerConfig?.products);
+  return productIds.length > 0 ? 'products' : 'store';
+}
+
+/**
+ * Filter the cart to items the offer applies to, per scope.
+ * Returns the filtered item list (may be empty if no match).
+ */
+function filterItemsByScope(items, scope, offerConfig, productMetaMap) {
+  if (scope === 'store' || !scope) return items;
+  if (scope === 'products') {
+    const scopedIds = extractProductIds(offerConfig?.products);
+    if (scopedIds.length === 0) return items;   // ill-configured; treat as store
+    return items.filter(i => scopedIds.includes(i.product_id));
+  }
+  if (scope === 'category') {
+    const cat = offerConfig?.category;
+    if (!cat) return items;   // ill-configured; treat as store
+    return items.filter(i => {
+      const section = productMetaMap?.get?.(i.product_id)?.section;
+      return section && String(section).toLowerCase() === String(cat).toLowerCase();
+    });
+  }
+  return items;
+}
+
+function resolveDiscount({ offerConfig, items, priceMap, variantPriceMap, productMetaMap, billAmount }) {
   const subType = offerConfig?.sub_type || 'pct';
   const value = Number(offerConfig?.value || 0);
-  const scopedIds = extractProductIds(offerConfig?.products);
+  const scope = resolveScope(offerConfig);
 
-  // Pay-at-store (no items) — applies to bill_amount
+  // Pay-at-store (no items, just a bill total).
+  // Only 'store' scope makes sense — category/product scope can't be
+  // resolved from a free-form bill (we don't know which items were on it).
   if (!items || items.length === 0) {
     if (billAmount == null) return { discount_amount: 0, applied_to: 'bill_amount', reason: 'No bill amount' };
+    if (scope !== 'store') {
+      return {
+        discount_amount: 0,
+        applied_to: 'bill_amount',
+        reason: scope === 'category'
+          ? `This offer is scoped to "${offerConfig.category}" — applies online only, not on walk-in bills`
+          : 'This offer is scoped to specific products — applies online only, not on walk-in bills',
+      };
+    }
     if (subType === 'flat') {
       const discount = Math.min(value, Number(billAmount));
       return {
@@ -102,7 +156,6 @@ function resolveDiscount({ offerConfig, items, priceMap, variantPriceMap, billAm
         reason: `Flat ₹${value} off your bill`,
       };
     }
-    // pct (default)
     return {
       discount_amount: r2(Number(billAmount) * value / 100),
       applied_to: 'bill_amount',
@@ -110,36 +163,45 @@ function resolveDiscount({ offerConfig, items, priceMap, variantPriceMap, billAm
     };
   }
 
-  // Online order — apply to scoped subtotal (or full cart if no scope)
-  const applicableItems = scopedIds.length === 0
-    ? items
-    : items.filter(i => scopedIds.includes(i.product_id));
+  // Online order — filter items by scope, then compute discount on subtotal.
+  const applicableItems = filterItemsByScope(items, scope, offerConfig, productMetaMap);
   const subtotal = itemsTotal(applicableItems, priceMap, variantPriceMap);
 
   if (applicableItems.length === 0) {
-    return { discount_amount: 0, applied_to: 'scope_subtotal', reason: 'Offer does not apply to any items in cart' };
+    const reason = scope === 'category'
+      ? `Offer applies to ${offerConfig.category} only — no items from that category in your cart`
+      : scope === 'products'
+        ? 'Offer does not apply to any items in cart'
+        : 'No items in cart';
+    return { discount_amount: 0, applied_to: 'scope_subtotal', reason };
   }
+
+  const scopeLabel = scope === 'store'
+    ? 'your order'
+    : scope === 'category'
+      ? `your ${offerConfig.category} items`
+      : `${applicableItems.length} eligible item(s)`;
+  const appliedTo = scope === 'store' ? 'cart_total' : 'scope_subtotal';
 
   if (subType === 'flat') {
     const discount = Math.min(value, subtotal);
     return {
       discount_amount: r2(discount),
-      applied_to: scopedIds.length === 0 ? 'cart_total' : 'scope_subtotal',
-      reason: `₹${value} off ${scopedIds.length === 0 ? 'your order' : applicableItems.length + ' eligible item(s)'}`,
+      applied_to: appliedTo,
+      reason: `₹${value} off ${scopeLabel}`,
     };
   }
-  // pct
   return {
     discount_amount: r2(subtotal * value / 100),
-    applied_to: scopedIds.length === 0 ? 'cart_total' : 'scope_subtotal',
-    reason: `${value}% off ${scopedIds.length === 0 ? 'your order' : applicableItems.length + ' eligible item(s)'}`,
+    applied_to: appliedTo,
+    reason: `${value}% off ${scopeLabel}`,
   };
 }
 
-function resolveVolume({ offerConfig, items, priceMap, variantPriceMap }) {
+function resolveVolume({ offerConfig, items, priceMap, variantPriceMap, productMetaMap }) {
   const tiers = Array.isArray(offerConfig?.tiers) ? offerConfig.tiers : [];
-  const scopedIds = extractProductIds(offerConfig?.products);
-  const applicable = scopedIds.length === 0 ? items : items.filter(i => scopedIds.includes(i.product_id));
+  const scope = resolveScope(offerConfig);
+  const applicable = filterItemsByScope(items, scope, offerConfig, productMetaMap);
   const subtotal = itemsTotal(applicable, priceMap, variantPriceMap);
 
   // Pick the highest-min_spend tier whose threshold is met
@@ -153,19 +215,20 @@ function resolveVolume({ offerConfig, items, priceMap, variantPriceMap }) {
   }
   if (!bestTier) {
     const lowestTier = tiers.reduce((acc, t) => acc == null || Number(t.min_spend || 0) < Number(acc.min_spend || 0) ? t : acc, null);
+    const scopeContext = scope === 'category' ? ` on ${offerConfig.category}` : scope === 'products' ? ' on eligible items' : '';
     return {
       discount_amount: 0,
       applied_to: 'scope_subtotal',
       reason: lowestTier
-        ? `Spend ₹${lowestTier.min_spend} more eligible to unlock ${lowestTier.pct_off}% off`
+        ? `Spend ₹${lowestTier.min_spend}${scopeContext} to unlock ${lowestTier.pct_off}% off`
         : 'Volume threshold not met',
     };
   }
 
   return {
     discount_amount: r2(subtotal * Number(bestTier.pct_off) / 100),
-    applied_to: scopedIds.length === 0 ? 'cart_total' : 'scope_subtotal',
-    reason: `${bestTier.pct_off}% off — spend ≥ ₹${bestTier.min_spend} tier`,
+    applied_to: scope === 'store' ? 'cart_total' : 'scope_subtotal',
+    reason: `${bestTier.pct_off}% off — spend ≥ ₹${bestTier.min_spend} tier${scope === 'category' ? ` on ${offerConfig.category}` : ''}`,
   };
 }
 
@@ -270,9 +333,16 @@ function resolveFreeGift({ offerConfig, items, priceMap, variantPriceMap }) {
 
 // ── Public ───────────────────────────────────────────────────────────────────
 
-function resolveOfferDiscount({ offerType, offerConfig, items = [], priceMap, variantPriceMap, billAmount } = {}) {
+function resolveOfferDiscount({ offerType, offerConfig, items = [], priceMap, variantPriceMap, productMetaMap, billAmount } = {}) {
   const type = normalizeOfferType(offerType);
-  const ctx = { offerConfig: offerConfig || {}, items: items || [], priceMap: priceMap || new Map(), variantPriceMap, billAmount };
+  const ctx = {
+    offerConfig: offerConfig || {},
+    items: items || [],
+    priceMap: priceMap || new Map(),
+    variantPriceMap,
+    productMetaMap,
+    billAmount,
+  };
 
   switch (type) {
     case 'discount':  return resolveDiscount(ctx);
