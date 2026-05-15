@@ -204,6 +204,15 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   const txIdShort = transactionId.replace(/-/g, '').slice(-4).toUpperCase();
   const { rows: brandRows } = await db.query(`SELECT business_name FROM brands WHERE id = $1`, [meta.brand_id]);
 
+  // Phase Salon-3 \u2014 follow-creator prompt to the follower
+  if (influencer) {
+    notificationService.notifyFollowCreatorPrompt({
+      followerUserId: req.user.sub,
+      influencer,
+      brandName: brandRows[0]?.business_name,
+    }).catch(e => console.error('[NOTIFY] follow_creator_prompt failed:', e.message));
+  }
+
   return success(res, {
     transaction_id: transactionId,
     reference_code: `INFLX-${txIdShort}`,
@@ -382,6 +391,15 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     phone: follower.phone,
   }).catch(e => console.error('[NOTIFY] booking.confirmed failed:', e.message));
 
+  // Phase Salon-3 — follow-creator prompt to the follower
+  if (influencer) {
+    notificationService.notifyFollowCreatorPrompt({
+      followerUserId: req.user.sub,
+      influencer,
+      brandName: brandRows[0]?.business_name,
+    }).catch(e => console.error('[NOTIFY] follow_creator_prompt failed:', e.message));
+  }
+
   return success(res, {
     booking_id: bookingId,
     reference_code: referenceCode,
@@ -540,6 +558,15 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
     sendSms: true,
     phone: follower.phone,
   }).catch(e => console.error('[NOTIFY] booking.confirmed (daterange) failed:', e.message));
+
+  // Phase Salon-3 — follow-creator prompt to the follower
+  if (influencer) {
+    notificationService.notifyFollowCreatorPrompt({
+      followerUserId: req.user.sub,
+      influencer,
+      brandName: brandRows[0]?.business_name,
+    }).catch(e => console.error('[NOTIFY] follow_creator_prompt failed:', e.message));
+  }
 
   return success(res, {
     booking_id: bookingId,
@@ -705,6 +732,15 @@ const verifyOrder = asyncHandler(async (req, res) => {
     sendSms: true,
     phone: follower.phone,
   }).catch(e => console.error('[NOTIFY] order.confirmed failed:', e.message));
+
+  // Phase Salon-3 — follow-creator prompt to the follower
+  if (influencer) {
+    notificationService.notifyFollowCreatorPrompt({
+      followerUserId: req.user.sub,
+      influencer,
+      brandName: brandRows[0]?.business_name,
+    }).catch(e => console.error('[NOTIFY] follow_creator_prompt failed:', e.message));
+  }
 
   return success(res, {
     order_id: orderRowId,

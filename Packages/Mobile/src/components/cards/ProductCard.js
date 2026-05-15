@@ -63,7 +63,25 @@ export default function ProductCard({
       {/* Body */}
       <View style={styles.body}>
         <Text style={styles.productName} numberOfLines={2}>{product?.name}</Text>
-        <Text style={styles.brandLine}>{brand?.name} · {brand?.locality}</Text>
+
+        {/* Brand line with inline verified check.
+            Phase Salon-3 — every visible brand is admin-approved (the feed
+            and category endpoints filter on users.status). We render the
+            green ✓ by default and gate on brand.is_verified === false only
+            when callers explicitly opt out. */}
+        <View style={styles.brandRow}>
+          <Text style={styles.brandLine} numberOfLines={1}>
+            {brand?.name}{brand?.locality ? ` · ${brand.locality}` : ''}
+          </Text>
+          {brand?.is_verified !== false && (
+            <Text style={styles.brandVerified}>✓</Text>
+          )}
+        </View>
+
+        {/* Phase Salon-3 trust chips — derived from category. Compact strip
+            so the card doesn't bloat. Salon and car_rental show two chips;
+            restaurant shows one. Categories without trust signals show none. */}
+        {renderTrustChips(brand?.category, accent)}
 
         {/* Prices */}
         <View style={styles.priceRow}>
@@ -79,6 +97,35 @@ export default function ProductCard({
         )}
       </View>
     </TouchableOpacity>
+  );
+}
+
+// ── Trust-chip derivation ───────────────────────────────────────────────────
+// Phase Salon-3 — mirrors the brand-level chips on BrandStoreScreen but
+// keyed by category since ProductCard doesn't have access to the full
+// template object (the feed/deals/category endpoints emit category, not
+// template). Trade-off: keeps the card lightweight + no backend change at
+// the cost of mobile knowing which categories support which trust signals.
+// Acceptable: only 3 active categories today.
+
+const TRUST_CHIPS_BY_CATEGORY = {
+  salon:       [{ icon: '💸', text: 'Pay at salon' }, { icon: '✕', text: 'Free cancel' }],
+  restaurant:  [{ icon: '💸', text: 'Pay at venue' }],
+  car_rental:  [{ icon: '✕', text: 'Free cancel' }, { icon: '💸', text: 'Pay at pickup' }],
+};
+
+function renderTrustChips(category, accent) {
+  const chips = TRUST_CHIPS_BY_CATEGORY[category];
+  if (!chips) return null;
+  return (
+    <View style={styles.trustRow}>
+      {chips.map((c, i) => (
+        <View key={i} style={[styles.trustChip, { borderColor: `${accent}55` }]}>
+          <Text style={styles.trustChipIcon}>{c.icon}</Text>
+          <Text style={[styles.trustChipText, { color: accent }]}>{c.text}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -159,11 +206,25 @@ const styles = StyleSheet.create({
     color: darkColors.text,
     lineHeight: 16,
   },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   brandLine: {
     fontSize: 9,
     color: darkColors.textMuted,
-    marginTop: 2,
+    flexShrink: 1,
   },
+  brandVerified: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#22C55E',                          // green-500, same as BrandStoreScreen verified badge
+  },
+  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+  trustChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 5, paddingVertical: 1,
+    borderRadius: 6, borderWidth: 0.5,
+  },
+  trustChipIcon: { fontSize: 8 },
+  trustChipText: { fontSize: 8, fontWeight: '700' },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',

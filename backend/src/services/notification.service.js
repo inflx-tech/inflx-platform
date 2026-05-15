@@ -164,4 +164,58 @@ async function _sendSms(phone, message) {
   // Production: POST to MSG91 SMS endpoint
 }
 
-module.exports = { send };
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase Salon-3 — "Follow this creator" prompt after a follower transaction
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Queue a "follow this creator" prompt to the follower's user account after
+ * a successful follower_transactions row is written. Fires the regular push
+ * + in-app notification pipeline; idempotent-by-effect (the notifications
+ * table is the in-app record; OneSignal/FCM dedup is whatever they offer).
+ *
+ * Gated to skip:
+ *   · followers who already follow this creator (no nag)
+ *   · transactions without attribution (no influencer to credit)
+ *
+ * Safe to call without await — uses .send() internally which already
+ * isolates push failures. Wrapping caller still .catch()es for defense.
+ *
+ * @param {object} opts
+ * @param {string} opts.followerUserId       — users.id of the follower who transacted
+ * @param {object} opts.influencer           — influencers row (must have id, name, instagram_handle)
+ * @param {string} [opts.brandName]          — surfaced in the notification body for context
+ */
+async function notifyFollowCreatorPrompt({ followerUserId, influencer, brandName }) {
+  if (!influencer || !influencer.id || !followerUserId) return;
+
+  // Skip if the follower already follows this creator. follower_follows uses
+  // followers.id (not users.id) as the FK; JOIN through followers to test.
+  const { rows: alreadyFollowing } = await db.query(
+    `SELECT 1
+       FROM follower_follows ff
+       JOIN followers f ON f.id = ff.follower_id
+      WHERE f.user_id = $1 AND ff.influencer_id = $2
+      LIMIT 1`,
+    [followerUserId, influencer.id]
+  );
+  if (alreadyFollowing.length > 0) return;
+
+  const creatorName = influencer.name || influencer.full_name || 'this creator';
+  const brandPart = brandName ? ` at ${brandName}` : '';
+
+  return send({
+    userId: followerUserId,
+    type: 'follow_creator_prompt',
+    title: `Loved ${creatorName}'s deal?`,
+    body: `Follow ${creatorName} on INFLX for more deals${brandPart} and beyond.`,
+    data: {
+      screen: 'InfluencerStore',
+      influencer_id: influencer.id,
+      instagram_handle: influencer.instagram_handle || '',
+      brand_name: brandName || '',
+    },
+  });
+}
+
+module.exports = { send, notifyFollowCreatorPrompt };
