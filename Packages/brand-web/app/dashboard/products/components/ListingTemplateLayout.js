@@ -57,11 +57,21 @@ export default function ListingTemplateLayout({
   const [uploading, setUploading] = useState(false);
 
   // ── Step list with brand-step skip applied ─────────────────────────────────
+  // Two modes:
+  //   - SKIP (default for returning brands) — only menu + preview + done render.
+  //     The brand has filled all required brand fields once; we don't make them
+  //     re-fill on every menu-add loop.
+  //   - FULL — all 9 steps render. Entered by the user clicking "Edit business
+  //     profile" near the wizard header. Lets them edit one-time fields (vibes,
+  //     hours, photos, etc.) without losing the rest of the flow.
+  const [editSetupMode, setEditSetupMode] = useState(false);
   const allSteps = useMemo(() => template?.listing_steps || [], [template]);
-  const skipBrand = useMemo(
+  const autoSkipBrand = useMemo(
     () => canSkipBrandSteps(template, brand, myProducts),
     [template, brand, myProducts]
   );
+  // Active skip = auto-skip eligible AND user hasn't asked to edit setup.
+  const skipBrand = autoSkipBrand && !editSetupMode;
   const visibleSteps = useMemo(
     () => skipBrand ? allSteps.filter(s => s.writes_to !== 'brand') : allSteps,
     [allSteps, skipBrand]
@@ -291,14 +301,38 @@ export default function ListingTemplateLayout({
         <p className="text-sm text-gray-500 mt-1">
           {myProducts?.length || 0} {(myProducts?.length === 1 ? labelSingular : labelPlural).toLowerCase()} in your listing
         </p>
-        {skipBrand && (
+
+        {/* Setup-mode toggle. Visible only when the brand is eligible for the
+            menu-only fast path (required brand fields filled + has products).
+            Default mode: menu-only loop. Click to expand into the full 9-step
+            setup for editing one-time fields (hours, photos, vibes, etc.). */}
+        {autoSkipBrand && (
           <button
             type="button"
-            onClick={() => alert('Edit business profile coming soon')}
-            className="mt-2 text-xs text-orange-600 hover:text-orange-700 underline"
+            onClick={() => {
+              setEditSetupMode(prev => !prev);
+              setCurrentStep(0); // jump back to step 1 of the new visible step list
+              resetWizard();     // clear any in-progress wizardState/wizardItems
+            }}
+            className="mt-2 text-xs underline transition-colors"
+            style={{
+              color: editSetupMode ? '#1F2328' : '#CA8A04',
+            }}
           >
-            Edit business profile
+            {editSetupMode
+              ? '← Done editing setup · back to menu-only'
+              : '✏️ Edit business setup (hours, photos, vibes, etc.)'}
           </button>
+        )}
+
+        {/* Banner when in edit-setup mode — explains what changed and where
+            menu-only mode lives. */}
+        {editSetupMode && (
+          <div className="mt-3 mx-auto max-w-md px-3 py-2 rounded-lg border text-xs"
+               style={{ backgroundColor: 'rgba(255,184,0,0.08)', borderColor: 'rgba(255,184,0,0.35)', color: '#92400E' }}>
+            ✏️ <strong>Editing your business setup.</strong> All {allSteps.length} steps are visible.
+            Adding a new menu item later? You'll see only the menu step again.
+          </div>
         )}
       </div>
 
