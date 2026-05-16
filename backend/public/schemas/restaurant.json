@@ -355,7 +355,7 @@
         "key": "accepts_table_booking",
         "type": "boolean",
         "label": "Accept table bookings",
-        "default": false
+        "default": true
       },
       "min_order_value": {
         "key": "min_order_value",
@@ -387,7 +387,7 @@
           "balance_text": "Balance paid at the restaurant",
           "endpoint": "/follower/prebook"
         },
-        "visible_if": "brand_data.accepts_table_booking == true"
+        "visible_if": "brand_data.accepts_table_booking != false"
       },
       {
         "kind": "transactional",

@@ -86,8 +86,10 @@ export default function CategoryListScreen({ route, navigation }) {
     const accentDim = getBusinessAccent(store.category).dim;
     const bestOffer = store.offers?.[0];
     const otherCreators = (store.offers || []).slice(1);
-    const cuisines = store.listing_data?.cuisines || store.cuisines || [];
+    const cuisines = store.cuisines || store.listing_data?.cuisines || [];
     const cuisineLine = Array.isArray(cuisines) ? cuisines.slice(0, 3).join(' · ') : '';
+    const locality = store.locality_or_neighborhood || store.city || 'Vijayawada';
+    const costForTwo = store.cost_for_two != null ? `₹${store.cost_for_two} for two` : null;
 
     return (
       <TouchableOpacity
@@ -114,6 +116,18 @@ export default function CategoryListScreen({ route, navigation }) {
               <Text style={s.diningBadgeText}>{bestOffer.discount_value}% OFF</Text>
             </View>
           ) : null}
+
+          {/* Phase 1 — open/closed pill on hero (top-left when present) */}
+          {store.open_status && (
+            <View style={[
+              s.openHeroPill,
+              { backgroundColor: store.open_status.is_open ? 'rgba(34,197,94,0.95)' : 'rgba(0,0,0,0.6)' },
+            ]}>
+              <Text style={s.openHeroPillText} numberOfLines={1}>
+                {store.open_status.is_open ? '● Open' : '● Closed'}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Body */}
@@ -121,8 +135,22 @@ export default function CategoryListScreen({ route, navigation }) {
           <Text style={s.diningName} numberOfLines={1}>{store.business_name}</Text>
           {cuisineLine ? <Text style={s.diningCuisine} numberOfLines={1}>{cuisineLine}</Text> : null}
           <Text style={s.diningMeta} numberOfLines={1}>
-            {store.city || 'Vijayawada'}{store.distance_text ? ` · ${store.distance_text}` : ''}{store.deal_count ? ` · ${store.deal_count} deal${store.deal_count > 1 ? 's' : ''}` : ''}
+            {locality}
+            {store.distance_text ? ` · ${store.distance_text}` : ''}
+            {costForTwo ? ` · ${costForTwo}` : ''}
           </Text>
+
+          {/* Deal aggregation row — Dineout-style "Flat X% off · +N more offers" */}
+          {bestOffer?.discount_value ? (
+            <View style={s.dealBar}>
+              <Text style={[s.dealBarText, { color: accent }]} numberOfLines={1}>
+                🔥 Flat {bestOffer.discount_value}% off
+              </Text>
+              {(store.deal_count || 0) > 1 && (
+                <Text style={[s.dealBarMore, { color: accent }]}>+{(store.deal_count || 1) - 1} more</Text>
+              )}
+            </View>
+          ) : null}
 
           {/* Creator endorsement chip(s) */}
           {bestOffer?.influencer_name && (
@@ -352,6 +380,22 @@ const s = StyleSheet.create({
     borderRadius: 12,
   },
   diningBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  openHeroPill: {
+    position: 'absolute', top: 12, left: 12,
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 10,
+  },
+  openHeroPillText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  dealBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: darkColors.border,
+  },
+  dealBarText: { fontSize: 12, fontWeight: '700', flex: 1 },
+  dealBarMore: { fontSize: 11, fontWeight: '600' },
   diningBody: { padding: 14 },
   diningName: { fontSize: 16, fontWeight: '800', color: darkColors.text },
   diningCuisine: { fontSize: 11, color: darkColors.textSecondary, marginTop: 4 },

@@ -165,8 +165,37 @@ export default function BrandStoreScreen({ navigation, route }) {
               <Text style={s.verifiedCheck}>✓</Text>
             </View>
           )}
+          {/* Phase 1 (Dining) — open/closed pill derived from hours_json.
+              Hidden when the brand hasn't set hours. Green when open, grey
+              when closed. */}
+          {brand?.open_status && (
+            <View style={[
+              s.openPill,
+              brand.open_status.is_open ? s.openPillOpen : s.openPillClosed,
+            ]}>
+              <View style={[
+                s.openDot,
+                { backgroundColor: brand.open_status.is_open ? '#22C55E' : '#EF4444' },
+              ]} />
+              <Text style={[
+                s.openPillText,
+                { color: brand.open_status.is_open ? '#22C55E' : darkColors.textMuted },
+              ]} numberOfLines={1}>
+                {brand.open_status.status_text}
+              </Text>
+            </View>
+          )}
         </View>
-        <Text style={s.storeMeta}>{brand?.category?.replace(/_/g, ' ')} · {brand?.city || ''}</Text>
+        <Text style={s.storeMeta}>
+          {brand?.category?.replace(/_/g, ' ')}
+          {brand?.locality_or_neighborhood ? ` · ${brand.locality_or_neighborhood}` : (brand?.city ? ` · ${brand.city}` : '')}
+          {brand?.cost_for_two ? ` · ₹${brand.cost_for_two} for two` : ''}
+        </Text>
+        {Array.isArray(brand?.cuisines) && brand.cuisines.length > 0 && (
+          <Text style={s.cuisineRow} numberOfLines={1}>
+            {brand.cuisines.slice(0, 4).join(' · ')}
+          </Text>
+        )}
 
         {/* Creator-trust strip — Phase Salon-2 progressive disclosure.
               · 0 creators  → nothing here (the green ✓ next to name already
@@ -512,6 +541,22 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   verifiedCheck: { fontSize: 10, fontWeight: '900', color: '#fff', lineHeight: 11 },
+  // Phase 1 (Dining) — open/closed pill
+  openPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  openPillOpen:   { backgroundColor: '#22C55E15', borderColor: '#22C55E55' },
+  openPillClosed: { backgroundColor: darkColors.card, borderColor: darkColors.border },
+  openDot:        { width: 6, height: 6, borderRadius: 3 },
+  openPillText:   { fontSize: 9, fontWeight: '700' },
+  cuisineRow: { fontSize: 10, color: darkColors.textMuted, marginTop: 4 },
   storeMeta: { fontSize: 11, color: darkColors.textSecondary, marginTop: 2 },
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   trustChip: {

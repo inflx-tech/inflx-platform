@@ -657,7 +657,7 @@ const getCategoryStores = asyncHandler(async (req, res) => {
   const { rows: stores } = await db.query(
     `SELECT DISTINCT ON (b.id)
        b.id, b.business_name, b.category, u.city,
-       b.listing_score, b.latitude, b.longitude,
+       b.listing_score, b.latitude, b.longitude, b.listing_data,
        (SELECT COUNT(*)::int FROM campaign_offers co
         JOIN campaign_sets cs ON cs.id = co.set_id
         JOIN campaigns c ON c.id = cs.campaign_id
@@ -673,6 +673,22 @@ const getCategoryStores = asyncHandler(async (req, res) => {
      LIMIT $${categoryKeys.length + 1} OFFSET $${categoryKeys.length + 2}`,
     [...categoryKeys, limit, offset]
   );
+
+  // Phase 1 (Dining) — surface listing_data fields the dining card needs:
+  // cover_image_url, cost_for_two, locality_or_neighborhood, cuisines,
+  // open_status (derived). Other categories also get them — harmless when
+  // listing_data is empty.
+  for (const store of stores) {
+    const ld = store.listing_data || {};
+    store.cover_image_url          = ld.cover_image_url || null;
+    store.cost_for_two             = ld.cost_for_two != null ? Number(ld.cost_for_two) : null;
+    store.locality_or_neighborhood = ld.locality_or_neighborhood || null;
+    store.cuisines                 = Array.isArray(ld.cuisines) ? ld.cuisines : [];
+    store.open_status              = followerService.computeOpenStatus
+      ? followerService.computeOpenStatus(ld.hours_json)
+      : null;
+    delete store.listing_data; // don't ship the full blob on list endpoints
+  }
 
   // Calculate distance for each store
   if (hasLocation) {

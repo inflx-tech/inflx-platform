@@ -16,6 +16,58 @@
  */
 
 const db = require('../config/db');
+const listingService = require('./listing.service');
+
+// ── Open/closed status helper ────────────────────────────────────────────────
+// hours_json shape (per WeeklyScheduleEditor):
+//   { mon: { open: "09:00", close: "20:00" } | null, tue: {...}, ..., sun: null }
+// Returns null when no hours data; otherwise:
+//   { is_open: boolean, status_text: string, closes_at?, opens_at? }
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+function formatTimeDisplay(hhmm) {
+  if (!hhmm || typeof hhmm !== 'string') return '';
+  const [hStr, mStr] = hhmm.split(':');
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr || '0', 10);
+  if (isNaN(h)) return '';
+  const period = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return m === 0 ? `${h12} ${period}` : `${h12}:${String(m).padStart(2, '0')} ${period}`;
+}
+
+function computeOpenStatus(hoursJson, now = new Date()) {
+  if (!hoursJson || typeof hoursJson !== 'object') return null;
+  const todayKey = DAY_KEYS[now.getDay()];
+  const today = hoursJson[todayKey];
+  if (!today || !today.open || !today.close) {
+    return { is_open: false, status_text: 'Closed today' };
+  }
+  const currentMin = now.getHours() * 60 + now.getMinutes();
+  const [oh, om = 0] = today.open.split(':').map(Number);
+  const [ch, cm = 0] = today.close.split(':').map(Number);
+  const openMin = oh * 60 + om;
+  let closeMin = ch * 60 + cm;
+  // Past-midnight close ("02:00") — treat as next-day close
+  if (closeMin <= openMin) closeMin += 24 * 60;
+
+  if (currentMin >= openMin && currentMin < closeMin) {
+    return {
+      is_open:    true,
+      status_text:`Open · Closes ${formatTimeDisplay(today.close)}`,
+      closes_at:  today.close,
+    };
+  }
+  if (currentMin < openMin) {
+    return {
+      is_open:    false,
+      status_text:`Closed · Opens ${formatTimeDisplay(today.open)}`,
+      opens_at:   today.open,
+    };
+  }
+  return { is_open: false, status_text: 'Closed' };
+}
+
 
 // Shared SQL fragment for "active campaign_influencer with offer" + DATE GATING
 const ACTIVE_CI_QUERY = `
@@ -384,12 +436,34 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
     }));
   }
 
+  // Phase 1 (Dining) — load the schema template so BrandStoreScreen can
+  // render brand_config.actions (Book Table / Pay at Restaurant) via the
+  // BrandActionRow component. Defensive lookup: unknown categories return
+  // null and the screen falls back to the legacy contact buttons.
+  const template = listingService.loadSchema(brand.category) || null;
+
+  // Phase 1 (Dining) — derive open/closed status from listing_data.hours_json
+  // so cards and detail headers can show "Open · Closes 11 PM" trust signals.
+  const listingData = brand.listing_data || {};
+  const openStatus = computeOpenStatus(listingData.hours_json);
+
   return {
     brand: {
       id: brand.id,
       business_name: brand.business_name,
       category: brand.category,
       city: brand.city,
+      // Phase 1 surfaces — only present when the brand has filled the
+      // corresponding listing fields. Mobile renders conditionally.
+      cover_image_url:           listingData.cover_image_url || null,
+      cost_for_two:              listingData.cost_for_two != null ? Number(listingData.cost_for_two) : null,
+      locality_or_neighborhood:  listingData.locality_or_neighborhood || null,
+      cuisines:                  Array.isArray(listingData.cuisines) ? listingData.cuisines : [],
+      open_status:               openStatus,
+      // Pass through full listing_data so BrandActionRow's visible_if
+      // expressions (e.g. "brand_data.accepts_table_booking == true") can
+      // evaluate. brand_data on mobile reads from this.
+      listing_data:              listingData,
     },
     products: products.map(p => ({
       id: p.id,
@@ -408,6 +482,7 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
     influencers: Object.values(byInfluencer),
     creator,                                              // null when no via param or unknown influencer
     creator_picks: creatorPicks,                          // Phase E — published dishes when viewed via creator link
+    template,                                             // Phase 1 (Dining) — drives BrandActionRow CTAs
   };
 }
 
@@ -906,4 +981,5 @@ module.exports = {
   getFollowing,
   getInfluencerStorePreview,
   getBrandStorePreview,
+  computeOpenStatus,        // Phase 1 (Dining) — exported so controllers can reuse the helper
 };
