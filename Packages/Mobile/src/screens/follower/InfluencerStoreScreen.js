@@ -210,6 +210,7 @@ export default function InfluencerStoreScreen({ navigation, route }) {
                           store:  { instagram_handle: handle, name: inf?.name },
                           influencer: inf,
                           selectedProductId: item.product.id,
+                          product: item.product, // preview — renders instantly while API call resolves
                           tracking: buildTrackingFromOffer(item.offer, inf),
                           trackingParams: buildTrackingFromOffer(item.offer, inf),
                         });

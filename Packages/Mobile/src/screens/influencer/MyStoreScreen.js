@@ -1,11 +1,26 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, FlatList,
+  View, Text, ScrollView, TouchableOpacity, FlatList, Image,
   StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, radius, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
+
+// Category-appropriate emoji fallback when a product has no image_url. The
+// previous hardcoded 🚗 made restaurant items look like cars and confused
+// creators previewing their store.
+const CATEGORY_EMOJI = {
+  restaurant:     '🍽️',
+  salon:          '💇',
+  car_rental:     '🚗',
+  bike_rental:    '🏍️',
+  fashion:        '👗',
+  fashion_walkin: '👗',
+  fashion_online: '👕',
+  bakery:         '🧁',
+  florist:        '💐',
+};
 
 /**
  * MyStoreScreen — influencer previews their store as followers see it.
@@ -101,7 +116,17 @@ export default function MyStoreScreen({ navigation }) {
             <View key={product.id || pIdx} style={s.productCard}>
               <View style={s.productRow}>
                 <View style={s.productEmoji}>
-                  <Text style={{ fontSize: 24 }}>🚗</Text>
+                  {product.image_url ? (
+                    <Image
+                      source={{ uri: product.image_url }}
+                      style={s.productImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Text style={{ fontSize: 24 }}>
+                      {CATEGORY_EMOJI[offer.brand_category] || '📦'}
+                    </Text>
+                  )}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={s.productName}>{product.name}</Text>
@@ -167,8 +192,9 @@ const s = StyleSheet.create({
   productRow: { flexDirection: 'row', padding: 12, gap: 10, alignItems: 'center' },
   productEmoji: {
     width: 48, height: 48, borderRadius: 10, backgroundColor: colors.surface2,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
+  productImage: { width: 48, height: 48 },
   productName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
   productDesc: { fontSize: 11, color: colors.t3, marginTop: 2 },
   productPrice: { fontSize: 14, fontWeight: '800', color: colors.t1, marginTop: 4 },

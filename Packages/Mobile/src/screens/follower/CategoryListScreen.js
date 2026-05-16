@@ -141,9 +141,24 @@ export default function CategoryListScreen({ route, navigation }) {
                             discount: store.offers?.[0] ? { value: store.offers[0].discount_value, influencer_name: store.offers[0].influencer_name } : null,
                           });
                         } else {
-                          navigation.navigate('BrandStore', {
-                            brandId: store.id,
-                            tracking: buildTrackingFromOffer(store.offers?.[0]),
+                          // Single-product detail (Phase 4 routing). store.offers[0]
+                          // is the best-discount offer driving the badge; its
+                          // creator gets attribution.
+                          const bestOffer = store.offers?.[0];
+                          navigation.navigate('ProductDetail', {
+                            offer: bestOffer ? {
+                              id: bestOffer.offer_id || bestOffer.id,
+                              offer_type: bestOffer.offer_type || 'percentage',
+                              discount_value: bestOffer.discount_value,
+                              availing_modes: bestOffer.availing_modes,
+                            } : null,
+                            brand: { id: store.id, name: store.business_name, category: store.category, locality: store.city, city: store.city },
+                            store: { instagram_handle: bestOffer?.instagram_handle || bestOffer?.influencer_handle, name: bestOffer?.influencer_name },
+                            influencer: bestOffer ? { id: bestOffer.influencer_id, name: bestOffer.influencer_name, instagram_handle: bestOffer.instagram_handle || bestOffer.influencer_handle } : null,
+                            selectedProductId: product.id,
+                            product,
+                            tracking: buildTrackingFromOffer(bestOffer),
+                            trackingParams: buildTrackingFromOffer(bestOffer),
                           });
                         }
                       }}

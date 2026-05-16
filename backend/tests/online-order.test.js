@@ -147,8 +147,17 @@ describe('GET /v1/store/:handle/products', () => {
     expect(res.body.data.products[0].name).toBe('Chocolate Cake');
   });
 
-  it('returns 404 for unknown handle', async () => {
-    const res = await request(app).get('/v1/store/unknownhandle_xyz/products');
+  it('returns 422 when offer_id is missing', async () => {
+    // offer_id is now required to prevent the silent-wrong-brand bug
+    // (creator with multiple campaigns → arbitrary LIMIT 1 pick).
+    const res = await request(app).get('/v1/store/bakerylover/products');
+    expect(res.status).toBe(422);
+    expect(res.body.error?.field).toBe('offer_id');
+  });
+
+  it('returns 404 for unknown handle (with valid-shaped offer_id)', async () => {
+    const { oid } = await setupOrderScenario();
+    const res = await request(app).get(`/v1/store/unknownhandle_xyz/products?offer_id=${oid}`);
     expect(res.status).toBe(404);
   });
 });

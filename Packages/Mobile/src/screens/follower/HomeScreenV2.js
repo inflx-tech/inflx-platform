@@ -147,9 +147,19 @@ export default function HomeScreenV2({ navigation }) {
                           tracking: item.tracking,
                         });
                       } else {
-                        navigation.navigate('BrandStore', {
-                          brandId: item.brand_id || item.brand?.id,
+                        // Single-product detail (Phase 4 routing). Pass the
+                        // offer so getStoreProducts can scope the result to
+                        // the correct brand's product set.
+                        const product = item.product || item;
+                        navigation.navigate('ProductDetail', {
+                          offer: { id: item.tracking?.offer_id || item.offer?.id, offer_type: item.offer_type, discount_value: item.discount_value, availing_modes: item.availing_modes || item.offer?.availing_modes },
+                          brand: item.brand || { id: item.brand_id, name: item.brand_name, category, locality: item.brand_city },
+                          store: { instagram_handle: item.influencer?.handle || item.influencer?.instagram_handle, name: item.influencer?.name },
+                          influencer: item.influencer,
+                          selectedProductId: product.id,
+                          product,
                           tracking: buildTracking(item),
+                          trackingParams: buildTracking(item),
                         });
                       }
                     }}
@@ -182,20 +192,42 @@ export default function HomeScreenV2({ navigation }) {
         <>
           <SectionHeader title="🛍️ Trending Products" onSeeAll={() => {}} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
-            {trendingProducts.map((item, i) => (
-              <View key={item.id || i} style={styles.horizontalCard}>
-                <ProductCard
-                  product={item.product || item}
-                  brand={item.brand || { name: item.brand_name, category: item.brand_category }}
-                  discount={item.discount || (item.discount_value ? { type: 'percentage', value: item.discount_value } : null)}
-                  influencer={item.influencer}
-                  onPress={() => navigation.navigate('BrandStore', {
-                    brandId: item.brand_id,
-                    tracking: buildTracking(item),
-                  })}
-                />
-              </View>
-            ))}
+            {trendingProducts.map((item, i) => {
+              const category = item.brand_category || item.brand?.category;
+              const isCarRental = category === 'car_rental' || category === 'bike_rental';
+              const product = item.product || item;
+              return (
+                <View key={item.id || i} style={styles.horizontalCard}>
+                  <ProductCard
+                    product={product}
+                    brand={item.brand || { name: item.brand_name, category }}
+                    discount={item.discount || (item.discount_value ? { type: 'percentage', value: item.discount_value } : null)}
+                    influencer={item.influencer}
+                    onPress={() => {
+                      if (isCarRental) {
+                        navigation.navigate('CarDetail', {
+                          vehicle: { name: product.name, specs: product.variants_json?.specs || {}, location: item.brand_city, distance: '1.2 km' },
+                          pricing: { day_rate: product.price, ...product.variants_json },
+                          discount: item.discount || (item.discount_value ? { value: item.discount_value, influencer_name: item.influencer?.name } : null),
+                          tracking: item.tracking,
+                        });
+                      } else {
+                        navigation.navigate('ProductDetail', {
+                          offer: { id: item.tracking?.offer_id || item.offer?.id, offer_type: item.offer_type, discount_value: item.discount_value, availing_modes: item.availing_modes || item.offer?.availing_modes },
+                          brand: item.brand || { id: item.brand_id, name: item.brand_name, category, locality: item.brand_city },
+                          store: { instagram_handle: item.influencer?.handle || item.influencer?.instagram_handle, name: item.influencer?.name },
+                          influencer: item.influencer,
+                          selectedProductId: product.id,
+                          product,
+                          tracking: buildTracking(item),
+                          trackingParams: buildTracking(item),
+                        });
+                      }
+                    }}
+                  />
+                </View>
+              );
+            })}
           </ScrollView>
         </>
       )}

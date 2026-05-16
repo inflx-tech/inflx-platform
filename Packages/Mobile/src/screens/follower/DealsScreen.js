@@ -3,31 +3,48 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl, Sty
 import { darkColors, spacing } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
-import NewOfferCard from '../../components/cards/NewOfferCard';
-import ServiceCard from '../../components/cards/ServiceCard';
 import { buildTracking } from '../../utils/tracking';
 
+/**
+ * DealsScreen — single-feed deals browser with brand-category tabs.
+ *
+ * Previous version had four content-type tabs (products / store_deals /
+ * services / ending_soon) that didn't match what the backend understood.
+ * Backend `category` param is a brand-category bucket (dining / shopping /
+ * booking) per CATEGORY_MAP in follower.service.js. Frontend was passing
+ * the tab key as category → backend treated it as undefined → all tabs
+ * returned the same data, rendered with different (mostly mis-shaped)
+ * card components. Confusing for the user.
+ *
+ * This version aligns the tabs with the backend's actual category buckets:
+ *   • All       — no filter
+ *   • Dining    — restaurant / bakery
+ *   • Shopping  — fashion / florist / packaged_food
+ *   • Booking   — salon / car_rental / function_hall / wedding_planner
+ *
+ * Card type is uniform (ProductCard). Card tap routes to ProductDetail for
+ * non-car_rental, CarDetail for car_rental — matching the rest of the
+ * follower app (HomeScreenV2 + InfluencerStoreScreen + CategoryListScreen).
+ */
+
 const TABS = [
-  { key: 'products', label: '🛍️ Products' },
-  { key: 'store_deals', label: '🏪 Store Deals' },
-  { key: 'services', label: '✨ Services' },
-  { key: 'ending_soon', label: '⏰ Ending Soon' },
+  { key: 'all',      label: 'All',      icon: '🏷️' },
+  { key: 'dining',   label: 'Dining',   icon: '🍽️' },
+  { key: 'shopping', label: 'Shopping', icon: '🛍️' },
+  { key: 'booking',  label: 'Booking',  icon: '📅' },
 ];
 
-export default function DealsScreen({ navigation, route }) {
-  const initialCategory = route?.params?.category || 'all';
-  const [tab, setTab] = useState('products');
+export default function DealsScreen({ navigation }) {
+  const [tab, setTab] = useState('all');
   const [deals, setDeals] = useState([]);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchDeals = useCallback(async (currentTab, pageNum = 1) => {
+  const fetchDeals = useCallback(async (currentTab) => {
     try {
-      const res = await followerApi.getDeals(currentTab, pageNum);
+      const res = await followerApi.getDeals(currentTab, 1);
       const data = res.data || res;
       setDeals(data.deals || []);
-      setPage(pageNum);
     } catch (e) {
       console.error('[DealsScreen] Error:', e.message);
     }
@@ -43,22 +60,6 @@ export default function DealsScreen({ navigation, route }) {
     await fetchDeals(tab);
     setRefreshing(false);
   }, [tab, fetchDeals]);
-
-  const handleCTA = useCallback((item, mode) => {
-    const params = {
-      offer: item.offer,
-      brand: item.brand,
-      tracking: item.tracking,
-      influencer: item.influencer,
-      product: item.product,
-    };
-    switch (mode) {
-      case 'pay_at_store': navigation.navigate('PayAtStore', params); break;
-      case 'prebook': navigation.navigate('PreBook', params); break;
-      case 'enquiry': navigation.navigate('Enquiry', params); break;
-      default: navigation.navigate('ProductDetail', params);
-    }
-  }, [navigation]);
 
   const handleSave = useCallback(async (item) => {
     try {
@@ -76,65 +77,62 @@ export default function DealsScreen({ navigation, route }) {
     }
   }, []);
 
-  const renderProductItem = useCallback(({ item, index }) => (
-    <View style={[s.gridItem, index % 2 === 0 && { marginRight: 5 }, index % 2 === 1 && { marginLeft: 5 }]}>
-      <ProductCard
-        product={item.product || item}
-        brand={item.brand || { name: item.brand_name, category: item.brand_category }}
-        discount={item.discount || (item.discount_value ? { type: item.offer_type || 'percentage', value: item.discount_value } : null)}
-        influencer={item.influencer}
-        isSaved={item.is_saved}
-        onPressHeart={() => handleSave(item)}
-        onPress={() => navigation.navigate('BrandStore', {
-          brandId: item.brand?.id || item.brand_id,
-          tracking: buildTracking(item),
-        })}
-      />
-    </View>
-  ), [handleSave, navigation]);
+  const renderItem = useCallback(({ item, index }) => {
+    const product = item.product || item;
+    const brand = item.brand || { name: item.brand_name, category: item.brand_category, city: item.brand_city };
+    const category = brand.category;
+    const isCarRental = category === 'car_rental' || category === 'bike_rental';
 
-  const renderStoreItem = useCallback(({ item }) => (
-    <NewOfferCard
-      store={{ name: item.brand?.name || item.brand_name, category: item.brand?.category || item.brand_category, logo_initial: (item.brand?.name || item.brand_name)?.[0] }}
-      dealType={item.deal_type || 'shop'}
-      dealLabel={item.deal_label || `${item.offer?.discount_value || item.discount_value}% OFF`}
-      discountValue={`${item.offer?.discount_value || item.discount_value || 0}%`}
-      tags={item.tags || []}
-      influencer={item.influencer}
-      validTill={item.valid_till}
-      onPress={() => navigation.navigate('BrandStore', {
-        brandId: item.brand?.id || item.brand_id,
-        tracking: buildTracking(item),
-      })}
-    />
-  ), [navigation]);
-
-  const renderServiceItem = useCallback(({ item }) => (
-    <View style={{ marginHorizontal: 20, marginBottom: 10 }}>
-      <ServiceCard
-        service={item.product || item}
-        businessType={item.brand?.category || item.brand_category}
-        location={item.brand?.city || item.brand_city}
-        ctaLabel="Book Now"
-        priceUnit="onwards"
-        discount={item.discount || (item.discount_value ? { type: 'percentage', value: item.discount_value } : null)}
-        influencer={item.influencer}
-        onPress={() => navigation.navigate('BrandStore', {
-          brandId: item.brand?.id || item.brand_id,
-          tracking: buildTracking(item),
-        })}
-      />
-    </View>
-  ), [navigation]);
+    return (
+      <View style={[s.gridItem, index % 2 === 0 && { marginRight: 5 }, index % 2 === 1 && { marginLeft: 5 }]}>
+        <ProductCard
+          product={product}
+          brand={brand}
+          discount={item.discount || (item.offer?.discount_value ? { type: item.offer?.offer_type || 'percentage', value: item.offer.discount_value } : null)}
+          influencer={item.influencer}
+          isSaved={item.is_saved}
+          onPressHeart={() => handleSave(item)}
+          onPress={() => {
+            if (isCarRental) {
+              const specs = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {});
+              navigation.navigate('CarDetail', {
+                vehicle: { name: product.name, specs: specs.specs || {}, location: brand.city, distance: '1.2 km' },
+                pricing: { day_rate: product.price, ...specs },
+                discount: item.offer?.discount_value ? { value: item.offer.discount_value, influencer_name: item.influencer?.name } : null,
+                tracking: item.tracking,
+              });
+            } else {
+              // Product tap → single-product detail. The offer in the deal
+              // row carries discount + availing_modes, so the detail screen
+              // can surface the right CTA stack.
+              navigation.navigate('ProductDetail', {
+                offer: item.offer || { id: item.tracking?.offer_id, offer_type: item.offer_type, discount_value: item.discount_value, availing_modes: item.availing_modes },
+                brand,
+                store: { instagram_handle: item.influencer?.handle || item.influencer?.instagram_handle, name: item.influencer?.name },
+                influencer: item.influencer,
+                selectedProductId: product.id,
+                product,
+                tracking: buildTracking(item),
+                trackingParams: buildTracking(item),
+              });
+            }
+          }}
+          onPressBrand={() => navigation.navigate('BrandStore', {
+            brandId: brand.id || item.brand_id,
+            brandName: brand.name,
+            tracking: buildTracking(item),
+          })}
+        />
+      </View>
+    );
+  }, [handleSave, navigation]);
 
   return (
     <View style={s.container}>
-      {/* Header */}
       <View style={s.header}>
         <Text style={s.title}>Deals</Text>
       </View>
 
-      {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
         {TABS.map(t => (
           <TouchableOpacity
@@ -142,7 +140,7 @@ export default function DealsScreen({ navigation, route }) {
             style={[s.tabPill, tab === t.key && s.tabPillActive]}
             onPress={() => { setTab(t.key); setDeals([]); }}
           >
-            <Text style={[s.tabText, tab === t.key && s.tabTextActive]}>{t.label}</Text>
+            <Text style={[s.tabText, tab === t.key && s.tabTextActive]}>{t.icon} {t.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -152,16 +150,15 @@ export default function DealsScreen({ navigation, route }) {
       ) : (
         <FlatList
           data={deals}
-          keyExtractor={(item, idx) => `${item.offer?.id || item.offer_id}_${idx}`}
-          numColumns={tab === 'products' ? 2 : 1}
-          key={tab === 'products' ? 'grid' : 'list'}
-          renderItem={tab === 'products' ? renderProductItem : tab === 'services' ? renderServiceItem : renderStoreItem}
-          contentContainerStyle={{ padding: tab === 'products' ? 20 : 0, paddingTop: 10, paddingBottom: 100, gap: 10 }}
+          keyExtractor={(item, idx) => `${item.offer?.id || item.offer_id || idx}_${item.product?.id || idx}`}
+          numColumns={2}
+          renderItem={renderItem}
+          contentContainerStyle={{ padding: 20, paddingTop: 10, paddingBottom: 100, gap: 10 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}
           ListEmptyComponent={
             <View style={s.empty}>
               <Text style={{ fontSize: 40, marginBottom: 10 }}>🏷️</Text>
-              <Text style={s.emptyTitle}>No deals found</Text>
+              <Text style={s.emptyTitle}>No deals in this category yet</Text>
               <Text style={s.emptyText}>Try a different tab or check back later.</Text>
             </View>
           }

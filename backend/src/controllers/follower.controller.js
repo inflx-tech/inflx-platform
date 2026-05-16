@@ -353,6 +353,19 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   const { influencer_handle } = req.params;
   const { offer_id } = req.query;
 
+  // offer_id is now REQUIRED. Without it, the old behaviour silently picked
+  // the first active campaign_influencer (LIMIT 1, no ORDER BY) and returned
+  // ALL products from that brand — which leaked unrelated cars onto a
+  // follower who'd tapped a restaurant dish. Fail fast instead.
+  if (!offer_id) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      'offer_id is required so we know which brand and product subset to return.',
+      422,
+      'offer_id'
+    );
+  }
+
   const { rows: infRows } = await db.query(
     `SELECT i.id, i.instagram_handle, u.name
      FROM influencers i JOIN users u ON u.id = i.user_id
@@ -362,45 +375,96 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   if (!infRows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
   const inf = infRows[0];
 
-  let brandId;
-  let discountPct = 0;
-  let campaignId = null;
+  // Resolve the offer → brand, campaign, set, discount, and the per-CI
+  // offer_config_json for this creator. The per-CI config is what carries
+  // the per-influencer product picks for Discount/Volume/Bundle offers.
+  const { rows: offerRows } = await db.query(
+    `SELECT co.id          AS offer_id,
+            co.discount_value,
+            co.products_json,
+            co.set_id,
+            c.id           AS campaign_id,
+            c.brand_id,
+            ci.id          AS campaign_influencer_id,
+            ci.offer_config_json
+     FROM   campaign_offers co
+     JOIN   campaigns c ON c.id = co.campaign_id
+     JOIN   campaign_sets cs ON cs.id = co.set_id
+     LEFT   JOIN campaign_influencers ci
+            ON ci.set_id = cs.id AND ci.influencer_id = $2
+     WHERE  co.id = $1`,
+    [offer_id, inf.id]
+  );
+  if (!offerRows[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
 
-  if (offer_id) {
-    const { rows: offerRows } = await db.query(
-      `SELECT co.*, c.brand_id, c.id AS campaign_id
-       FROM campaign_offers co
-       JOIN campaigns c ON c.id = co.campaign_id
-       WHERE co.id = $1`,
-      [offer_id]
-    );
-    if (offerRows[0]) {
-      brandId = offerRows[0].brand_id;
-      campaignId = offerRows[0].campaign_id;
-      discountPct = parseFloat(offerRows[0].discount_value || 0);
+  const offer = offerRows[0];
+  const brandId = offer.brand_id;
+  const campaignId = offer.campaign_id;
+  const discountPct = parseFloat(offer.discount_value || 0);
+
+  // Resolution order — same as getCampaignProducts on the influencer side:
+  //   1. Per-influencer offer_config (d_prods / v_prods / bnd_prods / products)
+  //   2. Set-level campaign_offers.products_json
+  //   3. Published influencer_product_notes
+  //   4. Full brand catalogue (true brand-level offer)
+  const ciCfg = offer.offer_config_json || {};
+  let productIds = [];
+
+  function collect(arr) {
+    if (!Array.isArray(arr)) return;
+    for (const p of arr) {
+      const pid = typeof p === 'string' ? p : (p.product_id || p.id);
+      if (pid) productIds.push(pid);
     }
   }
+  collect(ciCfg.products);
+  collect(ciCfg.d_prods);
+  collect(ciCfg.v_prods);
+  collect(ciCfg.bnd_prods);
 
-  if (!brandId) {
-    const { rows: ciRows } = await db.query(
-      `SELECT c.brand_id, c.id AS campaign_id FROM campaign_influencers ci
-       JOIN campaign_sets cs ON cs.id = ci.set_id
-       JOIN campaigns c ON c.id = cs.campaign_id
-       WHERE ci.influencer_id = $1 AND ci.status IN ('contracted','active')
-       LIMIT 1`,
-      [inf.id]
-    );
-    if (!ciRows[0]) throw new AppError('NOT_FOUND', 'No active campaign found', 404);
-    brandId = ciRows[0].brand_id;
-    campaignId = ciRows[0].campaign_id;
+  if (productIds.length === 0 && offer.products_json) {
+    try {
+      const pj = typeof offer.products_json === 'string' ? JSON.parse(offer.products_json) : offer.products_json;
+      if (Array.isArray(pj)) {
+        for (const p of pj) {
+          const pid = typeof p === 'string' ? p : (p.product_id || p.id);
+          if (pid) productIds.push(pid);
+        }
+      }
+    } catch {}
   }
 
-  const { rows: products } = await db.query(
-    `SELECT * FROM brand_products WHERE brand_id = $1 AND is_active = true ORDER BY section, name`,
-    [brandId]
-  );
+  if (productIds.length === 0) {
+    const { rows: noteRows } = await db.query(
+      `SELECT product_id FROM influencer_product_notes
+       WHERE influencer_id = $1 AND campaign_id = $2`,
+      [inf.id, campaignId]
+    );
+    productIds = noteRows.map(n => n.product_id);
+  }
 
-  // Get influencer notes for this campaign
+  let products;
+  if (productIds.length > 0) {
+    const { rows } = await db.query(
+      `SELECT * FROM brand_products
+       WHERE brand_id = $1 AND id = ANY($2) AND is_active = true
+       ORDER BY section, name`,
+      [brandId, productIds]
+    );
+    products = rows;
+  } else {
+    // True brand-level offer (no specific products assigned anywhere)
+    const { rows } = await db.query(
+      `SELECT * FROM brand_products
+       WHERE brand_id = $1 AND is_active = true
+       ORDER BY section, name`,
+      [brandId]
+    );
+    products = rows;
+  }
+
+  // Get influencer notes for this campaign so we can attach the creator's
+  // recommendation to each product card.
   const { rows: noteRows } = await db.query(
     `SELECT product_id, note_text FROM influencer_product_notes
      WHERE influencer_id = $1 AND campaign_id = $2`,
