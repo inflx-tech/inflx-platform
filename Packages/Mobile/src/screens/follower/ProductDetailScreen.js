@@ -76,8 +76,13 @@ export default function ProductDetailScreen({ navigation, route }) {
   } = route.params || {};
 
   const handle = store?.instagram_handle || influencer?.instagram_handle || '';
-  const offerId = offer?.id || offer?.offer_id || tracking?.offer_id || trackingParams?.offer_id;
   const trk = tracking || trackingParams || null;
+  const offerId = offer?.id || offer?.offer_id || trk?.offer_id || null;
+  // campaign_influencer_id is always present even when there's no
+  // campaign_offers row (conversion test campaigns configure offers per-CI
+  // via offer_config_json). Used as fallback scope to load the right brand's
+  // products without leaking unrelated cars onto a restaurant tap.
+  const ciId = trk?.campaign_influencer_id || null;
 
   const [products, setProducts] = useState(previewProduct ? [previewProduct] : []);
   const [loading, setLoading] = useState(true);
@@ -93,12 +98,12 @@ export default function ProductDetailScreen({ navigation, route }) {
         setLoading(false);
         return;
       }
-      if (!offerId) {
-        setError('Missing offer — the tap source did not pass an offer id');
+      if (!offerId && !ciId) {
+        setError('Missing offer context — the tap source did not pass an offer or campaign assignment id');
         setLoading(false);
         return;
       }
-      const res = await followerApi.getStoreProducts(handle, offerId);
+      const res = await followerApi.getStoreProducts(handle, { offerId, ciId });
       setLoading(false);
       if (res.success) {
         const items = res.data?.products || [];
@@ -108,7 +113,7 @@ export default function ProductDetailScreen({ navigation, route }) {
       }
     }
     load();
-  }, [handle, offerId]);
+  }, [handle, offerId, ciId]);
 
   const selected = products.find(p => p.id === selectedProductId) || products[0] || previewProduct || null;
   const others = products.filter(p => p.id !== selected?.id);

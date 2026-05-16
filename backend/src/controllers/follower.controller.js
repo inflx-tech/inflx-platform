@@ -351,16 +351,19 @@ const getFollowing = asyncHandler(async (req, res) => {
 
 const getStoreProducts = asyncHandler(async (req, res) => {
   const { influencer_handle } = req.params;
-  const { offer_id } = req.query;
+  const { offer_id, ci_id } = req.query;
 
-  // offer_id is now REQUIRED. Without it, the old behaviour silently picked
-  // the first active campaign_influencer (LIMIT 1, no ORDER BY) and returned
-  // ALL products from that brand — which leaked unrelated cars onto a
-  // follower who'd tapped a restaurant dish. Fail fast instead.
-  if (!offer_id) {
+  // Either offer_id (set-level campaign_offers row) OR ci_id (per-influencer
+  // campaign_influencer row) is REQUIRED. Without either, the old behaviour
+  // silently picked the first active CI via LIMIT 1 and returned ALL
+  // products from that brand — which leaked unrelated cars onto a restaurant
+  // tap. Most conversion-test campaigns today have NO campaign_offers row
+  // (offer is defined per-influencer via offer_config_json), so ci_id is the
+  // robust identifier; offer_id is accepted for legacy set-level offers.
+  if (!offer_id && !ci_id) {
     throw new AppError(
       'VALIDATION_ERROR',
-      'offer_id is required so we know which brand and product subset to return.',
+      'offer_id or ci_id is required so we know which brand and product subset to return.',
       422,
       'offer_id'
     );
@@ -375,27 +378,54 @@ const getStoreProducts = asyncHandler(async (req, res) => {
   if (!infRows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
   const inf = infRows[0];
 
-  // Resolve the offer → brand, campaign, set, discount, and the per-CI
-  // offer_config_json for this creator. The per-CI config is what carries
-  // the per-influencer product picks for Discount/Volume/Bundle offers.
-  const { rows: offerRows } = await db.query(
-    `SELECT co.id          AS offer_id,
-            co.discount_value,
-            co.products_json,
-            co.set_id,
-            c.id           AS campaign_id,
-            c.brand_id,
-            ci.id          AS campaign_influencer_id,
-            ci.offer_config_json
-     FROM   campaign_offers co
-     JOIN   campaigns c ON c.id = co.campaign_id
-     JOIN   campaign_sets cs ON cs.id = co.set_id
-     LEFT   JOIN campaign_influencers ci
-            ON ci.set_id = cs.id AND ci.influencer_id = $2
-     WHERE  co.id = $1`,
-    [offer_id, inf.id]
-  );
-  if (!offerRows[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+  // Resolve the scope → brand, campaign, set, discount, and the per-CI
+  // offer_config_json for this creator. The per-CI config carries the
+  // per-influencer product picks for Discount/Volume/Bundle offers.
+  // We support either entry point: ci_id (preferred — always present) or
+  // offer_id (legacy — for set-level offers).
+  let offerRows;
+  if (ci_id) {
+    const r = await db.query(
+      `SELECT co.id            AS offer_id,
+              COALESCE(co.discount_value,
+                       NULLIF(ci.offer_config_json->>'value','')::numeric,
+                       ci.commission_pct)         AS discount_value,
+              co.products_json,
+              cs.id            AS set_id,
+              c.id             AS campaign_id,
+              c.brand_id,
+              ci.id            AS campaign_influencer_id,
+              ci.offer_config_json
+       FROM   campaign_influencers ci
+       JOIN   campaign_sets cs ON cs.id = ci.set_id
+       JOIN   campaigns c ON c.id = cs.campaign_id
+       LEFT   JOIN campaign_offers co
+              ON co.set_id = cs.id AND co.is_active = true
+       WHERE  ci.id = $1 AND ci.influencer_id = $2`,
+      [ci_id, inf.id]
+    );
+    offerRows = r.rows;
+  } else {
+    const r = await db.query(
+      `SELECT co.id          AS offer_id,
+              co.discount_value,
+              co.products_json,
+              co.set_id,
+              c.id           AS campaign_id,
+              c.brand_id,
+              ci.id          AS campaign_influencer_id,
+              ci.offer_config_json
+       FROM   campaign_offers co
+       JOIN   campaigns c ON c.id = co.campaign_id
+       JOIN   campaign_sets cs ON cs.id = co.set_id
+       LEFT   JOIN campaign_influencers ci
+              ON ci.set_id = cs.id AND ci.influencer_id = $2
+       WHERE  co.id = $1`,
+      [offer_id, inf.id]
+    );
+    offerRows = r.rows;
+  }
+  if (!offerRows[0]) throw new AppError('NOT_FOUND', ci_id ? 'Campaign assignment not found' : 'Offer not found', 404);
 
   const offer = offerRows[0];
   const brandId = offer.brand_id;

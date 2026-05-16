@@ -147,9 +147,11 @@ describe('GET /v1/store/:handle/products', () => {
     expect(res.body.data.products[0].name).toBe('Chocolate Cake');
   });
 
-  it('returns 422 when offer_id is missing', async () => {
-    // offer_id is now required to prevent the silent-wrong-brand bug
-    // (creator with multiple campaigns → arbitrary LIMIT 1 pick).
+  it('returns 422 when both offer_id and ci_id are missing', async () => {
+    // At least one scope is required to prevent the silent-wrong-brand bug
+    // (creator with multiple campaigns → arbitrary LIMIT 1 pick). Either
+    // offer_id (set-level campaign_offers row) or ci_id
+    // (per-influencer campaign_influencers row) is acceptable.
     const res = await request(app).get('/v1/store/bakerylover/products');
     expect(res.status).toBe(422);
     expect(res.body.error?.field).toBe('offer_id');

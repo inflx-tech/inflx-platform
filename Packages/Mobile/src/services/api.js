@@ -397,7 +397,17 @@ export const followerApi = {
 
   // Store
   getStore: (handle) => api.get(`/store/${handle}`),
-  getStoreProducts: (handle, offerId) => api.get(`/store/${handle}/products${offerId ? `?offer_id=${offerId}` : ''}`),
+  getStoreProducts: (handle, scope) => {
+    // scope can be a string (legacy: treated as offerId) OR an object
+    // { offerId, ciId }. Either offerId or ciId is required by the backend;
+    // ciId is preferred for conversion campaigns which have no
+    // campaign_offers row.
+    const s = typeof scope === 'string' ? { offerId: scope } : (scope || {});
+    const qs = [];
+    if (s.offerId) qs.push(`offer_id=${s.offerId}`);
+    if (s.ciId)    qs.push(`ci_id=${s.ciId}`);
+    return api.get(`/store/${handle}/products${qs.length ? `?${qs.join('&')}` : ''}`);
+  },
   // Phase Salon-2 — accepts an optional viaInfluencerId so the response
   // embeds a `creator` object the BrandStoreScreen sticky header renders.
   getBrandStore: (brandId, viaInfluencerId = null) => {
