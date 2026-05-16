@@ -98,46 +98,73 @@
 
   "listing_steps": [
     {
-      "id": "brand_basics",
-      "title": "Tell us about your restaurant",
-      "subtitle": "Cuisines, hours, and a short description",
+      "id": "basics",
+      "title": "Basics",
+      "subtitle": "Cuisines, vibes, cost — the headline story",
       "component": "brand_fields",
       "writes_to": "brand",
       "field_keys": [
         "cuisines",
-        "restaurant_description",
+        "vibes",
+        "cost_for_two",
+        "restaurant_description"
+      ]
+    },
+    {
+      "id": "location",
+      "title": "Location",
+      "subtitle": "Verify your address via Google Maps",
+      "component": "brand_fields",
+      "writes_to": "brand",
+      "field_keys": [
+        "google_maps_url",
+        "locality"
+      ]
+    },
+    {
+      "id": "hours",
+      "title": "Hours",
+      "subtitle": "When you're open through the week",
+      "component": "brand_fields",
+      "writes_to": "brand",
+      "field_keys": [
         "hours_json"
       ]
     },
     {
-      "id": "brand_dining",
+      "id": "dining_setup",
       "title": "Dining setup",
-      "subtitle": "Tables, parking, and what you support",
+      "subtitle": "Tables, amenities, what you support",
       "component": "brand_fields",
       "writes_to": "brand",
       "field_keys": [
         "table_count",
         "parking",
+        "outdoor_seating",
+        "wifi",
+        "kids_welcome",
+        "wheelchair_accessible",
         "dine_in_supported",
         "takeaway_supported",
-        "accepts_table_booking",
         "min_order_value",
         "delivery_fee"
       ]
     },
     {
-      "id": "brand_photos",
-      "title": "Restaurant photos",
-      "subtitle": "Show off your space — interior, exterior, signature spreads",
+      "id": "photos",
+      "title": "Photos",
+      "subtitle": "Show off your space — interior, exterior, signature spreads. Pick a cover.",
       "component": "photo_upload",
       "writes_to": "brand",
       "min_photos": 3,
       "max_photos": 12,
-      "recommended_photos": 6
+      "recommended_photos": 6,
+      "cover_required": true,
+      "cover_field_key": "cover_image_url"
     },
     {
       "id": "menu",
-      "title": "Add your menu",
+      "title": "Menu",
       "subtitle": "Browse popular dishes by cuisine, or bulk-upload an Excel sheet",
       "component": "restaurant_dish_picker",
       "writes_to": "listing",
@@ -229,8 +256,21 @@
       ]
     },
     {
+      "id": "actions",
+      "title": "How followers buy",
+      "subtitle": "Toggle which CTAs appear on your restaurant page",
+      "component": "brand_fields",
+      "writes_to": "brand",
+      "field_keys": [
+        "accepts_table_booking",
+        "pay_at_store_supported",
+        "online_order_supported",
+        "enquiry_enabled"
+      ]
+    },
+    {
       "id": "preview",
-      "title": "Preview your store",
+      "title": "Preview",
       "subtitle": "How followers will see your restaurant",
       "component": "preview",
       "show_quality_score": true,
@@ -309,6 +349,50 @@
         "required": true,
         "max": 4
       },
+      "vibes": {
+        "key": "vibes",
+        "type": "multi_select",
+        "label": "Vibes",
+        "options": [
+          "fine_dining", "cafe", "quickbite", "rooftop",
+          "nightlife", "family", "buffet", "five_star",
+          "date_night", "birthday", "late_night"
+        ],
+        "max": 4,
+        "help": "Pick up to 4 that match your atmosphere"
+      },
+      "cost_for_two": {
+        "key": "cost_for_two",
+        "type": "number",
+        "label": "Cost for two (₹)",
+        "unit": "₹",
+        "min": 100,
+        "max": 10000,
+        "required": true,
+        "help": "Approximate, without alcohol"
+      },
+      "google_maps_url": {
+        "key": "google_maps_url",
+        "type": "google_maps_link",
+        "label": "Google Maps URL",
+        "required": true,
+        "help": "Paste your Google Maps share link. We'll verify and auto-fill location.",
+        "writes_to_keys": ["lat", "lng", "locality", "formatted_address"]
+      },
+      "locality": {
+        "key": "locality",
+        "type": "string",
+        "label": "Locality",
+        "required": true,
+        "help": "e.g. Banjara Hills, Hitech City. Auto-filled from Maps; edit if you want a different display name."
+      },
+      "cover_image_url": {
+        "key": "cover_image_url",
+        "type": "image",
+        "label": "Cover photo",
+        "help": "Pick one from your gallery to be the headline image",
+        "source_step": "photos"
+      },
       "restaurant_description": {
         "key": "restaurant_description",
         "type": "string",
@@ -339,6 +423,30 @@
         "label": "Parking available",
         "default": false
       },
+      "outdoor_seating": {
+        "key": "outdoor_seating",
+        "type": "boolean",
+        "label": "Outdoor seating",
+        "default": false
+      },
+      "wifi": {
+        "key": "wifi",
+        "type": "boolean",
+        "label": "Free Wi-Fi",
+        "default": false
+      },
+      "kids_welcome": {
+        "key": "kids_welcome",
+        "type": "boolean",
+        "label": "Kids welcome",
+        "default": false
+      },
+      "wheelchair_accessible": {
+        "key": "wheelchair_accessible",
+        "type": "boolean",
+        "label": "Wheelchair accessible",
+        "default": false
+      },
       "dine_in_supported": {
         "key": "dine_in_supported",
         "type": "boolean",
@@ -356,6 +464,27 @@
         "type": "boolean",
         "label": "Accept table bookings",
         "default": true
+      },
+      "pay_at_store_supported": {
+        "key": "pay_at_store_supported",
+        "type": "boolean",
+        "label": "Pay at Restaurant",
+        "default": true,
+        "help": "Followers can scan + pay their bill via INFLX, with discount auto-applied"
+      },
+      "online_order_supported": {
+        "key": "online_order_supported",
+        "type": "boolean",
+        "label": "Online order / delivery",
+        "default": false,
+        "help": "Enable if you support delivery or takeaway orders through INFLX"
+      },
+      "enquiry_enabled": {
+        "key": "enquiry_enabled",
+        "type": "boolean",
+        "label": "Enquiry CTA",
+        "default": true,
+        "help": "Show a 'Send Enquiry' button for catering / private events"
       },
       "min_order_value": {
         "key": "min_order_value",
@@ -376,7 +505,9 @@
       {
         "kind": "transactional",
         "action": "book_slot",
-        "label": "Book Table",
+        "label": "Book a Table",
+        "priority": 1,
+        "primary": true,
         "config": {
           "booking_type": "table",
           "fields": ["booking_date","time_slot","guest_count","special_requests"],
@@ -393,11 +524,35 @@
         "kind": "transactional",
         "action": "walkin_pay",
         "label": "Pay at Restaurant",
+        "priority": 2,
         "config": {
           "fields": ["amount","tip_amount"],
           "payment_modes": ["full"],
           "endpoint": "/follower/pay-at-store"
-        }
+        },
+        "visible_if": "brand_data.pay_at_store_supported != false"
+      },
+      {
+        "kind": "transactional",
+        "action": "online_order",
+        "label": "Order Online",
+        "priority": 3,
+        "config": {
+          "endpoint": "/follower/orders",
+          "cart_scope": "brand"
+        },
+        "visible_if": "brand_data.online_order_supported == true"
+      },
+      {
+        "kind": "transactional",
+        "action": "enquiry",
+        "label": "Send Enquiry",
+        "priority": 4,
+        "config": {
+          "endpoint": "/follower/enquiry",
+          "fields": ["name","phone","message"]
+        },
+        "visible_if": "brand_data.enquiry_enabled != false"
       },
       {
         "kind": "contact",
@@ -415,7 +570,7 @@
         "kind": "contact",
         "action": "directions",
         "label": "Directions",
-        "source_fields": ["address_line","latitude","longitude"]
+        "source_fields": ["google_maps_url","lat","lng","address_line"]
       }
     ],
     "photo_requirements": {
@@ -427,8 +582,30 @@
 
   "buyer_config": {
     "discovery_surface": "feed",
-    "filters": ["veg_flag", "section", "spice_level", "bestseller"],
-    "sort_options": ["distance", "price_low", "price_high", "rating"],
+    "filters": [
+      { "key": "veg_only",        "type": "boolean",      "label": "🟢 Veg only",            "source": "products.veg_flag" },
+      { "key": "vibes",           "type": "multi_select", "label": "Vibes",                  "source": "brand.vibes",
+        "options": ["fine_dining","cafe","quickbite","rooftop","nightlife","family","buffet","five_star","date_night","birthday","late_night"] },
+      { "key": "cuisines",        "type": "multi_select", "label": "Cuisines",               "source": "brand.cuisines" },
+      { "key": "cost_for_two",    "type": "range",        "label": "Cost",                   "source": "brand.cost_for_two",
+        "buckets": [
+          { "key": "under_300", "label": "Under ₹300",    "max": 300 },
+          { "key": "300_800",   "label": "₹300 – ₹800",   "min": 300, "max": 800 },
+          { "key": "800_plus",  "label": "₹800+",         "min": 800 }
+        ] },
+      { "key": "open_now",        "type": "boolean",      "label": "⏱ Open now",             "computed_from": "brand.hours_json" },
+      { "key": "has_offers",      "type": "boolean",      "label": "🏷 Has offers" },
+      { "key": "creator_trusted", "type": "boolean",      "label": "⭐ Creator trusted (3+)" }
+    ],
+    "sort_options": [
+      { "key": "distance",   "label": "Distance",        "default": true,
+        "computed_from": "haversine(brand.lat,lng, follower.lat,lng)" },
+      { "key": "rating",     "label": "Rating" },
+      { "key": "cost_asc",   "label": "Cost: low → high" },
+      { "key": "cost_desc",  "label": "Cost: high → low" },
+      { "key": "popularity", "label": "Popularity" },
+      { "key": "newest",     "label": "Newest" }
+    ],
     "default_sort": "distance"
   },
 
@@ -491,13 +668,25 @@
   },
 
   "quality_rules": [
-    { "field": "restaurant_description", "scope": "brand", "points": 5, "label": "Add a restaurant description" },
-    { "field": "cuisines", "scope": "brand", "points": 5, "label": "Pick up to 4 cuisines" },
-    { "field": "hours_json", "scope": "brand", "points": 5, "label": "Set operating hours" },
-    { "field": "accepts_table_booking", "scope": "brand", "points": 5, "label": "Enable table booking" },
-    { "type": "photos", "scope": "brand", "min": 3, "points": 10, "label": "Add at least 3 ambience photos" },
-    { "type": "photos", "scope": "brand", "min": 6, "points": 5, "label": "Add 6+ ambience photos for full gallery" },
-    { "items": "menu_items", "min": 10, "points": 15, "label": "Add at least 10 menu items" },
-    { "items": "menu_items", "min": 25, "points": 10, "label": "Add 25+ items for a complete menu" }
+    { "field": "restaurant_description", "scope": "brand",       "points": 5,  "label": "Description filled" },
+    { "field": "cuisines",               "scope": "brand",       "points": 5,  "label": "At least 1 cuisine", "min_count": 1 },
+    { "field": "vibes",                  "scope": "brand",       "points": 5,  "label": "At least 1 vibe",    "min_count": 1 },
+    { "field": "cost_for_two",           "scope": "brand",       "points": 5,  "label": "Cost for two set" },
+    { "field": "google_maps_url",        "scope": "brand",       "points": 10, "label": "Location verified" },
+    { "field": "hours_json",             "scope": "brand",       "points": 10, "label": "Operating hours set" },
+    { "field": "cover_image_url",        "scope": "brand",       "points": 10, "label": "Cover photo picked" },
+    { "type":  "photos",                 "scope": "brand",       "points": 10, "label": "6+ gallery photos",  "min": 6 },
+    { "type":  "photos",                 "scope": "brand",       "points": 5,  "label": "8+ gallery photos",  "min": 8 },
+    { "items": "menu_items",             "scope": "items",       "points": 15, "label": "10+ dishes on menu", "min": 10 },
+    { "items": "menu_items",             "scope": "items",       "points": 10, "label": "25+ dishes for complete menu", "min": 25 },
+    { "field": "image_url",              "scope": "item_photos", "points": 10, "label": "80% of dishes have photos", "min_pct": 0.8 },
+    { "field": "accepts_table_booking",  "scope": "brand",       "points": 5,  "label": "Table booking enabled" }
+  ],
+
+  "quality_tiers": [
+    { "key": "bronze",   "min_points": 40, "label": "Bronze",   "color": "#CD7F32" },
+    { "key": "silver",   "min_points": 60, "label": "Silver",   "color": "#A8A29E" },
+    { "key": "gold",     "min_points": 80, "label": "Gold",     "color": "#FFB800" },
+    { "key": "platinum", "min_points": 95, "label": "Platinum", "color": "#EAB308" }
   ]
 }

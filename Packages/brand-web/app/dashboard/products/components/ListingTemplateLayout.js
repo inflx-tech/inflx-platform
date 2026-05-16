@@ -84,6 +84,22 @@ export default function ListingTemplateLayout({
     });
   }, []);
 
+  // Wave 1 (Dining) — multi-key writer for field types that derive several
+  // wizardState entries from one user action. google_maps_link uses this to
+  // write { google_maps_url, lat, lng, locality, formatted_address } from
+  // a single Verify click.
+  const handleMultiFieldChange = useCallback((updates) => {
+    if (!updates || typeof updates !== 'object') return;
+    setWizardState(prev => ({ ...prev, ...updates }));
+    setErrors(prev => {
+      const touchedKeys = Object.keys(updates);
+      if (touchedKeys.every(k => !prev[k])) return prev;
+      const next = { ...prev };
+      for (const k of touchedKeys) delete next[k];
+      return next;
+    });
+  }, []);
+
   // Adjacent fix (Phase Salon-1): accept an optional initial item state so
   // pickers like RestaurantDishPicker + SalonServiceInlinePicker can append
   // a populated item in one call. Default `{}` preserves the original
@@ -239,6 +255,7 @@ export default function ListingTemplateLayout({
         wizardState={wizardState}
         wizardItems={wizardItems}
         onFieldChange={handleFieldChange}
+        onMultiFieldChange={handleMultiFieldChange}
         onItemAdd={handleItemAdd}
         onItemRemove={handleItemRemove}
         onItemFieldChange={handleItemFieldChange}

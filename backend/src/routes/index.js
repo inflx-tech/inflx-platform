@@ -56,7 +56,11 @@ const lookbooksRoutes       = require('./lookbooks.routes');
 
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
-const { authenticateOptional } = require('../middleware/auth');
+const { authenticateOptional, authenticate } = require('../middleware/auth');
+
+// Wave 1 (Dining) — geocoding for the restaurant listing wizard's
+// google_maps_link field type
+const geocodingCtrl     = require('../controllers/geocoding.controller');
 
 const router = Router();
 
@@ -118,6 +122,11 @@ router.get('/category/:category_key',             authenticateOptional, follower
 
 // ── Listing Engine — category stores with inline products ────────────────────
 router.get('/category/:super_category/stores',    authenticateOptional, followerCtrl.getCategoryStores);
+
+// ── Wave 1 (Dining) — geocoding for restaurant listing wizard ────────────────
+// Authenticated: any logged-in user (brand on web). Mock mode in dev returns
+// fixed Vijayawada coords; prod hits Google Geocoding API.
+router.post('/internal/geocode-maps-url',         authenticate, geocodingCtrl.geocodeMapsUrl);
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);

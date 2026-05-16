@@ -40,7 +40,7 @@ export function basic_fields({ step, wizardState, onFieldChange, errors }) {
 // shared wizardState; the publish driver routes them to brands.listing_data
 // rather than brand_products.
 
-export function brand_fields({ step, template, wizardState, onFieldChange, errors }) {
+export function brand_fields({ step, template, wizardState, onFieldChange, onMultiFieldChange, errors }) {
   const allBrandFields = template?.brand_config?.fields || {};
   const keys = step.field_keys || Object.keys(allBrandFields);
   return (
@@ -53,7 +53,8 @@ export function brand_fields({ step, template, wizardState, onFieldChange, error
         const field = { key, ...fieldDef };
         return (
           <FieldRow key={key} field={field} value={wizardState[key]}
-                    onChange={onFieldChange} error={errors?.[key]} />
+                    onChange={onFieldChange} onMultiChange={onMultiFieldChange}
+                    error={errors?.[key]} />
         );
       })}
     </div>
@@ -188,7 +189,7 @@ function StepHeader({ title, subtitle }) {
   );
 }
 
-function FieldRow({ field, value, onChange, error, compact }) {
+function FieldRow({ field, value, onChange, onMultiChange, error, compact }) {
   return (
     <div>
       <label className={compact
@@ -196,7 +197,10 @@ function FieldRow({ field, value, onChange, error, compact }) {
         : 'block text-sm font-semibold text-gray-700 mb-1.5'}>
         {field.label} {field.required && <span className="text-red-400">*</span>}
       </label>
-      <DynamicFieldRenderer field={field} value={value} onChange={onChange} error={error} />
+      {field.help && !compact && (
+        <p className="text-xs text-gray-400 mb-1.5">{field.help}</p>
+      )}
+      <DynamicFieldRenderer field={field} value={value} onChange={onChange} onMultiChange={onMultiChange} error={error} />
       {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   );

@@ -3,6 +3,8 @@
 import TeamMemberListEditor from './TeamMemberListEditor';
 import WeeklyScheduleEditor from './WeeklyScheduleEditor';
 import VariantMatrixEditor from './VariantMatrixEditor';
+import GoogleMapsLinkField from './GoogleMapsLinkField';
+import ImageField from './ImageField';
 
 /**
  * DynamicFieldRenderer — renders any field type from a business type config.
@@ -21,11 +23,26 @@ import VariantMatrixEditor from './VariantMatrixEditor';
  *     used by restaurant.json's hours_json after the rework, replacing the
  *     free-text "string" type that DynamicFieldRenderer was aliasing to text)
  *
- * Image / image[] / phone / email / date / time fall through to text-input
- * fallback for now — wired when their consumers land.
+ * Wave 1 — Dining refresh (restaurant.json):
+ *   - google_maps_link (Verify button → /v1/internal/geocode-maps-url →
+ *     populates lat/lng/locality/formatted_address via onMultiChange)
+ *   - image      (single, dropzone + GalleryPicker, optional cover badge)
+ *   - image[]    (gallery, multi-pick + reorder + min/max)
+ *
+ * Phone / email / date / time fall through to text-input for now.
+ *
+ * Props:
+ *   - field:         field def from schema (type, key, label, etc.)
+ *   - value:         current value (single or multi shape per type)
+ *   - onChange:      (key, value) => void
+ *   - onMultiChange: (updates: {key: value, ...}) => void — used by field
+ *                    types that need to write multiple keys at once
+ *                    (e.g. google_maps_link writes url + lat/lng/locality).
+ *                    Optional — falls back to repeated onChange when absent.
+ *   - error:         optional error string
  */
 
-export default function DynamicFieldRenderer({ field, value, onChange, error }) {
+export default function DynamicFieldRenderer({ field, value, onChange, onMultiChange, error }) {
   const base = 'w-full border-2 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-orange-400';
   const borderCls = error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white';
 
@@ -55,6 +72,65 @@ export default function DynamicFieldRenderer({ field, value, onChange, error }) 
       <VariantMatrixEditor
         value={value}
         onChange={(next) => onChange(field.key, next)}
+      />
+    );
+  }
+
+  // ── google_maps_link (Wave 1 Dining) ───────────────────────────────────────
+  // Brand pastes a Google Maps share URL → click Verify → backend extracts
+  // lat/lng + reverse-geocodes locality. Component writes the URL via
+  // onChange(field.key, url) and the derived fields via onMultiChange when
+  // available (so wizardState picks up { lat, lng, locality, formatted_address,
+  // place_id, city } in one render cycle).
+  if (field.type === 'google_maps_link') {
+    return (
+      <GoogleMapsLinkField
+        field={field}
+        value={value}
+        onChange={(url) => onChange(field.key, url)}
+        onVerified={(geo) => {
+          // Push all derived fields onto wizardState
+          const updates = { [field.key]: geo.input_url || value };
+          if (geo.lat != null)              updates.lat = geo.lat;
+          if (geo.lng != null)              updates.lng = geo.lng;
+          if (geo.locality)                 updates.locality = geo.locality;
+          if (geo.formatted_address)        updates.formatted_address = geo.formatted_address;
+          if (geo.place_id)                 updates.place_id = geo.place_id;
+          if (geo.city)                     updates.city = geo.city;
+          if (typeof onMultiChange === 'function') {
+            onMultiChange(updates);
+          } else {
+            // Fallback — write each key one at a time
+            for (const [k, v] of Object.entries(updates)) onChange(k, v);
+          }
+        }}
+        error={error}
+      />
+    );
+  }
+
+  // ── image (Wave 1 Dining — single) ─────────────────────────────────────────
+  if (field.type === 'image') {
+    return (
+      <ImageField
+        field={field}
+        mode="single"
+        value={value}
+        onChange={(next) => onChange(field.key, next)}
+        error={error}
+      />
+    );
+  }
+
+  // ── image[] (Wave 1 Dining — gallery) ──────────────────────────────────────
+  if (field.type === 'image[]') {
+    return (
+      <ImageField
+        field={field}
+        mode="gallery"
+        value={value}
+        onChange={(next) => onChange(field.key, next)}
+        error={error}
       />
     );
   }

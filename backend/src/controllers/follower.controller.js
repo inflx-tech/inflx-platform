@@ -636,7 +636,18 @@ const getCategories = asyncHandler(async (req, res) => {
 // GET /category/:super_category/stores — stores with inline products for CategoryListScreen
 const getCategoryStores = asyncHandler(async (req, res) => {
   const { super_category } = req.params;
-  const { sort, sub_category, page, lat, lng } = req.query;
+  const {
+    sort, sub_category, page, lat, lng,
+    // Wave 1 (Dining) — schema-driven filter params from
+    // restaurant.json.buyer_config.filters[]. All optional. Each filter is
+    // applied as an additional WHERE clause; SQL parameter ordering builds
+    // up dynamically. Vibes / cuisines are jsonb-containment; cost_bucket
+    // maps to one of the schema's bucket ranges; open_now is computed in
+    // JS after the SQL fetch (depends on per-brand timezone + current
+    // wall time which is brittle in SQL); has_offers is implicit in
+    // deal_count > 0; creator_trusted is influencer-count >= 3.
+    vibes, cuisines, cost_bucket, open_now, has_offers, creator_trusted, veg_only,
+  } = req.query;
   const pageNum = parseInt(page || '1', 10);
   const limit = 10;
   const offset = (pageNum - 1) * limit;
@@ -654,10 +665,92 @@ const getCategoryStores = asyncHandler(async (req, res) => {
   const followerLat = hasLocation ? parseFloat(lat) : null;
   const followerLng = hasLocation ? parseFloat(lng) : null;
 
+  // Build dynamic WHERE for new filter params. Append each clause + push
+  // its bind param after the fixed categoryKeys list. limit/offset are
+  // appended at the very end so their indexes are dynamic.
+  const params = [...categoryKeys];
+  const extraWhere = [];
+
+  // vibes — multi-select via jsonb containment. ?vibes=rooftop,family
+  if (vibes && typeof vibes === 'string') {
+    const arr = vibes.split(',').map(v => v.trim()).filter(Boolean);
+    if (arr.length > 0) {
+      params.push(JSON.stringify(arr));
+      extraWhere.push(`b.vibes @> $${params.length}::jsonb`);
+    }
+  }
+
+  // cuisines — multi-select. Cuisines live in listing_data.cuisines (jsonb)
+  // for now; later move to a typed column. ?cuisines=Italian,Mexican
+  if (cuisines && typeof cuisines === 'string') {
+    const arr = cuisines.split(',').map(v => v.trim()).filter(Boolean);
+    if (arr.length > 0) {
+      // Containment requires the listing_data.cuisines key to be a JSON array
+      params.push(JSON.stringify(arr));
+      extraWhere.push(`(b.listing_data->'cuisines') @> $${params.length}::jsonb`);
+    }
+  }
+
+  // cost_bucket — under_300 / 300_800 / 800_plus per schema buckets
+  if (cost_bucket === 'under_300') {
+    extraWhere.push(`b.cost_for_two < 300`);
+  } else if (cost_bucket === '300_800') {
+    extraWhere.push(`b.cost_for_two >= 300 AND b.cost_for_two < 800`);
+  } else if (cost_bucket === '800_plus') {
+    extraWhere.push(`b.cost_for_two >= 800`);
+  }
+
+  // has_offers — restrict to brands with at least one active offer. The
+  // deal_count subquery already exists; HAVING is awkward with DISTINCT ON,
+  // so we filter via EXISTS instead.
+  if (has_offers === 'true' || has_offers === '1') {
+    extraWhere.push(`EXISTS (
+      SELECT 1 FROM campaign_offers co
+      JOIN   campaign_sets cs ON cs.id = co.set_id
+      JOIN   campaigns c2 ON c2.id = cs.campaign_id
+      WHERE  c2.brand_id = b.id AND co.is_active = true
+        AND  c2.status IN ('published','active','live')
+        AND  (c2.end_date IS NULL OR c2.end_date >= CURRENT_DATE)
+    )`);
+  }
+
+  // creator_trusted — brands with 3+ distinct creators on active offers
+  if (creator_trusted === 'true' || creator_trusted === '1') {
+    extraWhere.push(`(
+      SELECT COUNT(DISTINCT ci2.influencer_id)
+      FROM   campaign_influencers ci2
+      JOIN   campaign_sets cs2 ON cs2.id = ci2.set_id
+      JOIN   campaigns c3 ON c3.id = cs2.campaign_id
+      WHERE  c3.brand_id = b.id
+        AND  ci2.status IN ('contracted','active','completed')
+        AND  c3.status IN ('published','active','live')
+    ) >= 3`);
+  }
+
+  // veg_only — brand has at least one veg-flag product. Lets the dining
+  // home filter to pure-veg restaurants or restaurants with veg options.
+  if (veg_only === 'true' || veg_only === '1') {
+    extraWhere.push(`EXISTS (
+      SELECT 1 FROM brand_products bp
+      WHERE  bp.brand_id = b.id AND bp.is_active = true AND bp.veg_flag = 'veg'
+    )`);
+  }
+
+  const whereClause = extraWhere.length > 0
+    ? ` AND ${extraWhere.join(' AND ')}`
+    : '';
+
+  params.push(limit, offset);
+  const limitIdx  = params.length - 1;
+  const offsetIdx = params.length;
+
   const { rows: stores } = await db.query(
     `SELECT DISTINCT ON (b.id)
        b.id, b.business_name, b.category, u.city,
        b.listing_score, b.latitude, b.longitude, b.listing_data,
+       b.vibes, b.cost_for_two, b.locality, b.cover_image_url,
+       b.lat, b.lng, b.accepts_table_booking, b.pay_at_store_supported,
+       b.online_order_supported, b.enquiry_enabled,
        (SELECT COUNT(*)::int FROM campaign_offers co
         JOIN campaign_sets cs ON cs.id = co.set_id
         JOIN campaigns c ON c.id = cs.campaign_id
@@ -668,42 +761,57 @@ const getCategoryStores = asyncHandler(async (req, res) => {
      FROM brands b
      JOIN users u ON u.id = b.user_id
      WHERE b.category IN (${placeholders})
-       AND u.status = 'approved'
+       AND u.status = 'approved'${whereClause}
      ORDER BY b.id, deal_count DESC
-     LIMIT $${categoryKeys.length + 1} OFFSET $${categoryKeys.length + 2}`,
-    [...categoryKeys, limit, offset]
+     LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+    params
   );
 
-  // Phase 1 (Dining) — surface listing_data fields the dining card needs:
-  // cover_image_url, cost_for_two, locality_or_neighborhood, cuisines,
-  // open_status (derived). Other categories also get them — harmless when
-  // listing_data is empty.
+  // Wave 1 (Dining) — surface listing fields the dining card needs. Prefer
+  // typed columns (post migration 051) over listing_data JSONB fallbacks.
+  // Other categories also get these — harmless when columns are NULL.
   for (const store of stores) {
     const ld = store.listing_data || {};
-    store.cover_image_url          = ld.cover_image_url || null;
-    store.cost_for_two             = ld.cost_for_two != null ? Number(ld.cost_for_two) : null;
-    store.locality_or_neighborhood = ld.locality_or_neighborhood || null;
+    store.cover_image_url          = store.cover_image_url || ld.cover_image_url || null;
+    store.cost_for_two             = store.cost_for_two != null
+                                       ? Number(store.cost_for_two)
+                                       : (ld.cost_for_two != null ? Number(ld.cost_for_two) : null);
+    store.locality_or_neighborhood = store.locality || ld.locality_or_neighborhood || ld.locality || null;
+    store.vibes                    = Array.isArray(store.vibes) ? store.vibes
+                                       : (Array.isArray(ld.vibes) ? ld.vibes : []);
     store.cuisines                 = Array.isArray(ld.cuisines) ? ld.cuisines : [];
     store.open_status              = followerService.computeOpenStatus
       ? followerService.computeOpenStatus(ld.hours_json)
       : null;
+    // Prefer typed-column lat/lng (hot fields), fall back to legacy
+    // latitude/longitude columns when not populated yet.
+    if (store.lat != null) store.latitude  = store.lat;
+    if (store.lng != null) store.longitude = store.lng;
     delete store.listing_data; // don't ship the full blob on list endpoints
+    delete store.lat; delete store.lng; // de-dupe with latitude/longitude
   }
+
+  // Open-now filter — applied AFTER fetch since the compute depends on
+  // current wall time and is brittle in SQL. Drops stores whose hours_json
+  // declares them closed right now.
+  const filteredStores = (open_now === 'true' || open_now === '1')
+    ? stores.filter(s => s.open_status && s.open_status.is_open)
+    : stores;
 
   // Calculate distance for each store
   if (hasLocation) {
-    for (const store of stores) {
+    for (const store of filteredStores) {
       if (store.latitude && store.longitude) {
         store.distance_km = locationService.haversineKm(followerLat, followerLng, parseFloat(store.latitude), parseFloat(store.longitude));
         store.distance_text = locationService.formatDistance(store.distance_km);
       }
     }
     // Sort by distance
-    stores.sort((a, b) => (a.distance_km || 9999) - (b.distance_km || 9999));
+    filteredStores.sort((a, b) => (a.distance_km || 9999) - (b.distance_km || 9999));
   }
 
   // For each store, fetch top products + card_config
-  const storesWithProducts = await Promise.all(stores.map(async (store) => {
+  const storesWithProducts = await Promise.all(filteredStores.map(async (store) => {
     const { rows: products } = await db.query(
       `SELECT id, name, price, image_url, section, veg_flag, description
        FROM brand_products
