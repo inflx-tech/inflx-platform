@@ -126,12 +126,14 @@ export function preview({ step, template, brand, wizardState, wizardItems, score
   return (
     <div className="space-y-4">
       <StepHeader title={step.title} subtitle={step.subtitle} />
-      <QualityScore scoreData={scoreData} />
+      <QualityScore scoreData={scoreData} template={template} />
       <LivePreview
         brand={previewData?.brand || brand}
         products={previewData?.products || products}
         cardConfig={previewData?.card_config || template?.card_config}
         actionTypes={previewData?.action_types || template?.action_types}
+        wizardState={wizardState}
+        template={template}
       />
     </div>
   );
@@ -146,28 +148,57 @@ export function done({ step, publishResult, template }) {
   const created = publishResult?.products_created || 0;
   const noun = template?.product_noun_plural?.toLowerCase() || 'listings';
 
+  // Three next-action cards (Wave 2E spec) — primary follow-ups after publish.
+  const NEXT_ACTIONS = [
+    { icon: '📣', title: 'Create a campaign',  desc: 'Get creators to drive footfall',  href: '/dashboard/campaigns/new',  accent: 'yellow' },
+    { icon: '⭐', title: 'Invite creators',    desc: 'Browse and invite local influencers',     href: '/dashboard/influencers',    accent: 'teal' },
+    { icon: '🏠', title: 'Back to dashboard',  desc: 'Track activity + bookings inbox',         href: '/dashboard',                accent: 'paper' },
+  ];
+
   return (
-    <div className="text-center py-6 space-y-4">
-      <div className="w-16 h-16 rounded-full bg-green-100 mx-auto flex items-center justify-center">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669"
-             strokeWidth="2.5" strokeLinecap="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
-      <div>
-        <div className="text-xl font-extrabold text-gray-900">{step.title || 'Listing published!'}</div>
-        {step.subtitle && <div className="text-sm text-gray-500 mt-1">{step.subtitle}</div>}
-        <div className="text-sm text-gray-600 mt-2">
-          {created > 0 ? `${created} ${noun} added.` : 'Brand profile updated.'}
+    <div className="py-6 space-y-5">
+      <div className="text-center space-y-3">
+        <div className="w-16 h-16 rounded-full bg-teal-pale mx-auto flex items-center justify-center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00B894"
+               strokeWidth="2.5" strokeLinecap="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div>
+          <div className="font-display text-2xl font-extrabold text-ink-1 tracking-tight">{step.title || 'Listing published!'}</div>
+          {step.subtitle && <div className="text-sm text-ink-3 mt-1">{step.subtitle}</div>}
+          <div className="text-sm text-ink-2 mt-2 font-mono">
+            {created > 0 ? `+${created} ${noun}` : 'BRAND PROFILE UPDATED'}
+          </div>
         </div>
       </div>
+
+      {/* 3 next-action cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+        {NEXT_ACTIONS.map(a => {
+          const accentBg = a.accent === 'yellow'
+            ? 'bg-yellow hover:bg-yellow-deep text-ink-1'
+            : a.accent === 'teal'
+              ? 'bg-teal hover:bg-teal-deep text-white'
+              : 'bg-paper hover:bg-paper-surface text-ink-1 border border-line-soft';
+          return (
+            <a key={a.title} href={a.href}
+               className={`block rounded-xl p-4 transition-colors shadow-sm ${accentBg}`}>
+              <div className="text-2xl mb-1">{a.icon}</div>
+              <div className="font-display text-sm font-extrabold">{a.title}</div>
+              <div className="text-[11px] opacity-80 mt-0.5">{a.desc}</div>
+            </a>
+          );
+        })}
+      </div>
+
       {tips.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-left max-w-md mx-auto">
-          <div className="text-xs font-bold text-amber-700 uppercase mb-2">Boost your listing</div>
+        <div className="bg-yellow-pale border border-yellow rounded-xl p-4 text-left max-w-2xl mx-auto">
+          <div className="font-mono text-[10px] font-bold text-yellow-deep uppercase tracking-wider mb-2">Boost your listing</div>
           <ul className="space-y-1.5">
             {tips.map((tip, i) => (
-              <li key={i} className="text-xs text-amber-800 flex gap-2">
-                <span>•</span><span>{tip}</span>
+              <li key={i} className="text-xs text-ink-2 flex gap-2">
+                <span className="text-yellow-deep">•</span><span>{tip}</span>
               </li>
             ))}
           </ul>
@@ -183,8 +214,8 @@ function StepHeader({ title, subtitle }) {
   if (!title && !subtitle) return null;
   return (
     <div>
-      {title && <h2 className="text-xl font-bold text-gray-900">{title}</h2>}
-      {subtitle && <p className="text-sm text-gray-500 mt-1">{subtitle}</p>}
+      {title && <h2 className="font-display text-xl font-bold text-ink-1 tracking-tight">{title}</h2>}
+      {subtitle && <p className="text-sm text-ink-3 mt-1">{subtitle}</p>}
     </div>
   );
 }

@@ -10,6 +10,7 @@ const enquiryCtrl = require('../controllers/enquiry.controller');
 const commissionCtrl = require('../controllers/commission.controller');
 const transactionCtrl = require('../controllers/transaction.controller');
 const inboxCtrl = require('../controllers/brandInbox.controller');
+const bookingsCtrl = require('../controllers/brandBookings.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
 const linkCtrl = require('../controllers/referenceLink.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
@@ -41,6 +42,13 @@ router.get('/me/campaigns/:campaign_id/escrow', authenticate, requireRole('brand
 // Phase 4 — Enquiry leads
 router.get('/me/enquiries',         authenticate, requireRole('brand'), enquiryCtrl.listEnquiries);
 router.patch('/me/enquiries/:id',   authenticate, requireRole('brand'), enquiryCtrl.updateEnquiry);
+
+// Wave 2 — BookingsInbox: incoming follower_bookings with creator attribution.
+// Brand confirms/rejects; rejecting also flips the underlying booking_status
+// to 'cancelled'. See brandBookings.controller.js for the brand_status model.
+router.get ('/me/bookings',              authenticate, requireRole('brand'), bookingsCtrl.list);
+router.post('/me/bookings/:id/confirm',  authenticate, requireRole('brand'), bookingsCtrl.confirm);
+router.post('/me/bookings/:id/reject',   authenticate, requireRole('brand'), bookingsCtrl.reject);
 
 // Online orders — brand-side order management
 router.get('/me/orders',                       authenticate, requireRole('brand'), ctrl.listBrandOrders);

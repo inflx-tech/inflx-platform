@@ -295,11 +295,11 @@ export default function ListingTemplateLayout({
     <div className="max-w-[780px] mx-auto">
       {/* Header */}
       <div className="text-center mb-5">
-        <h1 className="text-2xl font-extrabold text-gray-900">
+        <h1 className="font-display text-3xl font-extrabold text-ink-1 tracking-tight">
           {template.icon || ''} Your {labelPlural}
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {myProducts?.length || 0} {(myProducts?.length === 1 ? labelSingular : labelPlural).toLowerCase()} in your listing
+        <p className="text-sm text-ink-3 mt-1">
+          <span className="font-mono text-xs">{myProducts?.length || 0}</span> {(myProducts?.length === 1 ? labelSingular : labelPlural).toLowerCase()} in your listing
         </p>
 
         {/* Setup-mode toggle. Visible only when the brand is eligible for the
@@ -351,7 +351,9 @@ export default function ListingTemplateLayout({
           <button key={t.key}
             onClick={() => { setView(t.key); if (t.key === 'add') resetWizard(); }}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5
-              ${view === t.key ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              ${view === t.key
+                ? 'bg-yellow text-ink-1 shadow-sm'
+                : 'bg-paper-surface text-ink-2 hover:bg-paper-deep border border-line-soft'}`}>
             {t.icon} {t.label}
           </button>
         ))}
@@ -416,11 +418,11 @@ function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRem
         <p className="text-sm text-gray-400 mb-4">Add your first {labelSingular.toLowerCase()} or upload an Excel sheet</p>
         <div className="flex gap-3 justify-center">
           <button onClick={onAdd}
-            className="px-5 py-2.5 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600">
+            className="px-5 py-2.5 bg-yellow text-ink-1 text-sm font-bold rounded-xl hover:bg-yellow-deep transition-colors">
             ➕ Add {labelSingular}
           </button>
           <button onClick={onUpload}
-            className="px-5 py-2.5 bg-gray-200 text-gray-700 text-sm font-bold rounded-xl hover:bg-gray-300">
+            className="px-5 py-2.5 bg-paper-surface text-ink-2 text-sm font-bold rounded-xl border border-line-soft hover:bg-paper-deep transition-colors">
             📤 Bulk Upload
           </button>
         </div>
@@ -487,21 +489,32 @@ function AddWizardView({
 }) {
   return (
     <>
-      {/* Progress bar */}
+      {/* Progress bar + save indicator */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-ink-3">
+          Step <span className="text-ink-1">{String(currentStep + 1).padStart(2, '0')}</span>
+          <span className="text-ink-3"> / {String(steps.length).padStart(2, '0')}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
+          <span className="font-mono text-[10px] uppercase tracking-wider text-teal-deep">Autosaving</span>
+        </div>
+      </div>
       <div className="flex items-center mb-6">
         {steps.map((s, i) => (
           <div key={s.id} className="flex-1 flex flex-col items-center relative">
             {i < steps.length - 1 && (
-              <div className={`absolute top-3 left-[calc(50%+14px)] right-[calc(-50%+14px)] h-0.5 ${i < currentStep ? 'bg-orange-500' : 'bg-gray-300'}`} />
+              <div className={`absolute top-3 left-[calc(50%+14px)] right-[calc(-50%+14px)] h-0.5 transition-colors
+                ${i < currentStep ? 'bg-teal' : 'bg-paper-deep'}`} />
             )}
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold z-10 transition-all
-              ${i === currentStep ? 'bg-orange-500 text-white ring-4 ring-orange-200'
-                : i < currentStep ? 'bg-green-500 text-white' : 'bg-gray-300 text-gray-500'}`}>
+              ${i === currentStep ? 'bg-yellow text-ink-1 ring-4 ring-yellow-pale'
+                : i < currentStep ? 'bg-teal text-white' : 'bg-paper-deep text-ink-3'}`}>
               {i < currentStep ? '✓' : i + 1}
             </div>
             <div className={`text-[10px] mt-1 font-medium text-center
-              ${i === currentStep ? 'text-orange-600 font-semibold'
-                : i < currentStep ? 'text-green-600' : 'text-gray-400'}`}>
+              ${i === currentStep ? 'text-ink-1 font-semibold'
+                : i < currentStep ? 'text-teal-deep' : 'text-ink-3'}`}>
               {s.title}
             </div>
           </div>
@@ -509,11 +522,11 @@ function AddWizardView({
       </div>
 
       {/* Step content */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
+      <div className="bg-paper border border-line-soft rounded-2xl p-6 mb-4 shadow-sm">
         {renderStep()}
         {errors._publish && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mt-4">
-            <p className="text-red-600 text-xs">{errors._publish}</p>
+          <div className="bg-red-pale border border-red rounded-xl p-3 mt-4">
+            <p className="text-red text-xs">{errors._publish}</p>
           </div>
         )}
       </div>
@@ -523,7 +536,7 @@ function AddWizardView({
         <div className="flex items-center justify-between">
           {currentStep > 0 ? (
             <button onClick={onBack}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-gray-500 border-[1.5px] border-gray-200 hover:border-orange-500 hover:text-orange-600">
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-ink-2 border-[1.5px] border-line-soft hover:border-yellow hover:text-ink-1 transition-colors">
               ← Back
             </button>
           ) : <div />}
@@ -531,16 +544,16 @@ function AddWizardView({
             <button onClick={onPublish} disabled={saving || canProceed === false}
               className={`px-8 py-3 rounded-xl text-sm font-semibold transition-all
                 ${!saving && canProceed !== false
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}>
+                  ? 'bg-teal hover:bg-teal-deep text-white shadow-sm'
+                  : 'bg-paper-deep text-ink-3 cursor-not-allowed'}`}>
               {saving ? 'Publishing...' : 'Publish listing ✓'}
             </button>
           ) : (
             <button onClick={onNext} disabled={canProceed === false}
               className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all
                 ${canProceed === false
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-orange-500 hover:bg-orange-600 text-white'}`}>
+                  ? 'bg-paper-deep text-ink-3 cursor-not-allowed'
+                  : 'bg-yellow hover:bg-yellow-deep text-ink-1 shadow-sm'}`}>
               Next →
             </button>
           )}
@@ -548,11 +561,11 @@ function AddWizardView({
       ) : (
         <div className="flex gap-3 justify-center">
           <button onClick={onListAnother}
-            className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl">
+            className="px-5 py-2.5 bg-yellow hover:bg-yellow-deep text-ink-1 text-sm font-bold rounded-xl shadow-sm transition-colors">
             + List another
           </button>
           <button onClick={onViewFleet}
-            className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-xl">
+            className="px-5 py-2.5 bg-paper-surface hover:bg-paper-deep text-ink-2 text-sm font-bold rounded-xl border border-line-soft transition-colors">
             View list
           </button>
         </div>

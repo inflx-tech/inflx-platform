@@ -38,15 +38,50 @@ export default function PhotoUploadStep({ step, template, wizardState, onFieldCh
   const max = photoReq.gallery_max || step.max_photos || 99;
   const recommended = photoReq.gallery_recommended || step.recommended_photos || min;
 
+  // Wave 2 (Dining) — cover photo workflow. When the step config carries
+  // cover_required: true (restaurant.json sets this on the photos step),
+  // we ask the brand to mark one gallery photo as the cover. The selected
+  // photo's URL is mirrored into wizardState[cover_field_key] (default
+  // 'cover_image_url'). publishDriver routes it into brand.listing_data,
+  // and the backend updateMe handler mirrors it into the typed
+  // brands.cover_image_url column for discovery filters.
+  const coverRequired = step.cover_required || photoReq.cover_required || false;
+  const coverFieldKey = step.cover_field_key || 'cover_image_url';
+  const coverUrl      = wizardState[coverFieldKey] || null;
+
   const labelNoun = template?.label || 'Listing';
   const defaultTitle = `${labelNoun} photos`;
 
+  function urlOf(p) {
+    return p?.download_url || p?.url || null;
+  }
+
   function handlePickerDone(picked) {
-    onFieldChange('photos', picked);  // full asset objects so we can re-render thumbnails
+    onFieldChange('photos', picked);
+    // If the previously-chosen cover is no longer in the gallery, drop it.
+    if (coverUrl && !picked.some(p => urlOf(p) === coverUrl)) {
+      onFieldChange(coverFieldKey, null);
+    }
+    // Auto-pick the first photo as cover if cover is required and none set.
+    if (coverRequired && !coverUrl && picked.length > 0) {
+      const firstUrl = urlOf(picked[0]);
+      if (firstUrl) onFieldChange(coverFieldKey, firstUrl);
+    }
   }
 
   function removePhoto(assetId) {
+    const removed = photos.find(p => p.id === assetId);
+    const removedUrl = urlOf(removed);
     onFieldChange('photos', photos.filter(p => p.id !== assetId));
+    // Clear cover if the removed photo was the cover.
+    if (removedUrl && removedUrl === coverUrl) {
+      onFieldChange(coverFieldKey, null);
+    }
+  }
+
+  function setCover(photo) {
+    const url = urlOf(photo);
+    if (url) onFieldChange(coverFieldKey, url);
   }
 
   const initialSelectedIds = photos.map(p => p.id);
@@ -101,19 +136,56 @@ export default function PhotoUploadStep({ step, template, wizardState, onFieldCh
           </button>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-3 gap-3">
-          {photos.map(p => (
-            <div key={p.id} className="aspect-square rounded-xl overflow-hidden bg-gray-100 relative group border border-gray-200">
-              {p.download_url
-                ? <img src={p.download_url} alt={p.title || 'Photo'} className="w-full h-full object-cover" />
-                : <div className="w-full h-full flex items-center justify-center text-3xl">🖼️</div>}
-              <button type="button" onClick={() => removePhoto(p.id)}
-                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                ×
-              </button>
-            </div>
-          ))}
+          {photos.map(p => {
+            const url = urlOf(p);
+            const isCover = coverRequired && url && url === coverUrl;
+            return (
+              <div key={p.id}
+                   className={`aspect-square rounded-xl overflow-hidden bg-gray-100 relative group border-2 transition-all
+                     ${isCover ? 'border-yellow ring-2 ring-yellow-pale' : 'border-gray-200'}`}>
+                {url
+                  ? <img src={url} alt={p.title || 'Photo'} className="w-full h-full object-cover" />
+                  : <div className="w-full h-full flex items-center justify-center text-3xl">🖼️</div>}
+
+                {/* Cover badge — when this photo IS the cover */}
+                {isCover && (
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-yellow text-ink-1 font-mono text-[8px] uppercase tracking-wider font-bold shadow">
+                    ★ Cover
+                  </div>
+                )}
+
+                {/* Set-as-cover button — when cover_required AND not already cover */}
+                {coverRequired && !isCover && (
+                  <button type="button" onClick={() => setCover(p)}
+                    className="absolute bottom-1 left-1 right-1 px-1.5 py-1 rounded-md bg-black/55 backdrop-blur text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                    Make cover
+                  </button>
+                )}
+
+                <button type="button" onClick={() => removePhoto(p.id)}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                  ×
+                </button>
+              </div>
+            );
+          })}
         </div>
+
+        {/* Cover requirement banner */}
+        {coverRequired && photos.length > 0 && !coverUrl && (
+          <div className="bg-yellow-pale border border-yellow rounded-lg px-3 py-2 mt-2 text-xs text-ink-1 flex items-center gap-2">
+            <span className="text-base">★</span>
+            <span>Pick one photo as your cover — this is the headline image followers see first.</span>
+          </div>
+        )}
+        {coverRequired && coverUrl && (
+          <div className="flex items-center gap-2 mt-2 text-[11px] text-teal-deep font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-teal" /> Cover photo set
+          </div>
+        )}
+        </>
       )}
 
       <GalleryPicker

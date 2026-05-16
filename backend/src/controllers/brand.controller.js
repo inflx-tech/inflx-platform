@@ -184,11 +184,20 @@ const updateMe = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found. Please register first.', 404);
 
   // Whitelist of updatable fields
-  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'latitude', 'longitude', 'listing_data'];
+  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'latitude', 'longitude', 'listing_data', 'cover_image_url'];
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
+
+  // Wave 2 (Dining) — mirror cover_image_url from nested listing_data into
+  // the typed brands.cover_image_url column so discovery queries can SELECT
+  // it without unpacking JSONB. publishDriver writes the wizard cover into
+  // listing_data; this mirror keeps the typed column in sync without
+  // requiring the driver to learn which keys are typed.
+  if (req.body.listing_data?.cover_image_url !== undefined && updates.cover_image_url === undefined) {
+    updates.cover_image_url = req.body.listing_data.cover_image_url;
+  }
 
   // Auto-extract lat/lng from Google Maps URL if provided
   if (req.body.google_maps_url) {
