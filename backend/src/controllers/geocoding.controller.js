@@ -20,7 +20,7 @@
  * can show a friendly retry / manual-entry banner instead of erroring out.
  */
 
-const asyncHandler = require('../middleware/asyncHandler');
+const asyncHandler = require('../utils/asyncHandler');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 
