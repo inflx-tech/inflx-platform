@@ -772,11 +772,18 @@ const listingService = require('../services/listing.service');
 
 // GET /brands/me/listing-config — full config including listing_steps, card_config, quality_rules
 const getListingConfig = asyncHandler(async (req, res) => {
-  // In dev, clear both schema caches so file changes are picked up without restart
-  if (process.env.NODE_ENV !== 'production') {
-    listingService.clearSchemaCache();
-    schemaCache.clear();
-  }
+  // Always bust the schema cache — production observation: when a schema
+  // file is updated on disk and the Render container reloads, the cache
+  // can warm with the new content correctly, BUT if any orchestration
+  // detail (deploy race, sleeper container, build caching) causes the
+  // process to outlive the file change, the cache holds the old schema
+  // indefinitely. The cost of fs.readFileSync on a 5KB JSON file per
+  // brand request is microseconds; the cost of a stale schema is "user
+  // sees 6 old steps instead of 9 new ones, files a bug." Trade-off is
+  // obvious. Cache stays for non-brand-facing reads (getCategoryStores
+  // etc.) where the schema is unchanged-during-session.
+  listingService.clearSchemaCache();
+  schemaCache.clear();
 
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
