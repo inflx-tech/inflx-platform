@@ -350,7 +350,47 @@ export default function BrandStoreScreen({ navigation, route }) {
                       brand={{ name: brand?.business_name, category: brand?.category, locality: brand?.city }}
                       discount={bestOffer ? { type: bestOffer.offer_type || 'percentage', value: bestOffer.discount_value } : null}
                       accentColor={accent.accent}
-                      onPress={() => {}}
+                      onPress={() => {
+                        // Tap a product on BrandStore → ProductDetail.
+                        // Resolve the attribution influencer: prefer the via-
+                        // creator (sticky-header creator), otherwise pick the
+                        // influencer who owns bestOffer. Without either, we
+                        // can't fetch product context — skip silently.
+                        const isCarRental = brand?.category === 'car_rental' || brand?.category === 'bike_rental';
+                        if (isCarRental) {
+                          const specs = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {});
+                          navigation.navigate('CarDetail', {
+                            vehicle: { name: product.name, specs: specs.specs || {}, location: brand?.city, distance: '1.2 km' },
+                            pricing: { day_rate: product.price, ...specs },
+                            discount: bestOffer ? { value: bestOffer.discount_value, influencer_name: creator?.name } : null,
+                            tracking,
+                          });
+                          return;
+                        }
+                        // Find the influencer who owns bestOffer for tracking
+                        const owningInfluencer = creator
+                          || influencers.find(inf => (inf.offers || []).some(o => o.offer_id === bestOffer?.offer_id))
+                          || influencers[0]
+                          || null;
+                        if (!owningInfluencer || !bestOffer) return; // no attribution context — can't load details
+                        const attribTracking = tracking || {
+                          campaign_id: bestOffer.campaign_id,
+                          set_id: bestOffer.set_id,
+                          offer_id: bestOffer.offer_id,
+                          campaign_influencer_id: bestOffer.campaign_influencer_id,
+                          influencer_id: owningInfluencer.influencer_id || owningInfluencer.id,
+                        };
+                        navigation.navigate('ProductDetail', {
+                          offer: { id: bestOffer.offer_id, offer_type: bestOffer.offer_type, discount_value: bestOffer.discount_value, availing_modes: bestOffer.availing_modes },
+                          brand: { id: brand?.id, name: brand?.business_name, category: brand?.category, locality: brand?.city, city: brand?.city },
+                          store: { instagram_handle: owningInfluencer.instagram_handle, name: owningInfluencer.name },
+                          influencer: owningInfluencer,
+                          selectedProductId: product.id,
+                          product: { ...product, price: parseFloat(product.price || 0) },
+                          tracking: attribTracking,
+                          trackingParams: attribTracking,
+                        });
+                      }}
                     />
                   </View>
                 ))}
