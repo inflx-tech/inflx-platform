@@ -128,6 +128,29 @@ router.get('/category/:super_category/stores',    authenticateOptional, follower
 // fixed Vijayawada coords; prod hits Google Geocoding API.
 router.post('/internal/geocode-maps-url',         authenticate, geocodingCtrl.geocodeMapsUrl);
 
+// ── Wave 1 diagnostic — confirm which restaurant.json is deployed ────────────
+// Returns the listing_steps array (step ids + titles only — not full content)
+// so we can verify the deployed schema has the new 9 steps without needing
+// a brand-auth session. Remove after Wave 1 testing.
+router.get('/_dev/restaurant-schema-summary', (req, res) => {
+  try {
+    const listingService = require('../services/listing.service');
+    listingService.clearSchemaCache();
+    const schema = listingService.loadSchema('restaurant');
+    if (!schema) return res.json({ ok: false, reason: 'schema not loaded' });
+    res.json({
+      ok: true,
+      listing_steps_count: (schema.listing_steps || []).length,
+      listing_steps: (schema.listing_steps || []).map(s => ({ id: s.id, title: s.title, component: s.component })),
+      brand_fields_keys: Object.keys(schema.brand_config?.fields || {}),
+      quality_tiers: schema.quality_tiers || null,
+      filters_count: (schema.buyer_config?.filters || []).length,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, err: err.message });
+  }
+});
+
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);
 router.use('/follower',  returnsRoutes.followerRouter);
