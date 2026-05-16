@@ -353,6 +353,37 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
     }
   }
 
+  // Phase E — creator's published "picks" for this brand. When the buyer
+  // arrived via a creator link, surface a horizontal strip of dishes the
+  // creator has personally recommended (joined from influencer_product_notes
+  // → brand_products for this brand only). Empty array when the creator
+  // hasn't published anything for this brand, or no viaInfluencerId.
+  let creatorPicks = [];
+  if (viaInfluencerId) {
+    const { rows: pickRows } = await db.query(
+      `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag,
+              bp.description, ipn.note_text
+       FROM   influencer_product_notes ipn
+       JOIN   brand_products bp ON bp.id = ipn.product_id
+       WHERE  ipn.influencer_id = $1
+         AND  bp.brand_id = $2
+         AND  bp.is_active = true
+       ORDER  BY ipn.updated_at DESC NULLS LAST, ipn.created_at DESC
+       LIMIT  20`,
+      [viaInfluencerId, brandId]
+    );
+    creatorPicks = pickRows.map(p => ({
+      id: p.id,
+      name: p.name,
+      price: parseFloat(p.price || 0),
+      image_url: p.image_url,
+      section: p.section,
+      veg_flag: p.veg_flag,
+      description: p.description,
+      influencer_note: p.note_text,
+    }));
+  }
+
   return {
     brand: {
       id: brand.id,
@@ -376,6 +407,7 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
     })),
     influencers: Object.values(byInfluencer),
     creator,                                              // null when no via param or unknown influencer
+    creator_picks: creatorPicks,                          // Phase E — published dishes when viewed via creator link
   };
 }
 

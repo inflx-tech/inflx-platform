@@ -55,6 +55,7 @@ const CATEGORY_EMOJI = {
   florist:        '💐',
 };
 
+// Generic labels — fallback for categories without category-specific verbs.
 const MODE_LABELS = {
   online_order:  { label: 'Buy Now',     screen: 'OnlineOrder',  emoji: '🛒' },
   pay_at_store:  { label: 'Pay at Venue', screen: 'PayAtStore',   emoji: '💸' },
@@ -62,6 +63,47 @@ const MODE_LABELS = {
   prebook:       { label: 'Book Slot',   screen: 'PreBook',      emoji: '📅' },
   enquiry:       { label: 'Enquire',     screen: 'Enquiry',      emoji: '✉️' },
 };
+
+// Category-aware overrides — drive the verbs from the user's mental model
+// of what they're buying. Restaurants book tables, salons book slots, cars
+// get reserved. Fall through to MODE_LABELS when no override exists.
+const CATEGORY_LABELS = {
+  restaurant: {
+    online_order: { label: 'Order Online',    screen: 'OnlineOrder', emoji: '🛵' },
+    walkin_pay:   { label: 'Pay at Restaurant', screen: 'PayAtStore',  emoji: '💸' },
+    pay_at_store: { label: 'Pay at Restaurant', screen: 'PayAtStore',  emoji: '💸' },
+    prebook:      { label: 'Book a Table',    screen: 'PreBook',     emoji: '📅' },
+  },
+  bakery: {
+    online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '🧁' },
+    walkin_pay:   { label: 'Pay at Bakery', screen: 'PayAtStore',  emoji: '💸' },
+    pay_at_store: { label: 'Pay at Bakery', screen: 'PayAtStore',  emoji: '💸' },
+  },
+  salon: {
+    walkin_pay:   { label: 'Pay at Salon',  screen: 'PayAtStore', emoji: '💸' },
+    pay_at_store: { label: 'Pay at Salon',  screen: 'PayAtStore', emoji: '💸' },
+    prebook:      { label: 'Book Appointment', screen: 'PreBook',  emoji: '✂️' },
+  },
+  car_rental: {
+    prebook:      { label: 'Reserve Car',   screen: 'PreBook',     emoji: '🚗' },
+    walkin_pay:   { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
+    pay_at_store: { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
+  },
+  bike_rental: {
+    prebook:      { label: 'Reserve Bike',  screen: 'PreBook',     emoji: '🏍️' },
+    walkin_pay:   { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
+    pay_at_store: { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
+  },
+  fashion:        { online_order: { label: 'Buy Now', screen: 'OnlineOrder', emoji: '👗' } },
+  fashion_walkin: { online_order: { label: 'Buy Now', screen: 'OnlineOrder', emoji: '👗' } },
+  fashion_online: { online_order: { label: 'Buy Now', screen: 'OnlineOrder', emoji: '👕' } },
+};
+
+function getModeConfig(mode, category) {
+  const catOverrides = CATEGORY_LABELS[category];
+  if (catOverrides && catOverrides[mode]) return catOverrides[mode];
+  return MODE_LABELS[mode] || null;
+}
 
 export default function ProductDetailScreen({ navigation, route }) {
   const {
@@ -145,18 +187,22 @@ export default function ProductDetailScreen({ navigation, route }) {
     }
   }
 
-  // ── CTA list from availing_modes ───────────────────────────────────────
+  // ── CTA list from availing_modes — category-aware ─────────────────────
+  // For restaurants/salons/cars we use category-specific verbs (Book a Table,
+  // Pay at Restaurant, Reserve Car) instead of generic ones (Book Slot,
+  // Pay at Venue). Falls back to generic labels for other categories.
   const availingModes = Array.isArray(offer?.availing_modes) ? offer.availing_modes : ['online_order'];
   const ctaList = [];
   const seenScreens = new Set();
   for (const m of availingModes) {
-    const cfg = MODE_LABELS[m];
+    const cfg = getModeConfig(m, brand?.category);
     if (!cfg || seenScreens.has(cfg.screen)) continue;
     seenScreens.add(cfg.screen);
     ctaList.push({ mode: m, ...cfg });
   }
   if (ctaList.length === 0) {
-    ctaList.push({ mode: 'online_order', ...MODE_LABELS.online_order });
+    const fallback = getModeConfig('online_order', brand?.category) || MODE_LABELS.online_order;
+    ctaList.push({ mode: 'online_order', ...fallback });
   }
   const primaryCta = ctaList[0];
   const secondaryCtas = ctaList.slice(1);

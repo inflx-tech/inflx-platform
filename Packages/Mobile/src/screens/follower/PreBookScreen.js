@@ -6,6 +6,74 @@ import {
 import { colors, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
+// Category-aware copy. Restaurants get table-booking verbs, salons get
+// appointment verbs, cars get reservation verbs. Falls back to generic
+// "Pre-Book" for unknowns.
+function getCopyForCategory(category) {
+  switch (category) {
+    case 'restaurant':
+    case 'bakery':
+      return {
+        title:         'Book a Table',
+        peopleLabel:   'Party Size',
+        peopleSuffix:  'guests',
+        timeLabel:     'Time',
+        venueWord:     'restaurant',
+        confirmCta:    'Pay & Book Table',
+        showTimeSlots: true,
+      };
+    case 'salon':
+      return {
+        title:         'Book Appointment',
+        peopleLabel:   'Number of People',
+        peopleSuffix:  'people',
+        timeLabel:     'Time',
+        venueWord:     'salon',
+        confirmCta:    'Pay & Book',
+        showTimeSlots: true,
+      };
+    case 'car_rental':
+    case 'bike_rental':
+      return {
+        title:         category === 'bike_rental' ? 'Reserve Bike' : 'Reserve Car',
+        peopleLabel:   'Number of People',
+        peopleSuffix:  'people',
+        timeLabel:     'Pickup Time',
+        venueWord:     'pickup location',
+        confirmCta:    'Pay & Reserve',
+        showTimeSlots: false,
+      };
+    default:
+      return {
+        title:         'Pre-Book',
+        peopleLabel:   'Guests',
+        peopleSuffix:  'guests',
+        timeLabel:     'Preferred Time',
+        venueWord:     'venue',
+        confirmCta:    'Pay & Book',
+        showTimeSlots: false,
+      };
+  }
+}
+
+// Restaurant time slots — 30-min intervals from 12pm to 11pm.
+const RESTAURANT_TIME_SLOTS = [
+  '12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM',
+  '7:00 PM','7:30 PM','8:00 PM','8:30 PM','9:00 PM','9:30 PM','10:00 PM','10:30 PM',
+];
+
+// Salon time slots — hourly from 10am to 8pm.
+const SALON_TIME_SLOTS = [
+  '10:00 AM','11:00 AM','12:00 PM','1:00 PM','2:00 PM',
+  '3:00 PM','4:00 PM','5:00 PM','6:00 PM','7:00 PM','8:00 PM',
+];
+
+function getTimeSlotsForCategory(category) {
+  if (category === 'restaurant' || category === 'bakery') return RESTAURANT_TIME_SLOTS;
+  if (category === 'salon') return SALON_TIME_SLOTS;
+  return [];
+}
+
 // Simple date picker: show next 14 days
 function DatePicker({ selected, onSelect }) {
   const today = new Date();
@@ -39,9 +107,33 @@ function DatePicker({ selected, onSelect }) {
   );
 }
 
+// Time-slot chip picker — used for restaurants and salons. Free-text input
+// stays the fallback for categories without a fixed slot grid.
+function TimeSlotPicker({ slots, selected, onSelect }) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.datePicker}>
+      {slots.map(slot => {
+        const isSelected = selected === slot;
+        return (
+          <TouchableOpacity
+            key={slot}
+            style={[styles.timeSlotChip, isSelected && styles.timeSlotChipActive]}
+            onPress={() => onSelect(slot)}
+          >
+            <Text style={[styles.timeSlotText, isSelected && styles.timeSlotTextActive]}>{slot}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 // Steps: 'form' → 'summary' → 'paying' → 'confirmed'
 export default function PreBookScreen({ navigation, route }) {
-  const { offer, store, trackingParams } = route.params || {};
+  const { offer, store, brand, trackingParams } = route.params || {};
+  const category = brand?.category || store?.brand_category || null;
+  const copy = getCopyForCategory(category);
+  const timeSlots = getTimeSlotsForCategory(category);
   const [date, setDate]             = useState('');
   const [time, setTime]             = useState('');
   const [guests, setGuests]         = useState('1');
@@ -260,15 +352,17 @@ export default function PreBookScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
           <Text style={styles.backText}>{'\u2190'} Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Pre-Book</Text>
-        {offer?.name && <Text style={styles.sub}>{offer.name}</Text>}
+        <Text style={styles.title}>{copy.title}</Text>
+        {(offer?.name || brand?.name) && (
+          <Text style={styles.sub}>{offer?.name || brand?.name}</Text>
+        )}
       </View>
 
       {/* Offer summary with advance info */}
       {offer && (
         <View style={styles.card}>
           <View style={styles.offerRow}>
-            <Text style={styles.offerName}>{offer.name || offer.title}</Text>
+            <Text style={styles.offerName}>{offer.name || offer.title || brand?.name}</Text>
             {price > 0 && <Text style={styles.offerPrice}>{fmtMoney(price)}</Text>}
           </View>
           {offer.description ? <Text style={styles.offerDesc}>{offer.description}</Text> : null}
@@ -286,17 +380,22 @@ export default function PreBookScreen({ navigation, route }) {
         <DatePicker selected={date} onSelect={setDate} />
       </View>
 
-      {/* Time + guests */}
+      {/* Time picker \u2014 chips for restaurants/salons, free-text for others */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Preferred Time</Text>
-        <TextInput
-          style={styles.input}
-          value={time}
-          onChangeText={setTime}
-          placeholder="e.g. 2:00 PM or 14:00"
-          placeholderTextColor={colors.t3}
-        />
-        <Text style={[styles.cardTitle, { marginTop: 12 }]}>Number of Guests</Text>
+        <Text style={styles.cardTitle}>{copy.timeLabel}</Text>
+        {copy.showTimeSlots && timeSlots.length > 0 ? (
+          <TimeSlotPicker slots={timeSlots} selected={time} onSelect={setTime} />
+        ) : (
+          <TextInput
+            style={styles.input}
+            value={time}
+            onChangeText={setTime}
+            placeholder="e.g. 2:00 PM or 14:00"
+            placeholderTextColor={colors.t3}
+          />
+        )}
+
+        <Text style={[styles.cardTitle, { marginTop: 12 }]}>{copy.peopleLabel}</Text>
         <View style={styles.guestRow}>
           <TouchableOpacity
             style={styles.guestBtn}
@@ -309,6 +408,7 @@ export default function PreBookScreen({ navigation, route }) {
             onPress={() => setGuests(g => String(parseInt(g || '1', 10) + 1))}>
             <Text style={styles.guestBtnText}>+</Text>
           </TouchableOpacity>
+          <Text style={styles.guestSuffix}>{copy.peopleSuffix}</Text>
         </View>
       </View>
 
@@ -368,6 +468,18 @@ const styles = StyleSheet.create({
   guestBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
   guestBtnText: { fontSize: 20, color: colors.t1, fontWeight: '600' },
   guestCount: { fontSize: 20, fontWeight: '800', color: colors.t1, minWidth: 32, textAlign: 'center' },
+  guestSuffix: { fontSize: 12, color: colors.t3, marginLeft: 4 },
+
+  // Time-slot chips (restaurants / salons)
+  timeSlotChip: {
+    paddingHorizontal: 12, paddingVertical: 8,
+    marginRight: 6,
+    borderRadius: 18, backgroundColor: colors.surface2,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  timeSlotChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
+  timeSlotText: { fontSize: 12, fontWeight: '700', color: colors.t1 },
+  timeSlotTextActive: { color: colors.white },
   noteInput: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 13, color: colors.t1, textAlignVertical: 'top' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
   summaryLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },

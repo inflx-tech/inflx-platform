@@ -392,7 +392,7 @@
       {
         "kind": "transactional",
         "action": "walkin_pay",
-        "label": "Pay Bill",
+        "label": "Pay at Restaurant",
         "config": {
           "fields": ["amount","tip_amount"],
           "payment_modes": ["full"],

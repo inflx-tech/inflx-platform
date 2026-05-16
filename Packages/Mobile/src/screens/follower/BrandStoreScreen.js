@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
 import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
@@ -60,6 +60,7 @@ export default function BrandStoreScreen({ navigation, route }) {
   const products = store?.products || [];
   const influencers = store?.influencers || [];
   const creator = store?.creator || null;   // Phase Salon-2: via-influencer for sticky header
+  const creatorPicks = store?.creator_picks || []; // Phase E: published dishes when via creator
   const accent = getBusinessAccent(brand?.category);
   const icon = accent.icon;
 
@@ -269,6 +270,62 @@ export default function BrandStoreScreen({ navigation, route }) {
       {/* Products tab — grid layout */}
       {tab === 'products' && (
         <>
+          {/* Phase E — creator-picks strip. Only renders when the buyer
+              arrived via a creator link AND that creator has published
+              product notes for this brand. Horizontal scroll above the
+              regular menu sections so the creator's voice leads, then the
+              full catalogue follows for browsing. */}
+          {creator && creatorPicks.length > 0 && (
+            <View style={s.creatorPicksBlock}>
+              <View style={s.creatorPicksHeader}>
+                <View style={s.creatorPicksAvatarRow}>
+                  <View style={[s.creatorPicksAvatar, { backgroundColor: accent.accent }]}>
+                    <Text style={s.creatorPicksAvatarText}>{(creator.name || '?')[0]}</Text>
+                  </View>
+                  <Text style={[s.creatorPicksTitle, { color: accent.accent }]}>
+                    {creator.name?.split(' ')[0] || `@${creator.instagram_handle}`}'s picks ({creatorPicks.length})
+                  </Text>
+                </View>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.creatorPicksScroll}>
+                {creatorPicks.map(pick => (
+                  <TouchableOpacity
+                    key={pick.id}
+                    style={s.creatorPickCard}
+                    activeOpacity={0.85}
+                    onPress={() => {
+                      // Tap a creator-recommended dish → open product detail
+                      // with full tracking so commission still flows.
+                      navigation.navigate('ProductDetail', {
+                        offer: { availing_modes: brand?.category === 'restaurant' ? ['walkin_pay','prebook','online_order'] : undefined },
+                        brand: { id: brand?.id, name: brand?.business_name, category: brand?.category, locality: brand?.city, city: brand?.city },
+                        store: { instagram_handle: creator.instagram_handle, name: creator.name },
+                        influencer: creator,
+                        selectedProductId: pick.id,
+                        product: pick,
+                        tracking: tracking,
+                        trackingParams: tracking,
+                      });
+                    }}
+                  >
+                    <View style={[s.creatorPickImg, { backgroundColor: accent.dim }]}>
+                      {pick.image_url
+                        ? <Image source={{ uri: pick.image_url }} style={s.creatorPickImgFill} resizeMode="cover" />
+                        : <Text style={s.creatorPickEmoji}>{accent.icon}</Text>}
+                    </View>
+                    <Text style={s.creatorPickName} numberOfLines={2}>{pick.name}</Text>
+                    {pick.influencer_note ? (
+                      <Text style={[s.creatorPickNote, { color: accent.accent }]} numberOfLines={2}>
+                        "{pick.influencer_note}"
+                      </Text>
+                    ) : null}
+                    <Text style={s.creatorPickPrice}>{fmtMoney(parseFloat(pick.price || 0))}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Section pills */}
           {sectionList.length > 1 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.sectionPills}>
@@ -482,6 +539,40 @@ const s = StyleSheet.create({
     borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
   tabText: { fontSize: 12, fontWeight: '600', color: darkColors.textSecondary },
+  // Phase E — creator picks strip (creator's published dishes for this brand)
+  creatorPicksBlock: {
+    marginTop: 6,
+    paddingTop: 12,
+    paddingBottom: 6,
+    backgroundColor: darkColors.bg2,
+  },
+  creatorPicksHeader: { paddingHorizontal: 20, marginBottom: 8 },
+  creatorPicksAvatarRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  creatorPicksAvatar: {
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  creatorPicksAvatarText: { fontSize: 11, fontWeight: '800', color: '#fff' },
+  creatorPicksTitle: { fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  creatorPicksScroll: { paddingHorizontal: 20, gap: 10, paddingBottom: 4 },
+  creatorPickCard: {
+    width: 140,
+    backgroundColor: darkColors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    overflow: 'hidden',
+  },
+  creatorPickImg: {
+    height: 90, alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  creatorPickImgFill: { width: '100%', height: '100%' },
+  creatorPickEmoji: { fontSize: 32 },
+  creatorPickName: { fontSize: 11, fontWeight: '700', color: darkColors.text, paddingHorizontal: 10, paddingTop: 8, lineHeight: 14 },
+  creatorPickNote: { fontSize: 9, fontStyle: 'italic', paddingHorizontal: 10, paddingTop: 4, lineHeight: 12 },
+  creatorPickPrice: { fontSize: 12, fontWeight: '800', color: darkColors.text, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 10 },
+
   sectionPills: { paddingHorizontal: 20, paddingVertical: 10, gap: 6 },
   sectionPill: {
     paddingHorizontal: 12, paddingVertical: 6,

@@ -699,10 +699,18 @@ const getCategoryStores = asyncHandler(async (req, res) => {
 
     const cardConfig = listingService.getCardConfig(store.category);
 
-    // Fetch active offers for this store
+    // Fetch active offers for this store. We expose instagram_handle and
+    // campaign_influencer_id so the mobile CategoryListScreen can navigate
+    // to ProductDetail with full tracking — previously these were missing
+    // and the detail screen 500'd with "Missing creator handle".
     const { rows: offers } = await db.query(
-      `SELECT co.id AS offer_id, co.offer_type, co.discount_value,
-              ci.influencer_id, u_inf.name AS influencer_name
+      `SELECT co.id AS offer_id, co.offer_type, co.discount_value, co.availing_modes,
+              ci.id  AS campaign_influencer_id,
+              cs.id  AS set_id,
+              c.id   AS campaign_id,
+              ci.influencer_id,
+              u_inf.name AS influencer_name,
+              i.instagram_handle
        FROM campaign_offers co
        JOIN campaign_sets cs ON cs.id = co.set_id
        JOIN campaigns c ON c.id = cs.campaign_id
