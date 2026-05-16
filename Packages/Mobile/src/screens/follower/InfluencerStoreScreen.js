@@ -197,11 +197,21 @@ export default function InfluencerStoreScreen({ navigation, route }) {
                           tracking: { campaign_id: item.offer.campaign_id, set_id: item.offer.set_id, offer_id: item.offer.offer_id, campaign_influencer_id: item.offer.campaign_influencer_id },
                         });
                       } else {
-                        // Phase Salon-2 — thread tracking. influencer is the
-                        // current store's owner (`inf`), spliced as fallback.
-                        navigation.navigate('BrandStore', {
-                          brandId: item.brand.id,
+                        // Non-car_rental products → product detail page where
+                        // the follower sees the item + Buy-Now / book CTA.
+                        // Previously this navigated to BrandStore which was
+                        // wrong: tapping a single product shouldn't dump the
+                        // user into the entire brand catalogue. Brand-name
+                        // link (the chevron on the card) still goes to
+                        // BrandStore for catalogue browsing.
+                        navigation.navigate('ProductDetail', {
+                          offer:  { id: item.offer.offer_id, offer_type: item.offer.offer_type, discount_value: item.offer.discount_value, availing_modes: item.offer.availing_modes },
+                          brand:  item.brand,
+                          store:  { instagram_handle: handle, name: inf?.name },
+                          influencer: inf,
+                          selectedProductId: item.product.id,
                           tracking: buildTrackingFromOffer(item.offer, inf),
+                          trackingParams: buildTrackingFromOffer(item.offer, inf),
                         });
                       }
                     }}

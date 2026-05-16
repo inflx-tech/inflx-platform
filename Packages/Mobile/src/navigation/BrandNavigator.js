@@ -19,6 +19,7 @@ import BrandConversionsScreen from '../screens/brand/BrandConversionsScreen';
 import BrandInfluencerBrowseScreen from '../screens/brand/BrandInfluencerBrowseScreen';
 import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfileScreen';
 import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScreen';
+import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
 
 const Tab = createBottomTabNavigator();
@@ -36,6 +37,7 @@ function HomeStack() {
       <Stack.Screen name="BrandConversions" component={BrandConversionsScreen} />
       <Stack.Screen name="BrandInfluencerBrowse"  component={BrandInfluencerBrowseScreen} />
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
+      <Stack.Screen name="BrandStorePreview"      component={BrandStorePreviewScreen} />
       <Stack.Screen name="ContractPdf"            component={ContractPdfScreen} />
     </Stack.Navigator>
   );

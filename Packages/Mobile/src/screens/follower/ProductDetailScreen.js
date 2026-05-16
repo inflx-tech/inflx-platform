@@ -7,7 +7,7 @@ import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 export default function ProductDetailScreen({ navigation, route }) {
-  const { offer, store, trackingParams } = route.params || {};
+  const { offer, store, trackingParams, selectedProductId } = route.params || {};
   const handle = store?.instagram_handle || '';
 
   const [products, setProducts] = useState([]);
@@ -21,11 +21,20 @@ export default function ProductDetailScreen({ navigation, route }) {
       if (res.success) {
         const items = res.data?.products || res.data || [];
         setProducts(items);
-        if (items.length > 0) setSelected(items[0]);
+        // Honor selectedProductId when navigated from a specific product
+        // tap (e.g. ProductCard on InfluencerStore). Falls back to the
+        // first product if the id isn't in the list (defensive — handles
+        // stale links).
+        if (items.length > 0) {
+          const preselected = selectedProductId
+            ? items.find(p => p.id === selectedProductId)
+            : null;
+          setSelected(preselected || items[0]);
+        }
       }
     }
     if (handle) load();
-  }, [handle]);
+  }, [handle, selectedProductId]);
 
   function computeDiscount(pricePaise) {
     if (!offer) return 0;

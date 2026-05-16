@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { darkColors, fmtMoney, getBusinessAccent, fonts } from '../../theme/tokens';
 
 /**
@@ -40,9 +40,19 @@ export default function ProductCard({
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
-      {/* Hero area */}
+      {/* Hero area — real product image when image_url is present, category
+          emoji as fallback. Followers expect to see the actual car / dish /
+          outfit, not a generic icon. */}
       <View style={[styles.hero, { backgroundColor: accentDim || 'rgba(245,158,11,0.08)' }]}>
-        <Text style={styles.heroIcon}>{icon}</Text>
+        {product?.image_url ? (
+          <Image
+            source={{ uri: product.image_url }}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={styles.heroIcon}>{icon}</Text>
+        )}
 
         {/* Discount badge */}
         {discountLabel && (
@@ -220,6 +230,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    overflow: 'hidden',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
   },
   heroIcon: {
     fontSize: 48,

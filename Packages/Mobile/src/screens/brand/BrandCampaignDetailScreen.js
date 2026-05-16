@@ -747,39 +747,143 @@ export default function BrandCampaignDetailScreen({ navigation, route }) {
         );
       })() : null}
 
-      {/* ── Products Summary (conversion / hybrid only) ────────────────── */}
+      {/* ── Publishing Status — per-influencer pivot ──────────────────────
+          Shows the brand exactly who has published what, instead of a flat
+          product list. For brand-level offers (no per-product assignment),
+          pivots on published_by so the brand sees which creators have
+          actually pushed products to their stores.
+
+          Data source: brandApi.getCampaignAllProducts → productsData.products[]
+            - publish_status: 'published' | 'pending'
+            - published_by: [{ influencer_name, influencer_id, note_text }]
+            - assigned_to_influencers: [{ handle, name, influencer_id }]
+       */}
       {productsData && productsData.products && productsData.products.length > 0 &&
-       sets.some(s => ['conversion','hybrid'].includes((s.goal||'').toLowerCase())) && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Products in Offer ({productsData.summary?.total_products ?? productsData.products.length})
-          </Text>
-          {productsData.is_brand_level_offer && (
-            <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 10 }]}>
-              Brand-level offer — every influencer promotes the entire catalogue.
+       sets.some(s => ['conversion','hybrid'].includes((s.goal||'').toLowerCase())) && (() => {
+        // Build per-influencer pivot.
+        //   - assignedByInf[infId] = [products assigned to this CI]
+        //   - publishedByInf[infId] = Map<productId, note_text>
+        const assignedByInf = {};   // influencer_id → product[]
+        const publishedByInf = {};  // influencer_id → { product_id → note_text }
+        const infNameById = {};
+        const infHandleById = {};
+
+        for (const p of productsData.products) {
+          // Track who published which product
+          for (const note of (p.published_by || [])) {
+            const id = note.influencer_id;
+            if (!id) continue;
+            if (!publishedByInf[id]) publishedByInf[id] = {};
+            publishedByInf[id][p.id] = note.note_text;
+            infNameById[id] = note.influencer_name;
+          }
+          // Track who was assigned this product
+          for (const assignment of (p.assigned_to_influencers || [])) {
+            const id = assignment.influencer_id;
+            if (!id) continue;
+            if (!assignedByInf[id]) assignedByInf[id] = [];
+            assignedByInf[id].push(p);
+            if (assignment.name) infNameById[id] = assignment.name;
+            if (assignment.handle) infHandleById[id] = assignment.handle;
+          }
+        }
+
+        // For brand-level offers (no per-product assignment), the assigned
+        // list is empty. Fall back to "all products are available to every
+        // contracted influencer in the campaign" — but only surface rows
+        // for influencers who have actually published something (to keep
+        // the card tight).
+        const isBrandLevel = productsData.is_brand_level_offer || Object.keys(assignedByInf).length === 0;
+        let infIds = Object.keys(isBrandLevel ? publishedByInf : assignedByInf);
+        // For brand-level, surface contracted influencers from the campaign
+        // even when they haven't published anything, so the brand can see
+        // who's lagging.
+        if (isBrandLevel) {
+          for (const ci of allInfluencers) {
+            if (!ci.influencer_id) continue;
+            if (!infIds.includes(ci.influencer_id)) {
+              infIds.push(ci.influencer_id);
+              infNameById[ci.influencer_id] = ci.influencer_name || ci.full_name;
+              infHandleById[ci.influencer_id] = ci.instagram_handle;
+            }
+          }
+        }
+
+        if (infIds.length === 0) return null;
+
+        const totalProducts = productsData.products.length;
+        const totalPublished = productsData.products.filter(p => p.publish_status === 'published').length;
+
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>
+              Publishing Status · {totalPublished}/{totalProducts} live
             </Text>
-          )}
-          {productsData.products.slice(0, 5).map((p, i) => (
-            <View key={p.id || i} style={styles.productRow}>
-              <View style={styles.productDot} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
-                <Text style={styles.productSection}>{p.section || 'General'} · {fmtRupees(p.price)}</Text>
-                {(p.assigned_to_influencers || []).length > 0 && (
-                  <Text style={styles.productAssigned} numberOfLines={1}>
-                    Assigned to: {p.assigned_to_influencers.map(a => '@' + (a.handle || a.name)).join(', ')}
-                  </Text>
-                )}
-              </View>
-            </View>
-          ))}
-          {productsData.products.length > 5 && (
-            <Text style={[styles.headerDate, { color: colors.t3, marginTop: 6, textAlign: 'center' }]}>
-              + {productsData.products.length - 5} more — open web dashboard for full list
-            </Text>
-          )}
-        </View>
-      )}
+            {isBrandLevel && (
+              <Text style={[styles.headerDate, { color: colors.t3, marginBottom: 10 }]}>
+                Brand-level offer — every creator can promote the full catalogue.
+              </Text>
+            )}
+
+            {infIds.map(infId => {
+              const products = isBrandLevel
+                ? productsData.products  // brand-level: all products available
+                : (assignedByInf[infId] || []);
+              const publishedMap = publishedByInf[infId] || {};
+              const publishedCount = products.filter(p => publishedMap[p.id]).length;
+              const name = infNameById[infId] || 'Creator';
+              const handle = infHandleById[infId];
+
+              return (
+                <View key={infId} style={styles.pubInfBlock}>
+                  <View style={styles.pubInfHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.pubInfName}>{name}</Text>
+                      {handle ? <Text style={styles.pubInfHandle}>@{handle}</Text> : null}
+                    </View>
+                    <Text style={[
+                      styles.pubInfCount,
+                      publishedCount === products.length && products.length > 0
+                        ? { color: colors.tealDeep, backgroundColor: colors.tealPale }
+                        : publishedCount === 0
+                          ? { color: colors.orange, backgroundColor: colors.orangePale }
+                          : { color: colors.navy, backgroundColor: colors.navyPale },
+                    ]}>
+                      {publishedCount}/{products.length} live
+                    </Text>
+                  </View>
+
+                  {products.slice(0, 5).map((p, i) => {
+                    const isPublished = !!publishedMap[p.id];
+                    return (
+                      <View key={p.id || i} style={styles.pubProdRow}>
+                        <Text style={styles.pubProdStatus}>
+                          {isPublished ? '✓' : '○'}
+                        </Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.pubProdName} numberOfLines={1}>{p.name}</Text>
+                          {isPublished && publishedMap[p.id] ? (
+                            <Text style={styles.pubProdNote} numberOfLines={2}>
+                              "{publishedMap[p.id]}"
+                            </Text>
+                          ) : (
+                            <Text style={styles.pubProdPending}>Pending — creator hasn't published yet</Text>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                  {products.length > 5 && (
+                    <Text style={[styles.headerDate, { color: colors.t3, textAlign: 'center', marginTop: 4 }]}>
+                      + {products.length - 5} more
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        );
+      })()}
 
       {/* ── Escrow Section ──────────────────────────────────────────────── */}
       {/* Conversion-only campaigns have no fee → no escrow tranches.
@@ -1112,6 +1216,39 @@ const styles = StyleSheet.create({
   productName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
   productSection: { fontSize: 11, color: colors.t3, marginTop: 2 },
   productAssigned: { fontSize: 10, color: colors.tealDeep, marginTop: 2, fontStyle: 'italic' },
+
+  // Publishing-status pivot (per-influencer)
+  pubInfBlock: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  pubInfHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  pubInfName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  pubInfHandle: { fontSize: 11, color: colors.t3, marginTop: 1 },
+  pubInfCount: {
+    fontSize: 11,
+    fontWeight: '800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  pubProdRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 6,
+    paddingLeft: 4,
+  },
+  pubProdStatus: { fontSize: 14, color: colors.tealDeep, fontWeight: '800', width: 16 },
+  pubProdName: { fontSize: 12, fontWeight: '700', color: colors.t1 },
+  pubProdNote: { fontSize: 11, color: colors.tealDeep, fontStyle: 'italic', marginTop: 2, lineHeight: 16 },
+  pubProdPending: { fontSize: 11, color: colors.t3, marginTop: 2 },
 
   // Back button (error state)
   backBtn: {
