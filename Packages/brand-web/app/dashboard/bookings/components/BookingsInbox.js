@@ -18,15 +18,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { brandApi, fmtRupees } from '../../../../lib/api';
 
 const TABS = [
-  { key: 'all',      label: 'All' },
-  { key: 'pending',  label: 'Pending' },
-  { key: 'today',    label: 'Today' },
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'past',     label: 'Past' },
+  { key: 'pending',   label: 'Pending' },
+  { key: 'today',     label: 'Today' },
+  { key: 'upcoming',  label: 'Upcoming' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'cancelled', label: 'Cancelled' },
 ];
 
 export default function BookingsInbox() {
-  const [tab, setTab]           = useState('all');
+  const [tab, setTab]           = useState('pending');
   const [bookings, setBookings] = useState([]);
   const [stats, setStats]       = useState({ pending: 0, today: 0, upcoming: 0, revenue_7d: 0 });
   const [loading, setLoading]   = useState(true);
@@ -79,9 +79,11 @@ export default function BookingsInbox() {
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <StatTile label="Pending"     value={stats.pending}     hint="awaiting confirm" accent="yellow" />
-        <StatTile label="Today"       value={stats.today}       hint="bookings"         accent="teal" />
-        <StatTile label="Upcoming"    value={stats.upcoming}    hint="future"           accent="ink" />
+        <StatTile label="Pending"     value={stats.pending}
+                  hint={stats.pending > 0 ? 'Needs action' : 'All caught up'}
+                  accent={stats.pending > 0 ? 'yellow' : 'paper'} />
+        <StatTile label="Today"       value={stats.today}       hint="bookings"         accent="paper" />
+        <StatTile label="Upcoming"    value={stats.upcoming}    hint="future"           accent="paper" />
         <StatTile label="Revenue 7d"  value={`₹${Math.round(Number(stats.revenue_7d || 0)).toLocaleString('en-IN')}`}
                   hint="last 7 days" accent="paper" mono />
       </div>

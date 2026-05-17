@@ -6,6 +6,7 @@ import { getTemplate } from './templateRegistry';
 import * as builtins from './builtinStepComponents';
 import { runPublish, canSkipBrandSteps } from './publishDriver';
 import BulkUploadCard from './BulkUploadCard';
+import LivePreview from './LivePreview';
 
 /**
  * ListingTemplateLayout — shared chrome for category-driven listing wizards.
@@ -153,6 +154,16 @@ export default function ListingTemplateLayout({
     }
   }
 
+  // Used by the preview step's section-summary Edit buttons. Resolves a
+  // step ID against visibleSteps (so it respects the brand-skip mode).
+  function jumpToStep(stepId) {
+    const idx = visibleSteps.findIndex(s => s.id === stepId);
+    if (idx >= 0) {
+      setCurrentStep(idx);
+      setErrors({});
+    }
+  }
+
   function resetWizard() {
     setCurrentStep(0);
     setWizardState(tmpl?.initialWizardState?.() || {});
@@ -269,6 +280,7 @@ export default function ListingTemplateLayout({
         onItemAdd={handleItemAdd}
         onItemRemove={handleItemRemove}
         onItemFieldChange={handleItemFieldChange}
+        onJumpToStep={jumpToStep}
         errors={errors}
         scoreData={scoreData}
         previewData={previewData}
@@ -291,8 +303,12 @@ export default function ListingTemplateLayout({
   const labelPlural = template.product_noun_plural || 'Listings';
   const labelSingular = template.product_noun || 'Listing';
 
+  // Wide layout (1180px) when the wizard is open + not on the Done step,
+  // because the 2-col form + 380px live-preview rail needs the room.
+  const wideLayout = view === 'add' && !isDoneStep;
+
   return (
-    <div className="max-w-[780px] mx-auto">
+    <div className={wideLayout ? 'max-w-[1180px] mx-auto' : 'max-w-[780px] mx-auto'}>
       {/* Header */}
       <div className="text-center mb-5">
         <h1 className="font-display text-3xl font-extrabold text-ink-1 tracking-tight">
@@ -396,6 +412,12 @@ export default function ListingTemplateLayout({
           renderStep={renderStep}
           errors={errors}
           saving={saving}
+          scoreData={scoreData}
+          template={template}
+          brand={brand}
+          wizardState={wizardState}
+          wizardItems={wizardItems}
+          previewData={previewData}
           onBack={goBack}
           onNext={goNext}
           onPublish={handlePublish}
@@ -484,52 +506,76 @@ function UploadView({ labelPlural, uploading, uploadResult, onDownload, onUpload
 
 function AddWizardView({
   steps, currentStep, stepConfig, isDoneStep, isPublishStep, canProceed,
-  renderStep, errors, saving,
+  renderStep, errors, saving, scoreData,
+  template, brand, wizardState, wizardItems, previewData,
   onBack, onNext, onPublish, onListAnother, onViewFleet,
 }) {
+  // Pts-unlocked figure surfaces the quality-score progress as the brand
+  // walks through the wizard. We use the running scoreData.score (0–100)
+  // rather than per-step earned points because (a) the schema doesn't
+  // ship a step→rule map and (b) the score recomputes on every save
+  // anyway, so the running total is honest.
+  const score = Math.max(0, Math.min(100, Number(scoreData?.score) || 0));
+  const stepTitle = (stepConfig?.title || '').toUpperCase();
+  const stepNumStr = String(currentStep + 1).padStart(2, '0');
+  const stepTotalStr = String(steps.length).padStart(2, '0');
+  const nextStep = steps[currentStep + 1];
+  const nextLabel = nextStep
+    ? (nextStep.component === 'done' ? 'Publish & go live' : `Next: ${nextStep.title}`)
+    : 'Next';
+
   return (
     <>
-      {/* Progress bar + save indicator */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="font-mono text-[10px] uppercase tracking-wider text-ink-3">
-          Step <span className="text-ink-1">{String(currentStep + 1).padStart(2, '0')}</span>
-          <span className="text-ink-3"> / {String(steps.length).padStart(2, '0')}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
-          <span className="font-mono text-[10px] uppercase tracking-wider text-teal-deep">Autosaving</span>
-        </div>
-      </div>
-      <div className="flex items-center mb-6">
+      {/* Pill progress bar — thin segments, yellow active/done, grey upcoming */}
+      <div className="flex gap-1.5 mb-2 px-0.5">
         {steps.map((s, i) => (
-          <div key={s.id} className="flex-1 flex flex-col items-center relative">
-            {i < steps.length - 1 && (
-              <div className={`absolute top-3 left-[calc(50%+14px)] right-[calc(-50%+14px)] h-0.5 transition-colors
-                ${i < currentStep ? 'bg-teal' : 'bg-paper-deep'}`} />
-            )}
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold z-10 transition-all
-              ${i === currentStep ? 'bg-yellow text-ink-1 ring-4 ring-yellow-pale'
-                : i < currentStep ? 'bg-teal text-white' : 'bg-paper-deep text-ink-3'}`}>
-              {i < currentStep ? '✓' : i + 1}
-            </div>
-            <div className={`text-[10px] mt-1 font-medium text-center
-              ${i === currentStep ? 'text-ink-1 font-semibold'
-                : i < currentStep ? 'text-teal-deep' : 'text-ink-3'}`}>
-              {s.title}
-            </div>
-          </div>
+          <div key={s.id}
+               className={`flex-1 h-1 rounded-full transition-colors
+                 ${i <= currentStep ? 'bg-yellow' : 'bg-paper-deep'}`} />
         ))}
       </div>
 
-      {/* Step content */}
-      <div className="bg-paper border border-line-soft rounded-2xl p-6 mb-4 shadow-sm">
-        {renderStep()}
-        {errors._publish && (
-          <div className="bg-red-pale border border-red rounded-xl p-3 mt-4">
-            <p className="text-red text-xs">{errors._publish}</p>
-          </div>
-        )}
+      {/* Step meta — mono, uppercase, "STEP 01 / 09 · NAME" + pts unlocked */}
+      <div className="flex items-center justify-between mb-6 px-0.5 font-mono text-[11px] uppercase tracking-wider text-ink-3">
+        <span>
+          Step <span className="text-ink-1 font-bold">{stepNumStr}</span> / {stepTotalStr}
+          <span className="text-ink-3"> · </span>
+          <span className="text-ink-1">{stepTitle}</span>
+        </span>
+        <span>
+          <span className="text-yellow-deep font-bold">{score}</span>
+          <span className="text-ink-3"> pts unlocked of </span>
+          <span className="text-ink-1 font-bold">100</span>
+        </span>
       </div>
+
+      {/* Body grid — 2-col with pinned LivePreview rail on non-done steps */}
+      {!isDoneStep ? (
+        <div className="grid gap-5 mb-4" style={{ gridTemplateColumns: '1fr 380px' }}>
+          <div className="bg-paper border border-line-soft rounded-2xl p-6 shadow-sm min-w-0">
+            {renderStep()}
+            {errors._publish && (
+              <div className="bg-red-pale border border-red rounded-xl p-3 mt-4">
+                <p className="text-red text-xs">{errors._publish}</p>
+              </div>
+            )}
+          </div>
+          <div className="sticky top-4 self-start">
+            <LivePreview
+              brand={previewData?.brand || brand}
+              products={previewData?.products || wizardItems}
+              cardConfig={previewData?.card_config || template?.card_config}
+              actionTypes={previewData?.action_types || template?.action_types}
+              wizardState={wizardState}
+              template={template}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="bg-paper border border-line-soft rounded-2xl p-6 mb-4 shadow-sm">
+          {renderStep()}
+        </div>
+      )}
 
       {/* Navigation — hidden on done step */}
       {!isDoneStep ? (
@@ -542,19 +588,19 @@ function AddWizardView({
           ) : <div />}
           {isPublishStep ? (
             <button onClick={onPublish} disabled={saving || canProceed === false}
-              className={`px-8 py-3 rounded-xl text-sm font-semibold transition-all
+              className={`px-8 py-3 rounded-xl text-sm font-bold transition-all
                 ${!saving && canProceed !== false
-                  ? 'bg-teal hover:bg-teal-deep text-white shadow-sm'
+                  ? 'bg-yellow hover:bg-yellow-deep text-ink-1 shadow-sm'
                   : 'bg-paper-deep text-ink-3 cursor-not-allowed'}`}>
-              {saving ? 'Publishing...' : 'Publish listing ✓'}
+              {saving ? 'Publishing...' : 'Publish & go live →'}
             </button>
           ) : (
             <button onClick={onNext} disabled={canProceed === false}
-              className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all
                 ${canProceed === false
                   ? 'bg-paper-deep text-ink-3 cursor-not-allowed'
                   : 'bg-yellow hover:bg-yellow-deep text-ink-1 shadow-sm'}`}>
-              Next →
+              {nextLabel} →
             </button>
           )}
         </div>

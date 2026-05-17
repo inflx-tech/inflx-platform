@@ -91,102 +91,158 @@ export default function PhotoUploadStep({ step, template, wizardState, onFieldCh
   const accent = template?.card_config?.accent || '#F97316'; // orange-500 default
   const accentHover = template?.card_config?.accent_hover || accent;
 
+  // Find the cover photo object (if any) so the dedicated section can
+  // render it as a tall hero tile with Change button — matches the
+  // mockup pattern of cover-as-its-own-section above the gallery grid.
+  const coverPhoto = coverUrl ? photos.find(p => urlOf(p) === coverUrl) : null;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900">{step.title || defaultTitle}</h2>
-        {step.subtitle && <p className="text-sm text-gray-500 mt-1">{step.subtitle}</p>}
+        <h2 className="font-display text-xl font-bold text-ink-1 tracking-tight">{step.title || defaultTitle}</h2>
+        {step.subtitle && <p className="text-sm text-ink-3 mt-1">{step.subtitle}</p>}
       </div>
 
-      {/* Status row */}
-      <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-        <div className="text-xs">
-          <span className="font-bold text-gray-700">{photos.length}</span>
-          <span className="text-gray-500"> of {max} photos</span>
-          {photos.length < min && (
-            <span className="text-amber-600 ml-2">
-              (need {min - photos.length} more to publish)
+      {/* ─── Cover photo section (only when cover_required) ────────────── */}
+      {coverRequired && (
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <h4 className="font-display text-base font-bold text-ink-1">
+              Cover photo <span className="text-red ml-0.5">*</span>
+            </h4>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-3">
+              headline image · shown on every card
             </span>
-          )}
-          {photos.length >= min && photos.length < recommended && (
-            <span className="text-blue-600 ml-2">
-              (add {recommended - photos.length} more for best discoverability)
-            </span>
-          )}
-        </div>
-        <button type="button" onClick={() => setPickerOpen(true)}
-          style={{ backgroundColor: accent }}
-          className="px-4 py-2 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity">
-          {photos.length === 0 ? '+ Add photos' : '+ Add or change'}
-        </button>
-      </div>
-
-      {/* Photo grid */}
-      {photos.length === 0 ? (
-        <div className="text-center py-10 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-          <p className="text-3xl mb-2">📷</p>
-          <p className="text-sm font-bold text-gray-700 mb-1">No photos yet</p>
-          <p className="text-xs text-gray-400 mb-3">
-            Pick from your gallery or upload from your device
-          </p>
-          <button type="button" onClick={() => setPickerOpen(true)}
-            style={{ backgroundColor: accent }}
-            className="px-5 py-2 text-white text-xs font-bold rounded-xl hover:opacity-90 transition-opacity">
-            Open Gallery
-          </button>
-        </div>
-      ) : (
-        <>
-        <div className="grid grid-cols-3 gap-3">
-          {photos.map(p => {
-            const url = urlOf(p);
-            const isCover = coverRequired && url && url === coverUrl;
-            return (
-              <div key={p.id}
-                   className={`aspect-square rounded-xl overflow-hidden bg-gray-100 relative group border-2 transition-all
-                     ${isCover ? 'border-yellow ring-2 ring-yellow-pale' : 'border-gray-200'}`}>
-                {url
-                  ? <img src={url} alt={p.title || 'Photo'} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-3xl">🖼️</div>}
-
-                {/* Cover badge — when this photo IS the cover */}
-                {isCover && (
-                  <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-yellow text-ink-1 font-mono text-[8px] uppercase tracking-wider font-bold shadow">
-                    ★ Cover
-                  </div>
-                )}
-
-                {/* Set-as-cover button — when cover_required AND not already cover */}
-                {coverRequired && !isCover && (
-                  <button type="button" onClick={() => setCover(p)}
-                    className="absolute bottom-1 left-1 right-1 px-1.5 py-1 rounded-md bg-black/55 backdrop-blur text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
-                    Make cover
-                  </button>
-                )}
-
-                <button type="button" onClick={() => removePhoto(p.id)}
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                  ×
+          </div>
+          {coverPhoto ? (
+            <div className="relative rounded-xl overflow-hidden border border-line-soft bg-paper-surface" style={{ height: 240 }}>
+              <img src={urlOf(coverPhoto)} alt="Cover"
+                   className="w-full h-full object-cover" />
+              <span className="absolute top-3 left-3 px-3 py-1 rounded-md bg-ink-1 text-yellow font-mono text-[10px] uppercase tracking-wider font-bold shadow">
+                ★ Cover
+              </span>
+              <div className="absolute bottom-3 right-3 flex gap-2">
+                <button type="button" onClick={() => setPickerOpen(true)}
+                  className="px-3 py-1.5 rounded-md bg-paper text-ink-1 border border-line-soft text-xs font-bold hover:bg-paper-surface transition-colors">
+                  Change
+                </button>
+                <button type="button" onClick={() => onFieldChange(coverFieldKey, null)}
+                  className="px-3 py-1.5 rounded-md bg-paper text-ink-2 border border-line-soft text-xs font-bold hover:bg-paper-surface transition-colors">
+                  Unset
                 </button>
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <div className="rounded-xl border-2 border-dashed border-line-soft bg-paper-surface flex flex-col items-center justify-center text-center" style={{ height: 240 }}>
+              <div className="text-3xl mb-2">⭐</div>
+              <div className="font-display text-sm font-bold text-ink-1">No cover picked yet</div>
+              <div className="text-xs text-ink-3 mt-1 max-w-xs">
+                {photos.length === 0
+                  ? 'Add some gallery photos first, then mark one as your cover.'
+                  : 'Pick a photo from your gallery below and click "Make cover".'}
+              </div>
+              {photos.length === 0 && (
+                <button type="button" onClick={() => setPickerOpen(true)}
+                  className="mt-3 px-4 py-2 bg-yellow hover:bg-yellow-deep text-ink-1 text-xs font-bold rounded-lg transition-colors">
+                  Open Gallery
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Gallery section ───────────────────────────────────────────── */}
+      <div>
+        <div className="flex items-baseline justify-between mb-3">
+          <h4 className="font-display text-base font-bold text-ink-1">
+            {coverRequired ? 'Ambience gallery' : (step.title || defaultTitle)}
+            {' '}
+            <span className="font-normal text-ink-3 text-xs ml-1">
+              {photos.length} of {max} · min {min}
+            </span>
+          </h4>
+          <button type="button" onClick={() => setPickerOpen(true)}
+            className="px-3 py-1.5 bg-yellow hover:bg-yellow-deep text-ink-1 text-xs font-bold rounded-lg transition-colors">
+            {photos.length === 0 ? '+ Add photos' : '+ Add or change'}
+          </button>
         </div>
 
-        {/* Cover requirement banner */}
-        {coverRequired && photos.length > 0 && !coverUrl && (
-          <div className="bg-yellow-pale border border-yellow rounded-lg px-3 py-2 mt-2 text-xs text-ink-1 flex items-center gap-2">
-            <span className="text-base">★</span>
-            <span>Pick one photo as your cover — this is the headline image followers see first.</span>
+        {/* Quota row */}
+        {photos.length < min && (
+          <div className="text-xs text-yellow-deep mb-2">
+            Need <span className="font-mono font-bold">{min - photos.length}</span> more photo{min - photos.length !== 1 ? 's' : ''} to publish.
           </div>
         )}
-        {coverRequired && coverUrl && (
-          <div className="flex items-center gap-2 mt-2 text-[11px] text-teal-deep font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal" /> Cover photo set
+        {photos.length >= min && photos.length < recommended && (
+          <div className="text-xs text-ink-2 mb-2">
+            Add <span className="font-mono font-bold">{recommended - photos.length}</span> more for best discoverability.
           </div>
         )}
-        </>
-      )}
+
+        {photos.length === 0 ? (
+          <div className="text-center py-10 bg-paper-surface rounded-xl border-2 border-dashed border-line-soft">
+            <p className="text-3xl mb-2">📷</p>
+            <p className="font-display text-sm font-bold text-ink-1 mb-1">No photos yet</p>
+            <p className="text-xs text-ink-3 mb-3">
+              Pick from your gallery or upload from your device.
+            </p>
+            <button type="button" onClick={() => setPickerOpen(true)}
+              className="px-4 py-2 bg-yellow hover:bg-yellow-deep text-ink-1 text-xs font-bold rounded-lg transition-colors">
+              Open Gallery
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-2">
+            {photos.map(p => {
+              const url = urlOf(p);
+              const isCover = coverRequired && url && url === coverUrl;
+              return (
+                <div key={p.id}
+                     className={`aspect-square rounded-lg overflow-hidden bg-paper-surface relative group border transition-all
+                       ${isCover ? 'border-yellow ring-2 ring-yellow-pale' : 'border-line-soft'}`}>
+                  {url
+                    ? <img src={url} alt={p.title || 'Photo'} className="w-full h-full object-cover" />
+                    : <div className="w-full h-full flex items-center justify-center text-2xl">🖼️</div>}
+
+                  {isCover && (
+                    <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-ink-1 text-yellow font-mono text-[8px] uppercase tracking-wider font-bold">
+                      Cover
+                    </div>
+                  )}
+
+                  {coverRequired && !isCover && (
+                    <button type="button" onClick={() => setCover(p)}
+                      className="absolute bottom-1 left-1 right-1 px-1.5 py-1 rounded bg-black/55 backdrop-blur text-white text-[10px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                      Make cover
+                    </button>
+                  )}
+
+                  <button type="button" onClick={() => removePhoto(p.id)}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-paper text-ink-1 text-xs flex items-center justify-center shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Remove photo">
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+            {photos.length < max && (
+              <button type="button" onClick={() => setPickerOpen(true)}
+                className="aspect-square rounded-lg border-2 border-dashed border-line-soft bg-paper text-ink-3 text-2xl hover:border-yellow hover:text-yellow-deep transition-colors flex items-center justify-center">
+                +
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Photos quality nudge */}
+        {photos.length >= min && photos.length < 8 && (
+          <div className="bg-yellow-pale border border-yellow rounded-lg px-3 py-2 mt-3 text-xs text-ink-2 flex gap-2 items-start">
+            <span className="text-base">📸</span>
+            <span><strong className="text-ink-1">+10 quality pts</strong> at 8 gallery photos · <strong className="text-ink-1">+5 more</strong> at 10. Restaurants with rich galleries get 3× more clicks.</span>
+          </div>
+        )}
+      </div>
 
       <GalleryPicker
         open={pickerOpen}

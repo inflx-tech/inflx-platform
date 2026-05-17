@@ -58,6 +58,14 @@ const list = asyncHandler(async (req, res) => {
     conds.push(`COALESCE(fb.booking_date, fb.pickup_date) > CURRENT_DATE`);
   } else if (status === 'past') {
     conds.push(`COALESCE(fb.booking_date, fb.pickup_date) < CURRENT_DATE`);
+  } else if (status === 'completed') {
+    // booking_status enum value 'completed' is set when dining/service is
+    // marked complete (cron or staff action). Independent of brand_status.
+    conds.push(`fb.status = 'completed'`);
+  } else if (status === 'cancelled') {
+    // Includes both brand-rejected (reject endpoint flips booking_status
+    // to 'cancelled' in the same transaction) and follower-side cancels.
+    conds.push(`fb.status = 'cancelled'`);
   }
   // 'all' = no extra filter
 

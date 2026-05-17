@@ -119,44 +119,126 @@ export function repeatable_items({ step, wizardItems, onItemAdd, onItemRemove, o
 export const photo_upload = PhotoUploadStep;
 
 // ── preview ─────────────────────────────────────────────────────────────────
-// Renders LivePreview + QualityScore + a publish-readiness summary.
+// Sections summary — one card per logical grouping, each with Edit. The
+// LivePreview phone-frame lives in the layout's right rail on every step
+// (Wave 2.1 chrome rework), so this step no longer renders it inline.
+// QualityScore moved to the Done step where it carries more weight.
 
-export function preview({ step, template, brand, wizardState, wizardItems, scoreData, previewData }) {
-  const products = wizardItems.length > 0 ? wizardItems : (wizardState.name ? [wizardState] : []);
+export function preview({ step, template, brand, wizardState, wizardItems, onJumpToStep }) {
+  const ls = brand?.listing_data || {};
+  const merged = { ...ls, ...(wizardState || {}) };
+
+  const cuisines    = arr(merged.cuisines).join(', ') || '—';
+  const vibes       = arr(merged.vibes).map(v => String(v).replace(/_/g, ' ')).join(', ') || '—';
+  const locality    = merged.locality || brand?.city || '—';
+  const locVerified = !!merged.google_maps_url;
+  const photos      = arr(merged.photos);
+  const coverSet    = !!merged.cover_image_url;
+  const dishes      = wizardItems.length;
+  const sections    = new Set(wizardItems.map(it => it?.section).filter(Boolean)).size;
+  const amenityKeys = ['parking', 'outdoor_seating', 'wifi', 'kids_welcome', 'wheelchair_accessible'];
+  const amenityCount = amenityKeys.filter(k => merged[k] === true).length;
+  const tables      = merged.table_count;
+  const hoursSet    = !!merged.hours_json && Object.keys(merged.hours_json || {}).length > 0;
+  const actions = [
+    merged.accepts_table_booking !== false && { icon: '🪑', label: 'Book a Table' },
+    merged.pay_at_store_supported !== false && { icon: '💳', label: 'Pay at Restaurant' },
+    merged.online_order_supported === true   && { icon: '🛵', label: 'Order Online' },
+    merged.enquiry_enabled !== false         && { icon: '💬', label: 'Send Enquiry' },
+  ].filter(Boolean);
+
+  function jump(stepId) {
+    if (typeof onJumpToStep === 'function') onJumpToStep(stepId);
+  }
+
   return (
     <div className="space-y-4">
-      <StepHeader title={step.title} subtitle={step.subtitle} />
-      <QualityScore scoreData={scoreData} template={template} />
-      <LivePreview
-        brand={previewData?.brand || brand}
-        products={previewData?.products || products}
-        cardConfig={previewData?.card_config || template?.card_config}
-        actionTypes={previewData?.action_types || template?.action_types}
-        wizardState={wizardState}
-        template={template}
-      />
+      <StepHeader title={step.title || 'Final review'} subtitle={step.subtitle || 'Everything followers will see — review and publish.'} />
+
+      <SummaryCard title="Basics" onEdit={() => jump('basics')}>
+        <div className="text-sm text-ink-2 leading-relaxed">
+          <span className="font-bold text-ink-1">{brand?.business_name || merged.business_name || 'Your restaurant'}</span> · {cuisines} · <span className="font-mono">₹{merged.cost_for_two || '—'}/2</span>
+          <div className="text-ink-3 mt-1">Vibes: {vibes}</div>
+        </div>
+      </SummaryCard>
+
+      <SummaryCard title="Location · Hours" onEdit={() => jump('location')}>
+        <div className="text-sm text-ink-2 leading-relaxed">
+          {locality} {locVerified && <span className="font-mono text-teal-deep text-xs">· ✓ verified</span>}
+          <div className="text-ink-3 mt-1">{hoursSet ? 'Operating hours set' : <span className="text-yellow-deep">Hours not yet set</span>}</div>
+        </div>
+      </SummaryCard>
+
+      <SummaryCard title="Dining setup · Photos · Menu" onEdit={() => jump('dining_setup')}>
+        <div className="text-sm text-ink-2 leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
+          <span><span className="font-mono font-bold text-ink-1">{amenityCount}</span> amenities</span>
+          {tables && <span><span className="font-mono font-bold text-ink-1">{tables}</span> tables</span>}
+          <span><span className="font-mono font-bold text-ink-1">{photos.length}</span> photos {coverSet && <span className="text-teal-deep text-xs">· ★ cover</span>}</span>
+          <span><span className="font-mono font-bold text-ink-1">{dishes}</span> dishes{sections > 0 && <span> in {sections} sections</span>}</span>
+        </div>
+      </SummaryCard>
+
+      <SummaryCard title="Actions enabled" onEdit={() => jump('actions')}>
+        <div className="flex flex-wrap gap-1.5">
+          {actions.length === 0 && <span className="text-sm text-yellow-deep">No actions enabled — followers won't have any CTAs</span>}
+          {actions.map((a, i) => (
+            <span key={i} className="inline-flex items-center gap-1 bg-ink-1 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
+              {a.icon} {a.label}
+            </span>
+          ))}
+        </div>
+      </SummaryCard>
+
+      <div className="bg-yellow-pale border border-yellow rounded-xl p-3 flex gap-2.5 items-start">
+        <span className="text-base">🚀</span>
+        <p className="text-xs text-ink-2 leading-relaxed">
+          <strong className="text-ink-1">This is the final review.</strong> After publishing, every change syncs to followers within seconds. Click Publish below or use Back to edit any section.
+        </p>
+      </div>
     </div>
   );
 }
+
+// Internal — render a summary card with title + Edit button + body slot.
+function SummaryCard({ title, onEdit, children }) {
+  return (
+    <div className="bg-paper-surface border border-line-soft rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-display text-sm font-bold text-ink-1">{title}</div>
+        {onEdit && (
+          <button onClick={onEdit}
+            className="font-mono text-[10px] uppercase tracking-wider font-bold text-ink-3 hover:text-yellow-deep transition-colors">
+            Edit
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function arr(v) { return Array.isArray(v) ? v : []; }
 
 // ── done ────────────────────────────────────────────────────────────────────
 // Success step rendered by the layout after publish completes.
 // The layout passes publishResult; this just formats it.
 
-export function done({ step, publishResult, template }) {
+export function done({ step, publishResult, template, scoreData }) {
   const tips = step.boost_tips || [];
   const created = publishResult?.products_created || 0;
   const noun = template?.product_noun_plural?.toLowerCase() || 'listings';
 
-  // Three next-action cards (Wave 2E spec) — primary follow-ups after publish.
+  // Three next-action cards — primary follow-ups after publish.
+  // The yellow card is the recommended path (campaign first); the other
+  // two are equal-weight secondary CTAs.
   const NEXT_ACTIONS = [
-    { icon: '📣', title: 'Create a campaign',  desc: 'Get creators to drive footfall',  href: '/dashboard/campaigns/new',  accent: 'yellow' },
-    { icon: '⭐', title: 'Invite creators',    desc: 'Browse and invite local influencers',     href: '/dashboard/influencers',    accent: 'teal' },
-    { icon: '🏠', title: 'Back to dashboard',  desc: 'Track activity + bookings inbox',         href: '/dashboard',                accent: 'paper' },
+    { icon: '🏷️', title: 'Create your first campaign',  desc: 'Attract creators with a discount + commission offer.',  href: '/dashboard/campaigns/new',  accent: 'yellow' },
+    { icon: '🤝', title: 'Invite specific creators',    desc: 'Browse and invite local influencers.',                  href: '/dashboard/influencers',    accent: 'paper' },
+    { icon: '📥', title: 'Back to dashboard',           desc: 'Track activity, edit menu, top up wallet.',             href: '/dashboard',                accent: 'paper' },
   ];
 
   return (
-    <div className="py-6 space-y-5">
+    <div className="py-2 space-y-6">
       <div className="text-center space-y-3">
         <div className="w-16 h-16 rounded-full bg-teal-pale mx-auto flex items-center justify-center">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00B894"
@@ -165,36 +247,48 @@ export function done({ step, publishResult, template }) {
           </svg>
         </div>
         <div>
-          <div className="font-display text-2xl font-extrabold text-ink-1 tracking-tight">{step.title || 'Listing published!'}</div>
+          <div className="font-display text-2xl font-extrabold text-ink-1 tracking-tight">{step.title || 'You\'re live on INFLX 🎉'}</div>
           {step.subtitle && <div className="text-sm text-ink-3 mt-1">{step.subtitle}</div>}
-          <div className="text-sm text-ink-2 mt-2 font-mono">
-            {created > 0 ? `+${created} ${noun}` : 'BRAND PROFILE UPDATED'}
+          <div className="text-xs text-ink-3 mt-2 font-mono uppercase tracking-wider">
+            {created > 0 ? `Published · +${created} ${noun}` : 'Brand profile updated'}
           </div>
         </div>
       </div>
 
+      {/* Quality score with ring, tier, and Path-to-next-tier checklist.
+          Single card per Wave 2.1 — combines what the mockup splits into
+          score-card + path-to-Gold because QualityScore already renders
+          both pieces inline. */}
+      {scoreData && (
+        <QualityScore scoreData={scoreData} template={template} />
+      )}
+
       {/* 3 next-action cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {NEXT_ACTIONS.map(a => {
           const accentBg = a.accent === 'yellow'
+            ? 'bg-yellow-pale border border-yellow text-ink-1'
+            : 'bg-paper border border-line-soft text-ink-1';
+          const btnBg = a.accent === 'yellow'
             ? 'bg-yellow hover:bg-yellow-deep text-ink-1'
-            : a.accent === 'teal'
-              ? 'bg-teal hover:bg-teal-deep text-white'
-              : 'bg-paper hover:bg-paper-surface text-ink-1 border border-line-soft';
+            : 'bg-paper hover:bg-paper-surface text-ink-1 border border-line-soft';
           return (
-            <a key={a.title} href={a.href}
-               className={`block rounded-xl p-4 transition-colors shadow-sm ${accentBg}`}>
-              <div className="text-2xl mb-1">{a.icon}</div>
-              <div className="font-display text-sm font-extrabold">{a.title}</div>
-              <div className="text-[11px] opacity-80 mt-0.5">{a.desc}</div>
-            </a>
+            <div key={a.title} className={`rounded-xl p-5 shadow-sm ${accentBg}`}>
+              <div className="text-3xl">{a.icon}</div>
+              <div className="font-display text-sm font-extrabold mt-2.5 tracking-tight">{a.title}</div>
+              <div className="text-[12px] text-ink-2 mt-1.5 leading-relaxed">{a.desc}</div>
+              <a href={a.href}
+                 className={`mt-3 block w-full text-center px-3 py-2 rounded-lg text-xs font-bold transition-colors ${btnBg}`}>
+                {a.accent === 'yellow' ? 'Create campaign →' : 'Open →'}
+              </a>
+            </div>
           );
         })}
       </div>
 
       {tips.length > 0 && (
-        <div className="bg-yellow-pale border border-yellow rounded-xl p-4 text-left max-w-2xl mx-auto">
-          <div className="font-mono text-[10px] font-bold text-yellow-deep uppercase tracking-wider mb-2">Boost your listing</div>
+        <div className="bg-paper-surface border border-line-soft rounded-xl p-4">
+          <div className="font-mono text-[10px] font-bold text-ink-3 uppercase tracking-wider mb-2">Boost your listing</div>
           <ul className="space-y-1.5">
             {tips.map((tip, i) => (
               <li key={i} className="text-xs text-ink-2 flex gap-2">
