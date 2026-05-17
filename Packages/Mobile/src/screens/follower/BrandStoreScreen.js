@@ -4,6 +4,7 @@ import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import BrandActionRow from '../../components/BrandActionRow';
+import RestaurantDetailScreen from './RestaurantDetailScreen';
 
 export default function BrandStoreScreen({ navigation, route }) {
   const { brandId, brandName, tracking: routeTracking } = route.params;
@@ -63,6 +64,15 @@ export default function BrandStoreScreen({ navigation, route }) {
   const creatorPicks = store?.creator_picks || []; // Phase E: published dishes when via creator
   const accent = getBusinessAccent(brand?.category);
   const icon = accent.icon;
+
+  // Wave 4 PR 4.2 — dispatch the entire screen to the redesigned dining
+  // detail when this brand is a restaurant. RestaurantDetailScreen owns
+  // its own scroll, sticky CTA bar and sub-tabs; we just pass the already
+  // loaded store + tracking through. Non-restaurant brands continue on
+  // the legacy layout below.
+  if (brand?.category === 'restaurant') {
+    return <RestaurantDetailScreen store={store} navigation={navigation} tracking={tracking} />;
+  }
 
   // Schema-driven brand_config — surfaced when the store endpoint includes
   // the template (PR-B step 3.5+). Defensive lookup: if the backend doesn't
