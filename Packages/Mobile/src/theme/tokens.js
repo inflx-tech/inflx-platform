@@ -92,6 +92,55 @@ export const darkColors = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Light Theme (Wave 3 — Restaurant + brand-web parity)
+// ─────────────────────────────────────────────────────────────────────────────
+// Yellow + white palette confirmed with chat. Imported explicitly by
+// restaurant-related screens in Wave 4; non-restaurant follower surfaces
+// continue to use darkColors. Token names mirror the brand-web Tailwind
+// tokens (yellow / ink / paper / line) so designers/devs can switch
+// between web and mobile without re-mapping.
+
+export const lightColors = {
+  // Backgrounds
+  bg:         '#FAFAFA',
+  paper:      '#FFFFFF',
+  surface:    '#F4F4F5',
+  surface2:   '#E4E4E7',
+
+  // Text / ink ladder
+  ink:        '#0A0A0A',
+  ink2:       '#18181B',
+  muted:      '#52525B',
+  muted2:     '#71717A',
+  muted3:     '#A1A1AA',
+
+  // Borders
+  border:     '#E4E4E7',
+  border2:    '#D4D4D8',
+
+  // Primary — Yellow. Text on yellow = ink (per spec).
+  yellow:      '#EAB308',
+  yellowDeep:  '#CA8A04',
+  yellowLight: '#FACC15',
+  yellow50:    '#FEFCE8',
+  yellow100:   '#FEF9C3',
+  yellow200:   '#FEF08A',
+
+  // Status
+  success:    '#00B894',
+  success50:  '#ECFDF5',
+  success100: '#D1FAE5',
+  warning:    '#FFB800',
+  warning50:  '#FFFBEB',
+  warning100: '#FEF3C7',
+  danger:     '#E8401A',
+  danger50:   '#FDEEE9',
+
+  white:      '#FFFFFF',
+  black:      '#000000',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Per-Business Accent Colors
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -184,5 +233,56 @@ export const fonts = {
     ios: 'DMSans-Bold',
     android: 'DMSans-Bold',
     default: 'System',
+  }),
+
+  // ─── Wave 3: Outfit (display) + Plus Jakarta Sans (body) + JetBrains Mono ───
+  // Used by restaurant-related screens via the lightColors palette. Each
+  // family is registered as a separate Platform.select so we never collide
+  // with the existing Syne / DM Sans loaders.
+
+  // Outfit — display font (headlines, score numbers, brand names)
+  displayBold: Platform.select({
+    ios: 'Outfit-Bold',
+    android: 'Outfit-Bold',
+    default: 'System',
+  }),
+  displayBlack: Platform.select({
+    ios: 'Outfit-ExtraBold',
+    android: 'Outfit-ExtraBold',
+    default: 'System',
+  }),
+
+  // Plus Jakarta Sans — body font (default text)
+  sansRegular: Platform.select({
+    ios: 'PlusJakartaSans-Regular',
+    android: 'PlusJakartaSans-Regular',
+    default: 'System',
+  }),
+  sansMedium: Platform.select({
+    ios: 'PlusJakartaSans-Medium',
+    android: 'PlusJakartaSans-Medium',
+    default: 'System',
+  }),
+  sansSemiBold: Platform.select({
+    ios: 'PlusJakartaSans-SemiBold',
+    android: 'PlusJakartaSans-SemiBold',
+    default: 'System',
+  }),
+  sansBold: Platform.select({
+    ios: 'PlusJakartaSans-Bold',
+    android: 'PlusJakartaSans-Bold',
+    default: 'System',
+  }),
+
+  // JetBrains Mono — IDs, prices, meta labels
+  monoMedium: Platform.select({
+    ios: 'JetBrainsMono-Medium',
+    android: 'JetBrainsMono-Medium',
+    default: 'monospace',
+  }),
+  monoBold: Platform.select({
+    ios: 'JetBrainsMono-Bold',
+    android: 'JetBrainsMono-Bold',
+    default: 'monospace',
   }),
 };
