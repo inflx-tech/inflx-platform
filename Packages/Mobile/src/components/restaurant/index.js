@@ -18,3 +18,4 @@ export { default as VegDot }         from './VegDot';
 export { default as TimeSlot }       from './TimeSlot';
 export { default as StatusPill }     from './StatusPill';
 export { default as FilterChip }     from './FilterChip';
+export { default as FilterSheet }    from './FilterSheet';

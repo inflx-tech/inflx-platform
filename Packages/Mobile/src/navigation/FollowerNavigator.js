@@ -9,6 +9,10 @@ import HomeScreenV2 from '../screens/follower/HomeScreenV2';
 import FindScreen from '../screens/follower/FindScreen';
 import CategoryListScreen from '../screens/follower/CategoryListScreen';
 
+// Wave 4 — dining redesign (light theme, replaces CategoryListScreen for eat)
+import DiningHomeScreen from '../screens/follower/DiningHomeScreen';
+import DiningBrowseScreen from '../screens/follower/DiningBrowseScreen';
+
 // Existing screens
 import DealsScreen from '../screens/follower/DealsScreen';
 import SavedScreen from '../screens/follower/SavedScreen';
@@ -54,6 +58,10 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="Address" component={AddressScreen} />
     <Stack.Screen name="Find" component={FindScreen} />
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
+    {/* Wave 4 — restaurant discovery surface (only routed to from the 'eat'
+        category tile on HomeScreenV2; other categories keep CategoryList). */}
+    <Stack.Screen name="DiningHome" component={DiningHomeScreen} />
+    <Stack.Screen name="DiningBrowse" component={DiningBrowseScreen} />
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />

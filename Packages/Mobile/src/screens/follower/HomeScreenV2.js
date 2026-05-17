@@ -117,6 +117,12 @@ export default function HomeScreenV2({ navigation }) {
         onPressCategory={(cat) => {
           if (cat.key === 'all') {
             navigation.navigate('Find');
+          } else if (cat.key === 'eat') {
+            // Wave 4: dining redesign — eat routes to the new DiningHomeScreen
+            // (light theme, restaurant component library). Other supercategories
+            // continue to use the legacy CategoryList until they get their own
+            // redesigned home in a later wave.
+            navigation.navigate('DiningHome');
           } else {
             navigation.navigate('CategoryList', { superCategory: cat.key, label: cat.label, icon: cat.icon });
           }
