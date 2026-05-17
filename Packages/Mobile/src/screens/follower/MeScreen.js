@@ -43,6 +43,7 @@ export default function MeScreen({ navigation }) {
   }
 
   const menuItems = [
+    { icon: '💰', label: 'Wallet & Rewards', sub: 'Cashback from creator-attributed visits', onPress: () => navigation.navigate('FollowerWallet') },
     { icon: '📦', label: 'My Orders', sub: 'View order history & tracking', onPress: () => navigation.navigate('OrderHistory') },
     { icon: '📍', label: 'My Addresses', sub: 'Manage delivery addresses', onPress: () => navigation.navigate('Address') },
     { icon: '👥', label: 'Following', sub: 'Influencers you follow', onPress: () => navigation.navigate('FollowedInfluencers') },

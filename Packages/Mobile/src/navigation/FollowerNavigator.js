@@ -12,6 +12,8 @@ import CategoryListScreen from '../screens/follower/CategoryListScreen';
 // Wave 4 — dining redesign (light theme, replaces CategoryListScreen for eat)
 import DiningHomeScreen from '../screens/follower/DiningHomeScreen';
 import DiningBrowseScreen from '../screens/follower/DiningBrowseScreen';
+import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
+import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
 
 // Existing screens
 import DealsScreen from '../screens/follower/DealsScreen';
@@ -62,6 +64,8 @@ const SHARED_SCREENS = (Stack) => (
         category tile on HomeScreenV2; other categories keep CategoryList). */}
     <Stack.Screen name="DiningHome" component={DiningHomeScreen} />
     <Stack.Screen name="DiningBrowse" component={DiningBrowseScreen} />
+    <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
+    <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
@@ -119,6 +123,8 @@ function MeStack() {
       <Stack.Screen name="Address" component={AddressScreen} />
       <Stack.Screen name="FollowedInfluencers" component={FollowedInfluencersScreen} />
       <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
+      {/* Wave 4 PR 4.4 — Wallet entry. Reached from MeScreen menu row. */}
+      <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
     </Stack.Navigator>
   );
 }

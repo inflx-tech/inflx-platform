@@ -5,6 +5,9 @@ import {
 } from 'react-native';
 import { colors, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
+// Wave 4 PR 4.3 — restaurant table bookings dispatch to the redesigned
+// RestaurantBookingScreen below.
+import RestaurantBookingScreen from './RestaurantBookingScreen';
 
 // Category-aware copy. Restaurants get table-booking verbs, salons get
 // appointment verbs, cars get reservation verbs. Falls back to generic
@@ -130,8 +133,15 @@ function TimeSlotPicker({ slots, selected, onSelect }) {
 
 // Steps: 'form' → 'summary' → 'paying' → 'confirmed'
 export default function PreBookScreen({ navigation, route }) {
-  const { offer, store, brand, trackingParams } = route.params || {};
+  const { offer, store, brand, trackingParams, tracking, action } = route.params || {};
   const category = brand?.category || store?.brand_category || null;
+
+  // Wave 4 PR 4.3 dispatch — restaurants get the new design; other
+  // categories stay on the legacy flow below.
+  if (category === 'restaurant') {
+    return <RestaurantBookingScreen route={route} navigation={navigation} />;
+  }
+
   const copy = getCopyForCategory(category);
   const timeSlots = getTimeSlotsForCategory(category);
   const [date, setDate]             = useState('');
