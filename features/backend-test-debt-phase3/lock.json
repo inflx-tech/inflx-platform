@@ -1,0 +1,25 @@
+{
+  "feature": "backend-test-debt-phase3",
+  "area": "B2b-fix-P3",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "baseline": "Post P2: backend jest 151 passed / 231 failed / 382 total; migrations 53/53 0-error; DB laneState FAIL. Cumulative 281→244(P1)→231(P2).",
+  "phase": "Phase 3 — business-rule/status-drift cluster. Sub-classify (i) stale-create-payload | (ii) GENUINE backend defect | (iii) authz drift from db-jest.log. Fix top (i) batch by real controller-contract alignment; CARVE OUT every (ii) as its own finding and LEAVE THE TEST RED (never mask a product bug). Measure honest delta vs 151/231/382.",
+  "founder_directive": "Business-contract alignment, NOT force-green cleanup. Preserve: contract-first alignment, no force-green, no assertion weakening, no skip/delete masking, honest delta measurement. Genuine backend defects must surface, not be hidden by test edits.",
+  "notes": "Step 5 gate. Implementation GATED until approved=true. Deploy-inert. Ledger: features/backend-test-debt.",
+  "related": ["features/backend-test-debt (P1)", "features/backend-test-debt-phase2 (P2)", "features/db-substrate (B2b lane)", "features/qa-aggregation-fidelity (C1)", "features/backend-defect-city-column (carved genuine defect)"],
+  "phase3_result": {
+    "subclassification": "From db-jest.log: (i) stale-create-payload DOMINANT — 'name is required' x394 = registerInfluencer factory missing name (/influencers/register requires it, influencer.controller.js:202,205). (ii) genuine defect — `column \"city\" does not exist` x3 → 500 on /v1/campaigns/* (carved). (iii) ~3 other 500s + remaining business-logic/assertion drift = residual for P4.",
+    "fix_applied": "(i) ONLY: factories.js registerInfluencer now sends name (verified controller contract; not weakening). Same class as P1/P2.",
+    "defect_carved": "features/backend-defect-city-column — catching test(s) LEFT RED, backend NOT patched (Phase 3 = triage+align+carve, not backend-fix). influencers.city DOES exist (003) so request is valid → backend SQL alias/CTE bug.",
+    "measure": "pnpm qa:db: passed 151→188 (+37), failed 231→194 (−37), total 382, migrations 53/53 0-error, laneState FAIL by design. Cumulative 281→244(P1)→231(P2)→194(P3).",
+    "discipline": "No force-green / skip / delete / fabricated data / assertion weakening. Genuine defect surfaced as its own finding, not hidden. 'X is required' class now exhausted (P1+P2+P3)."
+  },
+  "rebaseline_for_phase4": "188 passed / 194 failed / 382. Residual = deeper business-logic/assertion drift + ~3 uncarved 500s. Cheap create-payload cascades are done; P4+ is per-test business-rule analysis.",
+  "release": { "qa_all_green": "Phase3-scope=true (evidence sub-classification + measured −37 + genuine defect carved + honest re-baseline, deploy-inert). DB lane FAIL by design; 194 residual + city-defect tracked.", "released": true, "released_by": "founder (AskUserQuestion, session 2026-05-18)", "released_at": "2026-05-18" }
+}

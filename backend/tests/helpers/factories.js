@@ -115,7 +115,10 @@ async function registerInfluencer(token, overrides = {}) {
   const res = await request(app)
     .post('/v1/influencers/register')
     .set('Authorization', `Bearer ${token}`)
-    .send({ instagram_handle: handle, ...overrides });
+    // /influencers/register requires instagram_handle AND name
+    // (influencer.controller.js:202,205). The factory historically
+    // omitted name — the dominant Phase-3 cascade (×394).
+    .send({ instagram_handle: handle, name: overrides.name || 'Test Influencer', ...overrides });
 
   if (res.status !== 201) {
     throw new Error(`registerInfluencer failed: ${JSON.stringify(res.body)}`);

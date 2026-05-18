@@ -1,0 +1,18 @@
+{
+  "feature": "backend-defect-city-column",
+  "area": "backend-defect",
+  "spec_version": "0.1.0",
+  "status": "carved-finding-backlog",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "kind": "GENUINE BACKEND DEFECT (not test debt). Carved from backend-test-debt Phase 3.",
+  "symptom": "x3 `error: column \"city\" does not exist` → HTTP 500 on /v1/campaigns/* (subset of 6 total 500s in the 194 residual).",
+  "not_a_false_alarm": "influencers.city exists (003_seed_influencers.sql:11) and B2b applies all migrations — the request is valid; the backend SQL is wrong (alias/CTE not exposing city).",
+  "candidate_sites": ["campaign.controller.js:141 lower(i.city)", "campaign.controller.js:1516 i.city", "audit brandInbox.controller.js:210, creatorAnalytics.controller.js:96, admin.controller.js:535/546"],
+  "disposition": "Phase 3 carves only — catching test(s) LEFT RED (correctly catch a real product bug), backend NOT patched here. A dedicated backend-fix contract addresses it later (own spec→lock→fix→qa:db).",
+  "source": "features/backend-test-debt-phase3 — qa/artifacts/db-jest.log 2026-05-18",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null }
+}
