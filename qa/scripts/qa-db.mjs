@@ -85,6 +85,18 @@ async function main() {
   }
 
   const out = res.out;
+  // Persist the full jest output for evidence-based triage
+  // (Phase 2: no guessing from summary counts). Additive — does
+  // not affect laneState/exit/C1.
+  try {
+    const logPath = path.join(QA_ROOT, 'artifacts', 'db-jest.log');
+    fs.mkdirSync(path.dirname(logPath), { recursive: true });
+    fs.writeFileSync(logPath, out);
+    console.log(`[qa:db] full jest output → ${logPath} (${out.length} bytes)`);
+  } catch (e) {
+    console.log(`[qa:db] WARN could not write db-jest.log: ${e.message}`);
+  }
+
   const migMatch = out.match(/migrations applied:\s*(\d+)\/(\d+)/);
   const migFail = out.match(/MIGRATION FAILED at (\S+)/);
   const testsLine = out.match(/Tests:\s+(?:(\d+) failed,\s+)?(?:(\d+) skipped,\s+)?(?:(\d+) passed,\s+)?(\d+) total/);

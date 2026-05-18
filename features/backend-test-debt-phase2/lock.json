@@ -1,0 +1,27 @@
+{
+  "feature": "backend-test-debt-phase2",
+  "area": "B2b-fix-P2",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "founder_guidance": "Evidence-first, no guessing from summary, no skip-normalization, no deletion-driven green, no fabricated fixtures, no assertion-weakening. Classify into 4 buckets: fixture/setup debt | stale schema assumptions | business-rule drift | genuine backend/state defects. Success = explicit clustering + measurable reduction + clearer classification. Preserve separate-lane, C1, determinism, migration coherence.",
+  "baseline": "Post Phase 1: backend jest 138 passed / 244 failed / 382 total; migrations 53/53 0-error; DB laneState FAIL.",
+  "phase": "Phase 2 — (1) qa-db persists db-jest.log; (2) evidence-based triage of the 244 by suite×cause; (3) fix the top cluster (real contract alignment only); (4) re-measure. Success = documented breakdown + measured progress + honest re-baseline, NOT laneState=PASS.",
+  "notes": "Step 5 gate. Implementation GATED until approved=true. Deploy-inert (qa/ + tests/ not in server import graph). Genuine backend bugs surfaced as their own findings, never masked by test edits. Ledger: features/backend-test-debt.",
+  "related": ["features/backend-test-debt (Phase 1, ledger)", "features/db-substrate (B2b, the lane)", "features/qa-aggregation-fidelity (C1 — qa-db change must not weaken it)"],
+  "qa_db_log": "qa/artifacts/db-jest.log persisted (622KB), additive to qa-db.mjs; C1/lane/exit untouched. Baseline deterministic 138/244/382.",
+  "triage_244_evidence_based": {
+    "fixture_setup_debt": "DOMINANT — 42x 'undefined (reading campaign)'. PROVEN root cause: campaign.routes.js:9 requires requireApproved; shared helper createRegisteredBrand() (campaigns.test.js:29) does NOT approve (only createApprovedBrand does) → 403 → res.body.data undefined → cascade across campaign-dependent suites.",
+    "business_rule_drift": "~20 status-assertion mismatches (Expected 201/200/404/422/401) — later phase.",
+    "stale_schema_assumptions": "column \"city\" does not exist x3 — NOT users.city (001:96-97 defines it); minor, defer.",
+    "other": "reading 'score' x2, 'enabled' x2 — defer."
+  },
+  "top_cluster_fix": "Fork resolved by EVIDENCE not judgement: grep proved NO test asserts an unapproved-brand 403 path → option (a) zero mask-risk. Applied (a): createRegisteredBrand() now approves (38 sites, campaigns.test.js only). Fixture alignment to campaign.routes.js:9 requireApproved — NOT assertion weakening; documented inline.",
+  "phase2_result": "pnpm qa:db re-run 2026-05-18: passed 138→151 (+13), failed 244→231 (−13), total 382, migrations 53/53 0-error, laneState FAIL (by design — Phase 2 = measured progress, not PASS). The +13 (not +42): removing the 403-cascade lets campaigns.test.js progress to SECONDARY failures (the ~20 status-drift class) — honest, expected; no .skip/deletion/fabrication/weakening.",
+  "rebaseline_for_phase3": "151 passed / 231 failed / 382. Cumulative debt paydown 281→244 (P1)→231 (P2). Next highest-leverage: the ~20 business-rule/status-drift cluster + remaining secondary campaign failures, triaged from db-jest.log.",
+  "release": { "qa_all_green": "Phase2-scope=true (evidence-based triage + documented 4-bucket classification + measured −13, honest re-baseline, deploy-inert). DB lane FAIL by design — 231 residual tracked for Phase 3.", "released": true, "released_by": "founder (AskUserQuestion, session 2026-05-18)", "released_at": "2026-05-18" }
+}

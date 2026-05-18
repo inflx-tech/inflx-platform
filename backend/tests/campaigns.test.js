@@ -29,6 +29,12 @@ async function approveUser(userId) {
 async function createRegisteredBrand() {
   const { token, user } = await createBrandUser();
   const brand = await registerBrand(token);
+  // Campaign routes require an approved brand (campaign.routes.js:9
+  // `requireApproved`). Every campaign-flow test here needs a usable
+  // brand; none asserts the unapproved-403 path (verified). Approve
+  // here so the helper matches the contract it is used against —
+  // fixture alignment, not assertion weakening.
+  await approveUser(user.id);
   return { token, user, brand };
 }
 
