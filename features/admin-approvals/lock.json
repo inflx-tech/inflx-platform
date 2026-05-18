@@ -1,0 +1,19 @@
+{
+  "feature": "admin-approvals",
+  "area": "A1",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Step 5 lock granted. Step 7 implementation authorized: qa/web/admin/approvals.spec.ts (approve path + auth-gate guard + PATCH-failure edge). No project split needed (admin served by brand-web:3002). Report green before commit.",
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 4/4 workflows passed (44.2s), 2026-05-18",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}
