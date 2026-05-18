@@ -198,8 +198,14 @@ async function calculateQualityScore(brandId, categoryKey) {
   if (!rules.length) return { score: 0, max: 0, breakdown: [], suggestions: [] };
 
   // Fetch brand profile
+  // city lives on `users` (brand registration does
+  // `UPDATE users SET city` — `brands` has no city column). Join to
+  // resolve it; result shape (business_name, city, category) is
+  // unchanged so quality-rule scoring behaviour is preserved.
   const { rows: [brand] } = await db.query(
-    'SELECT business_name, city, category FROM brands WHERE id = $1',
+    `SELECT b.business_name, u.city, b.category
+       FROM brands b JOIN users u ON u.id = b.user_id
+      WHERE b.id = $1`,
     [brandId]
   );
   if (!brand) return { score: 0, max: 0, breakdown: [], suggestions: [] };

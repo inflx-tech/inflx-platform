@@ -1,9 +1,28 @@
 # Backend Defect — `column "city" does not exist` on a campaign path
 
-> Status: **CARVED FINDING (backlog)** from backend-test-debt
-> Phase 3, 2026-05-18. This is a GENUINE BACKEND DEFECT, not test
-> debt. The catching test(s) are intentionally LEFT RED. NOT
-> auto-fixed — a backend fix is its own future contract.
+> Status: **PROMOTED → ACTIVE FIX CONTRACT** 2026-05-18 (was a
+> carved finding from Phase 3). GENUINE BACKEND DEFECT.
+> Implementation GATED on `lock.json.approved = true`.
+>
+> ⚠️ **NOT deploy-inert.** Edits backend runtime SQL → on release
+> `git push` makes **Render auto-deploy the backend to
+> production**. First runtime-code fix since A5b. It fixes a REAL
+> production bug, so the deploy is desirable — but Step-14 must be
+> an explicit, conscious decision.
+
+## Fix scope (Step 7, after lock)
+1. Reproduce the 500 on the qa:db Postgres (real DB) by running
+   the carved-red campaign test(s); capture the EXACT failing SQL
+   + Postgres error (statement + position) from the server output
+   in `db-jest.log` — pin the precise file:line (no guessing;
+   "pin exact at Step 7 against the live substrate" pattern).
+2. Apply the **minimal** SQL correction (alias/qualifier/missing
+   JOIN or unqualified `city`). No behaviour change beyond making
+   the column resolvable. No refactor.
+3. Verify via `pnpm qa:db`: the previously-RED carved test(s) go
+   GREEN, overall passed count rises vs the 188/194/382 baseline,
+   and the genuine defect is closed (not test-edited).
+4. Confirm zero regression to main `pnpm qa` (66) + C1.
 
 ## Symptom
 DB lane (`pnpm qa:db`) shows ×3 server errors:
