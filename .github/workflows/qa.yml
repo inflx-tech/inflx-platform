@@ -1,0 +1,99 @@
+name: QA & Governance
+
+# GOVERNANCE.md §11/§12. Mode B (advisory-on-push) until the founder
+# applies branch protection (§13) making `governance` + `qa` required —
+# no code change needed to flip B→A.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Governance: contract + release-evidence enforcement ──────────────────
+  governance:
+    name: governance (contract enforcement)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: git fetch origin main --depth=1 || true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: governance-check
+        run: node qa/scripts/governance-check.mjs --ci
+
+  # ── The gate: runs the EXISTING pnpm qa verbatim (workflow success) ───────
+  qa:
+    name: qa (workflow gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install root deps (frozen)
+        run: pnpm install --frozen-lockfile
+      - name: Install brand-web deps
+        working-directory: Packages/brand-web
+        # brand-web is NOT pnpm-workspace-managed (casing bug). Prefer a
+        # frozen lockfile install; fall back if the lockfile is absent.
+        run: npm ci || npm install
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run pnpm qa (CI)
+        env:
+          CI: 'true'
+        run: pnpm qa
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-evidence
+          path: |
+            qa/artifacts/results.json
+            qa/reports/**
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ── DB lane: INFORMATIONAL, decoupled, never blocks (GOVERNANCE.md §10) ──
+  qa-db:
+    name: qa-db (informational — non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      - name: Install root deps (frozen)
+        run: pnpm install --frozen-lockfile
+      - name: Run DB lane (decoupled — failure does NOT gate)
+        run: pnpm qa:db
+      - name: Upload DB-lane evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-lane-evidence
+          path: |
+            qa/artifacts/db-lane.json
+            qa/artifacts/db-jest.log
+          if-no-files-found: ignore
+          retention-days: 14

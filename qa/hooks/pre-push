@@ -1,0 +1,28 @@
+#!/bin/sh
+# INFLX governance pre-push hook (GOVERNANCE.md §11 — LOCAL layer).
+#
+# Advisory + LOUD, not the real gate (CI is). Bypassable by design
+# (`git push --no-verify`) — a fast feedback aid. Genuine exceptions
+# must use GOVERNANCE_OVERRIDE="reason" (printed, never silent).
+#
+# Installed by:  pnpm run hooks:install   (copies this into .git/hooks/)
+# Source of truth: qa/scripts/governance-check.mjs (shared with CI).
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "[pre-push] node not found — cannot run governance-check. Install Node or use --no-verify (logged by your shell)." >&2
+  exit 1
+fi
+
+node "$(git rev-parse --show-toplevel)/qa/scripts/governance-check.mjs"
+status=$?
+
+if [ "$status" -ne 0 ]; then
+  echo "" >&2
+  echo "[pre-push] governance-check failed (exit $status)." >&2
+  echo "[pre-push] Fix the contract, OR override explicitly & on the record:" >&2
+  echo "[pre-push]   GOVERNANCE_OVERRIDE=\"why\" git push" >&2
+  echo "[pre-push] (CI re-checks this — overriding locally does not bypass CI.)" >&2
+  exit "$status"
+fi
+
+exit 0
