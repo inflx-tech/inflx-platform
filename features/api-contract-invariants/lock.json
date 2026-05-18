@@ -1,0 +1,20 @@
+{
+  "feature": "api-contract-invariants",
+  "area": "B1",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Step 5 lock granted. Goal: establish backend/business-rule contract validation as the 2nd foundation after web workflow validation. Keep exact status-code assertions, deterministic API testing, honest reporting (SKIP != pass), deploy-inert, invariant-based. Step 7: qa/api/contract-invariants.spec.ts (W1 RBAC, W2 attribution-refusal, W3 auth contract). B2 (commission/brand_net/status math) deferred pending substrate decision.",
+  "related": ["B2 — deep calc/status-transition L1 (deferred; needs substrate decision)"],
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 42/42 workflows passed (53.3s), 2026-05-18. W1 RBAC + W2 attribution-refusal (follower auth OK, OTP_MOCK=true) + W3 auth-contract all green vs live backend; no SKIP.",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}
