@@ -1,8 +1,16 @@
 # Feature Spec — Backend jest suite debt (tracked finding from B2b)
 
-> Status: BACKLOG. Recorded so it is NOT lost. NOT auto-fixed —
-> each fix batch follows the full pipeline with its own Step-5 lock.
-> Origin: B2b DB lane, 2026-05-18.
+> Status: **PHASE 1 ACTIVE** (promoted 2026-05-18). Backlog ledger
+> below stays the running record; later phases get their own locks.
+>
+> **Phase 1 scope:** align `tests/helpers/factories.js` to current
+> backend contracts (confirmed: `registerBrand` omits the
+> now-required `name` — `brand.controller.js:121-123`; audit
+> `city`/`state`/`address_line` necessity at Step 7). This factory
+> backs most suites, so the fix should clear a large fraction of
+> the 281. Verifier: `pnpm qa:db`. Success = factories aligned +
+> **measured** pass increase vs baseline + honest re-baseline
+> (NOT a promise of 0 failures — phased, measurable, no force-green).
 
 ## Problem / goal
 B2b stood up the real substrate and applied all 53 migrations

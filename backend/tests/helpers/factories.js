@@ -87,9 +87,16 @@ async function registerBrand(token, overrides = {}) {
     .post('/v1/brands/register')
     .set('Authorization', `Bearer ${token}`)
     .send({
+      // /brands/register requires (brand.controller.js:115-135):
+      // business_name, category, name, city, state, address_line,
+      // 6-digit pincode. The factory historically omitted
+      // name/city/state — the cascade B2b revealed.
+      name: overrides.name || 'Test Brand Owner',
       business_name: overrides.business_name || 'Test Restaurant Pvt Ltd',
       category: overrides.category || 'restaurant',
       address_line: overrides.address_line || '123 MG Road',
+      city: overrides.city || 'Vijayawada',
+      state: overrides.state || 'Andhra Pradesh',
       pincode: overrides.pincode || '500001',
       ...overrides,
     });
