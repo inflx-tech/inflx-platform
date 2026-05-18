@@ -20,7 +20,7 @@ const ROOT = path.join(__dirname, '..');
 
 export default defineConfig({
   testDir: __dirname,
-  testMatch: ['web/**/*.spec.ts', 'api/**/*.spec.ts'],
+  testMatch: ['web/**/*.spec.ts', 'api/**/*.spec.ts', 'unit/**/*.spec.ts'],
   outputDir: path.join(__dirname, 'artifacts', 'test-output'),
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

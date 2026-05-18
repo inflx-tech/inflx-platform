@@ -1,0 +1,22 @@
+{
+  "feature": "calc-money-math",
+  "area": "B2a",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Step 5 gate. Pure-calc money-math unit net over exported calcPayAtStore/calcOnlineOrder (no DB/Docker/app-change). Locks the settlement identity (8% fee, brand_net = net - comm - fee, r2). Implementation (qa/unit/money-math.spec.ts + testMatch unit/**) GATED until approved=true. Deploy-inert.",
+  "related": ["B1/B1b (API invariants)", "B2b — Docker Postgres substrate for status-transition/flow coverage (COMMITTED as the immediately-following contract per founder decision 2026-05-18)"],
+  "step7_finding": "Anticipated import side-effect confirmed: transaction.service → config/env hard-validates required env at module load. Handled per pre-authorized path: minimal dummy env shim in the spec (values never read by calc*). Not hidden.",
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 56/56 workflows passed (1.2m), 2026-05-18. C1-C5 + I1 invariants green; import shim resolved env-load side-effect.",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18",
+    "release_notes": "56/56 deterministic green; settlement identity locked; deploy-inert; anticipated env-side-effect handled transparently (env shim, recorded); no invariant suppression."
+  }
+}
