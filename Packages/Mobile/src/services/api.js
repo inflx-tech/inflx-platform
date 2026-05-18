@@ -469,4 +469,8 @@ export const followerApi = {
 
   // Wave 5C — creators eating now (DiningHome social-proof strip)
   getCreatorsEatingNow: () => api.get('/follower/creators-eating-now'),
+
+  // Path C-2 — follower wallet
+  getWallet: () => api.get('/follower/wallet'),
+  getWalletTransactions: () => api.get('/follower/wallet/transactions'),
 };

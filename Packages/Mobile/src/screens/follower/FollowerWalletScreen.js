@@ -20,20 +20,53 @@
  *       influencer_handle, created_at, status }]
  */
 
-import React from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
+import { followerApi } from '../../services/api';
 import { CreatorChip } from '../../components/restaurant';
 
 export default function FollowerWalletScreen({ navigation }) {
-  // Placeholder data — replace with API call once backend lands.
-  const wallet = {
-    balance:  0,
-    pending:  0,
-    lifetime: 0,
-    transactions: [],
-  };
+  // Path C-2 — real wallet (reward balance derived from creator-attributed
+  // transactions server-side; ledger for redeem/adjust).
+  const [wallet, setWallet] = useState({
+    balance: 0, pending: 0, lifetime: 0, transactions: [],
+  });
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const [w, t] = await Promise.all([
+        followerApi.getWallet().catch(() => null),
+        followerApi.getWalletTransactions().catch(() => null),
+      ]);
+      const ww = (w?.data || w)?.wallet || {};
+      const tx = (t?.data || t)?.transactions || [];
+      setWallet({
+        balance:  ww.available ?? 0,
+        pending:  ww.pending ?? 0,
+        lifetime: ww.lifetime ?? 0,
+        transactions: tx.map(r => ({
+          id: r.id,
+          brand_name: r.brand_name || (r.kind === 'redeem' ? 'Redeemed' : r.kind === 'adjust' ? 'Adjustment' : 'Reward'),
+          influencer_handle: r.influencer_handle,
+          amount: r.amount,
+          status: r.status,
+          created_at: r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '',
+          negative: r.kind === 'redeem',
+        })),
+      });
+    } catch { /* keep zeros */ }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
 
   return (
     <View style={styles.root}>
@@ -47,7 +80,8 @@ export default function FollowerWalletScreen({ navigation }) {
         <View style={{ width: 36 }} />
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={lightColors.ink} />}>
         {/* Balance card */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>AVAILABLE BALANCE</Text>
@@ -85,7 +119,7 @@ export default function FollowerWalletScreen({ navigation }) {
               <View key={t.id} style={styles.txRow}>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.txTitle} numberOfLines={1}>
-                    Cashback from {t.brand_name}
+                    {t.negative ? t.brand_name : `Cashback from ${t.brand_name}`}
                   </Text>
                   <View style={styles.txMeta}>
                     {t.influencer_handle && (
@@ -96,9 +130,9 @@ export default function FollowerWalletScreen({ navigation }) {
                 </View>
                 <Text style={[
                   styles.txAmount,
-                  { color: t.status === 'pending' ? lightColors.muted : lightColors.success },
+                  { color: t.negative ? lightColors.muted : lightColors.success },
                 ]}>
-                  + ₹{Math.round(t.amount)}
+                  {t.negative ? '−' : '+'} ₹{Math.round(t.amount)}
                 </Text>
               </View>
             ))}

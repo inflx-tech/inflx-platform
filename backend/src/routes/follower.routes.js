@@ -4,6 +4,7 @@ const { Router } = require('express');
 const { authenticate, requireRole, authenticateOptional } = require('../middleware/auth');
 const ctrl = require('../controllers/follower.controller');
 const reviewCtrl = require('../controllers/review.controller');
+const walletCtrl = require('../controllers/followerWallet.controller');
 
 const router = Router();
 
@@ -41,5 +42,9 @@ router.get ('/me/reviewable', ...followerAuth,      reviewCtrl.getReviewable);
 
 // ── Wave 5C — Creators eating now (public discovery social-proof) ────────────
 router.get('/creators-eating-now', authenticateOptional, ctrl.creatorsEatingNow);
+
+// ── Path C-2 — Follower wallet (auth required) ───────────────────────────────
+router.get('/wallet',              ...followerAuth, walletCtrl.getWallet);
+router.get('/wallet/transactions', ...followerAuth, walletCtrl.listWalletTransactions);
 
 module.exports = router;
