@@ -21,7 +21,7 @@ import { View, Text, ScrollView, Pressable, Image, StyleSheet, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
-import { processPayment } from '../../services/payment';
+import { mockPayment } from '../../services/payment';
 import { ensureFollowerAuth } from '../../utils/authGate';
 import { CreatorChip } from '../../components/restaurant';
 
@@ -76,11 +76,12 @@ export default function RestaurantCartScreen({ route, navigation }) {
       const orderId = d.razorpay_order_id || d.order_id;
       const payable = d.net_amount != null ? d.net_amount : subtotal;
 
-      const pay = await processPayment({
-        orderId,
-        amount: payable,
-        description: `Order · ${brand?.business_name || 'Restaurant'}`,
-      });
+      // Mock-mode pilot: safe JS mock instead of native Razorpay SDK.
+      // processPayment()'s RazorpayCheckout.open() with an undefined key
+      // hard-crashed the app (native, bypasses JS try/catch) — that was
+      // the "app simply closes on Place order" report. Swap to
+      // processPayment + real keyId at production cutover.
+      const pay = await mockPayment(orderId);
       if (!pay?.razorpay_payment_id) {
         Alert.alert('Payment cancelled', 'Your order was not placed.');
         setPlacing(false);

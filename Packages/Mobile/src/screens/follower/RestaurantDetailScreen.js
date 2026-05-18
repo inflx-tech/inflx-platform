@@ -109,13 +109,13 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
     }
     if (actionKey === 'book') {
       navigation.navigate('PreBook', {
-        brand, brandId: brand.id, tracking,
+        brand, brandId: brand.id, tracking, offer,
         action: { action: 'book_slot', config: { booking_type: 'table', endpoint: '/follower/prebook' } },
       });
       return;
     }
     if (actionKey === 'pay') {
-      navigation.navigate('PayAtStore', { brand, brandId: brand.id, tracking });
+      navigation.navigate('PayAtStore', { brand, brandId: brand.id, tracking, offer });
       return;
     }
     if (actionKey === 'order') {

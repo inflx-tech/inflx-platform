@@ -73,13 +73,32 @@ export default function RestaurantBookingScreen({ route, navigation }) {
     // call 401s into a dead "Session expired" with no login path.
     if (!(await ensureFollowerAuth(navigation,
       { message: 'Sign in to book a table. It only takes 30 seconds!' }))) return;
+
+    // Resolve the mandatory creator-attribution ids. The offer object
+    // (store.influencers[].offers[]) carries offer_id / set_id /
+    // campaign_id / campaign_influencer_id; tracking is the fallback for
+    // both naming conventions (cid/sid/iid from share links,
+    // campaign_id/set_id/campaign_influencer_id from internal nav).
+    const cid  = offer?.campaign_id            || tracking?.campaign_id            || tracking?.cid;
+    const sid  = offer?.set_id                 || tracking?.set_id                 || tracking?.sid;
+    const ciid = offer?.campaign_influencer_id  || tracking?.campaign_influencer_id || tracking?.iid;
+    const offerId = offer?.offer_id || offer?.id || tracking?.offer_id || null;
+
+    if (!cid || !sid || !ciid) {
+      Alert.alert(
+        'Booking not available',
+        'This restaurant isn’t part of an active creator campaign right now, so table booking via INFLX isn’t available yet. You can still browse the menu.'
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const initiateRes = await followerApi.prebook({
-        offer_id:                offer?.id,
-        campaign_id:             offer?.campaign_id || tracking?.cid,
-        set_id:                  offer?.campaign_set_id || tracking?.sid,
-        campaign_influencer_id:  tracking?.iid || tracking?.influencer_id || null,
+        offer_id:                offerId,
+        campaign_id:             cid,
+        set_id:                  sid,
+        campaign_influencer_id:  ciid,
         booking_date:            selectedDate.iso,
         booking_time:            time,
         guest_count:             parseInt(party, 10) || 2,

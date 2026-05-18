@@ -28,7 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
-import { processPayment } from '../../services/payment';
+import { mockPayment } from '../../services/payment';
 import { ensureFollowerAuth } from '../../utils/authGate';
 import { CreatorChip, OfferPill } from '../../components/restaurant';
 
@@ -72,15 +72,27 @@ export default function RestaurantBillScreen({ route, navigation }) {
     }
     if (!(await ensureFollowerAuth(navigation,
       { message: 'Sign in to pay your bill via INFLX.' }))) return;
+
+    const cid  = offer?.campaign_id            || tracking?.campaign_id            || tracking?.cid;
+    const sid  = offer?.set_id                 || tracking?.set_id                 || tracking?.sid;
+    const ciid = offer?.campaign_influencer_id  || tracking?.campaign_influencer_id || tracking?.iid;
+    const offerId = offer?.offer_id || offer?.id || tracking?.offer_id || null;
+    if (!isPrebookBalance && (!cid || !sid || !ciid)) {
+      Alert.alert(
+        'Pay at Restaurant not available',
+        'This restaurant isn’t part of an active creator campaign right now, so paying via INFLX isn’t available yet.'
+      );
+      return;
+    }
     setPaying(true);
     try {
       // Initiate the transaction → backend returns Razorpay order
       const initiateRes = await followerApi.payAtStore({
         bill_amount:            bill,
-        offer_id:               offer?.id,
-        campaign_id:            offer?.campaign_id || tracking?.cid,
-        set_id:                 offer?.campaign_set_id || tracking?.sid,
-        campaign_influencer_id: tracking?.iid || tracking?.influencer_id || null,
+        offer_id:               offerId,
+        campaign_id:            cid,
+        set_id:                 sid,
+        campaign_influencer_id: ciid,
         prebook_booking_id:     prebookBookingId || null,
       });
       if (!initiateRes.success) {
@@ -90,12 +102,12 @@ export default function RestaurantBillScreen({ route, navigation }) {
       }
       const { razorpay_order_id } = initiateRes.data;
 
-      // Process via Razorpay (mocked in dev)
-      const paymentRes = await processPayment({
-        orderId: razorpay_order_id,
-        amount: youPay,
-        description: `Pay at ${brand?.business_name || 'Restaurant'}`,
-      });
+      // Mock-mode pilot: use the safe JS mock (Alert-confirm) instead of
+      // the native Razorpay SDK. processPayment() calls
+      // RazorpayCheckout.open() with an undefined key in mock mode, which
+      // can hard-crash the app natively (bypasses the JS try/catch).
+      // Swap back to processPayment + a real keyId at production cutover.
+      const paymentRes = await mockPayment(razorpay_order_id);
       if (!paymentRes?.razorpay_payment_id) {
         Alert.alert('Payment Cancelled', 'Try again to complete your payment.');
         setPaying(false);
