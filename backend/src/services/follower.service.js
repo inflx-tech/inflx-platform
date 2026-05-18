@@ -295,6 +295,34 @@ async function resolveStore(handle) {
  *      attribution-of-entry; we credit the creator even when their offer
  *      with this brand has since ended.
  */
+/**
+ * Wave 5 — batch rating lookup. Returns a map keyed by brand_id:
+ *   { [brandId]: { avg_rating: number, review_count: number } }
+ * Brands with no published reviews are simply absent from the map; callers
+ * default to { avg_rating: null, review_count: 0 } so the UI can show
+ * "New" instead of a fake score.
+ */
+async function getBrandRatings(brandIds) {
+  if (!Array.isArray(brandIds) || brandIds.length === 0) return {};
+  const { rows } = await db.query(
+    `SELECT brand_id,
+            ROUND(AVG(rating)::numeric, 1) AS avg_rating,
+            COUNT(*)::int                  AS review_count
+       FROM restaurant_reviews
+      WHERE brand_id = ANY($1::uuid[]) AND status = 'published'
+      GROUP BY brand_id`,
+    [brandIds]
+  );
+  const map = {};
+  for (const r of rows) {
+    map[r.brand_id] = {
+      avg_rating: r.avg_rating != null ? Number(r.avg_rating) : null,
+      review_count: r.review_count || 0,
+    };
+  }
+  return map;
+}
+
 async function resolveBusinessStore(brandId, viaInfluencerId = null) {
   const { rows: brandRows } = await db.query(
     `SELECT b.*, u.name, u.city FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
@@ -447,12 +475,19 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
   const listingData = brand.listing_data || {};
   const openStatus = computeOpenStatus(listingData.hours_json);
 
+  // Wave 5 — attach aggregate rating so the detail header + cards show a
+  // real score (or null → "New" when the place has no reviews yet).
+  const ratingMap = await getBrandRatings([brandId]);
+  const rating = ratingMap[brandId] || { avg_rating: null, review_count: 0 };
+
   return {
     brand: {
       id: brand.id,
       business_name: brand.business_name,
       category: brand.category,
       city: brand.city,
+      avg_rating:   rating.avg_rating,
+      review_count: rating.review_count,
       // Phase 1 surfaces — only present when the brand has filled the
       // corresponding listing fields. Mobile renders conditionally.
       cover_image_url:           listingData.cover_image_url || null,
@@ -975,6 +1010,7 @@ module.exports = {
   resolveStore,
   resolveBusinessStore,
   resolveCategoryStore,
+  getBrandRatings,
   getFeed,
   getHomeFeed,
   getDealsByCategory,

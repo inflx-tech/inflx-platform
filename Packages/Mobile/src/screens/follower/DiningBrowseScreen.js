@@ -301,7 +301,8 @@ function storeToCardProps(s) {
     cost_for_two: s.cost_for_two != null ? s.cost_for_two : ld.cost_for_two,
     locality: s.locality_or_neighborhood || s.city,
     distance_km: s.distance_km,
-    rating: s.rating || ld.rating,
+    rating: s.avg_rating != null ? s.avg_rating : (s.rating || ld.rating),
+    review_count: s.review_count || 0,
     is_open: s.is_open !== false,
     open_until: s.open_until,
     active_offer: offer ? {

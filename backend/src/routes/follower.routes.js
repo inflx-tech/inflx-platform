@@ -3,6 +3,7 @@
 const { Router } = require('express');
 const { authenticate, requireRole, authenticateOptional } = require('../middleware/auth');
 const ctrl = require('../controllers/follower.controller');
+const reviewCtrl = require('../controllers/review.controller');
 
 const router = Router();
 
@@ -30,5 +31,12 @@ router.get('/following', ...followerAuth, ctrl.getFollowing);       // auth requ
 // ── Listing Engine endpoints (public) ────────────────────────────────────────
 router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influencer story circles
 router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
+
+// ── Wave 5 — Reviews + ratings ───────────────────────────────────────────────
+// List is public (followers read reviews before visiting); create +
+// reviewable require follower auth + a qualifying completed transaction.
+router.get ('/reviews',       authenticateOptional, reviewCtrl.listBrandReviews);
+router.post('/reviews',       ...followerAuth,      reviewCtrl.createReview);
+router.get ('/me/reviewable', ...followerAuth,      reviewCtrl.getReviewable);
 
 module.exports = router;

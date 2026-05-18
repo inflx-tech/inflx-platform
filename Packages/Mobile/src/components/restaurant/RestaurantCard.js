@@ -36,7 +36,11 @@ export default function RestaurantCard({ restaurant: r, variant = 'feed', liked,
   const cuisinesLine = (r.cuisines || []).slice(0, 3).join(' · ');
   const distance = r.distance_km != null ? `${Number(r.distance_km).toFixed(1)} km` : null;
   const cost = r.cost_for_two != null ? `₹${Math.round(r.cost_for_two)}/2` : null;
-  const rating = r.rating != null ? Number(r.rating).toFixed(1) : null;
+  // Wave 5 — prefer real aggregate (avg_rating/review_count). Show "New"
+  // when a restaurant has no published reviews instead of a blank slot.
+  const avg = r.rating != null ? r.rating : r.avg_rating;
+  const rating = avg != null ? Number(avg).toFixed(1) : null;
+  const reviewCount = r.review_count || 0;
 
   if (variant === 'list') return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.listRow, pressed && { opacity: 0.85 }]}>
@@ -55,11 +59,11 @@ export default function RestaurantCard({ restaurant: r, variant = 'feed', liked,
           {r.active_offer && <OfferPill label={r.active_offer.label} icon={r.active_offer.icon || '🏷'} />}
         </View>
       </View>
-      {rating && (
-        <View style={styles.ratingTag}>
-          <Text style={styles.ratingText}>★ {rating}</Text>
-        </View>
-      )}
+      <View style={styles.ratingTag}>
+        <Text style={styles.ratingText}>
+          {rating ? `★ ${rating}` : 'New'}
+        </Text>
+      </View>
     </Pressable>
   );
 
@@ -74,11 +78,11 @@ export default function RestaurantCard({ restaurant: r, variant = 'feed', liked,
 
         {/* Overlay row top */}
         <View style={styles.heroTop}>
-          {rating && (
-            <View style={styles.ratingPill}>
-              <Text style={styles.ratingPillText}>★ {rating}</Text>
-            </View>
-          )}
+          <View style={styles.ratingPill}>
+            <Text style={styles.ratingPillText}>
+              {rating ? `★ ${rating}` : 'New'}
+            </Text>
+          </View>
           <Pressable onPress={onLike} hitSlop={10} style={styles.heart}>
             <Text style={styles.heartGlyph}>{liked ? '♥' : '♡'}</Text>
           </Pressable>

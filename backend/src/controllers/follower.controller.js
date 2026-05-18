@@ -860,7 +860,17 @@ const getCategoryStores = asyncHandler(async (req, res) => {
     };
   }));
 
-  return success(res, { stores: storesWithProducts, super_category: superCat });
+  // Wave 5 — attach aggregate ratings in one batch query so cards show a
+  // real score (or null → "New" badge) instead of a hardcoded placeholder.
+  const ratingMap = await followerService.getBrandRatings(
+    storesWithProducts.map(s => s.id)
+  );
+  const storesRated = storesWithProducts.map(s => {
+    const rt = ratingMap[s.id] || { avg_rating: null, review_count: 0 };
+    return { ...s, avg_rating: rt.avg_rating, review_count: rt.review_count };
+  });
+
+  return success(res, { stores: storesRated, super_category: superCat });
 });
 
 module.exports = {

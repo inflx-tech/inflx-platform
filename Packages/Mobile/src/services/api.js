@@ -456,4 +456,14 @@ export const followerApi = {
 
   // Enquiry
   submitEnquiry: (data) => api.post('/follower/enquiry', data),
+
+  // Wave 5 — Reviews + ratings
+  getBrandReviews: (brandId, opts = {}) => {
+    const q = [`brand_id=${encodeURIComponent(brandId)}`];
+    if (opts.creatorOnly) q.push('creator_only=true');
+    if (opts.page) q.push(`page=${opts.page}`);
+    return api.get(`/follower/reviews?${q.join('&')}`);
+  },
+  postReview: (data) => api.post('/follower/reviews', data),
+  getReviewable: () => api.get('/follower/me/reviewable'),
 };

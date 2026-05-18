@@ -23,10 +23,11 @@
  * BrandStoreScreen's existing layout.
  */
 
-import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linking, Alert } from 'react-native';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linking, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
+import { followerApi } from '../../services/api';
 import {
   CreatorChip, VegDot, StatusPill, SagarStrip, FilterChip,
 } from '../../components/restaurant';
@@ -431,29 +432,274 @@ function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks
   );
 }
 
+function StarRow({ value, size = 14, color = '#FFB800' }) {
+  const full = Math.round(Number(value) || 0);
+  return (
+    <Text style={{ color, fontSize: size, letterSpacing: 1 }}>
+      {'★★★★★'.slice(0, full)}
+      <Text style={{ color: lightColors.border2 }}>{'★★★★★'.slice(full)}</Text>
+    </Text>
+  );
+}
+
 function ReviewsTab({ brand }) {
-  // Wave 5 will add real reviews. For now: rating summary + empty state.
-  const rating = brand?.rating;
-  const ratingCount = brand?.rating_count || 0;
+  const [summary, setSummary]       = useState(null);
+  const [reviews, setReviews]       = useState([]);
+  const [creatorOnly, setCreatorOnly] = useState(false);
+  const [loading, setLoading]       = useState(true);
+  const [writeOpen, setWriteOpen]   = useState(false);
+  const [canReview, setCanReview]   = useState(false);
+
+  const load = useCallback(async () => {
+    if (!brand?.id) { setLoading(false); return; }
+    setLoading(true);
+    try {
+      const res = await followerApi.getBrandReviews(brand.id, { creatorOnly });
+      const d = res?.data || res;
+      setSummary(d?.summary || null);
+      setReviews(d?.reviews || []);
+    } catch (e) {
+      // soft-fail — empty state covers it
+    } finally {
+      setLoading(false);
+    }
+  }, [brand?.id, creatorOnly]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Does this follower have a completed visit here they haven't reviewed?
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await followerApi.getReviewable();
+        const list = (res?.data || res)?.reviewable || [];
+        if (alive) setCanReview(list.some(r => r.brand_id === brand?.id));
+      } catch { /* not logged in / none — hide the CTA */ }
+    })();
+    return () => { alive = false; };
+  }, [brand?.id]);
+
+  const dist = summary?.distribution || {};
+  const total = summary?.review_count || 0;
+
   return (
     <View style={styles.section}>
-      {rating && (
-        <View style={styles.ratingSummary}>
-          <View>
-            <Text style={styles.ratingBig}>{Number(rating).toFixed(1)}</Text>
-            <Text style={styles.ratingStars}>★★★★☆</Text>
-            <Text style={styles.ratingCount}>{ratingCount} RATINGS</Text>
+      {/* Rating summary */}
+      {total > 0 ? (
+        <View style={rvStyles.summary}>
+          <View style={{ alignItems: 'flex-start' }}>
+            <Text style={rvStyles.big}>{Number(summary.avg_rating).toFixed(1)}</Text>
+            <StarRow value={summary.avg_rating} size={13} />
+            <Text style={rvStyles.count}>{total} RATINGS</Text>
+            {summary.creator_count > 0 && (
+              <Text style={rvStyles.creatorCount}>
+                {summary.creator_count} creator-verified
+              </Text>
+            )}
+          </View>
+          <View style={{ flex: 1, marginLeft: 18 }}>
+            {[5, 4, 3, 2, 1].map(n => {
+              const c = dist[n] || 0;
+              const pct = total ? Math.round((c / total) * 100) : 0;
+              return (
+                <View key={n} style={rvStyles.distRow}>
+                  <Text style={rvStyles.distNum}>{n}</Text>
+                  <View style={rvStyles.distTrack}>
+                    <View style={[rvStyles.distFill, { width: `${pct}%` }]} />
+                  </View>
+                  <Text style={rvStyles.distPct}>{pct}%</Text>
+                </View>
+              );
+            })}
           </View>
         </View>
+      ) : null}
+
+      {/* Creator-verified filter toggle */}
+      {total > 0 && (
+        <Pressable onPress={() => setCreatorOnly(v => !v)} style={rvStyles.filterRow}>
+          <CreatorChip handle="creator-verified" verified size="sm" />
+          <Text style={rvStyles.filterText}>Show only creator reviews</Text>
+          <View style={[rvStyles.toggle, creatorOnly && rvStyles.toggleOn]}>
+            <View style={[rvStyles.knob, creatorOnly && rvStyles.knobOn]} />
+          </View>
+        </Pressable>
       )}
-      <View style={styles.reviewsEmpty}>
-        <Text style={styles.reviewsEmptyEmoji}>⭐</Text>
-        <Text style={styles.h4}>No reviews yet</Text>
-        <Text style={styles.muted}>Be the first to review after your visit.</Text>
-      </View>
+
+      {/* Write review CTA */}
+      {canReview && (
+        <Pressable onPress={() => setWriteOpen(true)} style={rvStyles.writeBtn}>
+          <Text style={rvStyles.writeBtnText}>★  Rate your visit</Text>
+        </Pressable>
+      )}
+
+      {/* List / states */}
+      {loading ? (
+        <ActivityIndicator color={lightColors.ink} style={{ marginTop: 24 }} />
+      ) : reviews.length === 0 ? (
+        <View style={styles.reviewsEmpty}>
+          <Text style={styles.reviewsEmptyEmoji}>⭐</Text>
+          <Text style={styles.h4}>
+            {creatorOnly ? 'No creator reviews yet' : 'No reviews yet'}
+          </Text>
+          <Text style={styles.muted}>
+            {creatorOnly
+              ? 'Switch off the filter to see all reviews.'
+              : 'Be the first to review after your visit.'}
+          </Text>
+        </View>
+      ) : (
+        reviews.map(r => (
+          <View key={r.id} style={rvStyles.card}>
+            <View style={rvStyles.cardHead}>
+              {r.creator_trusted && r.author_handle ? (
+                <CreatorChip handle={r.author_handle} verified size="sm" />
+              ) : (
+                <Text style={rvStyles.author}>{r.author_name || 'Guest'}</Text>
+              )}
+              <StarRow value={r.rating} size={12} />
+              <Text style={rvStyles.date}>{fmtReviewDate(r.created_at)}</Text>
+            </View>
+            {r.review_text ? (
+              <Text style={rvStyles.body}>{r.review_text}</Text>
+            ) : null}
+            {Array.isArray(r.photos) && r.photos.length > 0 && (
+              <View style={rvStyles.photoRow}>
+                {r.photos.slice(0, 4).map((p, i) => (
+                  <Image key={i} source={{ uri: typeof p === 'string' ? p : p.url }}
+                    style={rvStyles.photo} />
+                ))}
+              </View>
+            )}
+          </View>
+        ))
+      )}
+
+      <WriteReviewModal
+        visible={writeOpen}
+        brandId={brand?.id}
+        brandName={brand?.business_name}
+        onClose={() => setWriteOpen(false)}
+        onDone={() => { setWriteOpen(false); setCanReview(false); load(); }}
+      />
     </View>
   );
 }
+
+function WriteReviewModal({ visible, brandId, brandName, onClose, onDone }) {
+  const [rating, setRating] = useState(0);
+  const [text, setText]     = useState('');
+  const [saving, setSaving] = useState(false);
+
+  async function submit() {
+    if (rating < 1) { Alert.alert('Pick a rating', 'Tap the stars to rate 1–5.'); return; }
+    setSaving(true);
+    try {
+      const res = await followerApi.postReview({
+        brand_id: brandId, rating, review_text: text.trim() || undefined,
+      });
+      if (res?.success || res?.data) {
+        onDone();
+        setRating(0); setText('');
+      } else {
+        Alert.alert('Could not post', res?.error?.message || 'Try again.');
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={rvStyles.modalBg}>
+        <View style={rvStyles.modalCard}>
+          <Text style={rvStyles.modalTitle}>Rate {brandName || 'this restaurant'}</Text>
+          <View style={rvStyles.starPick}>
+            {[1, 2, 3, 4, 5].map(n => (
+              <Pressable key={n} onPress={() => setRating(n)} hitSlop={6}>
+                <Text style={[rvStyles.starPickGlyph,
+                  n <= rating && rvStyles.starPickGlyphOn]}>★</Text>
+              </Pressable>
+            ))}
+          </View>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="What stood out? (optional)"
+            placeholderTextColor={lightColors.muted3}
+            style={rvStyles.modalInput}
+            multiline
+          />
+          <View style={rvStyles.modalActions}>
+            <Pressable onPress={onClose} style={rvStyles.modalCancel}>
+              <Text style={rvStyles.modalCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={submit} disabled={saving}
+              style={[rvStyles.modalSubmit, saving && { opacity: 0.6 }]}>
+              {saving
+                ? <ActivityIndicator color={lightColors.ink} />
+                : <Text style={rvStyles.modalSubmitText}>Post review</Text>}
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function fmtReviewDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  if (days <= 0) return 'TODAY';
+  if (days === 1) return '1 DAY AGO';
+  if (days < 7) return `${days} DAYS AGO`;
+  if (days < 30) return `${Math.floor(days / 7)} WK AGO`;
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).toUpperCase();
+}
+
+const rvStyles = StyleSheet.create({
+  summary: { flexDirection: 'row', paddingVertical: 16, borderBottomColor: lightColors.border, borderBottomWidth: 1 },
+  big: { fontFamily: fonts.displayBlack, fontSize: 34, color: lightColors.ink, letterSpacing: -1 },
+  count: { fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted, marginTop: 4 },
+  creatorCount: { fontFamily: fonts.monoBold, fontSize: 10, color: lightColors.success, marginTop: 2 },
+  distRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  distNum: { width: 14, fontFamily: fonts.monoMedium, fontSize: 11, color: lightColors.muted2 },
+  distTrack: { flex: 1, height: 5, backgroundColor: lightColors.surface2, borderRadius: 3, marginHorizontal: 6 },
+  distFill: { height: '100%', backgroundColor: lightColors.success, borderRadius: 3 },
+  distPct: { width: 32, textAlign: 'right', fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: lightColors.ink, borderRadius: 10, padding: 12, marginTop: 14 },
+  filterText: { flex: 1, fontFamily: fonts.sansSemiBold, fontSize: 12, color: lightColors.white },
+  toggle: { width: 38, height: 22, borderRadius: 11, backgroundColor: 'rgba(255,255,255,0.25)', padding: 2 },
+  toggleOn: { backgroundColor: lightColors.yellow },
+  knob: { width: 18, height: 18, borderRadius: 9, backgroundColor: lightColors.white },
+  knobOn: { alignSelf: 'flex-end' },
+  writeBtn: { marginTop: 14, backgroundColor: lightColors.yellow, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  writeBtnText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
+  card: { paddingVertical: 14, borderBottomColor: lightColors.border, borderBottomWidth: 1 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  author: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
+  date: { marginLeft: 'auto', fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted },
+  body: { fontFamily: fonts.sansRegular, fontSize: 13, lineHeight: 19, color: lightColors.ink2 },
+  photoRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  photo: { width: 50, height: 50, borderRadius: 5, backgroundColor: lightColors.surface2 },
+  modalBg: { flex: 1, backgroundColor: 'rgba(10,10,10,0.45)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: lightColors.paper, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 32 },
+  modalTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: lightColors.ink, letterSpacing: -0.3 },
+  starPick: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginVertical: 18 },
+  starPickGlyph: { fontSize: 38, color: lightColors.border2 },
+  starPickGlyphOn: { color: '#FFB800' },
+  modalInput: { borderColor: lightColors.border2, borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 70, fontFamily: fonts.sansRegular, fontSize: 13, color: lightColors.ink, textAlignVertical: 'top' },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  modalCancel: { flex: 1, paddingVertical: 13, borderRadius: 10, borderColor: lightColors.border2, borderWidth: 1, alignItems: 'center' },
+  modalCancelText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink2 },
+  modalSubmit: { flex: 2, paddingVertical: 13, borderRadius: 10, backgroundColor: lightColors.yellow, alignItems: 'center' },
+  modalSubmitText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
+});
 
 function PhotosTab({ photos }) {
   if (!photos || photos.length === 0) {
