@@ -466,4 +466,7 @@ export const followerApi = {
   },
   postReview: (data) => api.post('/follower/reviews', data),
   getReviewable: () => api.get('/follower/me/reviewable'),
+
+  // Wave 5C — creators eating now (DiningHome social-proof strip)
+  getCreatorsEatingNow: () => api.get('/follower/creators-eating-now'),
 };

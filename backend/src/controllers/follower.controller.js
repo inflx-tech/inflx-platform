@@ -873,7 +873,76 @@ const getCategoryStores = asyncHandler(async (req, res) => {
   return success(res, { stores: storesRated, super_category: superCat });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /follower/creators-eating-now
+// Wave 5C — recent creator-attributed restaurant activity. Powers the
+// DiningHome "Creators eating now" strip (the live social-proof loop that
+// Swiggy structurally cannot replicate). Window is 48h so the strip stays
+// populated in a low-traffic pilot; tighten to 6-12h once volume is real.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const creatorsEatingNow = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT DISTINCT ON (i.id, b.id)
+        i.id                AS influencer_id,
+        i.instagram_handle,
+        i.profile_image_url AS profile_pic_url,
+        ui.name             AS influencer_name,
+        b.id                AS brand_id,
+        b.business_name,
+        b.cover_image_url,
+        b.listing_data,
+        ft.created_at,
+        ci.id               AS campaign_influencer_id,
+        cs.id               AS set_id,
+        c.id                AS campaign_id
+       FROM follower_transactions ft
+       JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c      ON c.id  = cs.campaign_id
+       JOIN influencers i    ON i.id  = ci.influencer_id
+       JOIN users ui         ON ui.id = i.user_id
+       JOIN brands b         ON b.id  = ft.brand_id
+      WHERE b.category = 'restaurant'
+        AND ft.created_at >= now() - interval '48 hours'
+        AND ft.status IN ('completed', 'initiated')
+      ORDER BY i.id, b.id, ft.created_at DESC
+      LIMIT 30`
+  );
+
+  const now = Date.now();
+  const items = rows
+    .map(r => {
+      const ld = r.listing_data || {};
+      const mins = Math.max(1, Math.round((now - new Date(r.created_at).getTime()) / 60000));
+      return {
+        influencer_id:   r.influencer_id,
+        instagram_handle: r.instagram_handle,
+        influencer_name: r.influencer_name,
+        profile_pic_url: r.profile_pic_url || null,
+        brand_id:        r.brand_id,
+        business_name:   r.business_name,
+        cover_image_url: r.cover_image_url || ld.cover_image_url || null,
+        minutes_ago:     mins,
+        when_text:       mins < 60 ? `${mins} min ago` : `${Math.round(mins / 60)}h ago`,
+        tracking: {
+          campaign_id:            r.campaign_id,
+          set_id:                 r.set_id,
+          campaign_influencer_id: r.campaign_influencer_id,
+          influencer_id:          r.influencer_id,
+          influencer_handle:      r.instagram_handle,
+          influencer_name:        r.influencer_name,
+        },
+      };
+    })
+    .sort((a, b) => a.minutes_ago - b.minutes_ago)
+    .slice(0, 12);
+
+  return success(res, { creators_eating_now: items });
+});
+
 module.exports = {
+  creatorsEatingNow,
   register,
   getMe,
   followInfluencer,

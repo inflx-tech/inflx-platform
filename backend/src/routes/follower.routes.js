@@ -39,4 +39,7 @@ router.get ('/reviews',       authenticateOptional, reviewCtrl.listBrandReviews)
 router.post('/reviews',       ...followerAuth,      reviewCtrl.createReview);
 router.get ('/me/reviewable', ...followerAuth,      reviewCtrl.getReviewable);
 
+// ── Wave 5C — Creators eating now (public discovery social-proof) ────────────
+router.get('/creators-eating-now', authenticateOptional, ctrl.creatorsEatingNow);
+
 module.exports = router;

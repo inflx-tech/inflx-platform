@@ -20,7 +20,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, FlatList } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
@@ -38,6 +38,7 @@ export default function DiningHomeScreen({ navigation, route }) {
   const [stores, setStores]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [vibeCount, setVibeCount] = useState({});
+  const [eatingNow, setEatingNow] = useState([]);
 
   // Pull a sticky creator from route params when the follower landed via
   // a creator share link. The same screen renders a small ink header pill
@@ -62,6 +63,11 @@ export default function DiningHomeScreen({ navigation, route }) {
     } finally {
       setLoading(false);
     }
+    // Creators eating now — non-blocking; empty list just hides the strip.
+    try {
+      const r = await followerApi.getCreatorsEatingNow?.();
+      setEatingNow((r?.data || r)?.creators_eating_now || []);
+    } catch { /* strip stays hidden */ }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -131,6 +137,42 @@ export default function DiningHomeScreen({ navigation, route }) {
             </Pressable>
           ))}
         </View>
+
+        {/* Creators eating now — live social proof (Wave 5C) */}
+        {eatingNow.length > 0 && (
+          <>
+            <SectionH title="Creators eating now" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.eatingScroll}>
+              {eatingNow.map((c, idx) => (
+                <Pressable key={`${c.influencer_id}-${c.brand_id}-${idx}`}
+                  onPress={() => navigation.navigate('BrandStore', {
+                    brandId: c.brand_id, ...c.tracking,
+                  })}
+                  style={styles.eatingCard}>
+                  <View style={styles.eatingPhoto}>
+                    {c.cover_image_url
+                      ? <Image source={{ uri: c.cover_image_url }} style={styles.eatingPhotoImg} />
+                      : <Text style={styles.eatingPhotoGlyph}>🍽️</Text>}
+                  </View>
+                  <View style={styles.eatingBody}>
+                    <View style={styles.eatingChip}>
+                      <Text style={styles.eatingChipAv}>
+                        {(c.instagram_handle || c.influencer_name || '?').charAt(0).toUpperCase()}
+                      </Text>
+                      <Text style={styles.eatingChipText} numberOfLines={1}>
+                        @{c.instagram_handle || c.influencer_name}
+                      </Text>
+                    </View>
+                    <Text style={styles.eatingMeta} numberOfLines={1}>
+                      {c.business_name} · {c.when_text}
+                    </Text>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        )}
 
         {/* Nearby restaurants list */}
         <SectionH title="Nearby" subtitle="4.2km radius" />
@@ -339,6 +381,41 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: lightColors.muted2,
     marginTop: 2,
+  },
+
+  eatingScroll: { gap: 10, paddingRight: 16 },
+  eatingCard: {
+    width: 150,
+    backgroundColor: lightColors.paper,
+    borderColor: lightColors.border, borderWidth: 1,
+    borderRadius: 12, overflow: 'hidden',
+  },
+  eatingPhoto: {
+    height: 80, backgroundColor: lightColors.yellow50,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  eatingPhotoImg: { width: '100%', height: '100%' },
+  eatingPhotoGlyph: { fontSize: 26 },
+  eatingBody: { padding: 8 },
+  eatingChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: lightColors.ink,
+    borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2,
+  },
+  eatingChipAv: {
+    width: 14, height: 14, borderRadius: 7,
+    backgroundColor: lightColors.yellow, color: lightColors.ink,
+    fontFamily: fonts.displayBlack, fontSize: 8,
+    textAlign: 'center', lineHeight: 14, overflow: 'hidden',
+  },
+  eatingChipText: {
+    fontFamily: fonts.monoBold, fontSize: 9,
+    color: lightColors.white, maxWidth: 86,
+  },
+  eatingMeta: {
+    fontFamily: fonts.sansSemiBold, fontSize: 11,
+    color: lightColors.ink2, marginTop: 5,
   },
 
   loading: {
