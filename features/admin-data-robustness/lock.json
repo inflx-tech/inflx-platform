@@ -1,0 +1,19 @@
+{
+  "feature": "admin-data-robustness",
+  "area": "A5b",
+  "spec_version": "0.1.0",
+  "status": "backlog",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "notes": "Tracked finding from A5 v0.2.0 (founder decision 2026-05-18). 3 admin pages crash on a realistic empty payload: /admin/analytics, /admin/marketing/leads, /admin/marketing/funnel. NOT auto-fixed — app-code change, each gets its own Step-5 lock when scheduled. Recorded so the finding is not lost.",
+  "source": "features/admin-nav-sweep (A5) — qa run 2026-05-18, 3/18 genuine crash-on-empty",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

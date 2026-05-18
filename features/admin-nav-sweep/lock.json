@@ -1,0 +1,34 @@
+{
+  "feature": "admin-nav-sweep",
+  "area": "A5",
+  "spec_version": "0.3.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "revisions": [
+    {
+      "version": "0.1.0",
+      "outcome": "6 false failures (entries.map is not a function)",
+      "root_cause": "stubApiPermissive returned data:{} (unrealistic) — short-circuited res.data?.x||res.data||[] into a non-array. Proven a stub defect via /admin/approvals (green in A1).",
+      "decision": "revise stub to data:[], re-lock, re-run"
+    },
+    {
+      "version": "0.2.0",
+      "outcome": "3 resolved (escrow/approvals/marketing-inbox); 3 still fail (analytics, marketing/leads, marketing/funnel)",
+      "root_cause": "Uniform stub cannot match object-shaped endpoints; assertion (c) 'no uncaught page error' over-reaches for a breadth net.",
+      "decision": "founder approved Option 1: v0.3.0 net = (a)+(b) only; spin A5b to track the 3 genuine crash-on-empty findings"
+    }
+  ],
+  "spec_version_notes": "v0.3.0: breadth net asserts only (a) not gated to /login + (b) HTTP<400. (c) removed as unsound under a uniform stub. The 3 genuine findings tracked in features/admin-data-robustness/ (A5b).",
+  "related": ["features/admin-data-robustness (A5b — tracks the 3 deferred crash-on-empty findings)"],
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 30/30 workflows passed (24.2s), 2026-05-18 (v0.3.0)",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}

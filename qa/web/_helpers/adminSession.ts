@@ -74,6 +74,27 @@ export async function stubAdminApis(
   return cap;
 }
 
+/**
+ * Permissive catch-all for every backend call (API base is
+ * http://localhost:3001/v1). Returns a REALISTIC empty payload
+ * (`data: []`) — no real INFLX endpoint returns `data:{}`, and an
+ * empty object falsely short-circuits the common
+ * `res.data?.<key> || res.data || []` fallback chain into a
+ * non-array. `data: []` lets those chains resolve to an empty
+ * array (empty state renders); pages with NO fallback that do
+ * `res.data.x.map(...)` still fail honestly — the net's real value.
+ * Additive — does not affect specs using the specific `stubAdminApis`.
+ */
+export async function stubApiPermissive(page: Page) {
+  await page.route('**/v1/**', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ success: true, data: [], meta: {} }),
+    }),
+  );
+}
+
 const SHOTS = path.join(__dirname, '..', '..', 'artifacts', 'screenshots');
 export function shotDir(phase: 'before' | 'after') {
   const d = path.join(SHOTS, phase);
