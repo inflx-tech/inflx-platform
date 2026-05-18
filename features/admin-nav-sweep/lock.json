@@ -23,7 +23,7 @@
     }
   ],
   "spec_version_notes": "v0.3.0: breadth net asserts only (a) not gated to /login + (b) HTTP<400. (c) removed as unsound under a uniform stub. The 3 genuine findings tracked in features/admin-data-robustness/ (A5b).",
-  "related": ["features/admin-data-robustness (A5b — tracks the 3 deferred crash-on-empty findings)"],
+  "related": ["features/admin-data-robustness (A5b) — CLOSED 2026-05-18: the 3 deferred crash-on-empty findings (analytics/marketing-leads/marketing-funnel) are fixed + verified green (39/39)"],
   "release": {
     "qa_all_green": true,
     "qa_run": "qa/reports/latest.md — 30/30 workflows passed (24.2s), 2026-05-18 (v0.3.0)",

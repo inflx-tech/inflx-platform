@@ -1,19 +1,22 @@
 {
   "feature": "admin-data-robustness",
   "area": "A5b",
-  "spec_version": "0.1.0",
-  "status": "backlog",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
-  "preview_reviewed": false,
-  "impact_reviewed": false,
-  "notes": "Tracked finding from A5 v0.2.0 (founder decision 2026-05-18). 3 admin pages crash on a realistic empty payload: /admin/analytics, /admin/marketing/leads, /admin/marketing/funnel. NOT auto-fixed — app-code change, each gets its own Step-5 lock when scheduled. Recorded so the finding is not lost.",
-  "source": "features/admin-nav-sweep (A5) — qa run 2026-05-18, 3/18 genuine crash-on-empty",
+  "spec_version": "0.2.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Promoted from backlog to ACTIVE 2026-05-18. First app-code change via the pipeline: minimal defensive guards on 3 admin pages (funnel/leads/analytics) so an empty/odd payload renders the existing empty state instead of crashing. Implementation (3 page.js guards + qa/web/admin/data-robustness.spec.ts) GATED until approved=true. NOT deploy-inert — Vercel redeploys brand-web on release.",
+  "source": "features/admin-nav-sweep (A5 v0.3.0) — 3 deferred crash-on-empty findings",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 39/39 workflows passed (25.1s), 2026-05-18. 6 empty/{} cases + 3 populated non-regression cases green; a5b__*-empty.png ×3 captured.",
+    "closes": "features/admin-nav-sweep A5 v0.3.0 deferred findings (analytics/marketing-leads/marketing-funnel crash-on-empty)",
+    "deploy_note": "NOT deploy-inert — release commits 3 brand-web page.js guards; Vercel auto-redeploys brand-web.",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18) — explicit real-deploy approval",
+    "released_at": "2026-05-18"
   }
 }

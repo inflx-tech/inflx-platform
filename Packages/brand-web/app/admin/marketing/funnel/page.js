@@ -41,7 +41,7 @@ export default function MarketingFunnelPage() {
   }, []);
 
   if (loading) return <div className="text-t3 text-sm p-8 text-center">Loading…</div>;
-  if (!data) return <div className="text-t3 text-sm p-8 text-center">Failed to load funnel.</div>;
+  if (!data || !data.totals || !data.influencers || !data.brands) return <div className="text-t3 text-sm p-8 text-center">Failed to load funnel.</div>;
 
   return (
     <div className="space-y-3 max-w-6xl mx-auto">

@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
     );
   }
 
-  if (!data) return null;
+  if (!data || typeof data !== 'object' || Array.isArray(data) || !data.overview) return null;
 
   const { overview, comparison, daily_signups, daily_transactions, top_campaigns, top_influencers, categories, funnel } = data;
 

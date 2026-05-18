@@ -94,7 +94,9 @@ export default function MarketingTriagePage() {
   useEffect(() => {
     (async () => {
       const r = await marketingApi.getFilterOptions();
-      if (r.success) setOpts(r.data);
+      if (r.success && r.data && typeof r.data === 'object' && !Array.isArray(r.data)) {
+        setOpts(o => ({ ...o, ...r.data }));
+      }
     })();
   }, []);
 
@@ -115,7 +117,7 @@ export default function MarketingTriagePage() {
     });
     setLoading(false);
     if (res.success) {
-      setRows(res.data || []);
+      setRows(Array.isArray(res.data) ? res.data : []);
       setTotal(res.meta?.total || 0);
     }
   }, [typeTab, status, minScore, city, category, subCategory, tier, search, sort, page, limit]);
