@@ -1,0 +1,24 @@
+{
+  "feature": "db-substrate",
+  "area": "B2b",
+  "spec_version": "0.1.0",
+  "status": "implemented-verified",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "impl_hold": "Step 7 HELD pending founder confirmation that Docker Desktop is running. No implementation/verification against an unverifiable substrate. On confirm: re-verify `docker ps`, then implement.",
+  "hard_precondition": "Docker daemon running (verified DOWN at draft time). Step 7 re-verifies `docker ps` before any implementation/verification.",
+  "design": "Separate gate/report lane (founder decision 2026-05-18) — DB status never merged into the main pnpm qa GREEN; C1 main verdict untouched; down/unrun lane → FAIL/NOT-EXERCISED, never implied-green.",
+  "notes": "Step 5 gate. Substrate + all-migrations applier fix (backend/tests/setup.js: 001 only → 001..054 sorted) + Dockerized PG + DB-lane reporting + proof (53 migrations apply 0-error; backend jest runs & reports truth). Legacy jest failures = tracked findings, not a B2b blocker. Implementation GATED until approved=true AND Docker verified up. Deploy-inert (test-infra/harness only).",
+  "related": ["B2a (pure-calc money math)", "C1 (governance fidelity — DB lane must extend, not weaken it)", "B2b-fix (future: opened only if migrations 002..054 error in sequence)"],
+  "step7_result": "Docker re-verified up. db-up/db-down lifecycle deterministic. setup.js now applies 001..054 sorted: ALL 53 migrations applied 0-ERROR (first-ever end-to-end migration-coherence proof). Separate DB lane: own exit, db-lane.json + qa-report 'DB lane' section. Backend jest executed to completion: 101 passed / 281 failed / 382 total → DB-lane FAIL (exit 1), substrate=OK — NO false-green. Main `pnpm qa` re-run: 66 GREEN, STATE=GREEN, gate 0 — C1 + main suite UNAFFECTED (separate-lane design proven).",
+  "substrate_contract": "ACHIEVED — Docker PG + all-migrations applier + separate truthful lane + C1 untouched. 281 backend failures are pre-existing legacy debt the substrate REVEALED → tracked in features/backend-test-debt (NOT a B2b blocker, NOT suppressed, NOT force-greened).",
+  "release": {
+    "qa_all_green": "B2b-scope=true (substrate proven; main 66 green/unaffected). DB lane FAIL by design = 281 tracked legacy findings (features/backend-test-debt).",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}

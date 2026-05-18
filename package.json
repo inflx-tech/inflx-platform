@@ -18,7 +18,10 @@
     "qa:web": "pnpm exec playwright test --config qa/playwright.config.ts",
     "qa:report": "node qa/scripts/qa-report.mjs",
     "qa:html": "pnpm exec playwright show-report qa/artifacts/html-report",
-    "qa:mobile": "cd Packages/Mobile && npm test"
+    "qa:mobile": "cd Packages/Mobile && npm test",
+    "qa:db": "node qa/scripts/qa-db.mjs",
+    "qa:db:up": "node qa/scripts/db-up.mjs",
+    "qa:db:down": "node qa/scripts/db-down.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

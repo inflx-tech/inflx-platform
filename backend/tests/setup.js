@@ -29,12 +29,28 @@ module.exports = async () => {
   await client.query('CREATE SCHEMA public');
   await client.query('GRANT ALL ON SCHEMA public TO public');
 
-  // Apply the full migration
-  const sqlPath = path.join(__dirname, '../migrations/001_initial_schema.sql');
-  const sql = fs.readFileSync(sqlPath, 'utf8');
-  await client.query(sql);
+  // Apply ALL migrations in sorted order (001 → 054). Filenames are
+  // zero-padded 3-digit prefixes, so lexicographic sort == numeric
+  // order. Previously this applied ONLY 001 — the long-standing
+  // staleness B2b fixes. Any SQL error stops the run, names the
+  // file, and fails globalSetup loudly (no partial/silent schema).
+  const migDir = path.join(__dirname, '../migrations');
+  const files = fs.readdirSync(migDir).filter((f) => f.endsWith('.sql')).sort();
+  let applied = 0;
+  for (const f of files) {
+    const sql = fs.readFileSync(path.join(migDir, f), 'utf8');
+    try {
+      await client.query(sql);
+      applied += 1;
+    } catch (e) {
+      console.error(`[setup] MIGRATION FAILED at ${f}: ${e.message}`);
+      await client.end();
+      throw new Error(`Migration failed at ${f}: ${e.message}`);
+    }
+  }
 
   await client.end();
 
-  console.log('\n✓ Test database migrated (inflx_test)\n');
+  console.log(`\n[setup] migrations applied: ${applied}/${files.length}`);
+  console.log('✓ Test database migrated (inflx_test)\n');
 };

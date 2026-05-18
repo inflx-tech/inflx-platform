@@ -176,6 +176,32 @@ function main() {
   lines.push(`- After screenshots (${after.length}): \`qa/artifacts/screenshots/after/\``);
   lines.push('');
 
+  // ── DB lane (B2b) — SEPARATE, informational. Read-only of
+  // db-lane.json. NEVER influences the main verdict/exit above
+  // (C1 governance untouched). Absence → explicit NOT EXERCISED,
+  // never blank, never implied-green. ──
+  lines.push('## DB lane (B2b — separate gate)');
+  lines.push('');
+  const dbLaneFile = process.env.QA_DB_LANE_FILE || path.join(QA_ROOT, 'artifacts', 'db-lane.json');
+  if (!fs.existsSync(dbLaneFile)) {
+    lines.push('**NOT EXERCISED** — run `pnpm qa:db`. (DB coverage status is explicit; its absence is never implied-green and never folded into the verdict above.)');
+  } else {
+    try {
+      const d = JSON.parse(fs.readFileSync(dbLaneFile, 'utf8'));
+      const icon = d.laneState === 'PASS' ? '✅' : '❌';
+      lines.push(`- **Lane state:** ${icon} ${d.laneState}`);
+      lines.push(`- **Substrate:** ${d.substrate}`);
+      if (d.migrationsApplied != null) lines.push(`- **Migrations:** ${d.migrationsApplied}/${d.migrationsTotal} applied (0-error)`);
+      if (d.jest) lines.push(`- **Backend jest:** ${d.jest.ran ? `${d.jest.passed}/${d.jest.total} passed, ${d.jest.failed} failed` : 'did not run'}`);
+      lines.push(`- **Reason:** ${d.reason}`);
+      if (d.findings) lines.push(`- **Tracked findings:** ${d.findings}`);
+      lines.push(`- **As of:** ${d.generatedAt}`);
+    } catch (e) {
+      lines.push(`**db-lane.json unreadable** (${e.message}) — treat as DB lane FAILED, not green.`);
+    }
+  }
+  lines.push('');
+
   const md = lines.join('\n');
   const runDir = path.join(REPORT_DIR, ts());
   fs.mkdirSync(runDir, { recursive: true });

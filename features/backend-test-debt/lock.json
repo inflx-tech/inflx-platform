@@ -1,0 +1,16 @@
+{
+  "feature": "backend-test-debt",
+  "area": "B2b-fix",
+  "spec_version": "0.1.0",
+  "status": "backlog",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "baseline": "B2b run 2026-05-18: backend jest 101 passed / 281 failed / 382 total, 28 suites (2 pass). Migrations 53/53 applied 0-error (substrate sound).",
+  "root_cause_sample": "tests/helpers/factories.js:98 registerBrand omits required `name` → VALIDATION_ERROR; cascades widely as most suites build state via factories.js.",
+  "notes": "Tracked finding from B2b (founder-visible). NOT auto-fixed. Phased fix, each phase its own Step-5 lock; verified by `pnpm qa:db` (target DB laneState=PASS). Not a B2b blocker — B2b substrate contract succeeded; this is the debt B2b made visible.",
+  "source": "features/db-substrate (B2b) — qa/artifacts/db-lane.json",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null }
+}
