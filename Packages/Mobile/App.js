@@ -13,6 +13,7 @@ import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
+import { LocationProvider } from './src/contexts/LocationContext';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
@@ -123,16 +124,18 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ setRole }}>
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-      {!showSplash && (
-        <NavigationContainer>
-          {role === 'brand' ? <BrandNavigator /> :
-           role === 'influencer' ? <InfluencerNavigator /> :
-           role === 'follower' ? <FollowerNavigator /> :
-           isFollowerApp ? <FollowerNavigator /> :
-           <AuthNavigator />}
-        </NavigationContainer>
-      )}
+      <LocationProvider>
+        {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+        {!showSplash && (
+          <NavigationContainer>
+            {role === 'brand' ? <BrandNavigator /> :
+             role === 'influencer' ? <InfluencerNavigator /> :
+             role === 'follower' ? <FollowerNavigator /> :
+             isFollowerApp ? <FollowerNavigator /> :
+             <AuthNavigator />}
+          </NavigationContainer>
+        )}
+      </LocationProvider>
     </AuthContext.Provider>
   );
 }

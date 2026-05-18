@@ -25,6 +25,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import RestaurantCard from '../../components/restaurant/RestaurantCard';
+import LocationHeader from '../../components/LocationHeader';
+import { useAppLocation } from '../../contexts/LocationContext';
 import { buildTrackingFromOffer } from '../../utils/tracking';
 
 const VIBE_TILES = [
@@ -44,11 +46,14 @@ export default function DiningHomeScreen({ navigation, route }) {
   // a creator share link. The same screen renders a small ink header pill
   // when present; otherwise it renders the default location/greeting row.
   const stickyCreator = route?.params?.creator || null;
+  const { location } = useAppLocation();
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await followerApi.getCategoryStores?.('eat');
+      const res = await followerApi.getCategoryStores?.('eat', {
+        lat: location?.latitude, lng: location?.longitude,
+      });
       const list = res?.data?.stores || [];
       setStores(list);
       // Count restaurants per vibe so the tiles can show "N spots".
@@ -68,7 +73,7 @@ export default function DiningHomeScreen({ navigation, route }) {
       const r = await followerApi.getCreatorsEatingNow?.();
       setEatingNow((r?.data || r)?.creators_eating_now || []);
     } catch { /* strip stays hidden */ }
-  }, []);
+  }, [location?.latitude, location?.longitude]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -100,8 +105,7 @@ export default function DiningHomeScreen({ navigation, route }) {
       {/* Top bar — location pill + greeting + avatar */}
       <View style={styles.topbar}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.locationPill}>📍 BANJARA HILLS</Text>
-          <Text style={styles.greeting}>What's on tonight?</Text>
+          <LocationHeader navigation={navigation} title="What's on tonight?" />
         </View>
         <Pressable style={styles.iconBtn} hitSlop={6}>
           <Text style={styles.iconBtnGlyph}>🔔</Text>
