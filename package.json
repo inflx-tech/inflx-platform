@@ -13,9 +13,15 @@
     "publish-ota:all": "node scripts/publish-ota.js all",
     "publish-ota:brand": "node scripts/publish-ota.js brand",
     "publish-ota:influencer": "node scripts/publish-ota.js influencer",
-    "publish-ota:follower": "node scripts/publish-ota.js follower"
+    "publish-ota:follower": "node scripts/publish-ota.js follower",
+    "qa": "node qa/scripts/run-qa.mjs",
+    "qa:web": "pnpm exec playwright test --config qa/playwright.config.ts",
+    "qa:report": "node qa/scripts/qa-report.mjs",
+    "qa:html": "pnpm exec playwright show-report qa/artifacts/html-report",
+    "qa:mobile": "cd Packages/Mobile && npm test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "concurrently": "^8.2.0"
   }
 }

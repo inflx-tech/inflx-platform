@@ -1,0 +1,17 @@
+{
+  "feature": "brand-web-auth",
+  "spec_version": "1.0.0",
+  "status": "implemented",
+  "approved": true,
+  "approved_by": "reference-workflow (foundation seed)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Reference contract that demonstrates the L0→test→report loop. Implementation pre-existed; QA spec qa/web/brand/auth.spec.ts is green.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

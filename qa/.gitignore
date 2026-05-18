@@ -1,0 +1,7 @@
+# Generated QA artifacts — not source of truth, regenerated every run
+artifacts/
+reports/
+
+# keep the structure, ignore the contents
+!artifacts/.gitkeep
+!reports/.gitkeep

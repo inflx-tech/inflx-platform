@@ -1,0 +1,17 @@
+{
+  "feature": "<feature-slug>",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "notes": "Step 5 gate. Set approved=true (with approved_by/at) only after spec + workflow + expected-outputs + preview are agreed. No implementation (Step 7) until approved=true.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
