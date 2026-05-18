@@ -1,0 +1,19 @@
+{
+  "feature": "admin-approvals-reject",
+  "area": "A3",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Step 5 lock granted. Step 7 authorized: qa/web/admin/approvals-reject.spec.ts (workflows A/B/C) + shared qa/web/_helpers/adminSession.ts. A1 left untouched. Report green before Step-14.",
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 7/7 workflows passed (27.6s), 2026-05-18",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}
