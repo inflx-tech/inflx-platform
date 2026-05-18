@@ -14,6 +14,7 @@ import DiningHomeScreen from '../screens/follower/DiningHomeScreen';
 import DiningBrowseScreen from '../screens/follower/DiningBrowseScreen';
 import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
 import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
+import RestaurantCartScreen from '../screens/follower/RestaurantCartScreen';
 
 // Existing screens
 import DealsScreen from '../screens/follower/DealsScreen';
@@ -66,6 +67,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="DiningBrowse" component={DiningBrowseScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
     <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
+    <Stack.Screen name="RestaurantCart" component={RestaurantCartScreen} />
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />

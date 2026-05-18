@@ -136,6 +136,42 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
     });
   }
 
+  // ── Wave 5B cart (online-order restaurants only) ──────────────────────────
+  // cart: { [productId]: { product, qty } }. Single-restaurant scope, so a
+  // local state map is enough — no global provider needed (matches the
+  // schema's cart_scope: "brand").
+  const [cart, setCart] = useState({});
+  const cartCount = useMemo(
+    () => Object.values(cart).reduce((n, c) => n + c.qty, 0), [cart]);
+  const cartTotal = useMemo(
+    () => Object.values(cart).reduce((s, c) => s + c.qty * Number(c.product.price || 0), 0), [cart]);
+
+  const addToCart = useCallback((p) => {
+    setCart(prev => ({ ...prev, [p.id]: { product: p, qty: (prev[p.id]?.qty || 0) + 1 } }));
+  }, []);
+  const decFromCart = useCallback((p) => {
+    setCart(prev => {
+      const cur = prev[p.id]?.qty || 0;
+      if (cur <= 1) { const n = { ...prev }; delete n[p.id]; return n; }
+      return { ...prev, [p.id]: { product: p, qty: cur - 1 } };
+    });
+  }, []);
+
+  function goToCart() {
+    navigation.navigate('RestaurantCart', {
+      brand,
+      tracking,
+      offer,
+      items: Object.values(cart).map(c => ({
+        product_id: c.product.id,
+        name: c.product.name,
+        price: Number(c.product.price || 0),
+        quantity: c.qty,
+        image_url: c.product.image_url,
+      })),
+    });
+  }
+
   return (
     <View style={styles.root}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 96 }}>
@@ -256,7 +292,9 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
           <OverviewTab description={description} vibes={vibes} creator={creator} />
         )}
         {tab === 'menu' && (
-          <MenuTab sections={sections} visibleSection={visibleSection}
+          <MenuTab cart={cart} onAdd={addToCart} onDec={decFromCart}
+            canOrder={showOnlineOrder}
+            sections={sections} visibleSection={visibleSection}
             sectionKeys={sectionKeys} onSelectSection={setSection}
             picks={picks} onProductPress={onProductPress} creator={creator} />
         )}
@@ -266,6 +304,16 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
       </ScrollView>
 
       {/* ── Sticky bottom CTA bar ────────────────────────────────────── */}
+      {showOnlineOrder && cartCount > 0 ? (
+        <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
+          <Pressable onPress={goToCart} style={styles.cartBar}>
+            <Text style={styles.cartBarLeft}>
+              {cartCount} item{cartCount !== 1 ? 's' : ''} · ₹{Math.round(cartTotal)}
+            </Text>
+            <Text style={styles.cartBarRight}>View cart →</Text>
+          </Pressable>
+        </SafeAreaView>
+      ) : (
       <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
         <View style={styles.ctaInner}>
           {callPhone && (
@@ -302,6 +350,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
           )}
         </View>
       </SafeAreaView>
+      )}
     </View>
   );
 }
@@ -348,7 +397,7 @@ function OverviewTab({ description, vibes, creator }) {
   );
 }
 
-function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks, onProductPress, creator }) {
+function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks, onProductPress, creator, cart = {}, onAdd, onDec, canOrder }) {
   if (sectionKeys.length === 0) {
     return (
       <View style={styles.section}>
@@ -420,9 +469,27 @@ function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks
               )}
               <View style={styles.dishPriceRow}>
                 <Text style={styles.dishPrice}>₹ {Math.round(p.price)}</Text>
-                <Pressable onPress={() => onProductPress(p)} style={styles.dishAddBtn}>
-                  <Text style={styles.dishAddText}>+ ADD</Text>
-                </Pressable>
+                {canOrder ? (
+                  (cart[p.id]?.qty || 0) > 0 ? (
+                    <View style={styles.qtyStepper}>
+                      <Pressable onPress={() => onDec(p)} hitSlop={8} style={styles.qtyBtn}>
+                        <Text style={styles.qtyBtnText}>−</Text>
+                      </Pressable>
+                      <Text style={styles.qtyNum}>{cart[p.id].qty}</Text>
+                      <Pressable onPress={() => onAdd(p)} hitSlop={8} style={styles.qtyBtn}>
+                        <Text style={styles.qtyBtnText}>+</Text>
+                      </Pressable>
+                    </View>
+                  ) : (
+                    <Pressable onPress={() => onAdd(p)} style={styles.dishAddBtn}>
+                      <Text style={styles.dishAddText}>+ ADD</Text>
+                    </Pressable>
+                  )
+                ) : (
+                  <Pressable onPress={() => onProductPress(p)} style={styles.dishAddBtn}>
+                    <Text style={styles.dishAddText}>View</Text>
+                  </Pressable>
+                )}
               </View>
             </View>
           </Pressable>
@@ -885,6 +952,13 @@ const styles = StyleSheet.create({
   dishPrice: { fontFamily: fonts.monoBold, fontSize: 13, color: lightColors.ink },
   dishAddBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: lightColors.yellow, borderRadius: 6 },
   dishAddText: { fontFamily: fonts.monoBold, fontSize: 10, color: lightColors.ink },
+  qtyStepper: { flexDirection: 'row', alignItems: 'center', backgroundColor: lightColors.yellow, borderRadius: 6, paddingHorizontal: 4 },
+  qtyBtn: { paddingHorizontal: 8, paddingVertical: 4 },
+  qtyBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, color: lightColors.ink },
+  qtyNum: { fontFamily: fonts.monoBold, fontSize: 12, color: lightColors.ink, minWidth: 16, textAlign: 'center' },
+  cartBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: lightColors.yellow, marginHorizontal: 16, marginVertical: 8, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 12 },
+  cartBarLeft: { fontFamily: fonts.sansBold, fontSize: 14, color: lightColors.ink },
+  cartBarRight: { fontFamily: fonts.sansBold, fontSize: 14, color: lightColors.ink },
   bestsellerChip: {
     backgroundColor: lightColors.yellow50,
     borderColor: lightColors.yellow200, borderWidth: 1,
