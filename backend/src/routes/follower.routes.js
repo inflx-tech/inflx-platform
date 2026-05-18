@@ -43,6 +43,9 @@ router.get ('/me/reviewable', ...followerAuth,      reviewCtrl.getReviewable);
 // ── Wave 5C — Creators eating now (public discovery social-proof) ────────────
 router.get('/creators-eating-now', authenticateOptional, ctrl.creatorsEatingNow);
 
+// ── Path C-3 — working search (public) ───────────────────────────────────────
+router.get('/search', authenticateOptional, ctrl.search);
+
 // ── Path C-2 — Follower wallet (auth required) ───────────────────────────────
 router.get('/wallet',              ...followerAuth, walletCtrl.getWallet);
 router.get('/wallet/transactions', ...followerAuth, walletCtrl.listWalletTransactions);

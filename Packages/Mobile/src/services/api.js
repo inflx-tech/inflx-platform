@@ -473,4 +473,11 @@ export const followerApi = {
   // Path C-2 — follower wallet
   getWallet: () => api.get('/follower/wallet'),
   getWalletTransactions: () => api.get('/follower/wallet/transactions'),
+
+  // Path C-3 — working search
+  search: (q, opts = {}) => {
+    const p = [`q=${encodeURIComponent(q)}`, `super=${opts.super || 'eat'}`];
+    if (opts.veg) p.push('veg=1');
+    return api.get(`/follower/search?${p.join('&')}`);
+  },
 };

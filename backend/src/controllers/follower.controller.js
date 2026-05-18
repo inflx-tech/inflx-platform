@@ -941,8 +941,92 @@ const creatorsEatingNow = asyncHandler(async (req, res) => {
   return success(res, { creators_eating_now: items });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /follower/search?q=&super=eat&veg=1
+// Path C-3 — real search across brands + dishes within a super-category.
+// Powers the working search screen (replaces the decorative bars).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const search = asyncHandler(async (req, res) => {
+  const { q, super: superKey = 'eat', veg } = req.query;
+  const term = (q || '').trim();
+  if (term.length < 2) {
+    return success(res, { brands: [], dishes: [] });
+  }
+
+  const superCat = listingService.getSuperCategories().find(s => s.key === superKey);
+  const categoryKeys = superCat ? superCat.sub_categories : ['restaurant'];
+  if (!categoryKeys.length) return success(res, { brands: [], dishes: [] });
+
+  const like = `%${term.replace(/[%_]/g, m => '\\' + m)}%`;
+  const vegOnly = veg === '1' || veg === 'true';
+
+  // Brands — name / cuisines / vibes match, approved, in-category.
+  const { rows: brands } = await db.query(
+    `SELECT DISTINCT b.id, b.business_name, b.category, b.cover_image_url,
+            b.cost_for_two, b.locality, b.listing_data, u.city
+       FROM brands b
+       JOIN users u ON u.id = b.user_id
+      WHERE u.status = 'approved'
+        AND b.category = ANY($1::text[])
+        AND (
+          b.business_name ILIKE $2
+          OR (b.listing_data->'cuisines')::text ILIKE $2
+          OR b.vibes::text ILIKE $2
+        )
+        ${vegOnly ? `AND EXISTS (SELECT 1 FROM brand_products bp
+                       WHERE bp.brand_id = b.id AND bp.is_active = true
+                         AND bp.veg_flag = 'veg')` : ''}
+      LIMIT 20`,
+    [categoryKeys, like]
+  );
+
+  // Dishes — product name match within approved in-category brands.
+  const { rows: dishes } = await db.query(
+    `SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag,
+            b.id AS brand_id, b.business_name, b.category
+       FROM brand_products bp
+       JOIN brands b ON b.id = bp.brand_id
+       JOIN users u  ON u.id = b.user_id
+      WHERE u.status = 'approved'
+        AND b.category = ANY($1::text[])
+        AND bp.is_active = true
+        AND bp.name ILIKE $2
+        ${vegOnly ? `AND bp.veg_flag = 'veg'` : ''}
+      ORDER BY bp.name
+      LIMIT 25`,
+    [categoryKeys, like]
+  );
+
+  const brandsOut = brands.map(b => {
+    const ld = b.listing_data || {};
+    return {
+      id: b.id,
+      business_name: b.business_name,
+      category: b.category,
+      cover_image_url: b.cover_image_url || ld.cover_image_url || null,
+      cuisines: Array.isArray(ld.cuisines) ? ld.cuisines : [],
+      cost_for_two: b.cost_for_two != null ? Number(b.cost_for_two) : (ld.cost_for_two || null),
+      locality: b.locality || ld.locality_or_neighborhood || b.city || null,
+    };
+  });
+  const dishesOut = dishes.map(d => ({
+    id: d.id,
+    name: d.name,
+    price: Number(d.price || 0),
+    image_url: d.image_url,
+    section: d.section,
+    veg_flag: d.veg_flag,
+    brand_id: d.brand_id,
+    business_name: d.business_name,
+  }));
+
+  return success(res, { brands: brandsOut, dishes: dishesOut });
+});
+
 module.exports = {
   creatorsEatingNow,
+  search,
   register,
   getMe,
   followInfluencer,

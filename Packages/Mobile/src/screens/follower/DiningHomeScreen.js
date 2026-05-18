@@ -116,7 +116,7 @@ export default function DiningHomeScreen({ navigation, route }) {
       </View>
 
       {/* Search bar — tapping forwards to BrowseScreen */}
-      <Pressable onPress={() => openBrowse(null)} style={styles.searchBar}>
+      <Pressable onPress={() => navigation.navigate('DiningSearch')} style={styles.searchBar}>
         <Text style={styles.searchGlyph}>🔍</Text>
         <Text style={styles.searchPlaceholder}>Search restaurants, dishes…</Text>
       </Pressable>
