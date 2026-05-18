@@ -1,0 +1,23 @@
+{
+  "feature": "qa-aggregation-fidelity",
+  "area": "C1",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "priority": "governance-integrity — sequenced BEFORE B2b per founder decision 2026-05-18",
+  "notes": "Step 5 gate. NARROW: 6 truthful-aggregation invariants only (green-impossible-on-nonzero-exit, worker/load-failure detectable, incomplete detection, parser-failure handling, exit/report reconciliation, unknown-state escalation). NO dashboards/analytics. Implementation (qa-report.mjs + run-qa.mjs + qa/unit/qa-report-fidelity.spec.ts) GATED until approved=true. Deploy-inert.",
+  "origin": "Finding B from B2a step-7 (qa-report printed ALL GREEN while run exited 1, via stale results.json)",
+  "related": ["B2b — Docker substrate (resumes AFTER C1 restores report trust)"],
+  "verification": "66/66 green 2026-05-18. 10 fidelity meta-tests (S1-S6,S3i,G1,G2) pass; S1 proves a perfectly-passed results.json + pwExit=1 → FAILED. Genuine 56-suite still STATE=GREEN gate 0 — reconciliation validated vs Playwright's real JSON (no false alarm).",
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 66/66 (1.2m), 2026-05-18; STATE=GREEN, run-qa pwExit=0 reportExit=0.",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}
