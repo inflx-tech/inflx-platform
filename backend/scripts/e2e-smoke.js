@@ -59,34 +59,38 @@ function assert(cond, step, detail) {
   console.log(`\n── INFLX e2e smoke ──  ${API_BASE}\n`);
 
   // 1. Auth — follower (warm Render with a retry; cold start drops the first call)
-  // E.164 Indian mobile — backend rejects bare 10-digit. Start with a
-  // valid leading digit (6-9) so the regex passes.
-  const phone = `+919${String(Date.now()).slice(-8)}`;
+  // Backend requires E.164 /^\+91[6-9]\d{9}$/ — +91 then a 10-digit
+  // number starting 6-9. Date.now() is 13 digits; the last 9 after a
+  // leading 9 form a valid 10-digit subscriber number.
+  const phone = `+919${String(Date.now()).slice(-9)}`;
   let authOk = false;
+  let lastVerify = null;
   for (let attempt = 1; attempt <= 3 && !authOk; attempt++) {
     await api('POST', '/auth/send-otp', { body: { phone }, auth: false });
     const v = await api('POST', '/auth/verify-otp', {
       body: { phone, otp: '000000', role: 'follower', name: 'Smoke Tester' },
       auth: false,
     });
+    lastVerify = v;
     if (v.status === 200 && v.json?.data?.access_token) {
       token = v.json.data.access_token;
       authOk = true;
     } else if (attempt < 3) {
-      await new Promise(r => setTimeout(r, 4000)); // Render warmup
-    } else if (attempt < 3) {
-      await new Promise(r => setTimeout(r, 4000));
+      await new Promise(r => setTimeout(r, 4000)); // Render cold-start warmup
     }
   }
   if (!authOk) {
-    // Real OTP on the deployed backend (OTP_MOCK=false) — can't auth
-    // here. Still run every PUBLIC endpoint so the smoke always yields
-    // proactive signal; mark the authed journey SKIP with the reason.
-    rec('auth.verify-otp (follower)', 'SKIP',
-      'OTP_MOCK=false on live — set OTP_MOCK=true on Render to unlock the full authed journey here');
+    // Report the ACTUAL symptom (status + error code), not a guessed
+    // cause — this previously mislabelled every failure "OTP_MOCK=false"
+    // even when the real issue was a malformed payload. Still run every
+    // PUBLIC endpoint so the smoke always yields proactive signal.
+    const why = lastVerify
+      ? `verify-otp → ${lastVerify.status}${lastVerify.json?.error ? ` ${lastVerify.json.error.code}: ${lastVerify.json.error.message}` : lastVerify.netErr ? ` net:${lastVerify.netErr}` : ''}`
+      : 'no response';
+    rec('auth.verify-otp (follower)', 'SKIP', why);
     await publicChecks();
     rec('authed journey (prebook/verify/reviews/wallet/pay)', 'SKIP',
-      'blocked by OTP_MOCK=false on live');
+      `blocked — auth failed (${why})`);
     return finish();
   }
   rec('auth.verify-otp (follower)', 'PASS', `token acquired`);
