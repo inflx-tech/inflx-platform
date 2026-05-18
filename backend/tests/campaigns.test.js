@@ -352,7 +352,7 @@ describe('POST /v1/campaigns/:id/sets', () => {
         name: 'Hyderabad Food Influencers',
         goal: 'engagement',
         assignment_mode: 'handpick',
-        budget: 20000,
+        set_budget: 20000,
       });
 
     expect(res.status).toBe(201);
@@ -404,7 +404,7 @@ describe('PATCH /v1/campaigns/:cid/sets/:sid', () => {
         name: overrides.name || 'Test Set',
         goal: overrides.goal || 'engagement',
         assignment_mode: overrides.assignment_mode || 'handpick',
-        budget: overrides.budget || 10000,
+        set_budget: overrides.set_budget || 10000,
         ...overrides,
       });
     return res.body.data.set;
@@ -452,7 +452,7 @@ describe('DELETE /v1/campaigns/:cid/sets/:sid', () => {
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Delete Me', goal: 'engagement', ...overrides });
+      .send({ name: 'Delete Me', goal: 'engagement', set_budget: 10000, ...overrides });
     return res.body.data.set;
   }
 
@@ -506,7 +506,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/invite', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Invite Set', goal: 'engagement', assignment_mode: 'handpick' });
+      .send({ name: 'Invite Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
     const sid = setRes.body.data.set.id;
 
     return { brandToken, inf, cid, sid };
@@ -592,7 +592,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/offers', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Offer Set', goal: 'conversion', assignment_mode: 'handpick' });
+      .send({ name: 'Offer Set', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN' });
     const sid = setRes.body.data.set.id;
 
     return { brandToken, cid, sid };

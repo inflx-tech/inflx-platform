@@ -1,0 +1,19 @@
+{
+  "feature": "backend-defect-follower-feed-noauth-500",
+  "area": "backend-defect",
+  "spec_version": "0.1.0",
+  "status": "carved",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "kind": "GENUINE BACKEND DEFECT — carved from backend-test-debt Phase 4 (2026-05-18). NOT a fix contract; the catching test is LEFT RED. A dedicated fix is its own future locked, production-impacting, gated contract.",
+  "symptom": "GET /v1/follower/feed with no Authorization header → HTTP 500 instead of 401 UNAUTHORIZED. Catching test: tests/follower-feed.test.js:182 ('returns 401 without auth') Expected 401 / Received 500.",
+  "root_cause_verify_twice": "follower.routes.js:27 `router.get('/feed', authenticateOptional, ctrl.getFeed)` — authenticateOptional does not reject the no-token request; follower.controller.js:299-303 getFeed then dereferences an undefined `follower` (follower.id) → asyncHandler surfaces a 500. The test is correct (no auth must be 401); the backend is wrong. Not a stale fixture / not assertion drift.",
+  "disposition": "Phase 4 carves only — test LEFT RED (correctly reports a real prod bug: the live endpoint 500s on unauthenticated requests). Backend NOT patched and test NOT edited here (no-fake-green; never mask a product bug).",
+  "fix_scope_future_contract": "Minimal, behaviour-preserving: make /v1/follower/feed return a clean 401 when unauthenticated (swap authenticateOptional→authenticate on the legacy /feed route, OR explicit AppError UNAUTHORIZED 401 in getFeed when no follower resolves). Authenticated behaviour unchanged. Verify: pnpm qa:db RED→GREEN by backend fix (not test edit) + main pnpm qa 66 GREEN unaffected.",
+  "deploy_posture": "This carve: DEPLOY-INERT (finding + RED test only). The future fix: PRODUCTION-IMPACTING (backend runtime → Render) — explicit Step-14 release gate, never silent.",
+  "source": "features/backend-test-debt-phase4 — qa/artifacts/db-jest.log 2026-05-18 (fresh, 53-migration Postgres)",
+  "release": { "qa_all_green": "n/a — carved finding, not a release", "released": false, "released_by": null, "released_at": null }
+}

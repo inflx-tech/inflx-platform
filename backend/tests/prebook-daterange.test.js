@@ -62,13 +62,13 @@ async function setupDaterangeScenario() {
   const campRes = await request(app)
     .post('/v1/campaigns')
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Weekend Wheels', total_budget: 100000, brief: 'Rent for the weekend' });
+    .send({ name: 'Weekend Wheels', total_budget: 100000, brief: 'Rent for the weekend', start_date: '2026-07-01', end_date: '2026-07-31' });
   const cid = campRes.body.data.campaign.id;
 
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Travel Vloggers', goal: 'conversion', assignment_mode: 'handpick' });
+    .send({ name: 'Travel Vloggers', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN' });
   const sid = setRes.body.data.set.id;
 
   const offerRes = await request(app)

@@ -61,14 +61,14 @@ async function setupActiveContract({ agreed_fee = 10000 } = {}) {
   const campaignRes = await request(app)
     .post('/v1/campaigns')
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Diwali Special', total_budget: 100000, brief: 'Show our best-selling thali' });
+    .send({ name: 'Diwali Special', total_budget: 100000, brief: 'Show our best-selling thali', start_date: '2026-07-01', end_date: '2026-07-31' });
   const cid = campaignRes.body.data.campaign.id;
 
   // Set
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick' });
+    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
   const sid = setRes.body.data.set.id;
 
   // Invite
