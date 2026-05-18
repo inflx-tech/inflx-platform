@@ -22,6 +22,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
+import { ensureFollowerAuth } from '../../utils/authGate';
 import { CreatorChip } from '../../components/restaurant';
 
 export default function RestaurantCartScreen({ route, navigation }) {
@@ -54,6 +55,8 @@ export default function RestaurantCartScreen({ route, navigation }) {
         'This restaurant has no active creator campaign right now, so online ordering isn’t available. Try Book a Table or Pay at Restaurant.');
       return;
     }
+    if (!(await ensureFollowerAuth(navigation,
+      { message: 'Sign in to place your order.' }))) return;
     if (items.length === 0) return;
     setPlacing(true);
     try {

@@ -28,6 +28,7 @@ import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
+import { ensureFollowerAuth } from '../../utils/authGate';
 import { TimeSlot, FilterChip, OfferPill } from '../../components/restaurant';
 
 const SLOTS = [
@@ -68,6 +69,10 @@ export default function RestaurantBookingScreen({ route, navigation }) {
       Alert.alert('Pick a time', 'Choose a time slot to continue.');
       return;
     }
+    // Booking requires a logged-in follower. Without this the prebook
+    // call 401s into a dead "Session expired" with no login path.
+    if (!(await ensureFollowerAuth(navigation,
+      { message: 'Sign in to book a table. It only takes 30 seconds!' }))) return;
     setLoading(true);
     try {
       const initiateRes = await followerApi.prebook({

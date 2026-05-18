@@ -29,6 +29,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
+import { ensureFollowerAuth } from '../../utils/authGate';
 import { CreatorChip, OfferPill } from '../../components/restaurant';
 
 export default function RestaurantBillScreen({ route, navigation }) {
@@ -69,6 +70,8 @@ export default function RestaurantBillScreen({ route, navigation }) {
       Alert.alert('Enter a valid amount');
       return;
     }
+    if (!(await ensureFollowerAuth(navigation,
+      { message: 'Sign in to pay your bill via INFLX.' }))) return;
     setPaying(true);
     try {
       // Initiate the transaction → backend returns Razorpay order

@@ -441,7 +441,7 @@ function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks
 
       <View style={styles.section}>
         {items.map(p => (
-          <Pressable key={p.id} onPress={() => onProductPress(p)} style={styles.dishRow}>
+          <View key={p.id} style={styles.dishRow}>
             {p.image_url ? (
               <Image source={{ uri: p.image_url }} style={styles.dishImg} />
             ) : (
@@ -485,14 +485,10 @@ function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks
                       <Text style={styles.dishAddText}>+ ADD</Text>
                     </Pressable>
                   )
-                ) : (
-                  <Pressable onPress={() => onProductPress(p)} style={styles.dishAddBtn}>
-                    <Text style={styles.dishAddText}>View</Text>
-                  </Pressable>
-                )}
+                ) : null}
               </View>
             </View>
-          </Pressable>
+          </View>
         ))}
       </View>
     </View>
