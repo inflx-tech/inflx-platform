@@ -1,0 +1,19 @@
+{
+  "feature": "admin-role-gate",
+  "area": "A2",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Step 5 lock granted. Step 7 authorized: qa/web/admin/role-gate.spec.ts (matrix M1..M5), reuses _helpers/adminSession. Report green before Step-14.",
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 12/12 workflows passed (28.0s), 2026-05-18",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}
