@@ -549,6 +549,19 @@ const verifyPrebook = asyncHandler(async (req, res) => {
   // Phase Salon-3 Q3 — resolve product_id (mobile-provided or single-product offer)
   const productId = await resolveProductId(db, meta.offer_id, meta.product_id);
 
+  // Wave 5D — restaurant table bookings enter the brand-review queue as
+  // 'pending' (restaurant confirms/rejects in BookingsInbox) rather than
+  // auto-confirming. booking_status stays 'confirmed' (payment cleared,
+  // slot held) — brand_status is the independent review dimension from
+  // migration 052. Other categories / booking types keep brand_status
+  // NULL → treated as confirmed everywhere (legacy UX preserved).
+  const { rows: catRows } = await db.query(
+    `SELECT category FROM brands WHERE id = $1`, [meta.brand_id]
+  );
+  const brandCategory = catRows[0]?.category || null;
+  const brandStatusValue =
+    (brandCategory === 'restaurant' && bookingTypeValue === 'table') ? 'pending' : null;
+
   let transactionId, bookingId, referenceCode;
 
   await db.withTransaction(async (client) => {
@@ -577,13 +590,13 @@ const verifyPrebook = asyncHandler(async (req, res) => {
       `INSERT INTO follower_bookings
          (transaction_id, booking_type, booking_date, booking_time, guest_count, reference_code,
           status, advance_paid, balance_due_at_venue, stylist_id, notes,
-          at_venue_discount_pct)
-       VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, 0, $8, $9, $10)
+          at_venue_discount_pct, brand_status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, 0, $8, $9, $10, $11)
        RETURNING id`,
       [
         transactionId, bookingTypeValue, meta.booking_date, meta.booking_time, meta.guest_count,
         referenceCode, advanceAmount, stylist_id || null, notes || null,
-        meta.at_venue_discount_pct || 0,
+        meta.at_venue_discount_pct || 0, brandStatusValue,
       ]
     );
     bookingId = bookRows[0].id;
@@ -597,15 +610,19 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     [meta.brand_id]
   );
 
-  // Notification to follower
+  // Notification to follower — Wave 5D: pending restaurant bookings are
+  // "requested", not "booked", until the restaurant confirms.
+  const isPending = brandStatusValue === 'pending';
   notificationService.send({
     userId: req.user.sub,
-    type: 'booking.confirmed',
-    title: 'Table booked!',
-    body: `Table booked! ${meta.booking_date} ${meta.booking_time} at ${brandRows[0]?.business_name}. Ref: ${referenceCode}`,
+    type: isPending ? 'booking.requested' : 'booking.confirmed',
+    title: isPending ? 'Reservation requested' : 'Table booked!',
+    body: isPending
+      ? `Reservation requested at ${brandRows[0]?.business_name} for ${meta.booking_date} ${meta.booking_time}. We'll notify you the moment they confirm. Ref: ${referenceCode}`
+      : `Table booked! ${meta.booking_date} ${meta.booking_time} at ${brandRows[0]?.business_name}. Ref: ${referenceCode}`,
     sendSms: true,
     phone: follower.phone,
-  }).catch(e => console.error('[NOTIFY] booking.confirmed failed:', e.message));
+  }).catch(e => console.error('[NOTIFY] booking notify failed:', e.message));
 
   // Phase Salon-3 — follow-creator prompt to the follower
   if (influencer) {
@@ -625,6 +642,10 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     balance_due_at_venue: 0,
     brand_name: brandRows[0]?.business_name,
     brand_whatsapp: brandRows[0]?.brand_phone,
+    // Wave 5D — surface the review state so the mobile confirmation
+    // screen renders "Requested · awaiting confirmation" vs "Confirmed".
+    brand_status: brandStatusValue,        // 'pending' | null
+    booking: { reference_code: referenceCode, brand_status: brandStatusValue },
   });
 });
 

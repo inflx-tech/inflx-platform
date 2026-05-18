@@ -26,7 +26,11 @@ async function run() {
      JOIN brands b ON b.id = ft.brand_id
      JOIN users brands_u ON brands_u.id = b.user_id
      WHERE (fb.booking_date = CURRENT_DATE OR fb.pickup_date = CURRENT_DATE)
-       AND fb.status = 'confirmed'`
+       AND fb.status = 'confirmed'
+       -- Wave 5D: don't remind for restaurant bookings the brand hasn't
+       -- confirmed yet. NULL brand_status = legacy/auto-confirmed (remind);
+       -- 'confirmed' = brand approved (remind); 'pending'/'rejected' = skip.
+       AND (fb.brand_status IS NULL OR fb.brand_status = 'confirmed')`
   );
 
   if (bookings.length === 0) {

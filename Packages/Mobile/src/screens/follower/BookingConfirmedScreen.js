@@ -54,6 +54,15 @@ export default function BookingConfirmedScreen({ route, navigation }) {
   const guestStr = booking?.guest_count ? `${booking.guest_count} guests` : '';
   const subLine = [brand?.business_name, dateStr, timeStr, guestStr].filter(Boolean).join(' · ');
 
+  // Wave 5D — restaurant table bookings land as 'pending' until the
+  // restaurant confirms in BookingsInbox. Reflect that honestly here
+  // instead of telling the follower it's locked in.
+  const isPending = booking?.brand_status === 'pending';
+  const headlineText = isPending ? 'Reservation requested' : 'Table booked';
+  const subPrefix = isPending
+    ? `Awaiting confirmation from ${brand?.business_name || 'the restaurant'}`
+    : null;
+
   const creator = tracking?.influencer_handle ? {
     handle: tracking.influencer_handle,
     name: tracking.influencer_name,
@@ -82,12 +91,21 @@ export default function BookingConfirmedScreen({ route, navigation }) {
 
           {/* Success splash */}
           <View style={styles.splash}>
-            <View style={styles.check}>
-              <Text style={styles.checkGlyph}>✓</Text>
+            <View style={[styles.check, isPending && styles.checkPending]}>
+              <Text style={styles.checkGlyph}>{isPending ? '⏳' : '✓'}</Text>
             </View>
-            <Text style={styles.headline}>Table booked</Text>
+            <Text style={styles.headline}>{headlineText}</Text>
+            {subPrefix ? (
+              <Text style={[styles.sub, { color: lightColors.yellowDeep }]}>{subPrefix}</Text>
+            ) : null}
             {subLine ? (
               <Text style={styles.sub}>{subLine}</Text>
+            ) : null}
+            {isPending ? (
+              <Text style={styles.sub}>
+                You'll get a notification the moment they confirm. Your reference
+                code below works either way.
+              </Text>
             ) : null}
           </View>
 
@@ -182,6 +200,10 @@ const styles = StyleSheet.create({
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: lightColors.yellow,
     alignItems: 'center', justifyContent: 'center',
+  },
+  checkPending: {
+    backgroundColor: lightColors.yellow50,
+    borderWidth: 2, borderColor: lightColors.yellow,
   },
   checkGlyph: {
     fontSize: 40, color: lightColors.ink,

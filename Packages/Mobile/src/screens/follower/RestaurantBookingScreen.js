@@ -98,17 +98,21 @@ export default function RestaurantBookingScreen({ route, navigation }) {
         return;
       }
 
-      const booking = verifyRes.data?.booking || {};
+      const vd = verifyRes.data || {};
+      const booking = vd.booking || {};
       navigation.replace('BookingConfirmed', {
         brand,
         booking: {
-          reference_code: booking.reference_code || `PRD-${Date.now().toString(36).toUpperCase().slice(-4)}`,
+          reference_code: booking.reference_code || vd.reference_code || `PRD-${Date.now().toString(36).toUpperCase().slice(-4)}`,
           booking_date:   selectedDate.iso,
           booking_time:   time,
           guest_count:    parseInt(party, 10) || 2,
           advance_paid:   advance_amount,
           table_number:   booking.table_number,
           special_requests: requests,
+          // Wave 5D — 'pending' → confirmation screen shows "Requested,
+          // awaiting confirmation" instead of "Table booked".
+          brand_status:   booking.brand_status ?? vd.brand_status ?? null,
         },
         tracking,
         offer,
