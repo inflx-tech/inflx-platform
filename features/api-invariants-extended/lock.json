@@ -1,0 +1,20 @@
+{
+  "feature": "api-invariants-extended",
+  "area": "B1b",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (AskUserQuestion, session 2026-05-18)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Step 5 gate. Widens B1's deterministic L1 net: W4 RBAC breadth (incl. a PATCH mutation), W5 auth-contract breadth (role required/valid, refresh no-cookie), W6 404 JSON envelope. Rate-limit/negotiation/idempotency EXCLUDED (abusive/seed → B2). Implementation (qa/api/invariants-extended.spec.ts) GATED until approved=true. Deploy-inert.",
+  "related": ["B1 (api-contract-invariants — base net)", "B2 (deep calc/status; deferred, substrate decision pending)"],
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/latest.md — 50/50 workflows passed (26.9s), 2026-05-18. W4x4 RBAC (incl. PATCH) + W5a/b/c auth-contract + W6 JSON-404 envelope all green vs live backend; no SKIP, no findings.",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-18)",
+    "released_at": "2026-05-18"
+  }
+}
