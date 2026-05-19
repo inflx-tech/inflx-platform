@@ -1,0 +1,21 @@
+{
+  "feature": "backend-test-debt-phase5",
+  "area": "B2b-fix-P5",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "agent (founder delegation 2026-05-18 'take your best decision, don't ask' + explicit directive: continue debt ladder not P3 until mechanical cascade exhausted; deploy-inert, continues locked P1-P4 ledger pattern)",
+  "approved_at": "2026-05-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "os_phase": "Test-debt ladder continuation (post-P2/Phase-4); P3 deferred per founder directive.",
+  "baseline": "Post-P4 fresh pnpm qa:db: 236 passed / 146 failed / 382; migrations 53/53 0-error; DB laneState FAIL by design. Ledger 281→244(P1)→231(P2)→194(P3)→192(city-fix)→146(P4).",
+  "phase": "Phase 5 — next cascade rung. Residual 146 dominated by SAME class-2 fixture drift one step deeper: invite/offer/accept payloads (`reading 'campaign_influencer'`/`'id'` ~200 occ) + WALLET_INSUFFICIENT ×7 (wallet-funding setup gap) + authz/assertion drift. Build full inventory from fresh db-jest.log; 4-class classify each justified by ACTUAL controller (verify-twice, real stack > hypothesis); align (1)+(2)+(4) to verified contract; CARVE every class-3 genuine defect RED (backend NOT patched, test NOT edited); honest measured delta vs 236/146.",
+  "founder_directive": "Continue debt paydown (NOT P3) until the mechanical cascade is exhausted and only genuine defects remain; surface the true 'real bugs vs test drift' split. No force-green; no skip/delete/assertion-weakening/fabricated-data/force-pass; genuine defects carved RED not masked; verify-twice; honest delta even if modest; re-run main pnpm qa for zero regression.",
+  "deploy_posture": "DEPLOY-INERT. backend/tests/** + new features/backend-defect-*/ + this contract only. No backend/src|migration|web|mobile|OTA|runtime|dep change → no Render/Vercel. Carved defects RECORDED here, fixed later as separate production-impacting gated contracts.",
+  "notes": "Step-5 LOCKED 2026-05-18 (agent best-judgment per delegation + explicit 'word is order' to continue the ladder). Implementation (Step 7) proceeds: fresh qa:db (launching) → inventory 146 → 4-class classify → align invite/offer/wallet setup → carve class-3 RED → re-measure → main pnpm qa zero-regression → record → deploy-inert commit.",
+  "related": ["features/backend-test-debt (P1)", "features/backend-test-debt-phase2", "features/backend-test-debt-phase3", "features/backend-test-debt-phase4", "features/backend-defect-city-column (fixed precedent)", "features/backend-defect-follower-feed-noauth-500 (open carve)", "features/db-substrate", "features/qa-aggregation-fidelity (C1)"],
+  "status_note_2026-05-19": "PAUSED — blocked by features/qa-db-determinism. Founder directive 2026-05-19: the qa:db instrument is nondeterministic (146↔149 timeout-flake noise, zero code change); it must be stabilized and an honest baseline re-established BEFORE Phase-5 residual paydown continues. Phase 5 resumes against the new stable baseline once qa-db-determinism is released.",
+  "result": "PAUSED at Step 7 pending features/qa-db-determinism (instrument stabilization). No Phase-5 alignment applied yet.",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null, "deploy": "DEPLOY-INERT — Step-14 = commit/push test-infra + carve stubs only; no Render/Vercel; no production approval gate. Mandatory pre-release: honest measured delta + class-3 carved RED + no-fake-green + main pnpm qa 66/C1/gate-0 unchanged + gov-check clean." }
+}

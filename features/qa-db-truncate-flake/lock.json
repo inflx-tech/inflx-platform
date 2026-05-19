@@ -1,0 +1,19 @@
+{
+  "feature": "qa-db-truncate-flake",
+  "area": "B2b-instrument",
+  "spec_version": "0.1.0",
+  "status": "carved",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "kind": "CARVED TEST-INFRA ROBUSTNESS DEFECT — residual ±1 nondeterminism from features/qa-db-determinism (2026-05-19). NOT a fix; honestly reported, NOT masked. Future fix is its own contract.",
+  "symptom": "After the pool-leak fix (qa-db-determinism: variance ±3-8→±1, --forceExit removed, clean self-exit proven), 3 consecutive pnpm qa:db runs gave failed=147/146/147 — NOT identical (contract determinism bar not met).",
+  "root_cause_verify_twice": "Diff of the 3 runs' ● failing sets: a DIFFERENT single test flips each run (run1 PATCH /influencers/me 404; run3 POST /offers/:id/accept 401; run2 clean), ALL with identical signature `Exceeded timeout of 30000 ms for a hook` at beforeEach→truncateAll() (influencer.test.js:8 / negotiations.test.js:20). truncateAll = one `TRUNCATE 28-tables RESTART IDENTITY CASCADE` (ACCESS EXCLUSIVE on all) → intermittently blocks until the 30s hook timeout when any lingering connection holds a conflicting lock / idle-in-transaction client. Not logic/ordering/date; test-infra contention.",
+  "disposition": "Carved finding. qa:db lane honestly reported as ±1 nondeterministic. NO masking (raising testTimeout / --forceExit / .skip / retry-to-green explicitly forbidden by founder). No test edited.",
+  "future_fix_scope": "Contention-free inter-test reset: per-test request hygiene (no un-awaited/in-flight supertest request or unreleased client holding a lock at beforeEach) and/or replace blanket TRUNCATE CASCADE with transaction-rollback / scoped reset not taking table-wide ACCESS EXCLUSIVE, and/or a LOUD bounded lock_timeout (never silent skip). Proven by ≥3 identical consecutive pnpm qa:db runs. Deploy-inert (test-infra) unless a genuine production connection-leak is implicated (then separate production-impacting carve).",
+  "deploy_posture": "DEPLOY-INERT (finding only). Future fix deploy-inert (test-infra).",
+  "source": "features/qa-db-determinism — Step 7 3-run determinism proof, qa/artifacts/_qadbdet_run{1,2,3}.log 2026-05-19",
+  "release": { "qa_all_green": "n/a — carved finding, not a release", "released": false, "released_by": null, "released_at": null }
+}
