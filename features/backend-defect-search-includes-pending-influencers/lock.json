@@ -1,0 +1,20 @@
+{
+  "feature": "backend-defect-search-includes-pending-influencers",
+  "area": "backend-defect",
+  "spec_version": "0.1.0",
+  "status": "carved",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "kind": "GENUINE BACKEND DEFECT (uncertain-intent ⇒ carved per GOVERNANCE.md §6, not masked) — carved from backend-test-debt Phase 10 (2026-05-19). NOT a fix contract; the catching test is LEFT RED. A dedicated fix + product-intent confirmation is its own future locked, production-impacting, gated contract (forward-only DB view migration).",
+  "symptom": "GET /v1/influencers/search returns pending (unapproved) onboarded influencers. Catching test: tests/influencer-search.test.js 'does NOT include pending (unapproved) influencers in results' creates 1 approved + 1 pending, expects 1 → gets 2. LEFT RED.",
+  "root_cause_verify_twice": "v_searchable_creators onboarded branch explicitly admits pending users: backend/migrations/045_profile_pic_r2_cache.sql:134-136 `FROM influencers i JOIN users u ON u.id=i.user_id WHERE u.status IN ('approved','pending')`. Instrumented (P10 re-measure, real qa:db PG, after the cohesive data.creators/ig_handle shape-rename so the test fails on the GENUINE assertion): res.body.data.creators.length Expected 1, Received 2 — the unapproved influencer appears. Account approval is the platform vetting gate (the brand caller itself is requireApproved-gated, P7); exposing un-vetted influencers in discovery contradicts the test's long-standing rule. Test correct; the view's IN('approved','pending') is the likely defect. Uncertain-intent: 'pending' inclusion COULD be deliberate — per §6 uncertain ⇒ carve (editing the test to accept 2 would be fake-green masking a probable real defect).",
+  "disposition": "Phase 10 carve — test LEFT RED. P10 applied the cohesive data.influencers→data.creators + instagram_handle→ig_handle shape-rename uniformly across all 8 search tests; for this test that makes it fail on the GENUINE assertion (creators.length 2 ≠ 1) rather than a stale undefined-TypeError — it EXPOSES the leak, does NOT mask it (no skip/weaken/assertion-change; intent unchanged). Backend NOT patched here.",
+  "fix_scope_future_contract": "Likely minimal (pending product confirmation that pending influencers must not surface): v_searchable_creators onboarded branch `WHERE u.status IN ('approved','pending')` → `WHERE u.status = 'approved'`, via a new forward-only migration. Production-impacting (Render runs migrations) → explicit Step-14 gate, never silent. Verify: pnpm qa:db this RED test → GREEN by the migration (not a test edit) + scraped branch unchanged + main pnpm qa 66 GREEN unaffected.",
+  "deploy_posture": "This carve: DEPLOY-INERT (finding + RED test only). The future fix: PRODUCTION-IMPACTING (DB view migration → Render) — explicit Step-14 release gate + product-intent confirmation, never silent.",
+  "source": "features/backend-test-debt-phase10 — qa/artifacts/_p10_remeasure_qadb.log + _p10_diag.log (reverted instrumented diagnostic) + _p9b_remeasure_qadb.log, 2026-05-19, real 53-migration qa:db Postgres",
+  "related": ["features/backend-test-debt-phase10", "features/backend-defect-onboarded-creator-city-search (open RED — sibling, same onboarded view branch)", "features/backend-defect-follower-feed-noauth-500 (open RED)", "features/backend-defect-city-column (FIXED — city-on-users precedent)"],
+  "release": { "qa_all_green": "n/a — carved finding, not a release", "released": false, "released_by": null, "released_at": null }
+}

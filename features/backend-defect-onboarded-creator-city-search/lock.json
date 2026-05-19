@@ -1,0 +1,20 @@
+{
+  "feature": "backend-defect-onboarded-creator-city-search",
+  "area": "backend-defect",
+  "spec_version": "0.1.0",
+  "status": "carved",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "kind": "GENUINE BACKEND DEFECT — carved from backend-test-debt Phase 10 (2026-05-19). NOT a fix contract; the catching test is LEFT RED. A dedicated fix is its own future locked, production-impacting, gated contract (forward-only DB view migration).",
+  "symptom": "GET /v1/influencers/search?city=<x> never matches onboarded (registered) influencers — their city is NULL in v_searchable_creators. Catching test: tests/influencer-search.test.js 'filters by city (case-insensitive)' expects 1 (arun_kumar) → gets 0. LEFT RED.",
+  "root_cause_verify_twice": "Influencer registration writes city to users.city (influencer.controller.js:214-219 `UPDATE users SET name=$1, city=COALESCE(NULLIF($2,''),city)`), and INSERT INTO influencers omits city → influencers.city stays NULL for onboarded influencers (column exists, migration 003_seed_influencers.sql:11, but never populated). The v_searchable_creators onboarded branch selects `i.city AS city` (always NULL) instead of `u.city` — the `JOIN users u ON u.id=i.user_id` is already present so u.city is available. Mirrors the established city-on-users pattern (cf. fixed brand backend-defect-city-column). Instrumented (P10 reverted diagnostic, real qa:db PG): both onboarded creators returned city:null despite registerInfluencer sending city:'Vijayawada'; niche/followers_count populate correctly — only city broken. Test correct; view wrong. Not a stale fixture / not the shape-rename drift.",
+  "disposition": "Phase 10 carve — test LEFT RED. P10 applied the cohesive data.influencers→data.creators + instagram_handle→ig_handle shape-rename uniformly across all 8 search tests (the separate, real class-2/4 drift); for this test that makes it fail on the GENUINE assertion (creators.length 0 ≠ 1) rather than a stale undefined-TypeError — it EXPOSES the defect, does NOT mask it (no skip/weaken/assertion-change). Backend NOT patched and the test intent NOT changed here.",
+  "fix_scope_future_contract": "Minimal, behaviour-preserving: v_searchable_creators onboarded branch `i.city AS city` → `u.city AS city` (users join already present). Forward-only migration → production-impacting (Render runs migrations) → explicit Step-14 gate, never silent. Verify: pnpm qa:db this RED test → GREEN by the migration (not a test edit) + scraped-branch unchanged + main pnpm qa 66 GREEN unaffected.",
+  "deploy_posture": "This carve: DEPLOY-INERT (finding + RED test only). The future fix: PRODUCTION-IMPACTING (DB view migration → Render) — explicit Step-14 release gate, never silent.",
+  "source": "features/backend-test-debt-phase10 — qa/artifacts/_p10_diag.log (reverted instrumented diagnostic) + _p9b_remeasure_qadb.log, 2026-05-19, real 53-migration qa:db Postgres",
+  "related": ["features/backend-test-debt-phase10", "features/backend-defect-follower-feed-noauth-500 (open RED)", "features/backend-defect-city-column (FIXED — the brand-side precedent for city-on-users)"],
+  "release": { "qa_all_green": "n/a — carved finding, not a release", "released": false, "released_by": null, "released_at": null }
+}

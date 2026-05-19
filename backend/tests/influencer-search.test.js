@@ -55,8 +55,8 @@ describe('GET /v1/influencers/search', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data.influencers)).toBe(true);
-    expect(res.body.data.influencers.length).toBe(2);
+    expect(Array.isArray(res.body.data.creators)).toBe(true);
+    expect(res.body.data.creators.length).toBe(2);
     expect(res.body.meta).toBeDefined();
     expect(res.body.meta.total).toBe(2);
   });
@@ -77,8 +77,8 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.influencers.length).toBe(1);
-    expect(res.body.data.influencers[0].instagram_handle).toBe('priya_sharma');
+    expect(res.body.data.creators.length).toBe(1);
+    expect(res.body.data.creators[0].ig_handle).toBe('priya_sharma');
   });
 
   it('filters by niche', async () => {
@@ -93,8 +93,8 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.influencers.length).toBe(1);
-    expect(res.body.data.influencers[0].instagram_handle).toBe('priya_sharma');
+    expect(res.body.data.creators.length).toBe(1);
+    expect(res.body.data.creators[0].ig_handle).toBe('priya_sharma');
   });
 
   it('filters by min_followers', async () => {
@@ -109,8 +109,8 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.influencers.length).toBe(1);
-    expect(res.body.data.influencers[0].instagram_handle).toBe('arun_kumar');
+    expect(res.body.data.creators.length).toBe(1);
+    expect(res.body.data.creators[0].ig_handle).toBe('arun_kumar');
   });
 
   it('filters by max_followers', async () => {
@@ -125,8 +125,8 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.influencers.length).toBe(1);
-    expect(res.body.data.influencers[0].instagram_handle).toBe('priya_sharma');
+    expect(res.body.data.creators.length).toBe(1);
+    expect(res.body.data.creators[0].ig_handle).toBe('priya_sharma');
   });
 
   it('filters by city (case-insensitive)', async () => {
@@ -141,8 +141,8 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.influencers.length).toBe(1);
-    expect(res.body.data.influencers[0].instagram_handle).toBe('arun_kumar');
+    expect(res.body.data.creators.length).toBe(1);
+    expect(res.body.data.creators[0].ig_handle).toBe('arun_kumar');
   });
 
   it('returns 401 without auth token', async () => {
@@ -171,15 +171,15 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    const inf = res.body.data.influencers[0];
+    const inf = res.body.data.creators[0];
     expect(inf.pan_number).toBeUndefined();
     expect(inf.bank_account_no).toBeUndefined();
     expect(inf.upi_id).toBeUndefined();
     expect(inf.fcm_token).toBeUndefined();
     // Public fields should be present
-    expect(inf.instagram_handle).toBeDefined();
+    expect(inf.ig_handle).toBeDefined();
     expect(inf.followers_count).toBeDefined();
-    expect(inf.engagement_rate).toBeDefined();
+    expect(inf.view_based_er).toBeDefined();
     expect(inf.niche).toBeDefined();
     expect(inf.city).toBeDefined();
   });
@@ -193,7 +193,7 @@ describe('GET /v1/influencers/search', () => {
       .set('Authorization', `Bearer ${adminToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.influencers.length).toBe(1);
+    expect(res.body.data.creators.length).toBe(1);
   });
 });
 
