@@ -91,7 +91,12 @@ describe('POST /v1/campaigns', () => {
   });
 
   it('returns 404 when brand profile has not been registered', async () => {
-    const { token } = await createBrandUser();  // user exists but no brand profile
+    const { token, user } = await createBrandUser();
+    // POST /campaigns is requireApproved (campaign.routes.js:12). Approve
+    // the user (but DON'T register a brand profile) so the request passes
+    // the middleware and reaches the controller's NOT_FOUND 404
+    // (campaign.controller.js:20) — the path this test actually asserts.
+    await approveUser(user.id);
 
     const res = await createCampaign(token);
 
@@ -419,11 +424,13 @@ describe('PATCH /v1/campaigns/:cid/sets/:sid', () => {
     const res = await request(app)
       .patch(`/v1/campaigns/${cid}/sets/${set.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'Updated Set Name', budget: 25000 });
+      .send({ name: 'Updated Set Name', set_budget: 25000 });
 
     expect(res.status).toBe(200);
     expect(res.body.data.set.name).toBe('Updated Set Name');
-    expect(parseFloat(res.body.data.set.budget)).toBe(25000);
+    // updateSet allows `set_budget` (campaign.controller.js:512); the
+    // response is the campaign_sets row (column `set_budget`, not `budget`).
+    expect(parseFloat(res.body.data.set.set_budget)).toBe(25000);
   });
 
   it('returns 403 when updating another brand\'s set', async () => {
@@ -461,6 +468,9 @@ describe('DELETE /v1/campaigns/:cid/sets/:sid', () => {
     const campaignRes = await createCampaign(token);
     const cid = campaignRes.body.data.campaign.id;
     const set = await createSet(token, cid);
+    // deleteSet blocks removing the LAST set — a campaign must keep ≥1
+    // (campaign.controller.js:550). Create a second so this delete is valid.
+    await createSet(token, cid, { name: 'Keeper Set' });
 
     const res = await request(app)
       .delete(`/v1/campaigns/${cid}/sets/${set.id}`)
@@ -820,7 +830,7 @@ describe('GET /v1/brands/me/wallet/transactions', () => {
 describe('POST /v1/campaigns/:id/publish', () => {
   async function fundedBrandWithCampaign(budget) {
     const { token, user } = await createBrandUser();
-    await registerBrand(token);
+    const brand = await registerBrand(token);
     await approveUser(user.id);
 
     // Top up wallet
@@ -842,21 +852,32 @@ describe('POST /v1/campaigns/:id/publish', () => {
     const campaignRes = await createCampaign(token, { total_budget: budget });
     const cid = campaignRes.body.data.campaign.id;
 
-    return { token, cid };
+    // Publish requires ≥1 set (campaign.controller.js:900). Engagement set
+    // needs set_budget (:452); set_budget ≤ campaign budget (:474).
+    await request(app)
+      .post(`/v1/campaigns/${cid}/sets`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: budget });
+
+    return { token, cid, brandId: brand.id };
   }
 
-  it('publishes a campaign, locks escrow, and returns 200', async () => {
-    const { token, cid } = await fundedBrandWithCampaign(50000);
+  it('publishes a campaign, sets status active, and returns 200', async () => {
+    const { token, cid, brandId } = await fundedBrandWithCampaign(50000);
 
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/publish`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.campaign.status).toBe('published');
+    // Publish sets status 'active' and returns { campaign } only
+    // (campaign.controller.js:959/1031).
+    expect(res.body.data.campaign.status).toBe('active');
     expect(res.body.data.campaign.published_at).toBeDefined();
-    // Wallet should be debited
-    expect(parseFloat(res.body.data.wallet_balance)).toBe(0);
+    // Publish moves NO money — funds stay in wallet, locked per-influencer
+    // at brand-sign (campaign.controller.js:942-946). Verify no debit.
+    const { rows } = await query(`SELECT wallet_balance FROM brands WHERE id = $1`, [brandId]);
+    expect(parseFloat(rows[0].wallet_balance)).toBe(50000);
   });
 
   it('returns 422 WALLET_INSUFFICIENT when balance is less than total_budget', async () => {
@@ -867,6 +888,13 @@ describe('POST /v1/campaigns/:id/publish', () => {
     // Campaign budget = 50000 but wallet = 0
     const campaignRes = await createCampaign(token, { total_budget: 50000 });
     const cid = campaignRes.body.data.campaign.id;
+
+    // Engagement set so publish passes the ≥1-set gate (:900) and reaches
+    // the wallet check (:935); wallet 0 < 50000 → WALLET_INSUFFICIENT.
+    await request(app)
+      .post(`/v1/campaigns/${cid}/sets`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: 50000 });
 
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/publish`)
@@ -881,12 +909,19 @@ describe('POST /v1/campaigns/:id/publish', () => {
     await registerBrand(token);
     await approveUser(user.id);
 
-    // Create campaign with no budget
+    // Create campaign WITH required dates (campaign.controller.js:190-193)
+    // but NO total_budget.
     const campaignRes = await request(app)
       .post('/v1/campaigns')
       .set('Authorization', `Bearer ${token}`)
-      .send({ name: 'No Budget Campaign' });
+      .send({ name: 'No Budget Campaign', start_date: '2026-07-01', end_date: '2026-07-31' });
     const cid = campaignRes.body.data.campaign.id;
+
+    // Engagement set → publish reaches the total_budget check (:909).
+    await request(app)
+      .post(`/v1/campaigns/${cid}/sets`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Set 1', goal: 'engagement', assignment_mode: 'handpick', set_budget: 5000 });
 
     const res = await request(app)
       .post(`/v1/campaigns/${cid}/publish`)
@@ -912,12 +947,13 @@ describe('POST /v1/campaigns/:id/publish', () => {
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
 
-  it('creates a wallet_transaction row of type escrow_lock', async () => {
+  it('does NOT create an escrow_lock wallet_transaction at publish (escrow locks at brand-sign)', async () => {
     const { token, cid } = await fundedBrandWithCampaign(20000);
 
-    await request(app)
+    const pubRes = await request(app)
       .post(`/v1/campaigns/${cid}/publish`)
       .set('Authorization', `Bearer ${token}`);
+    expect(pubRes.status).toBe(200);
 
     const res = await request(app)
       .get('/v1/brands/me/wallet/transactions')
@@ -925,8 +961,9 @@ describe('POST /v1/campaigns/:id/publish', () => {
 
     expect(res.status).toBe(200);
     const txs = res.body.data.transactions;
+    // Publish moves NO money (campaign.controller.js:942-946); escrow_lock
+    // is created per-influencer at brand-sign, NOT at publish.
     const escrowTx = txs.find(t => t.type === 'escrow_lock');
-    expect(escrowTx).toBeDefined();
-    expect(parseFloat(escrowTx.amount)).toBe(20000);
+    expect(escrowTx).toBeUndefined();
   });
 });

@@ -1,0 +1,20 @@
+{
+  "feature": "backend-defect-open-group-publish-assignment-mode-mismatch",
+  "area": "backend-defect",
+  "spec_version": "0.1.0",
+  "status": "carved",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "kind": "GENUINE BACKEND DEFECT — carved from backend-test-debt Phase 11 (2026-05-19). NOT a fix contract; the catching test is LEFT RED. A dedicated fix is its own future locked, production-impacting, gated contract (backend runtime + possibly a backfill migration).",
+  "symptom": "POST /v1/campaigns/:id/sets/:sid/publish-open always returns 422 VALIDATION_ERROR — an open-group set can never be published. Catching test: tests/negotiations.test.js 'publishes the open-group set and returns 200' expects 200 → gets 422. LEFT RED.",
+  "root_cause_verify_twice": "campaign_sets has TWO mode columns: assignment_mode ENUM('handpick','open_group') (migrations/001_initial_schema.sql:221, no DEFAULT → NULL) and influencer_mode varchar(20) DEFAULT 'handpick' (migrations/002_add_missing_columns.sql:12). createSet (campaign.controller.js:478-489) INSERTs only influencer_mode (influencer_mode || 'handpick'); never writes assignment_mode (body assignment_mode is ignored; updateSet allowed list also uses influencer_mode, :512). publishOpenGroup (offer.controller.js:835) gates on set.assignment_mode !== 'open_group' → always true (NULL ≠ 'open_group') → always 422. The migration-002 dual-column split was never reconciled between write (createSet→influencer_mode) and read (publishOpenGroup→assignment_mode). P11 deterministic re-measure (real qa:db PG), after correcting the separate class-2 fixture gap (setupOpenGroupScenario +set_budget): publish-open still 422 (Expected 200) — confirms the column mismatch, not the fixture.",
+  "disposition": "Phase 11 carve — test LEFT RED. P11's class-2 fixture fix (setupOpenGroupScenario +set_budget) is correct and retained: it lets the setup create the set + publish the campaign so the test now fails on the GENUINE publish-open 422 (exposes the defect), not a stale setup TypeError. No assertion weakened/skipped; backend NOT patched. Sibling 'returns 422 when set is not open_group' is GREEN and unchanged (rejecting a handpick set with 422 is the correct rule; not actionably masking).",
+  "fix_scope_future_contract": "Reconcile the dual column (product/eng to confirm canonical): either publishOpenGroup reads set.influencer_mode instead of set.assignment_mode, OR createSet/updateSet also persist assignment_mode (+ backfill existing rows). Backend runtime change → production-impacting → explicit Step-14 gate, never silent. Verify: pnpm qa:db this RED test → GREEN by the backend fix (not a test edit) + sibling handpick-422 test still GREEN + main pnpm qa regression. Audit other assignment_mode/influencer_mode readers in the same fix.",
+  "deploy_posture": "This carve: DEPLOY-INERT (finding + RED test only). The future fix: PRODUCTION-IMPACTING (backend runtime → Render, possibly a backfill migration) — explicit Step-14 release gate, never silent.",
+  "source": "features/backend-test-debt-phase11 — qa/artifacts/_p11_remeasure_qadb.log + _p10_remeasure_qadb.log, 2026-05-19, real 53-migration qa:db Postgres",
+  "related": ["features/backend-test-debt-phase11", "features/backend-defect-follower-feed-noauth-500 (open RED)", "features/backend-defect-onboarded-creator-city-search (open RED)", "features/backend-defect-search-includes-pending-influencers (open RED)"],
+  "release": { "qa_all_green": "n/a — carved finding, not a release", "released": false, "released_by": null, "released_at": null }
+}

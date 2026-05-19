@@ -545,6 +545,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
         name: 'Open Group Set',
         goal: 'engagement',
         assignment_mode: 'open_group',
+        set_budget: 10000,
         open_group_slots: 5,
       });
     const sid = setRes.body.data.set.id;
@@ -570,8 +571,9 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
   });
 
   it('returns 422 when set is not open_group assignment mode', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
     await registerBrand(brandToken);
+    await approveUser(brandUser.id);  // POST /campaigns is requireApproved (campaign.routes.js:12)
 
     const campaignRes = await request(app)
       .post('/v1/campaigns')
