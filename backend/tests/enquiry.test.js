@@ -69,7 +69,7 @@ async function setupEnquiryScenario() {
   const inviteRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets/${sid}/invite`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ influencer_id: inf.id, agreed_fee: 20000, posting_date: '2026-08-01' });
+    .send({ influencer_id: inf.id, agreed_fee: 20000, posting_date: '2026-08-01', offer_type: 'percentage' });
   const ci = inviteRes.body.data.campaign_influencer;
 
   await query(

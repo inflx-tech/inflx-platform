@@ -80,7 +80,7 @@ async function setupPrebookScenario() {
   const inviteRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets/${sid}/invite`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ influencer_id: inf.id, agreed_fee: 8000, posting_date: '2026-07-20' });
+    .send({ influencer_id: inf.id, agreed_fee: 8000, posting_date: '2026-07-20', offer_type: 'percentage' });
   const ci = inviteRes.body.data.campaign_influencer;
 
   await query(
