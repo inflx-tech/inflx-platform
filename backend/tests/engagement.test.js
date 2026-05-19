@@ -76,10 +76,16 @@ describe('Engagement Analytics', () => {
     expect(res.body.data.campaign_id).toBe(campaign.id);
     expect(res.body.data.campaign_name).toBe('Engagement Test Campaign');
     expect(res.body.data.totals).toBeDefined();
-    expect(res.body.data.totals.category_benchmark_er).toBe(3.8);
+    // engagement.service.js:151-163 — totals shape: total_likes/
+    // total_comments/total_views/avg_er + by_set/by_influencer
+    // (no category_benchmark_er / daily_reach in this analytics version)
+    expect(res.body.data.totals.total_likes).toBeDefined();
+    expect(res.body.data.totals.total_comments).toBeDefined();
+    expect(res.body.data.totals.total_views).toBeDefined();
+    expect(res.body.data.totals.avg_er).toBeDefined();
     expect(res.body.data.by_influencer).toBeInstanceOf(Array);
     expect(res.body.data.by_influencer.length).toBeGreaterThanOrEqual(1);
-    expect(res.body.data.daily_reach).toBeInstanceOf(Array);
+    expect(res.body.data.by_set).toBeInstanceOf(Array);
   });
 
   test('GET /brands/me/campaigns/:id/engagement returns 404 for unknown campaign', async () => {

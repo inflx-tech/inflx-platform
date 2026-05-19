@@ -682,8 +682,9 @@ describe('GET /v1/brands/me/wallet', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.wallet_balance).toBeDefined();
-    expect(parseFloat(res.body.data.wallet_balance)).toBe(0);
+    // getWallet nests under data.wallet (wallet.controller.js:68-74)
+    expect(res.body.data.wallet.wallet_balance).toBeDefined();
+    expect(parseFloat(res.body.data.wallet.wallet_balance)).toBe(0);
   });
 
   it('returns 404 when brand profile not registered', async () => {
@@ -717,7 +718,9 @@ describe('POST /v1/brands/me/wallet/topup', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.data.order_id).toBeDefined();
-    expect(res.body.data.amount).toBe(10000);
+    // amount is paise at the Razorpay boundary (wallet.controller.js:104;
+    // CLAUDE.md — Razorpay checkout requires paise). ₹10000 = 1000000 paise.
+    expect(res.body.data.amount).toBe(1000000);
     expect(res.body.data.currency).toBe('INR');
     expect(res.body.data.key_id).toBeDefined();
   });

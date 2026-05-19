@@ -19,7 +19,7 @@ describe('POST /v1/influencers/register', () => {
     const res = await request(app)
       .post('/v1/influencers/register')
       .set('Authorization', `Bearer ${token}`)
-      .send({ instagram_handle: 'foodie_priya_hyd' });
+      .send({ instagram_handle: 'foodie_priya_hyd', name: 'Priya' }); // register requires name (influencer.controller.js:205)
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);

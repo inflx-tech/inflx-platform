@@ -26,6 +26,11 @@ describe('POST /v1/brands/register', () => {
       .send({
         business_name: 'Spice Garden Restaurant',
         category: 'restaurant',
+        // brand register also requires name/city/state
+        // (brand.controller.js:121-128)
+        name: 'Ravi Kumar',
+        city: 'Hyderabad',
+        state: 'TG',
         address_line: '45 Park Lane, Banjara Hills',
         pincode: '500034',
       });

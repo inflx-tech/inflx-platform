@@ -178,7 +178,7 @@ describe('GET /v1/brands/me/escrow', () => {
     expect(t1.status).toBe('released');
     expect(parseFloat(t1.amount)).toBe(2500);
     expect(t1.trigger_event).toBe('contract_signed');
-    expect(t1.razorpay_payout_id).toMatch(/^mock_payout_/);
+    expect(t1.razorpay_payout_id).toMatch(/^tranche_1_/); // escrow tranche payout id (escrow.service.js:115); mock_payout_ is withdrawals-only
 
     const t2 = res.body.data.entries.find(e => e.tranche_number === 2);
     expect(t2.status).toBe('locked');

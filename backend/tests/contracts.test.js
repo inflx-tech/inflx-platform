@@ -423,7 +423,7 @@ describe('POST /v1/contracts/:id/brand-sign', () => {
       [res.body.data.contract.campaign_influencer_id]
     );
     expect(escrowRows[0].status).toBe('released');
-    expect(escrowRows[0].razorpay_payout_id).toMatch(/^mock_payout_/);
+    expect(escrowRows[0].razorpay_payout_id).toMatch(/^tranche_1_/); // escrow tranche payout id (escrow.service.js:115); mock_payout_ is withdrawals-only
   });
 
   it('auto-creates one deliverable (reel) when contract activates', async () => {
