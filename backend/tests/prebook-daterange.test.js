@@ -68,7 +68,7 @@ async function setupDaterangeScenario() {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Travel Vloggers', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN' });
+    .send({ name: 'Travel Vloggers', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN', formats_json: ['reel'] });
   const sid = setRes.body.data.set.id;
 
   const offerRes = await request(app)

@@ -76,10 +76,23 @@ async function setupAcceptedOffer({ agreed_fee = 10000 } = {}) {
     .send({ influencer_id: inf.id, agreed_fee, posting_date: '2026-07-15' });
   const ci = inviteRes.body.data.campaign_influencer;
 
-  // Influencer accepts → auto-creates contract
+  // Influencer accepts → auto-creates contract (status: draft)
   await request(app)
     .post(`/v1/offers/${ci.id}/accept`)
     .set('Authorization', `Bearer ${infToken}`);
+
+  // Brand "Approve & Send": draft → pending_influencer. The contract
+  // auto-creates 'draft' by design (contract.controller.js:1017);
+  // the brand approve step is required before signing (verified
+  // workflow, P6/P7). Re-approve from pending_influencer is allowed
+  // (contract.controller.js:1041), so callers that approve again
+  // are unaffected.
+  const setupContractRes = await request(app)
+    .get(`/v1/contracts/${ci.id}`)
+    .set('Authorization', `Bearer ${brandToken}`);
+  await request(app)
+    .post(`/v1/contracts/${setupContractRes.body.data.contract.id}/approve`)
+    .set('Authorization', `Bearer ${brandToken}`);
 
   return { brandToken, infToken, brandUser, infUser, inf, cid, sid, ci };
 }
@@ -156,11 +169,20 @@ describe('Contract auto-creation on offer acceptance', () => {
       .send({ proposed_fee: 7000 });
     const negId = negRes.body.data.negotiation.id;
 
-    // Brand accepts negotiation → contract should auto-create
+    // Brand accepts negotiation → contract auto-creates (status: draft)
     await request(app)
       .post(`/v1/negotiations/${negId}/respond`)
       .set('Authorization', `Bearer ${brandToken}`)
       .send({ action: 'accept' });
+
+    // Brand "Approve & Send": draft → pending_influencer (verified
+    // workflow, P6/P7). Path-independent contract-state transition;
+    // re-approve from pending_influencer is allowed
+    // (contract.controller.js:1041), so this is robust either way.
+    const draftRes = await getContractByCIId(brandToken, ci.id);
+    await request(app)
+      .post(`/v1/contracts/${draftRes.body.data.contract.id}/approve`)
+      .set('Authorization', `Bearer ${brandToken}`);
 
     const contractRes = await getContractByCIId(brandToken, ci.id);
     expect(contractRes.status).toBe(200);

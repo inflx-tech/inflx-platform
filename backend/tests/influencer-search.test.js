@@ -43,7 +43,8 @@ async function createApprovedInfluencer(instagramHandle) {
 
 describe('GET /v1/influencers/search', () => {
   it('returns 200 with a list of approved influencers (brand token)', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     await createApprovedInfluencer('priya_sharma');
     await createApprovedInfluencer('arun_kumar');
@@ -61,7 +62,8 @@ describe('GET /v1/influencers/search', () => {
   });
 
   it('does NOT include pending (unapproved) influencers in results', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     // Approved influencer
     await createApprovedInfluencer('priya_sharma');
@@ -80,7 +82,8 @@ describe('GET /v1/influencers/search', () => {
   });
 
   it('filters by niche', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     await createApprovedInfluencer('priya_sharma');  // niche: food, lifestyle
     await createApprovedInfluencer('arun_kumar');    // niche: fitness, technology
@@ -95,7 +98,8 @@ describe('GET /v1/influencers/search', () => {
   });
 
   it('filters by min_followers', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     await createApprovedInfluencer('priya_sharma');  // followers: 45200
     await createApprovedInfluencer('arun_kumar');    // followers: 120000
@@ -110,7 +114,8 @@ describe('GET /v1/influencers/search', () => {
   });
 
   it('filters by max_followers', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     await createApprovedInfluencer('priya_sharma');  // followers: 45200
     await createApprovedInfluencer('arun_kumar');    // followers: 120000
@@ -125,7 +130,8 @@ describe('GET /v1/influencers/search', () => {
   });
 
   it('filters by city (case-insensitive)', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     await createApprovedInfluencer('priya_sharma');  // city: Hyderabad
     await createApprovedInfluencer('arun_kumar');    // city: Mumbai
@@ -156,7 +162,8 @@ describe('GET /v1/influencers/search', () => {
   });
 
   it('returns search results with no sensitive fields', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
     await createApprovedInfluencer('priya_sharma');
 
     const res = await request(app)
@@ -196,7 +203,8 @@ describe('GET /v1/influencers/search', () => {
 
 describe('GET /v1/influencers/:id', () => {
   it('returns 200 with public influencer profile (brand can view)', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
     const { influencer } = await createApprovedInfluencer('priya_sharma');
 
     const res = await request(app)
@@ -211,7 +219,8 @@ describe('GET /v1/influencers/:id', () => {
   });
 
   it('returns 404 for a non-existent influencer ID', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
 
     const res = await request(app)
       .get('/v1/influencers/00000000-0000-0000-0000-000000000000')
@@ -222,7 +231,8 @@ describe('GET /v1/influencers/:id', () => {
   });
 
   it('does not return sensitive fields', async () => {
-    const { token: brandToken } = await createBrandUser();
+    const { token: brandToken, user: brandUser } = await createBrandUser();
+    await approveUser(brandUser.id);
     const { influencer } = await createApprovedInfluencer('priya_sharma');
 
     const res = await request(app)

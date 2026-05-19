@@ -66,7 +66,7 @@ async function setupCommissionScenario() {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Creators', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN' });
+    .send({ name: 'Creators', goal: 'conversion', assignment_mode: 'handpick', coupon_prefix: 'TESTCPN', formats_json: ['reel'] });
   const sid = setRes.body.data.set.id;
 
   const offerRes = await request(app)
