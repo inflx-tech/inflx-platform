@@ -1,0 +1,25 @@
+{
+  "feature": "fix-onboarded-creator-city-search",
+  "area": "backend-fix-production-impacting",
+  "spec_version": "0.1.0",
+  "status": "released",
+  "approved": true,
+  "approved_by": "agent (founder explicit GO 2026-05-19: 'onboarded-creator-city-search ... This is required pls fix this' + 'take your best decision' on execution; standing autonomy delegation; PRODUCTION-IMPACTING surfaced explicitly, not silent)",
+  "approved_at": "2026-05-19",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. backend/migrations/055_fix_v_searchable_creators_onboarded_city.sql (GOVERNED path) → git push origin main triggers Render forward-only migration. Surfaced explicitly; founder-authorized. View-only (no data migration); rollback = follow-up migration restoring i.city (zero data risk).",
+  "fix": "TWO parts (verify-twice found the migration alone insufficient — the qa:db re-measure showed the filter was ALSO case-sensitive): (A) Forward-only migration 055: CREATE OR REPLACE VIEW v_searchable_creators identical to migration 045 EXCEPT the onboarded branch `i.city AS city` → `u.city AS city` (users join already present; influencer registration writes users.city, influencer.controller.js:214-219; influencers.city always NULL for onboarded). Scraped branch + all other columns byte-identical; same output column set/order (CREATE OR REPLACE safe). WHERE u.status IN ('approved','pending') intentionally retained per the 2026-05-19 product decision (see features/fix-search-verification-tag). (B) influencer.controller.js search city filter made case-insensitive: `city = ANY($::text[])` → `LOWER(city) = ANY($::text[])` with the param lowercased — consistent with the follower nearby query `LOWER(u_b.city)=LOWER($1)`; users type 'mumbai', stored 'Mumbai'. The test 'filters by city (case-insensitive)' requires both (A) city populated and (B) case-insensitive match. Test fixture also corrected (class-2, deploy-inert): createApprovedInfluencer gained an overrides pass-through so the test sets real distinct cities (it previously set none — comments claimed Hyderabad/Mumbai but registerInfluencer never sent a city).",
+  "resolves_carve": "features/backend-defect-onboarded-creator-city-search",
+  "related": ["features/backend-defect-onboarded-creator-city-search", "features/backend-test-debt-phase10", "features/fix-search-verification-tag", "features/governance-enforcement-ci"],
+  "result": "RELEASED 2026-05-19. qa:db DETERMINISTIC GREEN (qa/artifacts/_fix6_remeasure_qadb.log, run 17:20:36Z): 382/382 passed, migrations 54/54 applied 0-error (migration 055 included — true measured count is 54/54, not the predicted 55/55), DB-LANE=PASS. tests/influencer-search.test.js '√ filters by city (case-insensitive)' (log line 5443) RED→GREEN via migration 055 (u.city) + the case-insensitive controller filter; all other influencer-search tests GREEN. This is the fix that was environment-blocked at handoff — now conclusively proven.",
+  "regression_proof": "main pnpm qa GREEN (qa/artifacts/_fix6_remeasure_qa.log, run 17:30:04Z): 66 passed, C1 STATE=GREEN, gate 0 (pwExit=0 reportExit=0), report qa/reports/2026-05-19T17-30-04-200Z/. Clean diff vs P12 baseline: exactly the 4 carved flipped GREEN, ZERO newly-red, ZERO regression (web/API + DB lanes).",
+  "discipline": "No-fake-green: the catching test flips via the MIGRATION only (carve discipline). View reproduced verbatim from 045 with a single value-expression change to an already-joined column; CREATE OR REPLACE column-set-mismatch fails loudly in globalSetup; the deterministic qa:db proves exact RED→GREEN + zero regression before the production push. PRODUCTION-IMPACTING surfaced explicitly per GOVERNANCE.md §5/§7; founder GO on record.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "agent (founder explicit GO 2026-05-19 'ok do proceed'; Q2 'This is required pls fix this' on record; standing autonomy delegation 'take your best decision'; PRODUCTION-IMPACTING push surfaced explicitly for go — never silent)",
+    "released_at": "2026-05-19T17:30Z",
+    "deploy": "PRODUCTION-IMPACTING — Step-14 = commit (with this approved contract so gov-check passes the governed migration) + push origin main → Render forward-only migration. Surfaced; founder-authorized. VERIFIED pre-release: carved test RED→GREEN by migration + 54/54 migrations 0-error (true measured count) + other search filters GREEN + main pnpm qa 66/C1/gate-0 + no new 500s + gov-check clean. Push gated on explicit founder go (never silent)."
+  }
+}

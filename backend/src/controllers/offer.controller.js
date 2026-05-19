@@ -831,11 +831,14 @@ const publishOpenGroup = asyncHandler(async (req, res) => {
   if (!setRows[0]) throw new AppError('NOT_FOUND', 'Campaign set not found', 404);
   const set = setRows[0];
 
-  // Validate set is open_group
-  if (set.assignment_mode !== 'open_group') {
+  // Validate set is open_group. campaign_sets.influencer_mode is the
+  // canonical mode column (createSet writes it; all open-group logic
+  // reads it — campaign.controller.js:66/1300/1435). The legacy
+  // assignment_mode ENUM is never written by the API (always NULL).
+  if (set.influencer_mode !== 'open_group') {
     throw new AppError(
       'VALIDATION_ERROR',
-      `Only sets with assignment_mode 'open_group' can be published via this endpoint. Current: '${set.assignment_mode}'`,
+      `Only sets with influencer_mode 'open_group' can be published via this endpoint. Current: '${set.influencer_mode}'`,
       422
     );
   }

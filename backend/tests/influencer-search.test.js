@@ -30,9 +30,9 @@ async function approveUser(userId) {
  * Create an influencer with a specific Instagram handle (for mock keying),
  * approve them, and return their data.
  */
-async function createApprovedInfluencer(instagramHandle) {
+async function createApprovedInfluencer(instagramHandle, overrides = {}) {
   const { token, user } = await createInfluencerUser();
-  const influencer = await registerInfluencer(token, { instagram_handle: instagramHandle });
+  const influencer = await registerInfluencer(token, { instagram_handle: instagramHandle, ...overrides });
   await approveUser(user.id);
   return { token, user, influencer };
 }
@@ -61,24 +61,39 @@ describe('GET /v1/influencers/search', () => {
     expect(res.body.meta.total).toBe(2);
   });
 
-  it('does NOT include pending (unapproved) influencers in results', async () => {
+  it('includes pending influencers but tags only admin-verified as is_verified', async () => {
+    // Product decision 2026-05-19: search shows BOTH registered+admin-
+    // verified and pending/scraped creators (supply for the brand<>
+    // influencer chicken-and-egg). The brand-facing `is_verified` tag
+    // distinguishes them. (Resolves carve
+    // backend-defect-search-includes-pending-influencers as
+    // working-as-intended; verified-flag truth fixed in migration 055.)
     const { token: brandToken, user: brandUser } = await createBrandUser();
     await approveUser(brandUser.id);
 
-    // Approved influencer
+    // Admin-verified (approved) influencer → is_verified true
     await createApprovedInfluencer('priya_sharma');
 
-    // Pending influencer — not approved
+    // Pending influencer — registered, NOT admin-approved → still shown,
+    // but is_verified false
     const { token: pendingToken } = await createInfluencerUser();
-    await registerInfluencer(pendingToken, { instagram_handle: 'arun_kumar' });
+    await registerInfluencer(pendingToken, { instagram_handle: 'arun_kumar', name: 'Arun' });
 
     const res = await request(app)
       .get('/v1/influencers/search')
       .set('Authorization', `Bearer ${brandToken}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.creators.length).toBe(1);
-    expect(res.body.data.creators[0].ig_handle).toBe('priya_sharma');
+    // BOTH appear (pending is NOT excluded)
+    expect(res.body.data.creators.length).toBe(2);
+    const byHandle = Object.fromEntries(
+      res.body.data.creators.map(c => [c.ig_handle, c])
+    );
+    expect(byHandle.priya_sharma).toBeDefined();
+    expect(byHandle.arun_kumar).toBeDefined();
+    // Explicit verification tag: approved → true, pending → false
+    expect(byHandle.priya_sharma.is_verified).toBe(true);
+    expect(byHandle.arun_kumar.is_verified).toBe(false);
   });
 
   it('filters by niche', async () => {
@@ -133,8 +148,8 @@ describe('GET /v1/influencers/search', () => {
     const { token: brandToken, user: brandUser } = await createBrandUser();
     await approveUser(brandUser.id);
 
-    await createApprovedInfluencer('priya_sharma');  // city: Hyderabad
-    await createApprovedInfluencer('arun_kumar');    // city: Mumbai
+    await createApprovedInfluencer('priya_sharma', { city: 'Hyderabad' });
+    await createApprovedInfluencer('arun_kumar', { city: 'Mumbai' });
 
     const res = await request(app)
       .get('/v1/influencers/search?city=mumbai')

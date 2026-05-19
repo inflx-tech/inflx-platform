@@ -1,0 +1,25 @@
+{
+  "feature": "fix-follower-feed-public-location",
+  "area": "backend-fix-production-impacting",
+  "spec_version": "0.1.0",
+  "status": "released",
+  "approved": true,
+  "approved_by": "agent (founder product decision 2026-05-19: 'follower no need authentication for entering and browsing ... if takes any action like purchase then system ask for signin ... if follower is signup then give personalised, not signup location based feed' + 'take your best decision' on execution; standing autonomy delegation; PRODUCTION-IMPACTING surfaced explicitly, not silent)",
+  "approved_at": "2026-05-19",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. backend/src/controllers/follower.controller.js (GOVERNED) → git push origin main triggers Render backend auto-deploy. Surfaced explicitly; founder-authorized. Forward-only; rollback = revert the ~6-line controller change. Mirrors the already-deployed getHomeFeed anonymous pattern (low risk).",
+  "fix": "follower.controller.js getFeed (lines 299-305): mirror the proven getHomeFeed anonymous pattern — `const follower = req.user?.sub ? await getFollowerByUserId(req.user.sub).catch(()=>null) : null; const city = follower?.user_city || req.query.city || null; followerService.getFeed(follower?.id || null, city)`. Public browse (no sign-in); signed-in → personalised (follows + their city); anonymous → location-based (client ?city). followerService.getFeed null-safe for null followerId (verified P12) — no service change. Carved test realigned: anon GET /feed?city=Vijayawada → 200 + location-based feed (offer surfaces), renamed; the prior 401 assertion was the wrong contract per product intent.",
+  "resolves_carve": "features/backend-defect-follower-feed-noauth-500",
+  "related": ["features/backend-defect-follower-feed-noauth-500", "features/backend-test-debt-phase4", "features/backend-test-debt-phase12", "features/governance-enforcement-ci"],
+  "result": "RELEASED 2026-05-19. qa:db DETERMINISTIC GREEN (qa/artifacts/_fix6_remeasure_qadb.log, run 17:20:36Z): 382/382 passed, 28/28 suites, migrations 54/54 applied 0-error, DB-LANE=PASS. tests/follower-feed.test.js PASS — '√ is publicly accessible without auth and returns a location-based feed' (log line 13780) + 3 sibling feed tests GREEN; ZERO 'Received: 500' anywhere (the no-auth 500 defect eliminated). Clean diff vs P12 post-ladder baseline (378 passed / 4 carved RED): exactly the 4 carved flipped GREEN, ZERO newly-red, ZERO regression.",
+  "regression_proof": "main pnpm qa GREEN (qa/artifacts/_fix6_remeasure_qa.log, run 17:30:04Z): 66 passed, C1 STATE=GREEN — all reconciliation checks passed, gate 0 (pwExit=0 reportExit=0), report qa/reports/2026-05-19T17-30-04-200Z/. Zero regression on web/API flows; qa:db zero prior-GREEN regression, zero newly-red.",
+  "discipline": "No-fake-green: the carve was a real defect (500 on no-auth) AND the catching test asserted the wrong contract (401) — the product intent is public browse. Both corrected: backend serves a public location-based feed; the test encodes the founder's product-confirmed contract and passes via the BACKEND fix (not a weakening). Mirrors a deployed sibling (getHomeFeed) — behavioural consistency, low risk; signed-in path semantically unchanged. Deterministic qa:db (all 382) + main pnpm qa regression before the production push. PRODUCTION-IMPACTING surfaced per GOVERNANCE.md §5/§7; founder GO on record.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "agent (founder explicit GO 2026-05-19 'ok do proceed'; Q1 product decision on record; standing autonomy delegation 'take your best decision'; PRODUCTION-IMPACTING push surfaced explicitly for go — never silent)",
+    "released_at": "2026-05-19T17:30Z",
+    "deploy": "PRODUCTION-IMPACTING — Step-14 = commit (with this approved contract so gov-check passes the governed controller change) + push origin main → Render backend deploy. Surfaced; founder-authorized. Pre-release: realigned follower-feed test GREEN by backend + 3 sibling follower-feed tests GREEN + main pnpm qa 66/C1/gate-0 unchanged + no new 500s + gov-check clean + carve closed."
+  }
+}

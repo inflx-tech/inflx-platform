@@ -297,10 +297,16 @@ const updateAddress = asyncHandler(async (req, res) => {
 // ── GET /follower/feed (legacy) ──────────────────────────────────────────────
 
 const getFeed = asyncHandler(async (req, res) => {
-  const follower = await getFollowerByUserId(req.user.sub);
-  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
+  // Public access — a follower may browse without signing in (sign-in is
+  // only required to complete a purchase, not to browse). Signed-in →
+  // personalised (their follows + their city); anonymous → location-based
+  // (client-supplied ?city). Mirrors the getHomeFeed anonymous pattern.
+  const follower = req.user?.sub
+    ? await getFollowerByUserId(req.user.sub).catch(() => null)
+    : null;
+  const city = follower?.user_city || req.query.city || null;
 
-  const feed = await followerService.getFeed(follower.id, follower.user_city);
+  const feed = await followerService.getFeed(follower?.id || null, city);
   return success(res, { feed });
 });
 

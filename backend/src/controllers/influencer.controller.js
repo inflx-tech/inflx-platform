@@ -430,8 +430,11 @@ const search = asyncHandler(async (req, res) => {
     conditions.push(`(full_name ILIKE $${params.length} OR ig_handle ILIKE $${params.length})`);
   }
   if (cities) {
-    params.push(cities);
-    conditions.push(`city = ANY($${params.length}::text[])`);
+    // Case-insensitive city match (consistent with the follower nearby
+    // feed query LOWER(u_b.city)=LOWER($1)); users type "mumbai", stored
+    // as "Mumbai".
+    params.push(cities.map(c => String(c).toLowerCase()));
+    conditions.push(`LOWER(city) = ANY($${params.length}::text[])`);
   }
   if (niches) {
     params.push(niches);
@@ -526,7 +529,15 @@ const search = asyncHandler(async (req, res) => {
   );
   await resolveAvatars(rows);
 
-  return success(res, { creators: rows }, 200, { page: pageNum, limit: limitNum, total });
+  // Explicit brand-facing verification tag (product decision 2026-05-19):
+  // search shows BOTH registered+admin-verified and scraped/pending
+  // creators; `is_verified` lets the UI render the "verified" badge for
+  // genuinely admin-verified registered influencers only. Derived from the
+  // view's is_inflx_verified, which migration 055 made approval-aware for
+  // onboarded ((u.status='approved')) and verification-aware for scraped.
+  const creators = rows.map(r => ({ ...r, is_verified: r.is_inflx_verified === true }));
+
+  return success(res, { creators }, 200, { page: pageNum, limit: limitNum, total });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

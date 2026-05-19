@@ -1,0 +1,25 @@
+{
+  "feature": "fix-open-group-publish-mode",
+  "area": "backend-fix-production-impacting",
+  "spec_version": "0.1.0",
+  "status": "released",
+  "approved": true,
+  "approved_by": "agent (founder explicit GO 2026-05-19: 'open-group-publish-assignment-mode-mismatch ... if really broken fix it' — verified broken; + 'take your best decision' on execution; standing autonomy delegation; PRODUCTION-IMPACTING surfaced explicitly, not silent)",
+  "approved_at": "2026-05-19",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. backend/src/controllers/offer.controller.js (GOVERNED path) → git push origin main triggers Render backend auto-deploy. Surfaced explicitly; founder-authorized. Forward-only; rollback = revert the 2-line change. No migration/data change.",
+  "fix": "offer.controller.js publishOpenGroup (lines 835,838): set.assignment_mode → set.influencer_mode (+ message text). influencer_mode is the canonical column — createSet writes it (campaign.controller.js:480-489) and all other open-group logic reads it (campaign.controller.js:66,1300,1435); only publishOpenGroup read the stale assignment_mode (always NULL → always 422). Verified-twice P11 + this phase.",
+  "resolves_carve": "features/backend-defect-open-group-publish-assignment-mode-mismatch",
+  "related": ["features/backend-defect-open-group-publish-assignment-mode-mismatch", "features/backend-test-debt-phase11", "features/governance-enforcement-ci"],
+  "result": "RELEASED 2026-05-19. qa:db DETERMINISTIC GREEN (qa/artifacts/_fix6_remeasure_qadb.log, run 17:20:36Z): 382/382 passed, migrations 54/54 applied 0-error, DB-LANE=PASS. tests/negotiations.test.js '√ publishes the open-group set and returns 200' (log line 6851) RED→GREEN via the offer.controller.js influencer_mode fix; sibling '√ returns 422 when set is not open_group assignment mode' (line 6852) stays GREEN; publishOpenGroup now broadcasts (log lines 6781,6806). Clean diff vs P12 baseline: exactly the 4 carved flipped GREEN.",
+  "regression_proof": "main pnpm qa GREEN (qa/artifacts/_fix6_remeasure_qa.log, run 17:30:04Z): 66 passed, C1 STATE=GREEN, gate 0 (pwExit=0 reportExit=0), report qa/reports/2026-05-19T17-30-04-200Z/. Zero regression on web/API + DB lanes; zero newly-red.",
+  "discipline": "No-fake-green: the catching test flips via the BACKEND change only (carve discipline — never a test edit to mask). Minimal behaviour-consistent fix to the canonical column; verify-twice (influencer_mode canonical confirmed across all readers). PRODUCTION-IMPACTING surfaced explicitly per GOVERNANCE.md §5/§7 (never silent); founder GO on record.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "agent (founder explicit GO 2026-05-19 'ok do proceed'; Q4 'if really broken fix it' — verified broken — on record; standing autonomy delegation 'take your best decision'; PRODUCTION-IMPACTING push surfaced explicitly for go — never silent)",
+    "released_at": "2026-05-19T17:30Z",
+    "deploy": "PRODUCTION-IMPACTING — Step-14 = commit (with this approved contract so gov-check passes the governed change) + push origin main → Render backend deploy. Surfaced; founder-authorized. Pre-release: carved test RED→GREEN by backend fix + sibling open_group negative test GREEN + main pnpm qa 66/C1/gate-0 unchanged + no new 500s + gov-check clean."
+  }
+}

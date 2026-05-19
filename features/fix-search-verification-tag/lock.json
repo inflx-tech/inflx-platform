@@ -1,0 +1,27 @@
+{
+  "feature": "fix-search-verification-tag",
+  "area": "backend-fix-production-impacting",
+  "spec_version": "0.1.0",
+  "status": "released",
+  "approved": true,
+  "approved_by": "agent (founder explicit product decision 2026-05-19: 'show both in search ... with tags like verified and without any tag who is not verified ... Intended, AND add explicit tag field' + 'take your best decision' on execution; standing autonomy delegation; PRODUCTION-IMPACTING surfaced explicitly, not silent)",
+  "approved_at": "2026-05-19",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. backend/migrations/055_*.sql (shared atomic CREATE OR REPLACE with fix-onboarded-creator-city-search) + backend/src/controllers/influencer.controller.js (GOVERNED) → git push origin main triggers Render migration + backend deploy. Surfaced explicitly; founder-authorized. Additive controller field + view-only migration; low risk; rollback = revert is_verified map + follow-up view migration.",
+  "fix": "Founder product decision (not a defect — carve was uncertain-intent hold, now decided): search shows BOTH registered+admin-verified and pending/scraped creators; explicit brand-facing tag. (1) Migration 055 onboarded branch: `TRUE AS is_inflx_verified` → `(u.status='approved')`, `'verified' AS internal_verification_status` → `u.status` (pending stays VISIBLE via WHERE u.status IN ('approved','pending') but correctly NOT verified-tagged). (2) influencer.controller.js search: additive `is_verified` boolean per result (= r.is_inflx_verified === true). (3) carved test realigned to the product contract (both appear; is_verified true(approved)/false(pending)) + renamed; pending influencer fixture gets name (register requires it, P12).",
+  "resolves_carve": "features/backend-defect-search-includes-pending-influencers (WORKING-AS-INTENDED — founder product decision; explicit tag added)",
+  "shared_migration": "Migration 055 is shared with features/fix-onboarded-creator-city-search (one atomic CREATE OR REPLACE VIEW carrying BOTH onboarded-branch truth fixes — city source + verified-flag — reproducing the 92-line view once, lower transcription risk).",
+  "out_of_scope_followup": "Deeper 4-state taxonomy surfacing (unclaimed vs claimed-in-verification) + the 'inform scraped influencer when a brand picks them' workflow = recorded future product feature; flagged, NOT silently built this pass.",
+  "related": ["features/backend-defect-search-includes-pending-influencers", "features/fix-onboarded-creator-city-search", "features/backend-test-debt-phase10", "features/governance-enforcement-ci"],
+  "result": "RELEASED 2026-05-19. qa:db DETERMINISTIC GREEN (qa/artifacts/_fix6_remeasure_qadb.log, run 17:20:36Z): 382/382 passed, migrations 54/54 applied 0-error (migration 055 included — true measured count is 54/54, not the predicted 55/55), DB-LANE=PASS. tests/influencer-search.test.js '√ includes pending influencers but tags only admin-verified as is_verified' (log line 5439) GREEN via migration 055 (approval-aware is_inflx_verified) + the additive is_verified controller field; all other influencer-search tests GREEN.",
+  "regression_proof": "main pnpm qa GREEN (qa/artifacts/_fix6_remeasure_qa.log, run 17:30:04Z): 66 passed, C1 STATE=GREEN, gate 0 (pwExit=0 reportExit=0), report qa/reports/2026-05-19T17-30-04-200Z/. Clean diff vs P12 baseline: exactly the 4 carved flipped GREEN, ZERO newly-red, ZERO regression (web/API + DB lanes).",
+  "discipline": "No-fake-green: the realigned test encodes the FOUNDER'S product-confirmed contract (include both; explicit verified tag) and passes via the BACKEND (migration + additive field) — there is no bug to mask; the prior carve was explicitly an uncertain-intent hold per GOVERNANCE.md §6, now decided by the founder. is_verified is additive; pending stays visible; only the verified-flag truth is corrected (approval-aware). Deterministic qa:db (all 382) + main pnpm qa regression before the production push. Deeper taxonomy held out-of-scope (surfaced, not silently built). PRODUCTION-IMPACTING surfaced per GOVERNANCE.md §5/§7; founder GO on record.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "agent (founder explicit GO 2026-05-19 'ok do proceed'; Q3 product decision 'show both, add explicit verified tag' on record; standing autonomy delegation 'take your best decision'; PRODUCTION-IMPACTING push surfaced explicitly for go — never silent)",
+    "released_at": "2026-05-19T17:30Z",
+    "deploy": "PRODUCTION-IMPACTING — Step-14 = commit (with this approved contract so gov-check passes the governed migration+controller) + push origin main → Render migration + backend deploy. Surfaced; founder-authorized. Pre-release: realigned test GREEN by backend + all other influencer-search GREEN + 54/54 migrations 0-error (true measured count) + main pnpm qa 66/C1/gate-0 + no new 500s + gov-check clean + carve closed working-as-intended. Push gated on explicit founder go (never silent)."
+  }
+}

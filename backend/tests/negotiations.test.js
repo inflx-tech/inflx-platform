@@ -544,7 +544,10 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
       .send({
         name: 'Open Group Set',
         goal: 'engagement',
-        assignment_mode: 'open_group',
+        // createSet persists `influencer_mode` (campaign.controller.js:428,
+        // 489) — the canonical mode column. The legacy `assignment_mode`
+        // input was never read by the API.
+        influencer_mode: 'open_group',
         set_budget: 10000,
         open_group_slots: 5,
       });
@@ -567,7 +570,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.set.assignment_mode).toBe('open_group');
+    expect(res.body.data.set.influencer_mode).toBe('open_group');
   });
 
   it('returns 422 when set is not open_group assignment mode', async () => {

@@ -184,8 +184,20 @@ describe('GET /v1/follower/feed', () => {
     expect(item.coupon_code).toBeDefined();
   });
 
-  it('returns 401 without auth', async () => {
-    const res = await request(app).get('/v1/follower/feed');
-    expect(res.status).toBe(401);
+  it('is publicly accessible without auth and returns a location-based feed', async () => {
+    // Product decision 2026-05-19: browsing the feed needs NO sign-in
+    // (sign-in is required only to complete a purchase). Anonymous →
+    // location-based feed via client-supplied ?city. (Resolves carve
+    // backend-defect-follower-feed-noauth-500 — was 500 on no-auth.)
+    await setupFeedScenario(); // publishes a Vijayawada conversion offer
+
+    const res = await request(app).get('/v1/follower/feed?city=Vijayawada');
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data.feed)).toBe(true);
+    // Location-scoped: the Vijayawada offer surfaces for an anonymous,
+    // location-based request.
+    expect(res.body.data.feed.length).toBeGreaterThan(0);
   });
 });
