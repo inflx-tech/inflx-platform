@@ -43,7 +43,7 @@ describe('Listing Service — Unit Tests', () => {
     expect(schema.phase).toBe(1);
     expect(schema.status).toBe('active');
     expect(schema.card_config).toBeTruthy();
-    expect(schema.card_config.accent).toBe('#ef4444');
+    expect(schema.card_config.accent).toBe('#dc2626');
     expect(schema.action_types).toBeTruthy();
     expect(schema.quality_rules).toBeInstanceOf(Array);
     expect(schema.listing_steps).toBeInstanceOf(Array);
@@ -58,10 +58,10 @@ describe('Listing Service — Unit Tests', () => {
     expect(schema.super_category).toBe('shop');
   });
 
-  test('loadSchema returns salon with phase 99', () => {
+  test('loadSchema returns salon at phase 1 / active', () => {
     const schema = listingService.loadSchema('salon');
-    expect(schema.phase).toBe(99);
-    expect(schema.status).toBe('coming_soon');
+    expect(schema.phase).toBe(1);
+    expect(schema.status).toBe('active');
     expect(schema.card_config).toBeTruthy();
   });
 
@@ -70,49 +70,50 @@ describe('Listing Service — Unit Tests', () => {
     expect(schema).toBeNull();
   });
 
-  test('getActivePhaseCategories returns only phase 1 categories', () => {
+  test('getActivePhaseCategories returns active-phase categories (phase <= LISTING_ENGINE_PHASE && active)', () => {
     const active = listingService.getActivePhaseCategories();
-    expect(active.length).toBe(2);
+    expect(active.length).toBe(5);
     const keys = active.map(a => a.category_key).sort();
-    expect(keys).toEqual(['fashion_walkin', 'restaurant']);
+    expect(keys).toEqual(['car_rental', 'fashion', 'fashion_walkin', 'restaurant', 'salon']);
   });
 
-  test('isCategoryActive returns true for restaurant, false for salon', () => {
+  test('isCategoryActive returns true for active-phase categories, false for unknown', () => {
     expect(listingService.isCategoryActive('restaurant')).toBe(true);
     expect(listingService.isCategoryActive('fashion_walkin')).toBe(true);
-    expect(listingService.isCategoryActive('salon')).toBe(false);
+    expect(listingService.isCategoryActive('salon')).toBe(true);
     expect(listingService.isCategoryActive('nonexistent')).toBe(false);
   });
 
   test('getCardConfig returns accent color for restaurant', () => {
     const config = listingService.getCardConfig('restaurant');
     expect(config).toBeTruthy();
-    expect(config.accent).toBe('#ef4444');
-    expect(config.cta_primary.label).toBe('Order');
+    expect(config.accent).toBe('#dc2626');
+    expect(config.cta_primary.label).toBe('Order Now');
     expect(config.icon).toBe('🍽️');
   });
 
-  test('getActionTypes returns walkin_pay and book_now for restaurant', () => {
+  test('getActionTypes returns online_order for restaurant', () => {
     const actions = listingService.getActionTypes('restaurant');
-    expect(actions.walkin_pay.enabled).toBe(true);
-    expect(actions.book_now.enabled).toBe(true);
-    expect(actions.book_now.type).toBe('slot_based');
-    expect(actions.enquiry.enabled).toBe(false);
+    expect(actions.online_order).toBeTruthy();
+    expect(actions.online_order.endpoint).toBe('/follower/orders');
+    expect(actions.online_order.cart_scope).toBe('brand');
+    expect(actions.online_order.min_order_value_field).toBe('min_order_value');
+    expect(actions.online_order.delivery_fee_field).toBe('delivery_fee');
   });
 
-  test('getQualityRules returns 9 rules for restaurant', () => {
+  test('getQualityRules returns 13 rules for restaurant', () => {
     const rules = listingService.getQualityRules('restaurant');
-    expect(rules.length).toBe(9);
-    expect(rules[0].field).toBe('business_name');
-    expect(rules[0].points).toBe(15);
+    expect(rules.length).toBe(13);
+    expect(rules[0].field).toBe('restaurant_description');
+    expect(rules[0].points).toBe(5);
   });
 
-  test('getListingSteps returns 3 steps for restaurant', () => {
+  test('getListingSteps returns 9 steps for restaurant', () => {
     const steps = listingService.getListingSteps('restaurant');
-    expect(steps.length).toBe(3);
+    expect(steps.length).toBe(9);
     expect(steps[0].id).toBe('basics');
-    expect(steps[1].id).toBe('menu');
-    expect(steps[2].id).toBe('preview');
+    expect(steps[1].id).toBe('location');
+    expect(steps[2].id).toBe('hours');
   });
 
   test('getSuperCategories returns 7 categories', () => {
@@ -182,8 +183,8 @@ describe('Listing Engine — Integration Tests', () => {
     expect(res.body.data.config).toBeTruthy();
     expect(res.body.data.config.category_key).toBe('restaurant');
     expect(res.body.data.listing_engine_active).toBe(true);
-    expect(res.body.data.config.listing_steps.length).toBe(3);
-    expect(res.body.data.config.card_config.accent).toBe('#ef4444');
+    expect(res.body.data.config.listing_steps.length).toBe(9);
+    expect(res.body.data.config.card_config.accent).toBe('#dc2626');
   });
 
   test('GET /brands/me/quality-score returns score with breakdown', async () => {
@@ -270,8 +271,10 @@ describe('Listing Engine — Integration Tests', () => {
 
     const scoreBefore = before.body.data.score;
 
-    // Add 5 products
-    for (let i = 0; i < 5; i++) {
+    // Add 10 products — restaurant quality rule 9 (items:'menu_items',
+    // min:10, +15pts) is the smallest product-credit threshold
+    // (listing.service.js calculateQualityScore:246 productCount>=rule.min).
+    for (let i = 0; i < 10; i++) {
       await request(app)
         .post('/v1/brands/me/products')
         .set('Authorization', `Bearer ${brandToken}`)
