@@ -78,7 +78,7 @@ async function setupCommissionScenario() {
   const inviteRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets/${sid}/invite`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ influencer_id: inf.id, agreed_fee: 10000, posting_date: '2026-07-15', offer_type: 'percentage' });
+    .send({ influencer_id: inf.id, agreed_fee: 10000, posting_date: '2026-07-15', offer_type: 'percentage', offer_config_json: { value: 30 } });
   const ci = inviteRes.body.data.campaign_influencer;
 
   await query(
@@ -120,7 +120,7 @@ async function setupCommissionScenario() {
   const initRes = await request(app)
     .post('/v1/follower/pay-at-store')
     .set('Authorization', `Bearer ${followerToken}`)
-    .send({ offer_id: oid, campaign_id: cid, set_id: sid, campaign_influencer_id: ci.id, bill_amount: 100000 });
+    .send({ offer_id: oid, campaign_id: cid, set_id: sid, campaign_influencer_id: ci.id, bill_amount: 1000 });
 
   await request(app)
     .post('/v1/follower/pay-at-store/verify')
@@ -130,7 +130,7 @@ async function setupCommissionScenario() {
       razorpay_payment_id: 'pay_commission_001',
       razorpay_signature: 'mock_sig',
       offer_id: oid, campaign_id: cid, set_id: sid, campaign_influencer_id: ci.id,
-      bill_amount: 100000,
+      bill_amount: 1000,
     });
 
   return { brandToken, infToken, followerToken, brand, inf, cid, sid, oid, ci };
@@ -162,7 +162,7 @@ describe('GET /v1/influencers/me/commissions', () => {
     const comm = res.body.data.commissions[0];
     expect(comm.transaction_id).toBeDefined();
     expect(comm.sale_id_display).toMatch(/^#INFLX-/);
-    expect(comm.commission_amount).toBe(5600); // 8% of 70000
+    expect(comm.commission_amount).toBe(56); // 8% of net ₹700 (₹1000 − 30%)
     expect(comm.status).toBe('pending');
     expect(comm.days_until_confirmed).toBeGreaterThan(0);
     expect(comm.coupon_code).toBe('SUMMER25_PRIYA');
@@ -187,8 +187,8 @@ describe('GET /v1/influencers/me/commissions', () => {
       .set('Authorization', `Bearer ${infToken}`);
 
     expect(res.body.data.summary).toBeDefined();
-    expect(res.body.data.summary.pending_commission).toBe(5600);
-    expect(res.body.data.summary.total_commission_earned).toBe(5600);
+    expect(res.body.data.summary.pending_commission).toBe(56);
+    expect(res.body.data.summary.total_commission_earned).toBe(56);
   });
 
   it('returns 401 without auth', async () => {
@@ -219,7 +219,7 @@ describe('GET /v1/brands/me/campaigns/:id/conversions', () => {
     expect(res.body.data.campaign_id).toBe(cid);
     expect(res.body.data.totals).toBeDefined();
     expect(res.body.data.totals.total_sales).toBe(1);
-    expect(res.body.data.totals.total_revenue).toBe(70000); // net_amount
+    expect(res.body.data.totals.total_revenue).toBe(700); // net_amount (₹1000 − 30%)
   });
 
   it('returns by_channel breakdown', async () => {
@@ -282,8 +282,8 @@ describe('GET /v1/influencers/me/earnings — Phase 4 additions', () => {
       .set('Authorization', `Bearer ${infToken}`);
 
     expect(res.body.data.commission_summary).toBeDefined();
-    expect(res.body.data.commission_summary.pending).toBe(5600);
+    expect(res.body.data.commission_summary.pending).toBe(56);
     expect(res.body.data.commission_summary.confirmed).toBe(0);
-    expect(res.body.data.commission_summary.total).toBe(5600);
+    expect(res.body.data.commission_summary.total).toBe(56);
   });
 });

@@ -47,7 +47,7 @@ describe('Influencer Withdrawal', () => {
     expect(parseFloat(updatedInf.wallet_balance)).toBe(0);
   });
 
-  test('returns WITHDRAWAL_TOO_SMALL for amount < 10000 paise', async () => {
+  test('returns WITHDRAWAL_TOO_SMALL for amount below the ₹100 minimum', async () => {
     const { infToken, inf } = await setupInfluencer('priya_sharma2');
     await query(
       `UPDATE influencers SET wallet_balance = 2084000, upi_id = $1 WHERE id = $2`,
@@ -57,7 +57,7 @@ describe('Influencer Withdrawal', () => {
     const res = await request(app)
       .post('/v1/influencers/me/withdraw')
       .set('Authorization', `Bearer ${infToken}`)
-      .send({ amount_requested: 5000, method: 'upi' });
+      .send({ amount_requested: 50, method: 'upi' });
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('WITHDRAWAL_TOO_SMALL');

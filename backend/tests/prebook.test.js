@@ -164,7 +164,7 @@ describe('POST /v1/follower/prebook', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.data.razorpay_order_id).toMatch(/^order_/);
-    expect(res.body.data.advance_amount).toBe(20000); // ₹200 in paise
+    expect(res.body.data.advance_amount).toBe(200); // ₹200 (rupees; migration 021)
   });
 
   it('returns 401 without auth', async () => {
@@ -211,7 +211,7 @@ describe('POST /v1/follower/prebook/verify', () => {
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.data.booking_id).toBeDefined();
     expect(verifyRes.body.data.reference_code).toMatch(/^BK/);
-    expect(verifyRes.body.data.advance_paid).toBe(20000);
+    expect(verifyRes.body.data.advance_paid).toBe(200);
   });
 
   it('creates follower_bookings row in DB', async () => {

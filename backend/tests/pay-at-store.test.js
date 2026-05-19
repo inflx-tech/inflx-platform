@@ -85,7 +85,7 @@ async function setupPayAtStoreScenario() {
   const inviteRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets/${sid}/invite`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ influencer_id: inf.id, agreed_fee: 10000, posting_date: '2026-07-15', offer_type: 'percentage' });
+    .send({ influencer_id: inf.id, agreed_fee: 10000, posting_date: '2026-07-15', offer_type: 'percentage', offer_config_json: { value: 30 } });
   const ci = inviteRes.body.data.campaign_influencer;
 
   await query(
@@ -141,16 +141,16 @@ describe('POST /v1/follower/pay-at-store', () => {
         campaign_id: cid,
         set_id: sid,
         campaign_influencer_id: ci.id,
-        bill_amount: 100000, // ₹1000 in paise
+        bill_amount: 1000, // ₹1000 (rupees; migration 021)
       });
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data.razorpay_order_id).toMatch(/^order_/);
     // 30% off ₹1000 = ₹300 discount, net = ₹700
-    expect(res.body.data.discount_amount).toBe(30000);
-    expect(res.body.data.net_amount).toBe(70000);
-    expect(res.body.data.original_amount).toBe(100000);
+    expect(res.body.data.discount_amount).toBe(300);
+    expect(res.body.data.net_amount).toBe(700);
+    expect(res.body.data.bill_amount).toBe(1000); // controller exposes bill_amount (transaction.controller.js:313), not original_amount
   });
 
   it('returns commission breakdown', async () => {
@@ -164,15 +164,15 @@ describe('POST /v1/follower/pay-at-store', () => {
         campaign_id: cid,
         set_id: sid,
         campaign_influencer_id: ci.id,
-        bill_amount: 100000,
+        bill_amount: 1000,
       });
 
     expect(res.status).toBe(201);
-    // 8% of 70000 = 5600
-    expect(res.body.data.breakdown.influencer_commission).toBe(5600);
-    // 8% of 70000 = 5600 (default platform fee)
-    expect(res.body.data.breakdown.platform_fee).toBe(5600);
-    expect(res.body.data.breakdown.brand_net).toBe(70000 - 5600 - 5600); // 58800
+    // net ₹700 (₹1000 − 30%); 8% of 700 = 56
+    expect(res.body.data.breakdown.influencer_commission).toBe(56);
+    // 8% of 700 = 56 (default platform fee)
+    expect(res.body.data.breakdown.platform_fee).toBe(56);
+    expect(res.body.data.breakdown.brand_net).toBe(700 - 56 - 56); // 588
   });
 
   it('returns 401 without auth', async () => {
@@ -224,7 +224,7 @@ describe('POST /v1/follower/pay-at-store/verify (end-to-end money flow)', () => 
     const initRes = await request(app)
       .post('/v1/follower/pay-at-store')
       .set('Authorization', `Bearer ${followerToken}`)
-      .send({ offer_id: oid, campaign_id: cid, set_id: sid, campaign_influencer_id: ci.id, bill_amount: 100000 });
+      .send({ offer_id: oid, campaign_id: cid, set_id: sid, campaign_influencer_id: ci.id, bill_amount: 1000 });
 
     const verifyRes = await request(app)
       .post('/v1/follower/pay-at-store/verify')
@@ -237,13 +237,13 @@ describe('POST /v1/follower/pay-at-store/verify (end-to-end money flow)', () => 
         campaign_id: cid,
         set_id: sid,
         campaign_influencer_id: ci.id,
-        bill_amount: 100000,
+        bill_amount: 1000,
       });
 
     expect(verifyRes.status).toBe(200);
     expect(verifyRes.body.data.transaction_id).toBeDefined();
     expect(verifyRes.body.data.reference_code).toMatch(/^INFLX-/);
-    expect(verifyRes.body.data.net_amount).toBe(70000);
+    expect(verifyRes.body.data.net_amount).toBe(700);
   });
 
   it('credits influencer pending_balance (8% of 70000 = 5600 paise)', async () => {
