@@ -68,7 +68,7 @@ async function setupActiveContract({ agreed_fee = 10000 } = {}) {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
+    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: ['reel'] });
   const sid = setRes.body.data.set.id;
 
   // Invite
@@ -88,6 +88,11 @@ async function setupActiveContract({ agreed_fee = 10000 } = {}) {
     .get(`/v1/contracts/${ci.id}`)
     .set('Authorization', `Bearer ${brandToken}`);
   const contractId = contractRes.body.data.contract.id;
+
+  // Brand "Approve & Send": draft → pending_influencer (required before signing)
+  await request(app)
+    .post(`/v1/contracts/${contractId}/approve`)
+    .set('Authorization', `Bearer ${brandToken}`);
 
   // Influencer signs
   await request(app)

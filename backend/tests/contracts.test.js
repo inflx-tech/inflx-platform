@@ -66,7 +66,7 @@ async function setupAcceptedOffer({ agreed_fee = 10000 } = {}) {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
+    .send({ name: 'Food Creators', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: ['reel'] });
   const sid = setRes.body.data.set.id;
 
   // Invite
@@ -140,7 +140,7 @@ describe('Contract auto-creation on offer acceptance', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
+      .send({ name: 'Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: ['reel'] });
     const sid = setRes.body.data.set.id;
 
     const inviteRes = await request(app)
@@ -235,7 +235,12 @@ describe('GET /v1/contracts/:campaign_influencer_id', () => {
 describe('POST /v1/contracts/:id/sign', () => {
   async function getContractId(token, ciId) {
     const res = await getContractByCIId(token, ciId);
-    return res.body.data.contract.id;
+    const id = res.body.data.contract.id;
+    // Brand "Approve & Send": draft → pending_influencer (required before signing)
+    await request(app)
+      .post(`/v1/contracts/${id}/approve`)
+      .set('Authorization', `Bearer ${token}`);
+    return id;
   }
 
   it('influencer signs contract — status becomes pending_brand', async () => {

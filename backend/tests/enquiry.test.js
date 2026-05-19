@@ -86,6 +86,11 @@ async function setupEnquiryScenario() {
     .set('Authorization', `Bearer ${brandToken}`);
   const contractId = contractRes.body.data.contract.id;
 
+  // Brand "Approve & Send": draft → pending_influencer (required before signing)
+  await request(app)
+    .post(`/v1/contracts/${contractId}/approve`)
+    .set('Authorization', `Bearer ${brandToken}`);
+
   await request(app)
     .post(`/v1/contracts/${contractId}/sign`)
     .set('Authorization', `Bearer ${infToken}`)

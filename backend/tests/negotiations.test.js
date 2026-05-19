@@ -71,7 +71,7 @@ async function setupFullInvite({ agreed_fee = 5000 } = {}) {
   const setRes = await request(app)
     .post(`/v1/campaigns/${cid}/sets`)
     .set('Authorization', `Bearer ${brandToken}`)
-    .send({ name: 'Test Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
+    .send({ name: 'Test Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: ['reel'] });
   const sid = setRes.body.data.set.id;
 
   // Invite
@@ -582,7 +582,7 @@ describe('POST /v1/campaigns/:cid/sets/:sid/publish-open', () => {
     const setRes = await request(app)
       .post(`/v1/campaigns/${cid}/sets`)
       .set('Authorization', `Bearer ${brandToken}`)
-      .send({ name: 'Handpick Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000 });
+      .send({ name: 'Handpick Set', goal: 'engagement', assignment_mode: 'handpick', set_budget: 10000, formats_json: ['reel'] });
     const sid = setRes.body.data.set.id;
 
     const res = await request(app)
