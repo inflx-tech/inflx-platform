@@ -50,6 +50,16 @@ const GOVERNED = [
   /^backend\/migrations\//,
   /^Packages\/[^/]+\/(src|app|components|lib|screens|services)\//,
 ];
+// UI_GOVERNED = subset of GOVERNED that needs mockup-lock + 06-diff/notes.md
+// (Phase 2 sub-contract 5; GOVERNANCE.md §4a + §4b).
+const UI_GOVERNED = [
+  /^Packages\/[^/]+\/(src|app|components|lib|screens|services)\//,
+];
+// MOBILE_GOVERNED = subset of UI_GOVERNED that also needs Maestro green
+// (Phase 2 sub-contract 5; GOVERNANCE.md §10).
+const MOBILE_GOVERNED = [
+  /^Packages\/Mobile\/src\//,
+];
 // Deploy-inert allowlist — never requires a contract.
 const ALLOWLIST = [
   /^features\//, /^qa\//, /^docs\//, /^\.github\//, /^design\//,
@@ -59,6 +69,8 @@ const ALLOWLIST = [
   /^\.gitignore$/, /^Packages\/[^/]+\/(package\.json|package-lock\.json)$/,
 ];
 const isGoverned = (f) => GOVERNED.some((r) => r.test(f)) && !ALLOWLIST.some((r) => r.test(f));
+const isUiGoverned     = (f) => UI_GOVERNED.some((r) => r.test(f))     && !ALLOWLIST.some((r) => r.test(f));
+const isMobileGoverned = (f) => MOBILE_GOVERNED.some((r) => r.test(f)) && !ALLOWLIST.some((r) => r.test(f));
 
 // ── Base ref resolution (deterministic, defensive) ─────────────────────────
 function resolveBase() {
@@ -136,6 +148,86 @@ function main() {
              `Lock a contract, or set GOVERNANCE_OVERRIDE="reason" (logged). exit 1`);
     }
     log(`  ↳ governed change backed by approved contract(s): ${touchedApproved.join(', ')} ✓`);
+
+    // ── 3+4+5. UI / Mobile cycle gates (Phase 2 sub-contract 5) ──────────
+    // These rules layer onto Rule 1: they only fire when there's a UI-
+    // governed (Packages/*/(src|app|components|lib|screens|services)/) or
+    // Mobile-governed (Packages/Mobile/src/) file in the changeset.
+    // Backend-only changesets (backend/src/, backend/migrations/) are
+    // unaffected — they pass through with just Rules 1+2.
+    const uiChanged     = changed.filter(isUiGoverned);
+    const mobileChanged = changed.filter(isMobileGoverned);
+    const overrideEnv   = process.env.GOVERNANCE_OVERRIDE;
+    const overrideBypass = (reason) => {
+      log(`⚠ OVERRIDE ACTIVE — GOVERNANCE_OVERRIDE="${overrideEnv}"`);
+      log(`⚠ ${reason} bypassed by explicit override (recorded, NOT silent).`);
+      die(0, `OK (overridden) — exit 0`);
+    };
+
+    if (uiChanged.length > 0) {
+      for (const slug of touchedApproved) {
+        const lock = contracts.get(slug).lock;
+
+        // Rule 3 — mockup_locked required for UI-governed changes
+        if (lock.mockup_locked !== true || !lock.mockup_locked_by || !lock.mockup_locked_at) {
+          log(`  ✗ Rule 3 — UI-governed path touched but contract ${slug} lacks mockup_locked`);
+          log(`    touched: ${uiChanged.slice(0, 3).join(', ')}${uiChanged.length > 3 ? ' ... +' + (uiChanged.length - 3) : ''}`);
+          log(`    contract: features/${slug}/lock.json`);
+          log(`    state: mockup_locked=${lock.mockup_locked}, _by=${lock.mockup_locked_by ? 'set' : 'unset'}, _at=${lock.mockup_locked_at ? 'set' : 'unset'}`);
+          log(`    fix: run \`pnpm preview:open ${slug}\` to review the mockups, then set`);
+          log(`         mockup_locked: true + mockup_locked_by + mockup_locked_at in lock.json.`);
+          log(`         Worked example: features/_demo-preview/. GOVERNANCE.md §4a.`);
+          if (overrideEnv) overrideBypass(`Rule 3 (UI-governed without mockup_locked)`);
+          die(1, `BLOCK — Rule 3: UI-governed change requires mockup_locked on ${slug}. ` +
+                 `GOVERNANCE.md §4a. exit 1`);
+        }
+        const lockedByShort = String(lock.mockup_locked_by).slice(0, 40);
+        log(`  ↳ ${slug} mockup_locked=true (by ${lockedByShort}${String(lock.mockup_locked_by).length > 40 ? '…' : ''}, at ${lock.mockup_locked_at}) ✓`);
+
+        // Rule 4 — 06-diff/notes.md present + non-empty
+        const notesPath = path.join(REPO_ROOT, 'features', slug, '06-diff', 'notes.md');
+        const notesOk = fs.existsSync(notesPath) &&
+                        fs.readFileSync(notesPath, 'utf8').trim().length > 0;
+        if (!notesOk) {
+          log(`  ✗ Rule 4 — UI-governed path touched but ${slug} lacks 06-diff/notes.md`);
+          log(`    contract: features/${slug}/lock.json`);
+          log(`    expected: features/${slug}/06-diff/notes.md (absent or empty)`);
+          log(`    fix: capture after PNGs (pnpm diff:after ${slug}); author 06-diff/notes.md`);
+          log(`         covering what was implemented / what matches / what diverged / what to check.`);
+          log(`         Worked example: features/_demo-preview/06-diff/notes.md. GOVERNANCE.md §4b.`);
+          if (overrideEnv) overrideBypass(`Rule 4 (UI-governed without 06-diff/notes.md)`);
+          die(1, `BLOCK — Rule 4: UI-governed change requires 06-diff/notes.md on ${slug}. ` +
+                 `GOVERNANCE.md §4b. exit 1`);
+        }
+        const notesSize = fs.statSync(notesPath).size;
+        log(`  ↳ features/${slug}/06-diff/notes.md present (${notesSize} bytes) ✓`);
+      }
+    }
+
+    if (mobileChanged.length > 0) {
+      for (const slug of touchedApproved) {
+        const lock = contracts.get(slug).lock;
+        const rel  = lock.release || {};
+        // Only enforce when THIS changeset releases the contract.
+        // (WIP commits with released=false may touch Mobile freely;
+        //  the maestro_green attestation is required at release-flip time.)
+        if (rel.released === true && rel.maestro_green !== true) {
+          log(`  ✗ Rule 5 — Mobile-governed path released without release.maestro_green on ${slug}`);
+          log(`    touched: ${mobileChanged.slice(0, 3).join(', ')}${mobileChanged.length > 3 ? ' ... +' + (mobileChanged.length - 3) : ''}`);
+          log(`    contract: features/${slug}/lock.json release.released=true`);
+          log(`    state: release.maestro_green=${rel.maestro_green} (must be === true)`);
+          log(`    fix: run \`pnpm qa:maestro\` against your device/emulator until ALL flows`);
+          log(`         pass; then set "release.maestro_green": true in lock.json.`);
+          log(`         GOVERNANCE.md §10.`);
+          if (overrideEnv) overrideBypass(`Rule 5 (Mobile-governed release without maestro_green)`);
+          die(1, `BLOCK — Rule 5: Mobile-governed release requires release.maestro_green===true on ${slug}. ` +
+                 `GOVERNANCE.md §10. exit 1`);
+        }
+        if (rel.released === true && rel.maestro_green === true) {
+          log(`  ↳ ${slug} release.maestro_green=true ✓`);
+        }
+      }
+    }
   } else {
     log(`no governed paths changed (deploy-inert changeset) ✓`);
   }

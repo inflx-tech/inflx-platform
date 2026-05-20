@@ -23,6 +23,7 @@
     "qa:db:up": "node qa/scripts/db-up.mjs",
     "qa:db:down": "node qa/scripts/db-down.mjs",
     "qa:gov": "node qa/scripts/governance-check.mjs",
+    "qa:gov:test": "node qa/scripts/governance-check.test.mjs",
     "hooks:install": "node qa/scripts/install-hooks.mjs",
     "db:dev:up": "node qa/scripts/dev-db-up.mjs",
     "db:dev:down": "node qa/scripts/dev-db-down.mjs",

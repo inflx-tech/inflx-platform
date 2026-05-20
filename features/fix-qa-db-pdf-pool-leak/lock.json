@@ -1,0 +1,24 @@
+{
+  "feature": "fix-qa-db-pdf-pool-leak",
+  "area": "backend-fix-production-impacting-zero-runtime-delta",
+  "spec_version": "0.1.0",
+  "status": "abandoned",
+  "approved": true,
+  "approved_by": "agent (founder explicit GO 2026-05-20 'Go with your recommendation' on option 3 of the 4 surfaced — NODE_ENV-gated await; production-impacting per gov-check path classification but ZERO runtime delta in prod; standing autonomy delegation; same posture precedent as fix-open-group-publish-mode 2026-05-19)",
+  "approved_at": "2026-05-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING per path classification (backend/src/controllers/contract.controller.js is GOVERNED). Runtime effect in production: ZERO — the fix is gated by env.NODE_ENV === 'test'. Render auto-deploys backend on push; brand-approve behaviour in prod is byte-identical to today. Forward-only; rollback = revert the 3-line change.",
+  "fix": "contract.controller.js:1153 — wrap the fire-and-forget _generateAndStorePdf(...).catch(...) so it is awaited under NODE_ENV='test' only. Root cause (verify-twice via qa/artifacts/_sc5_finalretry_qadb.log run 14:14Z): under qa:db's tight back-to-back test loop, the brand-approve handler's only fire-and-forget invocation of _generateAndStorePdf (1 of 6 call-sites; the other 5 await) leaves background PDF-gen pending on the app pool (src/config/db.js max=20). After ~20 in-flight approves the pool saturates → the SELECT on :1157 (db.query auto-managed) waits 10s for a connection → connectionTimeoutMillis hits → 'timeout exceeded when trying to connect' (14/14 stack-trace pinning to :1157 in the failed run). The pool starvation cascades into 30000ms hook timeouts in 5 qa:db suites (pay-at-store, earnings, follower-feed, commissions, prebook-daterange). In production the load pattern is sparse → invisible.",
+  "related": ["features/qa-db-determinism (e74cf9e)", "features/qa-db-truncate-flake (d93eb7d)", "features/enforce-cycle-gates (the next contract — UNBLOCKED by this fix)", "features/maestro-first-flow (last verified 382/382 baseline at commit 02e6298 05:47:12Z)"],
+  "result": "ABANDONED 2026-05-20T15:13Z (qa/artifacts/_fixpdf_qadb_run1.log). The hypothesised fix was IMPLEMENTED (contract.controller.js:1153 NODE_ENV-gated await) and MEASURED HONESTLY — it did remove the diagnosed symptom (14 controller.js:1157 timeouts → 0; commissions.test.js FAIL → PASS) but MADE THE OVERALL LANE WORSE: 5 RED suites → 7 RED; 15 tests RED → 31; wall time 985s → 1229s. New failures appeared at otp.service.js:20 with 12 Connection-terminated events (zero pre-fix). 3 previously-GREEN suites flipped RED (online-order, admin-escrow, prebook). Honest classification: my single-leak diagnosis was correct but INSUFFICIENT — the qa:db env-block has multiple compounding causes; surgical fixes won't reach 382/382 without addressing the broader substrate. Reverted via git checkout; HEAD restored to 02e6298. Contract retained on disk for future-session reference (do not re-try this avenue without new evidence).",
+  "regression_proof": "n/a — change measured + reverted. The fix is NOT in the codebase. No prod effect. The lesson is: do NOT promote a fix to green-on-first-attempt; always measure honestly first. (Discipline working as designed: the bad fix was caught by the verification step before any push.)",
+  "discipline": "PRODUCTION-IMPACTING per gov-check path classification — surfaced explicitly to founder, explicit GO 'Go with your recommendation' on record. No-fake-green: the fix made qa:db WORSE; the only correct response was to revert + report honestly + abandon. Did NOT push, did NOT massage results, did NOT retry-to-green. Verify-twice retroactively: the 14/14 stack-trace pinning to :1157 was real, BUT the conclusion 'serialising PDF gen fixes the lane' was wrong — the leak was one cause, not the only cause. Lesson recorded for the next-session substrate-hardening contract: surgical app-pool fixes don't work in isolation; need pg server config + pool tuning + diagnostics layered together.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "NOT DEPLOYED. The fix was MEASURED to be a regression (5 RED → 7 RED; 15 → 31 tests RED) and REVERTED via git checkout before any push. No prod impact. The contract is retained on disk as evidence that this avenue was tried + failed, so a future session does not waste cycles on the same approach."
+  }
+}

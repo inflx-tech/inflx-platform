@@ -92,11 +92,12 @@ happy paths · edge cases · auth/permission · money paths · failure paths
   is still enforced.
 - The agent never fabricates approval. `approved_by` records who/how.
 
-### 4a. Mockup-lock (optional, advisory)
+### 4a. Mockup-lock  **[ENFORCED]**
 
 Phase 2 sub-contract 1 (`features/preview-machinery/`) introduced
-an optional second human gate **between spec-lock and code**, for
-UI-touching contracts:
+a second human gate **between spec-lock and code** for UI-touching
+contracts. Phase 2 sub-contract 5 (`features/enforce-cycle-gates/`)
+promoted this to ENFORCED in `governance-check.mjs` (Rule 3):
 
 - Author HTML mockups in `features/<slug>/04-preview/mockups/*.html`
   and a sibling `04-preview/workflow-prediction.md`.
@@ -106,39 +107,46 @@ UI-touching contracts:
   - `mockup_locked: true`
   - `mockup_locked_by: "<who/how>"`
   - `mockup_locked_at: "<YYYY-MM-DD>"`
-- **[RECOMMENDED]** today. Phase 2 sub-contract 5 will promote this
-  to **[ENFORCED]** for any commit touching
-  `Packages/*/(app|components)/**`. Existing contracts without
-  these fields continue to validate; `governance-check.mjs` ignores
-  unknown lock.json fields.
+- **[ENFORCED]** for any commit touching
+  `Packages/*/(src|app|components|lib|screens|services)/`
+  ("UI-governed"). gov-check Rule 3 BLOCKS the push if the backing
+  approved+complete contract does not have all three
+  `mockup_locked*` fields set. `GOVERNANCE_OVERRIDE="reason"`
+  bypasses with a loud, recorded notice.
 - The fields are forward-compatible — they may be absent from
   contracts whose work does not touch UI (backend-only, infra,
-  test-debt, governance, showcase contracts).
+  test-debt, governance, showcase contracts). Backend-only commits
+  only have to satisfy Rule 1 (approved contract) + Rule 2 (release
+  evidence).
 
-### 4b. Before/after-diff (optional, advisory)
+### 4b. Before/after-diff  **[ENFORCED]**
 
 Phase 2 sub-contract 2 (`features/before-after-diff/`) added the
 **final visual gate before the production deploy** for UI-touching
-contracts:
+contracts. Sub-contract 5 promoted the presence of
+`06-diff/notes.md` to ENFORCED in gov-check (Rule 4):
 
 - After implementation, `pnpm diff:before <slug>` renders the locked
   mockups to PNGs in `qa/artifacts/diff/<slug>/before/`.
-- For each mockup that has a sibling
+- For each mockup with a sibling
   `04-preview/mockups/<name>.capture.json` (declares `url` +
   `viewport` + optional `wait_for_selector`),
   `pnpm diff:after <slug>` captures the real implementation against
   the local dev stack into `qa/artifacts/diff/<slug>/after/`.
+- For mobile mockups with a sibling `<name>.maestro-flow.json`
+  (`{flow, screenshot}`), `diff:after` copies the named screenshot
+  from the latest `qa/artifacts/qa-maestro/<ts>/` run.
 - Agent authors `features/<slug>/06-diff/notes.md` — plain-English
   notes on what shipped, what matches the mockup, what (honestly)
   diverged and why.
 - `pnpm diff:open <slug>` builds + opens the side-by-side review
   page (worked example: `features/_demo-preview/06-diff/`).
-- **[RECOMMENDED]** today. Phase 2 sub-contract 5 will promote the
-  presence of `06-diff/notes.md` + the diff PNGs (or their
-  release-evidence equivalent) to **[ENFORCED]** for UI-touching
-  releases.
-- The `06-diff/` folder is forward-compatible — backend-only, infra,
-  test-debt, and showcase contracts may legitimately omit it.
+- **[ENFORCED]** for UI-governed changes (same trigger as Rule 3).
+  gov-check Rule 4 BLOCKS the push if
+  `features/<slug>/06-diff/notes.md` is absent or empty in the
+  backing contract. Override mechanism identical to Rule 3.
+- The `06-diff/` folder is forward-compatible — backend-only,
+  infra, test-debt, and showcase contracts may legitimately omit it.
 
 ## 5. Step-14 RELEASE semantics
 
@@ -204,12 +212,18 @@ main GREEN and never blocks it. It stays informational until **formally
 promoted** by its own contract.
 
 The Maestro mobile lane (`pnpm qa:maestro`, Phase 2 sub-contract 3)
-follows the same pattern: separate, decoupled, **[RECOMMENDED]** for
-UI-touching mobile changes today; **[ENFORCED]** for any commit
-touching `Packages/Mobile/src/**` once sub-contract 5 lands. Maestro
+follows the same pattern: separate, decoupled, **[ENFORCED]** for
+any commit touching `Packages/Mobile/src/**` that flips
+`release.released = true`. gov-check Rule 5 (Phase 2 sub-contract 5)
+BLOCKS the push if the backing contract's `release.maestro_green`
+is not `=== true`. The attestation is opt-in by explicit
+declaration — silent omission is treated as not-green. WIP commits
+with `released=false` are allowed to touch Mobile freely; the
+attestation is required only at the release-flip moment. Maestro
 requires Maestro CLI + ADB + a connected device/emulator + the app
 flavor installed — all founder-side; `pnpm qa:maestro:doctor` reports
 red with install instructions when prerequisites are missing.
+`GOVERNANCE_OVERRIDE="reason"` bypasses with a loud, recorded notice.
 
 ---
 

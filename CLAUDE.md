@@ -16,42 +16,52 @@
 05-impact.md lock.json`). `features/_TEMPLATE/` is the scaffold.
 
 Lifecycle: **spec → workflow → Step-5 LOCK → HTML mockup +
-workflow-prediction in `04-preview/` → mockup-lock (advisory) →
-impact → implement → before/after diff in `06-diff/` (advisory) →
-Playwright/API/DB verify + Maestro mobile verify (advisory) →
+workflow-prediction in `04-preview/` → mockup-lock [ENFORCED for
+UI-governed] → impact → implement → before/after diff in
+`06-diff/` [ENFORCED for UI-governed] → Playwright/API/DB verify
++ Maestro mobile verify [ENFORCED for Mobile-governed releases] →
 fix → retest → Step-14 RELEASE → record into repo artifacts.**
 
-> **Mobile-verify gate (Phase 2 sub-contracts 3 + 4, contracts
-> `features/maestro-infrastructure/` + `features/maestro-first-flow/`,
-> advisory):** mobile E2E via Maestro on a connected Android device
-> or emulator. Setup + commands in `LOCAL.md`; run
-> `pnpm qa:maestro:doctor` then `pnpm qa:maestro`. The first real
-> golden-path flow (`qa/maestro/flows/01-follower-public-browse.yaml`)
-> exercises Q1's public deal browse. `Packages/Mobile/src/config/api.js`
-> reads `./api-overrides.js` (committed empty by default; preserves
+> **Mobile-verify gate (Phase 2 sub-contracts 3+4, contracts
+> `features/maestro-infrastructure/` + `features/maestro-first-flow/`;
+> [ENFORCED] for Mobile-governed releases via gov-check Rule 5):**
+> mobile E2E via Maestro on a connected Android device or emulator.
+> Setup + commands in `LOCAL.md`; run `pnpm qa:maestro:doctor` then
+> `pnpm qa:maestro`. The first real golden-path flow
+> (`qa/maestro/flows/01-follower-public-browse.yaml`) exercises Q1's
+> public deal browse. `Packages/Mobile/src/config/api.js` reads
+> `./api-overrides.js` (committed empty by default; preserves
 > current prod-pointing behaviour); developers customize locally +
 > `git update-index --skip-worktree` to keep edits out of commits.
-> Sub-contract 5 will make this gate required by gov-check for any
-> commit touching `Packages/Mobile/src/`.
+> Any commit touching `Packages/Mobile/src/**` that flips
+> `release.released = true` MUST have `release.maestro_green: true`
+> in lock.json — gov-check blocks the push otherwise.
+> `GOVERNANCE_OVERRIDE="reason"` bypasses with a loud, recorded notice.
 
 > **Mockup-lock gate (Phase 2 sub-contract 1, contract
-> `features/preview-machinery/`, advisory):** for UI-touching
-> features, after spec-lock author HTML mockups in
-> `features/<slug>/04-preview/mockups/*.html` + a
-> `04-preview/workflow-prediction.md`. Run
-> `pnpm preview:open <slug>` to review them in the browser, then
-> set `mockup_locked: true` (+ `_by` + `_at`) in `lock.json`.
-> See `features/_demo-preview/` for a worked example.
+> `features/preview-machinery/`; [ENFORCED] for UI-governed via
+> gov-check Rule 3):** for UI-touching features, after spec-lock
+> author HTML mockups in `features/<slug>/04-preview/mockups/*.html`
+> + a `04-preview/workflow-prediction.md`. Run `pnpm preview:open
+> <slug>` to review them in the browser, then set
+> `mockup_locked: true` (+ `_by` + `_at`) in `lock.json`. See
+> `features/_demo-preview/` for a worked example. Any commit
+> touching `Packages/*/(src|app|components|lib|screens|services)/`
+> MUST have all three `mockup_locked*` fields set on the backing
+> contract — gov-check blocks the push otherwise.
 >
 > **Before/after-diff gate (Phase 2 sub-contract 2, contract
-> `features/before-after-diff/`, advisory):** after implementation,
-> capture the "before" (mockup HTML rendered by Playwright at the
-> declared viewport) and the "after" (Playwright shot of the real
-> URL per a sibling `<mockup>.capture.json`); author plain-English
-> notes in `features/<slug>/06-diff/notes.md`. Run
-> `pnpm diff:open <slug>` to see side-by-side panels + notes in the
-> browser. Diff sign-off is the final gate before the production
-> deploy.
+> `features/before-after-diff/`; [ENFORCED] for UI-governed via
+> gov-check Rule 4):** after implementation, capture the "before"
+> (mockup HTML rendered by Playwright at the declared viewport)
+> and the "after" (Playwright shot of the real URL per a sibling
+> `<mockup>.capture.json`, OR Maestro screenshot per a sibling
+> `<mockup>.maestro-flow.json`); author plain-English notes in
+> `features/<slug>/06-diff/notes.md`. Run `pnpm diff:open <slug>`
+> to see side-by-side panels + notes in the browser. Diff sign-off
+> is the final gate before the production deploy. Any UI-governed
+> commit MUST have a non-empty `06-diff/notes.md` in the backing
+> contract — gov-check blocks the push otherwise.
 
 - No governed-path code (`backend/src/**`, `backend/migrations/**`,
   `Packages/*/{src,app,components,lib,...}`) without an **approved
