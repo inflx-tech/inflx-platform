@@ -203,6 +203,14 @@ integrity, verify zero regression. The DB lane (`pnpm qa:db`) is a
 main GREEN and never blocks it. It stays informational until **formally
 promoted** by its own contract.
 
+The Maestro mobile lane (`pnpm qa:maestro`, Phase 2 sub-contract 3)
+follows the same pattern: separate, decoupled, **[RECOMMENDED]** for
+UI-touching mobile changes today; **[ENFORCED]** for any commit
+touching `Packages/Mobile/src/**` once sub-contract 5 lands. Maestro
+requires Maestro CLI + ADB + a connected device/emulator + the app
+flavor installed — all founder-side; `pnpm qa:maestro:doctor` reports
+red with install instructions when prerequisites are missing.
+
 ---
 
 ## 11. The three enforcement layers (separation of powers)

@@ -125,6 +125,15 @@ if (fs.existsSync(mobApi)) {
   else if (m && m[1] === 'false') info(`Packages/Mobile USE_PRODUCTION=false — Mobile uses LAN IP (see DEV_LAN_IP in that file).`);
 }
 
+// 10. Maestro CLI — informational (full check is `pnpm qa:maestro:doctor`)
+const m = sh('maestro', ['-v']);
+if (m.status === 0) {
+  const ver = (m.stdout || m.stderr || '').toString().trim().split(/\r?\n/)[0];
+  info(`maestro CLI on PATH (${ver || 'version unknown'}) — full check: pnpm qa:maestro:doctor`);
+} else {
+  info(`maestro CLI not on PATH — mobile E2E lane unavailable. Install per LOCAL.md or skip if not running mobile tests yet.`);
+}
+
 console.log('');
 if (failures === 0) {
   console.log(`[dev-doctor] === ALL GREEN — start with: pnpm dev:all ===`);

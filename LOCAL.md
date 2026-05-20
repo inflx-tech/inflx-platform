@@ -103,22 +103,92 @@ If any check fails, the doctor prints the fix command and exits 1.
 
 ---
 
-## Mobile dev (deferred — Phase 2)
+## Mobile dev with Maestro (Phase 2 sub-contract 3 onward)
 
-`Packages/Mobile/src/config/api.js` has a hardcoded
-`USE_PRODUCTION = true` flag that forces all builds to hit the prod
-API. This is intentional **for now** — Phase 2 (Maestro mobile
-verification) will rewire this properly.
+INFLX ships three Android variants from one RN codebase:
+`in.inflx.app.brand`, `in.inflx.app.influencer`,
+`in.inflx.app.follower`. **Maestro is the mobile E2E lane** (parallel
+to Playwright on web).
 
-To dev Mobile against the local backend before then:
+### One-time install
 
-1. In `Packages/Mobile/src/config/api.js`, set `USE_PRODUCTION = false`.
-2. Update `DEV_LAN_IP` to your laptop's LAN IP (Android emulator can
-   use `10.0.2.2`; physical device needs your `192.168.x.x`).
+1. **Maestro CLI:**
+   - Windows: download the latest release from
+     [github.com/mobile-dev-inc/maestro/releases](https://github.com/mobile-dev-inc/maestro/releases)
+     and add the `bin/` directory to PATH. (Scoop alternative:
+     `scoop install maestro`.)
+   - macOS: `brew tap mobile-dev-inc/tap && brew install maestro`
+   - Verify: `maestro -v`
+2. **Android Platform Tools (`adb`)** — required for device control:
+   - Download from
+     [developer.android.com/studio/releases/platform-tools](https://developer.android.com/studio/releases/platform-tools)
+     and add to PATH.
+   - Verify: `adb version`
+3. **Get a device or emulator running:**
+   - **USB device:** enable Developer Options → USB debugging on the
+     phone, plug in, accept the RSA prompt. `adb devices` should
+     list it.
+   - **Android emulator** (Android Studio installed):
+     `emulator -list-avds` then `emulator -avd <name>`. `adb devices`
+     should list it as `emulator-5554`.
+4. **Install the follower app on the device:**
+   ```bash
+   cd Packages/Mobile
+   pnpm android:follower
+   ```
+
+### Daily run
+
+```bash
+pnpm qa:maestro:doctor    # verify Maestro + ADB + device + app readiness
+pnpm qa:maestro           # run all qa/maestro/flows/*.yaml
+```
+
+The doctor must be green before the orchestrator will run. Output
+lands in `qa/artifacts/qa-mobile/<timestamp>/` (gitignored;
+regenerable).
+
+### Where things live
+
+- **Flow YAML files:** `qa/maestro/flows/*.yaml` — durable test
+  definitions, committed. Naming: `NN-<name>.yaml` (numeric prefix
+  for sort order).
+- **Lane convention metadata:** `qa/maestro/{README.md, config.yaml}`.
+- **Per-run output:** `qa/artifacts/qa-mobile/<ts>/<flow-name>/` —
+  Maestro logs + any `takeScreenshot:` PNGs.
+
+### Mobile dev mode (`api.js` USE_PRODUCTION flag)
+
+`Packages/Mobile/src/config/api.js` currently has a hardcoded
+`USE_PRODUCTION = true` that forces all builds to hit the prod API.
+**Sub-contract 4 of Phase 2** will make this env-driven (and pair the
+change with the first real Maestro flow that needs it). Until then,
+the smoke flow only verifies the app *launches* — it does not test
+backend interactions.
+
+To dev Mobile against the local backend before sub-contract 4 lands:
+
+1. In `Packages/Mobile/src/config/api.js`, set
+   `USE_PRODUCTION = false`.
+2. Update `DEV_LAN_IP` to your laptop's LAN IP (Android emulator
+   can use `10.0.2.2`; physical device needs your `192.168.x.x`).
 3. `pnpm dev:mobile` for Metro, `pnpm dev:android` to run.
 
-**Do NOT commit the flipped flag** until Phase 2's contract lands —
-right now `USE_PRODUCTION = true` is the correct production posture.
+**Do NOT commit the flipped flag** until Phase 2 sub-contract 4
+lands the proper env-driven change — right now
+`USE_PRODUCTION = true` is the correct production posture.
+
+### Per-flavor app install
+
+```bash
+cd Packages/Mobile
+pnpm android:brand        # in.inflx.app.brand (debug)
+pnpm android:influencer   # in.inflx.app.influencer (debug)
+pnpm android:follower     # in.inflx.app.follower (debug)
+```
+
+The smoke flow targets the follower variant by default. To target a
+different variant, edit a flow's `appId:` header.
 
 ---
 

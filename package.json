@@ -34,7 +34,9 @@
     "diff:before": "node qa/scripts/diff-before.mjs",
     "diff:after": "node qa/scripts/diff-after.mjs",
     "diff:build": "node qa/scripts/diff-build.mjs",
-    "diff:open": "node qa/scripts/diff-open.mjs"
+    "diff:open": "node qa/scripts/diff-open.mjs",
+    "qa:maestro": "node qa/scripts/qa-maestro.mjs",
+    "qa:maestro:doctor": "node qa/scripts/maestro-doctor.mjs"
   },
   "engines": {
     "node": ">=20"

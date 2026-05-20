@@ -1,0 +1,13 @@
+# Smoke flow — confirms the follower app launches cleanly on a
+# connected Android device or emulator. Does NOT verify backend
+# connectivity (sub-contract 4's first golden-path flow does).
+#
+# Contract: features/maestro-infrastructure/
+# Run: pnpm qa:maestro         (runs all qa/maestro/flows/*.yaml)
+#      pnpm qa:maestro:doctor  (verify readiness first)
+
+appId: in.inflx.app.follower
+---
+- launchApp:
+    clearState: true
+- takeScreenshot: smoke-startup

@@ -1,0 +1,24 @@
+# INFLX Maestro lane — convention metadata.
+#
+# (This is documentation, not a Maestro runtime config — Maestro
+# flow configuration is per-flow in each YAML's header. We keep
+# lane-level conventions here so they're discoverable next to the
+# flows.)
+#
+# Contract: features/maestro-infrastructure/
+
+lane:
+  name: qa:maestro
+  description: Mobile E2E tests for INFLX Android variants.
+  output_dir: qa/artifacts/qa-mobile           # gitignored; per-run timestamped subdirs
+
+apps:
+  brand:       in.inflx.app.brand              # APK variant: brandDebug / brandRelease
+  influencer:  in.inflx.app.influencer         # APK variant: influencerDebug / influencerRelease
+  follower:    in.inflx.app.follower           # APK variant: followerDebug / followerRelease
+
+default_target: follower                       # the smoke flow uses this; other flows can override
+
+backend_target:
+  dev:  http://localhost:3001/v1               # Mobile USE_PRODUCTION flip in sub-contract 4 makes this reachable
+  prod: https://inflx-platform.onrender.com/v1
