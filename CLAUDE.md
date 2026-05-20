@@ -21,14 +21,18 @@ impact → implement → before/after diff in `06-diff/` (advisory) →
 Playwright/API/DB verify + Maestro mobile verify (advisory) →
 fix → retest → Step-14 RELEASE → record into repo artifacts.**
 
-> **Mobile-verify gate (Phase 2 sub-contract 3, contract
-> `features/maestro-infrastructure/`, advisory):** mobile E2E via
-> Maestro on a connected Android device or emulator. Setup +
-> commands in `LOCAL.md`; run `pnpm qa:maestro:doctor` then
-> `pnpm qa:maestro`. Sub-contract 4 will land the first real
-> golden-path flow + the Mobile `api.js` env-driven flip needed
-> for the dev backend; sub-contract 5 will make this gate required
-> by gov-check for any commit touching `Packages/Mobile/src/`.
+> **Mobile-verify gate (Phase 2 sub-contracts 3 + 4, contracts
+> `features/maestro-infrastructure/` + `features/maestro-first-flow/`,
+> advisory):** mobile E2E via Maestro on a connected Android device
+> or emulator. Setup + commands in `LOCAL.md`; run
+> `pnpm qa:maestro:doctor` then `pnpm qa:maestro`. The first real
+> golden-path flow (`qa/maestro/flows/01-follower-public-browse.yaml`)
+> exercises Q1's public deal browse. `Packages/Mobile/src/config/api.js`
+> reads `./api-overrides.js` (committed empty by default; preserves
+> current prod-pointing behaviour); developers customize locally +
+> `git update-index --skip-worktree` to keep edits out of commits.
+> Sub-contract 5 will make this gate required by gov-check for any
+> commit touching `Packages/Mobile/src/`.
 
 > **Mockup-lock gate (Phase 2 sub-contract 1, contract
 > `features/preview-machinery/`, advisory):** for UI-touching

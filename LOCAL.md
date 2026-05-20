@@ -157,26 +157,54 @@ regenerable).
 - **Per-run output:** `qa/artifacts/qa-maestro/<ts>/<flow-name>/` —
   Maestro logs + any `takeScreenshot:` PNGs.
 
-### Mobile dev mode (`api.js` USE_PRODUCTION flag)
+### Mobile dev mode (`api-overrides.js` pattern, Phase 2 sub-contract 4)
 
-`Packages/Mobile/src/config/api.js` currently has a hardcoded
-`USE_PRODUCTION = true` that forces all builds to hit the prod API.
-**Sub-contract 4 of Phase 2** will make this env-driven (and pair the
-change with the first real Maestro flow that needs it). Until then,
-the smoke flow only verifies the app *launches* — it does not test
-backend interactions.
+`Packages/Mobile/src/config/api.js` reads optional overrides from
+`Packages/Mobile/src/config/api-overrides.js`. The override file is
+**COMMITTED** with `export default {};` (empty defaults), so the
+default behaviour preserves the prior hardcoded `USE_PRODUCTION=true`:
+both debug AND release builds hit `PRODUCTION_API_URL` /
+`PRODUCTION_BRAND_WEB_URL`.
 
-To dev Mobile against the local backend before sub-contract 4 lands:
+**Release builds (`__DEV__ === false`) always use PRODUCTION** —
+overrides are read only in `__DEV__` debug builds. End users see
+zero behaviour change regardless of what `api-overrides.js`
+contains in your local working tree.
 
-1. In `Packages/Mobile/src/config/api.js`, set
-   `USE_PRODUCTION = false`.
-2. Update `DEV_LAN_IP` to your laptop's LAN IP (Android emulator
-   can use `10.0.2.2`; physical device needs your `192.168.x.x`).
-3. `pnpm dev:mobile` for Metro, `pnpm dev:android` to run.
+#### To redirect a debug APK at your local backend
 
-**Do NOT commit the flipped flag** until Phase 2 sub-contract 4
-lands the proper env-driven change — right now
-`USE_PRODUCTION = true` is the correct production posture.
+1. Edit `Packages/Mobile/src/config/api-overrides.js`:
+   ```js
+   export default {
+     API_BASE_URL: 'http://10.0.2.2:3001/v1',   // Android emulator
+     BRAND_WEB_URL: 'http://10.0.2.2:3002',
+     // Physical phone over LAN — use your laptop's IP:
+     // API_BASE_URL: 'http://192.168.x.y:3001/v1',
+   };
+   ```
+2. Keep your local edits OUT of commits:
+   ```bash
+   git update-index --skip-worktree Packages/Mobile/src/config/api-overrides.js
+   ```
+3. Start Metro: `cd Packages/Mobile && pnpm start`.
+4. Run the debug APK on your device/emulator (`pnpm android:follower`,
+   etc.) — it now hits local backend (assumes `pnpm dev:all` is
+   running).
+
+To start tracking changes to the file again:
+```bash
+git update-index --no-skip-worktree Packages/Mobile/src/config/api-overrides.js
+```
+
+#### Why this pattern (not gitignore)
+
+- **Default behaviour preserved** — empty committed file = current
+  prod-pointing behaviour exactly.
+- **No Metro dynamic-require fragility** — the file always exists,
+  static `import overrides from './api-overrides';` resolves
+  cleanly at bundle time.
+- **Safe even if accidentally committed** — release builds ignore
+  overrides regardless of their content.
 
 ### Per-flavor app install
 

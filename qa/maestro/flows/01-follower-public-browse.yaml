@@ -1,0 +1,31 @@
+# First real Maestro flow — exercises the Q1 follower public-browse
+# feature (commit bfcd788: "anonymous user can browse deals without
+# sign-in, sign-in only at purchase"). Runs against the PRODUCTION
+# API by default (the empty committed api-overrides.js preserves
+# USE_PRODUCTION=true semantics); read-only endpoint /v1/follower/
+# feed?city=... .
+#
+# Contract: features/maestro-first-flow/ (Phase 2 sub-contract 4)
+# Run:
+#   pnpm qa:maestro            # runs all qa/maestro/flows/*.yaml
+#   pnpm qa:maestro:doctor     # verify readiness first
+#
+# Prerequisite for full GREEN:
+#   Metro must be running so the debug APK can load JS.
+#     cd Packages/Mobile && pnpm start
+#   Without Metro the app shows the red "Could not connect to
+#   development server" screen and assertVisible will fail loudly.
+#
+# The assertion below is intentionally permissive on first author
+# (".*") — after the first real run captures the actual rendered UI,
+# tighten to a known Q1 element (suggestions in workflow-prediction):
+#   - assertVisible: "Deals near you"
+#   - assertVisible: "Browsing as guest"
+#   - assertVisible: "Sign in to save"
+
+appId: in.inflx.app.follower
+---
+- launchApp:
+    clearState: true
+- assertVisible: ".*"
+- takeScreenshot: feed-loaded

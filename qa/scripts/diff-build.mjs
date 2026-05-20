@@ -75,18 +75,28 @@ function build(slug) {
     const beforePng = path.join(beforeDir, `${base}.png`);
     const afterPng  = path.join(afterDir,  `${base}.png`);
     const captureJsonPath = path.join(mockupsDir, `${base}.capture.json`);
+    const maestroJsonPath = path.join(mockupsDir, `${base}.maestro-flow.json`);
     let captureCfg = null;
+    let maestroCfg = null;
     if (fs.existsSync(captureJsonPath)) {
       try { captureCfg = JSON.parse(fs.readFileSync(captureJsonPath, 'utf8')); } catch {}
     }
+    if (fs.existsSync(maestroJsonPath)) {
+      try { maestroCfg = JSON.parse(fs.readFileSync(maestroJsonPath, 'utf8')); } catch {}
+    }
+    // maestro-flow.json takes precedence over capture.json (matches diff-after.mjs).
+    const source = maestroCfg ? 'maestro' : (captureCfg ? 'web' : 'none');
     const c = {
-      base, name,
+      base, name, source,
       beforeOk: fs.existsSync(beforePng),
       afterOk:  fs.existsSync(afterPng),
-      captureCfg,
+      captureCfg, maestroCfg,
     };
-    info(`  ${base.padEnd(40)} : before ${c.beforeOk ? '✓' : '⏵ (run diff:before)'}` +
-         `  after ${c.afterOk ? '✓' : (captureCfg ? '⚠ capture configured but no PNG (run diff:after?)' : 'ⓘ no capture')}`);
+    const afterStatus = c.afterOk ? '✓'
+      : source === 'maestro' ? '⚠ maestro flow configured but no PNG (run pnpm qa:maestro?)'
+      : source === 'web' ? '⚠ capture configured but no PNG (run diff:after?)'
+      : 'ⓘ no capture';
+    info(`  ${base.padEnd(40)} : before ${c.beforeOk ? '✓' : '⏵ (run diff:before)'}  after ${afterStatus}`);
     return c;
   });
 
@@ -120,9 +130,11 @@ function renderIndex({ slug, feature, badge, badgeClass, cards, notesMd, specMd 
 
   const cardBlocks = cards.map((c) => {
     const title = c.base.replace(/^[\d\-]+/, '').replace(/-/g, ' ').trim() || c.base;
-    const captureLine = c.captureCfg
-      ? `<code>${escapeHtml(c.captureCfg.url || '?')}</code> @ ${c.captureCfg.viewport?.width || '?'}×${c.captureCfg.viewport?.height || '?'}`
-      : `<em>no <code>${escapeHtml(c.base)}.capture.json</code> — create one to enable live capture</em>`;
+    const captureLine = c.source === 'maestro'
+      ? `<span class="src-tag src-mobile">mobile</span> Maestro flow <code>${escapeHtml(c.maestroCfg.flow || '?')}</code> · screenshot <code>${escapeHtml(c.maestroCfg.screenshot || '?')}</code>`
+      : c.source === 'web'
+      ? `<span class="src-tag src-web">web</span> <code>${escapeHtml(c.captureCfg.url || '?')}</code> @ ${c.captureCfg.viewport?.width || '?'}×${c.captureCfg.viewport?.height || '?'}`
+      : `<em>no <code>${escapeHtml(c.base)}.capture.json</code> or <code>${escapeHtml(c.base)}.maestro-flow.json</code> — create one to enable live capture</em>`;
 
     const beforeBlock = c.beforeOk
       ? `<img src="before/${encodeURIComponent(c.base)}.png" alt="locked mockup — ${escapeHtml(title)}" />`
@@ -130,14 +142,22 @@ function renderIndex({ slug, feature, badge, badgeClass, cards, notesMd, specMd 
 
     const afterBlock = c.afterOk
       ? `<img src="after/${encodeURIComponent(c.base)}.png" alt="real implementation — ${escapeHtml(title)}" />`
-      : (c.captureCfg
+      : c.source === 'maestro'
+        ? `<div class="ph ph-warn"><strong>Maestro flow configured but PNG missing.</strong><br/>
+           Run <code>pnpm qa:maestro</code> (with Metro running) to produce<br/>
+           <code>qa-maestro/&lt;latest&gt;/${escapeHtml(c.maestroCfg.flow || '?')}/${escapeHtml(c.maestroCfg.screenshot || '?')}.png</code>,<br/>
+           then <code>pnpm diff:after ${escapeHtml(slug)}</code>.</div>`
+        : c.source === 'web'
           ? `<div class="ph ph-warn"><strong>Capture configured but PNG missing.</strong><br/>
              Run <code>pnpm diff:after ${escapeHtml(slug)}</code> (with <code>pnpm dev:all</code> running).</div>`
           : `<div class="ph"><strong>No live capture configured.</strong><br/>
-             For a real contract, add a sibling<br/>
+             For a real WEB mockup, add a sibling<br/>
              <code>${escapeHtml(c.base)}.capture.json</code> declaring<br/>
              <code>{ "url": "http://localhost:3002/...",</code><br/>
-             <code>&nbsp;&nbsp;"viewport": {"width": 1200, "height": 720} }</code></div>`);
+             <code>&nbsp;&nbsp;"viewport": {"width": 1200, "height": 720} }</code><br/><br/>
+             For a real MOBILE mockup, add<br/>
+             <code>${escapeHtml(c.base)}.maestro-flow.json</code> declaring<br/>
+             <code>{ "flow": "01-...", "screenshot": "..." }</code></div>`;
 
     return `
     <section class="card">
@@ -198,6 +218,11 @@ function renderIndex({ slug, feature, badge, badgeClass, cards, notesMd, specMd 
     .tag { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11px;
            font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
     .tag-before { background: #ddd6fe; color: #5b21b6; }
+    .src-tag { display: inline-block; padding: 1px 6px; border-radius: 3px;
+               font-size: 10px; font-weight: 600; text-transform: uppercase;
+               letter-spacing: 0.4px; margin-right: 6px; }
+    .src-web    { background: #dbeafe; color: #1e40af; }
+    .src-mobile { background: #fce7f3; color: #9d174d; }
     .tag-after  { background: #fed7aa; color: #9a3412; }
     .panel img { display: block; width: 100%; height: auto; border: 1px solid #e5e7eb;
                  border-radius: 6px; background: #fff; }

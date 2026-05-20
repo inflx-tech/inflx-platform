@@ -1,0 +1,5 @@
+{
+  "_doc": "Links 01-follower-public-browse.html (the locked mockup) to a Maestro flow + named screenshot that produces the 'after' PNG. diff-after.mjs reads this and copies the named screenshot from the latest qa-maestro/<ts>/ run into qa/artifacts/diff/maestro-first-flow/after/01-follower-public-browse.png. Contract: features/maestro-first-flow/",
+  "flow": "01-follower-public-browse",
+  "screenshot": "feed-loaded"
+}
