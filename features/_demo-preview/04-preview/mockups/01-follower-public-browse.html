@@ -1,0 +1,113 @@
+<!-- preview-size: mobile -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Follower — Browse deals</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+    .img-shop      { background: linear-gradient(135deg, #fbbf24, #f97316); }
+    .img-salon     { background: linear-gradient(135deg, #f472b6, #db2777); }
+    .img-rest      { background: linear-gradient(135deg, #34d399, #059669); }
+    .pulse-anon    { animation: pulse-soft 2.4s ease-in-out infinite; }
+    @keyframes pulse-soft { 0%, 100% { opacity: 0.95; } 50% { opacity: 1; } }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="min-h-screen flex flex-col">
+    <!-- Top bar -->
+    <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
+          <span class="text-white font-bold text-sm">i</span>
+        </div>
+        <span class="font-semibold text-gray-900">INFLX</span>
+      </div>
+      <button class="flex items-center gap-1 text-sm text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0L6.343 16.657A8 8 0 1117.657 16.657z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Vijayawada
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+    </header>
+
+    <!-- Anonymous-mode banner -->
+    <div class="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900 pulse-anon flex items-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+      Browsing as guest — sign in only when ready to buy
+    </div>
+
+    <!-- Feed -->
+    <main class="flex-1 px-4 py-4 space-y-4 pb-24">
+      <h2 class="text-base font-semibold text-gray-900">Deals near you</h2>
+
+      <!-- Deal card -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="img-shop h-32 flex items-center justify-center">
+          <span class="text-white/80 text-xs font-medium">Royal Threads · Boutique</span>
+        </div>
+        <div class="p-3 space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-900">Royal Threads</span>
+            <span class="text-[10px] uppercase tracking-wide text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Verified</span>
+          </div>
+          <p class="text-sm text-gray-700 leading-snug">Flat 30% off festive collection — silk &amp; cotton, all sizes.</p>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="text-base font-semibold text-gray-900">₹1,099</span>
+            <span class="text-xs text-gray-500 line-through">₹1,599</span>
+            <span class="text-xs font-medium text-emerald-700 ml-auto">30% OFF</span>
+          </div>
+          <button class="w-full mt-2 bg-gray-900 text-white text-sm font-medium py-2 rounded-lg">View deal</button>
+        </div>
+      </article>
+
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="img-salon h-32 flex items-center justify-center">
+          <span class="text-white/80 text-xs font-medium">Blush &amp; Co. · Salon</span>
+        </div>
+        <div class="p-3 space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-900">Blush &amp; Co.</span>
+            <span class="text-[10px] uppercase tracking-wide text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Verified</span>
+          </div>
+          <p class="text-sm text-gray-700 leading-snug">Hair spa + cut + style — book any weekday.</p>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="text-base font-semibold text-gray-900">₹899</span>
+            <span class="text-xs text-gray-500 line-through">₹1,500</span>
+            <span class="text-xs font-medium text-emerald-700 ml-auto">40% OFF</span>
+          </div>
+          <button class="w-full mt-2 bg-gray-900 text-white text-sm font-medium py-2 rounded-lg">Book slot</button>
+        </div>
+      </article>
+
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="img-rest h-32 flex items-center justify-center">
+          <span class="text-white/80 text-xs font-medium">City Wheels · Car Rental</span>
+        </div>
+        <div class="p-3 space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-gray-900">City Wheels</span>
+            <span class="text-[10px] uppercase tracking-wide text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Verified</span>
+          </div>
+          <p class="text-sm text-gray-700 leading-snug">Weekend rentals from ₹999/day — Swift, Baleno, Nexon.</p>
+          <div class="flex items-center gap-2 pt-1">
+            <span class="text-base font-semibold text-gray-900">₹999</span>
+            <span class="text-xs text-gray-500">/ day</span>
+            <span class="text-xs font-medium text-emerald-700 ml-auto">From</span>
+          </div>
+          <button class="w-full mt-2 bg-gray-900 text-white text-sm font-medium py-2 rounded-lg">View rentals</button>
+        </div>
+      </article>
+    </main>
+
+    <!-- Sticky sign-in CTA -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3">
+      <button class="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white text-sm font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
+        Sign in to save &amp; buy
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </button>
+    </div>
+  </div>
+</body>
+</html>

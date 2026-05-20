@@ -1,0 +1,226 @@
+<!-- preview-size: desktop -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>brand-web — Discover creators</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; }
+    .avatar { background: linear-gradient(135deg, #fbbf24, #f472b6); }
+    .avatar-2 { background: linear-gradient(135deg, #34d399, #2563eb); }
+    .avatar-3 { background: linear-gradient(135deg, #a78bfa, #ec4899); }
+    .avatar-4 { background: linear-gradient(135deg, #f87171, #f59e0b); }
+    .avatar-5 { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+    .avatar-6 { background: linear-gradient(135deg, #6b7280, #9ca3af); }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <!-- Top nav -->
+  <header class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center">
+            <span class="text-white font-bold text-sm">i</span>
+          </div>
+          <span class="font-semibold text-gray-900">INFLX</span>
+          <span class="text-xs text-gray-400 ml-1">brand</span>
+        </div>
+        <nav class="flex items-center gap-6 text-sm">
+          <a class="text-gray-900 font-medium border-b-2 border-gray-900 pb-3 -mb-3">Discover</a>
+          <a class="text-gray-500">Campaigns</a>
+          <a class="text-gray-500">Wallet</a>
+          <a class="text-gray-500">Earnings</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm text-gray-600">₹ 1,84,500 wallet</span>
+        <div class="w-8 h-8 rounded-full avatar"></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <div class="mb-6">
+      <h1 class="text-2xl font-semibold text-gray-900">Discover Creators</h1>
+      <p class="text-sm text-gray-500 mt-1">Find influencers and creators by city, niche, and follower range.</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex gap-3 flex-wrap items-end">
+      <div class="flex-1 min-w-[200px]">
+        <label class="text-xs text-gray-500 mb-1 block">Search</label>
+        <input type="text" placeholder="Search by name or handle" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" value="">
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">City</label>
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <option>Hyderabad</option>
+          <option>Vijayawada</option>
+          <option>Mumbai</option>
+          <option>All cities</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">Niche</label>
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <option>Any</option>
+          <option>Fashion</option>
+          <option>Food</option>
+          <option>Lifestyle</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-gray-500 mb-1 block">Followers</label>
+        <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white">
+          <option>10K — 100K</option>
+          <option>100K — 1M</option>
+          <option>1M+</option>
+        </select>
+      </div>
+      <button class="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">Apply</button>
+    </div>
+
+    <!-- Tag legend -->
+    <div class="flex items-center gap-4 mb-4 text-xs">
+      <span class="inline-flex items-center gap-1.5">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="text-gray-700"><strong>Verified</strong> — registered on INFLX, admin-approved</span>
+      </span>
+      <span class="inline-flex items-center gap-1.5">
+        <span class="inline-block w-2 h-2 rounded-full bg-gray-300"></span>
+        <span class="text-gray-700">Discovered — scraped profile, not yet on INFLX (invite to join)</span>
+      </span>
+      <span class="ml-auto text-gray-500">Showing 6 of 47 creators in Hyderabad</span>
+    </div>
+
+    <!-- Results grid -->
+    <div class="grid grid-cols-3 gap-4">
+
+      <!-- Verified creator -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-3">
+        <div class="w-16 h-16 rounded-full avatar shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 truncate">Priya Reddy</span>
+            <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              Verified
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">@priya.reddy</div>
+          <div class="text-sm text-gray-700 mt-1">142K followers · Hyderabad</div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Fashion</span>
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Lifestyle</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Verified creator -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-3">
+        <div class="w-16 h-16 rounded-full avatar-2 shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 truncate">Arun Kumar</span>
+            <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              Verified
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">@arun.eats</div>
+          <div class="text-sm text-gray-700 mt-1">88K followers · Hyderabad</div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Food</span>
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Travel</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Scraped (unverified) creator -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-3 opacity-90">
+        <div class="w-16 h-16 rounded-full avatar-5 shrink-0 relative">
+          <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center">
+            <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 truncate">Sneha Iyer</span>
+            <span class="text-[10px] uppercase tracking-wide font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Discovered</span>
+          </div>
+          <div class="text-xs text-gray-500">@sneha.style · scraped</div>
+          <div class="text-sm text-gray-700 mt-1">214K followers · Hyderabad</div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Fashion</span>
+          </div>
+          <button class="mt-2 text-xs text-blue-600 hover:underline">Invite to join INFLX</button>
+        </div>
+      </article>
+
+      <!-- Verified creator -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-3">
+        <div class="w-16 h-16 rounded-full avatar-3 shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 truncate">Meera Joshi</span>
+            <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              Verified
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">@meera.lifestyle</div>
+          <div class="text-sm text-gray-700 mt-1">56K followers · Hyderabad</div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Lifestyle</span>
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Beauty</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Verified creator -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-3">
+        <div class="w-16 h-16 rounded-full avatar-4 shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 truncate">Rohit Bansal</span>
+            <span class="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              Verified
+            </span>
+          </div>
+          <div class="text-xs text-gray-500">@rohit.fit</div>
+          <div class="text-sm text-gray-700 mt-1">312K followers · Hyderabad</div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Fitness</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Scraped (unverified) creator -->
+      <article class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex gap-3 opacity-90">
+        <div class="w-16 h-16 rounded-full avatar-6 shrink-0 relative">
+          <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full border-2 border-gray-300 flex items-center justify-center">
+            <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          </div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-gray-900 truncate">Kavya Menon</span>
+            <span class="text-[10px] uppercase tracking-wide font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Discovered</span>
+          </div>
+          <div class="text-xs text-gray-500">@kavya.kitchen · scraped</div>
+          <div class="text-sm text-gray-700 mt-1">98K followers · Hyderabad</div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            <span class="text-[10px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">Food</span>
+          </div>
+          <button class="mt-2 text-xs text-blue-600 hover:underline">Invite to join INFLX</button>
+        </div>
+      </article>
+
+    </div>
+  </main>
+</body>
+</html>

@@ -15,9 +15,20 @@
 (`01-spec.md 02-workflow.md 03-expected-outputs.md 04-preview/
 05-impact.md lock.json`). `features/_TEMPLATE/` is the scaffold.
 
-Lifecycle: **spec → workflow → mock → Step-5 LOCK → impact →
-implement → preview → Playwright/API/DB verify → fix → retest →
+Lifecycle: **spec → workflow → Step-5 LOCK → HTML mockup +
+workflow-prediction in `04-preview/` → mockup-lock (advisory) →
+impact → implement → before/after diff (Phase 2 sub-contract 2,
+coming) → Playwright/API/DB + Maestro mobile verify → fix → retest →
 Step-14 RELEASE → record into repo artifacts.**
+
+> **Mockup-lock gate (Phase 2 sub-contract 1, contract
+> `features/preview-machinery/`, advisory):** for UI-touching
+> features, after spec-lock author HTML mockups in
+> `features/<slug>/04-preview/mockups/*.html` + a
+> `04-preview/workflow-prediction.md`. Run
+> `pnpm preview:open <slug>` to review them in the browser, then
+> set `mockup_locked: true` (+ `_by` + `_at`) in `lock.json`.
+> See `features/_demo-preview/` for a worked example.
 
 - No governed-path code (`backend/src/**`, `backend/migrations/**`,
   `Packages/*/{src,app,components,lib,...}`) without an **approved

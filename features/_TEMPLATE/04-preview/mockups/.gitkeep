@@ -1,0 +1,11 @@
+# Drop static HTML mockups here — one per screen / state.
+# Suggested naming: 01-<screen>.html, 02-<screen>.html …
+#
+# Each mockup is a self-contained HTML doc (Tailwind via CDN is fine).
+# An optional sizing hint on the first line picks the iframe viewport:
+#   <!-- preview-size: mobile  -->  →  380 × 720
+#   <!-- preview-size: desktop -->  → 1200 × 720
+#   <!-- preview-size: 800x600 -->  →  800 × 600
+# Default: 1024 × 720.
+#
+# See features/_demo-preview/04-preview/mockups/ for worked examples.

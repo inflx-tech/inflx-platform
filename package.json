@@ -28,7 +28,9 @@
     "db:dev:down": "node qa/scripts/dev-db-down.mjs",
     "db:dev:reset": "node qa/scripts/dev-db-reset.mjs",
     "db:dev:init": "node qa/scripts/dev-db-init.mjs",
-    "dev:doctor": "node qa/scripts/dev-doctor.mjs"
+    "dev:doctor": "node qa/scripts/dev-doctor.mjs",
+    "preview:build": "node qa/scripts/preview-build.mjs",
+    "preview:open": "node qa/scripts/preview-open.mjs"
   },
   "engines": {
     "node": ">=20"

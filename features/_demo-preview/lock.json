@@ -1,0 +1,27 @@
+{
+  "feature": "_demo-preview",
+  "area": "showcase-permanent-never-released",
+  "spec_version": "0.1.0",
+  "status": "showcase",
+  "approved": false,
+  "approved_by": "n/a — showcase contract, intentionally NOT approved. The _ prefix in the slug excludes it from governance-check.mjs:90 iteration; this contract cannot back any production change.",
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "mockup_locked": false,
+  "mockup_locked_by": "n/a — permanent showcase, never locks, never releases.",
+  "mockup_locked_at": null,
+  "deploy_posture": "DEPLOY-INERT permanently. No code, no migration, no runtime change. Pure static demo content under features/_demo-preview/ illustrating what the preview-machinery produces.",
+  "fix": "Permanent worked example for the preview-machinery: 2 grounded mockups (Q1 follower public browse + Q3 search verified tag — both already shipped) + a workflow prediction (Q1) that the founder can open via pnpm preview:open _demo-preview to see what the preview tooling renders.",
+  "related": ["features/preview-machinery (delivers the tooling this demos)", "features/fix-follower-feed-public-location (Q1 — source of mockup 01)", "features/fix-search-verification-tag (Q3 — source of mockup 02)"],
+  "result": "n/a — never releases; the verification artifact IS opening the rendered preview page.",
+  "regression_proof": "n/a — no runtime change possible.",
+  "discipline": "Permanent _-prefix showcase; gov-check skips it (line 90); approved=false guarantees it can never satisfy rule-1 for any other commit; released=false permanently — gov-check rule-2 never fires on it. The mockups intentionally use real shipped features as content (rather than synthetic demo data) so the founder reviews the machinery on ground he already knows.",
+  "release": {
+    "qa_all_green": "n/a — showcase, never a release",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "n/a — never deploys. This contract exists only as static review content for the preview-machinery."
+  }
+}

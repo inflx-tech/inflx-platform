@@ -92,6 +92,29 @@ happy paths · edge cases · auth/permission · money paths · failure paths
   is still enforced.
 - The agent never fabricates approval. `approved_by` records who/how.
 
+### 4a. Mockup-lock (optional, advisory)
+
+Phase 2 sub-contract 1 (`features/preview-machinery/`) introduced
+an optional second human gate **between spec-lock and code**, for
+UI-touching contracts:
+
+- Author HTML mockups in `features/<slug>/04-preview/mockups/*.html`
+  and a sibling `04-preview/workflow-prediction.md`.
+- `pnpm preview:open <slug>` renders both in the default browser
+  for review (worked example: `features/_demo-preview/`).
+- On approval, set in `lock.json`:
+  - `mockup_locked: true`
+  - `mockup_locked_by: "<who/how>"`
+  - `mockup_locked_at: "<YYYY-MM-DD>"`
+- **[RECOMMENDED]** today. Phase 2 sub-contract 5 will promote this
+  to **[ENFORCED]** for any commit touching
+  `Packages/*/(app|components)/**`. Existing contracts without
+  these fields continue to validate; `governance-check.mjs` ignores
+  unknown lock.json fields.
+- The fields are forward-compatible — they may be absent from
+  contracts whose work does not touch UI (backend-only, infra,
+  test-debt, governance, showcase contracts).
+
 ## 5. Step-14 RELEASE semantics
 
 - Every release states: **what deploys, where it deploys, rollback
