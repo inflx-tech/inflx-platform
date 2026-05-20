@@ -30,7 +30,7 @@
 ```bash
 pnpm qa:maestro         # discovers qa/maestro/flows/*.yaml, runs each
                        # writes per-flow logs + screenshots to
-                       # qa/artifacts/qa-mobile/<timestamp>/
+                       # qa/artifacts/qa-maestro/<timestamp>/
                        # exits 0 only if all flows passed
 ```
 
@@ -55,7 +55,7 @@ Each check reports its own pass/fail with a specific fix command.
    from `06-diff/notes.md` so the diff page links the Maestro
    run + screenshots alongside the visual diff.
 3. `pnpm qa:maestro` runs all flows in sorted order; per-flow logs +
-   screenshots written to `qa/artifacts/qa-mobile/<timestamp>/<NN-name>/`.
+   screenshots written to `qa/artifacts/qa-maestro/<timestamp>/<NN-name>/`.
 4. Failures surface loudly (which flow, which step, which assertion).
 
 ## How THIS sub-contract is verified in this turn

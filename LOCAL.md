@@ -145,7 +145,7 @@ pnpm qa:maestro           # run all qa/maestro/flows/*.yaml
 ```
 
 The doctor must be green before the orchestrator will run. Output
-lands in `qa/artifacts/qa-mobile/<timestamp>/` (gitignored;
+lands in `qa/artifacts/qa-maestro/<timestamp>/` (gitignored;
 regenerable).
 
 ### Where things live
@@ -154,7 +154,7 @@ regenerable).
   definitions, committed. Naming: `NN-<name>.yaml` (numeric prefix
   for sort order).
 - **Lane convention metadata:** `qa/maestro/{README.md, config.yaml}`.
-- **Per-run output:** `qa/artifacts/qa-mobile/<ts>/<flow-name>/` —
+- **Per-run output:** `qa/artifacts/qa-maestro/<ts>/<flow-name>/` —
   Maestro logs + any `takeScreenshot:` PNGs.
 
 ### Mobile dev mode (`api.js` USE_PRODUCTION flag)

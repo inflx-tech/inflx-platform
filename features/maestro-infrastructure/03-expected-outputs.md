@@ -6,7 +6,7 @@
 qa/maestro/README.md                       Maestro lane intro + structure
 qa/maestro/config.yaml                     shared config (output, retries)
 qa/maestro/flows/00-smoke.yaml             smoke: launch follower app + screenshot
-qa/scripts/qa-mobile.mjs                   orchestrator (runs all flows)
+qa/scripts/qa-maestro.mjs                   orchestrator (runs all flows)
 qa/scripts/maestro-doctor.mjs              CLI + ADB + device readiness check
 ```
 
@@ -65,7 +65,7 @@ $ pnpm qa:maestro
 [qa:maestro] discovered 1 flow: qa/maestro/flows/00-smoke.yaml
 [qa:maestro] running 00-smoke (appId=in.inflx.app.follower) ...
 [qa:maestro]   ✓ launchApp (1.2s)
-[qa:maestro]   ✓ takeScreenshot smoke-startup → qa/artifacts/qa-mobile/<ts>/00-smoke/smoke-startup.png
+[qa:maestro]   ✓ takeScreenshot smoke-startup → qa/artifacts/qa-maestro/<ts>/00-smoke/smoke-startup.png
 [qa:maestro] === 1/1 flows PASSED ===
 exit 0
 ```
@@ -107,9 +107,9 @@ qa/maestro/
 └── flows/
     └── 00-smoke.yaml        # appId=in.inflx.app.follower; launchApp + screenshot
 qa/scripts/
-├── qa-mobile.mjs
+├── qa-maestro.mjs
 └── maestro-doctor.mjs
-qa/artifacts/qa-mobile/      # gitignored; per-run timestamped subdirs
+qa/artifacts/qa-maestro/      # gitignored; per-run timestamped subdirs
 └── <timestamp>/
     └── <flow-name>/
         ├── maestro.log

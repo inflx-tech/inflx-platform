@@ -10,7 +10,7 @@
 lane:
   name: qa:maestro
   description: Mobile E2E tests for INFLX Android variants.
-  output_dir: qa/artifacts/qa-mobile           # gitignored; per-run timestamped subdirs
+  output_dir: qa/artifacts/qa-maestro           # gitignored; per-run timestamped subdirs
 
 apps:
   brand:       in.inflx.app.brand              # APK variant: brandDebug / brandRelease

@@ -40,7 +40,7 @@ pnpm qa:maestro           # run all qa/maestro/flows/*.yaml; exit 0 only if all 
 
 ## Output
 
-`qa/artifacts/qa-mobile/<timestamp>/<flow-name>/` (gitignored)
+`qa/artifacts/qa-maestro/<timestamp>/<flow-name>/` (gitignored)
 contains per-flow `maestro.log` + any `takeScreenshot:`-produced
 `*.png`. Regenerable on every run.
 

@@ -24,10 +24,10 @@ a connected device or emulator. Deliverables:
 - `qa/maestro/` directory with one starter smoke flow that just
   launches the follower app + takes a screenshot. (Real golden-path
   flows land in sub-contract 4.)
-- `qa/scripts/qa-mobile.mjs` orchestrator — discovers all
+- `qa/scripts/qa-maestro.mjs` orchestrator — discovers all
   `qa/maestro/flows/*.yaml`, runs each via the `maestro test` CLI,
   collects exit codes + screenshots into
-  `qa/artifacts/qa-mobile/<timestamp>/`, prints a summary, exits
+  `qa/artifacts/qa-maestro/<timestamp>/`, prints a summary, exits
   non-zero on any failure.
 - `qa/scripts/maestro-doctor.mjs` — verifies the Maestro CLI is on
   PATH, `adb` is available, at least one device/emulator is
@@ -83,7 +83,7 @@ a connected device or emulator. Deliverables:
   diff-machinery pattern. Missing Maestro, missing ADB, no devices,
   app not installed, flow YAML invalid, flow execution failed —
   all produce clear actionable errors. No silent green.
-- **Maestro output** → `qa/artifacts/qa-mobile/<timestamp>/` which
+- **Maestro output** → `qa/artifacts/qa-maestro/<timestamp>/` which
   is gitignored under `qa/artifacts/*` — regenerable; never
   pollutes commits.
 - **Flow YAML files are committed** under `qa/maestro/flows/` —

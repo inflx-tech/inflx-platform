@@ -2,7 +2,7 @@
 
 ## What changes
 
-- 2 new scripts in `qa/scripts/`: `qa-mobile.mjs`,
+- 2 new scripts in `qa/scripts/`: `qa-maestro.mjs`,
   `maestro-doctor.mjs`
 - New `qa/maestro/` directory: `README.md`, `config.yaml`,
   `flows/00-smoke.yaml`
