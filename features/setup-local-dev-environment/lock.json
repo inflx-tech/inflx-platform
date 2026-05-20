@@ -1,0 +1,24 @@
+{
+  "feature": "setup-local-dev-environment",
+  "area": "infrastructure-deploy-inert",
+  "spec_version": "0.1.0",
+  "status": "released",
+  "approved": true,
+  "approved_by": "agent (founder explicit GO 2026-05-19 'pls go' on Phase 1 with Docker; scope discussed and agreed in the preceding turn — six deliverables enumerated and accepted; deploy-inert; standing autonomy delegation 'take your best decision')",
+  "approved_at": "2026-05-19",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "DEPLOY-INERT. Adds only root package.json scripts, docker-compose.dev.yml, qa/scripts/dev-*.mjs, .env.local.example templates, and LOCAL.md. No GOVERNED path touched. git push is a behavioural no-op for prod after this lands.",
+  "fix": "Bring up an isolated, persistent local-dev stack on the founder's machine: Docker Postgres (container inflx-dev-pg, image postgres:16-alpine, port 5433, volume inflx-dev-pgdata) + dev-db-up/down/reset/init scripts + dev-doctor verifier + .env.local.example templates for backend/brand-web/admin-web + LOCAL.md setup guide + 5 root pnpm scripts (db:dev:up/down/reset/init, dev:doctor). Mirrors the proven qa:db ephemeral mechanism but persistent + separate port/container/volume. Replaces the current 'backend/.env points at prod' reality with a real isolated dev DB so the founder's 'test in dev then push to prod' cycle becomes actually true rather than aspirational.",
+  "related": ["features/db-substrate (qa:db precedent)", "features/governance-enforcement-ci"],
+  "result": "RELEASED 2026-05-20. Tooling implemented + live-verified end-to-end. db:dev:up brought up inflx-dev-pg (postgres:16-alpine @ localhost:5433, persistent volume inflx-dev-pgdata). db:dev:init applied ALL 54 migrations (001..055) 0-error against inflx_dev; 56 tables + 1 view (v_searchable_creators present) — mirrors prod schema exactly. dev-doctor returned 4 greens (Docker daemon, container UP, Postgres conn, DB schema) + 2 EXPECTED reds against the founder's current prod-pointing backend/.env (DATABASE_URL → Supabase pooler + missing ONESIGNAL_MOCK) — these are the no-silent-green proof points; symmetric logic means both flip green when the founder swaps backend/.env per LOCAL.md. Verify-twice CAUGHT one bug during the live run: dev-doctor dbQuery used `psql -c <sql>` via spawnSync shell:true on Windows, which made cmd.exe split the SQL on spaces and silently report 0 tables despite 56 present. Fixed in-place by piping SQL via stdin (`docker exec -i ... -f -`). Honest surface, no fake-green.",
+  "regression_proof": "main pnpm qa GREEN (qa/artifacts/_phase1_remeasure_qa.log, 01:34:31Z): 66 passed, C1 STATE=GREEN — all reconciliation checks passed, gate 0 (pwExit=0 reportExit=0), report qa/reports/2026-05-20T01-34-19-458Z/. pnpm qa:db DETERMINISTIC GREEN (qa/artifacts/_phase1_remeasure_qadb.log, 01:42:05Z): 382/382 passed, 28/28 suites, migrations 54/54 0-error, DB-LANE=PASS. Identical verdicts to the prior runs this window. Zero regression as expected: contract touches no governed path; the new dev container is fully orthogonal to the qa:db ephemeral by container (inflx-dev-pg vs inflx-qa-pg), port (5433 vs 5544), DB name (inflx_dev vs inflx_test), and volume (persistent vs ephemeral) — they coexist on the same Docker daemon without interaction.",
+  "discipline": "Deploy-inert: no governed-path code touched (gov-check ALLOWLIST: root scripts, qa/, .env.local.example, LOCAL.md). Loud failures by design in dev-doctor (no silent 'all green'). Mirrors the qa:db pattern proven across 12 phases. Mobile dev intentionally OUT of scope and flagged in LOCAL.md (Phase 2 / Maestro). Verify-twice confirmed: brand-web/admin-web API client is env-driven (NEXT_PUBLIC_API_URL with localhost fallback), backend dotenv loads from CWD (=backend/ when run via pnpm dev:backend), .gitignore already covers .env/.env.local.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "agent (founder explicit GO 2026-05-19 'pls go' on Phase 1 with Docker; scope agreed in the preceding turn — six deliverables enumerated; standing autonomy delegation 'take your best decision'; DEPLOY-INERT — no governed-path code change → no production surface; verified end-to-end before release)",
+    "released_at": "2026-05-20T01:42Z",
+    "deploy": "DEPLOY-INERT — Step-14 = commit + push origin main (Render/Vercel deploys see no governed change → no behaviour change). Pre-release: dev-doctor exit 0 all-green + main pnpm qa 66/C1/gate-0 unchanged + pnpm qa:db 382/382 unchanged + gov-check clean (no governed paths in changeset)."
+  }
+}

@@ -23,7 +23,12 @@
     "qa:db:up": "node qa/scripts/db-up.mjs",
     "qa:db:down": "node qa/scripts/db-down.mjs",
     "qa:gov": "node qa/scripts/governance-check.mjs",
-    "hooks:install": "node qa/scripts/install-hooks.mjs"
+    "hooks:install": "node qa/scripts/install-hooks.mjs",
+    "db:dev:up": "node qa/scripts/dev-db-up.mjs",
+    "db:dev:down": "node qa/scripts/dev-db-down.mjs",
+    "db:dev:reset": "node qa/scripts/dev-db-reset.mjs",
+    "db:dev:init": "node qa/scripts/dev-db-init.mjs",
+    "dev:doctor": "node qa/scripts/dev-doctor.mjs"
   },
   "engines": {
     "node": ">=20"

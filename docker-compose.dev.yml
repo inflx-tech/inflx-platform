@@ -1,0 +1,35 @@
+# INFLX local-dev Postgres — persistent, isolated.
+# Distinct from the qa:db ephemeral container (which uses port 5544,
+# name inflx-qa-pg, ephemeral volume).
+#
+# Container : inflx-dev-pg
+# Port      : 5433 (NOT 5432 — defensive, avoids silent clash with
+#                   any host-installed Postgres)
+# Volume    : inflx-dev-pgdata (persistent across restarts)
+# DB        : inflx_dev (created on first up)
+# Image     : postgres:16-alpine (same major as qa:db)
+#
+# Contract: features/setup-local-dev-environment/
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: inflx-dev-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: inflx_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - inflx-dev-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inflx_dev"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  inflx-dev-pgdata:
+    name: inflx-dev-pgdata
