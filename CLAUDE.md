@@ -17,9 +17,9 @@
 
 Lifecycle: **spec → workflow → Step-5 LOCK → HTML mockup +
 workflow-prediction in `04-preview/` → mockup-lock (advisory) →
-impact → implement → before/after diff (Phase 2 sub-contract 2,
-coming) → Playwright/API/DB + Maestro mobile verify → fix → retest →
-Step-14 RELEASE → record into repo artifacts.**
+impact → implement → before/after diff in `06-diff/` (advisory) →
+Playwright/API/DB verify (Maestro mobile coming in Phase 2 sub 3+4) →
+fix → retest → Step-14 RELEASE → record into repo artifacts.**
 
 > **Mockup-lock gate (Phase 2 sub-contract 1, contract
 > `features/preview-machinery/`, advisory):** for UI-touching
@@ -29,6 +29,16 @@ Step-14 RELEASE → record into repo artifacts.**
 > `pnpm preview:open <slug>` to review them in the browser, then
 > set `mockup_locked: true` (+ `_by` + `_at`) in `lock.json`.
 > See `features/_demo-preview/` for a worked example.
+>
+> **Before/after-diff gate (Phase 2 sub-contract 2, contract
+> `features/before-after-diff/`, advisory):** after implementation,
+> capture the "before" (mockup HTML rendered by Playwright at the
+> declared viewport) and the "after" (Playwright shot of the real
+> URL per a sibling `<mockup>.capture.json`); author plain-English
+> notes in `features/<slug>/06-diff/notes.md`. Run
+> `pnpm diff:open <slug>` to see side-by-side panels + notes in the
+> browser. Diff sign-off is the final gate before the production
+> deploy.
 
 - No governed-path code (`backend/src/**`, `backend/migrations/**`,
   `Packages/*/{src,app,components,lib,...}`) without an **approved

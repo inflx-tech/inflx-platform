@@ -115,6 +115,31 @@ UI-touching contracts:
   contracts whose work does not touch UI (backend-only, infra,
   test-debt, governance, showcase contracts).
 
+### 4b. Before/after-diff (optional, advisory)
+
+Phase 2 sub-contract 2 (`features/before-after-diff/`) added the
+**final visual gate before the production deploy** for UI-touching
+contracts:
+
+- After implementation, `pnpm diff:before <slug>` renders the locked
+  mockups to PNGs in `qa/artifacts/diff/<slug>/before/`.
+- For each mockup that has a sibling
+  `04-preview/mockups/<name>.capture.json` (declares `url` +
+  `viewport` + optional `wait_for_selector`),
+  `pnpm diff:after <slug>` captures the real implementation against
+  the local dev stack into `qa/artifacts/diff/<slug>/after/`.
+- Agent authors `features/<slug>/06-diff/notes.md` — plain-English
+  notes on what shipped, what matches the mockup, what (honestly)
+  diverged and why.
+- `pnpm diff:open <slug>` builds + opens the side-by-side review
+  page (worked example: `features/_demo-preview/06-diff/`).
+- **[RECOMMENDED]** today. Phase 2 sub-contract 5 will promote the
+  presence of `06-diff/notes.md` + the diff PNGs (or their
+  release-evidence equivalent) to **[ENFORCED]** for UI-touching
+  releases.
+- The `06-diff/` folder is forward-compatible — backend-only, infra,
+  test-debt, and showcase contracts may legitimately omit it.
+
 ## 5. Step-14 RELEASE semantics
 
 - Every release states: **what deploys, where it deploys, rollback

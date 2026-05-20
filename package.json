@@ -30,7 +30,11 @@
     "db:dev:init": "node qa/scripts/dev-db-init.mjs",
     "dev:doctor": "node qa/scripts/dev-doctor.mjs",
     "preview:build": "node qa/scripts/preview-build.mjs",
-    "preview:open": "node qa/scripts/preview-open.mjs"
+    "preview:open": "node qa/scripts/preview-open.mjs",
+    "diff:before": "node qa/scripts/diff-before.mjs",
+    "diff:after": "node qa/scripts/diff-after.mjs",
+    "diff:build": "node qa/scripts/diff-build.mjs",
+    "diff:open": "node qa/scripts/diff-open.mjs"
   },
   "engines": {
     "node": ">=20"
