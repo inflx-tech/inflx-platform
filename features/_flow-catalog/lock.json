@@ -1,0 +1,24 @@
+{
+  "feature": "_flow-catalog",
+  "area": "reference-showcase",
+  "spec_version": "1.0.0",
+  "status": "showcase",
+  "approved": false,
+  "approved_by": "n/a — showcase/reference artifact, not a shipped feature. Excluded from gov-check via the _ prefix (same convention as _demo-preview).",
+  "approved_at": null,
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "DEPLOY-INERT reference documentation. No code, no governed paths. Pure markdown + HTML mockups under features/_flow-catalog/.",
+  "fix": "Code-verified inventory of every major INFLX user flow across 5 domains (auth, campaign, acceptance/negotiation, finance, follower/admin), produced 2026-05-22 from parallel deep-reads of the actual backend routes/controllers/services + mobile screens + web pages. Grounds the founder's testing plan. Includes 5 visual HTML flow-diagram decks + a master text catalog + a defects-found log.",
+  "related": ["features/_demo-preview (the other showcase folder)", "features/preview-machinery (the pnpm preview:open machinery this uses)"],
+  "result": "Reference artifact — not released/shipped in the contract sense. View via pnpm preview:open _flow-catalog.",
+  "regression_proof": "n/a — no code.",
+  "discipline": "Every flow verify-twice grounded in real file:line citations. Defects + doc-drift found during mapping are logged in DEFECTS-FOUND.md and surfaced to the founder, NOT silently fixed (each is gated production-impacting work).",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "n/a — showcase reference."
+  }
+}

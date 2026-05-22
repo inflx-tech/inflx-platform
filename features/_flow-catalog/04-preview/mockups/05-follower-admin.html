@@ -1,0 +1,94 @@
+<!-- preview-size: 1200x950 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Flows — Follower & Admin</title>
+<style>
+  :root{--brand:#2563eb;--inf:#7c3aed;--fol:#059669;--adm:#ea580c;--sys:#64748b;--bg:#0f172a;--card:#1e293b;--line:#334155;--ink:#e2e8f0;--mut:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:28px}
+  h1{font-size:24px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 24px}
+  .badge{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;color:#fff}
+  .b-brand{background:var(--brand)}.b-fol{background:var(--fol)}.b-adm{background:var(--adm)}.b-sys{background:var(--sys)}
+  .flow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+  .flow h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .flow .desc{color:var(--mut);margin:0 0 16px;font-size:13px}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0}
+  .node{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;text-align:center;min-width:78px}
+  .node.state{border-color:var(--brand)}.node.ok{border-color:var(--ok);color:#bbf7d0}.node.bad{border-color:var(--bad);color:#fecaca}.node.warn{border-color:var(--warn);color:#fde68a}
+  .arr{color:var(--mut);font-size:18px}.arr small{display:block;font-size:9px;text-align:center}
+  .ep{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:#7dd3fc;display:inline-block;margin:2px 0}
+  .meth{color:#fbbf24;font-weight:700}
+  .tx{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+  .txcard{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .txcard.t1{border-top:3px solid #38bdf8}.txcard.t2{border-top:3px solid #a78bfa}.txcard.t3{border-top:3px solid #34d399}.txcard.t4{border-top:3px solid #fb923c}
+  .txcard h3{margin:0 0 6px;font-size:14px}
+  ul.steps{margin:6px 0;padding-left:16px;font-size:12px}ul.steps li{margin:3px 0}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+  th{background:#0b1220;color:var(--mut);text-transform:uppercase;font-size:10.5px}
+  .edge{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;background:#1c1505;border-radius:0 6px 6px 0;font-size:12px}
+  code{font-family:ui-monospace,Menlo,monospace;background:#0b1220;padding:1px 5px;border-radius:4px;font-size:12px;color:#a5b4fc}
+</style>
+</head>
+<body>
+  <h1>🛍️ Domain 5 — Follower &amp; Admin</h1>
+  <p class="sub">Discovery (public) · 4 transaction types · share-link attribution · admin approvals/escrow/payouts.</p>
+
+  <div class="flow">
+    <h2>5.1 Share-link attribution — the commission spine <span class="badge b-fol">F</span><span class="badge b-sys">⚙</span></h2>
+    <div class="chain">
+      <div class="node">influencer shares<br><small>inflx.in/s/{handle}</small></div>
+      <span class="arr">→<small>?cid&sid&oid&iid</small></span>
+      <div class="node state">trackClick logs + 302</div>
+      <span class="arr">→</span>
+      <div class="node ok">follower app store page<br><small>4 IDs preserved</small></div>
+    </div>
+    <p style="font-size:12px;color:var(--mut)">The <b>4 attribution IDs</b> (campaign/set/offer/campaign_influencer) ride through every transaction → auto-commission. <code>iid</code> = campaign_influencer_id (per-assignment), not raw influencer.</p>
+  </div>
+
+  <div class="flow">
+    <h2>5.2 Discovery / browse <span class="badge b-fol">F — all public</span></h2>
+    <p class="desc">Sign-in required only at <b>purchase</b>, not to browse. Logged-in → personalized; anon → city via <code>?city</code>.</p>
+    <div class="chain">
+      <div class="node">home-feed</div><div class="node">deals/category</div><div class="node">stories</div><div class="node">influencer store</div><div class="node">brand store</div><div class="node">search</div><div class="node">creators-eating-now</div>
+    </div>
+    <p style="font-size:12px;color:var(--mut)">Product detail CTAs are driven by <code>offer.availing_modes</code>: online_order→Buy Now · pay_at_store→Pay at Venue · prebook→Book Slot · enquiry→Enquire.</p>
+  </div>
+
+  <div class="flow">
+    <h2>5.3 The 4 transaction types <span class="badge b-fol">F</span></h2>
+    <p class="desc">All paid types use initiate→verify; commission credits influencer <b>pending_balance</b> (30d hold).</p>
+    <div class="tx">
+      <div class="txcard t1"><h3>① Pay-at-store</h3><ul class="steps"><li>free-form <code>bill_amount</code>, <b>no cart</b></li><li>only Discount-type offers apply</li><li>optional "pay balance" vs a prior prebook</li></ul><span class="ep"><span class="meth">POST</span> /follower/pay-at-store</span></div>
+      <div class="txcard t2"><h3>② Booking / prebook</h3><ul class="steps"><li><b>advance/token</b> only (₹200 default), platform_fee=0</li><li>writes follower_transactions + follower_bookings (BK######)</li><li>table/slot/appointment/date_range</li><li><code>SLOT_FULL</code> if capacity hit</li></ul><span class="ep"><span class="meth">POST</span> /follower/prebook</span></div>
+      <div class="txcard t3"><h3>③ Online order</h3><ul class="steps"><li>real <b>cart</b> + delivery address</li><li>full offer engine (all 5 mechanics)</li><li>follower_orders: confirmed→dispatched→delivered (brand-driven)</li></ul><span class="ep"><span class="meth">POST</span> /follower/orders</span></div>
+      <div class="txcard t4"><h3>④ Enquiry (lead)</h3><ul class="steps"><li><b>no payment</b></li><li>enquiry_leads: submitted→responded→converted</li><li>commission fires only when brand marks converted w/ deal_value</li></ul><span class="ep"><span class="meth">POST</span> /follower/enquiry</span></div>
+    </div>
+    <div class="edge">Booking brand-status (mig 052): restaurant table bookings start <code>pending</code> (await confirm); others auto-confirmed. Returns (Fashion-1): requested→approved→received→refunded.</div>
+  </div>
+
+  <div class="flow">
+    <h2>5.6 Admin operational flows <span class="badge b-adm">A</span></h2>
+    <table>
+      <tr><th>Flow</th><th>Endpoint</th><th>Gate</th></tr>
+      <tr><td>Approval queues + approve/reject/suspend</td><td><code>GET /admin/queue/*</code> · <code>PATCH /admin/{brands,influencers}/:id/status</code></td><td>reviewer+</td></tr>
+      <tr><td>Stats / analytics / production queue</td><td><code>GET /admin/stats</code> · <code>/analytics</code></td><td>any admin</td></tr>
+      <tr><td>Escrow overview + manual release</td><td><code>GET /admin/escrow</code> · <code>POST /admin/escrow/:id/release</code></td><td>finance+</td></tr>
+      <tr><td>Payouts queue + process</td><td><code>GET /admin/withdrawals</code> · <code>POST .../:id/process</code></td><td>finance+</td></tr>
+      <tr><td>Per-brand fee overrides · payment config write</td><td><code>PATCH /admin/brands/:id/platform-fee</code></td><td>finance / superadmin</td></tr>
+      <tr><td>Admin user mgmt</td><td><code>GET/POST /admin/users</code></td><td>superadmin only</td></tr>
+      <tr><td>Creator verification + invitations · master dishes</td><td><code>/admin/creator-verifications</code> · <code>/admin/master-dishes</code></td><td>reviewer+</td></tr>
+      <tr><td>Marketing engine (intake/triage/funnel/inbox)</td><td><code>/admin/marketing/*</code></td><td>reviewer+ / superadmin</td></tr>
+      <tr><td>Production coordination (visit/shipment/remote)</td><td><code>/production-events/*</code> (admin can cancel)</td><td>2-sided + admin</td></tr>
+    </table>
+    <div class="edge">RBAC: superadmin = all; reviewer/finance = their exact domain only (not interchangeable). Founder's daily account isn't always superadmin → reads default to requireAnyAdminRole.</div>
+  </div>
+
+  <div class="flow">
+    <h2>5.7 Edge cases (verified)</h2>
+    <p style="font-size:12.5px;margin:0"><code>SLOT_FULL</code> (capacity 10/slot) · <code>OFFER_UNAVAILABLE</code> (inactive CI/campaign/expired) · <code>ACCOUNT_PENDING/REJECTED</code> · double-consume order→404 · getStoreProducts needs offer_id/ci_id (anti catalog-leak) · escrow already released→409 · withdrawal not 'initiated'→409. ⚠️ <code>STOCK_UNAVAILABLE</code> is declared but has NO live throw site (D8).</p>
+  </div>
+</body>
+</html>

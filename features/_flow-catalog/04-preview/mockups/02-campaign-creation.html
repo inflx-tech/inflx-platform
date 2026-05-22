@@ -1,0 +1,133 @@
+<!-- preview-size: 1200x900 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Flows — Campaign Creation</title>
+<style>
+  :root{--brand:#2563eb;--inf:#7c3aed;--fol:#059669;--adm:#ea580c;--sys:#64748b;--bg:#0f172a;--card:#1e293b;--line:#334155;--ink:#e2e8f0;--mut:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:28px}
+  h1{font-size:24px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 24px}
+  .badge{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;color:#fff}
+  .b-brand{background:var(--brand)}.b-inf{background:var(--inf)}
+  .flow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+  .flow h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .flow .desc{color:var(--mut);margin:0 0 16px;font-size:13px}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0}
+  .node{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;text-align:center;min-width:80px}
+  .node.state{border-color:var(--brand)}.node.ok{border-color:var(--ok);color:#bbf7d0}.node.bad{border-color:var(--bad);color:#fecaca}.node.warn{border-color:var(--warn);color:#fde68a}
+  .arr{color:var(--mut);font-size:18px}.arr small{display:block;font-size:9px;text-align:center}
+  .ep{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:#7dd3fc;display:inline-block;margin:2px 0}
+  .meth{color:#fbbf24;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:#0b1220;color:var(--mut);text-transform:uppercase;font-size:11px;letter-spacing:.04em}
+  td b{color:#fde68a}
+  .yes{color:var(--ok);font-weight:700}.no{color:var(--bad);font-weight:700}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .panel{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:12px}
+  .panel h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+  ul.steps{margin:8px 0;padding-left:18px;font-size:12.5px}ul.steps li{margin:4px 0}
+  .edge{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;background:#1c1505;border-radius:0 6px 6px 0;font-size:12px}
+  .drift{border-left:3px solid var(--bad);background:#1c0808;padding:6px 10px;margin:6px 0;border-radius:0 6px 6px 0;font-size:12px}
+  code{font-family:ui-monospace,Menlo,monospace;background:#0b1220;padding:1px 5px;border-radius:4px;font-size:12px;color:#a5b4fc}
+  .pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;margin:1px}
+  .p-eng{background:#1e3a5f;color:#93c5fd}.p-conv{background:#3b1e5f;color:#d8b4fe}.p-hyb{background:#1e5f3a;color:#86efac}
+</style>
+</head>
+<body>
+  <h1>📋 Domain 2 — Campaign Creation <span class="badge b-brand">Brand · WEB ONLY</span></h1>
+  <p class="sub">Mobile shows "create on web". The whole wizard is brand-web <code>/dashboard/campaigns/new</code>. <b>Code-verified.</b></p>
+
+  <div class="flow">
+    <h2>2.1 Campaign Lifecycle</h2>
+    <div class="chain">
+      <div class="node state">draft</div>
+      <span class="arr">→<small>publish</small></span>
+      <div class="node ok">active</div>
+      <span class="arr">→<small>deliverables live</small></span>
+      <div class="node ok">live</div>
+      <span class="arr">→<small>cron</small></span>
+      <div class="node">completed</div>
+      <span class="arr" style="margin-left:20px">↘<small>cancel</small></span>
+      <div class="node bad">cancelled</div>
+    </div>
+    <div class="drift">⚠️ <b>Drift corrected:</b> code goes <code>draft→active</code> directly. The spec's <code>pending_wallet</code>/<code>published</code> are legacy filter buckets only — publish sets status straight to <b>active</b>.</div>
+  </div>
+
+  <div class="flow">
+    <h2>2.2 The THREE Goal Types — your "three campaign flows"</h2>
+    <p class="desc">Goal lives on each <b>SET</b> (<code>campaign_sets.goal</code>), not the campaign — one campaign can mix goals across sets.</p>
+    <div class="chain">
+      <span class="pill p-eng">engagement</span>
+      <span class="pill p-conv">conversion</span>
+      <span class="pill p-hyb">hybrid</span>
+    </div>
+    <table>
+      <tr><th>Goal</th><th>What it is</th><th>set_budget</th><th>coupon_prefix</th><th>offer_type</th><th>Wallet check?</th></tr>
+      <tr><td><span class="pill p-eng">engagement</span></td><td>Fixed pay for content. No sales tracking.</td><td class="yes">required</td><td class="no">forbidden</td><td class="no">forbidden</td><td class="yes">yes (budget+fee)</td></tr>
+      <tr><td><span class="pill p-conv">conversion</span></td><td>Commission-only. Coupons track all sales.</td><td class="no">forbidden</td><td class="yes">required</td><td class="yes">required</td><td class="no">none</td></tr>
+      <tr><td><span class="pill p-hyb">hybrid</span></td><td>Fixed fee + commission on tracked sales.</td><td class="yes">required</td><td class="yes">required</td><td class="yes">required</td><td class="yes">yes (budget+fee)</td></tr>
+    </table>
+    <p style="font-size:12px;color:var(--mut)">Enforced in <code>campaign.controller.js:445-464</code>. Wizard helpers: <code>needsBudget</code>=eng|hyb, <code>needsCoupon</code>=conv|hyb, <code>needsOffer</code>=conv|hyb.</p>
+  </div>
+
+  <div class="flow">
+    <h2>2.3 Handpick vs Open-group — the OTHER axis (every set has both a goal AND a mode)</h2>
+    <div class="grid">
+      <div class="panel">
+        <h4>🎯 Handpick (<code>influencer_mode=handpick</code>)</h4>
+        <ul class="steps">
+          <li>Brand <b>searches + picks</b> specific influencers</li>
+          <li><span class="ep"><span class="meth">POST</span> /campaigns/:id/sets/:sid/invite</span> per influencer → CI <code>status=invited</code></li>
+          <li>Per-influencer fee/budget/offer/coupon set at invite</li>
+          <li>Accept → <b class="yes">accepted</b> + auto-create draft contract</li>
+          <li>Negotiation <span class="yes">ALLOWED</span></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>📢 Open-group (<code>influencer_mode=open_group</code>)</h4>
+        <ul class="steps">
+          <li>Brand sets <b>filters</b> (tiers/niches/cities/min_er) + <code>max_cap</code></li>
+          <li>At publish, <code>materialiseOpenGroupInvites</code> inserts one <code>invited</code> row per match (48h, cap 1000)</li>
+          <li>Accept → <b class="warn">applied</b> (NOT accepted, NO contract — it's an application)</li>
+          <li>Brand reviews: approve-application→accepted+contract / reject-application→rejected_by_brand</li>
+          <li>Negotiation <span class="no">FORBIDDEN</span> · cap race → <code>SLOT_FULL</code> → rest become <code>slots_filled</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <h2>2.4 Offer Types (conversion/hybrid sets only)</h2>
+    <div class="chain">
+      <div class="node">discount<br><small>flat/percentage</small></div>
+      <div class="node">volume<br><small>tiered</small></div>
+      <div class="node">bogo</div>
+      <div class="node">bundle</div>
+      <div class="node">free_gift</div>
+      <div class="node warn">prebook<br><small>legacy only</small></div>
+    </div>
+    <p style="font-size:12px;color:var(--mut)">Single engine <code>offer.service.js resolveOfferDiscount</code>. Engagement sets reject <code>offer_type</code>. Discount works on cart or pay-at-store bill; volume/bogo/bundle/free_gift need a cart.</p>
+  </div>
+
+  <div class="flow">
+    <h2>2.5 Publish <span class="badge b-brand">B</span> <span class="ep"><span class="meth">POST</span> /campaigns/:id/publish</span></h2>
+    <div class="chain">
+      <div class="node">draft + ≥1 set</div>
+      <span class="arr">→</span>
+      <div class="node state">eng/hyb? wallet ≥ total</div>
+      <span class="arr">→<small>lock L2 fee</small></span>
+      <div class="node ok">active + notify invited</div>
+    </div>
+    <ul class="steps">
+      <li>Must be draft + have ≥1 set</li>
+      <li>If engagement/hybrid present: total_budget&gt;0, set-budget sum ≤ total, <b>wallet ≥ total else <code>WALLET_INSUFFICIENT</code></b></li>
+      <li><b>No money moves at publish</b> — funds lock per-contract at brand-sign. L2 escrow-fee locked here.</li>
+      <li>Conversion-only campaigns skip wallet/L2 entirely.</li>
+    </ul>
+    <div class="edge">Edge cases: must keep ≥1 set (can't delete last) · per-influencer budget sum ≤ set_budget · draft-only mutations · cross-set duplicate influencer→409 · cancel refunds locked escrow+fee.</div>
+  </div>
+</body>
+</html>

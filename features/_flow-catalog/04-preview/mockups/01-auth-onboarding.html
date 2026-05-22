@@ -1,0 +1,158 @@
+<!-- preview-size: 1200x900 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Flows — Auth & Onboarding</title>
+<style>
+  :root{
+    --brand:#2563eb; --inf:#7c3aed; --fol:#059669; --adm:#ea580c; --sys:#64748b;
+    --bg:#0f172a; --card:#1e293b; --line:#334155; --ink:#e2e8f0; --mut:#94a3b8;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:28px}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--mut);margin:0 0 24px}
+  .legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+  .badge{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;color:#fff}
+  .b-brand{background:var(--brand)} .b-inf{background:var(--inf)} .b-fol{background:var(--fol)}
+  .b-adm{background:var(--adm)} .b-sys{background:var(--sys)}
+  .flow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+  .flow h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .flow .desc{color:var(--mut);margin:0 0 16px;font-size:13px}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:14px 0}
+  .node{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;text-align:center;min-width:90px}
+  .node.state{border-color:var(--brand)}
+  .node.ok{border-color:var(--ok);color:#bbf7d0}
+  .node.bad{border-color:var(--bad);color:#fecaca}
+  .node.warn{border-color:var(--warn);color:#fde68a}
+  .arr{color:var(--mut);font-size:18px}
+  .arr small{display:block;font-size:9px;color:var(--mut);text-align:center;font-weight:600}
+  .ep{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:#7dd3fc;display:inline-block;margin:2px 0}
+  .meth{color:#fbbf24;font-weight:700}
+  ul.steps{margin:10px 0;padding-left:18px}
+  ul.steps li{margin:5px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .panel{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:12px}
+  .panel h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+  .edge{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;background:#1c1505;border-radius:0 6px 6px 0;font-size:12px}
+  .drift{border-left:3px solid var(--bad);background:#1c0808;padding:6px 10px;margin:6px 0;border-radius:0 6px 6px 0;font-size:12px}
+  code{font-family:ui-monospace,Menlo,monospace;background:#0b1220;padding:1px 5px;border-radius:4px;font-size:12px;color:#a5b4fc}
+</style>
+</head>
+<body>
+  <h1>🔐 Domain 1 — Auth &amp; Onboarding</h1>
+  <p class="sub">Phone+OTP login · JWT/refresh · brand/influencer/follower registration · admin RBAC · approval gating. <b>Code-verified 2026-05-22.</b></p>
+  <div class="legend">
+    <span class="badge b-brand">Brand</span>
+    <span class="badge b-inf">Influencer</span>
+    <span class="badge b-fol">Follower</span>
+    <span class="badge b-adm">Admin</span>
+    <span class="badge b-sys">System</span>
+  </div>
+
+  <div class="flow">
+    <h2>1.1 Phone + OTP Login <span class="badge b-brand">B</span><span class="badge b-inf">I</span><span class="badge b-fol">F</span><span class="badge b-adm">A</span></h2>
+    <p class="desc">The single entry door for everyone. Mock OTP is always <code>000000</code>.</p>
+    <div class="chain">
+      <div class="node">Enter phone<br><small>+91…</small></div>
+      <span class="arr">→<small>send-otp</small></span>
+      <div class="node">Enter OTP<br><small>000000</small></div>
+      <span class="arr">→<small>verify-otp</small></span>
+      <div class="node state">Lookup user</div>
+      <span class="arr">→</span>
+      <div class="node ok">Issue JWT<br><small>15m + 30d refresh</small></div>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <h4>Endpoints</h4>
+        <span class="ep"><span class="meth">POST</span> /auth/send-otp</span><br>
+        <span class="ep"><span class="meth">POST</span> /auth/verify-otp</span>
+        <p style="font-size:12px;color:var(--mut);margin:8px 0 0">Both public. OTP TTL 10min, single-use, prior unused invalidated. Phone gate <code>^\+91[6-9]\d{9}$</code>.</p>
+      </div>
+      <div class="panel">
+        <h4>New user branching</h4>
+        <ul class="steps" style="font-size:12px">
+          <li><b>New</b> → needs <code>role</code>; insert <code>users status=pending</code></li>
+          <li><b>New follower</b> → also auto-creates profile + <b>status=approved instantly</b></li>
+          <li>Mobile guard: brand/influencer APK refuses if <code>role≠APP_ROLE</code></li>
+          <li>Admin → "use the web dashboard"</li>
+        </ul>
+      </div>
+    </div>
+    <div class="drift">⚠️ <b>Drift:</b> JWT is <b>HS256</b> (symmetric <code>JWT_SECRET</code>), NOT RS256 as CLAUDE.md states.</div>
+    <div class="edge">Edge: wrong/expired OTP → <code>401 UNAUTHORIZED</code>. New user without role → <code>422</code>.</div>
+  </div>
+
+  <div class="flow">
+    <h2>1.2 JWT Refresh + Rotation <span class="badge b-brand">all</span></h2>
+    <p class="desc">Sessions renew indefinitely if the app is opened within any 30-day window.</p>
+    <div class="chain">
+      <div class="node">Access expires<br><small>15 min</small></div>
+      <span class="arr">→<small>/auth/refresh</small></span>
+      <div class="node state">Validate DB hash</div>
+      <span class="arr">→</span>
+      <div class="node ok">New access + refresh<br><small>old revoked (rotation)</small></div>
+    </div>
+    <span class="ep"><span class="meth">POST</span> /auth/refresh</span> <span class="ep"><span class="meth">POST</span> /auth/logout</span>
+    <p style="font-size:12px;color:var(--mut)">Token source: HttpOnly cookie (web) OR request body (mobile). Only the SHA-256 hash is stored. Rotation revokes the old token on every use.</p>
+  </div>
+
+  <div class="flow">
+    <h2>1.3–1.5 Registration (3 actors, 3 very different paths)</h2>
+    <div class="grid">
+      <div class="panel">
+        <h4><span class="badge b-brand">Brand</span> — web only</h4>
+        <span class="ep"><span class="meth">POST</span> /brands/register</span>
+        <ul class="steps" style="font-size:12px">
+          <li>business_name, category, name, city, state, address, pincode</li>
+          <li>city+state live on <code>users</code>, not <code>brands</code></li>
+          <li>409 on duplicate</li>
+          <li>stays <b>pending</b> → admin review</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4><span class="badge b-inf">Influencer</span> — mobile only</h4>
+        <span class="ep"><span class="meth">POST</span> /influencers/register</span>
+        <ul class="steps" style="font-size:12px">
+          <li>name, instagram_handle (req), city, youtube</li>
+          <li>Apify scrape seeds followers/ER/niche</li>
+          <li>creator-profile claim: 1 match→claimed, &gt;1→admin conflict, 0→stub</li>
+          <li>stays <b>pending</b> → admin review</li>
+        </ul>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:12px">
+      <h4><span class="badge b-fol">Follower</span> — auto-approved</h4>
+      <p style="font-size:12px;margin:0">Followers are <b>approved at verify-otp</b> — no admin review. <span class="ep"><span class="meth">POST</span> /followers/register</span> is just idempotent profile completion (name/city/state), not a gate.</p>
+    </div>
+  </div>
+
+  <div class="flow">
+    <h2>1.6 Admin Login + RBAC <span class="badge b-adm">A</span></h2>
+    <p class="desc">Admins pre-provisioned by a superadmin. 3 sub-roles, enforced server-side.</p>
+    <div class="chain">
+      <div class="node">superadmin<br><small>everything</small></div>
+      <div class="node">reviewer<br><small>approval queue</small></div>
+      <div class="node">finance<br><small>escrow / payouts</small></div>
+    </div>
+    <p style="font-size:12px;color:var(--mut)"><code>requireAdminRole(x)</code>: superadmin always passes; reviewer/finance pass ONLY their exact domain (not interchangeable). <code>requireAnyAdminRole</code>: any admin.</p>
+    <div class="drift">⚠️ <b>Drift:</b> admin-web sidebar shows ALL nav to every admin; <code>admin_role</code> isn't in the client user object. Enforcement is 100% server-side (a reviewer clicking Payouts gets API 403, not a hidden link). Not a security hole — UX polish.</div>
+  </div>
+
+  <div class="flow">
+    <h2>1.7 Approval Gating <span class="badge b-brand">B</span><span class="badge b-inf">I</span></h2>
+    <div class="chain">
+      <div class="node warn">pending</div>
+      <span class="arr">→<small>admin approve</small></span>
+      <div class="node ok">approved</div>
+      <span class="arr">|</span>
+      <div class="node bad">rejected</div>
+      <span class="arr">→<small>resubmit</small></span>
+      <div class="node warn">pending</div>
+    </div>
+    <p style="font-size:12px;color:var(--mut)"><code>requireApproved</code> middleware: pending→<code>ACCOUNT_PENDING</code>, rejected→<code>ACCOUNT_REJECTED</code>. Applied to brand action routes + influencer search/analytics; NOT to followers. Admin reject requires a <code>reason</code>. Brand has a resubmit endpoint; influencer does not (re-edit + admin re-review).</p>
+  </div>
+</body>
+</html>

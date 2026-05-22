@@ -1,0 +1,115 @@
+<!-- preview-size: 1200x950 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Flows — Finance</title>
+<style>
+  :root{--brand:#2563eb;--inf:#7c3aed;--fol:#059669;--adm:#ea580c;--sys:#64748b;--bg:#0f172a;--card:#1e293b;--line:#334155;--ink:#e2e8f0;--mut:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:28px}
+  h1{font-size:24px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 24px}
+  .badge{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;color:#fff}
+  .b-brand{background:var(--brand)}.b-inf{background:var(--inf)}.b-fol{background:var(--fol)}.b-adm{background:var(--adm)}.b-sys{background:var(--sys)}
+  .flow{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+  .flow h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  .flow .desc{color:var(--mut);margin:0 0 16px;font-size:13px}
+  .chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0}
+  .node{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;text-align:center;min-width:78px}
+  .node.state{border-color:var(--brand)}.node.ok{border-color:var(--ok);color:#bbf7d0}.node.bad{border-color:var(--bad);color:#fecaca}.node.warn{border-color:var(--warn);color:#fde68a}
+  .arr{color:var(--mut);font-size:18px}.arr small{display:block;font-size:9px;text-align:center}
+  .ep{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:#0b1220;border:1px solid var(--line);border-radius:6px;padding:2px 7px;color:#7dd3fc;display:inline-block;margin:2px 0}
+  .meth{color:#fbbf24;font-weight:700}
+  .money{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  .mcard{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12px;flex:1;min-width:120px}
+  .mcard b{display:block;font-size:18px;color:#fde68a}
+  ul.steps{margin:8px 0;padding-left:18px;font-size:12.5px}ul.steps li{margin:4px 0}
+  .edge{border-left:3px solid var(--warn);padding:6px 10px;margin:6px 0;background:#1c1505;border-radius:0 6px 6px 0;font-size:12px}
+  .crit{border-left:3px solid var(--bad);background:#1c0808;padding:8px 12px;margin:8px 0;border-radius:0 6px 6px 0;font-size:12.5px}
+  code{font-family:ui-monospace,Menlo,monospace;background:#0b1220;padding:1px 5px;border-radius:4px;font-size:12px;color:#a5b4fc}
+  .tr{display:flex;gap:8px;margin:10px 0}
+  .tranche{flex:1;background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center}
+  .tranche b{display:block;font-size:20px}
+  .t1{border-color:var(--ok)}.t2{border-color:var(--warn)}.t3{border-color:var(--bad)}
+</style>
+</head>
+<body>
+  <h1>💰 Domain 4 — Finance</h1>
+  <p class="sub">All money is <b>RUPEES</b> (since mig 021); paise only at the Razorpay boundary. wallet → escrow → 3 tranches → commission → withdrawal → TDS.</p>
+
+  <div class="money">
+    <div class="mcard">Platform fee<b>8%</b>on top, brand-charged</div>
+    <div class="mcard">Tranches<b>25/25/50</b>T1/T2/T3</div>
+    <div class="mcard">TDS<b>10%</b>at withdrawal</div>
+    <div class="mcard">Min withdrawal<b>₹100</b></div>
+    <div class="mcard">Follower reward<b>3%</b>of net</div>
+  </div>
+
+  <div class="flow">
+    <h2>4.1 Brand wallet top-up <span class="badge b-brand">B</span></h2>
+    <div class="chain">
+      <div class="node">enter amount</div><span class="arr">→<small>topup</small></span>
+      <div class="node state">Razorpay (mock auto-OK)</div><span class="arr">→<small>verify</small></span>
+      <div class="node ok">wallet += amount + wallet_transactions(topup)</div>
+    </div>
+    <span class="ep"><span class="meth">POST</span> /brands/me/wallet/topup</span> <span class="ep"><span class="meth">POST</span> /brands/me/wallet/topup/verify</span>
+    <p style="font-size:12px;color:var(--mut)">Live path HMAC-verifies signature. <code>escrow_locked</code> derived from escrow_lock debits; <code>total_deposited</code> from topups.</p>
+  </div>
+
+  <div class="flow">
+    <h2>4.2–4.4 Escrow lock + 3 tranches <span class="badge b-inf">I</span><span class="badge b-brand">B</span><span class="badge b-sys">cron</span></h2>
+    <p class="desc">At <b>brand-sign</b> (NOT publish): debit wallet by <code>fee×(1+8%)</code>, create 3 escrow entries (all <code>locked</code>), each net of escrow fee.</p>
+    <div class="tr">
+      <div class="tranche t1"><b>T1 · 25%</b>trigger: contract_signed<br><span style="color:var(--ok)">✓ released immediately at brand-sign</span></div>
+      <div class="tranche t2"><b>T2 · 25%</b>trigger: content_live<br><span style="color:var(--warn)">released when ALL deliverables live</span></div>
+      <div class="tranche t3"><b>T3 · 50%</b>trigger: day_30_post_live<br><span style="color:var(--bad)">⚠️ never auto-releases (see below)</span></div>
+    </div>
+    <p style="font-size:12px;color:var(--mut)">Each release: <code>escrow_entries.status=released</code> + influencer <code>wallet_balance += net_to_influencer</code>. Conversion-only contracts (fee=0) skip lock+escrow entirely.</p>
+    <div class="crit">🚨 <b>D1 — GENUINE GAP (money stuck):</b> entries are created <code>status='locked'</code>, but the T3 cron only matches <code>status='queued'</code>. <b>No code ever flips T3 locked→queued.</b> So T3 (the final 50%) <b>never auto-releases in production</b> — only admin manual release works. Highest-value fix candidate.</div>
+  </div>
+
+  <div class="flow">
+    <h2>4.5 Follower purchase → commission <span class="badge b-fol">F</span><span class="badge b-sys">cron</span></h2>
+    <div class="chain">
+      <div class="node">follower buys</div><span class="arr">→</span>
+      <div class="node state">commission → pending_balance</div><span class="arr">→<small>30d window</small></span>
+      <div class="node ok">cron 00:01 IST → wallet_balance</div>
+    </div>
+    <ul class="steps">
+      <li>4 attribution IDs on every <code>follower_transactions</code> row</li>
+      <li><code>validateTracking</code>: CI∈{contracted,active,completed} + campaign∈{published,active,live} + not past end_date else <code>OFFER_UNAVAILABLE</code></li>
+      <li>commission = net × commission_pct → <b>pending_balance</b> (held 30d) + total_earned (at sale)</li>
+      <li>confirm cron moves pending_balance → <b>wallet_balance</b> (the only withdrawable bucket)</li>
+    </ul>
+  </div>
+
+  <div class="flow">
+    <h2>4.6 Withdrawal + TDS <span class="badge b-inf">I</span></h2>
+    <div class="chain">
+      <div class="node">request ≥ ₹100</div><span class="arr">→<small>TDS 10%</small></span>
+      <div class="node state">wallet -= amount (immediate)</div><span class="arr">→</span>
+      <div class="node ok">RazorpayX payout (net)</div>
+      <span class="arr">|</span>
+      <div class="node bad">fail → rollback wallet</div>
+    </div>
+    <span class="ep"><span class="meth">POST</span> /influencers/me/withdraw</span>
+    <ul class="steps">
+      <li>method ∈ upi|bank_transfer; amount ≥ ₹100 (<code>WITHDRAWAL_TOO_SMALL</code>) ≤ wallet_balance; payment method on file</li>
+      <li><b>TDS = amount × 10%; net_paid = amount − tds.</b> Form 16A at <code>/influencers/me/tds-certificate</code></li>
+      <li>Wallet deducted immediately (anti-double); rollback on payout failure</li>
+    </ul>
+    <div class="crit">🚨 <b>D2 — mobile display bug:</b> <code>EarningsScreen.js:177</code> shows the "Requested" amount ×100 (stale paise). TDS + "You Receive" lines below are correct. One-line OTA fix.</div>
+  </div>
+
+  <div class="flow">
+    <h2>4.7–4.9 System &amp; admin finance</h2>
+    <ul class="steps">
+      <li><b>Razorpay webhooks</b> <span class="badge b-sys">⚙</span>: payout.processed→completed; payout.reversed→failed + refund wallet (idempotent, always 200)</li>
+      <li><b>Follower reward wallet</b> <span class="badge b-fol">F</span>: derived 3% of net on attributed purchases (separate from creator money)</li>
+      <li><b>Escrow fee tiers</b> <span class="badge b-adm">A-superadmin</span>: <code>escrow_fee_tiers</code> CRUD → feeds <code>campaigns.escrow_fee_pct_locked</code> at publish</li>
+      <li><b>Admin manual release</b> <span class="badge b-adm">finance</span>: <span class="ep"><span class="meth">POST</span> /admin/escrow/:id/release</span> (override_reason) — the ONLY working T3 path today</li>
+    </ul>
+    <div class="edge">⚠️ Cron TZ inconsistency: commission-confirm runs 00:01 <b>IST</b>; tranche-3-release runs 06:00 <b>UTC</b>. Worth aligning when D1 is fixed.</div>
+  </div>
+</body>
+</html>
