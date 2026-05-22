@@ -1,0 +1,43 @@
+# LOCAL-BACKEND Maestro flow — influencer signs the conversion contract.
+# Prereq: flow 02 ran (offer accepted → draft contract), then the brand
+# approved it (node qa/scripts/contract-step.mjs approve → pending_influencer).
+# Reuses the logged-in session (clearState:false) to avoid another OTP.
+#
+# Run: maestro test qa/maestro/local-flows/03-influencer-sign-contract.yaml
+
+appId: in.inflx.app.influencer
+---
+- launchApp:
+    clearState: false
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible: "Offers"
+    timeout: 60000
+- tapOn: "Offers"
+- tapOn:
+    text: "Accepted"          # filter to accepted offers
+    optional: true
+- tapOn: "QA Test Diner"
+- scrollUntilVisible:
+    element:
+      text: "Review & Sign Contract"
+    direction: DOWN
+- tapOn: "Review & Sign Contract"
+- scrollUntilVisible:
+    element:
+      text: "Sign Contract"
+    direction: DOWN
+    timeout: 40000
+- tapOn: "Sign Contract"
+- assertVisible: "Your full name"
+- tapOn: "Your full name"
+- inputText: "Dummy Creator"
+- tapOn: "Sign Now"
+- tapOn:
+    text: "Sign Now"           # possible native confirm
+    optional: true
+- extendedWaitUntil:
+    visible: "Signed"
+    timeout: 20000
+- takeScreenshot: 04-contract-signed
