@@ -11,6 +11,8 @@ tmp/
 .env.local
 .env.ota
 .ota-tmp/
+.env.prod-backup
+*.prod-backup
 
 # Android build artifacts — but keep source (Kotlin, gradle configs, manifest)
 **/android/build/

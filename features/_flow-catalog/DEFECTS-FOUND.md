@@ -34,6 +34,12 @@ Listed worst-first.
 ## D8 — STOCK_UNAVAILABLE declared but never thrown (dead code / spec drift)
 - Declared error code; no live throw site in the purchase path. Either wire it (variant out-of-stock) or remove from the spec.
 
+## D9 — Conversion handpick invite silently dropped on publish ⚠️ (found via E2E 2026-05-22)
+- **Repro (E2E):** brand-web new-campaign wizard → conversion set → handpick + assign an influencer → fill post_date + commission but NOT an offer type → Review → Publish. Campaign publishes `active` with **0 influencers**.
+- **Cause:** backend `campaign.controller.js:654` requires `offer_type` for conversion/hybrid invites (→ 422), but the wizard's client validation (`validateSets`) only requires `post_date` + `commission_pct`, NOT `offer_type`. So `POST /sets/:sid/invite` 422s, and **publish does not block on invite failure** → the brand gets an active campaign they think has an influencer, but it's empty.
+- **Confirmed in dev log:** `POST .../invite 422` ×2 then `POST .../publish 200`; DB shows the set with zero `campaign_influencers`. With an offer type selected, invite returns 201 and the influencer persists (commission 10%, offer Discount, coupon SAVE20_DUMMY).
+- **Fix (2 parts, production-impacting → gated):** (a) wizard client validation should require `offer_type` for conversion/hybrid handpick influencers (mirror backend :654); (b) publish should surface/block on invite failures instead of swallowing them. Caught + regression-guarded by `qa/local-e2e/conversion-campaign.spec.ts` (asserts all invite responses are 2xx).
+
 ## Recommended sequencing
 - **D1** is the highest-value real bug (stuck money) — strong candidate for the founder's "one real feature change" / first gated fix.
 - **D2/D3** are quick money-display fixes (low risk, high visible value) — batch as a small production-impacting contract once the founder approves a push window.

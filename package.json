@@ -24,6 +24,7 @@
     "qa:db:down": "node qa/scripts/db-down.mjs",
     "qa:gov": "node qa/scripts/governance-check.mjs",
     "qa:gov:test": "node qa/scripts/governance-check.test.mjs",
+    "qa:e2e:conversion": "node qa/scripts/seed-conversion-e2e.mjs && pnpm exec playwright test --config qa/local-e2e/playwright.local.config.ts",
     "hooks:install": "node qa/scripts/install-hooks.mjs",
     "db:dev:up": "node qa/scripts/dev-db-up.mjs",
     "db:dev:down": "node qa/scripts/dev-db-down.mjs",
