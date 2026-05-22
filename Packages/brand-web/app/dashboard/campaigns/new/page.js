@@ -781,6 +781,13 @@ function NewCampaignPageInner() {
           } else if (!Number.isFinite(cp) || cp <= 0 || cp > 100) {
             errs.commission_pct = 'Must be between 0 and 100';
           }
+          // D9 fix: the backend invite requires offer_type for conversion/
+          // hybrid (campaign.controller.js:654 → 422). Without it the invite
+          // is silently dropped on publish (active campaign, 0 influencers).
+          // Mirror the rule client-side so Review stays blocked until set.
+          if (!inf.offer_type) {
+            errs.offer_type = 'Pick an offer type';
+          }
         }
         sv.influencers[ii] = errs;
       });
@@ -1516,8 +1523,9 @@ function NewCampaignPageInner() {
             <div>
               <div className="ie-lbl">Offer type</div>
               <div className="ot-grid">
-                {OFFER_TYPES.map(ot => <button key={ot} className={`ot${inf.offer_type === ot ? ' sel' : ''}`} onClick={() => onChg('offer_type', inf.offer_type === ot ? '' : ot)}>{ot}</button>)}
+                {OFFER_TYPES.map(ot => <button key={ot} className={`ot${inf.offer_type === ot ? ' sel' : ''}${infErr('offer_type') ? ' ot-err' : ''}`} onClick={() => { onChg('offer_type', inf.offer_type === ot ? '' : ot); markTouched(infTouchKey('offer_type')); }}>{ot}</button>)}
               </div>
+              {infErr('offer_type') && <div className="field-err">{infErrs.offer_type}</div>}
               {renderOfferConfig(inf, onChg, si, ii, false)}
             </div>
           </>}

@@ -146,3 +146,54 @@ test('brand creates + publishes a CONVERSION campaign (handpick invite)', async 
     `all invites should be 2xx — got ${JSON.stringify(inviteStatuses)}`,
   ).toBeTruthy();
 });
+
+/**
+ * D9 GUARD — the wizard must BLOCK a conversion handpick influencer with no
+ * offer type (mirrors backend campaign.controller.js:654). Before the fix,
+ * Review proceeded and the invite silently 422'd on publish.
+ */
+test('D9: blocks review when a conversion influencer has no offer type', async ({ page, context }) => {
+  const sess = JSON.parse(fs.readFileSync(SESSION_FILE, 'utf8'));
+  await context.addCookies([{ name: 'inflx_token', value: sess.access_token, domain: 'localhost', path: '/', sameSite: 'Strict' }]);
+  await page.addInitScript((s) => {
+    localStorage.setItem('inflx_token', s.access_token);
+    localStorage.setItem('inflx_user', JSON.stringify(s.user));
+    if (s.brand) localStorage.setItem('inflx_brand', JSON.stringify(s.brand));
+  }, sess);
+
+  await page.goto('/dashboard/campaigns/new');
+  await expect(page.getByText(/Campaign name/i)).toBeVisible();
+  await page.getByPlaceholder('e.g. Summer Collection 2025').fill(`QA D9 Guard ${Date.now()}`);
+  const d = page.locator('input[type="date"]');
+  await d.nth(0).fill(plusDays(1));
+  await d.nth(1).fill(plusDays(30));
+  await page.locator('button.btn-next').click();
+
+  await expect(page.locator('.cc-ct', { hasText: 'Deliverable sets' })).toBeVisible();
+  await page.locator('input.inp').first().fill('Guard Set');
+  await page.locator('.goal-grid .gc', { hasText: 'Conversion' }).click();
+  const sd = page.locator('input[type="date"]');
+  await sd.nth(0).fill(plusDays(2));
+  await sd.nth(1).fill(plusDays(20));
+  await page.locator('.fmt-chip', { hasText: /reel/i }).first().click();
+  await page.getByPlaceholder(/SALE25/i).fill('GUARD20');
+  await page.locator('.mode-btn', { hasText: /handpick/i }).click();
+  await page.locator('.browse-search').fill('test_creator');
+  const dummy = page.locator('.browse-card', { hasText: /Dummy Creator|test_creator/i });
+  await expect(dummy).toBeVisible({ timeout: 20_000 });
+  await dummy.first().click();
+  await page.locator('.browse-add-btn').click();
+
+  // fill post_date + commission but DELIBERATELY skip the offer type
+  await page.locator('.post-date-inp').first().fill(plusDays(5));
+  await page.getByPlaceholder('e.g. 10').first().fill('10');
+
+  // attempt Review → must be blocked by the D9 validation
+  await page.locator('button.btn-next', { hasText: /review/i }).click();
+  await shot(page, 'd9-blocked');
+
+  // the new error is shown and we did NOT reach the review step
+  await expect(page.getByText('Pick an offer type').first()).toBeVisible();
+  await expect(page.locator('.cc-ct', { hasText: /Review & publish/i })).toHaveCount(0);
+  expect(page.url()).toContain('/campaigns/new');
+});

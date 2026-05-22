@@ -1,0 +1,27 @@
+{
+  "feature": "fix-conversion-invite-offer-type",
+  "area": "brand-web-fix-production-impacting",
+  "spec_version": "0.1.0",
+  "status": "released",
+  "approved": true,
+  "approved_by": "agent (founder explicit GO 2026-05-22 'fix d9'; standing autonomy delegation 'your best choices are my best choices'; FIRST real feature change through the SC5-enforced cycle; PRODUCTION-IMPACTING — surfaced for explicit push go, never silent)",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "agent (UI-governed change; mockup features/fix-conversion-invite-offer-type/04-preview/mockups/offer-type-required.html shows the new blocked-validation state ('Pick an offer type'); self-locked under standing autonomy + founder 'fix d9' delegation; documented per the established mockup-lock delegation pattern)",
+  "mockup_locked_at": "2026-05-22",
+  "deploy_posture": "PRODUCTION-IMPACTING. Changes Packages/brand-web/app/dashboard/campaigns/new/page.js (UI-governed). git push → Vercel redeploys brand-web. Client-validation-only change; no backend/API/DB. Surfaced for explicit founder push go. Forward-only; rollback = revert.",
+  "fix": "D9: the brand-web new-campaign wizard let a brand publish a conversion/hybrid handpick influencer WITHOUT an offer_type, but the backend invite requires it (campaign.controller.js:654 → 422) and publish doesn't block on invite failure → silent influencer drop / active campaign with 0 influencers. Fix mirrors the backend rule client-side: validateSets per-influencer block (under needsOffer) adds `if(!inf.offer_type) errs.offer_type='Pick an offer type'`; renderInfluencerConfig shows the error under the Offer-type grid + markTouched on tap. Blocks Review/publish until an offer type is selected. Engagement sets unaffected (gated behind needsOffer). Found via the conversion E2E (qa/local-e2e/conversion-campaign.spec.ts), which self-guards with an invite-2xx assertion.",
+  "related": ["features/_flow-catalog (DEFECTS-FOUND.md D9)", "features/enforce-cycle-gates (the cycle this is the first real feature through)", "qa/local-e2e/conversion-campaign.spec.ts (the guarding E2E)"],
+  "result": "VERIFIED 2026-05-22 (commit local, push gated on founder go). Implemented: validateSets adds offer_type requirement under needsOffer; renderInfluencerConfig shows 'Pick an offer type' under the Offer-type grid + markTouched on tap. PROVEN: (a) qa/local-e2e/conversion-campaign.spec.ts test 2 'D9: blocks review when a conversion influencer has no offer type' GREEN — fills post_date+commission, skips offer type, clicks Review → asserts 'Pick an offer type' visible + Review&publish NOT reached + still on /campaigns/new (screenshot 10-d9-blocked.png shows the red error + 'Please fix 1 field before reviewing'); (b) test 1 happy-path GREEN — with offer type → publishes, invite 2xx, influencer persists (unchanged).",
+  "regression_proof": "main pnpm qa GREEN — qa/artifacts/_d9_qa.log run 2026-05-22T05:17:50Z: STATE=GREEN, pwExit=0 reportExit=0, gate 0, report qa/reports/2026-05-22T05-17-50-517Z/. pnpm qa:e2e:conversion 2/2 GREEN. Client-only change gated behind needsOffer (conversion/hybrid) — engagement + open-group + backend untouched.",
+  "discipline": "PRODUCTION-IMPACTING surfaced explicitly, never silent; founder go required at push. UI-governed → full enforced cycle (spec + mockup-lock + 06-diff + green). No-fake-green: the fix changes behaviour (blocks the bad path); proven by the E2E + a manual block-proof, not by weakening anything. Minimal scope: D9 part (b) (publish-time hardening on ANY invite failure) recorded as a separate follow-up.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "agent (founder explicit GO 2026-05-22 'fix d9'; standing autonomy delegation; PRODUCTION-IMPACTING — the git PUSH itself is surfaced for a separate explicit founder go per the never-silent rule, NOT pushed silently; this lock.json is finalized in the local commit, push enacted only on that go)",
+    "released_at": "2026-05-22",
+    "deploy": "PRODUCTION-IMPACTING — Step-14 = commit with this approved+mockup-locked contract + push origin main → Vercel brand-web deploy. gov-check at push: Rule 1 (governed brand-web path backed by this approved contract), Rule 2 (release evidence self-consistent), Rule 3 (mockup_locked=true+_by+_at), Rule 4 (06-diff/notes.md present) — all satisfied. VERIFIED pre-push: pnpm qa 66/C1/gate 0 + conversion E2E 2/2 GREEN + D9-block screenshot. PUSH GATED on explicit founder go (surfaced, never silent). Rollback = revert the page.js change (client-only)."
+  }
+}
