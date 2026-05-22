@@ -231,6 +231,24 @@ simultaneously — `pnpm qa:db` will not touch your dev DB.
 | dev     | `inflx-dev-pg`  | 5433 | `inflx_dev`  | `inflx-dev-pgdata` (persistent) |
 | qa:db   | `inflx-qa-pg`   | 5544 | `inflx_test` | ephemeral (`docker rm -f` between runs) |
 
+> ⚠️ **qa:db is a once-per-fresh-boot operation on this hardware.**
+> `pnpm qa:db` is the heaviest lane (~4 min clean; 382 backend
+> tests × 28 suites against a real Postgres). On this Windows +
+> Docker + WSL2 box it reliably passes **once** after a fresh
+> boot, but a **second consecutive run saturates the host** and
+> tests start timing out (the Windows/Docker socket layer, not
+> INFLX code — every failure is a test-DB timeout, never a
+> product defect). This is NOT fixable from app/test code
+> (`features/qa-db-env-resilience` proved it — pg/pool tuning
+> made zero difference; the pool-error diagnostics never fired).
+>
+> **The discipline:** before any release that needs qa:db
+> evidence, **restart Windows → run `pnpm qa:db` once → capture
+> the GREEN → proceed.** Don't re-run it back-to-back expecting
+> determinism; it won't, and that's a host ceiling, not a bug.
+> (The main `pnpm qa` lane is light and unaffected — run it
+> freely.)
+
 ---
 
 ## What's still missing (next contracts)

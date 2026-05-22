@@ -211,6 +211,16 @@ integrity, verify zero regression. The DB lane (`pnpm qa:db`) is a
 main GREEN and never blocks it. It stays informational until **formally
 promoted** by its own contract.
 
+> **qa:db host-ceiling discipline (`features/qa-db-env-resilience`,
+> shipped-partial 2026-05-22):** on the founder's Windows + Docker +
+> WSL2 box, `pnpm qa:db` passes cleanly **once per fresh boot** but
+> saturates on a second consecutive run (tests time out at the
+> socket/scheduling layer — not INFLX defects, not pool exhaustion;
+> proven by zero pool-`error` diagnostic events). Application/test
+> tuning cannot raise this ceiling. **Operational rule:** before a
+> release needing qa:db evidence, restart Windows, run qa:db once,
+> capture the GREEN. This is host hygiene, not a code gate.
+
 The Maestro mobile lane (`pnpm qa:maestro`, Phase 2 sub-contract 3)
 follows the same pattern: separate, decoupled, **[ENFORCED]** for
 any commit touching `Packages/Mobile/src/**` that flips

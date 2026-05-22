@@ -3,9 +3,34 @@
 const { Pool } = require('pg');
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 
+// Test-helper pool. Contract: features/qa-db-env-resilience.
+//   max:10                       — bumped from 5; raises queueing threshold
+//                                  under sustained qa:db parallel test load.
+//   connectionTimeoutMillis:10000 — matches app pool (src/config/db.js); makes
+//                                   wait-for-connection failures surface loud
+//                                   instead of hanging until Jest's 30s hook
+//                                   timeout (which obscures the real cause).
 const pool = new Pool({
   connectionString: process.env.TEST_DATABASE_URL,
-  max: 5,
+  max: 10,
+  connectionTimeoutMillis: 10000,
+});
+
+// Loud diagnostic on unexpected pool errors. Logs pool state alongside the
+// message so a future env-block (Connection terminated, etc.) is triageable
+// without needing to re-run with --detectOpenHandles. NOT a mask — the error
+// continues to propagate to whichever query/test triggered it.
+pool.on('error', (err) => {
+  try {
+    console.error(
+      '[test-pool] Unexpected pool error:', err && err.message,
+      '— pool state:', {
+        total: pool.totalCount,
+        idle: pool.idleCount,
+        waiting: pool.waitingCount,
+      }
+    );
+  } catch (_) { /* never let diagnostic logging throw */ }
 });
 
 async function query(text, params) {

@@ -33,12 +33,18 @@ function main() {
   sh('docker', ['rm', '-f', PG_CONTAINER]);
 
   // 2. start fresh
+  //    -c max_connections=200 — bumped from postgres default 100 to give
+  //    jest worker pools + helper pool + app pool collective headroom under
+  //    sustained qa:db load. Contract: features/qa-db-env-resilience.
+  //    Memory cost on the 7.5GB Docker RAM limit is negligible (~few KB per
+  //    connection slot).
   const run = sh('docker', [
     'run', '-d', '--name', PG_CONTAINER,
     '-e', 'POSTGRES_PASSWORD=qa',
     '-e', 'POSTGRES_DB=inflx_test',
     '-p', `${PG_PORT}:5432`,
     PG_IMAGE,
+    '-c', 'max_connections=200',
   ]);
   if (run.status !== 0) {
     fail(`docker run failed (port ${PG_PORT} clash? image pull failure?):\n${run.stderr || run.stdout}`);
