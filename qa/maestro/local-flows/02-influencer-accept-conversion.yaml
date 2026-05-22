@@ -1,0 +1,61 @@
+# LOCAL-BACKEND Maestro flow — influencer accepts the conversion offer that
+# the Playwright test created in the dev DB.
+#
+# PREREQ (all set up by the E2E session):
+#   - pnpm dev:all running (backend :3001 + dev DB :5433)
+#   - node qa/scripts/seed-conversion-e2e.mjs  (approved influencer +919900000002)
+#   - pnpm qa:e2e:conversion                   (creates the invited offer)
+#   - Packages/Mobile/src/config/api-overrides.js → http://10.0.2.2:3001/v1
+#     (skip-worktree'd) so the DEBUG app hits the LOCAL backend
+#   - Metro running (cd Packages/Mobile && pnpm start)
+#   - influencer debug app installed on the emulator
+#     (cd Packages/Mobile/android && ./gradlew app:installInfluencerDebug)
+#
+# NOTE: this flow logs in via OTP (mock 000000). The /auth limiter allows
+# 20 calls / 15 min — don't spam re-runs.
+#
+# Run standalone:  maestro test qa/maestro/flows/02-influencer-accept-conversion.yaml
+
+appId: in.inflx.app.influencer
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+# first screen after a cold launch waits for the Metro JS bundle to paint
+- extendedWaitUntil:
+    visible: "Enter your mobile number"
+    timeout: 60000
+- tapOn: "9876543210"
+- inputText: "9900000002"
+- tapOn: "Send OTP"
+- assertVisible: "Enter OTP"
+# focus the first of 6 segmented OTP boxes, then type — RN auto-advances per char
+- tapOn:
+    point: "14%,53%"
+- inputText: "000000"
+- tapOn:
+    text: "Verify OTP"
+    optional: true               # may have auto-verified on 6th digit
+- extendedWaitUntil:
+    visible: "Offers"            # bottom tab → we're in the app
+    timeout: 30000
+- tapOn: "Offers"
+- assertVisible: "QA Test Diner" # the brand on our conversion offer
+- takeScreenshot: 01-influencer-offers-inbox
+- tapOn: "QA Test Diner"
+- assertVisible: "Conversion"      # offer detail loaded
+- takeScreenshot: 02-offer-detail
+# the Accept Offer button is below the fold — scroll to it
+- scrollUntilVisible:
+    element:
+      text: "Accept Offer"
+    direction: DOWN
+- tapOn: "Accept Offer"
+- tapOn:
+    text: "Accept"               # native confirm dialog
+    optional: true
+- extendedWaitUntil:
+    notVisible: "Accept Offer"   # accepted → button gone / state changed
+    timeout: 20000
+- takeScreenshot: 03-accepted
