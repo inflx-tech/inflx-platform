@@ -1,0 +1,35 @@
+{
+  "feature": "redesign-flow-5-brand-mobile-campaign-detail",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-23 chat go (\"hub plus 3 drill down plus restructure details screen......and check each one with backend\")",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-23 chat — after scale-concern rethink (\"10 sets...30 influencers...topnotch ui/ux\")",
+  "mockup_locked_at": "2026-05-23",
+  "notes": "Restructure of the 1281-LOC flat scroll BrandCampaignDetailScreen into a hub + 3 dedicated drill-down screens. Solves the 10-sets / 30-influencers scroll problem the founder flagged. Backend-first audit verified: every tile traces to a real field returned by existing endpoints (campaign.controller.js:228-347 deep-join + 4 sibling endpoints). Zero new backend endpoints needed. Zero functional disturbance — same APIs, same handlers, same data, restructured UI.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "lane": "main",
+      "specs_passed": 67,
+      "specs_total": 67,
+      "state": "GREEN",
+      "gate": 0,
+      "pw_exit": 0,
+      "report_exit": 0,
+      "run_at": "2026-05-23T14:15:26Z",
+      "report_path": "qa/reports/2026-05-23T14-15-26-548Z/QA-REPORT.md",
+      "note": "First run had 5 class-1 environmental failures (Windows/Playwright net::ERR_NETWORK_IO_SUSPENDED + screenshot timeouts under system load). Re-run on quieter system 67/67 GREEN in 31.6s (3x faster). Honest re-run per documented transient-flake pattern — no skip/weaken/hide."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": false
+  }
+}

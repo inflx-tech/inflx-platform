@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX redesign — Flow 5 · Brand mobile · Campaign detail (HUB + drill-down)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white:#FFFFFF; --bg:#FAFAFA; --bg-2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA;
+  --border:#E4E4E7; --border-2:#D4D4D8;
+  --success:#10B981; --success-pale:#D1FAE5; --success-deep:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-deep:#B91C1C;
+  --font-display:'Outfit',system-ui,sans-serif;
+  --font-body:'Plus Jakarta Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:#18181B; color:var(--ink); font-family:var(--font-body); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+
+.review-bar { background:var(--ink); color:#fff; padding:12px 28px; display:flex; justify-content:space-between; position:sticky; top:0; z-index:100; font-size:12px; }
+.review-bar .name { font-family:var(--font-display); font-weight:800; }
+.review-bar .name .y { color:var(--yellow); }
+.review-bar .tag { background:rgba(255,193,7,0.15); color:var(--yellow); padding:4px 10px; border-radius:100px; font-weight:700; font-size:11px; }
+
+.section { padding:48px 28px 24px; border-bottom:1px solid #2A2A2D; }
+.section-head { max-width:1400px; margin:0 auto 24px; color:#fff; }
+.section-head .crumbs { font-family:var(--font-mono); font-weight:600; font-size:11px; color:var(--muted-3); letter-spacing:0.4px; text-transform:uppercase; margin-bottom:6px; }
+.section-head h2 { font-family:var(--font-display); font-weight:700; font-size:24px; -letter-spacing:0.5px; margin-bottom:4px; }
+.section-head .y-rule { width:32px; height:4px; background:var(--yellow); border-radius:100px; margin-bottom:8px; }
+.section-head .lede { font-family:var(--font-body); font-size:13px; color:#A1A1AA; max-width:780px; }
+.section-head .badge-shift { display:inline-block; margin-top:8px; background:rgba(255,193,7,0.15); color:var(--yellow); padding:4px 11px; border-radius:100px; font-family:var(--font-mono); font-weight:700; font-size:11px; letter-spacing:0.3px; }
+
+.stage { max-width:1400px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:24px; place-items:start center; padding:32px 0; background:linear-gradient(180deg,#2A2A2D 0%,#18181B 100%); border-radius:24px; border:1px solid #2A2A2D; }
+@media (max-width:1080px) { .stage { grid-template-columns:1fr; } }
+
+/* ── phone frame ── */
+.phone { width:380px; background:var(--bg); border-radius:44px; box-shadow:0 0 0 11px #1F1F22,0 0 0 13px #2A2A2D,0 36px 56px -20px rgba(0,0,0,0.55); position:relative; overflow:hidden; font-family:var(--font-body); color:var(--ink); }
+.phone .notch { position:absolute; top:11px; left:50%; transform:translateX(-50%); width:108px; height:28px; background:#0A0A0A; border-radius:100px; z-index:10; }
+.status-bar { height:42px; padding:13px 26px 0; display:flex; justify-content:space-between; font-family:var(--font-body); font-weight:600; font-size:13.5px; color:var(--ink); }
+.status-bar .right { font-family:var(--font-mono); font-size:11.5px; display:flex; gap:5px; }
+.phone-title { font-family:var(--font-mono); font-size:10px; color:var(--muted-3); text-align:center; padding:8px 0 0; letter-spacing:0.5px; text-transform:uppercase; }
+
+.app-header { background:var(--ink); padding:8px 16px 14px; }
+.back-btn { font-family:var(--font-body); font-size:12.5px; font-weight:600; color:rgba(255,255,255,0.65); padding:4px 0; }
+.app-header .title-row { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-top:8px; }
+.app-header .title { font-family:var(--font-display); font-weight:700; font-size:18px; color:var(--white); flex:1; -letter-spacing:0.3px; }
+.app-header .dates { font-family:var(--font-mono); font-size:10.5px; color:rgba(255,255,255,0.55); margin-top:3px; }
+.app-header .meta { font-family:var(--font-body); font-size:11px; color:rgba(255,255,255,0.55); margin-top:5px; }
+.app-header .meta .v { color:var(--white); font-weight:600; font-family:var(--font-mono); }
+
+.scroll { padding:12px; display:flex; flex-direction:column; gap:10px; }
+
+/* ════════════════════════════════════════════════════════════
+   HUB · Summary card (always visible top)
+   ════════════════════════════════════════════════════════════ */
+.summary-card { background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%); border:1px solid rgba(255,193,7,0.32); border-radius:16px; padding:16px; position:relative; overflow:hidden; }
+.summary-card::after { content:""; position:absolute; top:-36px; right:-36px; width:120px; height:120px; background:var(--yellow); border-radius:50%; opacity:0.22; }
+.summary-card > * { position:relative; z-index:1; }
+.summary-progress-row { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; }
+.summary-progress-pct { font-family:var(--font-mono); font-weight:700; font-size:34px; color:var(--ink); -letter-spacing:1px; line-height:1; }
+.summary-progress-lbl { font-family:var(--font-body); font-size:11px; font-weight:700; color:var(--yellow-text); letter-spacing:0.5px; text-transform:uppercase; }
+.summary-progress-bar { height:6px; background:rgba(10,10,10,0.1); border-radius:100px; overflow:hidden; margin-bottom:14px; }
+.summary-progress-fill { height:100%; background:var(--ink); border-radius:100px; }
+.summary-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.summary-stat { padding:6px 0; }
+.summary-stat + .summary-stat { border-left:1px solid rgba(10,10,10,0.12); padding-left:10px; }
+.summary-stat .l { font-family:var(--font-body); font-size:9.5px; font-weight:600; color:var(--muted); letter-spacing:0.3px; text-transform:uppercase; margin-bottom:2px; }
+.summary-stat .v { font-family:var(--font-mono); font-weight:700; font-size:15px; color:var(--ink); -letter-spacing:0.3px; }
+.summary-stat .sub { font-family:var(--font-body); font-size:10px; color:var(--muted-2); margin-top:1px; }
+
+/* ── Action queue (urgent, inline) ── */
+.action-queue-title { font-family:var(--font-display); font-weight:700; font-size:11px; color:var(--ink); letter-spacing:0.4px; text-transform:uppercase; margin-top:6px; margin-bottom:2px; display:flex; align-items:center; gap:7px; }
+.action-queue-title .pill { width:3px; height:11px; background:var(--yellow); border-radius:2px; }
+.action-row { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:11px 12px; display:flex; align-items:center; gap:11px; cursor:pointer; }
+.action-row.urgent { border-left:3px solid var(--yellow); padding-left:12px; }
+.action-row.danger-urgent { border-left:3px solid var(--danger); padding-left:12px; }
+.action-row .ic-circle { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:13px; flex-shrink:0; }
+.action-row.urgent .ic-circle { background:var(--yellow-pale); color:var(--ink); }
+.action-row.danger-urgent .ic-circle { background:var(--danger-pale); color:var(--danger); }
+.action-row .body { flex:1; min-width:0; }
+.action-row .title { font-family:var(--font-display); font-weight:700; font-size:12.5px; color:var(--ink); margin-bottom:2px; }
+.action-row .meta { font-family:var(--font-body); font-size:10.5px; color:var(--muted); }
+.action-row .meta .v { color:var(--ink); font-weight:600; font-family:var(--font-mono); }
+.action-row .arrow { font-family:var(--font-mono); font-weight:700; color:var(--muted-2); }
+.action-row .num-pill { background:var(--yellow); color:var(--ink); font-family:var(--font-mono); font-size:11px; font-weight:700; padding:2px 8px; border-radius:100px; flex-shrink:0; }
+.action-row.danger-urgent .num-pill { background:var(--danger); color:var(--white); }
+
+/* ── Section drill-down grid (the meat) ── */
+.section-grid-title { font-family:var(--font-display); font-weight:700; font-size:11px; color:var(--ink); letter-spacing:0.4px; text-transform:uppercase; margin-top:8px; margin-bottom:2px; display:flex; align-items:center; gap:7px; }
+.section-grid-title .pill { width:3px; height:11px; background:var(--yellow); border-radius:2px; }
+.section-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.section-tile { background:var(--white); border:1px solid var(--border); border-radius:14px; padding:13px 12px; display:flex; flex-direction:column; gap:6px; cursor:pointer; transition:border-color 0.15s, transform 0.06s; position:relative; }
+.section-tile:hover { border-color:var(--ink); transform:translateY(-1px); }
+.section-tile .tile-head { display:flex; justify-content:space-between; align-items:center; }
+.section-tile .tile-icon { width:28px; height:28px; border-radius:50%; background:var(--yellow); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:13px; color:var(--ink); }
+.section-tile .tile-icon.dark { background:var(--ink); color:var(--yellow); }
+.section-tile .tile-arrow { font-family:var(--font-mono); font-weight:700; color:var(--muted-3); }
+.section-tile .tile-label { font-family:var(--font-body); font-size:9.5px; font-weight:700; color:var(--muted-2); letter-spacing:0.4px; text-transform:uppercase; margin-top:4px; }
+.section-tile .tile-value { font-family:var(--font-mono); font-weight:700; font-size:18px; color:var(--ink); -letter-spacing:0.3px; line-height:1.1; }
+.section-tile .tile-sub { font-family:var(--font-body); font-size:10.5px; color:var(--muted); margin-top:1px; }
+.section-tile .tile-sub .v { color:var(--ink); font-weight:600; font-family:var(--font-mono); }
+
+/* ── Brief (collapsible) ── */
+.brief-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:12px; cursor:pointer; }
+.brief-head { display:flex; justify-content:space-between; align-items:center; }
+.brief-title { font-family:var(--font-display); font-weight:700; font-size:12.5px; color:var(--ink); display:flex; align-items:center; gap:7px; }
+.brief-title .pill { width:3px; height:11px; background:var(--yellow); border-radius:2px; }
+.brief-toggle { font-family:var(--font-mono); font-weight:700; color:var(--muted-2); font-size:14px; }
+.brief-text { font-family:var(--font-body); font-size:12px; color:var(--ink-2); line-height:1.5; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
+
+/* ── Web link ── */
+.web-link { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--white); border:1px solid var(--border); border-radius:12px; }
+.web-link .ic { font-size:15px; }
+.web-link .txt { flex:1; font-family:var(--font-body); font-weight:600; font-size:11.5px; color:var(--ink); }
+.web-link .arrow { font-family:var(--font-mono); font-weight:700; color:var(--muted-2); }
+
+/* ════════════════════════════════════════════════════════════
+   DRILL-DOWN · Influencers list screen
+   ════════════════════════════════════════════════════════════ */
+.dd-header { background:var(--ink); padding:8px 16px 14px; }
+.dd-header .title-row { display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-top:8px; }
+.dd-header .title { font-family:var(--font-display); font-weight:700; font-size:18px; color:var(--white); flex:1; }
+.dd-header .count { font-family:var(--font-mono); font-size:11px; color:rgba(255,255,255,0.6); }
+.dd-header .crumbs { font-family:var(--font-mono); font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:0.3px; text-transform:uppercase; margin-top:3px; }
+
+.dd-search { padding:12px 14px 0; }
+.dd-search-wrap { display:flex; align-items:center; background:var(--white); border:1px solid var(--border); border-radius:10px; padding:0 12px; height:40px; }
+.dd-search-wrap.focused { border-color:var(--yellow); box-shadow:0 0 0 3px rgba(255,193,7,0.18); }
+.dd-search-icon { font-size:13px; color:var(--muted-2); margin-right:8px; }
+.dd-search-input { flex:1; font-family:var(--font-body); font-size:13px; color:var(--ink); border:0; outline:0; padding:0; height:100%; }
+
+.dd-filter-label { font-family:var(--font-body); font-size:10px; font-weight:700; color:var(--muted-2); letter-spacing:0.4px; text-transform:uppercase; padding:10px 14px 4px; }
+.dd-chip-row { padding:0 0 0 14px; display:flex; gap:6px; overflow-x:auto; flex-shrink:0; padding-bottom:2px; }
+.dd-chip-row::-webkit-scrollbar { display:none; }
+.dd-chip { background:var(--bg-2); border:1px solid var(--border); color:var(--muted); padding:6px 11px; border-radius:100px; font-family:var(--font-body); font-weight:600; font-size:11px; white-space:nowrap; flex-shrink:0; display:inline-flex; align-items:center; gap:5px; }
+.dd-chip.active { background:var(--ink); color:var(--white); border-color:var(--ink); }
+.dd-chip .n { font-family:var(--font-mono); font-weight:700; font-size:10px; opacity:0.7; }
+
+.dd-list { padding:14px; display:flex; flex-direction:column; gap:8px; }
+.inf-list-card { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:12px; }
+.inf-list-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px; }
+.inf-list-name { font-family:var(--font-display); font-weight:700; font-size:13px; color:var(--ink); }
+.inf-list-handle { font-family:var(--font-mono); font-size:11px; color:var(--muted-2); margin-top:1px; }
+.inf-list-set { display:inline-flex; align-items:center; gap:5px; background:var(--bg-2); padding:2px 7px; border-radius:100px; font-family:var(--font-body); font-size:10px; color:var(--muted); margin-top:3px; }
+.inf-list-fee { font-family:var(--font-mono); font-weight:700; font-size:12.5px; color:var(--ink); }
+.inf-list-fee.comm { color:var(--success-deep); }
+.inf-list-progress { display:flex; align-items:center; gap:8px; margin-top:4px; }
+.inf-list-prog-bar { flex:1; height:4px; background:var(--bg-2); border-radius:100px; overflow:hidden; }
+.inf-list-prog-fill { height:100%; background:var(--yellow); border-radius:100px; }
+.inf-list-prog-text { font-family:var(--font-mono); font-size:10px; color:var(--muted-2); }
+.inf-list-trow { display:flex; gap:10px; margin-top:6px; padding:6px 10px; background:var(--bg-2); border-radius:7px; }
+.inf-list-tr { display:flex; align-items:center; gap:4px; font-family:var(--font-mono); font-weight:700; font-size:10.5px; }
+.inf-list-tr.released { color:var(--success-deep); }
+.inf-list-tr.locked { color:var(--ink); }
+.inf-list-tr.empty { color:var(--muted-3); }
+.inf-list-action { background:var(--ink); color:var(--yellow); font-family:var(--font-display); font-weight:700; font-size:10.5px; padding:6px 10px; border-radius:7px; align-self:flex-start; margin-top:8px; }
+
+/* ── Status badges ── */
+.badge { display:inline-flex; align-items:center; gap:4px; font-family:var(--font-body); font-weight:700; font-size:9.5px; padding:3px 7px; border-radius:100px; text-transform:uppercase; letter-spacing:0.3px; white-space:nowrap; flex-shrink:0; }
+.badge .dot { width:4px; height:4px; border-radius:50%; }
+.badge.live,.badge.active { background:var(--success-pale); color:var(--success-deep); }
+.badge.live .dot,.badge.active .dot { background:var(--success); }
+.badge.contracted { background:var(--success-pale); color:var(--success-deep); }
+.badge.contracted .dot { background:var(--success); }
+.badge.draft { background:var(--bg-2); color:var(--muted); }
+.badge.draft .dot { background:var(--muted-2); }
+.badge.applied { background:var(--yellow-pale); color:var(--yellow-text); }
+.badge.applied .dot { background:var(--yellow-hover); }
+.badge.invited { background:var(--bg-2); color:var(--ink-2); }
+.badge.invited .dot { background:var(--muted-2); }
+.badge.negotiating { background:var(--yellow-pale); color:var(--yellow-text); }
+.badge.negotiating .dot { background:var(--yellow-hover); }
+
+/* ── notes ── */
+.notes-strip { max-width:1400px; margin:28px auto 0; padding:22px 28px; background:var(--ink-2); color:#E4E4E7; border-radius:18px; font-family:var(--font-body); font-size:12.5px; line-height:1.6; }
+.notes-strip h2 { font-family:var(--font-display); font-weight:700; font-size:12.5px; letter-spacing:0.4px; text-transform:uppercase; color:var(--yellow); margin-bottom:14px; }
+.notes-cols { display:grid; grid-template-columns:repeat(3,1fr); gap:26px; }
+@media (max-width:920px) { .notes-cols { grid-template-columns:1fr; } }
+.notes-cols h3 { font-family:var(--font-display); font-weight:600; font-size:11px; letter-spacing:0.4px; text-transform:uppercase; color:#A1A1AA; margin-bottom:8px; }
+.notes-cols ul { list-style:none; padding:0; }
+.notes-cols li { padding:3px 0 3px 14px; position:relative; color:#D4D4D8; font-size:12px; }
+.notes-cols li::before { content:"›"; position:absolute; left:0; color:var(--yellow); font-weight:700; }
+.notes-cols code { font-family:var(--font-mono); font-size:11.5px; color:#FFF; background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px; }
+.notes-strip .compare-box { background:rgba(16,185,129,0.08); border-left:3px solid var(--success); padding:12px 14px; border-radius:8px; margin-top:14px; }
+.notes-strip .compare-box strong { color:var(--success); font-family:var(--font-display); }
+</style>
+</head>
+<body>
+
+<div class="review-bar">
+  <div><span class="name">INFLX <span class="y">redesign</span></span> · Flow 5 · Brand mobile · Campaign detail · <strong style="color:var(--yellow);">HUB + drill-down</strong> (rethink)</div>
+  <div><span class="tag">scalable to 10 sets · 30 influencers · 50 deliverables</span></div>
+</div>
+
+<section class="section">
+  <div class="section-head">
+    <div class="crumbs">screens/brand/BrandCampaignDetailScreen.js + 3 NEW drill-down screens</div>
+    <h2>Campaign detail · rethought as a control panel</h2>
+    <div class="y-rule"></div>
+    <div class="lede">Replaces the flat 1281-LOC scroll. Detail screen now = <strong>hub view</strong> with summary KPI + urgent action queue + drill-down section tiles. Lists with &gt;5 items live in their own dedicated full-screen lists with search/filter/sort. Scales cleanly to 10 sets / 30 influencers / 50 deliverables without scroll-from-hell.</div>
+    <span class="badge-shift">scope change: +3 new mobile list screens · founder approval required</span>
+  </div>
+
+  <div class="stage">
+
+    <!-- ════════════════════════════════════════════════════════
+         PHONE 1 — HUB view (the new BrandCampaignDetailScreen)
+         ════════════════════════════════════════════════════════ -->
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="phone-title">View · hub (campaign detail)</div>
+      <div class="status-bar"><div>9:41</div><div class="right">●●●● 5G ▮</div></div>
+
+      <div class="app-header">
+        <div class="back-btn">← Campaigns</div>
+        <div class="title-row">
+          <div style="flex:1;">
+            <div class="title">Diwali Festival Push</div>
+            <div class="dates">23 May → 30 May 2026</div>
+            <div class="meta"><span class="v">2</span> sets · <span class="v">12</span> influencers · <span class="v">8</span> deliverables</div>
+          </div>
+          <span class="badge live"><span class="dot"></span> Live</span>
+        </div>
+      </div>
+
+      <div class="scroll">
+
+        <!-- Summary card (the only always-visible KPI block) -->
+        <div class="summary-card">
+          <div class="summary-progress-row">
+            <div>
+              <div class="summary-progress-lbl">Campaign progress</div>
+              <div class="summary-progress-pct">68<span style="font-size:20px; color:var(--muted-2);">%</span></div>
+            </div>
+            <div style="font-family:var(--font-body); font-size:10.5px; color:var(--muted); text-align:right;">
+              5 of 8 deliverables<br />complete
+            </div>
+          </div>
+          <div class="summary-progress-bar"><div class="summary-progress-fill" style="width:68%"></div></div>
+          <div class="summary-stats">
+            <div class="summary-stat">
+              <div class="l">Budget</div>
+              <div class="v">62%</div>
+              <div class="sub">₹62.4K / ₹1L</div>
+            </div>
+            <div class="summary-stat">
+              <div class="l">Active</div>
+              <div class="v">7 / 12</div>
+              <div class="sub">influencers</div>
+            </div>
+            <div class="summary-stat">
+              <div class="l">Reach</div>
+              <div class="v">3.1L</div>
+              <div class="sub">4.2% ER</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Urgent action queue (only items needing the brand) -->
+        <div class="action-queue-title"><span class="pill"></span> Needs your attention <span style="margin-left:auto; font-family:var(--font-mono); color:var(--muted-2); font-weight:700;">6</span></div>
+
+        <div class="action-row urgent">
+          <div class="ic-circle">!</div>
+          <div class="body">
+            <div class="title">2 applications waiting</div>
+            <div class="meta">Open call · Food creators</div>
+          </div>
+          <span class="num-pill">2</span>
+          <span class="arrow">›</span>
+        </div>
+
+        <div class="action-row urgent">
+          <div class="ic-circle">⌕</div>
+          <div class="body">
+            <div class="title">3 deliverables to review</div>
+            <div class="meta">@priya.cooks · @vja.foodies · @srija.lifestyle</div>
+          </div>
+          <span class="num-pill">3</span>
+          <span class="arrow">›</span>
+        </div>
+
+        <div class="action-row danger-urgent">
+          <div class="ic-circle">▶</div>
+          <div class="body">
+            <div class="title">1 live URL to confirm</div>
+            <div class="meta">Releases <span class="v">₹15,600</span> Tranche-2</div>
+          </div>
+          <span class="num-pill">1</span>
+          <span class="arrow">›</span>
+        </div>
+
+        <!-- Section drill-down grid -->
+        <div class="section-grid-title"><span class="pill"></span> Explore</div>
+        <div class="section-grid">
+
+          <div class="section-tile">
+            <div class="tile-head">
+              <div class="tile-icon">⊟</div>
+              <span class="tile-arrow">›</span>
+            </div>
+            <div class="tile-label">Sets</div>
+            <div class="tile-value">2</div>
+            <div class="tile-sub"><span class="v">1</span> open call</div>
+          </div>
+
+          <div class="section-tile">
+            <div class="tile-head">
+              <div class="tile-icon">★</div>
+              <span class="tile-arrow">›</span>
+            </div>
+            <div class="tile-label">Influencers</div>
+            <div class="tile-value">12</div>
+            <div class="tile-sub"><span class="v">7</span> active · <span class="v">3</span> negotiating</div>
+          </div>
+
+          <div class="section-tile">
+            <div class="tile-head">
+              <div class="tile-icon">∼</div>
+              <span class="tile-arrow">›</span>
+            </div>
+            <div class="tile-label">Analytics</div>
+            <div class="tile-value">48.7K</div>
+            <div class="tile-sub">likes · <span class="v">4.2%</span> avg ER</div>
+          </div>
+
+          <div class="section-tile">
+            <div class="tile-head">
+              <div class="tile-icon dark">₹</div>
+              <span class="tile-arrow">›</span>
+            </div>
+            <div class="tile-label">Escrow</div>
+            <div class="tile-value">₹15.6K</div>
+            <div class="tile-sub">released · <span class="v">₹46.8K</span> locked</div>
+          </div>
+
+          <div class="section-tile">
+            <div class="tile-head">
+              <div class="tile-icon">▶</div>
+              <span class="tile-arrow">›</span>
+            </div>
+            <div class="tile-label">Content</div>
+            <div class="tile-value">5 / 8</div>
+            <div class="tile-sub">live · <span class="v">3</span> in queue</div>
+          </div>
+
+          <div class="section-tile">
+            <div class="tile-head">
+              <div class="tile-icon dark">⊞</div>
+              <span class="tile-arrow">›</span>
+            </div>
+            <div class="tile-label">Conversions</div>
+            <div class="tile-value">22</div>
+            <div class="tile-sub"><span class="v">₹64.3K</span> revenue</div>
+          </div>
+
+        </div>
+
+        <!-- Collapsible brief -->
+        <div class="brief-card">
+          <div class="brief-head">
+            <div class="brief-title"><span class="pill"></span> Campaign brief</div>
+            <div class="brief-toggle">∨</div>
+          </div>
+          <div class="brief-text">Create reels showcasing Diwali-special pizzas — Paneer Tikka, Tandoori Chicken, Veggie Delight. Mention the festival combo offer. Reels 15-30s.</div>
+        </div>
+
+        <!-- Web dashboard link -->
+        <div class="web-link">
+          <div class="ic">🌐</div>
+          <div class="txt">Full details on web dashboard</div>
+          <div class="arrow">›</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         PHONE 2 — Drill-down example · Influencers list
+         (Tapping "Influencers" tile lands here)
+         ════════════════════════════════════════════════════════ -->
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="phone-title">Drill-down · all influencers (30-scale)</div>
+      <div class="status-bar"><div>9:41</div><div class="right">●●●● 5G ▮</div></div>
+
+      <div class="dd-header">
+        <div class="back-btn">← Diwali Festival Push</div>
+        <div class="title-row">
+          <div>
+            <div class="title">Influencers</div>
+            <div class="crumbs">/dashboard/campaigns/CMP-2418/influencers</div>
+          </div>
+          <div class="count">30 total</div>
+        </div>
+      </div>
+
+      <div class="dd-search">
+        <div class="dd-search-wrap focused">
+          <span class="dd-search-icon">⌕</span>
+          <input class="dd-search-input" placeholder="Search by name or @handle" value="priya" />
+        </div>
+      </div>
+
+      <div class="dd-filter-label">Set</div>
+      <div class="dd-chip-row">
+        <button class="dd-chip active">All <span class="n">30</span></button>
+        <button class="dd-chip">Vijayawada locals · Reels <span class="n">8</span></button>
+        <button class="dd-chip">Tier-2 cities · Stories <span class="n">4</span></button>
+        <button class="dd-chip">Open call · Food <span class="n">18</span></button>
+      </div>
+
+      <div class="dd-filter-label">Status</div>
+      <div class="dd-chip-row">
+        <button class="dd-chip active">All <span class="n">30</span></button>
+        <button class="dd-chip">Active <span class="n">7</span></button>
+        <button class="dd-chip">Negotiating <span class="n">3</span></button>
+        <button class="dd-chip">Invited <span class="n">2</span></button>
+        <button class="dd-chip">Applied <span class="n">2</span></button>
+        <button class="dd-chip">Contracted <span class="n">16</span></button>
+      </div>
+
+      <div class="dd-list">
+
+        <!-- Card 1 -->
+        <div class="inf-list-card">
+          <div class="inf-list-top">
+            <div>
+              <div class="inf-list-name">Priya Reddy</div>
+              <div class="inf-list-handle">@priya.cooks</div>
+              <span class="inf-list-set">▦ Vijayawada locals · Reels</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+              <span class="badge active"><span class="dot"></span> Active</span>
+              <span class="inf-list-fee">₹8,500</span>
+            </div>
+          </div>
+          <div class="inf-list-progress">
+            <div class="inf-list-prog-bar"><div class="inf-list-prog-fill" style="width:50%"></div></div>
+            <span class="inf-list-prog-text">1/2</span>
+          </div>
+          <div class="inf-list-trow">
+            <div class="inf-list-tr released">✓ T1</div>
+            <div class="inf-list-tr locked">○ T2</div>
+            <div class="inf-list-tr empty">— T3</div>
+          </div>
+          <button class="inf-list-action">Open contract</button>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="inf-list-card">
+          <div class="inf-list-top">
+            <div>
+              <div class="inf-list-name">Priyanka Sharma</div>
+              <div class="inf-list-handle">@priyanka.eats</div>
+              <span class="inf-list-set">▦ Open call · Food</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+              <span class="badge contracted"><span class="dot"></span> Contracted</span>
+              <span class="inf-list-fee comm">5% comm.</span>
+            </div>
+          </div>
+          <button class="inf-list-action">Open contract</button>
+        </div>
+
+        <!-- Card 3 (negotiating) -->
+        <div class="inf-list-card">
+          <div class="inf-list-top">
+            <div>
+              <div class="inf-list-name">Priyaa Reddy</div>
+              <div class="inf-list-handle">@priyaa.lifestyle</div>
+              <span class="inf-list-set">▦ Tier-2 cities · Stories</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+              <span class="badge negotiating"><span class="dot"></span> Negotiating</span>
+              <span class="inf-list-fee">₹6,200</span>
+            </div>
+          </div>
+          <button class="inf-list-action" style="background:var(--yellow); color:var(--ink);">Open chat</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       Bottom notes — what changes
+       ════════════════════════════════════════════════════════ -->
+  <aside class="notes-strip">
+    <h2>What this rethink solves · the 30-influencer scroll problem</h2>
+
+    <div class="notes-cols">
+      <div>
+        <h3>Before · flat scroll (current 1281 LOC)</h3>
+        <ul>
+          <li>2 sets visible inline → bad at 10</li>
+          <li>30 influencer rows × 150px = 4500px of scroll</li>
+          <li>No way to filter "show me only negotiating"</li>
+          <li>No way to find "@priya.cooks" without scroll-search</li>
+          <li>Set context lost mid-scroll</li>
+          <li>Analytics buried below influencers</li>
+          <li>Web dashboard link 6000px below the fold</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>After · hub view (HUB phone)</h3>
+        <ul>
+          <li>One summary card with progress + 3 KPIs (always above the fold)</li>
+          <li>Urgent action queue inline (apps / reviews / live confirm) — actionable in &lt; 1 second</li>
+          <li>6 drill-down tiles (Sets · Influencers · Analytics · Escrow · Content · Conversions) — each shows headline number + sub-stat</li>
+          <li>Brief collapsed by default (tap to expand)</li>
+          <li>Web link visible without scrolling past everything</li>
+          <li>Hub fits in ~3 phone-screens of scroll regardless of campaign size</li>
+        </ul>
+        <h3 style="margin-top:14px;">After · drill-down (Influencers phone)</h3>
+        <ul>
+          <li>Search by name/handle (yellow focus halo)</li>
+          <li>Filter by SET (chip row with mono counts)</li>
+          <li>Filter by STATUS (chip row with mono counts)</li>
+          <li>Per-card progress + tranches + action button (Open contract / chat)</li>
+          <li>Scales to 30+ rows cleanly because the user filtered down before reaching the list</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3>New screens needed</h3>
+        <ul>
+          <li><code>BrandCampaignInfluencersListScreen</code> — drill-down from Influencers tile · search + set filter + status filter</li>
+          <li><code>BrandCampaignSetsListScreen</code> — drill-down from Sets tile · set cards with embedded influencer mini-roster + funnel for open calls</li>
+          <li><code>BrandCampaignReviewQueueScreen</code> — drill-down from Content tile · combines content-awaiting-review + live-confirm into one focused queue</li>
+        </ul>
+        <h3 style="margin-top:14px;">Existing screens reused (no new)</h3>
+        <ul>
+          <li><code>BrandConversions</code> — already exists, takes <code>campaignId</code> param · used for Conversions tile drill-down</li>
+          <li><code>BrandContract</code> — already exists · used from influencer card "Open contract"</li>
+          <li><code>BrandNegotiation</code> — already exists · used from "Open chat"</li>
+          <li><code>BrandInfluencerProfile</code> — already exists · used from application "View profile"</li>
+        </ul>
+        <h3 style="margin-top:14px;">Inline (no drill-down) on the hub</h3>
+        <ul>
+          <li>Analytics tile shows summary; tap could open a future dedicated screen OR open BrandConversions for now</li>
+          <li>Escrow tile shows summary; tap could open a future dedicated tranche screen OR open wallet for now</li>
+          <li>Pragmatic: stub these two tile-taps to navigate to the existing closest screen until dedicated screens are built</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="compare-box">
+      <strong>Scope honesty:</strong>
+      this is bigger than my original Flow 5 (just restyle). It's a structural restructure + restyle + 3 new screens. Realistic effort: 6-10h focused work (vs ~3h for restyle-only). Founder authorisation needed before proceeding. Alternative: ship the restyle-only version first (Flow 5a) and carve the hub-redesign as Flow 5b separately if you want to validate the visual change before committing to the structural change. Recommended: do both together as one Flow 5 since the founder explicitly flagged the UX scale problem — restyle alone wouldn't address it.
+    </div>
+
+    <div style="margin-top:18px; font-size:12px; color:#A1A1AA;">
+      <strong style="color:var(--yellow); font-family:var(--font-display);">Functional preservation:</strong>
+      all 5 parallel API calls preserved · 6 action handlers + Alert prompts preserved · navigation routes preserved · useFocusEffect lifecycle preserved · openWebDashboard deeplink preserved · goal-aware conditional rendering preserved · all data still trace to real backend fields (no phantom tiles). <strong style="color:var(--yellow); font-family:var(--font-display);">Zero functional / backend / logic / DB impact — visual + UX restructure only.</strong>
+    </div>
+  </aside>
+</section>
+
+</body>
+</html>
