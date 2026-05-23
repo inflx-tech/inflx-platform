@@ -211,14 +211,17 @@ describe('pricing.service.computeL3OnFollowerTxn — Glow Studio walkthrough', (
   test('Path B salon, ₹2000 → 5% = ₹100 (Day-8 Anita books via Divya click)', async () => {
     const { brand_id, follower_id, influencer_id } = await setupGlowStudio();
     // Create a minimal campaign_influencer row so classifyPath can resolve the influencer
+    // (verify-twice: campaigns has no `goal` column — that's on campaign_sets;
+    // campaign_sets.name is NOT NULL)
     const { rows: cRows } = await query(
-      `INSERT INTO campaigns (brand_id, name, status, goal, start_date, end_date)
-       VALUES ($1, 'Diwali Glow Up', 'active', 'conversion', current_date, current_date + 30)
+      `INSERT INTO campaigns (brand_id, name, status, start_date, end_date)
+       VALUES ($1, 'Diwali Glow Up', 'active', current_date, current_date + 30)
        RETURNING id`,
       [brand_id]
     );
     const { rows: csRows } = await query(
-      `INSERT INTO campaign_sets (campaign_id, goal) VALUES ($1, 'conversion') RETURNING id`,
+      `INSERT INTO campaign_sets (campaign_id, name, goal)
+       VALUES ($1, 'Set 1', 'conversion') RETURNING id`,
       [cRows[0].id]
     );
     const { rows: ciRows } = await query(

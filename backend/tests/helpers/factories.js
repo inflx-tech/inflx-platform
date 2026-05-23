@@ -115,10 +115,27 @@ async function registerBrand(token, overrides = {}) {
 
   // Auto-provision enterprise-tier subscription so the new quotaCheck
   // middleware (Phase A4) doesn't break tests that create multiple
-  // campaigns/products/sets per brand. Skip with `{ tier: 'free' }`
-  // (or any non-default) when a test wants to assert quota behavior.
+  // campaigns/products/sets per brand. Robust to missing seed: SELECT-
+  // INTO-INSERT means if the requested tier doesn't exist, the INSERT
+  // inserts 0 rows and we proceed without a subscription row (the
+  // quotaCheck middleware will lazy-create a Free row on first call).
+  // Skip with `{ tier: 'free' }` (or any other tier_key) when a test
+  // wants to assert quota behavior.
   const tierKey = tierKeyOverride || 'enterprise';
-  await setBrandTier(brand.id, tierKey);
+  try {
+    await query(
+      `INSERT INTO brand_subscriptions
+         (brand_id, tier_id, status, current_cycle_start, current_cycle_end)
+       SELECT $1, t.id, 'active', current_date, current_date + 30
+         FROM subscription_tiers t
+        WHERE t.tier_key = $2`,
+      [brand.id, tierKey]
+    );
+  } catch (_) {
+    // unique-constraint violation (brand already has active sub) or
+    // any other transient error — proceed silently; quotaCheck will
+    // lazy-create on first call.
+  }
   return brand;
 }
 
