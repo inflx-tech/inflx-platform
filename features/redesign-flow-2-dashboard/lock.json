@@ -24,11 +24,18 @@
       "run_at": "2026-05-23T12:35:27Z",
       "report_path": "qa/reports/2026-05-23T12-35-27-635Z/QA-REPORT.md"
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-23 chat go (\"ok pls go to implementation\" — pre-authorized step 5 of locked 5-step rhythm)",
+    "released_at": "2026-05-23",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "1c931ca",
+        "deployed_at": "2026-05-23",
+        "note": "git push origin main triggered Vercel auto-deploy of brand-web — new dashboard chrome + home page live for all authenticated brands"
+      }
+    },
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched (gov-check Rule 5 does not fire)"
   }
 }
