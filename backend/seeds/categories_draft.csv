@@ -1,0 +1,17 @@
+category_key,name,label,path_a_pct,path_b_pct,path_c_pct,sort_order,description
+salon_beauty,salon_beauty,Salon & Beauty,9.00,5.00,7.00,1,Hair / spa / beauty services
+restaurant,restaurant,Restaurant,8.00,4.00,6.00,2,Dine-in / pay-at-store
+fashion,fashion,Fashion,10.00,5.00,7.00,3,Apparel / accessories
+car_rental,car_rental,Car Rental,8.00,4.00,6.00,4,Vehicle rentals
+packaged_food,packaged_food,Packaged Food,9.00,5.00,7.00,5,Branded / packaged food
+florist,florist,Florist,10.00,5.00,7.00,6,Flower / bouquet
+wedding_planner,wedding_planner,Wedding Planner,10.00,5.00,7.00,7,Event / wedding planning
+function_hall,function_hall,Function Hall,10.00,5.00,7.00,8,Banquet / event venue
+gym_fitness,gym_fitness,Gym & Fitness,8.00,4.00,6.00,9,Gym / fitness studio
+travel_hotel,travel_hotel,Travel & Hotel,9.00,5.00,7.00,10,Hotel / travel booking
+electronics,electronics,Electronics,8.00,4.00,6.00,11,Consumer electronics
+jewellery,jewellery,Jewellery,8.00,4.00,6.00,12,Jewellery retail
+footwear,footwear,Footwear,8.00,4.00,6.00,13,Footwear retail
+furniture,furniture,Furniture,8.00,4.00,6.00,14,Furniture retail
+optical,optical,Optical,8.00,4.00,6.00,15,Eyewear / opticals
+home_services,home_services,Home Services,8.00,4.00,6.00,16,Plumber / electrician / cleaning

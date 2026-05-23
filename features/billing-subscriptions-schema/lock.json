@@ -1,0 +1,36 @@
+{
+  "feature": "billing-subscriptions-schema",
+  "area": "backend-migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'take your best decision on backend and tables and all'. Phase A1 of the INFLX 3-Layer Revenue Model rollout; schema only, additive, idempotent, deploy-inert until executed. Step-5 lock decision delegated per feedback_deploy_cadence.md autonomy directive.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend/migrations/058_billing_subscriptions.sql runs on Render→Supabase on push. Additive only (5 new tables + 4 new enums + 20 seed rows); no existing table touched. Pushed only on explicit founder go; never silent. Local-only (localhost:5433/inflx_dev) until then.",
+  "fix": "Phase A1 of the INFLX Revenue Model: the Postgres schema for L1 (subscription_tiers, brand_subscriptions, subscription_invoices), L3 (categories, attribution_clicks), with admin-editable tier rows + category rows. L2 (escrow_fee_tiers) was delivered by M037 and reused as-is; no L2 schema work in this phase.",
+  "related": [
+    "features/escrow-fee-tiers-l2",
+    "features/billing-column-rename",
+    "features/billing-pricing-service",
+    "features/billing-quota-middleware",
+    "features/billing-attribution-l3",
+    "features/billing-subscription-mandate",
+    "features/billing-admin-and-brand-ui",
+    "features/billing-revenue-reconciliation"
+  ],
+  "result": "Migration 058 applied to LOCAL dev DB (localhost:5433/inflx_dev) 2026-05-23. 5 tables + 4 enums + 4 subscription_tiers rows + 16 categories rows + uniq_brand_subs_active partial unique index + 4 updated_at triggers all verified by run-058.js sanity probes. Re-applied — zero state delta (idempotent). brand_subscriptions/subscription_invoices/attribution_clicks empty (no backfill, lazy-create in A4/A5). Awaiting explicit founder go on git push (production-impacting — Render runs 058 on Supabase prod).",
+  "regression_proof": "Additive DDL only; no backend/src/** modified. pnpm qa AFTER local apply: 67/67 GREEN, STATE=GREEN, gate=0, pwExit=0 reportExit=0 — report C:/WORK/inflx-platform/qa/reports/2026-05-23T07-28-10-155Z/QA-REPORT.md. Backend grep verified: no current code references any of the 5 new table names or 4 new enum types. Re-apply produces zero state delta (full idempotency via IF NOT EXISTS + DO $$ EXCEPTION + ON CONFLICT DO NOTHING).",
+  "discipline": "Contract-first per GOVERNANCE.md: spec/workflow/expected-outputs/impact authored BEFORE migration SQL. CSV-first seeds per feedback_csv_first_seeds.md: founder edits backend/seeds/*_draft.csv (gitignored review artifacts) before any seed value reaches production. Production-impacting migration surfaced for explicit go, never pushed silently per feedback_deploy_cadence.md hard carve-out.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "LOCAL APPLY DONE (2026-05-23, 5 tables + 4 enums + 20 seed rows + partial unique index, idempotent re-run clean, pnpm qa 67/67 GREEN C1 gate=0). Pending founder explicit go on git push origin main → Render runs 058 on Supabase prod (PRODUCTION-IMPACTING, surfaced never silent per CLAUDE.md §1)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A backend-only contract; attestation set to satisfy gov-check Rule 3 if/when this contract is bundled with UI-governed changesets later in the program. No UI in Phase A1.",
+  "mockup_locked_at": "2026-05-23"
+}
