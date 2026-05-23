@@ -24,6 +24,7 @@ import MeScreen from '../screens/follower/MeScreen';
 import InfluencerStoreScreen from '../screens/follower/InfluencerStoreScreen';
 import BrandStoreScreen from '../screens/follower/BrandStoreScreen';
 import FollowedInfluencersScreen from '../screens/follower/FollowedInfluencersScreen';
+import MealsChatScreen from '../screens/follower/MealsChatScreen';
 
 // Car rental specific screens
 import CarDetailScreen from '../screens/follower/CarDetailScreen';
@@ -53,6 +54,7 @@ const SHARED_SCREENS = (Stack) => (
   <>
     <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
     <Stack.Screen name="BrandStore" component={BrandStoreScreen} />
+    <Stack.Screen name="MealsChat" component={MealsChatScreen} />
     <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
     <Stack.Screen name="PayAtStore" component={PayAtStoreScreen} />
     <Stack.Screen name="PreBook" component={PreBookScreen} />

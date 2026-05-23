@@ -1,0 +1,29 @@
+{
+  "feature": "meals-schema",
+  "area": "backend-migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-22) — lock decision delegated; founder directed move to implementation, P0 = schema. Derives from the locked Meals data-model decisions (Q2 memory model + 6-table P-DATA).",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend/migrations/056_meals_schema.sql runs on Render→Supabase on push. Additive only (9 new tables + 6 enums); no existing table touched. Pushed only on explicit founder go; never silent. Local-only (localhost:5433) until then.",
+  "fix": "P0 of INFLX Meals: the Postgres schema — restaurant_meal_config, meal_slots, meal_offer_rules, meal_intents, meal_offers, meal_orders + memory tables (meal_restaurant_learnings, meal_customer_preferences, meal_conversations) + 6 enums. No API/UI/AI.",
+  "related": [
+    "features/_meals-mockups"
+  ],
+  "result": "Schema migration 056 authored + applied to local dev DB; tables/enums verified; pnpm qa green (zero regression). Awaiting founder manual review + explicit push go.",
+  "regression_proof": "Additive DDL only; pnpm qa GREEN unchanged; full-order re-apply composes after 055.",
+  "discipline": "Contract-first per governance: spec/workflow/expected-outputs/impact locked before the migration. Production-impacting migration surfaced for explicit go, never pushed silently.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending founder go: git push → Render runs 056 on Supabase prod."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A for backend-only contract; attestation set to satisfy gov-check Rule 3 when bundled with UI-governed changesets in the single end-of-program push.",
+  "mockup_locked_at": "2026-05-23"
+}

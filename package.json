@@ -20,6 +20,7 @@
     "qa:html": "pnpm exec playwright show-report qa/artifacts/html-report",
     "qa:mobile": "cd Packages/Mobile && npm test",
     "qa:db": "node qa/scripts/qa-db.mjs",
+    "qa:ai-eval": "node qa/scripts/ai-eval.mjs",
     "qa:db:up": "node qa/scripts/db-up.mjs",
     "qa:db:down": "node qa/scripts/db-down.mjs",
     "qa:gov": "node qa/scripts/governance-check.mjs",

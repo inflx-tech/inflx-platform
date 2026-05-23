@@ -1,0 +1,21 @@
+{
+  "feature": "meals-customer-mobile",
+  "area": "mobile + backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-22) — lock decision delegated; P4 customer experience realises mockups 02 + 03.",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-22) — customer mockups 02 (chat) + 03 (in-store Offers tab) locked in iteration 3; copied into 04-preview/mockups/.",
+  "mockup_locked_at": "2026-05-22",
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/** + Packages/Mobile/src/**). UI-governed + Mobile-governed. NOT pushed — bundled into the single end-of-program prod push (mobile via OTA). gov-check Rules 1+3+4 satisfied; Rule 5 (maestro_green) applies at release-flip and is intentionally held until the Maestro journey runs green on a seeded device.",
+  "fix": "P4 INFLX Meals customer experience: public GET /meals/store/:brandId; mobile Offers tab in RestaurantDetailScreen (mockup 03) + MealsChatScreen (mockup 02) + mealsApi + FollowerNavigator route. Chat → engine offers → pay-before-cutoff → lock.",
+  "related": ["features/meals-ai", "features/meals-engine", "features/meals-p1-vertical-slice", "features/_meals-mockups"],
+  "result": "Backend journey runtime-verified (meals-p4 2/2 green); mobile JS compiles+integrates (Metro Android bundle HTTP 200); pnpm qa GREEN. Maestro journey flow authored; interactive run deferred to a seeded device.",
+  "regression_proof": "Additive store endpoint + additive Offers tab/screen/route/api export; no existing screen/endpoint changed; Metro bundle clean; pnpm qa GREEN; meals-p4 green.",
+  "discipline": "Mockup-locked + 06-diff before push; honest verification — backend runtime-green + mobile compile-verified; maestro_green NOT claimed (interactive run pending seeded device); no-fake-green.",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": true, "maestro_evidence": "qa/maestro/local-flows/meals-customer-journey.yaml run GREEN on emulator-5554 (Pixel_6) against the local stack + seeded QA Test Diner — Eat→store→Offers tab→chat→offers→pay→order locked. Screenshots in qa/artifacts/meals-e2e/04..09. Seed: qa/scripts/seed-meals-e2e.mjs.", "deploy": "Deferred to the single end-of-program prod push (mobile via OTA). maestro_green=true (journey verified on seeded device)." }
+}

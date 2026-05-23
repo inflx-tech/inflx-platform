@@ -54,6 +54,9 @@ const returnsRoutes         = require('./returns.routes');
 // Fashion-2 — creator-curated lookbooks (outfit collections)
 const lookbooksRoutes       = require('./lookbooks.routes');
 
+// INFLX Meals — planned-meal marketplace (P1 vertical slice)
+const mealsRoutes           = require('./meals.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional, authenticate } = require('../middleware/auth');
@@ -112,6 +115,9 @@ router.use('/brands', engagementRoutes);
 
 // ── Phase 6 — Notifications (any authenticated user) ─────────────────────────
 router.use('/notifications', notificationRoutes);
+
+// ── INFLX Meals — planned-meal marketplace (P1) ──────────────────────────────
+router.use('/meals', mealsRoutes);
 
 // ── Phase 4 — Public store endpoints (no auth required) ──────────────────────
 router.get('/store/:influencer_handle/products', authenticateOptional, followerCtrl.getStoreProducts);

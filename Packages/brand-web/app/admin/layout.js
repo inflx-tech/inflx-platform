@@ -28,6 +28,7 @@ const NAV = [
   { href: '/admin/payouts', label: 'Payouts', icon: '💸' },
   { section: 'SETTINGS' },
   { href: '/admin/settings/payments', label: 'Payment Config', icon: '⚙️' },
+  { href: '/admin/meals',             label: 'Meals',          icon: '🍽️' },
   { href: '/admin/users',             label: 'Admin Users',    icon: '👥' },
 ];
 

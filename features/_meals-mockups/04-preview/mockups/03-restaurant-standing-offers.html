@@ -1,0 +1,189 @@
+<!-- preview-size: 420x1280 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Meals — Offers tab inside the restaurant store</title>
+<style>
+  /* Mirrors the real RestaurantDetailScreen (lightColors palette + Outfit/Jakarta/mono). */
+  :root{
+    --bg:#FAFAFA;--paper:#fff;--surface:#F4F4F5;
+    --ink:#0A0A0A;--ink2:#18181B;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;
+    --border:#E4E4E7;--border2:#D4D4D8;
+    --yellow:#EAB308;--yellowDeep:#CA8A04;--yellow50:#FEFCE8;--yellow200:#FEF08A;
+    --success:#00B894;--danger:#E8401A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#d8dbe2;font:14px/1.45 'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .disp{font-family:'Outfit','Plus Jakarta Sans',sans-serif}
+  .mono{font-family:'JetBrains Mono','SFMono-Regular',Menlo,monospace}
+  .phone{max-width:400px;margin:0 auto;background:var(--bg);min-height:100vh;display:flex;flex-direction:column;position:relative}
+
+  /* Hero */
+  .hero{height:200px;position:relative;background:linear-gradient(135deg,#b45309,#f59e0b 60%,#fbbf24)}
+  .hero .photo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:74px;opacity:.92}
+  .hero .topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:12px 16px}
+  .hero .hbtn{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--ink)}
+  .hero .pag{position:absolute;bottom:10px;right:12px;background:rgba(10,10,10,.7);color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
+
+  /* Header block */
+  .sec{padding:14px 16px 8px}
+  .hrow{display:flex;align-items:flex-start;gap:10px}
+  .bname{font-family:'Outfit',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.4px;line-height:1.15;margin:0}
+  .cuis{font-size:12px;color:var(--muted);font-weight:500;margin-top:4px}
+  .rate{background:var(--success);color:#fff;font-weight:800;font-size:12px;padding:3px 8px;border-radius:4px;white-space:nowrap}
+  .meta{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:9px}
+  .meta .m{font-size:11px;color:var(--muted)}
+  .pill-open{font-size:10px;font-weight:800;color:var(--success);background:var(--success50,#ECFDF5);border:1px solid #b7ebdc;padding:3px 8px;border-radius:99px}
+  .amen{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
+  .amen .a{background:var(--surface);border:1px solid var(--border);font-size:10px;font-weight:600;color:var(--ink2);padding:4px 8px;border-radius:4px}
+
+  /* Sub-tabs (Overview/Menu/Offers/Reviews/Photos) */
+  .tabs{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--paper);margin-top:10px;position:sticky;top:0;z-index:5}
+  .tab{flex:1;text-align:center;padding:12px 2px;font-size:11.5px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent}
+  .tab.on{color:var(--ink);font-weight:800;border-bottom-color:var(--yellow)}
+
+  /* Offers tab content */
+  .o-intro{padding:12px 16px 0;font-size:11.5px;color:var(--muted);display:flex;gap:7px;align-items:flex-start}
+  .o-intro b{color:var(--ink2)}
+  .slots{display:flex;gap:8px;padding:12px 16px 4px}
+  .slot{flex:1;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--paper)}
+  .slot.on{border-color:var(--yellow);background:var(--yellow50)}
+  .slot .sn{font-size:11px;font-weight:800}
+  .slot .sc{font-size:10px;color:var(--muted3);margin-top:2px}
+  .slot.on .sc{color:var(--yellowDeep)}
+
+  /* Party-size tabs (the new "their own tabs") */
+  .psize{display:flex;gap:7px;overflow-x:auto;padding:12px 16px 4px}
+  .ps{flex:0 0 auto;border:1px solid var(--border);background:var(--paper);border-radius:99px;padding:7px 13px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .ps.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ps .ct{opacity:.6;font-weight:600;margin-left:3px}
+
+  /* Offer cards WITH photos */
+  .offers{padding:8px 16px 4px;display:flex;flex-direction:column;gap:14px}
+  .ocard{background:var(--paper);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .ophoto{height:118px;position:relative;display:flex;align-items:center;justify-content:center;font-size:50px}
+  .ophoto .badge{position:absolute;top:10px;left:10px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;background:rgba(10,10,10,.78);color:#fff}
+  .ophoto .save{position:absolute;top:10px;right:10px;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;background:var(--yellow);color:var(--ink)}
+  .obody{padding:12px 13px 13px}
+  .oname{font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;letter-spacing:-.2px}
+  .oitems{font-size:12px;color:var(--muted);margin:4px 0 8px}
+  .oprice{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px}
+  .oprice .s{font-size:12px;color:var(--muted3);text-decoration:line-through;font-weight:500;margin-left:7px}
+  .oprice .ph{font-size:11px;color:var(--muted);font-weight:500}
+  .ofree{font-size:11.5px;color:var(--success);font-weight:700;margin-top:4px}
+  .ocut{font-size:11px;color:var(--yellowDeep);margin-top:6px}
+  .obtn{margin-top:11px;width:100%;border:none;background:var(--yellow);color:var(--ink);border-radius:9px;padding:11px;font-weight:800;font-size:13px;font-family:inherit;cursor:pointer}
+
+  /* fallback chat row */
+  .chatcta{margin:14px 16px 4px;background:var(--paper);border:1.5px dashed var(--border2);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center}
+  .chatcta .ico{font-size:20px}
+  .chatcta .tx{flex:1;font-size:12px;color:var(--muted)}.chatcta .tx b{color:var(--ink)}
+  .chatcta button{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:12px;font-family:inherit;cursor:pointer}
+
+  /* sticky bottom CTA (matches real store) */
+  .cta{position:sticky;bottom:0;background:var(--paper);border-top:1px solid var(--border);display:flex;gap:8px;padding:12px 16px}
+  .cta .call{width:52px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .cta .main{flex:1;background:var(--yellow);color:var(--ink);border:none;border-radius:10px;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer}
+</style>
+</head>
+<body>
+  <div class="phone">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="photo">🍛</div>
+      <div class="topbar"><span class="hbtn">←</span><span class="hbtn">♡</span></div>
+      <div class="pag">1 / 6</div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="sec">
+      <div class="hrow">
+        <div style="flex:1">
+          <h1 class="bname">Spice Route Kitchen</h1>
+          <div class="cuis">Biryani · Hyderabadi · North Indian</div>
+        </div>
+        <span class="rate">★ 4.4</span>
+      </div>
+      <div class="meta">
+        <span class="m mono">₹600/two</span>
+        <span class="m mono">📍 Jubilee Hills</span>
+        <span class="pill-open">● Open till 11 PM</span>
+      </div>
+      <div class="amen">
+        <span class="a">🅿 Parking</span><span class="a">🌳 Outdoor</span><span class="a">📶 Wi-Fi</span><span class="a">🛵 Self-delivery</span>
+      </div>
+    </div>
+
+    <!-- SUB-TABS — same row as the live store, with the new Offers tab -->
+    <div class="tabs">
+      <div class="tab">Overview</div>
+      <div class="tab">Menu (42)</div>
+      <div class="tab on">Offers</div>
+      <div class="tab">Reviews</div>
+      <div class="tab">Photos</div>
+    </div>
+
+    <!-- OFFERS TAB CONTENT -->
+    <div class="o-intro"><span>ℹ️</span><span><b>Plan-ahead meals</b> — pick an offer and pay before the cutoff. Kitchen cooks to order &amp; self-delivers within 5 km.</span></div>
+
+    <div class="slots">
+      <div class="slot on"><div class="sn">🍴 Lunch · 1 PM</div><div class="sc">order by 11 AM</div></div>
+      <div class="slot"><div class="sn">🌙 Dinner · 8 PM</div><div class="sc">order by 6 PM</div></div>
+    </div>
+
+    <!-- PARTY-SIZE TABS -->
+    <div class="psize">
+      <span class="ps">All<span class="ct">8</span></span>
+      <span class="ps on">🧍 Single<span class="ct">2</span></span>
+      <span class="ps">👥 2<span class="ct">2</span></span>
+      <span class="ps">👨‍👩‍👦 3<span class="ct">1</span></span>
+      <span class="ps">👨‍👩‍👧‍👦 Family<span class="ct">2</span></span>
+      <span class="ps">🏢 Office<span class="ct">1</span></span>
+    </div>
+
+    <!-- OFFER CARDS (Single selected) — now with photos -->
+    <div class="offers">
+      <div class="ocard">
+        <div class="ophoto" style="background:linear-gradient(135deg,#d97706,#fbbf24)">🍗
+          <span class="badge">🎁 Freebie</span><span class="save">★ Popular</span>
+        </div>
+        <div class="obody">
+          <div class="oname">First-Timer Solo</div>
+          <div class="oitems">Chicken Biryani + free Masala Soda · medium spicy</div>
+          <div class="oprice">₹300</div>
+          <div class="ofree">🎁 Free Masala Soda</div>
+          <div class="ocut">⏳ Lunch slot · order by 11 AM</div>
+          <button class="obtn">Order for lunch →</button>
+        </div>
+      </div>
+
+      <div class="ocard">
+        <div class="ophoto" style="background:linear-gradient(135deg,#16a34a,#84cc16)">🥗
+          <span class="badge">⏰ Pre-book</span>
+        </div>
+        <div class="obody">
+          <div class="oname">Quick Solo Lunch</div>
+          <div class="oitems">Any 1 biryani + curd · pre-book by 10 AM → 10% off</div>
+          <div class="oprice">₹198 <span class="s">₹220</span></div>
+          <div class="ocut">⏳ Lunch slot · order by 11 AM</div>
+          <button class="obtn">Order for lunch →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chatcta">
+      <span class="ico">💬</span>
+      <span class="tx"><b>Don't see your combo?</b> Tell me what you want and I'll build an offer for you.</span>
+      <button>Chat</button>
+    </div>
+
+    <!-- STICKY BOTTOM CTA -->
+    <div class="cta">
+      <div class="call">📞</div>
+      <button class="main">Order for lunch →</button>
+    </div>
+  </div>
+</body>
+</html>

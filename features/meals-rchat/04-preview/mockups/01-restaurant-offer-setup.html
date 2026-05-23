@@ -1,0 +1,176 @@
+<!-- preview-size: 1000x980 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Meals — Restaurant offer setup (AI co-pilot)</title>
+<style>
+  :root{--orange:#f47920;--orange-d:#d9650f;--green:#16a34a;--red:#e23b3b;--ink:#1a2233;--t2:#5b6577;--t3:#8a93a6;--border:#e7eaf0;--bg:#f4f6f9;--card:#fff;--chip:#fff6ef}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:14px/1.5 'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .top{background:linear-gradient(90deg,#1a2233,#2a3550);color:#fff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+  .top .brand{font-weight:800;font-size:16px}.top .brand b{color:var(--orange)}
+  .top .sub{font-size:12px;color:#aab4c8}
+  .wrap{display:grid;grid-template-columns:1fr 280px;gap:18px;padding:20px 22px}
+  .ai-intro{background:var(--chip);border:1px solid #f3d9c2;border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#7a4a1d;display:flex;gap:10px}
+  .ai-intro .bot{font-size:20px}
+  h2{font-size:15px;margin:0 0 12px}
+
+  /* Party-size tabs */
+  .psize{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .ps{border:1px solid var(--border);background:#fff;border-radius:99px;padding:8px 15px;font-size:13px;font-weight:700;color:var(--t2);cursor:pointer;font-family:inherit}
+  .ps.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .ps .ct{opacity:.6;font-weight:600;margin-left:4px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .offer{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative}
+  .offer.acc{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+  .o-head{display:flex;gap:11px;margin-bottom:8px}
+  .o-photo{width:62px;height:62px;border-radius:9px;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:26px}
+  .o-photo.has{background:linear-gradient(135deg,#d97706,#fbbf24)}
+  .o-photo.add{background:#fff;border:1.5px dashed #f3c0db;color:#be185d;font-size:18px;cursor:pointer}
+  .o-photo.add span{font-size:8.5px;font-weight:800;margin-top:2px}
+  .o-headtext{min-width:0}
+  .tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:99px;margin-bottom:6px}
+  .t-disc{background:#e8f0fe;color:#2563eb}.t-free{background:#e7f7ee;color:var(--green)}.t-mix{background:#f3e8ff;color:#7c3aed}.t-time{background:#fff4e0;color:#b8740b}
+  .o-name{font-weight:800;font-size:14px;margin:0 0 2px}
+  .o-who{font-size:11px;color:var(--t3)}
+  .o-body{font-size:12.5px;color:var(--t2);margin:0 0 10px;min-height:20px}
+  .o-deal{font-size:13px;font-weight:700;margin-bottom:4px}
+  .strike{color:var(--t3);text-decoration:line-through;font-weight:500}
+  .o-margin{font-size:11px;color:var(--t3);font-style:italic;margin-bottom:10px}
+  .o-margin b{color:var(--green);font-style:normal}
+  .acts{display:flex;gap:6px}
+  .b{flex:1;border:none;border-radius:8px;padding:7px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+  .b-acc{background:var(--green);color:#fff}.b-mod{background:#fff;border:1px solid var(--border);color:var(--t2)}.b-rej{background:#fff;border:1px solid #f3c9c9;color:var(--red)}
+  .acc-badge{position:absolute;top:10px;right:10px;font-size:10px;font-weight:800;color:var(--green)}
+  .side{display:flex;flex-direction:column;gap:14px}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin:0 0 4px}
+  .panel .hint{font-size:11px;color:var(--t3);margin:0 0 10px}
+  .clock{display:flex;flex-direction:column;gap:7px}
+  .clock .crow{display:flex;align-items:center;gap:6px}
+  .clock .crow input{border:1px solid var(--border);border-radius:7px;padding:5px 7px;font-size:12px;font-family:inherit;width:46px;text-align:center}
+  .clock .crow .lbl{font-size:11.5px;color:var(--t2);flex:1}
+  .clock .crow .pct{font-weight:800;color:var(--orange)}
+  .clock .crow .x{color:var(--t3);cursor:pointer;font-size:14px;border:none;background:none;padding:0 2px}
+  .clock-add{margin-top:8px;font-size:11.5px;font-weight:700;color:var(--orange);background:none;border:1px dashed #f3d9c2;border-radius:8px;padding:6px;width:100%;cursor:pointer;font-family:inherit}
+  .saved{font-size:10.5px;color:var(--green);font-weight:700;margin-top:6px;display:block}
+  .floor{font-size:12px;color:var(--t2)}.floor b{color:var(--ink)}
+  .createbox{background:#fff;border:1.5px dashed #f3c0db;border-radius:12px;padding:14px 16px;margin:16px 0 16px}
+  .createbox h3{font-size:13px;margin:0 0 4px;color:#be185d}
+  .createbox p{font-size:12px;color:var(--t2);margin:0 0 10px}
+  .createbox textarea{width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;font-size:12.5px;font-family:inherit;resize:none;min-height:40px}
+  .createbox .crow{display:flex;gap:8px;align-items:center;margin-top:9px}
+  .createbox button{background:#be185d;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .createbox .ex{font-size:11px;color:var(--t3)}
+  .preview-rule{margin-top:10px;background:#fdf2f8;border:1px solid #f8d4e7;border-radius:8px;padding:9px 11px;font-size:11.5px;color:#9d174d}
+  .preview-rule b{color:#be185d}
+  .chatbar{margin-top:4px;display:flex;gap:8px}
+  .chatbar input{flex:1;border:1.5px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13px;font-family:inherit}
+  .chatbar button{background:var(--orange);color:#fff;border:none;border-radius:10px;padding:0 18px;font-weight:700;cursor:pointer;font-family:inherit}
+  .reason{margin-top:8px;font-size:11px;color:var(--t3)}
+  .learned{background:#eef7f0;border:1px solid #cde9d6;border-radius:8px;padding:8px 10px;font-size:11.5px;color:#2c6e44}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div><div class="brand">INFL<b>X</b> Meals</div><div class="sub">Restaurant offer setup</div></div>
+    <div class="sub">Spice Route Kitchen · Hyderabad · Casual dining</div>
+  </div>
+
+  <div class="wrap">
+    <div>
+      <div class="ai-intro">
+        <span class="bot">🤖</span>
+        <span>I read your menu and your details. Pick a <b>party size</b> below to manage its offers. <b>Accept</b>, <b>Modify</b>, or <b>Reject</b> each — these use <b>your own prices</b>; the margin note is my rough guess. <b>Add a photo</b> to any offer so it looks great in your store's Offers tab.</span>
+      </div>
+
+      <h2>Suggested offers <span style="font-weight:500;color:var(--t3);font-size:12px">— pick a party size</span></h2>
+
+      <!-- PARTY-SIZE TABS -->
+      <div class="psize">
+        <span class="ps">🧍 Single<span class="ct">2</span></span>
+        <span class="ps">👥 For 2<span class="ct">2</span></span>
+        <span class="ps">👨‍👩‍👦 For 3<span class="ct">2</span></span>
+        <span class="ps on">👨‍👩‍👧‍👦 Family<span class="ct">2</span></span>
+        <span class="ps">🏢 Office<span class="ct">2</span></span>
+      </div>
+
+      <!-- FAMILY tab active -->
+      <div class="grid">
+        <div class="offer acc">
+          <span class="acc-badge">✓ Accepted</span>
+          <div class="o-head">
+            <div class="o-photo has">🍛</div>
+            <div class="o-headtext">
+              <span class="tag t-mix">🔀 mixed</span>
+              <div class="o-name">Family Mixed Pack</div>
+              <div class="o-who">For 4 people · 📷 photo added</div>
+            </div>
+          </div>
+          <div class="o-body">2 Chicken + 2 Veg Biryani + free Raita ×2</div>
+          <div class="o-deal"><span class="strike">₹1,040</span> → ₹950 + 🎁 Raita</div>
+          <div class="o-margin">rough margin to you: <b>~₹520</b></div>
+          <div class="acts"><button class="b b-mod">Modify</button><button class="b b-rej">Remove</button></div>
+        </div>
+
+        <div class="offer">
+          <div class="o-head">
+            <div class="o-photo add">📷<span>Add photo</span></div>
+            <div class="o-headtext">
+              <span class="tag t-free">🎁 free add-on</span>
+              <div class="o-name">Veg Family Feast</div>
+              <div class="o-who">For 4 people · no photo yet</div>
+            </div>
+          </div>
+          <div class="o-body">4 Veg Biryani + free 4 Gulab Jamun + free delivery</div>
+          <div class="o-deal">₹880 <span style="color:var(--green);font-weight:700">(no discount, freebies)</span></div>
+          <div class="o-margin">rough margin to you: <b>~₹430</b></div>
+          <div class="acts"><button class="b b-acc">Accept</button><button class="b b-mod">Modify</button><button class="b b-rej">Reject</button></div>
+        </div>
+      </div>
+
+      <!-- CREATE YOUR OWN -->
+      <div class="createbox">
+        <h3>✏️ Create your own offer type</h3>
+        <p>Describe any offer in plain English — I'll turn it into a rule using your menu &amp; prices, and you can add a photo. You stay in control of the final numbers.</p>
+        <textarea>Rainy-day combo: if it's raining, 2 biryanis + free hot soup, ₹50 off, only for orders within 3 km</textarea>
+        <div class="crow">
+          <button>Build this rule</button>
+          <span class="ex">e.g. "Birthday pack", "Monday student discount", "Free dessert over ₹800"</span>
+        </div>
+        <div class="preview-rule">🤖 I'll set this up as → <b>Trigger:</b> weather = rain · <b>Items:</b> 2 biryanis + soup (free) · <b>Discount:</b> ₹50 · <b>Radius:</b> 3 km · <b>Party size:</b> For 2. Review, add a photo &amp; accept before it goes live.</div>
+      </div>
+
+      <div class="chatbar">
+        <input placeholder="Modify by chat — e.g. “make the family pack 3 biryanis, not 4” or “reject the Tuesday one, too thin”">
+        <button>Send</button>
+      </div>
+      <div class="reason">💡 You just said: “office is too thin, rice &amp; gas cost more” → <span class="learned" style="display:inline">AI learned: your bulk costs are higher — future margin hints adjusted.</span></div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <h3>Your discount clock</h3>
+        <div class="hint">Editable — set how your price falls as the cutoff nears. These are <b>your</b> values, change anytime.</div>
+        <div class="clock">
+          <div class="crow"><input value="1"><span class="lbl">day(s) before</span><input value="20"><span class="pct">%</span><button class="x">×</button></div>
+          <div class="crow"><input value="5"><span class="lbl">hour(s) before</span><input value="12"><span class="pct">%</span><button class="x">×</button></div>
+          <div class="crow"><input value="2"><span class="lbl">hour(s) before</span><input value="5"><span class="pct">%</span><button class="x">×</button></div>
+        </div>
+        <button class="clock-add">+ Add a step</button>
+        <span class="saved">✓ Saved · applies to all auto-offers</span>
+      </div>
+      <div class="panel">
+        <h3>Your limits (safety)</h3>
+        <div class="floor">Never discount below cost: <b>on</b><br>Max total discount: <b>25%</b><br>Lunch capacity: <b>40 orders</b><br>Delivery radius: <b>5 km</b></div>
+      </div>
+      <div class="panel">
+        <h3>Auto-offer</h3>
+        <div class="floor"><b style="color:var(--green)">ON</b> — approved offers go out instantly when customers ask. Switch off to review each first.</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

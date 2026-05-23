@@ -27,7 +27,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linking, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { lightColors, fonts } from '../../theme/tokens';
-import { followerApi } from '../../services/api';
+import { followerApi, mealsApi } from '../../services/api';
 import {
   CreatorChip, VegDot, StatusPill, SagarStrip, FilterChip,
 } from '../../components/restaurant';
@@ -38,14 +38,18 @@ const HERO_HEIGHT = 230;
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'menu',     label: 'Menu'     },
+  { key: 'offers',   label: 'Offers'   },
   { key: 'reviews',  label: 'Reviews'  },
   { key: 'photos',   label: 'Photos'   },
 ];
+
+const PARTY_LABELS = { single: '🧍 Single', duo: '👥 For 2', trio: '👨‍👩‍👦 For 3', family: '👨‍👩‍👧‍👦 Family', office: '🏢 Office' };
 
 export default function RestaurantDetailScreen({ store, navigation, tracking }) {
   const [tab, setTab] = useState('overview');
   const [section, setSection] = useState(null);
   const [photoIdx, setPhotoIdx] = useState(0);
+  const [mealStore, setMealStore] = useState(null);
 
   const brand     = store?.brand || {};
   const products  = store?.products || [];
@@ -78,6 +82,16 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
     all.sort((a, b) => (b.discount_value || 0) - (a.discount_value || 0));
     return all[0];
   }, [store?.influencers]);
+
+  // INFLX Meals — load the restaurant's planned-meal offers for the Offers tab.
+  useEffect(() => {
+    let alive = true;
+    if (!brand.id) return undefined;
+    mealsApi.getStore(brand.id)
+      .then((res) => { if (alive && (res?.success || res?.data)) setMealStore(res.data || res); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [brand.id]);
 
   const showBookTable   = (brand.accepts_table_booking ?? ld.accepts_table_booking) !== false;
   const showPayAtStore  = (brand.pay_at_store_supported ?? ld.pay_at_store_supported) !== false;
@@ -298,6 +312,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
             sectionKeys={sectionKeys} onSelectSection={setSection}
             picks={picks} onProductPress={onProductPress} creator={creator} />
         )}
+        {tab === 'offers'  && <MealsOffersTab data={mealStore} brand={brand} navigation={navigation} />}
         {tab === 'reviews' && <ReviewsTab brand={brand} />}
         {tab === 'photos'  && <PhotosTab photos={heroPhotos} />}
 
@@ -782,6 +797,92 @@ function PhotosTab({ photos }) {
     </View>
   );
 }
+
+// ── INFLX Meals — Offers tab (mockup 03) ─────────────────────────────────────
+
+function MealsOffersTab({ data, brand, navigation }) {
+  const offers = (data && data.offers) || [];
+  const byParty = (data && data.offers_by_party) || {};
+  const partyKeys = Object.keys(byParty);
+  const [psize, setPsize] = useState(null);
+  const active = psize || partyKeys[0] || null;
+  const shown = active ? (byParty[active] || []) : offers;
+  const slot = (data && data.slots && data.slots[0]) || null;
+
+  const goChat = () => navigation.navigate('MealsChat', { brand, brandId: brand.id });
+
+  if (!data || offers.length === 0) {
+    return (
+      <View style={styles.section}>
+        <Text style={styles.muted}>No planned-meal offers here yet.</Text>
+        <Pressable onPress={goChat} style={mo.chatBtn} testID="meals-plan-chat">
+          <Text style={mo.chatBtnText}>💬 Plan a meal by chat</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.section}>
+      <View style={mo.noteRow}>
+        <Text style={mo.note}>
+          Plan-ahead meals — pay before the cutoff{slot ? ` (order by ~${slot.cutoff_minutes_before} min before ${slot.label})` : ''}. Self-delivery within {data.delivery_radius_km || 5} km.
+        </Text>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 10 }}>
+        {partyKeys.map((k) => (
+          <Pressable key={k} onPress={() => setPsize(k)} style={[mo.psize, active === k && mo.psizeOn]}>
+            <Text style={[mo.psizeText, active === k && mo.psizeTextOn]}>{PARTY_LABELS[k] || k} {byParty[k].length}</Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
+      {shown.map((o) => (
+        <View key={o.id} style={mo.card} testID={`store-offer-${o.id}`}>
+          <Text style={mo.cName}>{o.name}</Text>
+          <Text style={mo.cItems} numberOfLines={1}>
+            {(o.items_json || []).map((it) => `${it.qty ? it.qty + '× ' : ''}${it.name}`).join(', ') || 'Chef’s pack'}
+          </Text>
+          <Text style={mo.cPrice}>
+            ₹{Math.round(o.price)}
+            {o.original_price && Number(o.original_price) > Number(o.price)
+              ? <Text style={mo.cStrike}>  ₹{Math.round(o.original_price)}</Text> : null}
+          </Text>
+          {Array.isArray(o.freebies_json) && o.freebies_json.length > 0 && (
+            <Text style={mo.cFree}>🎁 {o.freebies_json.join(', ')}</Text>
+          )}
+          <Pressable onPress={goChat} style={mo.orderBtn} testID={`store-offer-order-${o.id}`}>
+            <Text style={mo.orderText}>Order this →</Text>
+          </Pressable>
+        </View>
+      ))}
+
+      <Pressable onPress={goChat} style={mo.chatBtn} testID="meals-plan-chat">
+        <Text style={mo.chatBtnText}>💬 Don&apos;t see your combo? Plan by chat</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const mo = StyleSheet.create({
+  noteRow: { backgroundColor: lightColors.success50 || '#ECFDF5', borderColor: '#cde9d6', borderWidth: 1, borderRadius: 10, padding: 10 },
+  note: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: '#2c6e44' },
+  psize: { borderColor: lightColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, backgroundColor: '#fff' },
+  psizeOn: { backgroundColor: lightColors.ink, borderColor: lightColors.ink },
+  psizeText: { fontFamily: fonts.sansBold, fontSize: 12, color: lightColors.muted },
+  psizeTextOn: { color: '#fff' },
+  card: { backgroundColor: '#fff', borderColor: lightColors.border, borderWidth: 1, borderRadius: 14, padding: 13, marginBottom: 10 },
+  cName: { fontFamily: fonts.displayBold, fontSize: 15, color: lightColors.ink },
+  cItems: { fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.muted, marginTop: 3 },
+  cPrice: { fontFamily: fonts.monoBold, fontSize: 16, color: lightColors.ink, marginTop: 6 },
+  cStrike: { fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.muted3, textDecorationLine: 'line-through' },
+  cFree: { fontFamily: fonts.sansBold, fontSize: 11.5, color: lightColors.success, marginTop: 3 },
+  orderBtn: { marginTop: 10, backgroundColor: lightColors.yellow, borderRadius: 9, paddingVertical: 10, alignItems: 'center' },
+  orderText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
+  chatBtn: { marginTop: 6, borderColor: lightColors.border2, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  chatBtnText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: lightColors.ink2 },
+});
 
 // ── Amenity chip strip ──────────────────────────────────────────────────────
 

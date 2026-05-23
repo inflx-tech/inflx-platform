@@ -1,0 +1,133 @@
+<!-- preview-size: 420x1140 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Meals — Customer chat → offers → pay</title>
+<style>
+  :root{--orange:#f47920;--green:#16a34a;--ink:#1a2233;--t2:#5b6577;--t3:#8a93a6;--border:#e7eaf0;--bg:#eef1f6;--bot:#fff;--me:#1a2233}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:14px/1.45 'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .phone{max-width:400px;margin:0 auto;background:#fbfcfe;min-height:100vh;display:flex;flex-direction:column}
+  .hdr{background:linear-gradient(90deg,#1a2233,#2a3550);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px}
+  .hdr .b{font-weight:800}.hdr .b i{color:var(--orange);font-style:normal}
+  .hdr .sub{font-size:11px;color:#aab4c8}
+  .thread{flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:auto}
+  .mem{background:#fff6ef;border:1px solid #f3d9c2;border-radius:12px;padding:9px 12px;font-size:11.5px;color:#7a4a1d;display:flex;gap:8px;align-items:flex-start}
+  .mem b{color:#9a5a1d}
+  .msg{max-width:80%;padding:9px 12px;border-radius:14px;font-size:13px}
+  .bot{background:var(--bot);border:1px solid var(--border);border-bottom-left-radius:4px;align-self:flex-start}
+  .me{background:var(--me);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-self:flex-start;max-width:88%}
+  .chip{font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:99px;border:1px solid var(--border);background:#fff;color:var(--t2)}
+  .chip.sel{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .chip.usual{border-color:#f3d9c2;background:#fff6ef;color:#9a5a1d}
+  .chip .star{font-size:9px;font-weight:800;margin-right:2px}
+  .why{align-self:flex-start;max-width:88%;font-size:10.5px;color:var(--t3);font-style:italic;padding:0 4px;display:flex;gap:5px}
+  .divider{text-align:center;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin:6px 0}
+  .offers{display:flex;flex-direction:column;gap:10px;align-self:stretch}
+  .ocard{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;position:relative}
+  .ocard.best{border-color:var(--orange);box-shadow:0 4px 14px rgba(244,121,32,.15)}
+  .best-tag{position:absolute;top:-9px;left:12px;background:var(--orange);color:#fff;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px}
+  .r-name{font-weight:800;font-size:13.5px}
+  .r-meta{font-size:11px;color:var(--t3);margin:1px 0 8px}
+  .r-items{font-size:12.5px;color:var(--t2);margin-bottom:8px}
+  .r-price{font-size:16px;font-weight:800}.r-price .s{font-size:12px;color:var(--t3);text-decoration:line-through;font-weight:500;margin-left:6px}
+  .r-free{font-size:11.5px;color:var(--green);font-weight:700;margin:3px 0}
+  .r-why{font-size:11px;color:#9a5a1d;background:#fff6ef;border-radius:7px;padding:5px 8px;margin:5px 0 0}
+  .r-when{font-size:11px;color:var(--t3);margin-top:4px}
+  .pick{margin-top:9px;width:100%;border:1px solid var(--border);background:#fff;color:var(--t2);border-radius:9px;padding:8px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit}
+  .ocard.best .pick{background:var(--orange);color:#fff;border-color:var(--orange)}
+  .paybox{background:#1a2233;color:#fff;border-radius:14px;padding:14px;align-self:stretch}
+  .paybox .t{font-size:12px;color:#aab4c8}
+  .paybox .amt{font-size:24px;font-weight:800;margin:2px 0}
+  .paybox .cut{font-size:11px;color:#ffd9b8;margin-bottom:10px}
+  .paybtn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+  .inbar{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;background:#fff}
+  .inbar input{flex:1;border:1px solid var(--border);border-radius:99px;padding:9px 14px;font-size:13px;font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="hdr">
+      <div>🍽️</div>
+      <div><div class="b">INFL<i>X</i> Meals</div><div class="sub">Plan tomorrow's lunch</div></div>
+    </div>
+
+    <div class="thread">
+      <div class="mem"><span>🧠</span><span>Welcome back, Aveen. I remember: usually <b>medium spicy</b>, budget around <b>₹250/head</b>, you liked <b>Spice Route Kitchen</b>. I'll use these so I don't ask twice.</span></div>
+
+      <div class="msg me">3 people for lunch tomorrow 1pm, 1 veg and 2 non-veg</div>
+      <div class="msg bot">Got it 👍 tomorrow ~1 PM, 3 people, 1 veg + 2 non-veg. A few quick things so I pick the best for you — I'll skip what I already know.</div>
+
+      <div class="msg bot">Your <b>1 veg</b> — which?</div>
+      <div class="chips"><span class="chip">Veg Biryani ₹220</span><span class="chip usual"><span class="star">★</span>Paneer Biryani ₹260</span></div>
+      <div class="why"><span>↳</span><span>asking: I don't know which veg dish you want today</span></div>
+      <div class="msg me">paneer</div>
+
+      <div class="msg bot">And your <b>2 non-veg</b>?</div>
+      <div class="chips"><span class="chip usual sel"><span class="star">★</span>Chicken ₹300 ×2</span><span class="chip">Mutton ₹420</span><span class="chip">Egg ₹240</span></div>
+      <div class="msg me">2 chicken</div>
+
+      <div class="msg bot">Same <b>medium spicy</b> as last time?</div>
+      <div class="chips"><span class="chip sel">Yes, medium</span><span class="chip">Milder</span><span class="chip">Spicier</span></div>
+      <div class="why"><span>↳</span><span>confirming from memory — not re-asking from scratch</span></div>
+      <div class="msg me">yes medium</div>
+
+      <div class="msg bot">Any occasion? It changes which offer is best for you.</div>
+      <div class="chips"><span class="chip sel">Just lunch</span><span class="chip">Office</span><span class="chip">Birthday</span><span class="chip">Guests over</span></div>
+      <div class="why"><span>↳</span><span>asking: occasion decides if a family/office pack beats a plain combo</span></div>
+      <div class="msg me">just lunch</div>
+
+      <div class="msg bot">Deliver to <b>Home</b> (saved) or somewhere else? Helps me find restaurants close enough to deliver by 1 PM.</div>
+      <div class="chips"><span class="chip usual sel"><span class="star">★</span>Home — Jubilee Hills</span><span class="chip">Office</span><span class="chip">New address</span></div>
+      <div class="why"><span>↳</span><span>asking: drop-off sets the 5 km self-delivery radius</span></div>
+      <div class="msg me">home</div>
+
+      <div class="msg bot">Perfect — and ordering a day ahead gets you the best price. Here's what I found 👇 <b>I suggest the first one</b> — it fits your medium spice and stays inside your usual ₹250/head.</div>
+
+      <div class="divider">Top offers for you</div>
+      <div class="offers">
+        <div class="ocard best">
+          <span class="best-tag">⭐ AI suggests this</span>
+          <div class="r-name">Spice Route Kitchen</div>
+          <div class="r-meta">⭐ 4.4 · 2.1 km · self-delivery</div>
+          <div class="r-items">1 Paneer + 2 Chicken Biryani · medium spicy</div>
+          <div class="r-price">₹740 <span class="s">₹860</span></div>
+          <div class="r-free">🎁 Free Raita ×3 + Papad</div>
+          <div class="r-why">✓ Your favourite · ✓ medium spice · ✓ ₹247/head — inside budget</div>
+          <div class="r-when">🛵 by ~1:00 PM tomorrow</div>
+          <button class="pick">Select this offer</button>
+        </div>
+        <div class="ocard">
+          <div class="r-name">Paradise Family Dhaba</div>
+          <div class="r-meta">⭐ 4.2 · 3.4 km · self-delivery</div>
+          <div class="r-items">1 Paneer + 2 Chicken Biryani</div>
+          <div class="r-price">₹770 <span class="s">₹840</span></div>
+          <div class="r-free">🎁 Free dessert</div>
+          <div class="r-when">🛵 by ~1:15 PM tomorrow</div>
+          <button class="pick">Select</button>
+        </div>
+        <div class="ocard">
+          <div class="r-name">Hyderabad House</div>
+          <div class="r-meta">⭐ 4.5 · 4.7 km · self-delivery</div>
+          <div class="r-items">1 Paneer + 2 Chicken Biryani</div>
+          <div class="r-price">₹795 <span class="s">₹860</span></div>
+          <div class="r-when">🛵 by ~1:20 PM tomorrow</div>
+          <button class="pick">Select</button>
+        </div>
+      </div>
+
+      <div class="divider">You selected · Spice Route Kitchen</div>
+      <div class="paybox">
+        <div class="t">Pay now to lock this offer</div>
+        <div class="amt">₹740</div>
+        <div class="cut">⏳ Pay before <b>11:00 AM tomorrow</b> to secure this price &amp; your 1 PM slot</div>
+        <button class="paybtn">Pay ₹740 &amp; lock</button>
+      </div>
+    </div>
+
+    <div class="inbar"><input placeholder="Reply or tweak your order…"></div>
+  </div>
+</body>
+</html>

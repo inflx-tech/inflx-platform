@@ -1,0 +1,168 @@
+<!-- preview-size: 1000x880 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX Meals — Restaurant Meals dashboard</title>
+<style>
+  :root{--orange:#f47920;--green:#16a34a;--red:#e23b3b;--ink:#1a2233;--t2:#5b6577;--t3:#8a93a6;--border:#e7eaf0;--bg:#f4f6f9;--card:#fff}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:14px/1.5 'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+  .top{background:linear-gradient(90deg,#1a2233,#2a3550);color:#fff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+  .top .brand{font-weight:800;font-size:16px}.top .brand b{color:var(--orange)}
+  .top .sub{font-size:12px;color:#aab4c8}
+  .slottabs{display:flex;gap:10px;padding:14px 22px 0}
+  .stab{border:1px solid var(--border);background:#fff;border-radius:10px 10px 0 0;padding:10px 16px;cursor:pointer}
+  .stab.on{border-bottom-color:#fff;background:#fff;box-shadow:0 -2px 0 var(--orange) inset}
+  .stab .n{font-size:13px;font-weight:800}
+  .stab .c{font-size:11px;color:var(--t3);margin-top:2px}
+  .stab.on .c{color:#b8740b}
+  .wrap{display:grid;grid-template-columns:1fr 290px;gap:18px;padding:16px 22px 22px}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+  .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin:0 0 12px}
+  .statrow{display:flex;gap:14px;margin-bottom:14px}
+  .stat{flex:1;background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 14px}
+  .stat .v{font-size:22px;font-weight:800}.stat .v.g{color:var(--green)}.stat .v.o{color:var(--orange)}
+  .stat .l{font-size:11px;color:var(--t3);margin-top:2px}
+  .cutbar{background:#fff6ef;border:1px solid #f3d9c2;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .cutbar .clk{font-size:22px}
+  .cutbar .tx{flex:1;font-size:13px;color:#7a4a1d}.cutbar .tx b{color:#9a5a1d}
+  .cutbar .freeze{font-size:11px;font-weight:800;color:#b8740b;background:#fff;border:1px solid #f3d9c2;border-radius:99px;padding:5px 12px}
+  .capwrap{margin-bottom:6px}
+  .capwrap .ct{display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:6px}
+  .capwrap .ct b{color:var(--ink)}
+  .bar{height:12px;background:#eef1f6;border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--orange),#f9a04b);border-radius:99px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);padding:0 8px 8px;border-bottom:1px solid var(--border)}
+  td{padding:10px 8px;border-bottom:1px solid #f1f3f7;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .who{font-weight:700}.who .sz{font-size:10.5px;color:var(--t3);font-weight:600;display:block}
+  .items{color:var(--t2)}
+  .amt{font-weight:800}
+  .st{font-size:10.5px;font-weight:800;padding:2px 9px;border-radius:99px}
+  .st-paid{background:#e7f7ee;color:var(--green)}.st-lock{background:#fff4e0;color:#b8740b}.st-new{background:#e8f0fe;color:#2563eb}
+  .prep{display:flex;flex-direction:column;gap:9px}
+  .prep .row{display:flex;justify-content:space-between;font-size:12.5px}
+  .prep .row b{font-weight:800}
+  .prep .tot{border-top:1px dashed var(--border);padding-top:9px;margin-top:3px;font-weight:800}
+  .demand{display:flex;flex-direction:column;gap:10px}
+  .demand .d{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px}
+  .demand .d .q{font-size:12px;color:var(--ink)}
+  .demand .d .m{font-size:10.5px;color:var(--t3);margin-top:3px}
+  .demand .d .a{display:flex;gap:6px;margin-top:8px}
+  .demand .d .a button{flex:1;border:none;border-radius:7px;padding:6px 0;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+  .b-mk{background:var(--green);color:#fff}.b-sk{background:#fff;border:1px solid var(--border);color:var(--t2)}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div><div class="brand">INFL<b>X</b> Meals</div><div class="sub">Restaurant dashboard · today</div></div>
+    <div class="sub">Spice Route Kitchen · Hyderabad</div>
+  </div>
+
+  <div class="slottabs">
+    <div class="stab on"><div class="n">🍴 Lunch · 1 PM</div><div class="c">cutoff 11 AM · 47 min left</div></div>
+    <div class="stab"><div class="n">🌙 Dinner · 8 PM</div><div class="c">cutoff 6 PM · open</div></div>
+  </div>
+
+  <div class="wrap">
+    <div>
+      <div class="cutbar">
+        <span class="clk">⏳</span>
+        <span class="tx">Lunch order-book closes at <b>11:00 AM</b> (47 min). After cutoff the book <b>freezes</b> — no new orders, kitchen starts prep.</span>
+        <span class="freeze">Auto-freeze ON</span>
+      </div>
+
+      <div class="statrow">
+        <div class="stat"><div class="v">23</div><div class="l">orders confirmed</div></div>
+        <div class="stat"><div class="v o">17</div><div class="l">capacity left (of 40)</div></div>
+        <div class="stat"><div class="v g">₹14,680</div><div class="l">locked revenue</div></div>
+        <div class="stat"><div class="v">81</div><div class="l">meals to cook</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Lunch order book filling</h3>
+        <div class="capwrap">
+          <div class="ct"><span>23 of 40 orders · <b>58% full</b></span><span>17 slots open</span></div>
+          <div class="bar"><i style="width:58%"></i></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Incoming orders (this slot)</h3>
+        <table>
+          <thead><tr><th>Customer</th><th>Items</th><th>Deliver</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="who">Aveen S.<span class="sz">3 people · For 3</span></td>
+              <td class="items">1 Paneer + 2 Chicken Biryani · medium</td>
+              <td class="items">Jubilee Hills · 2.1 km</td>
+              <td class="amt">₹740</td>
+              <td><span class="st st-paid">✓ Paid</span></td>
+            </tr>
+            <tr>
+              <td class="who">Reddy family<span class="sz">4 people · Family</span></td>
+              <td class="items">Family Mixed Pack + Raita ×2</td>
+              <td class="items">Banjara Hills · 3.3 km</td>
+              <td class="amt">₹950</td>
+              <td><span class="st st-paid">✓ Paid</span></td>
+            </tr>
+            <tr>
+              <td class="who">TechNova (office)<span class="sz">12 people · Office</span></td>
+              <td class="items">Corporate Pre-book · 12 packs</td>
+              <td class="items">Madhapur · 4.1 km</td>
+              <td class="amt">₹3,360</td>
+              <td><span class="st st-lock">⏳ Locking</span></td>
+            </tr>
+            <tr>
+              <td class="who">Priya M.<span class="sz">2 people · For 2</span></td>
+              <td class="items">Duo Combo · 1 veg 1 chicken</td>
+              <td class="items">Jubilee Hills · 1.8 km</td>
+              <td class="amt">₹580</td>
+              <td><span class="st st-paid">✓ Paid</span></td>
+            </tr>
+            <tr>
+              <td class="who">Karthik<span class="sz">1 person · Single</span></td>
+              <td class="items">First-Timer Solo + soda</td>
+              <td class="items">Film Nagar · 2.9 km</td>
+              <td class="amt">₹300</td>
+              <td><span class="st st-new">• New</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h3>Prep summary (so far)</h3>
+        <div class="prep">
+          <div class="row"><span>Chicken Biryani</span><b>38</b></div>
+          <div class="row"><span>Veg / Paneer Biryani</span><b>27</b></div>
+          <div class="row"><span>Mutton Biryani</span><b>6</b></div>
+          <div class="row"><span>Raita (free add-on)</span><b>22</b></div>
+          <div class="row"><span>Gulab Jamun (free)</span><b>16</b></div>
+          <div class="row tot"><span>Total meals</span><b>81</b></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Unmatched requests</h3>
+        <div class="demand">
+          <div class="d">
+            <div class="q">"Jain biryani for 2, no onion no garlic"</div>
+            <div class="m">2 asked today · you don't have a Jain offer</div>
+            <div class="a"><button class="b-mk">Create offer</button><button class="b-sk">Ignore</button></div>
+          </div>
+          <div class="d">
+            <div class="q">"Late dinner ~10 PM, 4 people"</div>
+            <div class="m">outside your dinner slot (8 PM cutoff 6 PM)</div>
+            <div class="a"><button class="b-mk">Add late slot</button><button class="b-sk">Ignore</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+{
+  "feature": "meals-ai",
+  "area": "backend + qa",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-22) — lock decision delegated; X1 AI services + X2 AI-eval lane.",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/**) but NOT pushed — bundled into the single end-of-program prod push. Backend-only → gov-check Rule 1. Deploy prereq: npm i @anthropic-ai/sdk + ANTHROPIC_API_KEY + AI_MOCK=false in prod.",
+  "fix": "X1 INFLX Meals AI: backend/src/services/ai/ (mock + Anthropic client tool-use forced-JSON + prompt caching, Haiku extract / Sonnet reason, AI_MOCK + key in env) + POST /meals/chat (memory-aware intent → meaningful clarify → engine offers → AI recommendation; AI returns STRUCTURE never prices). X2 AI-eval lane: qa/ai-eval/golden-intents.json + qa/scripts/ai-eval.mjs + qa:ai-eval (informational, exit 0).",
+  "related": [
+    "features/meals-engine",
+    "features/meals-schema",
+    "features/_meals-mockups"
+  ],
+  "result": "AI module + chat endpoint + eval lane added; meals-x1 test green; qa:ai-eval reports pass rate; pnpm qa GREEN.",
+  "regression_proof": "Mock default (no key) → existing suite unaffected; lazy SDK; new behaviour covered by meals-x1; pnpm qa GREEN.",
+  "discipline": "AI returns structure only (engine prices); money-memory owner-confirmed; AI errors fall back to deterministic mock; eval lane is informational like qa:db.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Deferred to the single end-of-program prod push (+ @anthropic-ai/sdk install + key)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A for backend-only contract; attestation set to satisfy gov-check Rule 3 when bundled with UI-governed changesets in the single end-of-program push.",
+  "mockup_locked_at": "2026-05-23"
+}

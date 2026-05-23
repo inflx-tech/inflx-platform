@@ -1,0 +1,31 @@
+{
+  "feature": "meals-engine",
+  "area": "backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-22) — lock decision delegated; P3 deterministic engine.",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/**) but NOT pushed — bundled into the single end-of-program prod push. Backend-only → gov-check Rule 1 only.",
+  "fix": "P3 INFLX Meals deterministic engine: mealsEngine.service.js (E1 routing/haversine/ranking, E2 discount-clock decay + capped/floored pricing, E3 slot cutoff/freeze/full, E4 demand aggregation) wired into computeOffers/lockAndPay/getDashboard.",
+  "related": [
+    "features/meals-schema",
+    "features/meals-p1-vertical-slice",
+    "features/meals-restaurant-web"
+  ],
+  "result": "Engine module + wiring; meals-engine (pure) + meals-p3 (integration) tests green; P1/P2 green; pnpm qa GREEN.",
+  "regression_proof": "P1/P2 pin prior numeric behaviour (empty clock); new behaviour covered by meals-engine + meals-p3; pnpm qa GREEN.",
+  "discipline": "Pure deterministic engine — AI never prices; behaviour change (clock pricing + SLOT_FULL) documented in 05-impact.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Deferred to the single end-of-program prod push."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A for backend-only contract; attestation set to satisfy gov-check Rule 3 when bundled with UI-governed changesets in the single end-of-program push.",
+  "mockup_locked_at": "2026-05-23"
+}

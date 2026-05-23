@@ -364,6 +364,18 @@ export async function uploadFile(uploadUrl, method, fileUri, filename, contentTy
   });
 }
 
+// ─── INFLX Meals (customer side) ────────────────────────────────────────────
+export const mealsApi = {
+  // C0 — in-store Offers tab (public)
+  getStore: (brandId) => api.get(`/meals/store/${brandId}`),
+  // C1–C3 — chat → clarify → offers + AI recommendation
+  chat: (body) => api.post('/meals/chat', body),
+  // C4 — lock + pay before cutoff
+  pay: (mealOfferId) => api.post('/meals/orders', { meal_offer_id: mealOfferId }),
+  // C5 — track
+  getOrder: (id) => api.get(`/meals/orders/${id}`),
+};
+
 export const followerApi = {
   // Profile
   getMe: () => api.get('/followers/me'),

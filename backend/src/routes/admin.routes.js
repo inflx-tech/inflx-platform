@@ -24,6 +24,13 @@ router.patch('/influencers/:id/status', authenticate, requireAdminRole('reviewer
 // Platform stats — any admin role
 router.get('/stats', authenticate, requireAnyAdminRole, ctrl.getStats);
 
+// INFLX Meals — platform settings (radius + tolerance + lead time).
+// Any admin can read; any admin can update (founder's daily account
+// is not always superadmin per the admin-role-gate memory).
+const mealsCtrl = require('../controllers/meals.controller');
+router.get('/meals/settings',  authenticate, requireAnyAdminRole, mealsCtrl.adminGetSettings);
+router.put('/meals/settings',  authenticate, requireAnyAdminRole, mealsCtrl.adminPutSettings);
+
 // Escrow management — finance+
 router.get('/escrow',          authenticate, requireAdminRole('finance'), ctrl.getEscrowOverview);
 router.post('/escrow/:id/release', authenticate, requireAdminRole('finance'), ctrl.adminReleaseEscrow);

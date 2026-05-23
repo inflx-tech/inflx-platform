@@ -1,0 +1,21 @@
+{
+  "feature": "_meals-mockups",
+  "area": "design-mockup-showcase",
+  "spec_version": "0.1.0",
+  "status": "mockup-locked",
+  "approved": true,
+  "approved_by": "founder (2026-05-22) — reviewed iterations 1–3, directed move to implementation. Showcase folder (_ prefix) stays out of gov-check; each mockup is copied into its real feature contract's 04-preview/mockups/ as that phase is built.",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-22) — design frozen; 4 mockups locked: 01 offer-setup (party-size tabs + editable discount clock + create-your-own + photo upload), 02 chat (memory-driven follow-ups), 03 store Offers tab (in existing RestaurantDetailScreen), 04 R5 dashboard.",
+  "mockup_locked_at": "2026-05-22",
+  "deploy_posture": "DEPLOY-INERT design mockups. HTML only, under features/_meals-mockups/. No code, no governed paths.",
+  "fix": "INFLX Meals design mockups (restaurant offer-setup co-pilot + customer chat→offers→pay-lock), reflecting the 4 locked decisions. For review/iteration before features are locked + built.",
+  "related": ["features/_flow-catalog", "features/preview-machinery"],
+  "result": "Mockups for review. View: pnpm preview:open _meals-mockups.",
+  "regression_proof": "n/a — no code.",
+  "discipline": "Mockup-first per the founder's governance: features discussed + planned, now mockups for review → lock → only then implementation. Decisions playback recorded in 01-spec.md.",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "deploy": "n/a — design showcase." }
+}

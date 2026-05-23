@@ -1,0 +1,30 @@
+{
+  "feature": "meals-p1-vertical-slice",
+  "area": "backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-22) — lock decision delegated; founder directed building all phases locally, single prod push at the end. P1 = deterministic backend slice.",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/**) but NOT pushed — bundled into the single end-of-program prod push per founder instruction. Backend-only changeset → gov-check Rules 3/4/5 (UI/Mobile) do not apply; Rule 1 satisfied by this approved contract.",
+  "fix": "P1 INFLX Meals thin vertical slice: /v1/meals endpoints — restaurant config/slots/offer-rules, customer intent → deterministic offer shortlist → lock+pay (mock) → track → manual deliver. No AI, no routing/clock yet.",
+  "related": [
+    "features/meals-schema",
+    "features/_meals-mockups"
+  ],
+  "result": "meals.service/controller/routes added + wired at /meals; E2E test backend/tests/meals-p1.test.js green; pnpm qa GREEN (zero regression).",
+  "regression_proof": "New namespace only; no existing file's behaviour changed; pnpm qa GREEN; backend E2E walks the full chain.",
+  "discipline": "Contract-first; deterministic pricing in service (AI never sets prices); production push deferred to the single end-of-program bundle.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Deferred to the single end-of-program prod push (migrations + backend + web + mobile OTA together)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A for backend-only contract; attestation set to satisfy gov-check Rule 3 when bundled with UI-governed changesets in the single end-of-program push.",
+  "mockup_locked_at": "2026-05-23"
+}

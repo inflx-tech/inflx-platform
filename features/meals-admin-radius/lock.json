@@ -1,0 +1,21 @@
+{
+  "feature": "meals-admin-radius",
+  "area": "backend + brand-web + mobile",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — address-first chat + admin platform radius lock.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — customer chat mockup (02) is the locked baseline; the picker bubble is an additive step inserted before the offers section (recorded in 06-diff/notes.md).",
+  "mockup_locked_at": "2026-05-23",
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/migrations + backend/src + Packages/brand-web/app + Packages/Mobile/src). UI + Mobile governed. NOT pushed — bundled into the single end-of-program prod push.",
+  "fix": "Admin platform radius (single platform_meals_settings row, GET/PUT /admin/meals/settings, /admin/meals UI). Customer chat enforces address-first: stage=address_required with saved addresses + GPS button before any offer is computed; in-store chats reject out_of_range. Engine reads platform radius for cross-restaurant routing.",
+  "related": ["features/meals-engine", "features/meals-ai", "features/meals-customer-mobile", "features/meals-schema"],
+  "result": "Migration 057 applied; 5/5 admin-radius backend tests green; full meals backend 32/32 green; admin page + mobile picker built.",
+  "regression_proof": "All meals backend suites green; per-brand radius retained in schema but unused by the engine (no breaking schema change); pnpm qa GREEN (web lane unaffected).",
+  "discipline": "Founder's locked product rule (address before offers) implemented as a server-side stage; AI never picks addresses; per-restaurant radius retained for a future capped override.",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": true, "maestro_evidence": "qa/artifacts/meals-e2e/run-journey.yaml run GREEN end-to-end on emulator-5554: launch → Eat → QA Test Diner → Offers tab → chat → send → ADDRESS PICKER → tap saved Home → offers → pay → ORDER LOCKED. New screenshot 07b-address-required captures the address picker bubble; 08/09 unchanged.", "deploy": "Deferred to the single end-of-program prod push (mobile via OTA)." }
+}

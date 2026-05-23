@@ -1,0 +1,33 @@
+{
+  "feature": "meals-learning",
+  "area": "backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — last gap before the single prod push: closes the memory loop end-to-end.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/**) but NOT pushed — bundled into the single end-of-program prod push. Backend-only → gov-check Rule 1.",
+  "fix": "Learning loop writes: on offer-rule Accept (status→active|accepted) write meal_restaurant_learnings (discount_appetite + freebie_willingness when applicable); on Reject (with reason) write rejected_reason tagged; on paid order upsert meal_customer_preferences (favourite_brand_ids union, rolling budget_per_head, spice_pref). Read side unchanged.",
+  "related": [
+    "features/meals-schema",
+    "features/meals-ai",
+    "features/meals-ai-suggest",
+    "features/meals-rchat"
+  ],
+  "result": "meals-learning 3/3 PASS; all meals backend suites green; pnpm qa GREEN (web lane unaffected).",
+  "regression_proof": "Failure-safe writes; transactional FOR UPDATE prev-status capture; no schema change; existing meals tests green.",
+  "discipline": "Owner-confirmed money facts (owner_confirmed=true) come from owner actions only. Learning writes never fail the user action.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": null,
+    "deploy": "Deferred to the single end-of-program prod push."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A for backend-only contract; attestation set to satisfy gov-check Rule 3 when bundled with UI-governed changesets in the single end-of-program push.",
+  "mockup_locked_at": "2026-05-23"
+}

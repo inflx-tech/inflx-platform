@@ -1,0 +1,21 @@
+{
+  "feature": "meals-rchat",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — restaurant-side chat for offer creation, paired with the auto-suggest feed.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — mockup 01 baseline; the create-your-own card is now chat-driven.",
+  "mockup_locked_at": "2026-05-23",
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/** + Packages/brand-web/app/**). UI-governed. NOT pushed — bundled into the single end-of-program prod push. Deploy prereqs same as P-AI-INTEL: @anthropic-ai/sdk + ANTHROPIC_API_KEY + AI_MOCK=false.",
+  "fix": "POST /v1/meals/restaurant-chat — owner describes an offer in plain English; AI extracts STRUCTURE referencing real product_ids; backend joins brand_products.price; inserts meal_offer_rules status='suggested', source='custom'. Brand-web Setup tab's create-your-own box now drives this endpoint.",
+  "related": ["features/meals-ai", "features/meals-ai-suggest", "features/meals-restaurant-web"],
+  "result": "meals-rchat 4/4 PASS; all meals backend suites green; pnpm qa GREEN.",
+  "regression_proof": "Additive endpoint + same-shape rule row; existing OfferCard lifecycle unchanged; pnpm qa GREEN.",
+  "discipline": "AI returns structure only — system prompt + tool schema forbid invented dishes/prices; menu prices joined server-side; safe mock fallback on any AI error.",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": null, "deploy": "Deferred to the single end-of-program prod push." }
+}

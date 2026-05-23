@@ -1,0 +1,21 @@
+{
+  "feature": "meals-restaurant-web",
+  "area": "brand-web + backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-22) — lock decision delegated; P2 realises the locked restaurant mockups (01 + 04) as the /dashboard/meals UI.",
+  "approved_at": "2026-05-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-22) — mockups 01 (offer setup) + 04 (dashboard) locked in iteration 3; copied into 04-preview/mockups/.",
+  "mockup_locked_at": "2026-05-22",
+  "deploy_posture": "PRODUCTION-IMPACTING (Packages/brand-web/app/** + backend/src/**), UI-governed. NOT pushed — bundled into the single end-of-program prod push. gov-check Rules 1 (approved contract) + 3 (mockup_locked) + 4 (06-diff/notes.md) satisfied.",
+  "fix": "P2 INFLX Meals restaurant web: /dashboard/meals (Setup + Today tabs) realising mockups 01 + 04, plus backend GET config/slots/offer-rules, PATCH offer-rules/:id, GET dashboard.",
+  "related": ["features/meals-schema", "features/meals-p1-vertical-slice", "features/_meals-mockups"],
+  "result": "Meals page + nav + mealsApi + backend read/manage/dashboard endpoints added; meals-p2 backend test green; pnpm qa GREEN incl. brand spec; screenshots captured.",
+  "regression_proof": "Additive route + nav + API export; no existing page/endpoint changed; pnpm qa GREEN; backend meals-p2 test green.",
+  "discipline": "Mockup-locked + 06-diff authored before push; AI suggested-offers feed explicitly deferred to X1 (recorded in 06-diff/notes.md); deterministic pricing only.",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "deploy": "Deferred to the single end-of-program prod push." }
+}

@@ -151,6 +151,28 @@ export const brandApi = {
   deleteProduct: (id) => api.delete(`/brands/me/products/${id}`),
 };
 
+// ─── INFLX Meals (admin platform settings) ──────────────────────────────────
+export const mealsAdminApi = {
+  getSettings: () => api.get('/admin/meals/settings'),
+  putSettings: (data) => request('PUT', '/admin/meals/settings', data),
+};
+
+// ─── INFLX Meals (restaurant side) ──────────────────────────────────────────
+export const mealsApi = {
+  getConfig: () => api.get('/meals/config'),
+  saveConfig: (data) => api.post('/meals/config', data) /* PUT */,
+  putConfig: (data) => request('PUT', '/meals/config', data),
+  listSlots: () => api.get('/meals/slots'),
+  createSlot: (data) => api.post('/meals/slots', data),
+  listOfferRules: (params) => api.get(`/meals/offer-rules${params ? '?' + new URLSearchParams(params) : ''}`),
+  createOfferRule: (data) => api.post('/meals/offer-rules', data),
+  suggestOffers: () => api.post('/meals/offer-rules/suggest'),
+  restaurantChat: (body) => api.post('/meals/restaurant-chat', body),
+  updateOfferRule: (id, data) => api.patch(`/meals/offer-rules/${id}`, data),
+  getDashboard: (params) => api.get(`/meals/dashboard${params ? '?' + new URLSearchParams(params) : ''}`),
+  deliverOrder: (id) => api.post(`/meals/orders/${id}/deliver`),
+};
+
 export const walletApi = {
   getBalance: () => api.get('/brands/me/wallet'),
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),

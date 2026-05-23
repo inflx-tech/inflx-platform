@@ -1,0 +1,47 @@
+{
+  "description": "Golden chat→intent set for the INFLX Meals X2 AI-eval lane. Scored against the deterministic extractor (ai/mock.js) — and, in prod, the live model. Tolerance-scored + INFORMATIONAL (like qa:db): never gates the main GREEN.",
+  "pass_threshold_per_case": 0.8,
+  "cases": [
+    {
+      "name": "family lunch, mixed veg/nonveg, medium",
+      "input": "family lunch tomorrow, 2 chicken and 2 veg biryani, medium spicy",
+      "expect": { "party_size": "family", "veg_count": 2, "nonveg_count": 2, "spice_level": "medium", "slot_label": "Lunch", "expects_clarify": false }
+    },
+    {
+      "name": "3 people, 1 veg 2 nonveg",
+      "input": "3 people for lunch tomorrow 1pm, 1 veg and 2 non-veg, medium",
+      "expect": { "party_size": "trio", "veg_count": 1, "nonveg_count": 2, "spice_level": "medium", "slot_label": "Lunch", "expects_clarify": false }
+    },
+    {
+      "name": "solo dinner",
+      "input": "just me for dinner tonight, one chicken biryani",
+      "expect": { "party_size": "single", "spice_level": null, "slot_label": "Dinner", "expects_clarify": false }
+    },
+    {
+      "name": "couple, paneer",
+      "input": "dinner for 2, paneer biryani, mild",
+      "expect": { "party_size": "duo", "spice_level": "mild", "slot_label": "Dinner", "expects_clarify": false }
+    },
+    {
+      "name": "office bulk pre-book",
+      "input": "office lunch for 12 people tomorrow",
+      "expect": { "party_size": "office", "occasion": "office", "slot_label": "Lunch", "expects_clarify": false }
+    },
+    {
+      "name": "missing party size → clarify",
+      "input": "lunch tomorrow, biryani please",
+      "expect": { "party_size": null, "slot_label": "Lunch", "expects_clarify": true }
+    },
+    {
+      "name": "budget mentioned",
+      "input": "family dinner, 4 biryanis, under 250 per head, spicy",
+      "expect": { "party_size": "family", "spice_level": "spicy", "slot_label": "Dinner", "budget_per_head": 250, "expects_clarify": false }
+    },
+    {
+      "name": "memory fills spice + budget",
+      "input": "trio lunch tomorrow, 1 veg 2 chicken",
+      "memory": { "spice_pref": "medium", "budget_per_head": 300 },
+      "expect": { "party_size": "trio", "veg_count": 1, "spice_level": "medium", "budget_per_head": 300, "slot_label": "Lunch", "expects_clarify": false }
+    }
+  ]
+}

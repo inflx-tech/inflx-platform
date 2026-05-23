@@ -68,6 +68,15 @@ module.exports = {
   R2_BUCKET: process.env.R2_BUCKET || 'inflx-dev',
   PDF_STORAGE_PATH: process.env.PDF_STORAGE_PATH || './tmp/contracts',
 
+  // INFLX Meals AI (Anthropic). Mock by default for local/test
+  // determinism; set AI_MOCK=false + ANTHROPIC_API_KEY in prod. Key
+  // never committed. AI returns STRUCTURE (intent/levers/rankings),
+  // never prices — those come from the deterministic engine.
+  AI_MOCK: process.env.AI_MOCK !== 'false',
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
+  AI_MODEL_EXTRACT: process.env.AI_MODEL_EXTRACT || 'claude-haiku-4-5-20251001',
+  AI_MODEL_REASON: process.env.AI_MODEL_REASON || 'claude-sonnet-4-6',
+
   // OTA publish endpoint — the shared secret that the local publish-ota
   // script sends in the X-OTA-Token header to authorise bundle uploads.
   // If unset in prod, the publish endpoint refuses all requests.

@@ -1,0 +1,21 @@
+{
+  "feature": "meals-ai-suggest",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — the heart of the AI vision: AI picks combinations, system computes every rupee.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — mockup 01 baseline; the AI feed implements the previously-deferred AI source.",
+  "mockup_locked_at": "2026-05-23",
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/** + Packages/brand-web/app/**). UI-governed. NOT pushed — bundled into the single end-of-program prod push. Deploy prereqs: npm i @anthropic-ai/sdk + ANTHROPIC_API_KEY + AI_MOCK=false (lazy-required; mock works without).",
+  "fix": "POST /v1/meals/offer-rules/suggest — AI returns STRUCTURE (combinations + freebies + names referencing real product_ids); backend joins brand_products.price; inserts as meal_offer_rules status=suggested source=ai. Brand-web Setup tab gains an AI banner + Generate button + suggested section above the party-size grid.",
+  "related": ["features/meals-ai", "features/meals-restaurant-web", "features/meals-schema"],
+  "result": "meals-suggest 3/3 PASS; all meals backend suites green; pnpm qa GREEN; Metro bundle clean.",
+  "regression_proof": "Additive endpoint + additive UI block; existing Setup tab behaviour unchanged; pnpm qa GREEN.",
+  "discipline": "AI returns structure only — system prompt + tool schema both forbid prices/discounts; backend joins menu prices server-side. Safe mock fallback on any AI error.",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": null, "deploy": "Deferred to the single end-of-program prod push." }
+}

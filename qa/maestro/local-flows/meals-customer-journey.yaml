@@ -1,0 +1,52 @@
+# INFLX Meals — customer journey (P4, mockup 02/03), LOCAL backend.
+#
+# Drives the follower app: open a restaurant store → Offers tab → plan a
+# meal by chat → receive offers → pay-before-cutoff → see the lock.
+#
+# PREREQUISITES (a seeded local device run — not part of `pnpm qa:maestro`):
+#   1. backend/.env → LOCAL dev DB; `pnpm dev:all` (backend on 3001).
+#   2. api-overrides.js → http://10.0.2.2:3001/v1 (already set, skip-worktree).
+#   3. Seed: one approved restaurant (brand) with Meals enabled, a Lunch
+#      slot, and an ACTIVE family offer-rule (see meals-p4.test.js setup),
+#      plus a logged-in follower session in the app.
+#   4. Metro running so the debug app loads the latest JS.
+#
+# Run: maestro test qa/maestro/local-flows/meals-customer-journey.yaml
+# On green, set features/meals-customer-mobile/lock.json
+#   release.maestro_green = true.
+
+appId: in.inflx.app.follower
+---
+- launchApp
+
+# Navigate to the seeded restaurant's store (Dining → first restaurant).
+- tapOn:
+    text: "Dining"
+    optional: true
+- tapOn:
+    id: "restaurant-card-0"
+    optional: true
+
+# Open the in-store Offers tab (mockup 03).
+- tapOn: "Offers"
+- assertVisible: "Plan a meal by chat"
+
+# Enter the chat (mockup 02) and state an intent.
+- tapOn:
+    id: "meals-plan-chat"
+- tapOn:
+    id: "meal-chat-input"
+- inputText: "family lunch tomorrow, 2 chicken and 2 veg biryani, medium"
+- tapOn:
+    id: "meal-chat-send"
+
+# Engine offers come back; pay the AI-recommended (rank 1) before cutoff.
+- assertVisible:
+    id: "meal-offer-1"
+- tapOn:
+    id: "meal-pay-1"
+
+# Order locked.
+- assertVisible:
+    id: "meal-order-confirmed"
+- takeScreenshot: meals-customer-journey-locked
