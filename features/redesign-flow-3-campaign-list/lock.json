@@ -1,0 +1,34 @@
+{
+  "feature": "redesign-flow-3-campaign-list",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-23 chat go (\"go with flow 3\" + \"go with your recommendation\" → option (a) drop phantom fields permanently)",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-23 chat confirm",
+  "mockup_locked_at": "2026-05-23",
+  "notes": "Visual + UX restyle of brand-web /dashboard/campaigns page. Zero backend / API / schema / DB change. One honest UI correction: drop spent_budget progress bar + influencer_count footer from CampaignCard — both fields are NEVER populated by any backend controller (verified-twice via migrations/001_initial_schema.sql:199-212 and campaign.controller.js:221 SELECT * pattern). Card render today shows 0/0 on every card; Flow 3 removes the phantom UI. Tile-source audit complete in 01-spec.md. Status filter dropdown -> interactive chip row. All logic (selection, bulk cancel/delete, CSV export, modals) preserved verbatim.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "lane": "main",
+      "specs_passed": 67,
+      "specs_total": 67,
+      "state": "GREEN",
+      "gate": 0,
+      "pw_exit": 0,
+      "report_exit": 0,
+      "run_at": "2026-05-23T12:52:46Z",
+      "report_path": "qa/reports/2026-05-23T12-52-46-384Z/QA-REPORT.md"
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}

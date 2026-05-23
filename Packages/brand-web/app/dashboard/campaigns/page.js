@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { campaignApi, fmtRupees } from '../../../lib/api';
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─── Status pill config (locked palette) ────────────────────────────────────
 
 const STATUS_CFG = {
-  draft:          { bg: 'bg-surface2 text-t3', dot: 'bg-border2' },
-  pending_wallet: { bg: 'bg-gold-pale text-yellow-700', dot: 'bg-gold' },
-  published:      { bg: 'bg-navy-pale text-navy', dot: 'bg-navy' },
-  active:         { bg: 'bg-teal-pale text-teal-deep', dot: 'bg-teal' },
-  live:           { bg: 'bg-teal-pale text-teal-deep', dot: 'bg-teal' },
-  completed:      { bg: 'bg-navy-pale text-navy', dot: 'bg-navy-light' },
-  cancelled:      { bg: 'bg-red-pale text-red', dot: 'bg-red' },
+  draft:          { bg: 'bg-[#F4F4F5]',  text: 'text-[#52525B]',  dot: 'bg-[#A1A1AA]',  label: 'Draft' },
+  pending_wallet: { bg: 'bg-[#FFF7CC]',  text: 'text-[#6B5A00]',  dot: 'bg-[#E0A800]',  label: 'Pending wallet' },
+  published:      { bg: 'bg-[#FFF7CC]',  text: 'text-[#6B5A00]',  dot: 'bg-[#E0A800]',  label: 'Published' },
+  active:         { bg: 'bg-[#D1FAE5]',  text: 'text-[#047857]',  dot: 'bg-[#10B981]',  label: 'Active' },
+  live:           { bg: 'bg-[#D1FAE5]',  text: 'text-[#047857]',  dot: 'bg-[#10B981]',  label: 'Live' },
+  completed:      { bg: 'bg-[#F4F4F5]',  text: 'text-[#1F1F22]',  dot: 'bg-[#71717A]',  label: 'Completed' },
+  cancelled:      { bg: 'bg-[#FDEEE9]',  text: 'text-[#B91C1C]',  dot: 'bg-[#E8401A]',  label: 'Cancelled' },
 };
 
 const ALL_STATUSES = ['draft', 'pending_wallet', 'published', 'active', 'live', 'completed', 'cancelled'];
@@ -30,14 +30,19 @@ const SORT_OPTIONS = [
 function StatusBadge({ status }) {
   const cfg = STATUS_CFG[status] || STATUS_CFG.draft;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cfg.bg}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.3px] whitespace-nowrap flex-shrink-0 ${cfg.bg} ${cfg.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {status?.replace(/_/g, ' ')}
+      {cfg.label}
     </span>
   );
 }
 
 function generateCSV(campaigns) {
+  // Note: spent_budget + influencer_count columns intentionally retained
+  // in the CSV header for backward-compat with any external workflow that
+  // ingests these files — values will be 0 since backend doesn't populate.
+  // If/when a backend-enrichment contract lands, the CSV picks up real values
+  // automatically without code change here.
   const headers = ['Name', 'Status', 'Total Budget', 'Spent Budget', 'Influencers', 'Start Date', 'End Date', 'Created At'];
   const rows = campaigns.map(c => [
     `"${(c.name || '').replace(/"/g, '""')}"`,
@@ -66,27 +71,30 @@ function downloadCSV(csvContent, filename) {
 
 // ─── Confirmation Modal ─────────────────────────────────────────────────────
 
-function ConfirmModal({ open, title, message, confirmLabel, confirmColor, onConfirm, onCancel, loading }) {
+function ConfirmModal({ open, title, message, confirmLabel, tone, onConfirm, onCancel, loading }) {
   if (!open) return null;
+  const confirmClass = tone === 'danger'
+    ? 'bg-[#E8401A] hover:bg-[#B91C1C] text-white'
+    : 'bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A]';
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onCancel}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="font-display text-lg font-bold text-t1 mb-2">{title}</h3>
-        <p className="text-sm text-t3 mb-6">{message}</p>
-        <div className="flex items-center justify-end gap-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 backdrop-blur-sm" onClick={onCancel}>
+      <div className="bg-white rounded-[18px] shadow-2xl max-w-md w-full mx-4 p-6 font-body" onClick={e => e.stopPropagation()}>
+        <h3 className="font-display text-[17px] font-bold text-[#0A0A0A] mb-2 -tracking-[0.2px]">{title}</h3>
+        <p className="text-[13px] text-[#52525B] mb-6 leading-relaxed">{message}</p>
+        <div className="flex items-center justify-end gap-2">
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 text-sm font-semibold text-t3 hover:text-t1 rounded-lg hover:bg-surface2 transition-colors"
+            className="px-4 py-2 text-[13px] font-semibold text-[#52525B] hover:text-[#0A0A0A] rounded-[10px] hover:bg-[#F4F4F5] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 text-sm font-bold text-white rounded-lg transition-colors ${confirmColor || 'bg-red hover:bg-red/90'} disabled:opacity-50`}
+            className={`px-4 py-2 text-[13px] font-display font-bold rounded-[10px] transition-colors disabled:opacity-50 ${confirmClass}`}
           >
-            {loading ? 'Processing...' : confirmLabel}
+            {loading ? 'Processing…' : confirmLabel}
           </button>
         </div>
       </div>
@@ -94,15 +102,12 @@ function ConfirmModal({ open, title, message, confirmLabel, confirmColor, onConf
   );
 }
 
-// ─── Campaign Card ──────────────────────────────────────────────────────────
+// ─── Campaign Card (simplified — no phantom fields) ─────────────────────────
 
 function CampaignCard({ campaign, selected, onToggleSelect }) {
   const router = useRouter();
   const isDraft = campaign.status === 'draft';
   const budget = campaign.total_budget || 0;
-  const spent = campaign.spent_budget || 0;
-  const pct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
-  const influencerCount = campaign.influencer_count || 0;
 
   const goToDetail = () => {
     if (isDraft) router.push(`/dashboard/campaigns/new?id=${campaign.id}`);
@@ -115,9 +120,13 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
       tabIndex={0}
       onClick={goToDetail}
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail(); } }}
-      className={`bg-white rounded-xl border p-4 hover:shadow-md transition-all flex flex-col gap-3 cursor-pointer ${selected ? 'border-navy ring-2 ring-navy/20' : 'border-border hover:border-navy/20'}`}
+      className={`bg-white rounded-[16px] border p-4 transition-all flex flex-col gap-3 cursor-pointer ${
+        selected
+          ? 'border-[#0A0A0A] shadow-[0_0_0_2px_rgba(10,10,10,0.08)]'
+          : 'border-[#E4E4E7] hover:border-[#D4D4D8] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-16px_rgba(0,0,0,0.08)]'
+      }`}
     >
-      {/* Header with checkbox */}
+      {/* Head: checkbox + title/dates + status badge */}
       <div className="flex items-start gap-2.5">
         <label
           className="flex items-center mt-0.5 cursor-pointer"
@@ -128,38 +137,39 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
             checked={selected}
             onChange={() => onToggleSelect(campaign.id)}
             onClick={e => e.stopPropagation()}
-            className="w-4 h-4 rounded border-border2 text-navy focus:ring-navy/30 cursor-pointer"
+            className="w-4 h-4 rounded cursor-pointer"
+            style={{ accentColor: '#0A0A0A' }}
           />
         </label>
-        <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-t1 text-sm truncate">{campaign.name}</div>
-            <div className="text-[10px] text-t3 mt-0.5">
-              {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString('en-IN') : '—'} –{' '}
-              {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString('en-IN') : '—'}
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-bold text-[#0A0A0A] text-[14.5px] truncate -tracking-[0.2px]">{campaign.name}</div>
+          <div className="text-[10.5px] text-[#71717A] font-mono mt-0.5 tracking-[0.2px]">
+            {campaign.start_date
+              ? new Date(campaign.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+              : <span className="text-[#A1A1AA]">— no dates set —</span>}
+            {campaign.end_date && <>
+              <span className="text-[#D4D4D8] mx-1.5">→</span>
+              {new Date(campaign.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            </>}
           </div>
-          <StatusBadge status={campaign.status} />
         </div>
+        <StatusBadge status={campaign.status} />
       </div>
 
-      {/* Budget bar */}
-      <div>
-        <div className="flex justify-between text-[10px] text-t3 mb-1">
-          <span>Budget used</span>
-          <span className="font-semibold">{fmtRupees(spent)} / {fmtRupees(budget)}</span>
-        </div>
-        <div className="h-1.5 bg-surface2 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-orange to-gold rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between text-[10px] text-t3 mt-auto">
-        <span>{influencerCount} influencer{influencerCount !== 1 ? 's' : ''}</span>
-        <span className={isDraft ? 'text-[11px] font-bold text-orange' : 'text-navy font-semibold'}>
-          {isDraft ? 'Continue draft →' : 'View details →'}
+      {/* Budget (only real backend-backed amount) */}
+      <div className="flex items-baseline gap-2 pt-2 border-t border-[#E4E4E7]">
+        <span className="font-body font-semibold text-[10.5px] text-[#71717A] uppercase tracking-[0.4px]">Budget</span>
+        <span className={`ml-auto font-mono font-bold text-[16px] -tracking-[0.3px] ${budget > 0 ? 'text-[#0A0A0A]' : 'text-[#A1A1AA]'}`}>
+          {budget > 0 ? fmtRupees(budget) : '—'}
         </span>
+      </div>
+
+      {/* Footer CTA */}
+      <div className="flex items-center justify-between pt-2 border-t border-[#E4E4E7]">
+        <span className={`font-body text-[11.5px] ${isDraft ? 'text-[#E0A800] font-bold' : 'text-[#52525B] font-semibold'}`}>
+          {isDraft ? 'Continue draft' : 'View details'}
+        </span>
+        <span className="font-mono font-bold text-[#0A0A0A]">→</span>
       </div>
     </div>
   );
@@ -169,34 +179,35 @@ function CampaignCard({ campaign, selected, onToggleSelect }) {
 
 function SummaryStats({ campaigns }) {
   const counts = useMemo(() => {
-    const c = { total: campaigns.length, draft: 0, active: 0, live: 0, completed: 0, cancelled: 0, published: 0 };
+    const c = { total: campaigns.length, draft: 0, active: 0, live: 0, completed: 0, cancelled: 0, published: 0, pending_wallet: 0 };
     campaigns.forEach(camp => { if (c[camp.status] !== undefined) c[camp.status]++; });
     return c;
   }, [campaigns]);
 
   const totalBudget = useMemo(() => campaigns.reduce((sum, c) => sum + (Number(c.total_budget) || 0), 0), [campaigns]);
 
-  const stats = [
-    { label: 'Total', value: counts.total, color: 'text-t1' },
-    { label: 'Draft', value: counts.draft, color: 'text-t3' },
-    { label: 'Active', value: counts.active + counts.live, color: 'text-teal-deep' },
-    { label: 'Completed', value: counts.completed, color: 'text-navy' },
-    { label: 'Total Budget', value: fmtRupees(totalBudget), color: 'text-t1' },
+  const tiles = [
+    { label: 'Total',        value: counts.total,                  sub: 'All campaigns',          valueClass: 'text-[#0A0A0A]' },
+    { label: 'Draft',        value: counts.draft,                  sub: 'Not yet published',      valueClass: 'text-[#52525B]' },
+    { label: 'Active',       value: counts.active + counts.live,   sub: 'Currently live',         valueClass: 'text-[#047857]' },
+    { label: 'Completed',    value: counts.completed,              sub: 'Wrapped up',             valueClass: 'text-[#1F1F22]' },
+    { label: 'Total budget', value: fmtRupees(totalBudget),        sub: 'Across all campaigns',   valueClass: 'text-[#0A0A0A] text-[18px]', isAmount: true },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-      {stats.map(s => (
-        <div key={s.label} className="bg-white rounded-xl border border-border p-3 text-center">
-          <div className={`font-display text-lg font-bold ${s.color}`}>{s.value}</div>
-          <div className="text-[10px] text-t3 font-semibold uppercase tracking-wider">{s.label}</div>
+    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+      {tiles.map(t => (
+        <div key={t.label} className="bg-white rounded-[14px] border border-[#E4E4E7] px-4 py-3.5">
+          <div className="font-body font-semibold text-[10.5px] text-[#71717A] uppercase tracking-[0.4px] mb-1">{t.label}</div>
+          <div className={`font-mono font-bold leading-tight ${t.isAmount ? 'text-[18px]' : 'text-[22px]'} ${t.valueClass}`}>{t.value}</div>
+          <div className="font-body text-[10.5px] text-[#71717A] mt-1">{t.sub}</div>
         </div>
       ))}
     </div>
   );
 }
 
-// ─── Bulk Action Bar ────────────────────────────────────────────────────────
+// ─── Bulk Action Bar (ink chrome) ───────────────────────────────────────────
 
 function BulkActionBar({ selectedIds, campaigns, onCancelSelected, onDeleteSelected, onExportSelected, onClearSelection }) {
   const selectedCampaigns = campaigns.filter(c => selectedIds.has(c.id));
@@ -204,24 +215,24 @@ function BulkActionBar({ selectedIds, campaigns, onCancelSelected, onDeleteSelec
   const deletableCount = selectedCampaigns.filter(c => c.status === 'draft').length;
 
   return (
-    <div className="bg-navy-deep text-white rounded-xl px-4 py-3 mb-4 flex items-center justify-between gap-4 flex-wrap animate-in">
+    <div className="bg-[#0A0A0A] text-white rounded-[14px] px-4 py-3 mb-4 flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-semibold">{selectedIds.size} campaign{selectedIds.size !== 1 ? 's' : ''} selected</span>
-        <button onClick={onClearSelection} className="text-xs text-white/60 hover:text-white underline">
+        <span className="font-display text-[13px] font-bold">{selectedIds.size} campaign{selectedIds.size !== 1 ? 's' : ''} selected</span>
+        <button onClick={onClearSelection} className="text-[11.5px] text-[#A1A1AA] hover:text-white underline transition-colors">
           Clear
         </button>
       </div>
       <div className="flex items-center gap-2">
         <button
           onClick={onExportSelected}
-          className="px-3 py-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+          className="px-3 py-1.5 text-[11.5px] font-display font-bold bg-white/10 hover:bg-white/20 rounded-[8px] transition-colors"
         >
           Export CSV
         </button>
         {cancellableCount > 0 && (
           <button
             onClick={onCancelSelected}
-            className="px-3 py-1.5 text-xs font-bold bg-orange/80 hover:bg-orange rounded-lg transition-colors"
+            className="px-3 py-1.5 text-[11.5px] font-display font-bold bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] rounded-[8px] transition-colors"
           >
             Cancel ({cancellableCount})
           </button>
@@ -229,7 +240,7 @@ function BulkActionBar({ selectedIds, campaigns, onCancelSelected, onDeleteSelec
         {deletableCount > 0 && (
           <button
             onClick={onDeleteSelected}
-            className="px-3 py-1.5 text-xs font-bold bg-red/80 hover:bg-red rounded-lg transition-colors"
+            className="px-3 py-1.5 text-[11.5px] font-display font-bold bg-[#E8401A] hover:bg-[#B91C1C] text-white rounded-[8px] transition-colors"
           >
             Delete ({deletableCount})
           </button>
@@ -241,46 +252,81 @@ function BulkActionBar({ selectedIds, campaigns, onCancelSelected, onDeleteSelec
 
 // ─── Filter / Sort / Search Bar ─────────────────────────────────────────────
 
-function FilterBar({ search, onSearchChange, statusFilter, onStatusFilterChange, sort, onSortChange }) {
+function FilterBar({ search, onSearchChange, statusFilter, onStatusFilterChange, sort, onSortChange, campaigns }) {
+  // Per-status counts for the chip badges
+  const statusCounts = useMemo(() => {
+    const c = { all: campaigns.length };
+    ALL_STATUSES.forEach(s => { c[s] = 0; });
+    campaigns.forEach(camp => { if (c[camp.status] !== undefined) c[camp.status]++; });
+    return c;
+  }, [campaigns]);
+
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
+    <div className="bg-white border border-[#E4E4E7] rounded-[14px] p-3 mb-5 flex flex-col lg:flex-row gap-3 lg:items-center">
+
       {/* Search */}
-      <div className="relative flex-1 max-w-sm">
+      <div className="relative flex-shrink-0" style={{ minWidth: '220px', maxWidth: '380px', flex: '1 1 280px' }}>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#71717A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
         <input
           type="text"
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          placeholder="Search campaigns..."
-          className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 focus:border-navy/40 transition-all"
+          placeholder="Search campaigns…"
+          className="w-full pl-9 pr-3 py-2.5 text-[13.5px] font-body text-[#0A0A0A] bg-[#FAFAFA] border border-[#E4E4E7] rounded-[10px] outline-none transition-all focus:border-[#FFC107] focus:bg-white focus:shadow-[0_0_0_3px_rgba(255,193,7,0.18)]"
         />
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-t3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
       </div>
 
-      {/* Status filter */}
-      <select
-        value={statusFilter}
-        onChange={e => onStatusFilterChange(e.target.value)}
-        className="px-3 py-2 text-sm border border-border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 cursor-pointer"
-      >
-        <option value="all">All statuses</option>
+      {/* Status chips */}
+      <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+        <StatusChip label="All" count={statusCounts.all} active={statusFilter === 'all'} onClick={() => onStatusFilterChange('all')} />
         {ALL_STATUSES.map(s => (
-          <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+          <StatusChip
+            key={s}
+            label={STATUS_CFG[s]?.label || s}
+            count={statusCounts[s]}
+            active={statusFilter === s}
+            onClick={() => onStatusFilterChange(s)}
+          />
         ))}
-      </select>
+      </div>
 
       {/* Sort */}
-      <select
-        value={sort}
-        onChange={e => onSortChange(e.target.value)}
-        className="px-3 py-2 text-sm border border-border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-navy/20 cursor-pointer"
-      >
-        {SORT_OPTIONS.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <label className="font-body text-[11.5px] text-[#71717A] font-medium">Sort:</label>
+        <select
+          value={sort}
+          onChange={e => onSortChange(e.target.value)}
+          className="font-body text-[12.5px] font-semibold text-[#0A0A0A] px-3 pr-8 py-2 border border-[#E4E4E7] rounded-[10px] bg-white cursor-pointer focus:outline-none focus:border-[#FFC107] focus:shadow-[0_0_0_3px_rgba(255,193,7,0.18)] appearance-none bg-no-repeat"
+          style={{
+            backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")`,
+            backgroundPosition: 'right 10px center',
+          }}
+        >
+          {SORT_OPTIONS.map(o => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+      </div>
     </div>
+  );
+}
+
+function StatusChip({ label, count, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-body font-semibold transition-all whitespace-nowrap ${
+        active
+          ? 'bg-[#0A0A0A] text-white border border-[#0A0A0A]'
+          : 'bg-[#F4F4F5] text-[#52525B] border border-[#E4E4E7] hover:border-[#0A0A0A] hover:text-[#0A0A0A]'
+      }`}
+    >
+      {label}
+      <span className={`font-mono font-bold text-[10.5px] ${active ? 'opacity-90' : 'opacity-65'}`}>{count}</span>
+    </button>
   );
 }
 
@@ -317,29 +363,22 @@ export default function CampaignsPage() {
   const filtered = useMemo(() => {
     let result = [...campaigns];
 
-    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(c => c.status === statusFilter);
     }
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase().trim();
       result = result.filter(c => (c.name || '').toLowerCase().includes(q));
     }
 
-    // Sort
     result.sort((a, b) => {
       switch (sort) {
-        case 'oldest':
-          return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-        case 'budget_desc':
-          return (b.total_budget || 0) - (a.total_budget || 0);
-        case 'name_asc':
-          return (a.name || '').localeCompare(b.name || '');
+        case 'oldest':      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        case 'budget_desc': return (b.total_budget || 0) - (a.total_budget || 0);
+        case 'name_asc':    return (a.name || '').localeCompare(b.name || '');
         case 'newest':
-        default:
-          return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        default:            return new Date(b.created_at || 0) - new Date(a.created_at || 0);
       }
     });
 
@@ -405,27 +444,49 @@ export default function CampaignsPage() {
 
   const allFilteredSelected = filtered.length > 0 && selectedIds.size === filtered.length;
 
+  // Header counts
+  const liveCount  = campaigns.filter(c => ['active', 'live'].includes(c.status)).length;
+  const draftCount = campaigns.filter(c => c.status === 'draft').length;
+
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+    <div className="max-w-6xl">
+
+      {/* ── Page Header ─────────────────────────────────────── */}
+      <div className="flex items-end justify-between mb-6 gap-5 flex-wrap">
         <div>
-          <h1 className="font-display text-xl font-bold text-t1">Campaigns</h1>
-          <p className="text-xs text-t3 mt-0.5">{campaigns.length} total</p>
+          <div className="font-mono text-[11px] font-medium text-[#71717A] uppercase tracking-[0.3px] mb-1">/dashboard / campaigns</div>
+          <h1 className="font-display text-[28px] font-bold text-[#0A0A0A] -tracking-[0.6px]">Campaigns</h1>
+          <div className="w-9 h-1 bg-[#FFC107] rounded-full mt-1.5"></div>
+          <div className="font-body text-[12.5px] text-[#52525B] mt-2">
+            <span className="font-mono font-semibold text-[#0A0A0A]">{campaigns.length}</span> total
+            <span className="text-[#D4D4D8] mx-1.5">·</span>
+            <span className="font-mono font-semibold text-[#0A0A0A]">{liveCount}</span> live
+            <span className="text-[#D4D4D8] mx-1.5">·</span>
+            <span className="font-mono font-semibold text-[#0A0A0A]">{draftCount}</span> draft{draftCount !== 1 ? 's' : ''}
+          </div>
         </div>
-        <Link href="/dashboard/campaigns/new" className="px-4 py-2 bg-gradient-to-r from-red to-orange text-white font-bold text-sm rounded-xl hover:shadow-lg transition-shadow">
-          + New Campaign
+        <Link
+          href="/dashboard/campaigns/new"
+          className="inline-flex items-center gap-1.5 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold text-[13.5px] px-[18px] py-[11px] rounded-[12px] transition-colors"
+        >
+          <span className="font-mono font-bold">+</span>
+          New campaign
         </Link>
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-t3 text-sm">Loading campaigns...</div>
+        <div className="text-center py-12 text-[#71717A] text-sm font-body">Loading campaigns…</div>
       ) : campaigns.length === 0 ? (
         <div className="text-center py-16">
-          <div className="text-5xl mb-4">📣</div>
-          <div className="font-display text-lg font-bold text-t1 mb-2">No campaigns yet</div>
-          <div className="text-sm text-t3 mb-5">Create your first campaign to start working with influencers</div>
-          <Link href="/dashboard/campaigns/new" className="px-6 py-3 bg-gradient-to-r from-red to-orange text-white font-bold text-sm rounded-xl">Create Campaign</Link>
+          <div className="w-16 h-16 rounded-full bg-[#F4F4F5] mx-auto mb-4 inline-flex items-center justify-center font-display font-bold text-[#71717A] text-[24px]">·</div>
+          <div className="font-display text-[18px] font-bold text-[#0A0A0A] mb-1.5">No campaigns yet</div>
+          <div className="font-body text-sm text-[#52525B] mb-5">Create your first campaign to start working with influencers</div>
+          <Link
+            href="/dashboard/campaigns/new"
+            className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold text-sm rounded-[12px] transition-colors"
+          >
+            Create campaign →
+          </Link>
         </div>
       ) : (
         <>
@@ -440,6 +501,7 @@ export default function CampaignsPage() {
             onStatusFilterChange={v => { setStatusFilter(v); clearSelection(); }}
             sort={sort}
             onSortChange={setSort}
+            campaigns={campaigns}
           />
 
           {/* Bulk Action Bar */}
@@ -462,9 +524,10 @@ export default function CampaignsPage() {
                   type="checkbox"
                   checked={allFilteredSelected}
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-border2 text-navy focus:ring-navy/30 cursor-pointer"
+                  className="w-4 h-4 rounded cursor-pointer"
+                  style={{ accentColor: '#0A0A0A' }}
                 />
-                <span className="text-xs font-semibold text-t3">
+                <span className="font-body text-[12px] font-semibold text-[#52525B]">
                   {allFilteredSelected ? 'Deselect all' : `Select all ${filtered.length}`}
                 </span>
               </label>
@@ -473,11 +536,11 @@ export default function CampaignsPage() {
 
           {/* Campaign Grid */}
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-sm text-t3">
+            <div className="text-center py-12 text-sm text-[#71717A] font-body">
               No campaigns match your filters.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
               {filtered.map(c => (
                 <CampaignCard
                   key={c.id}
@@ -496,8 +559,8 @@ export default function CampaignsPage() {
         open={modal.open && modal.type === 'cancel'}
         title="Cancel selected campaigns?"
         message={`This will cancel ${campaigns.filter(c => selectedIds.has(c.id) && ['draft', 'published'].includes(c.status)).length} draft/published campaign(s). Active or completed campaigns will not be affected. This action cannot be undone.`}
-        confirmLabel="Cancel Campaigns"
-        confirmColor="bg-orange hover:bg-orange/90"
+        confirmLabel="Cancel campaigns"
+        tone="primary"
         onConfirm={handleBulkCancel}
         onCancel={() => setModal({ open: false, type: null })}
         loading={bulkLoading}
@@ -506,8 +569,8 @@ export default function CampaignsPage() {
         open={modal.open && modal.type === 'delete'}
         title="Delete selected drafts?"
         message={`This will permanently delete ${campaigns.filter(c => selectedIds.has(c.id) && c.status === 'draft').length} draft campaign(s). Only drafts can be deleted. This action cannot be undone.`}
-        confirmLabel="Delete Drafts"
-        confirmColor="bg-red hover:bg-red/90"
+        confirmLabel="Delete drafts"
+        tone="danger"
         onConfirm={handleBulkDelete}
         onCancel={() => setModal({ open: false, type: null })}
         loading={bulkLoading}
