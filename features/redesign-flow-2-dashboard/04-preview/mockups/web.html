@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX redesign — Flow 2 · Dashboard chrome + home (web)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white:        #FFFFFF;
+  --bg:           #FAFAFA;
+  --bg-2:         #F4F4F5;
+  --yellow:       #FFC107;
+  --yellow-hover: #E0A800;
+  --yellow-light: #FFD54F;
+  --yellow-pale:  #FFF7CC;
+  --yellow-50:    #FFFDEB;
+  --yellow-text:  #6B5A00;
+  --ink:          #0A0A0A;
+  --ink-2:        #1F1F22;
+  --ink-3:        #3A3A3D;
+  --muted:        #52525B;
+  --muted-2:      #71717A;
+  --muted-3:      #A1A1AA;
+  --border:       #E4E4E7;
+  --border-2:     #D4D4D8;
+  --success:      #10B981;
+  --success-pale: #D1FAE5;
+  --success-deep: #047857;
+  --danger:       #E8401A;
+  --danger-pale:  #FDEEE9;
+  --danger-deep:  #B91C1C;
+
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── REVIEW CHROME (sticky review-only header above the mockup) ── */
+.review-bar {
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.review-bar .name { font-family: var(--font-display); font-weight: 800; letter-spacing: -0.3px; }
+.review-bar .name .y { color: var(--yellow); }
+.review-bar .tag {
+  background: rgba(255,193,7,0.15);
+  color: var(--yellow);
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   APP TOPBAR — black chrome (lifted from poster + sample-dashboard)
+   ──────────────────────────────────────────────────────────── */
+.topbar {
+  background: var(--ink);
+  color: #fff;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 24px;
+  border-bottom: 1px solid #2A2A2D;
+}
+
+.brand-slot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.brand-slot .logo-ph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 8px 18px;
+  border: 2px dashed rgba(255,255,255,0.22);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 2.5px;
+}
+
+.nav {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav a {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #A1A1AA;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.nav a:hover { color: #fff; background: #2A2A2D; }
+.nav a.active {
+  color: var(--ink);
+  background: var(--yellow);
+  font-weight: 700;
+}
+.nav a .ico {
+  width: 14px; height: 14px;
+  display: inline-flex; align-items: center; justify-content: center;
+  opacity: 0.85;
+}
+.nav a.active .ico { opacity: 1; }
+
+.topbar-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: #A1A1AA;
+  position: relative;
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover { background: #2A2A2D; color: #fff; }
+.icon-btn .badge {
+  position: absolute;
+  top: 6px; right: 6px;
+  min-width: 16px; height: 16px;
+  padding: 0 4px;
+  background: var(--yellow);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9.5px;
+  display: flex; align-items: center; justify-content: center;
+  line-height: 1;
+}
+
+.avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  letter-spacing: 0.3px;
+}
+.signout-link {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #71717A;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 6px;
+}
+.signout-link:hover { color: #fff; }
+
+/* ────────────────────────────────────────────────────────────
+   LAYOUT-LEVEL PENDING BANNER (persistent across dashboard sub-routes)
+   ──────────────────────────────────────────────────────────── */
+.pending-strip {
+  background: var(--yellow-pale);
+  border-bottom: 1px solid rgba(255,193,7,0.4);
+  padding: 12px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.pending-strip .ic {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--yellow);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+}
+.pending-strip strong { color: var(--ink); font-weight: 700; }
+.pending-strip .eta-chip {
+  margin-left: 6px;
+  background: var(--ink);
+  color: var(--yellow);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 100px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   PAGE BODY
+   ──────────────────────────────────────────────────────────── */
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 28px;
+}
+
+.page-header { margin-bottom: 24px; }
+.page-header .greeting {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--muted-2);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.page-header h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.6px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.page-header .y-rule {
+  width: 42px; height: 4px;
+  background: var(--yellow);
+  border-radius: 100px;
+  margin-bottom: 8px;
+}
+.page-header .sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── ACTION REQUIRED (brand inbox) ── */
+.action-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px 20px;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.action-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--yellow);
+}
+.action-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.action-card-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  display: flex; align-items: center; gap: 10px;
+}
+.action-card-head h2 .pill {
+  background: var(--yellow);
+  color: var(--ink);
+  padding: 2px 9px;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+.action-card-head .hint {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted-2);
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+@media (max-width: 760px) { .action-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.action-tile {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.12s, background 0.12s, transform 0.05s;
+}
+.action-tile:hover {
+  border-color: var(--ink);
+  background: var(--white);
+}
+.action-tile .n {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--ink);
+  margin-bottom: 2px;
+  line-height: 1;
+}
+.action-tile .l {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.action-tile.danger { border-color: rgba(232,64,26,0.2); background: var(--danger-pale); }
+.action-tile.danger .n { color: var(--danger-deep); }
+.action-tile.danger .l { color: var(--danger-deep); }
+.action-tile.danger:hover { border-color: var(--danger); }
+
+/* ── KPI TILES — yellow icon-in-circle (poster pattern) ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 32px;
+}
+@media (max-width: 920px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.kpi {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  position: relative;
+}
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -10px rgba(0,0,0,0.08);
+  border-color: var(--border-2);
+}
+.kpi-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.kpi-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--yellow);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.kpi-icon.danger { background: var(--danger-pale); }
+.kpi-icon.danger svg { stroke: var(--danger-deep); }
+.kpi-icon svg { width: 20px; height: 20px; }
+.kpi .arrow {
+  color: var(--muted-3);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+.kpi .label {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--muted-2);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-top: 10px;
+}
+.kpi .value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--ink);
+  letter-spacing: -0.4px;
+  line-height: 1.1;
+}
+.kpi .sub {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted-2);
+}
+.kpi .sub.warn { color: var(--danger-deep); font-weight: 600; }
+
+/* ── QUICK ACTIONS — yellow-on-ink chip strip ── */
+.quick-head {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.quick-head .y-pill {
+  width: 4px; height: 16px;
+  background: var(--yellow);
+  border-radius: 2px;
+}
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+@media (max-width: 700px) { .quick-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.quick-tile {
+  background: var(--ink);
+  border-radius: 14px;
+  padding: 14px 16px;
+  color: var(--white);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.1s;
+}
+.quick-tile:hover { transform: translateY(-1px); }
+.quick-tile::after {
+  content: "";
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 60px; height: 60px;
+  background: var(--yellow);
+  border-radius: 50%;
+  opacity: 0.18;
+}
+.quick-tile.primary { background: var(--yellow); color: var(--ink); }
+.quick-tile.primary::after { background: var(--ink); opacity: 0.08; }
+.quick-tile .arrow {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  z-index: 1;
+  position: relative;
+}
+
+/* ── TWO-COLUMN: ACTIVITY + CAMPAIGNS ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+@media (max-width: 980px) { .two-col { grid-template-columns: 1fr; } }
+
+.list-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.list-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+}
+.list-head .more {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.list-head .more:hover { background: var(--yellow-pale); }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+}
+.row:first-of-type { border-top: 0; }
+.row:hover { background: var(--bg-2); }
+
+.tx-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9.5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.tx-pill.walkin   { background: var(--success-pale); color: var(--success-deep); }
+.tx-pill.booking  { background: var(--yellow-pale);  color: var(--yellow-text);  }
+.tx-pill.order    { background: var(--bg-2);          color: var(--muted);        border: 1px solid var(--border); }
+.tx-pill.click    { background: var(--bg-2);          color: var(--muted-2);      }
+
+.row .who { flex: 1; min-width: 0; }
+.row .who .name {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+  margin-bottom: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row .who .meta {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--muted-2);
+}
+.row .amt {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--ink);
+  flex-shrink: 0;
+  text-align: right;
+}
+.row .amt.up { color: var(--success-deep); }
+.row .amt.down { color: var(--danger-deep); }
+
+.camp-row .who .meta { display: flex; align-items: center; gap: 6px; }
+.camp-row .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+.camp-row .badge .dot { width: 5px; height: 5px; border-radius: 50%; }
+.camp-row .badge.active   { background: var(--success-pale); color: var(--success-deep); }
+.camp-row .badge.active .dot { background: var(--success); }
+.camp-row .badge.pending  { background: var(--yellow-pale); color: var(--yellow-text); }
+.camp-row .badge.pending .dot { background: var(--yellow-hover); }
+.camp-row .badge.draft    { background: var(--bg-2); color: var(--muted); }
+.camp-row .badge.draft .dot { background: var(--muted-2); }
+
+/* empty states */
+.empty {
+  padding: 32px 18px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--muted);
+}
+.empty .ico {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+  font-size: 22px;
+}
+.empty a { color: var(--ink); font-weight: 700; border-bottom: 1px dotted var(--muted-3); text-decoration: none; }
+
+/* ── BOTTOM NOTES PANEL ── */
+.notes-strip {
+  max-width: 1400px;
+  margin: 32px auto 0;
+  padding: 24px 28px;
+  background: var(--ink-2);
+  color: #E4E4E7;
+  border-radius: 20px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.notes-strip h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--yellow);
+  margin-bottom: 16px;
+}
+.notes-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+@media (max-width: 920px) { .notes-cols { grid-template-columns: 1fr; } }
+.notes-cols h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #A1A1AA;
+  margin-bottom: 8px;
+}
+.notes-cols ul { list-style: none; padding: 0; }
+.notes-cols li {
+  padding: 4px 0 4px 16px;
+  position: relative;
+  color: #D4D4D8;
+  font-size: 12.5px;
+}
+.notes-cols li::before {
+  content: "›";
+  position: absolute; left: 0;
+  color: var(--yellow);
+  font-weight: 700;
+}
+.notes-strip .footnote {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #2A2A2D;
+  font-size: 12px;
+  color: #A1A1AA;
+}
+</style>
+</head>
+<body>
+
+<div class="review-bar">
+  <div><span class="name">INFLX <span class="y">redesign</span></span> · Flow 2 · Dashboard chrome + home (web)</div>
+  <div><span class="tag">layout.js + page.js (rest of page.js)</span></div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     APP TOPBAR
+     ════════════════════════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="brand-slot">
+    <span class="logo-ph" aria-label="inflx logo placeholder">LOGO</span>
+  </div>
+
+  <nav class="nav">
+    <a class="active" href="#"><span class="ico">⌂</span> Dashboard</a>
+    <a href="#"><span class="ico">⊟</span> Campaigns</a>
+    <a href="#"><span class="ico">≡</span> Contracts</a>
+    <a href="#"><span class="ico">★</span> Influencers</a>
+    <a href="#"><span class="ico">▤</span> Listings</a>
+    <a href="#"><span class="ico">◉</span> Meals</a>
+    <a href="#"><span class="ico">▦</span> Bookings</a>
+    <a href="#"><span class="ico">▢</span> Gallery</a>
+    <a href="#"><span class="ico">✉</span> Proposals</a>
+    <a href="#"><span class="ico">₹</span> Conversions</a>
+    <a href="#"><span class="ico">◫</span> Wallet</a>
+    <a href="#"><span class="ico">◉</span> Profile</a>
+  </nav>
+
+  <div class="topbar-right">
+    <button class="icon-btn" title="Notifications">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="badge">3</span>
+    </button>
+    <div class="avatar" title="Sagar Reddy">SR</div>
+    <button class="signout-link" title="Sign out">Sign out</button>
+  </div>
+</header>
+
+<!-- Layout-level pending banner (only shows when brand.status === 'pending') -->
+<div class="pending-strip">
+  <span class="ic">!</span>
+  <span><strong>Account under review.</strong> You can explore the platform — some actions stay locked until approval.</span>
+  <span class="eta-chip">ETA &lt; 24h</span>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE BODY — /dashboard
+     ════════════════════════════════════════════════════════════ -->
+<main class="page">
+
+  <!-- Welcome header -->
+  <div class="page-header">
+    <div class="greeting">Good morning · Saturday, 23 May 2026</div>
+    <h1>Welcome back, Sagar's Pizza Corner</h1>
+    <div class="y-rule"></div>
+    <div class="sub">Here's what needs your attention today.</div>
+  </div>
+
+  <!-- ── ACTION REQUIRED ── -->
+  <section class="action-card">
+    <div class="action-card-head">
+      <h2>
+        Action Required <span class="pill">6 pending</span>
+      </h2>
+      <div class="hint">Things waiting on you</div>
+    </div>
+    <div class="action-grid">
+      <a href="#" class="action-tile">
+        <div class="n">3</div>
+        <div class="l">Negotiations</div>
+      </a>
+      <a href="#" class="action-tile">
+        <div class="n">2</div>
+        <div class="l">Content reviews</div>
+      </a>
+      <a href="#" class="action-tile">
+        <div class="n">1</div>
+        <div class="l">Contract signs</div>
+      </a>
+      <a href="#" class="action-tile danger">
+        <div class="n">1</div>
+        <div class="l">Contract failed</div>
+      </a>
+      <a href="#" class="action-tile danger">
+        <div class="n">2</div>
+        <div class="l">PDF failed</div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── KPI TILES (4) ── -->
+  <div class="kpi-grid">
+    <a href="#" class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-8-3 18-7-7-8-3z"/></svg>
+        </div>
+        <span class="arrow">→</span>
+      </div>
+      <div class="label">Active campaigns</div>
+      <div class="value">4</div>
+      <div class="sub">12 total campaigns</div>
+    </a>
+
+    <a href="#" class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h.01"/></svg>
+        </div>
+        <span class="arrow">→</span>
+      </div>
+      <div class="label">Wallet balance</div>
+      <div class="value">₹2,40,000</div>
+      <div class="sub">₹85,500 in escrow</div>
+    </a>
+
+    <a href="#" class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <span class="arrow">→</span>
+      </div>
+      <div class="label">Total revenue</div>
+      <div class="value">₹1,15,420</div>
+      <div class="sub">All completed follower transactions</div>
+    </a>
+
+    <a href="#" class="kpi">
+      <div class="kpi-top">
+        <div class="kpi-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h2l3.6 13.6a2 2 0 002 1.4h7.7a2 2 0 002-1.4L22 8H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+        </div>
+        <span class="arrow">→</span>
+      </div>
+      <div class="label">Listed products</div>
+      <div class="value">38</div>
+      <div class="sub">In your catalogue</div>
+    </a>
+  </div>
+
+  <!-- ── QUICK ACTIONS ── -->
+  <h2 class="quick-head"><span class="y-pill"></span> Quick actions</h2>
+  <div class="quick-grid">
+    <a href="#" class="quick-tile primary">
+      <span>Create campaign</span>
+      <span class="arrow">→</span>
+    </a>
+    <a href="#" class="quick-tile">
+      <span>Browse influencers</span>
+      <span class="arrow">→</span>
+    </a>
+    <a href="#" class="quick-tile">
+      <span>Manage listings</span>
+      <span class="arrow">→</span>
+    </a>
+    <a href="#" class="quick-tile">
+      <span>View wallet</span>
+      <span class="arrow">→</span>
+    </a>
+  </div>
+
+  <!-- ── TWO COLUMN: ACTIVITY + CAMPAIGNS ── -->
+  <div class="two-col">
+
+    <!-- Recent activity -->
+    <div class="list-card">
+      <div class="list-head">
+        <h2>Recent activity</h2>
+        <a href="#" class="more">View all →</a>
+      </div>
+
+      <a href="#" class="row">
+        <span class="tx-pill walkin">WALK-IN</span>
+        <div class="who">
+          <div class="name">Priya Reddy paid at store</div>
+          <div class="meta">Diwali Push · 2 min ago</div>
+        </div>
+        <div class="amt up">+₹138</div>
+      </a>
+
+      <a href="#" class="row">
+        <span class="tx-pill order">ORDER</span>
+        <div class="who">
+          <div class="name">Sneha Patil online order</div>
+          <div class="meta">via @vja.foodies · 12 min ago</div>
+        </div>
+        <div class="amt up">+₹84</div>
+      </a>
+
+      <a href="#" class="row">
+        <span class="tx-pill booking">BOOKING</span>
+        <div class="who">
+          <div class="name">Rahul Sharma prebook</div>
+          <div class="meta">Foodie Week · 1h ago</div>
+        </div>
+        <div class="amt up">+₹212</div>
+      </a>
+
+      <a href="#" class="row">
+        <span class="tx-pill walkin">WALK-IN</span>
+        <div class="who">
+          <div class="name">Customer paid at store</div>
+          <div class="meta">via @srija.lifestyle · 3h ago</div>
+        </div>
+        <div class="amt up">+₹56</div>
+      </a>
+
+      <a href="#" class="row">
+        <span class="tx-pill click">CLICK</span>
+        <div class="who">
+          <div class="name">14 link clicks today</div>
+          <div class="meta">no conversion yet</div>
+        </div>
+        <div class="amt" style="color:#71717A;">—</div>
+      </a>
+    </div>
+
+    <!-- Recent campaigns -->
+    <div class="list-card">
+      <div class="list-head">
+        <h2>Recent campaigns</h2>
+        <a href="#" class="more">View all →</a>
+      </div>
+
+      <a href="#" class="row camp-row">
+        <div class="who">
+          <div class="name">Diwali Festival Push</div>
+          <div class="meta">
+            <span style="font-family:var(--font-mono); color:var(--muted-2);">23 May → 30 May</span>
+            <span style="color:var(--muted-3);">·</span>
+            <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">₹1,00,000</span>
+          </div>
+        </div>
+        <span class="badge active"><span class="dot"></span> Live</span>
+      </a>
+
+      <a href="#" class="row camp-row">
+        <div class="who">
+          <div class="name">Vijayawada Foodie Week</div>
+          <div class="meta">
+            <span style="font-family:var(--font-mono); color:var(--muted-2);">25 May → 1 Jun</span>
+            <span style="color:var(--muted-3);">·</span>
+            <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">₹85,500</span>
+          </div>
+        </div>
+        <span class="badge pending"><span class="dot"></span> Pending sign</span>
+      </a>
+
+      <a href="#" class="row camp-row">
+        <div class="who">
+          <div class="name">Monsoon Menu Specials</div>
+          <div class="meta">
+            <span style="font-family:var(--font-mono); color:var(--muted-2);">— draft —</span>
+            <span style="color:var(--muted-3);">·</span>
+            <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">₹0</span>
+          </div>
+        </div>
+        <span class="badge draft"><span class="dot"></span> Draft</span>
+      </a>
+    </div>
+
+  </div>
+</main>
+
+<!-- ════════════════════════════════════════════════════════════
+     BOTTOM NOTES — what changed (consolidated)
+     ════════════════════════════════════════════════════════════ -->
+<aside class="notes-strip">
+  <h2>What this Flow 2 mockup changes</h2>
+
+  <div class="notes-cols">
+    <div>
+      <h3>Topbar / nav (layout.js)</h3>
+      <ul>
+        <li>Navy gradient → solid <code>#0A0A0A</code> ink chrome (same as Flow 1 brand mark anchor)</li>
+        <li>Emoji nav icons (🏠📣📝⭐…) → minimal symbol glyphs · less playful, more professional · same 12 labels</li>
+        <li>Active nav state: <code>bg-white/10</code> grey → <strong>yellow filled with ink text</strong> — the active page reads instantly</li>
+        <li>Hover state: subtle grey background, white text</li>
+        <li>Notification bell: badge re-styled · yellow on ink ring · mono digit · max "9+" overflow preserved</li>
+        <li>Avatar: gold-pale circle → solid yellow with ink initials · "SR" instead of last-2 phone digits (uses real first+last initial when available, falls back to phone)</li>
+        <li>"Sign out" stays inline; demoted to muted ghost text</li>
+        <li>Logo: <code>&lt;Logo tone="light" size="sm" /&gt;</code> placeholder — swaps to <code>/inflx-logo-dark.png</code> on light bg or <code>/inflx-logo-on-dark.png</code> on the black topbar once founder uploads</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>Persistent pending banner (layout.js)</h3>
+      <ul>
+        <li>amber-50 generic Tailwind palette → yellow-pale (<code>#FFF7CC</code>) on locked system</li>
+        <li>⏳ emoji → black icon-circle with yellow <code>!</code> glyph (consistent with Flow 1 dashboard banner)</li>
+        <li>New live ETA chip "ETA &lt; 24h" on ink bg — same pattern as Flow 1 Waiting state · sets expectation</li>
+        <li>Persistent across all <code>/dashboard/*</code> sub-routes (already does so today; only restyled)</li>
+      </ul>
+      <h3 style="margin-top:18px;">Action Required panel</h3>
+      <ul>
+        <li>Orange-50 panel → white card with yellow left-stripe accent</li>
+        <li>"6 pending" mono pill in title — quick scan number</li>
+        <li>Failure tiles (contract-failed · pdf-failed) use danger-pale bg + danger-deep text — semantic colour separation from "things in progress"</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3>KPI tiles · Quick actions · Lists</h3>
+      <ul>
+        <li>4 KPIs unchanged structurally — added the yellow icon-in-circle (poster pattern) on the top-left of each tile</li>
+        <li>Numbers in JetBrains Mono (₹2,40,000 reads tighter and more numeric)</li>
+        <li>Quick actions: 4 gradient buttons → 3 ink tiles + 1 yellow primary tile · "Create campaign" gets the brand colour</li>
+        <li>Recent Activity / Recent Campaigns: same 2-column layout, same row structure, restyled types — walkin / booking / order / click pills, status dot pills (live/pending/draft) consistent with Flow 1</li>
+        <li>Empty states: emoji 📋📣 → soft empty card with muted icon + clear next-step link</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <strong style="color:var(--yellow); font-family:var(--font-display);">Backend-source audit (every tile traced to real data):</strong>
+    <ul style="list-style:none; padding-left:0; margin-top:8px;">
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Action Required · 5 tiles</strong> · <code>inbox.{pending_negotiations, pending_reviews, pending_signatures, contracts_failed, pdf_failed}</code> · <code>GET /brands/me/inbox-summary</code> · backend SQL in <code>brandInbox.controller.js:142-170</code></li>
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Active campaigns</strong> · <code>campaigns.filter(c =&gt; ['active','live'].includes(c.status)).length</code> · derived from <code>campaignApi.list()</code></li>
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Wallet balance</strong> · <code>wallet.wallet_balance</code> · <code>walletApi.getBalance()</code> · backend <code>wallet.controller.js:53-65</code> (also exposes <code>escrow_locked</code> and <code>total_deposited</code>)</li>
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Total revenue · REWIRED</strong> · today: misleading <code>recentTx.reduce(...)</code> over last 5. Fix: read <code>tx.data.summary.total_revenue</code> — already in the existing <code>GET /brands/me/transactions</code> response · backend SQL <code>brand.controller.js:722-735</code> (SUM of <code>follower_transactions.net_amount</code> WHERE status='completed'). No backend change needed.</li>
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Listed products</strong> · <code>products.length</code> · <code>brandApi.getProducts()</code></li>
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Recent activity</strong> · <code>tx.data.transactions</code> · transaction-type pills mapped from <code>tx.type</code> (pay_at_store / prebook / online_order / redirect_click)</li>
+      <li style="padding:3px 0; padding-left:14px; position:relative;"><span style="position:absolute; left:0; color:var(--yellow);">›</span><strong>Recent campaigns</strong> · <code>campaigns.slice(0,3)</code> · status badges from <code>c.status</code></li>
+    </ul>
+    <div style="margin-top:14px;"><strong style="color:var(--yellow); font-family:var(--font-display);">Functional preservation:</strong> every nav link href · brand status logic · notification fetch · logout flow · 12-item NAV array (Window A's later "Subscription" + "Billing" appends slot in additively). <strong style="color:var(--yellow); font-family:var(--font-display);">Zero functional / backend / logic / DB impact — visual + UX only, + the 1 honest Total-Revenue rewire that reads an already-existing summary field.</strong></div>
+  </div>
+</aside>
+
+</body>
+</html>

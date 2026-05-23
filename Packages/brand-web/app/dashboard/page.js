@@ -2,87 +2,99 @@
 import { useEffect, useState } from 'react';
 import { brandApi, walletApi, campaignApi, brandInboxApi, fmtMoney, fmtRupees } from '../../lib/api';
 
-/* ── Stat Card ──────────────────────────────────────────────── */
+/* ── StatCard — yellow icon-in-circle (poster pattern) ──────── */
 
-function StatCard({ label, value, sub, color = 'navy', href, icon }) {
-  const colorMap = {
-    navy:   'text-navy border-navy/10',
-    teal:   'text-teal border-teal/10',
-    orange: 'text-orange border-orange/10',
-    gold:   'text-yellow-600 border-yellow-200',
-    red:    'text-red border-red/10',
-  };
+function StatCard({ label, value, sub, href, icon, subTone }) {
+  const subClass = subTone === 'warn'
+    ? 'text-[11.5px] text-[#B91C1C] font-semibold mt-0.5'
+    : subTone === 'success'
+    ? 'text-[11.5px] text-[#047857] font-semibold mt-0.5'
+    : 'text-[11.5px] text-[#71717A] mt-0.5';
+
   const card = (
-    <div className={`bg-white rounded-xl border ${colorMap[color]} p-5 ${href ? 'hover:shadow-md transition-shadow cursor-pointer' : ''}`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-t3">{label}</div>
-        {icon && <span className="text-lg opacity-60">{icon}</span>}
+    <div className="bg-white rounded-[16px] border border-[#E4E4E7] p-[18px] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_-10px_rgba(0,0,0,0.08)] hover:border-[#D4D4D8] transition-all">
+      <div className="flex items-start justify-between">
+        <div className="w-10 h-10 rounded-full bg-[#FFC107] flex items-center justify-center flex-shrink-0">
+          {icon}
+        </div>
+        {href && <span className="text-[#A1A1AA] font-mono text-[14px] font-bold">→</span>}
       </div>
-      <div className={`font-display text-2xl font-extrabold ${colorMap[color].split(' ')[0]} mb-0.5`}>{value}</div>
-      {sub && <div className="text-[10px] text-t3">{sub}</div>}
+      <div className="text-[11px] font-semibold uppercase tracking-[0.4px] text-[#71717A] mt-3 mb-1">
+        {label}
+      </div>
+      <div className="font-mono font-bold text-[24px] text-[#0A0A0A] -tracking-[0.4px] leading-tight">
+        {value}
+      </div>
+      {sub && <div className={subClass}>{sub}</div>}
     </div>
   );
-  return href ? <a href={href}>{card}</a> : card;
+  return href ? <a href={href} className="block">{card}</a> : card;
 }
 
-/* ── Campaign Row ───────────────────────────────────────────── */
+/* ── Campaign status pill ───────────────────────────────────── */
 
 const CAMPAIGN_STATUS = {
-  draft:          'bg-gray-100 text-gray-500',
-  pending_wallet: 'bg-yellow-100 text-yellow-700',
-  active:         'bg-teal-100 text-teal-700',
-  live:           'bg-teal-100 text-teal-700',
-  published:      'bg-blue-100 text-blue-700',
-  completed:      'bg-blue-100 text-blue-700',
-  cancelled:      'bg-red-100 text-red-600',
+  draft:          { bg: 'bg-[#F4F4F5]',    text: 'text-[#71717A]',  dot: 'bg-[#A1A1AA]',  label: 'Draft' },
+  pending_wallet: { bg: 'bg-[#FFF7CC]',    text: 'text-[#6B5A00]',  dot: 'bg-[#E0A800]',  label: 'Pending wallet' },
+  active:         { bg: 'bg-[#D1FAE5]',    text: 'text-[#047857]',  dot: 'bg-[#10B981]',  label: 'Active' },
+  live:           { bg: 'bg-[#D1FAE5]',    text: 'text-[#047857]',  dot: 'bg-[#10B981]',  label: 'Live' },
+  published:      { bg: 'bg-[#FFF7CC]',    text: 'text-[#6B5A00]',  dot: 'bg-[#E0A800]',  label: 'Published' },
+  completed:      { bg: 'bg-[#F4F4F5]',    text: 'text-[#52525B]',  dot: 'bg-[#71717A]',  label: 'Completed' },
+  cancelled:      { bg: 'bg-[#FDEEE9]',    text: 'text-[#B91C1C]',  dot: 'bg-[#E8401A]',  label: 'Cancelled' },
 };
 
 function CampaignRow({ c }) {
+  const status = CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft;
   return (
     <a href={`/dashboard/campaigns/${c.id}`}
-      className="flex items-center justify-between py-3 px-4 hover:bg-surface2 rounded-xl transition-colors">
+      className="flex items-center gap-3 py-3 px-4 hover:bg-[#FAFAFA] border-t border-[#E4E4E7] first:border-t-0 transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-t1 truncate">{c.name}</div>
-        <div className="text-[10px] text-t3 mt-0.5">
-          {c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN') : '—'}
-          {c.end_date ? ` — ${new Date(c.end_date).toLocaleDateString('en-IN')}` : ''}
-          {' · '}{fmtRupees(c.total_budget || 0)}
+        <div className="text-[13.5px] font-semibold text-[#0A0A0A] truncate">{c.name}</div>
+        <div className="text-[11px] text-[#71717A] mt-0.5 flex items-center gap-1.5 flex-wrap">
+          <span className="font-mono">
+            {c.start_date ? new Date(c.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
+            {c.end_date ? ` → ${new Date(c.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}
+          </span>
+          <span className="text-[#D4D4D8]">·</span>
+          <span className="font-mono font-semibold text-[#0A0A0A]">{fmtRupees(c.total_budget || 0)}</span>
         </div>
       </div>
-      <span className={`ml-3 px-2 py-0.5 rounded-full text-[9px] font-bold capitalize flex-shrink-0 ${CAMPAIGN_STATUS[c.status] || CAMPAIGN_STATUS.draft}`}>
-        {c.status?.replace(/_/g, ' ')}
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2px] ${status.bg} ${status.text}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+        {status.label}
       </span>
     </a>
   );
 }
 
-/* ── Transaction Type Styles ────────────────────────────────── */
+/* ── Transaction type pill + row ────────────────────────────── */
 
 const TX_TYPE_STYLES = {
-  pay_at_store:   { bg: 'bg-teal-50', text: 'text-teal-700', label: 'Walk-in' },
-  prebook:        { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Booking' },
-  online_order:   { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Order' },
-  redirect_click: { bg: 'bg-gray-50', text: 'text-gray-600', label: 'Click' },
+  pay_at_store:   { bg: 'bg-[#D1FAE5]', text: 'text-[#047857]',  label: 'WALK-IN' },
+  prebook:        { bg: 'bg-[#FFF7CC]', text: 'text-[#6B5A00]',  label: 'BOOKING' },
+  online_order:   { bg: 'bg-[#F4F4F5]', text: 'text-[#52525B]',  label: 'ORDER'   },
+  redirect_click: { bg: 'bg-[#F4F4F5]', text: 'text-[#71717A]',  label: 'CLICK'   },
 };
 
 function TransactionRow({ tx }) {
   const style = TX_TYPE_STYLES[tx.type] || TX_TYPE_STYLES.redirect_click;
+  const isClick = tx.type === 'redirect_click';
   return (
-    <div className="flex items-center justify-between py-3 px-4 hover:bg-surface2 rounded-xl transition-colors">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0 ${style.bg} ${style.text}`}>
-          {style.label}
-        </span>
-        <div className="min-w-0">
-          <div className="text-sm font-medium text-t1 truncate">
-            {tx.follower_name || tx.follower_phone || 'Customer'}
-          </div>
-          <div className="text-[10px] text-t3">
-            {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </div>
+    <div className="flex items-center gap-3 py-3 px-4 hover:bg-[#FAFAFA] border-t border-[#E4E4E7] first:border-t-0 transition-colors">
+      <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold tracking-[0.3px] flex-shrink-0 font-mono ${style.bg} ${style.text}`}>
+        {style.label}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="text-[13.5px] font-semibold text-[#0A0A0A] truncate">
+          {tx.follower_name || tx.follower_phone || 'Customer'}
+        </div>
+        <div className="text-[11px] text-[#71717A] mt-0.5">
+          {new Date(tx.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
         </div>
       </div>
-      <div className="text-sm font-bold text-navy ml-3">{fmtMoney(tx.amount || 0)}</div>
+      <div className={`font-mono font-bold text-[13.5px] flex-shrink-0 ${isClick ? 'text-[#71717A]' : 'text-[#047857]'}`}>
+        {isClick ? '—' : `+${fmtRupees(tx.amount || 0)}`}
+      </div>
     </div>
   );
 }
@@ -94,6 +106,7 @@ export default function BrandDashboardHome() {
   const [wallet, setWallet]             = useState(null);
   const [campaigns, setCampaigns]       = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [summary, setSummary]           = useState(null);
   const [products, setProducts]         = useState([]);
   const [inbox, setInbox]               = useState(null);
   const [loading, setLoading]           = useState(true);
@@ -112,7 +125,13 @@ export default function BrandDashboardHome() {
       if (br.success) setBrand(br.data?.brand || br.data);
       if (wl.success) setWallet(wl.data?.wallet || wl.data);
       if (cp.success) setCampaigns(cp.data?.campaigns || []);
-      if (tx.success) setTransactions(tx.data?.transactions || tx.data || []);
+      if (tx.success) {
+        // The endpoint returns { transactions: [...], summary: { total_revenue, ... } }
+        // Read both — surface a true cumulative Total Revenue from .summary instead of
+        // re-summing the limited row set. Backend SQL: brand.controller.js:722-735.
+        setTransactions(tx.data?.transactions || tx.data || []);
+        setSummary(tx.data?.summary || null);
+      }
       if (pr.success) setProducts(pr.data?.products || pr.data || []);
       if (ib.success) setInbox(ib.data?.summary || null);
     }
@@ -120,18 +139,20 @@ export default function BrandDashboardHome() {
   }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-40 text-t3 text-sm">Loading dashboard...</div>
+    <div className="flex items-center justify-center h-40 text-[#71717A] text-sm font-body">Loading dashboard…</div>
   );
 
-  const balance      = wallet?.wallet_balance || 0;
-  const escrowLocked = wallet?.escrow_locked || 0;
+  const balance         = wallet?.wallet_balance || 0;
+  const escrowLocked    = wallet?.escrow_locked || 0;
   const activeCampaigns = campaigns.filter(c => ['active', 'live'].includes(c.status));
   const recentCampaigns = campaigns.slice(0, 3);
   const recentTx        = Array.isArray(transactions) ? transactions.slice(0, 5) : [];
   const productCount    = Array.isArray(products) ? products.length : 0;
 
-  // Revenue from transactions
-  const totalRevenue = recentTx.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+  // True total revenue — backend already returns it as summary.total_revenue
+  // (SUM of follower_transactions.net_amount WHERE status='completed').
+  // Previously was a misleading sum-of-last-5; honest correction.
+  const totalRevenue = summary?.total_revenue || 0;
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -141,18 +162,31 @@ export default function BrandDashboardHome() {
   const isApproved = brand?.status === 'approved';
   const isRejected = brand?.status === 'rejected';
 
+  const inboxPending = inbox
+    ? (inbox.pending_negotiations || 0) + (inbox.pending_reviews || 0) + (inbox.pending_signatures || 0) + (inbox.contracts_failed || 0) + (inbox.pdf_failed || 0)
+    : 0;
+
+  /* ── icon SVGs (single source for the yellow-circle pattern) ── */
+  const ic = {
+    trophy: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-8-3 18-7-7-8-3z"/></svg>,
+    wallet: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h.01"/></svg>,
+    trend:  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+    cart:   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h2l3.6 13.6a2 2 0 002 1.4h7.7a2 2 0 002-1.4L22 8H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>,
+  };
+
   return (
-    <div className="max-w-5xl">
+    <div className="max-w-6xl">
 
       {/* ── Welcome Header ──────────────────────────────────── */}
-      <div className="mb-6">
-        <h1 className="font-display text-2xl font-bold text-t1">
+      <div className="mb-7">
+        <div className="text-[11px] font-medium text-[#71717A] uppercase tracking-[0.3px] mb-1">{today}</div>
+        <h1 className="font-display text-[28px] font-bold text-[#0A0A0A] -tracking-[0.6px]">
           Welcome back{brand?.business_name ? `, ${brand.business_name}` : ''}
         </h1>
-        <p className="text-xs text-t3 mt-1">{today}</p>
+        <div className="w-11 h-1 bg-[#FFC107] rounded-full mt-2"></div>
       </div>
 
-      {/* ── Account Status Banners (locked palette: yellow + ink + danger/success) ── */}
+      {/* ── Account Status Banners (Flow 1 — locked palette: yellow + ink + danger/success) ── */}
       {isPending && (
         <div className="mb-5 p-4 bg-[#FFF7CC] border border-[#FFC107]/40 border-l-4 border-l-[#FFC107] rounded-[12px] flex items-start gap-3">
           <span className="flex-shrink-0 w-[26px] h-[26px] rounded-full bg-[#0A0A0A] text-[#FFC107] inline-flex items-center justify-center mt-0.5">
@@ -186,35 +220,41 @@ export default function BrandDashboardHome() {
       )}
 
       {/* ── Action Required (brand inbox) ─────────────────────── */}
-      {inbox && (inbox.pending_negotiations + inbox.pending_reviews + inbox.pending_signatures + inbox.contracts_failed + inbox.pdf_failed) > 0 && (
-        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-bold text-orange-900">Action Required</h2>
-            <span className="text-[10px] text-orange-600 font-semibold">Things waiting on you</span>
+      {inbox && inboxPending > 0 && (
+        <div className="mb-7 bg-white border border-[#E4E4E7] rounded-[18px] p-5 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[#FFC107]"></div>
+          <div className="flex items-center justify-between mb-3.5">
+            <h2 className="font-display text-[14px] font-bold text-[#0A0A0A] flex items-center gap-2.5">
+              Action Required
+              <span className="bg-[#FFC107] text-[#0A0A0A] px-2 py-0.5 rounded-full font-mono text-[11px] font-bold">
+                {inboxPending} pending
+              </span>
+            </h2>
+            <span className="text-[11.5px] text-[#71717A]">Things waiting on you</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-            <a href="/dashboard/inbox?tab=negotiations" className="bg-white border border-orange-200 rounded-xl px-3 py-2 hover:border-orange-400 transition-colors">
-              <div className="text-2xl font-extrabold text-orange-700">{inbox.pending_negotiations}</div>
-              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Negotiations</div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2.5">
+            <a href="/dashboard/inbox?tab=negotiations" className="bg-[#F4F4F5] border border-[#E4E4E7] rounded-[12px] px-3.5 py-3 hover:border-[#0A0A0A] hover:bg-white transition-all">
+              <div className="font-mono font-bold text-[22px] text-[#0A0A0A] leading-none">{inbox.pending_negotiations || 0}</div>
+              <div className="text-[10.5px] font-semibold text-[#52525B] uppercase tracking-[0.4px] mt-1.5">Negotiations</div>
             </a>
-            <a href="/dashboard/inbox?tab=reviews" className="bg-white border border-orange-200 rounded-xl px-3 py-2 hover:border-orange-400 transition-colors">
-              <div className="text-2xl font-extrabold text-orange-700">{inbox.pending_reviews}</div>
-              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Content reviews</div>
+            <a href="/dashboard/inbox?tab=reviews" className="bg-[#F4F4F5] border border-[#E4E4E7] rounded-[12px] px-3.5 py-3 hover:border-[#0A0A0A] hover:bg-white transition-all">
+              <div className="font-mono font-bold text-[22px] text-[#0A0A0A] leading-none">{inbox.pending_reviews || 0}</div>
+              <div className="text-[10.5px] font-semibold text-[#52525B] uppercase tracking-[0.4px] mt-1.5">Content reviews</div>
             </a>
-            <a href="/dashboard/inbox?tab=signatures" className="bg-white border border-orange-200 rounded-xl px-3 py-2 hover:border-orange-400 transition-colors">
-              <div className="text-2xl font-extrabold text-orange-700">{inbox.pending_signatures}</div>
-              <div className="text-[10px] font-bold text-gray-600 uppercase tracking-wide">Contract signs</div>
+            <a href="/dashboard/inbox?tab=signatures" className="bg-[#F4F4F5] border border-[#E4E4E7] rounded-[12px] px-3.5 py-3 hover:border-[#0A0A0A] hover:bg-white transition-all">
+              <div className="font-mono font-bold text-[22px] text-[#0A0A0A] leading-none">{inbox.pending_signatures || 0}</div>
+              <div className="text-[10.5px] font-semibold text-[#52525B] uppercase tracking-[0.4px] mt-1.5">Contract signs</div>
             </a>
             {inbox.contracts_failed > 0 && (
-              <a href="/dashboard/inbox?tab=failures" className="bg-white border border-red-300 rounded-xl px-3 py-2 hover:border-red-500 transition-colors">
-                <div className="text-2xl font-extrabold text-red-700">{inbox.contracts_failed}</div>
-                <div className="text-[10px] font-bold text-red-700 uppercase tracking-wide">Contract failed</div>
+              <a href="/dashboard/inbox?tab=failures" className="bg-[#FDEEE9] border border-[#E8401A]/20 rounded-[12px] px-3.5 py-3 hover:border-[#E8401A] transition-all">
+                <div className="font-mono font-bold text-[22px] text-[#B91C1C] leading-none">{inbox.contracts_failed}</div>
+                <div className="text-[10.5px] font-semibold text-[#B91C1C] uppercase tracking-[0.4px] mt-1.5">Contract failed</div>
               </a>
             )}
             {inbox.pdf_failed > 0 && (
-              <a href="/dashboard/inbox?tab=failures" className="bg-white border border-red-300 rounded-xl px-3 py-2 hover:border-red-500 transition-colors">
-                <div className="text-2xl font-extrabold text-red-700">{inbox.pdf_failed}</div>
-                <div className="text-[10px] font-bold text-red-700 uppercase tracking-wide">PDF failed</div>
+              <a href="/dashboard/inbox?tab=failures" className="bg-[#FDEEE9] border border-[#E8401A]/20 rounded-[12px] px-3.5 py-3 hover:border-[#E8401A] transition-all">
+                <div className="font-mono font-bold text-[22px] text-[#B91C1C] leading-none">{inbox.pdf_failed}</div>
+                <div className="text-[10.5px] font-semibold text-[#B91C1C] uppercase tracking-[0.4px] mt-1.5">PDF failed</div>
               </a>
             )}
           </div>
@@ -222,94 +262,110 @@ export default function BrandDashboardHome() {
       )}
 
       {/* ── Overview Stat Cards ─────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-8">
         <StatCard
-          label="Active Campaigns"
+          label="Active campaigns"
           value={activeCampaigns.length}
-          sub={`${campaigns.length} total campaigns`}
-          color="teal"
-          icon="&#128640;"
+          sub={`${campaigns.length} total`}
+          icon={ic.trophy}
           href="/dashboard/campaigns"
         />
         <StatCard
-          label="Wallet Balance"
-          value={fmtMoney(balance)}
-          sub={escrowLocked > 0 ? `${fmtMoney(escrowLocked)} in escrow` : 'No escrow locked'}
-          color={balance < 50000 ? 'red' : 'navy'}
-          icon="&#128176;"
+          label="Wallet balance"
+          value={fmtRupees(balance)}
+          sub={escrowLocked > 0 ? `${fmtRupees(escrowLocked)} in escrow` : 'No escrow locked'}
+          subTone={balance < 50000 ? 'warn' : undefined}
+          icon={ic.wallet}
           href="/dashboard/wallet"
         />
         <StatCard
-          label="Total Revenue"
-          value={fmtMoney(totalRevenue)}
-          sub="From follower transactions"
-          color="orange"
-          icon="&#128200;"
+          label="Total revenue"
+          value={fmtRupees(totalRevenue)}
+          sub="All completed follower transactions"
+          icon={ic.trend}
           href="/dashboard/conversions"
         />
         <StatCard
-          label="Listed Products"
+          label="Listed products"
           value={productCount}
           sub="In your catalogue"
-          color="navy"
-          icon="&#128722;"
+          icon={ic.cart}
           href="/dashboard/products"
         />
       </div>
 
       {/* ── Quick Actions ───────────────────────────────────── */}
       <div className="mb-8">
-        <h2 className="text-sm font-bold text-t1 mb-3">Quick Actions</h2>
+        <h2 className="font-display text-[14px] font-bold text-[#0A0A0A] mb-3 flex items-center gap-2.5">
+          <span className="w-1 h-4 bg-[#FFC107] rounded-sm"></span>
+          Quick actions
+        </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { href: '/dashboard/campaigns/new', label: 'Create Campaign',   gradient: 'from-navy to-teal' },
-            { href: '/dashboard/influencers',   label: 'Browse Influencers', gradient: 'from-teal to-emerald-500' },
-            { href: '/dashboard/products',      label: 'Manage Listings',    gradient: 'from-orange to-amber-400' },
-            { href: '/dashboard/wallet',        label: 'View Wallet',        gradient: 'from-navy to-indigo-500' },
-          ].map(a => (
-            <a key={a.href} href={a.href}
-              className={`bg-gradient-to-r ${a.gradient} rounded-xl p-3.5 text-center text-white text-xs font-bold shadow-sm hover:shadow-md hover:scale-[1.02] transition-all`}>
-              {a.label}
-            </a>
-          ))}
+          <a href="/dashboard/campaigns/new"
+            className="bg-[#FFC107] text-[#0A0A0A] rounded-[14px] py-3.5 px-4 font-display font-bold text-[13px] flex items-center justify-between hover:-translate-y-0.5 transition-transform relative overflow-hidden">
+            <span className="z-10 relative">Create campaign</span>
+            <span className="font-mono z-10 relative">→</span>
+            <span className="absolute -top-5 -right-5 w-14 h-14 rounded-full bg-[#0A0A0A] opacity-[0.08]"></span>
+          </a>
+          <a href="/dashboard/influencers"
+            className="bg-[#0A0A0A] text-white rounded-[14px] py-3.5 px-4 font-display font-bold text-[13px] flex items-center justify-between hover:-translate-y-0.5 transition-transform relative overflow-hidden">
+            <span className="z-10 relative">Browse influencers</span>
+            <span className="font-mono z-10 relative">→</span>
+            <span className="absolute -top-5 -right-5 w-14 h-14 rounded-full bg-[#FFC107] opacity-[0.18]"></span>
+          </a>
+          <a href="/dashboard/products"
+            className="bg-[#0A0A0A] text-white rounded-[14px] py-3.5 px-4 font-display font-bold text-[13px] flex items-center justify-between hover:-translate-y-0.5 transition-transform relative overflow-hidden">
+            <span className="z-10 relative">Manage listings</span>
+            <span className="font-mono z-10 relative">→</span>
+            <span className="absolute -top-5 -right-5 w-14 h-14 rounded-full bg-[#FFC107] opacity-[0.18]"></span>
+          </a>
+          <a href="/dashboard/wallet"
+            className="bg-[#0A0A0A] text-white rounded-[14px] py-3.5 px-4 font-display font-bold text-[13px] flex items-center justify-between hover:-translate-y-0.5 transition-transform relative overflow-hidden">
+            <span className="z-10 relative">View wallet</span>
+            <span className="font-mono z-10 relative">→</span>
+            <span className="absolute -top-5 -right-5 w-14 h-14 rounded-full bg-[#FFC107] opacity-[0.18]"></span>
+          </a>
         </div>
       </div>
 
       {/* ── Two-column: Recent Activity + Recent Campaigns ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-xl border border-border">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <h2 className="text-sm font-bold text-t1">Recent Activity</h2>
-            <a href="/dashboard/conversions" className="text-xs text-navy font-semibold hover:underline">View all &rarr;</a>
+        <div className="bg-white rounded-[18px] border border-[#E4E4E7] overflow-hidden">
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#E4E4E7]">
+            <h2 className="font-display text-[14px] font-bold text-[#0A0A0A]">Recent activity</h2>
+            <a href="/dashboard/conversions" className="text-[12px] text-[#0A0A0A] font-semibold hover:bg-[#FFF7CC] px-2.5 py-1 rounded-lg transition-colors">View all →</a>
           </div>
           {recentTx.length === 0 ? (
-            <div className="px-4 py-8 text-center text-t3 text-sm">
-              <div className="text-3xl mb-2">&#128203;</div>
-              No transactions yet. Activity from follower purchases will appear here.
+            <div className="px-4 py-10 text-center text-[#71717A] text-sm">
+              <div className="w-12 h-12 rounded-full bg-[#F4F4F5] inline-flex items-center justify-center mb-3 text-xl">·</div>
+              <div>No transactions yet.</div>
+              <div className="text-[11.5px] text-[#71717A] mt-1">Follower purchases via campaign links will appear here.</div>
             </div>
           ) : (
-            <div className="pb-2">
+            <div>
               {recentTx.map((tx, i) => <TransactionRow key={tx.id || i} tx={tx} />)}
             </div>
           )}
         </div>
 
         {/* Recent Campaigns */}
-        <div className="bg-white rounded-xl border border-border">
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <h2 className="text-sm font-bold text-t1">Recent Campaigns</h2>
-            <a href="/dashboard/campaigns" className="text-xs text-navy font-semibold hover:underline">View all &rarr;</a>
+        <div className="bg-white rounded-[18px] border border-[#E4E4E7] overflow-hidden">
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#E4E4E7]">
+            <h2 className="font-display text-[14px] font-bold text-[#0A0A0A]">Recent campaigns</h2>
+            <a href="/dashboard/campaigns" className="text-[12px] text-[#0A0A0A] font-semibold hover:bg-[#FFF7CC] px-2.5 py-1 rounded-lg transition-colors">View all →</a>
           </div>
           {recentCampaigns.length === 0 ? (
-            <div className="px-4 py-8 text-center text-t3 text-sm">
-              <div className="text-3xl mb-2">&#128227;</div>
-              No campaigns yet.{' '}
-              <a href="/dashboard/campaigns/new" className="text-navy font-semibold hover:underline">Create your first campaign</a>
+            <div className="px-4 py-10 text-center text-[#71717A] text-sm">
+              <div className="w-12 h-12 rounded-full bg-[#F4F4F5] inline-flex items-center justify-center mb-3 text-xl">·</div>
+              <div>No campaigns yet.</div>
+              <div className="text-[11.5px] mt-1">
+                <a href="/dashboard/campaigns/new" className="text-[#0A0A0A] font-semibold border-b border-dotted border-[#A1A1AA]">Create your first campaign</a>
+              </div>
             </div>
           ) : (
-            <div className="pb-2">
+            <div>
               {recentCampaigns.map(c => <CampaignRow key={c.id} c={c} />)}
             </div>
           )}

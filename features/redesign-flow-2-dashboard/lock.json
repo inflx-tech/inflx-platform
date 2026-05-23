@@ -1,0 +1,34 @@
+{
+  "feature": "redesign-flow-2-dashboard",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-23 chat go (\"ok pls give path in work folder where flow 2 mocks are sitting\" + \"ok pls go to implementation\")",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-23 chat confirm (backend-source audit + Total Revenue rewire to summary.total_revenue accepted)",
+  "mockup_locked_at": "2026-05-23",
+  "notes": "Visual + UX restyle of brand-web dashboard chrome (layout.js) + home body (page.js). Zero backend / API / schema / DB change. One honest frontend rewire: Total Revenue tile now reads summary.total_revenue from the same /brands/me/transactions response already fetched (currently ignores .summary). Tile-source audit in 01-spec.md verifies every metric traces to a real backend field. Status banners from Flow 1 untouched. Web-only deploy via Vercel; no mobile, no OTA, Rule 5 doesn't fire.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "lane": "main",
+      "specs_passed": 67,
+      "specs_total": 67,
+      "state": "GREEN",
+      "gate": 0,
+      "pw_exit": 0,
+      "report_exit": 0,
+      "run_at": "2026-05-23T12:35:27Z",
+      "report_path": "qa/reports/2026-05-23T12-35-27-635Z/QA-REPORT.md"
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}
