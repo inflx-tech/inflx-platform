@@ -4,6 +4,7 @@ const { Router } = require('express');
 const { authenticate, requireRole, requireAdminRole, requireApproved } = require('../middleware/auth');
 const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/brand.controller');
+const subCtrl = require('../controllers/subscription.controller');
 
 const walletRoutes = require('./wallet.routes');
 const { getBrandEscrow, getCampaignEscrow } = require('../controllers/escrow.controller');
@@ -79,6 +80,11 @@ router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'),
 // Brand products — full CRUD with category-aware validation
 router.get('/me/products',        authenticate, requireRole('brand'), ctrl.listProducts);
 router.post('/me/products',       authenticate, requireRole('brand'), requireApproved, checkQuota('createProduct'), ctrl.createProduct);
+
+// ── Phase A6 — Subscription / billing (brand self-service) ────────────────────
+router.get('/me/subscription',          authenticate, requireRole('brand'), subCtrl.getSubscription);
+router.post('/me/subscription/upgrade', authenticate, requireRole('brand'), subCtrl.upgrade);
+router.get('/me/billing/invoices',      authenticate, requireRole('brand'), subCtrl.listInvoices);
 router.patch('/me/products/:pid', authenticate, requireRole('brand'), ctrl.updateProduct);
 router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.deleteProduct);
 

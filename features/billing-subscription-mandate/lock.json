@@ -1,0 +1,33 @@
+{
+  "feature": "billing-subscription-mandate",
+  "area": "backend-controller+job+routes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'go and complete all phases'. Phase A6 of the revenue model rollout. Mock-mode complete; live Razorpay integration deferred to a follow-up A6.5.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — new endpoints + cron deployed. RAZORPAY_MOCK=true on prod (current env audit) → mock mode runs safely. Live mode returns 501 explicitly until A6.5 wires real Razorpay.",
+  "fix": "Phase A6 — subscription.controller.js (tier list, get sub, upgrade, list invoices) + subscription-renewal.job.js (daily cron 02:00 IST). RAZORPAY_MOCK mode is end-to-end functional; live mode shape stable for forward-compat A7 UI.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-pricing-service",
+    "features/billing-quota-middleware",
+    "features/billing-attribution-l3",
+    "features/billing-admin-and-brand-ui"
+  ],
+  "result": "subscription.controller.js + subscription-renewal.job.js + 4 routes + 6 new test assertions. pnpm qa 67/67 GREEN STATE=GREEN gate=0. Ready to push.",
+  "regression_proof": "Net-new endpoints, net-new cron, net-new test file. No existing code touched. registerBrand factory auto-upsert from Phase A4 already provides the subscription rows expected by the new endpoints. Cron skipped in test env (ENABLE_CRONS=false); test calls .run() directly.",
+  "discipline": "Contract-first; verify-twice on routes/index.js mount pattern + jobs/index.js registration pattern; mock-mode complete + live-mode 501 explicit (no silent failure).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; subscription endpoints + cron go live)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A backend-only.",
+  "mockup_locked_at": "2026-05-23"
+}

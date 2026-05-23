@@ -21,6 +21,7 @@ const bookingReminderJob   = require('./booking-reminder.job');
 const lowWalletJob         = require('./low-wallet-alert.job');
 const negotiationExpiryJob = require('./negotiation-expiry.job');
 const productionReminderJob = require('./production-shipment-reminder.job');
+const subscriptionRenewalJob = require('./subscription-renewal.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -63,6 +64,10 @@ function startAllJobs() {
   // unconfirmed shipments and flags 14+ day stalls for admin attention.
   cron.schedule('30 9 * * *', productionReminderJob.run, { timezone: tz });
 
+  // subscription-renewal — 02:00 IST daily; charges due brand_subscriptions
+  // (mock-mode synthetic invoice; live-mode TODO Razorpay subscription charge).
+  cron.schedule('0 2 * * *', subscriptionRenewalJob.run, { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -78,4 +83,5 @@ module.exports = {
   lowWalletJob,
   negotiationExpiryJob,
   productionReminderJob,
+  subscriptionRenewalJob,
 };

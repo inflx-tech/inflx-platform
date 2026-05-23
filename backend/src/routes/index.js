@@ -65,6 +65,9 @@ const { authenticateOptional, authenticate } = require('../middleware/auth');
 // google_maps_link field type
 const geocodingCtrl     = require('../controllers/geocoding.controller');
 
+// Phase A6 — public subscription tier catalog (no auth)
+const subscriptionCtrl  = require('../controllers/subscription.controller');
+
 const router = Router();
 
 // ── Webhooks (no auth — verified by signature) ───────────────────────────────
@@ -128,6 +131,9 @@ router.get('/category/:category_key',             authenticateOptional, follower
 
 // ── Listing Engine — category stores with inline products ────────────────────
 router.get('/category/:super_category/stores',    authenticateOptional, followerCtrl.getCategoryStores);
+
+// ── Phase A6 — Subscription tier catalog (public read; admin edits via /admin/pricing/tiers in Phase A7)
+router.get('/subscription-tiers', subscriptionCtrl.listTiers);
 
 // ── Wave 1 (Dining) — geocoding for restaurant listing wizard ────────────────
 // Authenticated: any logged-in user (brand on web). Mock mode in dev returns
