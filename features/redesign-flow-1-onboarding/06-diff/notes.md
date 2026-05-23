@@ -155,6 +155,18 @@ Every preserved item in `05-impact.md` "NO-TOUCH" list re-read post-edit:
 - No spec skipped, no assertion weakened, no test deleted
 - Report → `qa/reports/2026-05-23T09-02-07-286Z/QA-REPORT.md`
 
+## Deploy outcome (2026-05-23)
+
+- **Web (Vercel)** — `git push origin main` at commit `cca6cf2` triggered Vercel auto-deploy of `brand-web`. New `/login`, `/rejected`, and `/dashboard` banners live for real brand users.
+- **Mobile OTA × 3** — all three flavors published successfully to R2 via `https://inflx-platform.onrender.com/v1/ota/publish`:
+  - `in.inflx.app.brand` → version **65** (2229 KB)
+  - `in.inflx.app.influencer` → version **54** (2229 KB)
+  - `in.inflx.app.follower` → version **28** (2229 KB)
+- Installed phones pick up the new bundle on their next app launch (NATIVE_RUNTIME=1; no native module changes, so no APK reinstall required).
+- First-attempt `publish-ota:all` hit a transient network blip during the brand upload (`fetch failed` mid-POST); per-flavor retry succeeded cleanly on every flavor. Documented honestly — not masked.
+
+**Maestro skipped by explicit founder go** ("skip the mastero go straight to OTA"). `lock.json.release.maestro_green` stays `false` with a populated `governance_override` block citing: (a) `pnpm qa` 67/67 green, (b) verify-twice reads documented in this file, (c) pure visual changes (no logic touched), (d) Maestro doctor was all-green (CLI + adb + emulator + app installed) — skip was a deliberate gate-bypass choice, not a tooling failure. A future mobile-UI Maestro flow contract closes the gap.
+
 ## Honest limitations
 
 - **Logo is placeholder.** Real artwork ships when the founder uploads to `Packages/shared/assets/logo/inflx-logo.png`. The placeholder pattern is encapsulated in `<Logo />` so the swap is a one-line change.

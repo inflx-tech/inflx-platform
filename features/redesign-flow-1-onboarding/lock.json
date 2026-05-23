@@ -24,12 +24,43 @@
       "run_at": "2026-05-23T09:02:07Z",
       "report_path": "qa/reports/2026-05-23T09-02-07-286Z/QA-REPORT.md"
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-23 chat go (\"skip the mastero go straight to OTA, or if you can you do all three stepa,b,c\")",
+    "released_at": "2026-05-23",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web", "ota:brand", "ota:influencer", "ota:follower"],
+    "deploy_evidence": {
+      "vercel_brand_web": {
+        "commit": "cca6cf2",
+        "deployed_at": "2026-05-23",
+        "note": "git push origin main triggered Vercel auto-deploy of brand-web"
+      },
+      "ota_brand": {
+        "version": 65,
+        "bundle_size_kb": 2229,
+        "published_at": "2026-05-23",
+        "message": "Flow 1 — brand onboarding redesign (retry)"
+      },
+      "ota_influencer": {
+        "version": 54,
+        "bundle_size_kb": 2229,
+        "published_at": "2026-05-23",
+        "message": "Flow 1 — brand onboarding redesign (shared auth screens)"
+      },
+      "ota_follower": {
+        "version": 28,
+        "bundle_size_kb": 2229,
+        "published_at": "2026-05-23",
+        "message": "Flow 1 — brand onboarding redesign (shared auth screens)"
+      },
+      "ota_endpoint": "https://inflx-platform.onrender.com/v1/ota/publish"
+    },
     "maestro_green": false,
-    "maestro_note": "Mobile RELEASE flip requires a fresh Maestro run on connected emulator/device. release.released stays false until founder runs pnpm qa:maestro and confirms green, OR scopes OTA push as web-first with mobile in a follow-up commit."
+    "governance_override": {
+      "rule": "gov-check Rule 5 (Maestro green required for mobile RELEASE flip)",
+      "reason": "Maestro skipped by explicit founder go (chat: \"skip the mastero go straight to OTA\"). Substituted evidence: (1) pnpm qa = 67/67 GREEN gate 0 (Playwright + jest + API contract specs all pass with the new copy assertions in qa/web/brand/auth.spec.ts); (2) verify-twice per-file source reads documented in 06-diff/notes.md confirm every API call, form field name, validation rule, navigation route, localStorage + AsyncStorage key, and role-routing branch is preserved unchanged; (3) mobile changes are pure visual restyle — no logic touched; (4) Maestro CLI + adb + emulator + app installed all green per pnpm qa:maestro:doctor — only skipped to avoid the rebuild + Metro orchestration friction. Recorded loud per Rule-5 override mechanism. Future flow with mobile-specific UI assertions in qa/maestro/flows/ would close this gap.",
+      "approved_by": "founder · 2026-05-23 chat",
+      "approved_at": "2026-05-23"
+    }
   }
 }
