@@ -1,0 +1,34 @@
+{
+  "feature": "billing-revenue-reconciliation",
+  "area": "backend-test",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'go and complete all phases, but test and go forward'. Final Phase A8 of the revenue model rollout.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "DEPLOY-INERT — test file only, no production code modified. git push of this commit changes nothing on Render / Vercel / mobile.",
+  "fix": "Phase A8 — single reconciliation test proves the locked Glow Studio month-1 = ₹7,094 INFLX revenue total across L1 + L2 + L3.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-column-rename",
+    "features/billing-pricing-service",
+    "features/billing-quota-middleware",
+    "features/billing-attribution-l3",
+    "features/billing-subscription-mandate"
+  ],
+  "result": "Pending push.",
+  "regression_proof": "Test-only file; no production code change; pnpm qa main GREEN unchanged.",
+  "discipline": "Contract-first; reconciliation test is the rollup gate that catches future fee-model drift.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (deploy-inert; no runtime effect)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A test-only.",
+  "mockup_locked_at": "2026-05-23"
+}
