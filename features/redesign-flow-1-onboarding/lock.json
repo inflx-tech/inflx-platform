@@ -29,7 +29,7 @@
     "released_at": "2026-05-23",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web", "ota:brand", "ota:influencer", "ota:follower"],
-    "deploy_evidence": {
+    "deploy": {
       "vercel_brand_web": {
         "commit": "cca6cf2",
         "deployed_at": "2026-05-23",
