@@ -2,6 +2,7 @@
 
 const { Router } = require('express');
 const { authenticate, requireRole, requireAdminRole, requireApproved } = require('../middleware/auth');
+const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/brand.controller');
 
 const walletRoutes = require('./wallet.routes');
@@ -77,7 +78,7 @@ router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'),
 
 // Brand products — full CRUD with category-aware validation
 router.get('/me/products',        authenticate, requireRole('brand'), ctrl.listProducts);
-router.post('/me/products',       authenticate, requireRole('brand'), requireApproved, ctrl.createProduct);
+router.post('/me/products',       authenticate, requireRole('brand'), requireApproved, checkQuota('createProduct'), ctrl.createProduct);
 router.patch('/me/products/:pid', authenticate, requireRole('brand'), ctrl.updateProduct);
 router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.deleteProduct);
 

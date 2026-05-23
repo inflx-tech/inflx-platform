@@ -1,0 +1,32 @@
+{
+  "feature": "billing-quota-middleware",
+  "area": "backend-middleware+routes",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'go and complete all phases'. Phase A4 of the revenue model rollout.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — middleware + 4 routes shipped; Free-tier limits now enforced. Existing brands without a brand_subscriptions row are lazy-created as Free on first quota check (no retroactive deletion).",
+  "fix": "Phase A4 — backend/src/middleware/quotaCheck.js + 4 route wirings (createCampaign, createSet, createProduct, inviteInfluencer). AppError/response/errorHandler extended for the QUOTA_EXCEEDED details payload. registerBrand factory auto-upserts enterprise tier so existing tests don't break.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-pricing-service",
+    "features/billing-subscription-mandate",
+    "features/billing-admin-and-brand-ui"
+  ],
+  "result": "pnpm qa main GREEN 67/67 STATE=GREEN gate=0. 4 routes wired (campaign/set/invite/product). Factory auto-upserts enterprise tier on test brands → existing tests unaffected. qa:db substrate run in flight (informational). Ready to push.",
+  "regression_proof": "registerBrand factory auto-upserts enterprise tier → existing tests bypass quotas. Only 3 new test assertions explicitly downgrade. AppError extension is backward-compatible (5th arg defaults to null; existing callsites unchanged).",
+  "discipline": "Contract-first; verify-twice on route paths and ctrl names; backward-compat preserved everywhere.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Free-tier walls go live for any brand whose subscription is Free or who hits first quota check (lazy-create Free row))."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A backend-only.",
+  "mockup_locked_at": "2026-05-23"
+}

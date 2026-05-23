@@ -29,9 +29,10 @@ function success(res, data, statusCode = 200, meta = null) {
  * @param {number} [statusCode=400]
  * @param {string} [field]
  */
-function error(res, code, message, statusCode = 400, field = null) {
+function error(res, code, message, statusCode = 400, field = null, details = null) {
   const body = { success: false, error: { code, message } };
-  if (field) body.error.field = field;
+  if (field)   body.error.field   = field;
+  if (details) body.error.details = details;
   return res.status(statusCode).json(body);
 }
 

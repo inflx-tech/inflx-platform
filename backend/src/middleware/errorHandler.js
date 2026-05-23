@@ -16,7 +16,7 @@ const { error } = require('../utils/response');
 module.exports = function errorHandler(err, req, res, next) {
   // Known application error
   if (err instanceof AppError) {
-    return error(res, err.code, err.message, err.statusCode, err.field);
+    return error(res, err.code, err.message, err.statusCode, err.field, err.details);
   }
 
   // PostgreSQL unique violation (e.g. duplicate phone, duplicate instagram_handle)

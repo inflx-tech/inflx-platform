@@ -2,6 +2,7 @@
 
 const { Router } = require('express');
 const { authenticate, requireRole, requireApproved } = require('../middleware/auth');
+const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/campaign.controller');
 
 const router = Router();
@@ -9,7 +10,7 @@ const brandAuth = [authenticate, requireRole('brand')];
 const brandApproved = [authenticate, requireRole('brand'), requireApproved];
 
 // ── Campaign CRUD ────────────────────────────────────────────────────────────
-router.post('/',       ...brandApproved, ctrl.create);
+router.post('/',       ...brandApproved, checkQuota('createCampaign'), ctrl.create);
 router.get('/',        ...brandAuth, ctrl.list);
 router.get('/:id',     ...brandAuth, ctrl.getById);
 router.patch('/:id',   ...brandApproved, ctrl.update);
@@ -28,13 +29,13 @@ router.post('/:id/influencers/:ciid/reject-application',  ...brandAuth, ctrl.rej
 
 // ── Campaign Sets CRUD ───────────────────────────────────────────────────────
 router.get('/:id/sets',                     ...brandAuth, ctrl.getSets);
-router.post('/:id/sets',                    ...brandAuth, ctrl.createSet);
+router.post('/:id/sets',                    ...brandAuth, checkQuota('createSet'), ctrl.createSet);
 router.patch('/:id/sets/:sid',              ...brandAuth, ctrl.updateSet);
 router.delete('/:id/sets/:sid',             ...brandAuth, ctrl.deleteSet);
 router.post('/:id/sets/:sid/duplicate',     ...brandAuth, ctrl.duplicateSet);
 
 // ── Invite influencer to set (handpick) ─────────────────────────────────────
-router.post('/:id/sets/:sid/invite', ...brandAuth, ctrl.invite);
+router.post('/:id/sets/:sid/invite', ...brandAuth, checkQuota('inviteInfluencer'), ctrl.invite);
 
 // ── Update existing influencer assignment (draft editing) ───────────────────
 router.patch('/:id/sets/:sid/influencers/:ciId', ...brandAuth, ctrl.updateInfluencer);

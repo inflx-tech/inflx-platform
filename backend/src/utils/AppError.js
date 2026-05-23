@@ -15,13 +15,15 @@ class AppError extends Error {
    * @param {string} message     - Human-readable message
    * @param {number} statusCode  - HTTP status code (default 400)
    * @param {string} [field]     - Optional field name for validation errors
+   * @param {object} [details]   - Optional structured payload (e.g. QUOTA_EXCEEDED { action, used, limit, upgrade_to })
    */
-  constructor(code, message, statusCode = 400, field = null) {
+  constructor(code, message, statusCode = 400, field = null, details = null) {
     super(message);
     this.name = 'AppError';
     this.code = code;
     this.statusCode = statusCode;
     this.field = field;
+    this.details = details;
   }
 }
 

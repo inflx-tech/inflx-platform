@@ -81,8 +81,15 @@ async function createAdminUser(adminRole = 'superadmin') {
 /**
  * Registers a brand profile for an already-authenticated brand user.
  * Returns the brand data from the API response.
+ *
+ * Phase A4: AUTO-PROVISIONS an 'enterprise' tier brand_subscriptions row
+ * so existing tests that create many campaigns/products/sets/invites are
+ * not blocked by the new quotaCheck middleware. Tests that want to
+ * exercise quota enforcement should call setBrandTier(brandId, 'free').
+ * Override: pass `{ tier: 'free' }` to skip the enterprise upsert.
  */
 async function registerBrand(token, overrides = {}) {
+  const { tier: tierKeyOverride, ...registerOverrides } = overrides;
   const res = await request(app)
     .post('/v1/brands/register')
     .set('Authorization', `Bearer ${token}`)
@@ -91,20 +98,55 @@ async function registerBrand(token, overrides = {}) {
       // business_name, category, name, city, state, address_line,
       // 6-digit pincode. The factory historically omitted
       // name/city/state — the cascade B2b revealed.
-      name: overrides.name || 'Test Brand Owner',
-      business_name: overrides.business_name || 'Test Restaurant Pvt Ltd',
-      category: overrides.category || 'restaurant',
-      address_line: overrides.address_line || '123 MG Road',
-      city: overrides.city || 'Vijayawada',
-      state: overrides.state || 'Andhra Pradesh',
-      pincode: overrides.pincode || '500001',
-      ...overrides,
+      name: registerOverrides.name || 'Test Brand Owner',
+      business_name: registerOverrides.business_name || 'Test Restaurant Pvt Ltd',
+      category: registerOverrides.category || 'restaurant',
+      address_line: registerOverrides.address_line || '123 MG Road',
+      city: registerOverrides.city || 'Vijayawada',
+      state: registerOverrides.state || 'Andhra Pradesh',
+      pincode: registerOverrides.pincode || '500001',
+      ...registerOverrides,
     });
 
   if (res.status !== 201) {
     throw new Error(`registerBrand failed: ${JSON.stringify(res.body)}`);
   }
-  return res.body.data.brand;
+  const brand = res.body.data.brand;
+
+  // Auto-provision enterprise-tier subscription so the new quotaCheck
+  // middleware (Phase A4) doesn't break tests that create multiple
+  // campaigns/products/sets per brand. Skip with `{ tier: 'free' }`
+  // (or any non-default) when a test wants to assert quota behavior.
+  const tierKey = tierKeyOverride || 'enterprise';
+  await setBrandTier(brand.id, tierKey);
+  return brand;
+}
+
+/**
+ * Upserts the active brand_subscriptions row for a brand to the given
+ * tier_key. Used by quota tests to swap a brand between Free / Growth /
+ * Pro / Enterprise plans. Cancels any existing active row first
+ * (uniq_brand_subs_active partial unique would otherwise reject).
+ */
+async function setBrandTier(brandId, tierKey) {
+  const { rows: tierRows } = await query(
+    `SELECT id FROM subscription_tiers WHERE tier_key = $1 LIMIT 1`,
+    [tierKey]
+  );
+  if (!tierRows[0]) throw new Error(`setBrandTier: tier '${tierKey}' not seeded`);
+  // Cancel any prior active row (preserve history).
+  await query(
+    `UPDATE brand_subscriptions
+        SET status = 'cancelled', cancelled_at = now()
+      WHERE brand_id = $1 AND status = 'active'`,
+    [brandId]
+  );
+  await query(
+    `INSERT INTO brand_subscriptions
+       (brand_id, tier_id, status, current_cycle_start, current_cycle_end)
+     VALUES ($1, $2, 'active', current_date, current_date + 30)`,
+    [brandId, tierRows[0].id]
+  );
 }
 
 /**
@@ -134,4 +176,5 @@ module.exports = {
   registerBrand,
   registerInfluencer,
   loginUser,
+  setBrandTier,
 };
