@@ -1,0 +1,30 @@
+{
+  "feature": "redesign-flow-6-brand-web-campaign-detail",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-23 chat go (\"Now we go for brands campaign details in web\" + \"pls go\" — confirmed replacement-not-layering pattern)",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-23 chat — confirmed hub+3-drill-down pattern + replacement strategy",
+  "mockup_locked_at": "2026-05-23",
+  "notes": "Web counterpart of Flow 5 mobile. Restructures the 2435-LOC tab-based campaign detail page into a hub view + 3 dedicated sub-route drill-downs (influencers / sets / reviews). Web-specific features preserved as inline modals on the influencers sub-route (ContractModal / NegotiationModal / ProductionPanel). Existing /escrow sub-route kept in place. Old palette classes (bg-navy-deep / text-orange / etc.) deleted from touched files; locked palette inlined throughout. Backend-first audit confirms zero phantom data — every value traces to real fields from existing endpoints. Zero backend / API / schema / DB change.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-23T16:13:25Z",
+      "result": "67/67 passed · gate 0 · STATE=GREEN",
+      "duration_seconds": 72,
+      "report": "qa/reports/2026-05-23T16-13-25-414Z/QA-REPORT.md",
+      "first_run_clean": true
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}
