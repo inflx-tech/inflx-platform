@@ -46,6 +46,9 @@ const TRUNCATE_SQL = `
       follower_orders,
       follower_addresses,
       influencer_withdrawals,
+      attribution_clicks,
+      subscription_invoices,
+      brand_subscriptions,
       follower_transactions,
       escrow_entries,
       wallet_transactions,
@@ -68,6 +71,9 @@ const TRUNCATE_SQL = `
       users
     RESTART IDENTITY CASCADE
   `;
+// Note: subscription_tiers + categories (admin-config seeded by M058) are
+// NOT truncated — same pattern as escrow_fee_tiers (M037). Tests that
+// PATCH these tables reset their rows explicitly in beforeEach.
 
 /**
  * Wipes all tables so each test starts clean.

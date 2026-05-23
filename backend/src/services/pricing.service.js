@@ -5,21 +5,25 @@
  *
  * Central pricing engine for the 3-layer revenue model.
  *
- *   Layer 1 — SaaS subscription tiers           (Phase B3, not yet implemented)
- *   Layer 2 — Campaign Protection (escrow) fee  (this file, Phase B1)
- *   Layer 3 — Marketplace fee per category      (Phase B2, not yet implemented)
+ *   Layer 1 — SaaS subscription tiers            (computeL1Renewal — Phase A3)
+ *   Layer 2 — Campaign Protection (escrow) fee   (resolve/lock/getLocked — M037, Phase B1)
+ *   Layer 3 — Marketplace fee per category × path (computeL3OnFollowerTxn — Phase A3)
  *
  * All fee math goes through this service so that admin-edited rates flow
  * everywhere consistently and there is exactly one place to audit when a
  * fee value looks wrong.
  *
- * Caches escrow_fee_tiers in memory for 60s; admin updates bust the cache.
+ * Caches escrow_fee_tiers + categories in memory for 60s; admin updates
+ * bust the cache. classifyPath is DB-bound (reads attribution_clicks)
+ * but does not cache — its result is per-(follower,brand,now).
  */
 
 const db = require('../config/db');
 
 let _tierCache     = null;
 let _tierCacheTime = 0;
+let _categoriesCache     = null;
+let _categoriesCacheTime = 0;
 const CACHE_TTL_MS = 60_000;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -194,7 +198,229 @@ async function getLockedEscrowFeePct(client, campaignId) {
   return parseFloat(rows[0].escrow_fee_pct_locked);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Layer 1 — SaaS subscription
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Resolve the next-cycle monthly charge for a brand's active subscription.
+ *
+ * Returns:
+ *   { amount_inr: number, tier_key: string, source: string }
+ *
+ * source = 'active_subscription' (found a brand_subscriptions row, status='active')
+ *        | 'no_subscription'     (no row yet — lazy 'free' default in Phase A4 quota check)
+ *
+ * Does NOT add GST; the subscription billing layer (Phase A6) applies that.
+ */
+async function computeL1Renewal(brandId) {
+  const { rows } = await db.query(
+    `SELECT t.monthly_price_inr, t.tier_key
+       FROM brand_subscriptions bs
+       JOIN subscription_tiers  t ON t.id = bs.tier_id
+      WHERE bs.brand_id = $1
+        AND bs.status   = 'active'
+      LIMIT 1`,
+    [brandId]
+  );
+  if (!rows[0]) {
+    return { amount_inr: 0, tier_key: 'free', source: 'no_subscription' };
+  }
+  return {
+    amount_inr: parseFloat(rows[0].monthly_price_inr),
+    tier_key:   rows[0].tier_key,
+    source:     'active_subscription',
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Layer 3 — Marketplace fee per category × path
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Mapping from brands.category (free-text registration value) to
+ * categories.category_key (admin catalog row).
+ *
+ * Hardcoded for Phase A3; admin UI for editing the alias map is a
+ * follow-up (Phase A7+). Pass-through if no alias hits — caller may
+ * still match a category_key directly (e.g. 'restaurant' → 'restaurant').
+ */
+const CATEGORY_ALIASES = {
+  salon:           'salon_beauty',
+  salon_beauty:    'salon_beauty',
+  beauty:          'salon_beauty',
+  spa:             'salon_beauty',
+  restaurant:      'restaurant',
+  restaurants:     'restaurant',
+  fashion:         'fashion',
+  fashion_walkin:  'fashion',
+  fashion_online:  'fashion',
+  apparel:         'fashion',
+  car_rental:      'car_rental',
+  rental:          'car_rental',
+  packaged_food:   'packaged_food',
+  food:            'packaged_food',
+  florist:         'florist',
+  flowers:         'florist',
+  wedding_planner: 'wedding_planner',
+  wedding:         'wedding_planner',
+  function_hall:   'function_hall',
+  banquet:         'function_hall',
+  gym:             'gym_fitness',
+  gym_fitness:     'gym_fitness',
+  fitness:         'gym_fitness',
+  travel:          'travel_hotel',
+  travel_hotel:    'travel_hotel',
+  hotel:           'travel_hotel',
+  hotels:          'travel_hotel',
+  electronics:     'electronics',
+  jewellery:       'jewellery',
+  jewelry:         'jewellery',
+  footwear:        'footwear',
+  shoes:           'footwear',
+  furniture:       'furniture',
+  optical:         'optical',
+  eyewear:         'optical',
+  home_services:   'home_services',
+  cleaning:        'home_services',
+  plumber:         'home_services',
+};
+
+function _normalizeCategoryKey(rawCategory) {
+  if (!rawCategory) return null;
+  const k = String(rawCategory).trim().toLowerCase();
+  return CATEGORY_ALIASES[k] || k;  // pass-through allows direct category_key matches
+}
+
+async function _loadCategories() {
+  const now = Date.now();
+  if (_categoriesCache && (now - _categoriesCacheTime) < CACHE_TTL_MS) return _categoriesCache;
+  const { rows } = await db.query(
+    `SELECT category_key, path_a_pct, path_b_pct, path_c_pct, active
+       FROM categories`
+  );
+  _categoriesCache = new Map(
+    rows.map(r => [r.category_key, {
+      path_a_pct: parseFloat(r.path_a_pct),
+      path_b_pct: parseFloat(r.path_b_pct),
+      path_c_pct: parseFloat(r.path_c_pct),
+      active:     r.active,
+    }])
+  );
+  _categoriesCacheTime = now;
+  return _categoriesCache;
+}
+
+function bustCategoryCache() {
+  _categoriesCache     = null;
+  _categoriesCacheTime = 0;
+}
+
+/**
+ * Classify the path of a follower→brand transaction.
+ *
+ * Returns:
+ *   { path: 'direct'|'influencer_direct'|'influencer_attributed',
+ *     influencer_id: uuid|null }
+ *
+ *   - 'influencer_direct'     — the transaction carries an active
+ *     campaign_influencer_id (the follower came in via the inflx.in/s/...
+ *     redirect chain). influencer_id is resolved from the CI row.
+ *   - 'influencer_attributed' — no CI on this txn, but an unexpired
+ *     attribution_clicks row exists for (follower, this brand). Returns
+ *     the most-recent unexpired row's influencer_id.
+ *   - 'direct'                — neither — pure walk-in / direct buy.
+ *
+ * @param {object} client   pg client (transaction-bound or pool)
+ * @param {object} args
+ * @param {string} args.followerId
+ * @param {string} args.brandId
+ * @param {string|null} args.campaignInfluencerId
+ */
+async function classifyPath(client, { followerId, brandId, campaignInfluencerId }) {
+  if (campaignInfluencerId) {
+    const { rows } = await client.query(
+      `SELECT influencer_id FROM campaign_influencers WHERE id = $1`,
+      [campaignInfluencerId]
+    );
+    return { path: 'influencer_direct', influencer_id: rows[0]?.influencer_id || null };
+  }
+  const { rows } = await client.query(
+    `SELECT influencer_id
+       FROM attribution_clicks
+      WHERE follower_id = $1
+        AND brand_id    = $2
+        AND expires_at  > now()
+      ORDER BY expires_at DESC
+      LIMIT 1`,
+    [followerId, brandId]
+  );
+  if (rows[0]) return { path: 'influencer_attributed', influencer_id: rows[0].influencer_id };
+  return { path: 'direct', influencer_id: null };
+}
+
+/**
+ * Compute the L3 marketplace fee for a single follower transaction.
+ *
+ * @param {object} args
+ * @param {object} args.client                pg client (transaction-bound or pool)
+ * @param {string} args.brandId
+ * @param {string} args.followerId
+ * @param {string|null} args.campaignInfluencerId
+ * @param {string|null} args.brandCategory    brands.category (varchar)
+ * @param {number} args.netAmount             rupees
+ *
+ * Returns: {
+ *   fee_amount,   // rupees, 2-decimal
+ *   fee_pct,      // applied percentage
+ *   path,         // 'direct'|'influencer_direct'|'influencer_attributed'
+ *   category_key, // normalized key actually used (null if fell back)
+ *   source,       // 'category_lookup' | 'brand_legacy_fallback'
+ *   influencer_id // uuid|null — for attribution-commission downstream
+ * }
+ */
+async function computeL3OnFollowerTxn(args) {
+  const { client, brandId, followerId, campaignInfluencerId, brandCategory, netAmount } = args;
+  const amt = parseFloat(netAmount) || 0;
+  const { path, influencer_id } = await classifyPath(client, { followerId, brandId, campaignInfluencerId });
+
+  const categoryKey = _normalizeCategoryKey(brandCategory);
+  const categories  = await _loadCategories();
+  const cat         = categoryKey ? categories.get(categoryKey) : null;
+
+  let fee_pct, source, used_category_key;
+  if (cat && cat.active) {
+    fee_pct =
+      path === 'direct'            ? cat.path_a_pct :
+      path === 'influencer_direct' ? cat.path_b_pct :
+      /* influencer_attributed */    cat.path_c_pct;
+    source             = 'category_lookup';
+    used_category_key  = categoryKey;
+  } else {
+    // Fallback: legacy brands.platform_fee_pct (defaults to 8%)
+    const { rows } = await client.query(
+      `SELECT COALESCE(platform_fee_pct, 8.00) AS pct FROM brands WHERE id = $1`,
+      [brandId]
+    );
+    fee_pct            = parseFloat(rows[0]?.pct || 8.00);
+    source             = 'brand_legacy_fallback';
+    used_category_key  = null;
+  }
+
+  const fee_amount = parseFloat((amt * fee_pct / 100).toFixed(2));
+  return {
+    fee_amount,
+    fee_pct,
+    path,
+    category_key:  used_category_key,
+    source,
+    influencer_id,
+  };
+}
+
 module.exports = {
+  // L1 — SaaS subscription
+  computeL1Renewal,
   // L2 — escrow / Campaign Protection Fee
   lookupEscrowFeeTier,
   resolveEscrowFeePct,
@@ -202,4 +428,11 @@ module.exports = {
   lockEscrowFeeAtPublish,
   getLockedEscrowFeePct,
   bustEscrowTierCache,
+  // L3 — marketplace fee per category × path
+  classifyPath,
+  computeL3OnFollowerTxn,
+  bustCategoryCache,
+  // Exposed for tests
+  _normalizeCategoryKey,
+  CATEGORY_ALIASES,
 };

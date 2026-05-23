@@ -1,0 +1,33 @@
+{
+  "feature": "billing-pricing-service",
+  "area": "backend-service",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'go and complete all phases, but test and go forward'. Phase A3 of the revenue model rollout.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src/** touched, file ships in Render image) but BEHAVIOR-INERT — no caller exists yet; the new exports run only when Phase A5/A6 wire them in. Net runtime effect = nil.",
+  "fix": "Phase A3 — extend pricing.service.js with computeL1Renewal (L1), classifyPath + computeL3OnFollowerTxn (L3), CATEGORY_ALIASES map, bustCategoryCache. Plus pricing-service.test.js (18 assertions) + TRUNCATE-list extension.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-column-rename",
+    "features/billing-quota-middleware",
+    "features/billing-attribution-l3",
+    "features/billing-subscription-mandate"
+  ],
+  "result": "pnpm qa main GREEN 67/67 STATE=GREEN gate=0. qa:db substrate run in flight (informational). New exports have zero runtime callers in this phase — no behavioural regression possible. Ready to push.",
+  "regression_proof": "No controller/route/middleware changes. New service exports have zero callers in this phase. Existing L2 exports unchanged.",
+  "discipline": "Contract-first; verify-twice on pricing.service existing footprint (header comments already reserved L1/L3 placeholders).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; new file deployed but inert until Phase A5/A6 wire callers)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A backend-only contract.",
+  "mockup_locked_at": "2026-05-23"
+}
