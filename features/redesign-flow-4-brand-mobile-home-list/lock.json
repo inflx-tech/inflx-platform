@@ -1,0 +1,34 @@
+{
+  "feature": "redesign-flow-4-brand-mobile-home-list",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-23 chat go (\"go with flow 4, second option\" + wallet card iteration + \"ok go for implementation\")",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-23 chat confirm",
+  "mockup_locked_at": "2026-05-23",
+  "notes": "Visual + UX restyle of brand-mobile Home + Campaign list to the locked wave2 palette. Zero backend / API / schema / DB change. One dead-code cleanup: drop sets[].influencers reading on list cards (always 0, guarded behind > 0, never displayed). Wallet card iterated post-mockup-review: ink-black → yellow-pale gradient with corner accent + ink Top-up button (yellow text). Quick Actions: 7 → 6 tiles (drop View My Store). Logo component reused from Flow 1.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "lane": "main",
+      "specs_passed": 67,
+      "specs_total": 67,
+      "state": "GREEN",
+      "gate": 0,
+      "pw_exit": 0,
+      "report_exit": 0,
+      "run_at": "2026-05-23T13:25:22Z",
+      "report_path": "qa/reports/2026-05-23T13-25-22-120Z/QA-REPORT.md"
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": false
+  }
+}

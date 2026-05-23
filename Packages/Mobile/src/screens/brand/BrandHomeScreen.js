@@ -4,16 +4,67 @@ import {
   RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, fmtRupees } from '../../theme/tokens';
+import { fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
+import Logo from '../../components/Logo';
+
+// ── locked palette (inline; consolidation deferred to a future token contract) ──
+const P = {
+  bg:           '#FAFAFA',
+  surface:      '#FFFFFF',
+  surface2:     '#F4F4F5',
+  ink:          '#0A0A0A',
+  ink2:         '#1F1F22',
+  muted:        '#52525B',
+  muted2:       '#71717A',
+  muted3:       '#A1A1AA',
+  border:       '#E4E4E7',
+  border2:      '#D4D4D8',
+  yellow:       '#FFC107',
+  yellowHover:  '#E0A800',
+  yellowPale:   '#FFF7CC',
+  yellow50:     '#FFFDEB',
+  yellowText:   '#6B5A00',
+  success:      '#10B981',
+  successPale:  '#D1FAE5',
+  successDeep:  '#047857',
+  danger:       '#E8401A',
+  dangerPale:   '#FDEEE9',
+  dangerDeep:  '#B91C1C',
+  white:        '#FFFFFF',
+};
+
+const STATUS_BADGE = {
+  draft:          { bg: P.surface2,   text: P.muted,        dot: P.muted2 },
+  pending_wallet: { bg: P.yellowPale, text: P.yellowText,   dot: P.yellowHover },
+  published:      { bg: P.yellowPale, text: P.yellowText,   dot: P.yellowHover },
+  active:         { bg: P.successPale,text: P.successDeep,  dot: P.success },
+  live:           { bg: P.successPale,text: P.successDeep,  dot: P.success },
+  completed:      { bg: P.surface2,   text: P.ink2,         dot: P.muted2 },
+  cancelled:      { bg: P.dangerPale, text: P.dangerDeep,   dot: P.danger },
+};
+
+const STATUS_LABEL = {
+  draft: 'Draft', pending_wallet: 'Needs funding', published: 'Published',
+  active: 'Active', live: 'Live', completed: 'Completed', cancelled: 'Cancelled',
+};
+
+const QUICK_ACTIONS = [
+  { label: 'Campaigns',     icon: '⊟', target: 'Campaigns' },
+  { label: 'Wallet',        icon: '◫', target: 'Wallet' },
+  { label: 'Negotiations',  icon: '🤝', target: 'Campaigns' },
+  { label: 'Enquiries',     icon: '✉',  target: 'BrandEnquiries' },
+  { label: 'Conversions',   icon: '₹',  target: 'BrandConversions' },
+  { label: 'Influencers',   icon: '★',  target: 'BrandInfluencerBrowse' },
+];
 
 export default function BrandHomeScreen({ navigation }) {
-  const [brand, setBrand]       = useState(null);
-  const [campaigns, setCampaigns] = useState([]);
+  const [brand, setBrand]               = useState(null);
+  const [campaigns, setCampaigns]       = useState([]);
   const [inboxSummary, setInboxSummary] = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [refreshing, setRefreshing]     = useState(false);
 
   async function load() {
     const [brandRes, campRes, inboxRes] = await Promise.all([
@@ -23,15 +74,11 @@ export default function BrandHomeScreen({ navigation }) {
     ]);
     setLoading(false);
     if (brandRes.success) setBrand(brandRes.data?.brand || brandRes.data);
-    if (campRes.success) setCampaigns(campRes.data?.campaigns || []);
+    if (campRes.success)  setCampaigns(campRes.data?.campaigns || []);
     if (inboxRes?.success) setInboxSummary(inboxRes.data?.summary || inboxRes.data);
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { load(); }, []));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -43,272 +90,459 @@ export default function BrandHomeScreen({ navigation }) {
   const pendingWallet   = campaigns.filter(c => c.status === 'pending_wallet');
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={styles.center}><ActivityIndicator color={P.ink} /></View>;
   }
 
-  const STATUS_COLORS = {
-    draft: colors.t3, pending_wallet: colors.orange,
-    published: '#3B82F6', active: colors.teal, live: colors.teal,
-    completed: colors.navy, cancelled: colors.red,
-  };
+  // Status banner derivation
+  const s = brand?.user_status || brand?.status;
+  const banner = (s === 'pending' || s === 'rejected' || s === 'suspended')
+    ? (() => {
+        const isRejected  = s === 'rejected';
+        const isSuspended = s === 'suspended';
+        return {
+          tone: isRejected || isSuspended ? 'danger' : 'pending',
+          title: isRejected ? 'Account not approved'
+            : isSuspended ? 'Account suspended'
+            : 'Account under review',
+          body: isRejected
+            ? (brand?.rejection_reason ? `Reason: ${brand.rejection_reason}` : 'Please contact support.')
+            : isSuspended
+              ? 'Your account is temporarily suspended. Contact support to restore access.'
+              : 'An admin will approve your account soon — usually within 24 hours.',
+        };
+      })()
+    : null;
+
+  // Action Required total
+  let inboxTotal = 0;
+  let inboxParts = [];
+  if (inboxSummary) {
+    inboxTotal =
+      (inboxSummary.pending_applications || 0) +
+      (inboxSummary.pending_negotiations || 0) +
+      (inboxSummary.pending_reviews || 0) +
+      (inboxSummary.pending_signatures || 0) +
+      (inboxSummary.contracts_failed || 0) +
+      (inboxSummary.pdf_failed || 0);
+    if (inboxSummary.pending_applications) inboxParts.push(`${inboxSummary.pending_applications} application${inboxSummary.pending_applications !== 1 ? 's' : ''}`);
+    if (inboxSummary.pending_negotiations) inboxParts.push(`${inboxSummary.pending_negotiations} negotiation${inboxSummary.pending_negotiations !== 1 ? 's' : ''}`);
+    if (inboxSummary.pending_reviews)      inboxParts.push(`${inboxSummary.pending_reviews} review${inboxSummary.pending_reviews !== 1 ? 's' : ''}`);
+    if (inboxSummary.pending_signatures)   inboxParts.push(`${inboxSummary.pending_signatures} contract${inboxSummary.pending_signatures !== 1 ? 's' : ''}`);
+    const failures = (inboxSummary.contracts_failed || 0) + (inboxSummary.pdf_failed || 0);
+    if (failures) inboxParts.push(`${failures} failure${failures !== 1 ? 's' : ''}`);
+  }
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
-    >
-      {/* Header */}
+    <View style={styles.container}>
+      {/* ── Ink app header ── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          INFL<Text style={{ color: colors.orange }}>X</Text>
+        <Logo tone="light" size="sm" />
+        <Text style={styles.headerBrand} numberOfLines={1}>
+          {brand?.business_name || brand?.brand_name || 'Brand workspace'}
         </Text>
-        <Text style={styles.headerBrand}>{brand?.business_name || brand?.brand_name || 'Dashboard'}</Text>
       </View>
 
-      {/* Account status banner — shown until brand is approved */}
-      {(() => {
-        const s = brand?.user_status || brand?.status;
-        if (s !== 'pending' && s !== 'rejected' && s !== 'suspended') return null;
-        const isRejected = s === 'rejected';
-        const isSuspended = s === 'suspended';
-        const title = isRejected ? 'Account not approved'
-          : isSuspended ? 'Account suspended'
-          : 'Account pending review';
-        const body = isRejected
-          ? (brand?.rejection_reason ? `Reason: ${brand.rejection_reason}` : 'Please contact support.')
-          : isSuspended
-            ? 'Your account is temporarily suspended. Contact support to restore access.'
-            : 'An admin will approve your account soon. You can update your profile in the meantime.';
-        return (
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
+      >
+
+        {/* Status banner (pending / rejected / suspended) */}
+        {banner && (
           <TouchableOpacity
-            style={[styles.statusBanner, isRejected || isSuspended ? styles.statusBannerError : styles.statusBannerWarn]}
-            activeOpacity={0.8}
+            style={[styles.banner, banner.tone === 'danger' ? styles.bannerDanger : styles.bannerPending]}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('Profile', { screen: 'BrandProfile' })}
           >
-            <Text style={[styles.statusBannerTitle, isRejected || isSuspended ? styles.statusBannerErrorText : styles.statusBannerWarnText]}>
-              {title}
-            </Text>
-            <Text style={[styles.statusBannerBody, isRejected || isSuspended ? styles.statusBannerErrorText : styles.statusBannerWarnText]}>
-              {body}
-            </Text>
+            <View style={[styles.bannerIcon, banner.tone === 'danger' ? styles.bannerIconDanger : styles.bannerIconPending]}>
+              <Text style={[styles.bannerIconGlyph, banner.tone === 'danger' ? { color: P.white } : { color: P.yellow }]}>!</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bannerTitle}>{banner.title}</Text>
+              <Text style={styles.bannerBody}>{banner.body}</Text>
+            </View>
           </TouchableOpacity>
-        );
-      })()}
+        )}
 
-      {/* Wallet card */}
-      <View style={styles.walletCard}>
-        <Text style={styles.walletLabel}>Wallet Balance</Text>
-        <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
-        <View style={styles.walletRow}>
-          <View style={styles.walletStat}>
-            <Text style={styles.walletStatLabel}>Active Campaigns</Text>
-            <Text style={styles.walletStatVal}>{activeCampaigns.length}</Text>
+        {/* ── Wallet card — yellow-pale gradient + corner accent + ink Top-up ── */}
+        <View style={styles.walletCard}>
+          <View style={styles.walletCornerLarge} pointerEvents="none" />
+          <View style={styles.walletCornerSmall} pointerEvents="none" />
+          <Text style={styles.walletLabel}>Wallet balance</Text>
+          <Text style={styles.walletAmount}>{fmtRupees(brand?.wallet_balance || 0)}</Text>
+          <View style={styles.walletStats}>
+            <View style={styles.walletStat}>
+              <Text style={styles.walletStatLabel}>Active campaigns</Text>
+              <Text style={styles.walletStatVal}>{activeCampaigns.length}</Text>
+            </View>
+            <View style={[styles.walletStat, styles.walletStatDivided]}>
+              <Text style={styles.walletStatLabel}>Total campaigns</Text>
+              <Text style={styles.walletStatVal}>{campaigns.length}</Text>
+            </View>
           </View>
-          <View style={[styles.walletStat, { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.2)', paddingLeft: 16 }]}>
-            <Text style={styles.walletStatLabel}>Total Campaigns</Text>
-            <Text style={styles.walletStatVal}>{campaigns.length}</Text>
-          </View>
+          <TouchableOpacity style={styles.topupBtn} onPress={() => navigation.navigate('Wallet')}>
+            <Text style={styles.topupBtnText}>+  Top up wallet</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.topupBtn} onPress={() => navigation.navigate('Wallet')}>
-          <Text style={styles.topupBtnText}>+ Top Up Wallet</Text>
-        </TouchableOpacity>
-      </View>
 
-      {/* Action Required — counts of items waiting on the brand. Hidden when
-          nothing is pending. Tap → opens the unified Action Required hub. */}
-      {(() => {
-        if (!inboxSummary) return null;
-        const totals =
-          (inboxSummary.pending_applications || 0) +
-          (inboxSummary.pending_negotiations || 0) +
-          (inboxSummary.pending_reviews || 0) +
-          (inboxSummary.pending_signatures || 0) +
-          (inboxSummary.contracts_failed || 0) +
-          (inboxSummary.pdf_failed || 0);
-        if (totals === 0) return null;
-        const parts = [];
-        if (inboxSummary.pending_applications) parts.push(`${inboxSummary.pending_applications} application${inboxSummary.pending_applications !== 1 ? 's' : ''}`);
-        if (inboxSummary.pending_negotiations) parts.push(`${inboxSummary.pending_negotiations} negotiation${inboxSummary.pending_negotiations !== 1 ? 's' : ''}`);
-        if (inboxSummary.pending_reviews)      parts.push(`${inboxSummary.pending_reviews} review${inboxSummary.pending_reviews !== 1 ? 's' : ''}`);
-        if (inboxSummary.pending_signatures)   parts.push(`${inboxSummary.pending_signatures} contract${inboxSummary.pending_signatures !== 1 ? 's' : ''}`);
-        const failures = (inboxSummary.contracts_failed || 0) + (inboxSummary.pdf_failed || 0);
-        if (failures)                          parts.push(`${failures} failure${failures !== 1 ? 's' : ''}`);
-        return (
+        {/* Action Required (white card with yellow left-stripe + yellow-pale icon-circle) */}
+        {inboxSummary && inboxTotal > 0 && (
           <TouchableOpacity
-            style={styles.actionRequiredCard}
+            style={styles.actionCard}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('BrandActionRequired')}
           >
-            <Text style={styles.actionRequiredIcon}>⚠️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.actionRequiredTitle}>Action Required ({totals})</Text>
-              <Text style={styles.actionRequiredBody}>{parts.join(' · ')}</Text>
+            <View style={styles.actionCardStripe} />
+            <View style={styles.actionCardIcon}>
+              <Text style={styles.actionCardIconGlyph}>!</Text>
             </View>
-            <Text style={styles.actionRequiredArrow}>›</Text>
-          </TouchableOpacity>
-        );
-      })()}
-
-      {/* Context-aware wallet alert — only shown when a campaign is actually
-          blocked on funds. Tapping opens the wallet top-up flow directly. */}
-      {pendingWallet.length > 0 && (
-        <TouchableOpacity
-          style={styles.alert}
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate('Wallet')}
-        >
-          <Text style={styles.alertTitle}>
-            {pendingWallet.length} campaign{pendingWallet.length > 1 ? 's' : ''} waiting on wallet top-up
-          </Text>
-          <Text style={styles.alertBody}>
-            Top up to release funds and publish{pendingWallet.length > 1 ? ' them' : ' it'} to influencers.
-          </Text>
-          <Text style={styles.alertCta}>Top Up Now →</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Open Web Dashboard */}
-      <TouchableOpacity style={styles.webDashBtn} onPress={() => openWebDashboard('/dashboard')}>
-        <Text style={styles.webDashIcon}>🌐</Text>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.webDashTitle}>Open Web Dashboard</Text>
-          <Text style={styles.webDashSub}>Full campaign management, analytics, and more</Text>
-        </View>
-        <Text style={styles.webDashArrow}>›</Text>
-      </TouchableOpacity>
-
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickGrid}>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Campaigns')}>
-            <Text style={styles.quickActionIcon}>📊</Text>
-            <Text style={styles.quickActionLabel}>View Campaigns</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Wallet')}>
-            <Text style={styles.quickActionIcon}>💳</Text>
-            <Text style={styles.quickActionLabel}>Wallet & Payments</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('Campaigns')}>
-            <Text style={styles.quickActionIcon}>🤝</Text>
-            <Text style={styles.quickActionLabel}>Negotiations</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('BrandEnquiries')}>
-            <Text style={styles.quickActionIcon}>📩</Text>
-            <Text style={styles.quickActionLabel}>Enquiry Leads</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('BrandConversions')}>
-            <Text style={styles.quickActionIcon}>💸</Text>
-            <Text style={styles.quickActionLabel}>Conversions</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('BrandInfluencerBrowse')}>
-            <Text style={styles.quickActionIcon}>⭐</Text>
-            <Text style={styles.quickActionLabel}>Find Influencers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickAction} onPress={() => navigation.navigate('BrandStorePreview')}>
-            <Text style={styles.quickActionIcon}>🏪</Text>
-            <Text style={styles.quickActionLabel}>View My Store</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Active campaigns */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Campaigns</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Campaigns')}>
-            <Text style={styles.seeAll}>See All →</Text>
-          </TouchableOpacity>
-        </View>
-
-        {campaigns.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={{ fontSize: 28, marginBottom: 8 }}>📣</Text>
-            <Text style={styles.emptyText}>No campaigns yet</Text>
-            <Text style={styles.emptySubText}>Create campaigns from the web dashboard</Text>
-          </View>
-        ) : (
-          campaigns.slice(0, 5).map(c => (
-            <TouchableOpacity
-              key={c.id}
-              style={styles.campaignCard}
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate('Campaigns', { screen: 'CampaignDetail', params: { campaignId: c.id } })}
-            >
-              <View style={styles.campaignHeader}>
-                <Text style={styles.campaignName} numberOfLines={1}>{c.name}</Text>
-                <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[c.status] || colors.t3 }]} />
+            <View style={{ flex: 1 }}>
+              <View style={styles.actionCardTitleRow}>
+                <Text style={styles.actionCardTitle}>Action required</Text>
+                <View style={styles.actionCardCount}>
+                  <Text style={styles.actionCardCountText}>{inboxTotal}</Text>
+                </View>
               </View>
-              <Text style={styles.campaignStatus}>{c.status?.replace(/_/g, ' ')}</Text>
-              {(c.total_budget > 0) && (
-                <Text style={styles.campaignBudget}>Budget: ₹{Number(c.total_budget).toLocaleString('en-IN')}</Text>
-              )}
-            </TouchableOpacity>
-          ))
+              <Text style={styles.actionCardBody} numberOfLines={1}>{inboxParts.join(' · ')}</Text>
+            </View>
+            <Text style={styles.actionCardArrow}>›</Text>
+          </TouchableOpacity>
         )}
-      </View>
 
-      <View style={{ height: 40 }} />
-    </ScrollView>
+        {/* Wallet top-up alert (when ≥1 pending_wallet campaign) */}
+        {pendingWallet.length > 0 && (
+          <TouchableOpacity
+            style={styles.walletAlert}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Wallet')}
+          >
+            <Text style={styles.walletAlertTitle}>
+              {pendingWallet.length} campaign{pendingWallet.length > 1 ? 's' : ''} waiting on wallet top-up
+            </Text>
+            <Text style={styles.walletAlertBody}>
+              Top up to release funds and publish{pendingWallet.length > 1 ? ' them' : ' it'} to influencers.
+            </Text>
+            <Text style={styles.walletAlertCta}>Top up now →</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Open Web Dashboard */}
+        <TouchableOpacity style={styles.webCta} onPress={() => openWebDashboard('/dashboard')}>
+          <Text style={styles.webCtaIcon}>🌐</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.webCtaTitle}>Open web dashboard</Text>
+            <Text style={styles.webCtaSub}>Full campaign management + analytics</Text>
+          </View>
+          <Text style={styles.webCtaArrow}>›</Text>
+        </TouchableOpacity>
+
+        {/* Quick Actions (6 tiles, 2 columns, yellow icon-in-circle) */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeadRow}>
+            <View style={styles.sectionTitlePill} />
+            <Text style={styles.sectionTitle}>Quick actions</Text>
+          </View>
+          <View style={styles.quickGrid}>
+            {QUICK_ACTIONS.map(qa => (
+              <TouchableOpacity
+                key={qa.label}
+                style={styles.quickTile}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate(qa.target)}
+              >
+                <View style={styles.quickIcon}>
+                  <Text style={styles.quickIconGlyph}>{qa.icon}</Text>
+                </View>
+                <Text style={styles.quickLabel}>{qa.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Campaigns top-5 */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeadRowSpread}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <View style={styles.sectionTitlePill} />
+              <Text style={styles.sectionTitle}>Campaigns</Text>
+            </View>
+            <TouchableOpacity onPress={() => navigation.navigate('Campaigns')}>
+              <Text style={styles.seeAll}>See all →</Text>
+            </TouchableOpacity>
+          </View>
+
+          {campaigns.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}><Text style={styles.emptyIconGlyph}>·</Text></View>
+              <Text style={styles.emptyText}>No campaigns yet</Text>
+              <Text style={styles.emptySubText}>Create campaigns from the web dashboard</Text>
+            </View>
+          ) : (
+            campaigns.slice(0, 5).map(c => {
+              const badge = STATUS_BADGE[c.status] || STATUS_BADGE.draft;
+              const label = STATUS_LABEL[c.status] || c.status;
+              return (
+                <TouchableOpacity
+                  key={c.id}
+                  style={styles.campaignCard}
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate('Campaigns', { screen: 'CampaignDetail', params: { campaignId: c.id } })}
+                >
+                  <View style={styles.campaignRow1}>
+                    <Text style={styles.campaignName} numberOfLines={1}>{c.name}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+                      <View style={[styles.statusDot, { backgroundColor: badge.dot }]} />
+                      <Text style={[styles.statusBadgeText, { color: badge.text }]}>{label}</Text>
+                    </View>
+                  </View>
+                  {(c.total_budget > 0) && (
+                    <Text style={styles.campaignBudget}>
+                      <Text style={styles.campaignBudgetV}>{fmtRupees(c.total_budget)}</Text> budget
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        <View style={{ height: 32 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: colors.navyDeep, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16 },
-  headerTitle: { fontSize: 22, fontWeight: '900', color: colors.white, fontFamily: 'System' },
-  headerBrand: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-  walletCard: { margin: 16, marginBottom: 0, backgroundColor: colors.navy, borderRadius: 20, padding: 20 },
-  walletLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 1 },
-  walletAmount: { fontSize: 32, fontWeight: '900', color: colors.white, marginTop: 4, marginBottom: 12 },
-  walletRow: { flexDirection: 'row', marginBottom: 16 },
-  walletStat: { flex: 1 },
-  walletStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginBottom: 2 },
-  walletStatVal: { fontSize: 18, fontWeight: '800', color: colors.white },
-  topupBtn: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
-  topupBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  alert: { margin: 16, marginBottom: 0, backgroundColor: colors.orange + '20', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.orange + '40' },
-  alertTitle: { fontSize: 13, color: colors.orange, fontWeight: '800', marginBottom: 3 },
-  alertBody:  { fontSize: 11, color: colors.orange, opacity: 0.9, lineHeight: 15, marginBottom: 6 },
-  alertCta:   { fontSize: 12, color: colors.orange, fontWeight: '800' },
-  actionRequiredCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.white, borderRadius: 14, padding: 14,
-    marginHorizontal: 16, marginTop: 12,
-    borderWidth: 1, borderColor: colors.border,
+  container: { flex: 1, backgroundColor: P.bg },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+
+  // Ink header
+  header: {
+    backgroundColor: P.ink,
+    paddingHorizontal: 18,
+    paddingTop: 52,
+    paddingBottom: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  actionRequiredIcon: { fontSize: 24 },
-  actionRequiredTitle: { fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 2 },
-  actionRequiredBody:  { fontSize: 11, color: colors.t3 },
-  actionRequiredArrow: { fontSize: 22, color: colors.t3 },
-  statusBanner: { margin: 16, marginBottom: 0, padding: 12, borderRadius: 12, borderWidth: 1 },
-  statusBannerWarn:  { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
-  statusBannerError: { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
-  statusBannerTitle: { fontSize: 13, fontWeight: '800', marginBottom: 3 },
-  statusBannerBody:  { fontSize: 12, lineHeight: 16 },
-  statusBannerWarnText: { color: '#92400E' },
-  statusBannerErrorText:{ color: '#991B1B' },
-  section: { margin: 16, marginBottom: 0 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: colors.t1 },
-  seeAll: { fontSize: 12, fontWeight: '700', color: colors.navy },
-  emptyCard: { backgroundColor: colors.white, borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  emptyText: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptySubText: { fontSize: 11, color: colors.t3, textAlign: 'center' },
-  campaignCard: { backgroundColor: colors.white, borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  campaignHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  campaignName: { fontSize: 14, fontWeight: '700', color: colors.t1, flex: 1, marginRight: 8 },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  campaignStatus: { fontSize: 11, color: colors.t3, textTransform: 'capitalize', marginBottom: 2 },
-  campaignBudget: { fontSize: 11, color: colors.t2 },
-  webDashBtn: { margin: 16, marginBottom: 0, backgroundColor: colors.navy, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  webDashIcon: { fontSize: 26 },
-  webDashTitle: { fontSize: 14, fontWeight: '700', color: colors.white },
-  webDashSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-  webDashArrow: { fontSize: 22, color: 'rgba(255,255,255,0.4)' },
-  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  quickAction: { width: '47%', backgroundColor: colors.white, borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  quickActionIcon: { fontSize: 24, marginBottom: 8 },
-  quickActionLabel: { fontSize: 11, fontWeight: '700', color: colors.t1, textAlign: 'center' },
+  headerBrand: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.85)',
+    flexShrink: 1,
+    textAlign: 'right',
+  },
+
+  scroll: { padding: 14, gap: 12 },
+
+  // Status banner
+  banner: {
+    flexDirection: 'row',
+    gap: 9,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 0,
+  },
+  bannerPending: { backgroundColor: P.yellowPale, borderColor: 'rgba(255,193,7,0.45)' },
+  bannerDanger:  { backgroundColor: P.dangerPale, borderColor: 'rgba(232,64,26,0.25)' },
+  bannerIcon: {
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center',
+    marginTop: 1,
+  },
+  bannerIconPending: { backgroundColor: P.ink },
+  bannerIconDanger:  { backgroundColor: P.danger },
+  bannerIconGlyph: { fontSize: 13, fontWeight: '800' },
+  bannerTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink, marginBottom: 2 },
+  bannerBody:  { fontSize: 11.5, color: P.ink2, lineHeight: 16 },
+
+  // Wallet card — yellow-pale gradient with corner accent
+  walletCard: {
+    backgroundColor: P.yellow50,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,193,7,0.32)',
+    position: 'relative',
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  walletCornerLarge: {
+    position: 'absolute',
+    top: -36, right: -36,
+    width: 130, height: 130, borderRadius: 65,
+    backgroundColor: P.yellow,
+    opacity: 0.28,
+  },
+  walletCornerSmall: {
+    position: 'absolute',
+    top: -12, right: 30,
+    width: 50, height: 50, borderRadius: 25,
+    backgroundColor: P.yellow,
+    opacity: 0.16,
+  },
+  walletLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: P.yellowText,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  walletAmount: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: P.ink,
+    letterSpacing: -0.6,
+    marginBottom: 14,
+  },
+  walletStats: { flexDirection: 'row', gap: 14, marginBottom: 14 },
+  walletStat:  { flex: 1 },
+  walletStatDivided: { paddingLeft: 14, borderLeftWidth: 1, borderLeftColor: 'rgba(10,10,10,0.12)' },
+  walletStatLabel: { fontSize: 9.5, fontWeight: '600', color: P.muted, marginBottom: 2, letterSpacing: 0.2 },
+  walletStatVal:   { fontSize: 18, fontWeight: '700', color: P.ink, letterSpacing: -0.2 },
+  topupBtn: {
+    backgroundColor: P.ink,
+    borderRadius: 11,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  topupBtnText: { fontSize: 12.5, fontWeight: '700', color: P.yellow, letterSpacing: 0.2 },
+
+  // Action Required card
+  actionCard: {
+    backgroundColor: P.surface,
+    borderRadius: 14,
+    padding: 13,
+    paddingLeft: 16,
+    borderWidth: 1,
+    borderColor: P.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  actionCardStripe: {
+    position: 'absolute',
+    top: 0, left: 0,
+    width: 3, height: '100%',
+    backgroundColor: P.yellow,
+  },
+  actionCardIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: P.yellowPale,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionCardIconGlyph: { fontSize: 16, fontWeight: '800', color: P.ink },
+  actionCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 2 },
+  actionCardTitle: { fontSize: 12.5, fontWeight: '700', color: P.ink },
+  actionCardCount: {
+    backgroundColor: P.yellow,
+    paddingHorizontal: 6, paddingVertical: 1,
+    borderRadius: 100,
+  },
+  actionCardCountText: { fontSize: 10.5, fontWeight: '700', color: P.ink },
+  actionCardBody: { fontSize: 11, color: P.muted },
+  actionCardArrow: { fontSize: 18, color: P.muted2, fontWeight: '700' },
+
+  // Wallet alert (yellow-pale)
+  walletAlert: {
+    backgroundColor: P.yellowPale,
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1, borderColor: 'rgba(255,193,7,0.4)',
+    borderLeftWidth: 3, borderLeftColor: P.yellow,
+  },
+  walletAlertTitle: { fontSize: 12, fontWeight: '700', color: P.ink, marginBottom: 2 },
+  walletAlertBody:  { fontSize: 11, color: P.ink2, lineHeight: 15, marginBottom: 4 },
+  walletAlertCta:   { fontSize: 11.5, color: P.yellowHover, fontWeight: '700' },
+
+  // Web Dashboard CTA
+  webCta: {
+    backgroundColor: P.surface,
+    borderRadius: 12,
+    padding: 13,
+    borderWidth: 1, borderColor: P.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  webCtaIcon: { fontSize: 18 },
+  webCtaTitle: { fontSize: 12, fontWeight: '700', color: P.ink, marginBottom: 1 },
+  webCtaSub:   { fontSize: 10.5, color: P.muted2 },
+  webCtaArrow: { fontSize: 18, color: P.muted2, fontWeight: '700' },
+
+  // Section heads
+  section: { marginTop: 4 },
+  sectionHeadRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
+  sectionHeadRowSpread: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  sectionTitlePill: { width: 3, height: 13, backgroundColor: P.yellow, borderRadius: 2 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: P.ink },
+  seeAll: { fontSize: 11.5, fontWeight: '700', color: P.ink },
+
+  // Quick Actions grid
+  quickGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickTile: {
+    width: '48%',
+    backgroundColor: P.surface,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1, borderColor: P.border,
+    flexDirection: 'column',
+    gap: 6,
+  },
+  quickIcon: {
+    width: 30, height: 30, borderRadius: 15,
+    backgroundColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  quickIconGlyph: { fontSize: 14, fontWeight: '700', color: P.ink },
+  quickLabel: { fontSize: 11, fontWeight: '600', color: P.ink, textAlign: 'center' },
+
+  // Campaign cards (Home — compact)
+  campaignCard: {
+    backgroundColor: P.surface,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1, borderColor: P.border,
+    marginBottom: 8,
+  },
+  campaignRow1: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  campaignName: { fontSize: 13.5, fontWeight: '700', color: P.ink, flex: 1, letterSpacing: 0.1 },
+  campaignBudget: { fontSize: 10.5, color: P.muted2, marginTop: 4 },
+  campaignBudgetV: { color: P.ink, fontWeight: '600' },
+
+  // Status badges
+  statusBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 7, paddingVertical: 3,
+    borderRadius: 100,
+    flexShrink: 0,
+  },
+  statusDot: { width: 4, height: 4, borderRadius: 2 },
+  statusBadgeText: { fontSize: 9.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+
+  // Empty
+  emptyCard: {
+    backgroundColor: P.surface,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1, borderColor: P.border,
+  },
+  emptyIcon: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: P.surface2,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 10,
+  },
+  emptyIconGlyph: { fontSize: 22, fontWeight: '700', color: P.muted2 },
+  emptyText: { fontSize: 14, fontWeight: '700', color: P.ink, marginBottom: 4 },
+  emptySubText: { fontSize: 11, color: P.muted, textAlign: 'center' },
 });
