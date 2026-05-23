@@ -152,33 +152,35 @@ export default function BrandDashboardHome() {
         <p className="text-xs text-t3 mt-1">{today}</p>
       </div>
 
-      {/* ── Account Status Banners ──────────────────────────── */}
+      {/* ── Account Status Banners (locked palette: yellow + ink + danger/success) ── */}
       {isPending && (
-        <div className="mb-5 p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-center gap-3">
-          <span className="text-amber-500 text-xl">&#9888;</span>
+        <div className="mb-5 p-4 bg-[#FFF7CC] border border-[#FFC107]/40 border-l-4 border-l-[#FFC107] rounded-[12px] flex items-start gap-3">
+          <span className="flex-shrink-0 w-[26px] h-[26px] rounded-full bg-[#0A0A0A] text-[#FFC107] inline-flex items-center justify-center mt-0.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
           <div>
-            <div className="text-sm font-bold text-amber-700">Account Pending Review</div>
-            <div className="text-xs text-amber-600 mt-0.5">Your account is being reviewed by our team. Some features may be limited until approval.</div>
+            <div className="text-sm font-bold text-[#0A0A0A]">Account under review</div>
+            <div className="text-xs text-[#52525B] mt-0.5 leading-relaxed">Your account is being reviewed by our team. Some features may be limited until approval — usually within 24 hours.</div>
           </div>
         </div>
       )}
       {isRejected && (
-        <div className="mb-5 p-4 bg-red-50 border border-red-300 rounded-xl flex items-center gap-3">
-          <span className="text-red-500 text-xl">&#10006;</span>
+        <div className="mb-5 p-4 bg-[#FDEEE9] border border-[#E8401A]/20 border-l-4 border-l-[#E8401A] rounded-[12px] flex items-start gap-3">
+          <span className="flex-shrink-0 w-[26px] h-[26px] rounded-full bg-[#E8401A] text-white font-display font-extrabold text-[14px] inline-flex items-center justify-center mt-0.5">!</span>
           <div>
-            <div className="text-sm font-bold text-red-700">Account Rejected</div>
-            <div className="text-xs text-red-600 mt-0.5">
-              Your account application was not approved.{' '}
-              <a href="/dashboard/profile" className="font-semibold underline">Review your profile</a> and resubmit.
+            <div className="text-sm font-bold text-[#0A0A0A]">Account needs a fix</div>
+            <div className="text-xs text-[#52525B] mt-0.5 leading-relaxed">
+              Your application wasn't approved.{' '}
+              <a href="/dashboard/profile" className="font-semibold text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">Review your profile</a> and resubmit.
             </div>
           </div>
         </div>
       )}
       {isApproved && (
         <div className="mb-5 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-xs font-bold text-green-700">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
-            Verified Account
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#D1FAE5] border border-[#10B981]/20 rounded-full text-xs font-bold text-[#047857]">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] inline-block" />
+            Verified account
           </span>
         </div>
       )}

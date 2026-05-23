@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>INFLX redesign — Flow 1 · Brand onboarding (web)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --white:        #FFFFFF;
+  --bg:           #FAFAFA;
+  --bg-2:         #F4F4F5;
+  --yellow:       #FFC107;
+  --yellow-hover: #E0A800;
+  --yellow-pale:  #FFF7CC;
+  --yellow-50:    #FFFDEB;
+  --ink:          #0A0A0A;
+  --ink-2:        #1F1F22;
+  --muted:        #52525B;
+  --muted-2:      #71717A;
+  --muted-3:      #A1A1AA;
+  --border:       #E4E4E7;
+  --border-2:     #D4D4D8;
+  --success:      #10B981;
+  --success-pale: #D1FAE5;
+  --success-deep: #047857;
+  --danger:       #E8401A;
+  --danger-pale:  #FDEEE9;
+  --danger-deep:  #B91C1C;
+
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-2);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── REVIEW CHROME ───────────────────────────────────────── */
+.review-bar {
+  background: var(--ink);
+  color: #fff;
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  font-size: 12.5px;
+  letter-spacing: 0.3px;
+}
+.review-bar .name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.review-bar .name .y { color: var(--yellow); }
+.review-bar .tag {
+  background: rgba(255,193,7,0.15);
+  color: var(--yellow);
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+
+.flow-nav {
+  background: var(--ink-2);
+  padding: 12px 32px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 48px;
+  z-index: 99;
+  border-bottom: 1px solid #2A2A2D;
+}
+.flow-nav a {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  color: #A1A1AA;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.flow-nav a:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.flow-nav a .num {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--yellow);
+}
+
+/* ── SECTION CONTAINER ───────────────────────────────────── */
+.section {
+  padding: 56px 32px 32px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.section:nth-child(even) { background: var(--bg-2); }
+.section-head {
+  max-width: 1100px;
+  margin: 0 auto 28px;
+}
+.section-head .crumbs {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--muted-2);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.section-head h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.section-head .y-rule {
+  width: 36px; height: 4px;
+  background: var(--yellow);
+  border-radius: 100px;
+  margin-bottom: 10px;
+}
+.section-head .lede {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 640px;
+}
+
+/* ── MOCKUP FRAME ────────────────────────────────────────── */
+.frame {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 980px) { .frame { grid-template-columns: 1fr; } }
+
+.stage {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 48px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 540px;
+}
+.section:nth-child(even) .stage { background: var(--white); }
+
+/* ── BRAND placeholder — same pattern will become a shared <LogoPlaceholder/> component in code ── */
+.brand { text-align: center; margin-bottom: 28px; }
+.brand .wordmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  padding: 14px 28px;
+  border: 2px dashed var(--border-2);
+  border-radius: 12px;
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted-2);
+  letter-spacing: 3px;
+  position: relative;
+  text-indent: -9999px;
+}
+.brand .wordmark::after {
+  content: "LOGO";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-indent: 0;
+}
+.brand .wordmark .y { display: none; }
+.brand .tag {
+  margin-top: 10px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--muted-2);
+  letter-spacing: 0.3px;
+}
+.brand .placeholder {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--muted-3);
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+  text-transform: lowercase;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02), 0 12px 32px -16px rgba(0,0,0,0.08);
+}
+.card.wide { max-width: 520px; }
+.card h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+.card .lede {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+.card .form-section {
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+  margin-top: 18px;
+}
+.card .form-section-label {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--ink-2);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card .form-section-label .num {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── FIELD ── */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+.field label .req { color: var(--danger); margin-left: 2px; }
+.field label .opt {
+  font-family: var(--font-body);
+  font-weight: 500;
+  color: var(--muted-2);
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.input,
+.select {
+  width: 100%;
+  border: 1.5px solid var(--border-2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--white);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  outline: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus,
+.select:focus {
+  border-color: var(--yellow);
+  box-shadow: 0 0 0 4px rgba(255,193,7,0.18);
+}
+.input::placeholder { color: var(--muted-3); }
+.select { appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2371717A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+
+/* phone prefix */
+.phone-input { display: flex; border: 1.5px solid var(--border-2); border-radius: 12px; overflow: hidden; transition: border-color 0.15s, box-shadow 0.15s; }
+.phone-input:focus-within { border-color: var(--yellow); box-shadow: 0 0 0 4px rgba(255,193,7,0.18); }
+.phone-input .prefix {
+  padding: 12px 14px;
+  background: var(--bg-2);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-right: 1px solid var(--border);
+}
+.phone-input input {
+  flex: 1; border: 0; outline: 0; background: transparent;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 15px;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+.phone-input input::placeholder { color: var(--muted-3); font-weight: 400; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.helper {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted-2);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+/* OTP cells */
+.otp-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.otp-cell {
+  height: 56px;
+  border: 1.5px solid var(--border-2);
+  border-radius: 12px;
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+.otp-cell.filled { background: var(--yellow-50); border-color: var(--yellow); }
+.otp-cell.focus { border-color: var(--yellow); box-shadow: 0 0 0 4px rgba(255,193,7,0.18); }
+
+.otp-meta {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 14px;
+}
+.otp-meta .num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+}
+.otp-meta .resend {
+  color: var(--yellow-hover);
+  font-weight: 600;
+  cursor: pointer;
+}
+.otp-meta .dev {
+  display: inline-block;
+  margin-left: 6px;
+  background: var(--yellow-pale);
+  color: #6B5A00;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+/* ── BUTTON ── */
+.btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14.5px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 0;
+  cursor: pointer;
+  letter-spacing: 0.1px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+.btn-primary { background: var(--yellow); color: var(--ink); }
+.btn-primary:hover { background: var(--yellow-hover); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--muted); padding: 10px; font-size: 13px; font-weight: 600; }
+.btn-ghost:hover { color: var(--ink); }
+.btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--border-2); }
+.btn-outline:hover { border-color: var(--ink); }
+
+.footnote {
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted-2);
+  margin-top: 18px;
+}
+.footnote a {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--muted-3);
+}
+
+/* ── WAITING / STATUS PAGES ── */
+.status-icon {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  background: var(--yellow-pale);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  position: relative;
+}
+.status-icon.success { background: var(--success-pale); }
+.status-icon.danger  { background: var(--danger-pale); }
+.status-icon svg { width: 36px; height: 36px; }
+.status-icon .pulse {
+  position: absolute;
+  inset: -6px;
+  border: 2px solid var(--yellow);
+  border-radius: 50%;
+  opacity: 0.35;
+}
+
+.card.status { text-align: center; max-width: 440px; }
+.card.status h1 { font-size: 22px; }
+.card.status .lede { font-size: 13.5px; margin-bottom: 18px; }
+
+.alert {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-align: left;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.alert.danger { background: var(--danger-pale); border-color: rgba(232,64,26,0.2); border-left-color: var(--danger); }
+.alert.success { background: var(--success-pale); border-color: rgba(16,185,129,0.2); border-left-color: var(--success); }
+.alert.yellow { background: var(--yellow-pale); border-color: rgba(255,193,7,0.4); border-left-color: var(--yellow); }
+.alert .ic {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+}
+.alert.danger .ic { background: var(--danger); }
+.alert.success .ic { background: var(--success); }
+.alert.yellow .ic { background: var(--ink); color: var(--yellow); }
+.alert .body { flex: 1; min-width: 0; }
+.alert .body .label {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 3px;
+  color: var(--ink-2);
+}
+.alert .body .text {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.alert.danger .body .label { color: var(--danger-deep); }
+.alert.success .body .label { color: var(--success-deep); }
+
+.tip {
+  background: var(--bg-2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.eta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-2);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+.eta-chip .dot {
+  width: 6px; height: 6px;
+  background: var(--yellow);
+  border-radius: 50%;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+/* ── NOTES PANEL (per section) ── */
+.notes {
+  background: var(--ink-2);
+  color: #E4E4E7;
+  border-radius: 18px;
+  padding: 20px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.notes h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--yellow);
+  margin-bottom: 10px;
+}
+.notes h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #A1A1AA;
+  margin: 14px 0 6px;
+}
+.notes ul { list-style: none; padding: 0; }
+.notes li {
+  padding: 4px 0 4px 14px;
+  position: relative;
+  color: #D4D4D8;
+  font-size: 12px;
+}
+.notes li::before {
+  content: "›";
+  position: absolute;
+  left: 0;
+  color: var(--yellow);
+  font-weight: 700;
+}
+.notes .before {
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  color: var(--muted-3);
+  padding-top: 8px;
+  margin-top: 8px;
+  border-top: 1px solid #2A2A2D;
+}
+.notes .before strong { color: #A1A1AA; }
+
+/* ── FOOTER ── */
+.foot {
+  text-align: center;
+  padding: 40px 24px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--muted-2);
+  background: var(--ink);
+  color: #A1A1AA;
+}
+.foot strong { color: var(--yellow); font-family: var(--font-display); font-weight: 700; letter-spacing: 0.3px; }
+</style>
+</head>
+<body>
+
+<div class="review-bar">
+  <div><span class="name">INFLX <span class="y">redesign</span></span> · Flow 1 · Brand onboarding (web)</div>
+  <div><span class="tag">palette locked · yellow + white</span></div>
+</div>
+
+<nav class="flow-nav">
+  <a href="#s1"><span class="num">01</span> Phone</a>
+  <a href="#s2"><span class="num">02</span> OTP</a>
+  <a href="#s3"><span class="num">03</span> Register</a>
+  <a href="#s4"><span class="num">04</span> Waiting</a>
+  <a href="#s5"><span class="num">05</span> Rejected</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATE 01 — PHONE ENTRY
+     ═══════════════════════════════════════════════════════════ -->
+<section id="s1" class="section">
+  <div class="section-head">
+    <div class="crumbs">State 01 · /login (step: phone)</div>
+    <h2>Sign in with mobile</h2>
+    <div class="y-rule"></div>
+    <div class="lede">First touch. Brand types their phone, we send the OTP. Everything anchored on the wordmark + a single clear next step.</div>
+  </div>
+
+  <div class="frame">
+    <div class="stage">
+      <div>
+        <div class="brand">
+          <div class="wordmark">in<span class="y">flx</span></div>
+          <div class="tag">Brand workspace</div>
+          <div class="placeholder">[real PNG logo replaces this once uploaded]</div>
+        </div>
+
+        <div class="card">
+          <h1>Welcome back</h1>
+          <p class="lede">Sign in with your mobile number to manage your campaigns, contracts and conversions.</p>
+
+          <div class="field">
+            <label>Mobile number</label>
+            <div class="phone-input">
+              <div class="prefix">🇮🇳 +91</div>
+              <input value="98765 43210" />
+            </div>
+            <div class="helper">We'll send a 6-digit OTP to verify your number.</div>
+          </div>
+
+          <button class="btn btn-primary">Send OTP →</button>
+
+          <div class="footnote">
+            By continuing you agree to our <a href="#">Terms</a> &amp; <a href="#">Privacy Policy</a>.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes">
+      <h3>What changed</h3>
+      <ul>
+        <li>Navy gradient bg → warm <code>#FAFAFA</code></li>
+        <li>"Brand Login" + uppercase tag → plain "Welcome back" + one-line lede that says what they'll do after</li>
+        <li>Red→orange gradient CTA → flat yellow + ink text (reads in sun)</li>
+        <li>Mono digits on the phone input + +91 prefix</li>
+        <li>Focus halo (yellow ring) replaces border-colour swap</li>
+        <li>Terms + Privacy footnote (current page omits them — small compliance gap)</li>
+        <li>Wordmark placeholder until the real PNG lands</li>
+      </ul>
+      <div class="before">
+        <strong>Before:</strong> dark navy-gradient page, 96px card, red→orange button.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATE 02 — OTP
+     ═══════════════════════════════════════════════════════════ -->
+<section id="s2" class="section">
+  <div class="section-head">
+    <div class="crumbs">State 02 · /login (step: otp)</div>
+    <h2>Enter the 6-digit code</h2>
+    <div class="y-rule"></div>
+    <div class="lede">OTP boxes get 3 distinct states (empty / filled / focus). Mono digits + a yellow resend timer + a dev-only pill that's labelled, not loose grey text.</div>
+  </div>
+
+  <div class="frame">
+    <div class="stage">
+      <div>
+        <div class="brand">
+          <div class="wordmark">in<span class="y">flx</span></div>
+          <div class="tag">Brand workspace</div>
+        </div>
+
+        <div class="card">
+          <h1>Enter the 6-digit code</h1>
+          <p class="lede">Sent to <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">+91 98765 43210</span></p>
+
+          <div class="otp-row">
+            <div class="otp-cell filled">0</div>
+            <div class="otp-cell filled">0</div>
+            <div class="otp-cell filled">0</div>
+            <div class="otp-cell filled">0</div>
+            <div class="otp-cell focus">0</div>
+            <div class="otp-cell"></div>
+          </div>
+          <div class="otp-meta">
+            Didn't get it? <span class="resend">Resend in 23s</span>
+            <span class="dev">dev · 000000</span>
+          </div>
+
+          <button class="btn btn-primary">Verify &amp; continue →</button>
+          <button class="btn btn-ghost">← Change number</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes">
+      <h3>What changed</h3>
+      <ul>
+        <li>OTP cells: <em>empty</em> grey-border / <em>filled</em> yellow-pale / <em>focus</em> yellow halo — 3 instantly readable states (current page only animates the focused box)</li>
+        <li>Mono font on digits + the phone-number echo above</li>
+        <li>"Resend OTP" button → countdown text ("Resend in 23s") that becomes tappable when timer hits 0 — friendlier than re-clickable forever</li>
+        <li>Dev hint becomes a labelled pill, not loose grey text</li>
+        <li>Change-number is a ghost button below, not a hyperlink lost in copy</li>
+      </ul>
+      <div class="before">
+        <strong>Before:</strong> 6 boxes with navy focus border, "Resend OTP" button always clickable, dev hint as raw grey text inline.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATE 03 — REGISTER
+     ═══════════════════════════════════════════════════════════ -->
+<section id="s3" class="section">
+  <div class="section-head">
+    <div class="crumbs">State 03 · /login (step: register)</div>
+    <h2>Tell us about your business</h2>
+    <div class="y-rule"></div>
+    <div class="lede">8-field form grouped into 2 numbered chunks (Business · Location). Same backend fields, way less cognitive load.</div>
+  </div>
+
+  <div class="frame">
+    <div class="stage">
+      <div>
+        <div class="brand">
+          <div class="wordmark">in<span class="y">flx</span></div>
+          <div class="tag">Brand workspace</div>
+        </div>
+
+        <div class="card wide">
+          <h1>Tell us about your business</h1>
+          <p class="lede">A couple of minutes — admin uses this to approve your account.</p>
+
+          <div class="form-section" style="border-top: 0; padding-top: 0; margin-top: 0;">
+            <div class="form-section-label"><span class="num">1</span> Business</div>
+
+            <div class="field">
+              <label>Your name<span class="req">*</span></label>
+              <input class="input" value="Sagar Reddy" />
+            </div>
+            <div class="field">
+              <label>Business name<span class="req">*</span></label>
+              <input class="input" value="Sagar's Pizza Corner" />
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>Industry<span class="req">*</span></label>
+                <select class="select"><option>Food &amp; Dining</option></select>
+              </div>
+              <div class="field">
+                <label>Business type<span class="req">*</span></label>
+                <select class="select"><option>Restaurant &amp; Cafe</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-label"><span class="num">2</span> Location</div>
+
+            <div class="field">
+              <label>Business address<span class="req">*</span></label>
+              <input class="input" value="Shop 4, Sai Towers, MG Road" />
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label>City<span class="req">*</span></label>
+                <input class="input" value="Vijayawada" />
+              </div>
+              <div class="field">
+                <label>Pincode<span class="req">*</span></label>
+                <input class="input" style="font-family:var(--font-mono);" value="520010" />
+              </div>
+            </div>
+            <div class="field">
+              <label>State<span class="req">*</span></label>
+              <select class="select"><option>Andhra Pradesh</option></select>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:8px;">Complete registration →</button>
+          <div class="footnote">Admin review takes &lt; 24 hours. You'll get an SMS when approved.</div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes">
+      <h3>What changed</h3>
+      <ul>
+        <li>8 fields stacked in one block → grouped into 2 numbered sections ("1 Business" · "2 Location") with thin dividers</li>
+        <li>Field arrangement uses 2-column rows where pairs make sense (Industry+Type, City+Pincode) — fewer scroll-pumps</li>
+        <li>Same backend fields exactly (name / business_name / industry / category / address_line / city / state / pincode) — no API change</li>
+        <li>Required asterisk in danger red so users instantly spot blockers</li>
+        <li>Footnote sets expectation ("&lt; 24 hours") so the next screen isn't a surprise</li>
+      </ul>
+      <div class="before">
+        <strong>Before:</strong> 96px-wide card, all 8 fields single-column, no grouping, "Complete Registration" red→orange button.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATE 04 — WAITING (3 variants stacked)
+     ═══════════════════════════════════════════════════════════ -->
+<section id="s4" class="section">
+  <div class="section-head">
+    <div class="crumbs">State 04 · /dashboard (when brand.status = pending)</div>
+    <h2>Application under review</h2>
+    <div class="y-rule"></div>
+    <div class="lede">The current web "/waiting" route is a redirect-stub — the actual UI happens on the dashboard via a pending-banner. This mockup shows the dedicated waiting state we'd render when status = pending. 3 variants: standard / profile-recognised / multiple-matches.</div>
+  </div>
+
+  <div class="frame">
+    <div class="stage" style="flex-direction:column; gap:20px; padding-top:24px; padding-bottom:24px;">
+
+      <!-- Variant A: standard waiting -->
+      <div class="card status">
+        <div class="status-icon">
+          <div class="pulse"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <span class="eta-chip"><span class="dot"></span> ETA &lt; 24h</span>
+        <h1>Application under review</h1>
+        <p class="lede">Your application is being reviewed by the INFLX team. We'll send you an SMS at <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">+91 98765 43210</span> the moment it's approved.</p>
+
+        <div class="alert yellow">
+          <div class="ic">i</div>
+          <div class="body">
+            <div class="label">While you wait</div>
+            <div class="text">You can browse sample campaigns and explore the dashboard. Some actions stay locked until approval.</div>
+          </div>
+        </div>
+
+        <button class="btn btn-outline">Take a tour →</button>
+        <button class="btn btn-ghost">Sign out</button>
+      </div>
+
+      <!-- Variant B: profile recognised (claim matched) — relevant to influencer flow, kept for completeness -->
+      <div class="card status">
+        <div class="status-icon success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h1>Profile recognised</h1>
+        <p class="lede">We already had <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">@sagar.pizza</span> in our database — admin just needs to verify it's yours.</p>
+        <div class="tip">Verification usually takes under 24 hours.</div>
+        <button class="btn btn-ghost">Sign out</button>
+      </div>
+
+    </div>
+
+    <aside class="notes">
+      <h3>What changed</h3>
+      <ul>
+        <li>Emoji ⏳ → SVG clock icon in a yellow-pale circle with a pulsing ring (movement = "we're working on it")</li>
+        <li>"Application Under Review" centered title kept but resized to display H1 with a yellow rule under it</li>
+        <li>New live ETA chip ("ETA &lt; 24h" with a slow-pulse dot) — sets expectation visually</li>
+        <li>New yellow-pale info alert: "While you wait, here's what you can do" — gives the page something to <em>do</em></li>
+        <li>Soft outline "Take a tour" CTA so the user has somewhere productive to go</li>
+        <li>Profile-recognised variant uses success-green check + the recognised handle in mono</li>
+        <li><strong>Note for impact:</strong> current <code>/waiting/page.js</code> is just a router.replace stub; this UI would live on <code>/dashboard</code> behind a <code>status === 'pending'</code> branch, OR we revive the /waiting route as a real page</li>
+      </ul>
+      <div class="before">
+        <strong>Before (mobile WaitingScreen):</strong> bg-bg, emoji icon, plain text, navy dev-hint box.<br>
+        <strong>Before (web /waiting):</strong> spinning circle, then redirects to /dashboard.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATE 05 — REJECTED
+     ═══════════════════════════════════════════════════════════ -->
+<section id="s5" class="section">
+  <div class="section-head">
+    <div class="crumbs">State 05 · /rejected</div>
+    <h2>Application needs a fix</h2>
+    <div class="y-rule"></div>
+    <div class="lede">Reframed from "Application Rejected" → "Needs a fix" — same outcome, less hostile. The rejection reason is a danger banner, not the dominant feeling of the page.</div>
+  </div>
+
+  <div class="frame">
+    <div class="stage">
+      <div>
+        <div class="brand">
+          <div class="wordmark">in<span class="y">flx</span></div>
+          <div class="tag">Brand workspace</div>
+        </div>
+
+        <div class="card status">
+          <div class="status-icon danger">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h1>Your application needs a fix</h1>
+          <p class="lede">Admin noted something that needs to be corrected before approval. Once you resubmit, review usually takes under a day.</p>
+
+          <div class="alert danger" style="margin-bottom: 18px;">
+            <div class="ic">!</div>
+            <div class="body">
+              <div class="label">Reason from admin</div>
+              <div class="text">Business address doesn't match the FSSAI registration on file. Please update the address to match exactly and resubmit.</div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary">Update &amp; resubmit →</button>
+          <button class="btn btn-ghost">Sign out</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="notes">
+      <h3>What changed</h3>
+      <ul>
+        <li>Emoji ❌ → SVG warning-icon in a danger-pale circle (less hostile, still clearly an issue)</li>
+        <li>Title softened from "Application Rejected" → "Your application needs a fix" — same outcome, different feel</li>
+        <li>Rejection reason in a proper danger banner with "Reason from admin" label — anchored, not loose text</li>
+        <li>Primary CTA: "Update &amp; resubmit" (not just "Resubmit") — implies the user should fix something first, prevents blind resubmits with no change</li>
+        <li>Resubmit button is yellow (the system CTA), not red→orange gradient</li>
+        <li>"Sign out" demoted to ghost button</li>
+      </ul>
+      <div class="before">
+        <strong>Before:</strong> ❌ emoji, red H1 "Application Rejected", reason in a small red-pale box, red→orange "Resubmit Application" button.
+      </div>
+    </aside>
+  </div>
+</section>
+
+<div class="foot">
+  <strong>INFLX redesign</strong> · Flow 1 · web · 5 states · waiting on confirm/iterate → impact analysis → implement
+</div>
+
+</body>
+</html>

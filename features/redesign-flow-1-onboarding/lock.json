@@ -1,0 +1,35 @@
+{
+  "feature": "redesign-flow-1-onboarding",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-23 chat go (\"ok pls proceed\" + \"go with flow1 implementation\")",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-23 chat confirm (\"ok pls proceed\")",
+  "mockup_locked_at": "2026-05-23",
+  "notes": "Visual + UX restyle of brand-onboarding screens (3 web · 5 mobile · 2 new shared Logo components). Zero functional disturbance: all API calls, fields, validation, navigation routes, storage keys, role-routing preserved. Honest copy-assertion realignment in qa/web/brand/auth.spec.ts. Production-impacting at deploy: web push (Vercel) + 3 mobile OTAs.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "lane": "main",
+      "specs_passed": 67,
+      "specs_total": 67,
+      "state": "GREEN",
+      "gate": 0,
+      "pw_exit": 0,
+      "report_exit": 0,
+      "run_at": "2026-05-23T09:02:07Z",
+      "report_path": "qa/reports/2026-05-23T09-02-07-286Z/QA-REPORT.md"
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web", "ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": false,
+    "maestro_note": "Mobile RELEASE flip requires a fresh Maestro run on connected emulator/device. release.released stays false until founder runs pnpm qa:maestro and confirms green, OR scopes OTA push as web-first with mobile in a follow-up commit."
+  }
+}

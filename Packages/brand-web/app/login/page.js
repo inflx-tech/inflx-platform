@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, brandApi } from '../../lib/api';
+import Logo from '../../../shared/components/Logo';
 
 const INDUSTRY_HIERARCHY = [
   { group: 'Food & Dining', categories: [
@@ -55,8 +56,6 @@ const INDUSTRY_HIERARCHY = [
   ]},
 ];
 
-// Indian states + UTs — lifted from MoH&FW spelling. Kept in alpha order
-// so the dropdown is easy to scan.
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
   'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
@@ -64,7 +63,6 @@ const INDIAN_STATES = [
   'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
   'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
   'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  // Union Territories
   'Andaman & Nicobar', 'Chandigarh', 'Dadra & Nagar Haveli and Daman & Diu',
   'Delhi', 'Jammu & Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
 ];
@@ -79,8 +77,6 @@ export default function LoginPage() {
   const [businessName, setBusinessName] = useState('');
   const [industry, setIndustry]       = useState('');
   const [category, setCategory]       = useState('');
-  // Location — collected at registration so the brand profile is complete
-  // by the time admin reviews the approval queue.
   const [addressLine, setAddressLine] = useState('');
   const [city, setCity]               = useState('');
   const [state, setStateField]        = useState('');
@@ -116,7 +112,6 @@ export default function LoginPage() {
     if (otp.length < 6) { setError('Enter the 6-digit OTP'); return; }
     setLoading(true);
 
-    // Try verifying with a dummy name first (for existing users)
     const res = await authApi.verifyOtp(fmt, otp, 'Brand User');
     setLoading(false);
 
@@ -130,11 +125,6 @@ export default function LoginPage() {
     localStorage.setItem('inflx_user', JSON.stringify(user));
     document.cookie = `inflx_token=${access_token}; path=/; max-age=900; SameSite=Strict`;
 
-    // Branch by role. The web supports two roles — brand and admin —
-    // and the backend already returns the right role for existing users.
-    // For brand-new users, the verifyOtp call defaults to creating a
-    // brand row, so we send them through brand registration. Influencers
-    // and followers are mobile-only — kick them out with a clear error.
     if (user.role === 'admin') {
       router.push('/admin');
       return;
@@ -156,11 +146,10 @@ export default function LoginPage() {
       }
     }
 
-    // No role matched OR brand role with no brand profile yet → register flow
     setStep('register');
   }
 
-  // Step 3: Register brand (name + business + category + location)
+  // Step 3: Register brand
   async function handleRegister(e) {
     e.preventDefault();
     setError('');
@@ -174,9 +163,6 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Single round-trip — backend's /brands/register now accepts name +
-    // city + state and updates the users row, fixing the "Brand User"
-    // placeholder that admin used to see.
     const res = await brandApi.register({
       name:          name.trim(),
       business_name: businessName.trim(),
@@ -196,159 +182,251 @@ export default function LoginPage() {
     const brand = res.data?.brand || res.data;
     localStorage.setItem('inflx_brand', JSON.stringify(brand));
 
-    // Refresh the cached user too — the backend just updated users.name
-    // + city + state, so the next page load should reflect the real name.
     const meRes = await brandApi.getMe().catch(() => null);
     if (meRes?.success) {
       const updatedUser = meRes.data?.user;
       if (updatedUser) localStorage.setItem('inflx_user', JSON.stringify(updatedUser));
     }
 
-    // Go to dashboard — pending approval banner will show there
     router.push('/dashboard');
   }
 
+  /* ── Shared input styles (locked palette) ─────────────────────────── */
+  const labelClass = 'block text-xs font-semibold text-[#18181B] mb-2';
+  const inputClass = 'w-full border-[1.5px] border-[#D4D4D8] rounded-[12px] px-3.5 py-3 text-sm text-[#0A0A0A] bg-white outline-none focus:border-[#FFC107] focus:shadow-[0_0_0_4px_rgba(255,193,7,0.18)] transition';
+  const selectClass = inputClass + ' appearance-none bg-no-repeat bg-[right_14px_center] pr-10 bg-[url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'14\' height=\'14\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2371717A\' stroke-width=\'2.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><polyline points=\'6 9 12 15 18 9\'/></svg>")]';
+  const monoInputClass = inputClass + " font-['JetBrains_Mono',ui-monospace,monospace] tracking-wider";
+  const btnPrimary = 'w-full py-3.5 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold rounded-[12px] text-sm disabled:opacity-40 disabled:cursor-not-allowed transition';
+  const btnGhost   = 'w-full mt-1 py-2.5 text-xs font-semibold text-[#52525B] hover:text-[#0A0A0A] transition';
+  const reqAst     = <span className="text-[#E8401A] ml-0.5">*</span>;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy-deep via-navy to-navy-mid">
-      <div className="bg-white rounded-2xl p-8 w-96 shadow-2xl">
-        <div className="text-center mb-6">
-          <div className="font-display text-2xl font-extrabold text-navy-deep mb-1">
-            INFL<span className="bg-gradient-to-r from-red to-orange bg-clip-text text-transparent">X</span>
-          </div>
-          <div className="text-xs text-t3 font-semibold uppercase tracking-widest">Brand Dashboard</div>
+    <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] px-4 py-10 font-body">
+      <div className="w-full max-w-[420px]">
+
+        {/* ── Brand mark — Logo placeholder ── */}
+        <div className="text-center mb-7">
+          <Logo tone="dark" size="md" />
+          <div className="mt-3 text-xs font-medium text-[#71717A] tracking-[0.3px]">Brand workspace</div>
         </div>
 
-        {/* ── STEP 1: Phone ── */}
-        {step === 'phone' && (
-          <form onSubmit={handleSendOtp}>
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-2">Phone Number</label>
-              <div className="flex items-center border-2 border-border2 rounded-lg overflow-hidden focus-within:border-gold">
-                <span className="px-3 py-2.5 bg-surface2 text-t2 text-sm font-medium border-r border-border2">+91</span>
-                <input type="tel" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="9876543210" className="flex-1 px-3 py-2.5 text-sm text-t1 outline-none" required />
-              </div>
-            </div>
-            {error && <div className="mb-3 p-2.5 bg-red-pale rounded-lg text-xs text-red">{error}</div>}
-            <button type="submit" disabled={loading || phone.length < 10} className="w-full py-3 bg-gradient-to-r from-red to-orange text-white font-bold rounded-lg text-sm disabled:opacity-50">
-              {loading ? 'Sending...' : 'Send OTP'}
-            </button>
-          </form>
-        )}
+        {/* ── Card ── */}
+        <div className="bg-white border border-[#E4E4E7] rounded-[20px] p-7 shadow-[0_1px_2px_rgba(0,0,0,0.02),0_12px_32px_-16px_rgba(0,0,0,0.08)]">
 
-        {/* ── STEP 2: OTP ── */}
-        {step === 'otp' && (
-          <form onSubmit={handleVerifyOtp}>
-            <div className="text-xs text-t3 text-center mb-4">
-              OTP sent to +91{phone} <span className="text-t3">(dev: 000000)</span>
-            </div>
-            <div className="flex gap-2 justify-center mb-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <input key={i} id={`otp-${i}`} type="text" inputMode="numeric" maxLength={1} value={otp[i] || ''}
-                  onChange={e => {
-                    const v = e.target.value.replace(/\D/g, '');
-                    const a = otp.split(''); a[i] = v;
-                    const j = a.join('').slice(0, 6); setOtp(j);
-                    if (v && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === 'Backspace' && !otp[i] && i > 0) document.getElementById(`otp-${i - 1}`)?.focus();
-                  }}
-                  className="w-10 h-12 border-2 border-border2 rounded-xl text-center text-lg font-bold text-t1 outline-none focus:border-navy"
-                />
-              ))}
-            </div>
-            {error && <div className="mb-3 p-2.5 bg-red-pale rounded-lg text-xs text-red">{error}</div>}
-            <button type="submit" disabled={loading || otp.length < 6} className="w-full py-3 bg-gradient-to-r from-red to-orange text-white font-bold rounded-lg text-sm disabled:opacity-50">
-              {loading ? 'Verifying...' : 'Verify OTP'}
-            </button>
-            <button type="button" onClick={handleResendOtp} disabled={resending} className="w-full mt-2 py-2 text-xs text-navy font-semibold hover:underline disabled:opacity-50">
-              {resending ? 'Resending...' : 'Resend OTP'}
-            </button>
-            <button type="button" onClick={() => { setStep('phone'); setOtp(''); setError(''); }} className="w-full mt-1 py-2 text-xs text-t3 hover:text-t2">
-              ← Change number
-            </button>
-          </form>
-        )}
+          {/* ══════════ STEP 1: PHONE ══════════ */}
+          {step === 'phone' && (
+            <form onSubmit={handleSendOtp}>
+              <h1 className="font-display text-[22px] font-bold text-[#0A0A0A] -tracking-[0.4px] mb-1.5">Welcome back</h1>
+              <p className="text-[13.5px] text-[#52525B] mb-5 leading-relaxed">
+                Sign in with your mobile number to manage your campaigns, contracts and conversions.
+              </p>
 
-        {/* ── STEP 3: Register (Name + Business + Category — ONE screen) ── */}
-        {step === 'register' && (
-          <form onSubmit={handleRegister}>
-            <div className="text-xs text-t3 text-center mb-4">Almost done! Tell us about your business</div>
-            <div className="mb-3">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Your Name</label>
-              <input type="text" value={name} onChange={e => setName(e.target.value)}
-                placeholder="Your full name"
-                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
-            </div>
-            <div className="mb-3">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Name</label>
-              <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)}
-                placeholder="e.g. Spice Garden Restaurant"
-                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
-            </div>
-            <div className="mb-3">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Industry</label>
-              <select value={industry} onChange={e => { setIndustry(e.target.value); setCategory(''); }}
-                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
-                <option value="">Select your industry</option>
-                {INDUSTRY_HIERARCHY.map(g => (
-                  <option key={g.group} value={g.group}>{g.group}</option>
-                ))}
-              </select>
-            </div>
-            {industry && (
-              <div className="mb-3">
-                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Type</label>
-                <select value={category} onChange={e => setCategory(e.target.value)}
-                  className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
-                  <option value="">Select your business type</option>
-                  {INDUSTRY_HIERARCHY.find(g => g.group === industry)?.categories.map(c => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
+              <div className="mb-4">
+                <label className={labelClass}>Mobile number</label>
+                <div className="flex border-[1.5px] border-[#D4D4D8] rounded-[12px] overflow-hidden bg-white focus-within:border-[#FFC107] focus-within:shadow-[0_0_0_4px_rgba(255,193,7,0.18)] transition">
+                  <span className="px-3.5 py-3 bg-[#F4F4F5] text-sm font-semibold text-[#0A0A0A] border-r border-[#E4E4E7] font-['JetBrains_Mono',ui-monospace,monospace] flex items-center gap-1.5">
+                    🇮🇳 +91
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    placeholder="9876543210"
+                    className="flex-1 px-3.5 py-3 text-[15px] text-[#0A0A0A] outline-none bg-transparent font-['JetBrains_Mono',ui-monospace,monospace] tracking-wider"
+                    required
+                  />
+                </div>
+                <div className="mt-2 text-[11.5px] text-[#71717A]">We'll send a 6-digit OTP to verify your number.</div>
               </div>
-            )}
 
-            {/* Business location — required so admin sees a complete profile
-                in the approval queue. */}
-            <div className="mb-3">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Business Address</label>
-              <input type="text" value={addressLine} onChange={e => setAddressLine(e.target.value)}
-                placeholder="Building, street, area"
-                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div>
-                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">City</label>
-                <input type="text" value={city} onChange={e => setCity(e.target.value)}
-                  placeholder="e.g. Vijayawada"
-                  className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">Pincode</label>
-                <input type="text" inputMode="numeric" maxLength={6} value={pincode}
-                  onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="6-digit"
-                  className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold" required />
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="block text-xs font-bold text-t2 uppercase tracking-wider mb-1.5">State</label>
-              <select value={state} onChange={e => setStateField(e.target.value)}
-                className="w-full border-2 border-border2 rounded-lg px-3 py-2.5 text-sm text-t1 outline-none focus:border-gold bg-white" required>
-                <option value="">Select your state</option>
-                {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+              {error && (
+                <div className="mb-4 p-3 bg-[#FDEEE9] border border-[#E8401A]/20 rounded-[10px] text-xs text-[#B91C1C] font-medium">
+                  {error}
+                </div>
+              )}
 
-            {error && <div className="mb-3 p-2.5 bg-red-pale rounded-lg text-xs text-red">{error}</div>}
-            <button type="submit"
-              disabled={loading || !name.trim() || !businessName.trim() || !category || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
-              className="w-full py-3 bg-gradient-to-r from-red to-orange text-white font-bold rounded-lg text-sm disabled:opacity-50">
-              {loading ? 'Registering...' : 'Complete Registration'}
-            </button>
-          </form>
-        )}
+              <button type="submit" disabled={loading || phone.length < 10} className={btnPrimary}>
+                {loading ? 'Sending…' : 'Send OTP'}
+              </button>
+
+              <div className="text-center text-[11.5px] text-[#71717A] mt-5">
+                By continuing you agree to our{' '}
+                <a href="#" className="text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">Terms</a>
+                {' '}&amp;{' '}
+                <a href="#" className="text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">Privacy Policy</a>.
+              </div>
+            </form>
+          )}
+
+          {/* ══════════ STEP 2: OTP ══════════ */}
+          {step === 'otp' && (
+            <form onSubmit={handleVerifyOtp}>
+              <h1 className="font-display text-[22px] font-bold text-[#0A0A0A] -tracking-[0.4px] mb-1.5">Enter the 6-digit code</h1>
+              <p className="text-[13.5px] text-[#52525B] mb-5">
+                Sent to <span className="font-['JetBrains_Mono',ui-monospace,monospace] font-semibold text-[#0A0A0A]">+91 {phone}</span>
+              </p>
+
+              <div className="grid grid-cols-6 gap-2 mb-4">
+                {Array.from({ length: 6 }).map((_, i) => {
+                  const filled = !!otp[i];
+                  return (
+                    <input
+                      key={i}
+                      id={`otp-${i}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={otp[i] || ''}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '');
+                        const a = otp.split(''); a[i] = v;
+                        const j = a.join('').slice(0, 6); setOtp(j);
+                        if (v && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Backspace' && !otp[i] && i > 0) document.getElementById(`otp-${i - 1}`)?.focus();
+                      }}
+                      className={`h-[56px] rounded-[12px] text-center font-['JetBrains_Mono',ui-monospace,monospace] font-bold text-[22px] text-[#0A0A0A] outline-none border-[1.5px] transition ${filled ? 'bg-[#FFFDEB] border-[#FFC107]' : 'bg-white border-[#D4D4D8] focus:border-[#FFC107] focus:shadow-[0_0_0_4px_rgba(255,193,7,0.18)]'}`}
+                    />
+                  );
+                })}
+              </div>
+
+              <div className="text-center text-[12.5px] text-[#52525B] mb-4">
+                Didn't get it?{' '}
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={resending}
+                  className="text-[#E0A800] font-semibold hover:text-[#CA8A04] disabled:opacity-50"
+                >
+                  {resending ? 'Resending…' : 'Resend OTP'}
+                </button>
+                <span className="ml-2 inline-block bg-[#FFF7CC] text-[#6B5A00] font-['JetBrains_Mono',ui-monospace,monospace] font-semibold text-[11px] px-2 py-0.5 rounded">
+                  dev · 000000
+                </span>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-[#FDEEE9] border border-[#E8401A]/20 rounded-[10px] text-xs text-[#B91C1C] font-medium">
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading || otp.length < 6} className={btnPrimary}>
+                {loading ? 'Verifying…' : 'Verify & continue'}
+              </button>
+              <button type="button" onClick={() => { setStep('phone'); setOtp(''); setError(''); }} className={btnGhost}>
+                ← Change number
+              </button>
+            </form>
+          )}
+
+          {/* ══════════ STEP 3: REGISTER ══════════ */}
+          {step === 'register' && (
+            <form onSubmit={handleRegister}>
+              <h1 className="font-display text-[22px] font-bold text-[#0A0A0A] -tracking-[0.4px] mb-1.5">Tell us about your business</h1>
+              <p className="text-[13.5px] text-[#52525B] mb-5 leading-relaxed">
+                A couple of minutes — admin uses this to approve your account.
+              </p>
+
+              {/* Section 1 — Business */}
+              <div className="flex items-center gap-2 text-[11px] font-bold text-[#18181B] uppercase tracking-[0.6px] mb-3">
+                <span className="w-[18px] h-[18px] rounded-full bg-[#FFC107] text-[#0A0A0A] font-display font-bold text-[10px] inline-flex items-center justify-center">1</span>
+                <span>Business</span>
+              </div>
+
+              <div className="mb-3.5">
+                <label className={labelClass}>Your name{reqAst}</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)}
+                  placeholder="Your full name" className={inputClass} required />
+              </div>
+
+              <div className="mb-3.5">
+                <label className={labelClass}>Business name{reqAst}</label>
+                <input type="text" value={businessName} onChange={e => setBusinessName(e.target.value)}
+                  placeholder="e.g. Spice Garden Restaurant" className={inputClass} required />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-3.5">
+                <div>
+                  <label className={labelClass}>Industry{reqAst}</label>
+                  <select value={industry} onChange={e => { setIndustry(e.target.value); setCategory(''); }}
+                    className={selectClass} required>
+                    <option value="">Select…</option>
+                    {INDUSTRY_HIERARCHY.map(g => (
+                      <option key={g.group} value={g.group}>{g.group}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Business type{reqAst}</label>
+                  <select value={category} onChange={e => setCategory(e.target.value)}
+                    className={selectClass} required disabled={!industry}>
+                    <option value="">{industry ? 'Select…' : 'Pick industry first'}</option>
+                    {INDUSTRY_HIERARCHY.find(g => g.group === industry)?.categories.map(c => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Section 2 — Location */}
+              <div className="border-t border-[#E4E4E7] mt-5 pt-5">
+                <div className="flex items-center gap-2 text-[11px] font-bold text-[#18181B] uppercase tracking-[0.6px] mb-3">
+                  <span className="w-[18px] h-[18px] rounded-full bg-[#FFC107] text-[#0A0A0A] font-display font-bold text-[10px] inline-flex items-center justify-center">2</span>
+                  <span>Location</span>
+                </div>
+
+                <div className="mb-3.5">
+                  <label className={labelClass}>Business address{reqAst}</label>
+                  <input type="text" value={addressLine} onChange={e => setAddressLine(e.target.value)}
+                    placeholder="Building, street, area" className={inputClass} required />
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-3.5">
+                  <div>
+                    <label className={labelClass}>City{reqAst}</label>
+                    <input type="text" value={city} onChange={e => setCity(e.target.value)}
+                      placeholder="e.g. Vijayawada" className={inputClass} required />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Pincode{reqAst}</label>
+                    <input type="text" inputMode="numeric" maxLength={6} value={pincode}
+                      onChange={e => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="6-digit" className={monoInputClass} required />
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <label className={labelClass}>State{reqAst}</label>
+                  <select value={state} onChange={e => setStateField(e.target.value)}
+                    className={selectClass} required>
+                    <option value="">Select your state</option>
+                    {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mb-4 p-3 bg-[#FDEEE9] border border-[#E8401A]/20 rounded-[10px] text-xs text-[#B91C1C] font-medium">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !name.trim() || !businessName.trim() || !category || !addressLine.trim() || !city.trim() || !state.trim() || pincode.length !== 6}
+                className={btnPrimary}
+              >
+                {loading ? 'Registering…' : 'Complete registration'}
+              </button>
+
+              <div className="text-center text-[11.5px] text-[#71717A] mt-4">
+                Admin review takes &lt; 24 hours. You'll get an SMS when approved.
+              </div>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

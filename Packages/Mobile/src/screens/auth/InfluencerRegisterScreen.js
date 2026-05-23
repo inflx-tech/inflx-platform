@@ -1,21 +1,33 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { colors } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
+const P = {
+  bg:          '#FAFAFA',
+  surface:     '#FFFFFF',
+  surface2:    '#F4F4F5',
+  ink:         '#0A0A0A',
+  ink2:        '#18181B',
+  muted:       '#52525B',
+  muted2:      '#71717A',
+  muted3:      '#A1A1AA',
+  border:      '#E4E4E7',
+  border2:     '#D4D4D8',
+  yellow:      '#FFC107',
+  yellowHover: '#E0A800',
+  yellowPale:  '#FFF7CC',
+  yellowText:  '#6B5A00',
+  danger:      '#E8401A',
+  dangerPale:  '#FDEEE9',
+  dangerDeep:  '#B91C1C',
+};
+
+const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
+
 /**
- * Influencer registration screen.
- *
- * Asks for both Instagram handle (required) and YouTube handle (optional).
- * The backend tries to match either against existing creator_profiles
- * rows pushed in by the marketing-automation pipeline. If exactly one
- * profile matches, that profile is "claimed" — the user lands on the
- * Waiting screen with a clearer message that admin review is in flight.
- *
- * If multiple profiles match (handle conflict), the user is still
- * Waiting — admin resolves the conflict manually from the verification
- * queue. We surface this as a soft success ("we'll get you sorted")
- * rather than an error since it's not the user's fault.
+ * Influencer registration. Backend tries to match the IG handle against an
+ * existing scraped creator_profile; matched/conflict/no-match → 3 Waiting
+ * variants. Payload + handler + navigation.reset preserved exactly.
  */
 export default function InfluencerRegisterScreen({ navigation }) {
   const [fullName,    setFullName]    = useState('');
@@ -45,8 +57,6 @@ export default function InfluencerRegisterScreen({ navigation }) {
 
     if (!res.success) { setError(res.error?.message || 'Registration failed'); return; }
 
-    // Backend returns { influencer, user_status, claim:{ match_count, claimed, conflict, ... }}.
-    // Decide which post-registration screen to show based on the outcome.
     const claim = res.data?.claim || {};
     const params = {
       claimMatched:    !!claim.claimed,
@@ -58,103 +68,112 @@ export default function InfluencerRegisterScreen({ navigation }) {
     navigation.reset({ index: 0, routes: [{ name: 'Waiting', params }] });
   }
 
+  const canSubmit = fullName.trim().length > 0 && igHandle.trim().length > 0 && !loading;
+
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: P.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.container}>
-          <Text style={styles.title}>Set up your profile</Text>
-          <Text style={styles.sub}>
-            Just a few quick details so we can verify your account and match
-            you with brands.
-          </Text>
+        <Text style={styles.title}>Set up your profile</Text>
+        <Text style={styles.lede}>A few quick details so we can verify your account and match you with brands.</Text>
 
-          <Text style={styles.label}>Full Name <Text style={styles.required}>*</Text></Text>
-          <View style={styles.inputRowPlain}>
-            <TextInput
-              style={styles.input}
-              value={fullName}
-              onChangeText={setFullName}
-              placeholder="Your full name"
-              placeholderTextColor={colors.t3}
-              autoCorrect={false}
-            />
-          </View>
+        <Text style={styles.label}>Full name <Text style={styles.req}>*</Text></Text>
+        <TextInput
+          style={styles.input}
+          value={fullName}
+          onChangeText={setFullName}
+          placeholder="Your full name"
+          placeholderTextColor={P.muted3}
+          autoCorrect={false}
+        />
 
-          <Text style={styles.label}>City</Text>
-          <View style={styles.inputRowPlain}>
-            <TextInput
-              style={styles.input}
-              value={city}
-              onChangeText={setCity}
-              placeholder="Hyderabad / Nellore / …"
-              placeholderTextColor={colors.t3}
-              autoCorrect={false}
-            />
-          </View>
+        <Text style={styles.label}>City</Text>
+        <TextInput
+          style={styles.input}
+          value={city}
+          onChangeText={setCity}
+          placeholder="Hyderabad / Nellore / …"
+          placeholderTextColor={P.muted3}
+          autoCorrect={false}
+        />
 
-          <Text style={styles.label}>Instagram Handle <Text style={styles.required}>*</Text></Text>
-          <View style={styles.inputRow}>
-            <Text style={styles.at}>@</Text>
-            <TextInput
-              style={styles.input}
-              value={igHandle}
-              onChangeText={t => setIgHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
-              placeholder="yourhandle"
-              placeholderTextColor={colors.t3}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          <Text style={styles.label}>YouTube Channel Handle <Text style={styles.optional}>(optional)</Text></Text>
-          <View style={styles.inputRow}>
-            <Text style={styles.at}>@</Text>
-            <TextInput
-              style={styles.input}
-              value={ytHandle}
-              onChangeText={t => setYtHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
-              placeholder="yourchannel"
-              placeholderTextColor={colors.t3}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <TouchableOpacity
-            style={[styles.btn, (!fullName.trim() || !igHandle.trim() || loading) && styles.btnDisabled]}
-            onPress={handleRegister}
-            disabled={!fullName.trim() || !igHandle.trim() || loading}
-          >
-            <Text style={styles.btnText}>{loading ? 'Registering...' : 'Complete Registration'}</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.hint}>
-            We&apos;ll match your handle to our creator database and our team will review your profile.
-            You&apos;ll be notified once verified.
-          </Text>
+        <Text style={styles.label}>Instagram handle <Text style={styles.req}>*</Text></Text>
+        <View style={styles.handleRow}>
+          <Text style={styles.atSign}>@</Text>
+          <TextInput
+            style={styles.handleInput}
+            value={igHandle}
+            onChangeText={t => setIgHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
+            placeholder="yourhandle"
+            placeholderTextColor={P.muted3}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
         </View>
+
+        <Text style={styles.label}>YouTube channel <Text style={styles.opt}>(optional)</Text></Text>
+        <View style={styles.handleRow}>
+          <Text style={styles.atSign}>@</Text>
+          <TextInput
+            style={styles.handleInput}
+            value={ytHandle}
+            onChangeText={t => setYtHandle(t.replace(/\s/g, '').replace(/^@+/, ''))}
+            placeholder="yourchannel"
+            placeholderTextColor={P.muted3}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+
+        <View style={styles.info}>
+          <View style={styles.infoBadge}><Text style={styles.infoBadgeText}>i</Text></View>
+          <Text style={styles.infoText}>We'll match your handle to our creator database. If we already have you, you skip ahead.</Text>
+        </View>
+
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
       </ScrollView>
+
+      <View style={styles.ctaBar}>
+        <TouchableOpacity
+          style={[styles.btn, !canSubmit && styles.btnDisabled]}
+          onPress={handleRegister}
+          disabled={!canSubmit}
+        >
+          <Text style={styles.btnText}>{loading ? 'Registering…' : 'Complete registration'}</Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll:      { flexGrow: 1, backgroundColor: colors.navyDeep },
-  container:   { flex: 1, padding: 24, justifyContent: 'center', minHeight: '100%' },
-  title:       { fontSize: 26, fontWeight: '800', color: colors.white, marginBottom: 10 },
-  sub:         { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 28, lineHeight: 21 },
-  label:       { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
-  required:    { color: colors.orange },
-  optional:    { color: 'rgba(255,255,255,0.4)', textTransform: 'none', letterSpacing: 0 },
-  inputRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, marginBottom: 20 },
-  inputRowPlain: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, marginBottom: 20 },
-  at:          { fontSize: 18, color: colors.gold, fontWeight: '700', marginRight: 4 },
-  input:       { flex: 1, paddingVertical: 14, fontSize: 16, color: colors.white },
-  error:       { backgroundColor: colors.redPale, borderRadius: 10, padding: 10, fontSize: 12, color: colors.red, marginBottom: 16 },
-  btn:         { backgroundColor: colors.orange, borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 16 },
-  btnDisabled: { opacity: 0.5 },
-  btnText:     { fontSize: 16, fontWeight: '700', color: colors.white },
-  hint:        { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center', lineHeight: 18 },
+  scroll:        { flexGrow: 1, paddingHorizontal: 22, paddingTop: 40, paddingBottom: 24 },
+  title:         { fontSize: 22, fontWeight: '700', color: P.ink, marginBottom: 6, letterSpacing: -0.4 },
+  lede:          { fontSize: 13, color: P.muted, marginBottom: 22, lineHeight: 19 },
+
+  label:         { fontSize: 11.5, fontWeight: '600', color: P.ink2, marginBottom: 8, marginTop: 6 },
+  req:           { color: P.danger, fontWeight: '700' },
+  opt:           { fontSize: 11, fontWeight: '500', color: P.muted2 },
+
+  input:         { backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, color: P.ink, marginBottom: 14 },
+
+  handleRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: P.surface, borderWidth: 1.5, borderColor: P.border2, borderRadius: 12, paddingHorizontal: 14, marginBottom: 14 },
+  atSign:        { fontSize: 16, color: P.yellowHover, fontWeight: '700', marginRight: 4, fontFamily: MONO },
+  handleInput:   { flex: 1, paddingVertical: 13, fontSize: 14.5, color: P.ink, fontFamily: MONO },
+
+  info:          { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: P.yellowPale, borderRadius: 10, borderLeftWidth: 3, borderLeftColor: P.yellow, paddingHorizontal: 12, paddingVertical: 11, marginTop: 4 },
+  infoBadge:     { width: 20, height: 20, borderRadius: 10, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginRight: 9 },
+  infoBadgeText: { color: P.yellow, fontSize: 12, fontWeight: '800' },
+  infoText:      { flex: 1, fontSize: 12, color: P.ink2, lineHeight: 17 },
+
+  errorBox:      { backgroundColor: P.dangerPale, borderLeftWidth: 3, borderLeftColor: P.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 12 },
+  errorText:     { fontSize: 12, color: P.dangerDeep, fontWeight: '500' },
+
+  ctaBar:        { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 28, backgroundColor: P.bg },
+  btn:           { backgroundColor: P.yellow, borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
+  btnDisabled:   { opacity: 0.45 },
+  btnText:       { fontSize: 15, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
 });

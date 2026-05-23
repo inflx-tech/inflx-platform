@@ -2,10 +2,32 @@ import React, { useState, useRef, useContext, useEffect, useCallback } from 'rea
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, AppState } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../../theme/tokens';
 import { authApi, influencerApi, brandApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import APP_ROLE from '../../config/appRole';
+
+const P = {
+  bg:          '#FAFAFA',
+  surface:     '#FFFFFF',
+  surface2:    '#F4F4F5',
+  ink:         '#0A0A0A',
+  ink2:        '#18181B',
+  muted:       '#52525B',
+  muted2:      '#71717A',
+  muted3:      '#A1A1AA',
+  border:      '#E4E4E7',
+  border2:     '#D4D4D8',
+  yellow:      '#FFC107',
+  yellowHover: '#E0A800',
+  yellow50:    '#FFFDEB',
+  yellowPale:  '#FFF7CC',
+  yellowText:  '#6B5A00',
+  danger:      '#E8401A',
+  dangerPale:  '#FDEEE9',
+  dangerDeep:  '#B91C1C',
+};
+
+const MONO = Platform.OS === 'android' ? 'monospace' : 'Menlo';
 
 export default function OTPScreen({ navigation, route }) {
   const { phone, role } = route.params;
@@ -19,40 +41,33 @@ export default function OTPScreen({ navigation, route }) {
   const autoVerifyTimer = useRef(null);
   const hasAutoVerified = useRef(false);
 
-  // ── Clipboard OTP auto-read ──────────────────────────────────
+  // ── Clipboard auto-read (preserved) ──
   const checkClipboardForOtp = useCallback(async () => {
     try {
       const text = await Clipboard.getString();
       if (!text) return;
-      // Extract a 6-digit number from clipboard content
       const match = text.match(/\b(\d{6})\b/);
       if (match) {
         const digits = match[1].split('');
         setOtp(digits);
         setClipboardHint('OTP pasted from clipboard');
-        // Clear hint after 3 seconds
         setTimeout(() => setClipboardHint(''), 3000);
       }
     } catch (_) { /* clipboard not available */ }
   }, []);
 
-  // Check clipboard when app returns to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        checkClipboardForOtp();
-      }
+      if (nextState === 'active') checkClipboardForOtp();
     });
-    // Also check once on mount (user may have copied OTP before opening)
     checkClipboardForOtp();
     return () => subscription.remove();
   }, [checkClipboardForOtp]);
 
-  // ── Auto-verify when all 6 digits filled ─────────────────────
+  // ── Auto-verify when all 6 digits filled (preserved) ──
   useEffect(() => {
     const otpStr = otp.join('');
     if (otpStr.length === 6 && !hasAutoVerified.current && !loading) {
-      // Short delay so user can see the filled OTP before submission
       autoVerifyTimer.current = setTimeout(() => {
         hasAutoVerified.current = true;
         handleVerify();
@@ -61,10 +76,10 @@ export default function OTPScreen({ navigation, route }) {
     return () => {
       if (autoVerifyTimer.current) clearTimeout(autoVerifyTimer.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otp, loading]);
 
   function handleChange(index, value) {
-    // Support pasting a full OTP into any box
     const cleaned = value.replace(/\D/g, '');
     if (cleaned.length === 6) {
       const digits = cleaned.split('');
@@ -88,7 +103,7 @@ export default function OTPScreen({ navigation, route }) {
   async function handleResend() {
     setError('');
     setOtp(['', '', '', '', '', '']);
-    hasAutoVerified.current = false; // allow auto-verify again after resend
+    hasAutoVerified.current = false;
     setResending(true);
     const res = await authApi.sendOtp(phone);
     setResending(false);
@@ -100,19 +115,14 @@ export default function OTPScreen({ navigation, route }) {
     if (otpStr.length < 6) return;
     setError('');
     setLoading(true);
-    // No name passed — for new users the backend creates a placeholder user
-    // row and the next screen (InfluencerRegister) collects real name + city
-    // + handles in one shot. Avoids the double-verify-OTP bug.
+
     const res = await authApi.verifyOtp(phone, otpStr, role);
     setLoading(false);
     if (!res.success) { setError(res.error?.message || 'Invalid OTP'); return; }
 
     const { access_token, refresh_token, user } = res.data;
 
-    // Role guard — this APK is baked for a specific flavor. Refuse to log
-    // in a user whose registered role doesn't match the APK. Don't save
-    // anything to AsyncStorage in this branch so the app stays on the
-    // auth screen instead of silently routing to the wrong navigator.
+    // Role guard (preserved)
     if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer') && user.role !== APP_ROLE) {
       const appLabel   = APP_ROLE === 'brand' ? 'Brand' : 'Influencer';
       const otherLabel = user.role === 'brand' ? 'Brand'
@@ -125,9 +135,7 @@ export default function OTPScreen({ navigation, route }) {
     }
 
     await AsyncStorage.setItem('inflx_token', access_token);
-    if (refresh_token) {
-      await AsyncStorage.setItem('inflx_refresh_token', refresh_token);
-    }
+    if (refresh_token) await AsyncStorage.setItem('inflx_refresh_token', refresh_token);
     await AsyncStorage.setItem('inflx_user', JSON.stringify(user));
 
     if (user.role === 'brand') {
@@ -136,9 +144,9 @@ export default function OTPScreen({ navigation, route }) {
         navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
       } else {
         const status = brandRes.data?.brand?.status || brandRes.data?.user_status;
-        if (status === 'rejected') navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
+        if (status === 'rejected')      navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
         else if (status === 'approved') setAppRole('brand');
-        else navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
+        else                             navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
       }
     } else if (user.role === 'influencer') {
       const infRes = await influencerApi.getMe();
@@ -146,9 +154,9 @@ export default function OTPScreen({ navigation, route }) {
         navigation.navigate('InfluencerRegister');
       } else {
         const status = infRes.data?.user_status;
-        if (status === 'rejected') navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
+        if (status === 'rejected')      navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });
         else if (status === 'approved') setAppRole('influencer');
-        else navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
+        else                             navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
       }
     } else if (user.role === 'follower') {
       setAppRole('follower');
@@ -160,22 +168,21 @@ export default function OTPScreen({ navigation, route }) {
   const otpComplete = otp.join('').length === 6;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: P.bg }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>Enter OTP</Text>
-        <Text style={styles.sub}>Sent to {phone}</Text>
-        <Text style={styles.devHint}>Dev mode: use 000000</Text>
+        <Text style={styles.title}>Enter the 6-digit code</Text>
+        <Text style={styles.sub}>Sent to <Text style={styles.subMono}>{phone}</Text></Text>
 
         <View style={styles.otpRow}>
           {otp.map((digit, i) => (
             <TextInput
               key={i}
               ref={el => inputRefs.current[i] = el}
-              style={[styles.otpBox, digit && styles.otpBoxFilled]}
+              style={[styles.otpBox, digit ? styles.otpBoxFilled : null]}
               value={digit}
               onChangeText={v => handleChange(i, v)}
               onKeyPress={e => handleKeyPress(i, e)}
@@ -186,45 +193,75 @@ export default function OTPScreen({ navigation, route }) {
           ))}
         </View>
 
-        {clipboardHint ? <Text style={styles.clipboardHint}>{clipboardHint}</Text> : null}
+        {clipboardHint ? (
+          <View style={styles.clipboardHint}>
+            <Text style={styles.clipboardIcon}>⎘</Text>
+            <Text style={styles.clipboardText}>{clipboardHint}</Text>
+          </View>
+        ) : null}
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <View style={styles.resendRow}>
+          <Text style={styles.resendLabel}>Didn't get it? </Text>
+          <TouchableOpacity onPress={handleResend} disabled={resending}>
+            <Text style={styles.resendLink}>{resending ? 'Resending…' : 'Resend OTP'}</Text>
+          </TouchableOpacity>
+        </View>
 
+        <View style={styles.autoVerifyRow}>
+          <Text style={styles.autoVerifyText}>Auto-verifying when you fill the last digit</Text>
+          <Text style={styles.devPill}> dev · 000000 </Text>
+        </View>
+
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      <View style={styles.ctaBar}>
         <TouchableOpacity
           style={[styles.btn, (!otpComplete || loading) && styles.btnDisabled]}
           onPress={handleVerify}
           disabled={!otpComplete || loading}
         >
-          <Text style={styles.btnText}>{loading ? 'Verifying...' : 'Verify OTP'}</Text>
+          <Text style={styles.btnText}>{loading ? 'Verifying…' : 'Verify OTP'}</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.resendBtn} onPress={handleResend} disabled={resending}>
-          <Text style={styles.resendText}>{resending ? 'Resending...' : 'Resend OTP'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, backgroundColor: colors.navyDeep, padding: 24, justifyContent: 'center' },
-  back: { marginBottom: 24 },
-  backText: { fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  title: { fontSize: 26, fontWeight: '800', color: colors.white, marginBottom: 8 },
-  sub: { fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
-  devHint: { fontSize: 11, color: colors.gold, marginBottom: 32, opacity: 0.7 },
-  otpRow: { flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 28 },
-  otpBox: { width: 48, height: 56, borderRadius: 12, borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)', backgroundColor: 'rgba(255,255,255,0.07)', color: colors.white, fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  otpBoxFilled: { borderColor: colors.gold, backgroundColor: 'rgba(255,184,0,0.1)' },
-  clipboardHint: { fontSize: 12, color: colors.gold, textAlign: 'center', marginBottom: 12, opacity: 0.8 },
-  nameWrap: { marginBottom: 20 },
-  nameLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
-  nameLabelHint: { fontSize: 10, fontWeight: '400', textTransform: 'none', letterSpacing: 0 },
-  nameInput: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 14, fontSize: 15, color: colors.white },
-  error: { backgroundColor: colors.redPale, borderRadius: 10, padding: 10, fontSize: 12, color: colors.red, marginBottom: 16 },
-  btn: { backgroundColor: colors.orange, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  btnDisabled: { opacity: 0.5 },
-  btnText: { fontSize: 16, fontWeight: '700', color: colors.white },
-  resendBtn: { marginTop: 14, alignItems: 'center', paddingVertical: 8 },
-  resendText: { fontSize: 14, fontWeight: '600', color: colors.gold },
+  scroll:        { flexGrow: 1, paddingHorizontal: 22, paddingTop: 32, paddingBottom: 24 },
+  back:          { marginBottom: 18 },
+  backText:      { fontSize: 13, color: P.muted, fontWeight: '600' },
+
+  title:         { fontSize: 22, fontWeight: '700', color: P.ink, marginBottom: 6, letterSpacing: -0.4 },
+  sub:           { fontSize: 13, color: P.muted, marginBottom: 22, lineHeight: 19 },
+  subMono:       { fontFamily: MONO, fontWeight: '600', color: P.ink },
+
+  otpRow:        { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14, gap: 7 },
+  otpBox:        { flex: 1, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: P.border2, backgroundColor: P.surface, color: P.ink, fontSize: 22, fontWeight: '700', textAlign: 'center', fontFamily: MONO },
+  otpBoxFilled:  { borderColor: P.yellow, backgroundColor: P.yellow50 },
+
+  clipboardHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.yellowPale, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  clipboardIcon: { fontSize: 13, color: P.yellowHover, fontWeight: '700', marginRight: 6 },
+  clipboardText: { fontSize: 11.5, color: P.yellowText, fontWeight: '600' },
+
+  resendRow:     { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  resendLabel:   { fontSize: 12.5, color: P.muted },
+  resendLink:    { fontSize: 12.5, fontWeight: '600', color: P.yellowHover },
+
+  autoVerifyRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 18, flexWrap: 'wrap' },
+  autoVerifyText:{ fontSize: 11.5, color: P.muted2 },
+  devPill:       { fontSize: 10.5, color: P.yellowText, fontWeight: '600', backgroundColor: P.yellowPale, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 5, fontFamily: MONO, marginLeft: 6 },
+
+  errorBox:      { backgroundColor: P.dangerPale, borderLeftWidth: 3, borderLeftColor: P.danger, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 4 },
+  errorText:     { fontSize: 12, color: P.dangerDeep, fontWeight: '500' },
+
+  ctaBar:        { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 28, backgroundColor: P.bg },
+  btn:           { backgroundColor: P.yellow, borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
+  btnDisabled:   { opacity: 0.45 },
+  btnText:       { fontSize: 15, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
 });

@@ -40,7 +40,12 @@ test.describe('WORKFLOW: brand-web auth — phone → OTP step', () => {
 
     // ── Step: land on the login workflow entrypoint ──
     await page.goto('/login');
-    await expect(page.getByText('Brand Dashboard')).toBeVisible();
+    // Copy realigned with redesign-flow-1-onboarding (2026-05-23):
+    //   "Brand Dashboard" → "Brand workspace"
+    //   "OTP sent to +91" → "Sent to +91"
+    // Honest re-baseline — workflow + selectors preserved (#otp-0,
+    // input[type="tel"], button text matches /send otp/i).
+    await expect(page.getByText('Brand workspace')).toBeVisible();
     const phone = page.locator('input[type="tel"]');
     await expect(phone).toBeVisible();
     await page.screenshot({
@@ -53,7 +58,7 @@ test.describe('WORKFLOW: brand-web auth — phone → OTP step', () => {
     await page.getByRole('button', { name: /send otp/i }).click();
 
     // ── Workflow success = the UI advanced to the OTP step ──
-    await expect(page.getByText(/OTP sent to \+91/i)).toBeVisible();
+    await expect(page.getByText(/Sent to \+91/i)).toBeVisible();
     await expect(page.locator('#otp-0')).toBeVisible();
     await page.screenshot({
       path: path.join(shotDir('after'), 'brand-auth__otp-step.png'),
