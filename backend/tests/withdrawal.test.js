@@ -177,7 +177,7 @@ describe('Influencer Withdrawal', () => {
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id,
           transaction_type, gross_amount, discount_amount, net_amount,
-          influencer_commission, platform_fee, brand_net,
+          influencer_commission, marketplace_fee_amount, brand_net,
           status, return_window_ends_at)
        VALUES ($1, $2, $3, $4, $5, 'pay_at_store', 500000, 0, 500000, 50000, 4000, 496000,
                'completed', NOW() - INTERVAL '31 days')`,

@@ -363,7 +363,7 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           variant_id, offer_type, prebook_booking_id,
           transaction_type, gross_amount, discount_amount, net_amount,
-          influencer_commission, platform_fee, brand_net,
+          influencer_commission, marketplace_fee_amount, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pay_at_store',$11,$12,$13,$14,$15,$16,'completed',$17,$18,$19)
        RETURNING id`,
@@ -570,7 +570,7 @@ const verifyPrebook = asyncHandler(async (req, res) => {
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           variant_id, offer_type,
           transaction_type, gross_amount, discount_amount, net_amount,
-          influencer_commission, platform_fee, brand_net,
+          influencer_commission, marketplace_fee_amount, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'prebook',$10,0,$10,$11,$12,$13,'completed',$14,$15,$16)
        RETURNING id`,
@@ -758,7 +758,7 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           variant_id, offer_type,
           transaction_type, gross_amount, discount_amount, net_amount,
-          influencer_commission, platform_fee, brand_net,
+          influencer_commission, marketplace_fee_amount, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'prebook',$10,0,$10,$11,$12,$13,'completed',$14,$15,$16)
        RETURNING id`,
@@ -977,7 +977,7 @@ const verifyOrder = asyncHandler(async (req, res) => {
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
           variant_id, offer_type,
           transaction_type, gross_amount, discount_amount, net_amount,
-          influencer_commission, platform_fee, brand_net,
+          influencer_commission, marketplace_fee_amount, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'online_order',$10,$11,$12,$13,$14,$15,'completed',$16,$17,$18)
        RETURNING id`,

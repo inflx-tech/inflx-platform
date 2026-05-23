@@ -1,0 +1,31 @@
+{
+  "feature": "billing-column-rename",
+  "area": "backend-migration+controllers",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'go and complete all phases, but test and go forward' (revenue model A2 of A1-A8). Step-5 lock decision delegated per feedback_deploy_cadence.md autonomy directive.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend/migrations/059_rename_marketplace_fee_amount.sql + 3 controller changes. RENAME COLUMN is metadata-only; SQL aliases preserve API JSON keys → zero frontend impact. Pushed only after pnpm qa green + backend jest green locally.",
+  "fix": "Phase A2 — rename follower_transactions.platform_fee to marketplace_fee_amount + update all 3 backend controllers' SQL and the 6 test files that touch the DB column. API field name preserved via SELECT marketplace_fee_amount AS platform_fee.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-pricing-service",
+    "features/billing-attribution-l3"
+  ],
+  "result": "Migration 059 applied to LOCAL dev DB 2026-05-23 — column renamed to marketplace_fee_amount, old name absent. Code updated: admin.controller (6 SUMs), brand.controller (1 SELECT-AS + 1 SUM), transaction.controller (4 INSERT column lists via replace_all). Tests updated: withdrawal.test.js + cron-commission-confirm.test.js (2 INSERT column lists). pnpm qa 67/67 GREEN STATE=GREEN gate=0. Ready to push.",
+  "regression_proof": "Coordinated change: schema + readers in same commit. API JSON keys unchanged via SQL aliases. pnpm qa expected GREEN unchanged. Verify-twice mapped the actual scope (1 column, not 3 as the brief implied).",
+  "discipline": "Contract-first; verify-twice on column truth (escrow_entries already renamed M037; wallet_transactions has no such column); production-impacting push surfaced never silent — founder broad-delegation gave the explicit go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Local apply + pnpm qa GREEN complete. Pending git push (production-impacting; Render runs M059 on Supabase prod, metadata-only RENAME atomic with new image)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A backend-only contract; attestation satisfies gov-check Rule 3 if bundled with UI-governed changesets later.",
+  "mockup_locked_at": "2026-05-23"
+}

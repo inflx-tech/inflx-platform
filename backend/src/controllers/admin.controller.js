@@ -257,7 +257,7 @@ const getStats = asyncHandler(async (req, res) => {
 
   const { rows: revenueRows } = await db.query(
     `SELECT
-       (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions
+       (SELECT COALESCE(SUM(marketplace_fee_amount), 0) FROM follower_transactions
         WHERE created_at >= $1 AND status = 'completed') +
        (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries
         WHERE released_at >= $1 AND status = 'released') AS platform_revenue_this_month`,
@@ -935,7 +935,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
     `SELECT
        d::date AS day,
        (SELECT COUNT(*) FROM follower_transactions WHERE status = 'completed' AND created_at::date = d::date) AS transactions,
-       (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed' AND created_at::date = d::date) +
+       (SELECT COALESCE(SUM(marketplace_fee_amount), 0) FROM follower_transactions WHERE status = 'completed' AND created_at::date = d::date) +
        (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at::date = d::date) AS revenue
      FROM generate_series($1::date, CURRENT_DATE, '1 day') AS d
      ORDER BY d`,
@@ -948,13 +948,13 @@ const getAnalytics = asyncHandler(async (req, res) => {
        -- Current period
        (SELECT COUNT(*) FROM users WHERE created_at >= $1) AS current_users,
        (SELECT COUNT(*) FROM follower_transactions WHERE status = 'completed' AND created_at >= $1) AS current_transactions,
-       (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed' AND created_at >= $1) +
+       (SELECT COALESCE(SUM(marketplace_fee_amount), 0) FROM follower_transactions WHERE status = 'completed' AND created_at >= $1) +
        (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at >= $1) AS current_revenue,
        (SELECT COUNT(*) FROM campaigns WHERE status IN ('active','live') AND created_at >= $1) AS current_active_campaigns,
        -- Previous period
        (SELECT COUNT(*) FROM users WHERE created_at >= $2 AND created_at < $1) AS prev_users,
        (SELECT COUNT(*) FROM follower_transactions WHERE status = 'completed' AND created_at >= $2 AND created_at < $1) AS prev_transactions,
-       (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed' AND created_at >= $2 AND created_at < $1) +
+       (SELECT COALESCE(SUM(marketplace_fee_amount), 0) FROM follower_transactions WHERE status = 'completed' AND created_at >= $2 AND created_at < $1) +
        (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released' AND released_at >= $2 AND released_at < $1) AS prev_revenue,
        (SELECT COUNT(*) FROM campaigns WHERE status IN ('active','live') AND created_at >= $2 AND created_at < $1) AS prev_active_campaigns`,
     [sinceISO, prevSinceISO]
@@ -982,7 +982,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
        c.id, c.name, c.status, c.category,
        u.name AS brand_name,
        COUNT(ft.id) AS follower_transactions,
-       COALESCE(SUM(ft.platform_fee), 0) AS revenue
+       COALESCE(SUM(ft.marketplace_fee_amount), 0) AS revenue
      FROM campaigns c
      JOIN brands b ON b.id = c.brand_id
      JOIN users u ON u.id = b.user_id
@@ -1050,7 +1050,7 @@ const getAnalytics = asyncHandler(async (req, res) => {
     `SELECT
        (SELECT COUNT(*) FROM users) AS total_users,
        (SELECT COUNT(*) FROM campaigns WHERE status IN ('active','live')) AS total_active_campaigns,
-       (SELECT COALESCE(SUM(platform_fee), 0) FROM follower_transactions WHERE status = 'completed') +
+       (SELECT COALESCE(SUM(marketplace_fee_amount), 0) FROM follower_transactions WHERE status = 'completed') +
        (SELECT COALESCE(SUM(escrow_fee_amount), 0) FROM escrow_entries WHERE status = 'released') AS total_revenue`
   );
   const totals = totalsRows[0];

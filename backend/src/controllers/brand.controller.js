@@ -688,7 +688,7 @@ const listAllTransactions = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT
        ft.id, ft.transaction_type, ft.status, ft.gross_amount, ft.discount_amount,
-       ft.net_amount, ft.influencer_commission, ft.platform_fee, ft.brand_net,
+       ft.net_amount, ft.influencer_commission, ft.marketplace_fee_amount AS platform_fee, ft.brand_net,
        ft.coupon_code_used, ft.razorpay_payment_id, ft.created_at,
        ft.campaign_id, ft.set_id, ft.campaign_influencer_id,
        c.name AS campaign_name,
@@ -724,7 +724,7 @@ const listAllTransactions = asyncHandler(async (req, res) => {
        COUNT(*)::int AS total_transactions,
        COALESCE(SUM(ft.net_amount), 0)::bigint AS total_revenue,
        COALESCE(SUM(ft.influencer_commission), 0)::bigint AS total_commission,
-       COALESCE(SUM(ft.platform_fee), 0)::bigint AS total_platform_fee,
+       COALESCE(SUM(ft.marketplace_fee_amount), 0)::bigint AS total_platform_fee,
        COALESCE(SUM(ft.brand_net), 0)::bigint AS total_brand_net,
        COUNT(CASE WHEN ft.transaction_type = 'pay_at_store' THEN 1 END)::int AS pay_at_store_count,
        COUNT(CASE WHEN ft.transaction_type = 'prebook' THEN 1 END)::int AS prebook_count,

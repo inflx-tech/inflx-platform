@@ -20,7 +20,7 @@ async function insertFollowerTransaction({ campaignId, setId, ciId, brandId, fol
     `INSERT INTO follower_transactions
        (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id,
         transaction_type, gross_amount, discount_amount, net_amount,
-        influencer_commission, platform_fee, brand_net,
+        influencer_commission, marketplace_fee_amount, brand_net,
         status, return_window_ends_at)
      VALUES ($1, $2, $3, $4, $5, 'pay_at_store', 56000, 0, 56000, $6, 448, 55552,
              'completed', NOW() + $7::interval)`,
