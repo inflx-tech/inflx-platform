@@ -1,0 +1,33 @@
+{
+  "feature": "billing-attribution-l3",
+  "area": "backend-controller+service",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — broad delegation 'go and complete all phases'. Phase A5 of the revenue model rollout.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — the L3 path-based marketplace fee goes LIVE on push. Brands with mapped categories charge new path-based percentages instead of flat brands.platform_fee_pct.",
+  "fix": "Phase A5 — wire pricing.service.computeL3OnFollowerTxn into pay-at-store + online_order createOrder math; attribution_clicks write at all 4 verifyOrder sites on Path B (CI present); pay-at-store test assertion updated for Path B restaurant 4%.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-column-rename",
+    "features/billing-pricing-service",
+    "features/billing-quota-middleware",
+    "features/billing-subscription-mandate"
+  ],
+  "result": "Backend wired: validateTracking exposes brand_category; pricing.service.computeL3OnFollowerTxn drives platform fee at pay-at-store + online_order createOrder; attribution_clicks INSERT at all 4 verifyOrder sites on Path B. pay-at-store.test.js assertion updated for Path B restaurant 4%. pnpm qa 67/67 GREEN STATE=GREEN gate=0. Ready to push.",
+  "regression_proof": "validateTracking SELECT addition is additive (existing fields preserved). pricing.service callers tested in Phase A3. attribution_clicks write is INSERT-only with no FK conflicts (CI lookup + FK references all proven). API response shape stable.",
+  "discipline": "Contract-first; verify-twice on validateTracking columns; production-impacting fee model surfaced for founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; L3 path-based fee goes LIVE)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — N/A backend-only.",
+  "mockup_locked_at": "2026-05-23"
+}

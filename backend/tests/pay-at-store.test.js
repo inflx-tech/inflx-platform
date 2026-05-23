@@ -168,11 +168,13 @@ describe('POST /v1/follower/pay-at-store', () => {
       });
 
     expect(res.status).toBe(201);
-    // net ₹700 (₹1000 − 30%); 8% of 700 = 56
+    // net ₹700 (₹1000 − 30%); 8% of 700 = 56 (commission unchanged — contract-based)
     expect(res.body.data.breakdown.influencer_commission).toBe(56);
-    // 8% of 700 = 56 (default platform fee)
-    expect(res.body.data.breakdown.platform_fee).toBe(56);
-    expect(res.body.data.breakdown.brand_net).toBe(700 - 56 - 56); // 588
+    // Phase A5: L3 path-based marketplace fee replaces the legacy flat 8%.
+    // Brand category 'restaurant' + Path B (influencer_direct, CI present) → 4%.
+    // 4% of 700 = 28.
+    expect(res.body.data.breakdown.platform_fee).toBe(28);
+    expect(res.body.data.breakdown.brand_net).toBe(700 - 56 - 28); // 616
   });
 
   it('returns 401 without auth', async () => {

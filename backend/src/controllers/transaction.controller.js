@@ -27,6 +27,7 @@ const txService = require('../services/transaction.service');
 const bookingService = require('../services/booking.service');
 const notificationService = require('../services/notification.service');
 const offerService = require('../services/offer.service');
+const pricingService = require('../services/pricing.service');
 
 // ── Conversion-flow helpers (Tier-1) ─────────────────────────────────────────
 
@@ -271,7 +272,6 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
   });
   const discountAmount = parseFloat(offerResult.discount_amount || 0);
 
-  const platformFeePct = parseFloat(record.platform_fee_pct || env.PLATFORM_FEE_PCT);
   const commissionPct = parseFloat(record.commission_pct || 0);
 
   // Q3 corrected math:
@@ -288,10 +288,24 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
   const grossForTxn = parseFloat((billAmount - tokenPaid).toFixed(2));
   const netAmount = amountToCharge;
   const influencerCommission = parseFloat((netAmount * commissionPct / 100).toFixed(2));
-  const platformFee          = parseFloat((netAmount * platformFeePct / 100).toFixed(2));
-  const brandNet             = parseFloat((netAmount - influencerCommission - platformFee).toFixed(2));
 
-  // Create Razorpay order
+  // L3 marketplace fee (Phase A5): pricing.service classifies the path
+  // (direct / influencer_direct / influencer_attributed) and resolves the
+  // category × path percentage. Falls back to brands.platform_fee_pct
+  // (legacy 8% default) when category doesn't map.
+  const l3 = await pricingService.computeL3OnFollowerTxn({
+    client:                db,
+    brandId:               record.brand_id,
+    followerId:            follower.id,
+    campaignInfluencerId:  campaign_influencer_id,
+    brandCategory:         record.brand_category,
+    netAmount,
+  });
+  const platformFee = l3.fee_amount;
+  const brandNet    = parseFloat((netAmount - influencerCommission - platformFee).toFixed(2));
+
+  // Create Razorpay order — stash L3 classification in meta so verifyOrder
+  // can write attribution_clicks atomically after the txn lands.
   const orderId = await txService.createOrder(amountToCharge, {
     type: 'pay_at_store',
     offer_id, campaign_id, set_id, campaign_influencer_id,
@@ -305,6 +319,11 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     offer_type: record.ci_offer_type || null,   // denormalized analytics dim
     prebook_booking_id: prebook_booking_id || null,
     token_paid: tokenPaid,
+    // L3 (Phase A5) classification — stashed for verifyOrder attribution write
+    l3_path:          l3.path,
+    l3_category_key:  l3.category_key,
+    l3_source:        l3.source,
+    l3_influencer_id: l3.influencer_id,
   });
 
   return success(res, {
@@ -380,6 +399,18 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
 
     // Credit influencer pending_balance in rupees
     await txService.creditInfluencerCommission(client, influencer.id, meta.influencer_commission);
+
+    // L3 attribution write (Phase A5) — on Path B (influencer_direct) transactions
+    // record a 30-day attribution window so future direct buys by this follower
+    // from this brand fall into Path C and the influencer keeps earning credit.
+    if (meta.l3_path === 'influencer_direct' && meta.l3_influencer_id) {
+      await client.query(
+        `INSERT INTO attribution_clicks
+           (follower_id, influencer_id, brand_id, campaign_id, expires_at)
+         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
+        [meta.follower_id, meta.l3_influencer_id, meta.brand_id, meta.campaign_id]
+      );
+    }
   });
 
   // Fire notification to influencer
@@ -602,6 +633,18 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     bookingId = bookRows[0].id;
 
     await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+
+    // L3 attribution write (Phase A5) — Path B (CI present) opens a
+    // 30-day attribution window so future direct buys by this follower
+    // from this brand fall into Path C and the influencer keeps earning.
+    if (meta.campaign_influencer_id && influencer?.id) {
+      await client.query(
+        `INSERT INTO attribution_clicks
+           (follower_id, influencer_id, brand_id, campaign_id, expires_at)
+         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
+        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id]
+      );
+    }
   });
 
   const { rows: brandRows } = await db.query(
@@ -792,6 +835,18 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
     bookingId = bookRows[0].id;
 
     await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+
+    // L3 attribution write (Phase A5) — Path B (CI present) opens a
+    // 30-day attribution window so future direct buys by this follower
+    // from this brand fall into Path C and the influencer keeps earning.
+    if (meta.campaign_influencer_id && influencer?.id) {
+      await client.query(
+        `INSERT INTO attribution_clicks
+           (follower_id, influencer_id, brand_id, campaign_id, expires_at)
+         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
+        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id]
+      );
+    }
   });
 
   const { rows: brandRows } = await db.query(
@@ -876,7 +931,6 @@ const placeOrder = asyncHandler(async (req, res) => {
   });
 
   const discountAmount = parseFloat(offerResult.discount_amount || 0);
-  const platformFeePct = parseFloat(record.platform_fee_pct || env.PLATFORM_FEE_PCT);
   const commissionPct  = parseFloat(record.commission_pct || 0);
   const deliveryFee    = parseFloat(delivery_fee || 0);
 
@@ -884,8 +938,19 @@ const placeOrder = asyncHandler(async (req, res) => {
   const discountedItems = parseFloat((itemsTotal - discountAmount).toFixed(2));
   const netAmount = parseFloat((discountedItems + deliveryFee).toFixed(2));
   const influencerCommission = parseFloat((discountedItems * commissionPct / 100).toFixed(2));
-  const platformFee          = parseFloat((discountedItems * platformFeePct / 100).toFixed(2));
-  const brandNet             = parseFloat((discountedItems - influencerCommission - platformFee).toFixed(2));
+
+  // L3 marketplace fee (Phase A5) — applied on discountedItems (matches
+  // legacy: delivery_fee is brand pass-through, fee charged on item revenue only)
+  const l3 = await pricingService.computeL3OnFollowerTxn({
+    client:                db,
+    brandId:               record.brand_id,
+    followerId:            follower.id,
+    campaignInfluencerId:  campaign_influencer_id,
+    brandCategory:         record.brand_category,
+    netAmount:             discountedItems,
+  });
+  const platformFee = l3.fee_amount;
+  const brandNet    = parseFloat((discountedItems - influencerCommission - platformFee).toFixed(2));
 
   // items_json: per-item snapshot for follower_orders. Now carries variant_id
   // so returns + per-variant analytics work end-to-end.
@@ -907,6 +972,11 @@ const placeOrder = asyncHandler(async (req, res) => {
     offer_type: record.ci_offer_type || null,
     discount_reason: offerResult.reason,
     adjustments: offerResult.adjustments || null,
+    // L3 (Phase A5) classification — stashed for verifyOrder attribution write
+    l3_path:          l3.path,
+    l3_category_key:  l3.category_key,
+    l3_source:        l3.source,
+    l3_influencer_id: l3.influencer_id,
   });
 
   return success(res, {
@@ -1002,6 +1072,18 @@ const verifyOrder = asyncHandler(async (req, res) => {
     orderRowId = orderRows[0].id;
 
     await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+
+    // L3 attribution write (Phase A5) — Path B (CI present) opens a
+    // 30-day attribution window so future direct buys by this follower
+    // from this brand fall into Path C and the influencer keeps earning.
+    if (meta.campaign_influencer_id && influencer?.id) {
+      await client.query(
+        `INSERT INTO attribution_clicks
+           (follower_id, influencer_id, brand_id, campaign_id, expires_at)
+         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
+        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id]
+      );
+    }
   });
 
   // Notifications

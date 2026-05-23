@@ -119,7 +119,8 @@ async function validateTracking(campaignId, setId, campaignInfluencerId, offerId
        co.id AS offer_id,
        co.discount_value AS legacy_offer_discount_value,
        co.products_json  AS legacy_offer_products_json,
-       b.platform_fee_pct
+       b.platform_fee_pct,
+       b.category        AS brand_category
      FROM campaign_influencers ci
      JOIN campaign_sets cs ON cs.id = ci.set_id
      JOIN campaigns c      ON c.id  = cs.campaign_id
