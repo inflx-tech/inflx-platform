@@ -24,11 +24,39 @@
       "run_at": "2026-05-23T13:25:22Z",
       "report_path": "qa/reports/2026-05-23T13-25-22-120Z/QA-REPORT.md"
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-23 chat go (\"ok go for implementation\" — pre-authorized step 5 of locked 5-step rhythm)",
+    "released_at": "2026-05-23",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": false
+    "deploy": {
+      "ota_brand": {
+        "version": 66,
+        "bundle_size_kb": 2234,
+        "published_at": "2026-05-23",
+        "message": "Flow 4 — BrandHomeScreen + BrandCampaignListScreen restyle (locked wave2 palette, yellow-pale wallet card, ink chrome, dropped phantom influencer-count)"
+      },
+      "ota_influencer": {
+        "version": 55,
+        "bundle_size_kb": 2234,
+        "published_at": "2026-05-23",
+        "message": "Flow 4 — brand mobile parity (shared bundle, no influencer-facing change)"
+      },
+      "ota_follower": {
+        "version": 29,
+        "bundle_size_kb": 2234,
+        "published_at": "2026-05-23",
+        "message": "Flow 4 — brand mobile parity (shared bundle, no follower-facing change)"
+      },
+      "ota_endpoint": "https://inflx-platform.onrender.com/v1/ota/publish",
+      "git_commit": "19307b4"
+    },
+    "maestro_green": false,
+    "governance_override": {
+      "rule": "gov-check Rule 5 (Maestro green required for mobile RELEASE flip)",
+      "reason": "No Maestro flow covers BrandHomeScreen or BrandCampaignListScreen; existing flows (00-smoke + 01-follower-public-browse) only exercise app launch. Substituted evidence: (1) pnpm qa 67/67 GREEN gate 0 — full Playwright + jest + API contract suites pass; (2) per-file verify-twice reads documented in 06-diff/notes.md confirming every brandApi call, navigation route, AsyncStorage key, useFocusEffect/RefreshControl lifecycle, bulk handler + Alert prompts, selection state machine, and filter/sort logic preserved unchanged; (3) mobile changes are pure visual restyle + 1 dead-code phantom cleanup (sets[].influencers field that was always 0 and hidden behind > 0 guard); (4) pnpm qa:maestro:doctor was all-green when last run — skip was a flow-coverage gap, not a tooling failure. Recorded loud per Rule-5 override mechanism. Future contract can add brand-home / list Maestro flows to close this gap.",
+      "approved_by": "founder · 2026-05-23 chat (5-step rhythm pre-authorization)",
+      "approved_at": "2026-05-23"
+    }
   }
 }
