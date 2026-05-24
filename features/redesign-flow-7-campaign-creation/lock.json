@@ -20,11 +20,19 @@
       "report": "qa/reports/2026-05-24T02-57-41-710Z/QA-REPORT.md",
       "first_run_clean": true
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-24 chat \"ok push\" (approved production-impacting push to main)",
+    "released_at": "2026-05-24",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "8a0cad1",
+        "pushed_at": "2026-05-24T03:05:00Z",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web (admin-web not touched, backend not touched)"
+      }
+    }
   }
 }
