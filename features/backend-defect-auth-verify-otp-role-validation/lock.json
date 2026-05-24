@@ -1,16 +1,18 @@
 {
   "feature": "backend-defect-auth-verify-otp-role-validation",
   "spec_version": "1.0.0",
-  "status": "open",
+  "status": "closed-misdiagnosis",
   "approved": true,
   "approved_by": "Window B · 2026-05-24 — carved per feedback_qa_governance.md when 3 auth tests went RED post Window A's 3920772 push",
   "approved_at": "2026-05-24",
-  "owner": "Window A (backend territory)",
-  "notes": "3 QA workflows in qa/api/* fail consistently after Window A's commit 3920772 (Phase A7-admin). Failure is in POST /auth/verify-otp role validation envelope shape. Window B carries on with isolated frontend redesign work; each subsequent flow records 'qa_classification: pre-existing backend-defect' instead of qa_all_green=true. Contract closes when Window A restores the typed-422 + field=role envelope OR updates the 3 spec assertions if the new shape is intentional.",
+  "owner": "no owner — was not a real defect",
+  "resolution": "Misdiagnosed. Re-run of pnpm qa at 2026-05-24T06:10:22 hours later returned 71/71 GREEN gate 0 with NO new backend commits in between (verified — Window A's last backend commit was 3920772 from earlier, no fix push happened). The 3 'failures' were transient — most likely MSG91 OTP send-rate-limit affecting the W3/W5a/W5b test precondition (each test calls /auth/send-otp before /auth/verify-otp and depends on the send succeeding). When send-otp throttled, the `expect(sent).toBe(true)` precondition fails and reports the test as red, but the failure is environmental not in the code path being tested.",
+  "lesson_learned": "Per feedback_qa_governance.md: classify failures properly. I jumped to 'backend regression caused by Window A's recent push' without reading the actual failure assertion or testing whether the precondition was the actual failure point. Should have inspected which expect() failed and whether send-otp succeeded before claiming the role-validation envelope was wrong. Memo to self: when 3 tests fail simultaneously in the same file targeting the same external dep (MSG91), suspect the dep before the code.",
+  "notes": "Carved + resolved on the same day. Flow 8 lock.json's governance_override block references this carve — needs no follow-up since carve closed as not-a-defect. Flow 8 release.released can flip to true cleanly on its next close-out.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": "moot — was never a real defect",
     "released": false,
-    "deploy_class": "backend (Window A territory)",
+    "deploy_class": "n/a",
     "maestro_green": "n/a"
   }
 }

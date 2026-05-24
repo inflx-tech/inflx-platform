@@ -22,11 +22,17 @@
       "first_run_clean_for_wallet_paths": true,
       "carve_out_contract": "features/backend-defect-auth-verify-otp-role-validation/"
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "release_state": "deployed-pending-certification",
-    "release_state_note": "Wallet code IS LIVE on Vercel via e5c6025 (founder approved push 2026-05-24 chat 'Go with your recommendation'). release.released stays false because gov-check Rule 2 requires qa_all_green !== false to flip released=true, and 3 pre-existing backend-defect failures in qa/api/* (Window A territory, carved as features/backend-defect-auth-verify-otp-role-validation/) block that. When Window A resolves the backend-defect → pnpm qa goes green → this contract closes by flipping released=true with proper Rule 2 evidence in a follow-up close-out commit.",
+    "released": true,
+    "released_by": "founder · 2026-05-24 chat \"Go with your recommendation\" (option A push); release-certified 2026-05-24T06:10 when pnpm qa re-ran clean 71/71 GREEN gate 0",
+    "released_at": "2026-05-24",
+    "qa_all_green": true,
+    "qa_evidence_recert": {
+      "ran_at": "2026-05-24T06:10:22Z",
+      "result": "71/71 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 102,
+      "report": "qa/reports/2026-05-24T06-10-22-866Z/QA-REPORT.md",
+      "note": "Earlier 67/71 with 3 auth-test failures was a transient MSG91 OTP rate-limit flake on the test preconditions, NOT a Window A code regression. The carved backend-defect-auth-verify-otp-role-validation/ contract has been closed as misdiagnosis (no Window A backend commits landed between earlier red runs and this green re-run). Flow 8 release now certifies cleanly."
+    },
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
     "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",

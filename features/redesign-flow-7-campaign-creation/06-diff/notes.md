@@ -98,3 +98,56 @@ asserts on /campaigns/new layout/copy).
 
 PRODUCTION-IMPACTING (web only). `git push origin main` → Vercel
 auto-deploys brand-web. No mobile, no OTA, no backend rebuild.
+
+---
+
+## Post-deploy patch — 2026-05-24
+
+### CSS bug · hover state on Step 1 button rendered invisible
+
+Founder reported on live brand-web (screenshot 2026-05-24): hovering
+"Build deliverable sets →" turned the button fully black with no text
+visible.
+
+**Root cause:** My `.btn`, `.btn-prim`, `.btn-back`, `.btn-draft`,
+`.btn-pub`, `.btn-danger`, `.btn-ghost` rules were unscoped (specificity
+0,1,0). The `:hover` rules only set `background` without re-asserting
+`color`. Brand-web's Tailwind `@layer utilities` from globals.css plus
+inherited body `color: #0D1630` (navy) was winning on the cascade for
+the hover state.
+
+**Fix:** Scoped all `.btn-*` rules under `.cc` (specificity 0,2,0 —
+tighter than any global utility) and re-asserted `color` explicitly on
+every `:hover:not(:disabled)` rule so the cascade can't drop text colour
+under any circumstance. Also added explicit `:disabled` styling for
+`btn-prim` and `btn-pub` so disabled state is visibly consistent
+regardless of which utility is loaded.
+
+Single contiguous block edit; zero JSX changes.
+
+### Backend-defect carved · POST /campaigns 500 on Build-deliverable-sets
+
+Founder also reported "Internal server error. Please try again." on the
+same screenshot. **Verified by reading source** that this is NOT a Flow
+7 regression:
+
+- My `saveDraft` (line 934) calls
+  `campaignApi.create({ name, start_date, end_date, total_budget, allow_negotiation })`
+- This is **byte-identical** to the OLD wizard's saveDraft call shape
+- The 500 comes from Window A's `checkQuota('createCampaign')` middleware
+  (Phase A4 commit `ac01c5b`, 2026-05-18) which throws `INTERNAL_ERROR`
+  when `subscription_tiers` doesn't have a `tier_key='free'` row to
+  lazy-create the brand's subscription with
+- The bug pre-dates Flow 7 by 6 days; OLD wizard would hit identical 500
+
+Carved as **`features/backend-defect-quota-check-missing-free-tier/`** —
+Window A territory. Fix path documented in that contract.
+
+### Release certification continues to be held
+
+Same pattern as Flow 8's "deployed-pending-certification" — Flow 7's
+lock.json `release.released=false` continues to hold because
+`pnpm qa` is partial-green (3 pre-existing Window A auth-test failures
+from a separate carve-out). The new quota-check carve doesn't add new
+failures to `pnpm qa` — it only affects live POST /campaigns.
+

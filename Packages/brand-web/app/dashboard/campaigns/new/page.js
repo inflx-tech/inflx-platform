@@ -324,24 +324,28 @@ textarea.inp{resize:vertical;min-height:84px;line-height:1.55;font-size:12px}
 .te .sh{font-size:11px;color:var(--muted-2);margin-bottom:14px}
 
 /* nav footer */
-.nf{display:flex;align-items:center;justify-content:space-between;padding-top:22px;margin-top:8px;border-top:1px solid var(--border)}
-.btn{padding:10px 22px;border-radius:11px;font-size:12px;font-weight:700;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
-.btn-prim{background:var(--ink);color:var(--yellow)}
-.btn-prim:hover{background:var(--ink-2)}
-.btn-prim:disabled{opacity:.4;cursor:not-allowed}
-.btn-back{background:var(--white);border:1px solid var(--border);color:var(--ink)}
-.btn-back:hover{border-color:var(--ink)}
-.btn-draft{background:var(--white);border:1px solid var(--border);color:var(--muted)}
-.btn-draft:hover{border-color:var(--ink);color:var(--ink)}
-.btn-pub{background:var(--yellow);color:var(--ink)}
-.btn-pub:hover{background:var(--yellow-hover)}
-.btn-pub:disabled{opacity:.4;cursor:not-allowed}
-.btn-sm{padding:7px 12px;font-size:11px;border-radius:8px}
-.btn-danger{background:var(--danger-pale);color:var(--danger-text)}
-.btn-danger:hover{background:#FBCBC4}
-.btn-ghost{background:transparent;color:var(--muted-2);font-weight:600}
-.btn-ghost:hover{color:var(--ink)}
-.step-ctr{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);font-weight:800;letter-spacing:.3px}
+.cc .nf{display:flex;align-items:center;justify-content:space-between;padding-top:22px;margin-top:8px;border-top:1px solid var(--border)}
+/* Buttons — scoped under .cc so brand-web global Tailwind / dashboard layout
+   styles can't override them (specificity 0,2,0 vs global 0,1,0). Each :hover
+   rule re-asserts color explicitly so a wins-by-cascade rule from elsewhere
+   can't accidentally drop text colour and leave us with ink-on-ink. */
+.cc .btn{padding:10px 22px;border-radius:11px;font-size:12px;font-weight:700;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px;border:0;cursor:pointer}
+.cc .btn-prim{background:var(--ink);color:var(--yellow)}
+.cc .btn-prim:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.cc .btn-prim:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);color:var(--yellow)}
+.cc .btn-back{background:var(--white);border:1px solid var(--border);color:var(--ink)}
+.cc .btn-back:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.cc .btn-draft{background:var(--white);border:1px solid var(--border);color:var(--muted)}
+.cc .btn-draft:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.cc .btn-pub{background:var(--yellow);color:var(--ink)}
+.cc .btn-pub:hover:not(:disabled){background:var(--yellow-hover);color:var(--ink)}
+.cc .btn-pub:disabled{opacity:.4;cursor:not-allowed;background:var(--yellow);color:var(--ink)}
+.cc .btn-sm{padding:7px 12px;font-size:11px;border-radius:8px}
+.cc .btn-danger{background:var(--danger-pale);color:var(--danger-text)}
+.cc .btn-danger:hover:not(:disabled){background:#FBCBC4;color:var(--danger-text)}
+.cc .btn-ghost{background:transparent;color:var(--muted-2);font-weight:600;border:0}
+.cc .btn-ghost:hover:not(:disabled){color:var(--ink);background:transparent}
+.cc .step-ctr{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);font-weight:800;letter-spacing:.3px}
 
 /* right rail cards */
 .rc{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}

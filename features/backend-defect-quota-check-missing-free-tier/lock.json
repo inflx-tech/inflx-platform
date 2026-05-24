@@ -1,0 +1,17 @@
+{
+  "feature": "backend-defect-quota-check-missing-free-tier",
+  "spec_version": "1.0.0",
+  "status": "open",
+  "approved": true,
+  "approved_by": "Window B · 2026-05-24 — carved per feedback_qa_governance.md when founder reproduced 500 on POST /campaigns from live brand-web wizard",
+  "approved_at": "2026-05-24",
+  "owner": "Window A (backend territory — middleware quotaCheck.js from Phase A4 commit ac01c5b)",
+  "severity": "production-blocking — campaign creation broken for any brand without an active subscription row",
+  "notes": "POST /campaigns returns HTTP 500 with `INTERNAL_ERROR — free tier missing from subscription_tiers — migration 058 not applied?` when quotaCheck middleware's _ensureSubscription lazy-create path can't find a `tier_key='free'` row. Root cause: migration 058 seed inserts weren't applied to prod (or the row was removed). Fix is Window A territory — either run seed insert on prod, or patch _ensureSubscription to soft-fall-back to unlimited when free tier row missing. Verified via reading saveDraft at line 934 of Flow 7 wizard that the request payload is byte-identical to the OLD wizard pre-Flow-7; the bug pre-dates Flow 7 by 6 days (since Window A commit ac01c5b on 2026-05-18).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "deploy_class": "backend (Window A territory)",
+    "maestro_green": "n/a"
+  }
+}
