@@ -1,0 +1,39 @@
+{
+  "feature": "redesign-flow-10-brand-web-proposals",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat \"ok build\" + \"ok go for implementation\" — confirmed row-cards + niche chips + per-tab counts + 3-mode detail modal + empty-state conditional CTA",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat — locked Flow 10 mockup (row-cards · niche chips · per-tab counts · 3-mode modal · empty-state CTA)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand proposals inbox. Restyles 411-LOC wave1 table page to locked wave2 row-card page (matches Flow 9 contracts pattern). Surfaces 1 backend field (influencer_niches) already in listForBrand SELECT but unused today. Adds per-tab counts derived from already-loaded array. CSS scoping discipline under .prp wrapper from day 1. Zero backend / API / schema / DB change.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-24T07:59:02Z",
+      "result": "73/73 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 90,
+      "report": "qa/reports/2026-05-24T07-59-02-959Z/QA-REPORT.md",
+      "first_run_clean": true,
+      "note": "Test count grew 71 → 73 from Window A's new subscription-billing-nav.spec.ts (their Phase A6 coverage); all pass."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-24 chat \"ok go for implementation\" (production-impacting deploy approved with same pattern as Flows 8 + 9)",
+    "released_at": "2026-05-24",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "see-commit-message",
+        "pushed_at": "2026-05-24",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web (admin-web not touched, backend not touched)"
+      }
+    }
+  }
+}

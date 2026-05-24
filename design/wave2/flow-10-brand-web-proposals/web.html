@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 10 · brand-web proposals — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --hyb:#6B5A00; --hyb-pale:#FFF7CC;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --shadow:0 1px 3px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{padding:32px 24px 64px}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.mono{font-family:'JetBrains Mono',monospace}
+.display{font-family:'Outfit',sans-serif}
+
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800;letter-spacing:-.2px}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:640px;line-height:1.5}
+
+/* simulated dashboard frame */
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:30px}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:780px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center;opacity:.9}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+.page{padding:30px 36px;background:var(--bg);overflow-y:auto}
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+
+.hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.hdr-l h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.hdr-l .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 6px}
+.hdr-l .sub{font-size:12px;color:var(--muted-2);max-width:560px;line-height:1.5}
+.hdr-r{display:flex;gap:8px}
+.cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:800;margin-bottom:6px}
+.btn-ghost{padding:7px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+.btn-ghost:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+
+/* settings panel */
+.set-panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.set-panel h3{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);margin-bottom:14px}
+.set-row{margin-bottom:14px}
+.set-row:last-child{margin-bottom:0}
+.set-switch{display:flex;gap:10px;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:12px;align-items:flex-start;cursor:pointer;margin-bottom:14px}
+.set-switch input{margin-top:3px;accent-color:var(--yellow);width:16px;height:16px}
+.set-switch-t{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.set-switch-s{font-size:11px;color:var(--muted-2);line-height:1.5}
+.set-lbl{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:8px}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11.5px;font-weight:600;color:var(--muted);cursor:pointer;text-transform:capitalize}
+.chip:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
+.chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:700}
+.set-2col{display:grid;grid-template-columns:auto auto auto;gap:14px 22px;align-items:center;flex-wrap:wrap}
+.set-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);cursor:pointer}
+.set-check input{accent-color:var(--yellow);width:15px;height:15px}
+.set-er-input{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--ink)}
+.set-er-input input{width:70px;padding:6px 9px;border:1px solid var(--border);border-radius:8px;font-family:'JetBrains Mono';font-size:13px;font-weight:700;outline:none}
+.set-er-input input:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.set-save{padding:9px 18px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;margin-top:8px}
+.set-save:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+
+/* warning banner */
+.warn{padding:13px 16px;background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:12px;display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.warn .ic{width:30px;height:30px;background:var(--yellow);color:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:14px;flex-shrink:0}
+.warn .t{flex:1;font-size:12px;color:var(--ink);line-height:1.5}
+.warn .t b{font-weight:700}
+.warn .cta{font-size:11.5px;font-weight:700;color:var(--yellow-text);text-decoration:underline;background:transparent;border:0;cursor:pointer}
+
+/* status tabs */
+.tabs{display:flex;gap:2px;margin-bottom:14px;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:2px solid transparent;font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap;background:transparent;margin-bottom:-1px}
+.tab:hover:not(.act){color:var(--ink)}
+.tab.act{color:var(--ink);border-bottom-color:var(--yellow)}
+.tab .ct{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted-2);background:var(--bg2);padding:2px 7px;border-radius:99px}
+.tab.act .ct{background:var(--ink);color:var(--yellow)}
+
+/* row card */
+.rc{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:start;transition:all .15s;margin-bottom:8px;cursor:pointer}
+.rc:hover{border-color:var(--muted-3)}
+.av{width:42px;height:42px;border-radius:50%;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:14px;flex-shrink:0}
+.rc-mid{min-width:0}
+.rc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.rc-name{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.rc-handle{font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted-2)}
+.tier-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.tier-pill.nano{background:var(--bg2);color:var(--muted)}
+.tier-pill.micro{background:var(--eng-pale);color:var(--eng)}
+.tier-pill.macro{background:var(--yellow-pale);color:var(--yellow-text)}
+.tier-pill.mega{background:var(--conv-pale);color:var(--conv)}
+.rc-city{font-size:10.5px;color:var(--muted-2)}
+.rc-niches{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.niche-chip{font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--bg);border:1px solid var(--border);color:var(--ink);text-transform:capitalize}
+.niche-chip.overflow{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+.rc-pitch-t{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc-pitch-m{font-size:11.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5}
+.rc-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;min-width:130px}
+.rc-ask{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--ink);letter-spacing:-.2px}
+.rc-ask-sub{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2)}
+.status-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}
+.status-pill.sent{background:var(--yellow-pale);color:var(--yellow-text)}
+.status-pill.viewed{background:var(--info-pale);color:var(--info)}
+.status-pill.countered{background:var(--conv-pale);color:var(--conv)}
+.status-pill.accepted{background:var(--success-pale);color:var(--success-text)}
+.status-pill.rejected{background:var(--danger-pale);color:var(--danger-text)}
+.status-pill.expired,.status-pill.withdrawn{background:var(--bg2);color:var(--muted-2)}
+.rc-dt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+
+/* empty state */
+.empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;margin-top:14px;position:relative;overflow:hidden}
+.empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
+.empty > *{position:relative;z-index:2}
+.empty .ic{width:60px;height:60px;background:var(--ink);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:24px;margin:0 auto 14px}
+.empty .h{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty .t{font-size:12px;color:var(--muted);line-height:1.55;max-width:480px;margin:0 auto 16px}
+.empty .cta{display:inline-flex;align-items:center;padding:9px 16px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none;font-family:inherit}
+.empty .cta:hover{background:var(--ink-2);color:var(--yellow)}
+
+/* modal */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.mod{background:var(--white);border-radius:18px;max-width:680px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+.mod-h{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.mod-t{font-family:'Outfit';font-size:15px;font-weight:700;color:var(--ink)}
+.mod-s{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-top:3px}
+.mod-x{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted-2);font-size:18px;background:transparent;border:0;cursor:pointer}
+.mod-x:hover{background:var(--bg)}
+.mod-b{flex:1;overflow-y:auto;padding:18px 22px}
+.mod-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.mod-stat{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center}
+.mod-stat-v{font-family:'JetBrains Mono';font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.2px}
+.mod-stat-l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+.mod-sec{margin-bottom:16px}
+.mod-sec-h{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.mod-pitch{font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft)}
+.kv:last-child{border-bottom:0}
+.kv-k{font-size:11.5px;color:var(--muted-2);font-weight:500}
+.kv-v{font-size:12px;color:var(--ink);font-weight:700}
+.kv-v.mono{font-family:'JetBrains Mono'}
+.port{display:flex;flex-direction:column;gap:4px}
+.port a{font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink);text-decoration:none;border-bottom:1px dashed var(--muted-3);width:max-content;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.port a:hover{color:var(--yellow-text);border-bottom-color:var(--yellow)}
+.mod-banner-ok{padding:12px 14px;background:var(--success-pale);border:1px solid rgba(16,185,129,.3);border-radius:10px;font-size:11.5px;color:var(--success-text)}
+.mod-banner-ok b{font-weight:700;display:block;margin-bottom:3px}
+.mod-banner-no{padding:12px 14px;background:var(--danger-pale);border:1px solid #FBCBC4;border-radius:10px;font-size:11.5px;color:var(--danger-text)}
+.mod-banner-no b{font-weight:700;display:block;margin-bottom:3px}
+
+.mod-f{padding:14px 22px;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.btn-decline{padding:9px 16px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+.btn-decline:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.btn-counter{padding:9px 16px;background:var(--yellow);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-counter:hover:not(:disabled){background:var(--yellow-hover);color:var(--ink)}
+.btn-accept{padding:9px 16px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-accept:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.btn-danger{padding:9px 16px;background:var(--danger);color:var(--white);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-danger:hover:not(:disabled){background:#C5350E;color:var(--white)}
+
+.mode-panel{padding:14px 22px;border-top:1px solid var(--border);background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.mode-textarea{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;font-family:inherit;font-size:12px;background:var(--white);outline:none;color:var(--ink);resize:vertical;min-height:64px}
+.mode-textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.mode-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode-f{display:flex;flex-direction:column;gap:6px}
+.mode-f-l{font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.mode-f-i{padding:9px 12px;border:1px solid var(--border);border-radius:9px;font-family:'JetBrains Mono';font-size:13px;font-weight:700;background:var(--white);outline:none;color:var(--ink)}
+.mode-f-i:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.mode-actions{display:flex;justify-content:flex-end;gap:8px}
+
+/* variant heading */
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 10 · brand-web proposals — wave2 mockup</h1>
+  <span class="sub">Locked palette · row-card inbox (vs OLD table) · status tabs with mono counts · settings panel · niche chips surfaced (NEW from already-loaded SELECT) · 3-mode detail modal</span>
+</div>
+
+<!-- ─── State 1 — NORMAL inbox ─────────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 4</span>
+  <span class="title">Inbox · normal · 6 mixed-status proposals</span>
+  <span class="note">accepts_proposals = true · settings collapsed</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / proposals</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link act"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>proposals</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">6 pending</span>
+          <h1>Influencer Proposals</h1>
+          <div class="rule"></div>
+          <div class="sub">Pitches sent to you by influencers. Toggle settings to control who can pitch you.</div>
+        </div>
+        <div class="hdr-r">
+          <button class="btn-ghost">⚙ Settings</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab act">All <span class="ct">6</span></button>
+        <button class="tab">New <span class="ct">2</span></button>
+        <button class="tab">Viewed <span class="ct">1</span></button>
+        <button class="tab">Countered <span class="ct">1</span></button>
+        <button class="tab">Accepted <span class="ct">1</span></button>
+        <button class="tab">Rejected <span class="ct">1</span></button>
+      </div>
+
+      <!-- Row 1: NEW -->
+      <div class="rc">
+        <div class="av">PR</div>
+        <div class="rc-mid">
+          <div class="rc-top">
+            <span class="rc-name">Priya Ravi</span>
+            <span class="rc-handle">@priyareels</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="rc-city">· Hyderabad</span>
+          </div>
+          <div class="rc-niches">
+            <span class="niche-chip">food</span>
+            <span class="niche-chip">lifestyle</span>
+          </div>
+          <div class="rc-pitch-t">Monsoon snack bowl series — 2 reels + 3 stories</div>
+          <div class="rc-pitch-m">I run a food + lifestyle channel · 142K followers · 5.8% ER. Would love to feature your monsoon snack range in a 2-week posting window.</div>
+        </div>
+        <div class="rc-right">
+          <div class="rc-ask">₹18,000</div>
+          <div class="rc-ask-sub">+ 5% comm</div>
+          <span class="status-pill sent">● New</span>
+          <div class="rc-dt">2 hours ago</div>
+        </div>
+      </div>
+
+      <!-- Row 2: NEW -->
+      <div class="rc">
+        <div class="av">RT</div>
+        <div class="rc-mid">
+          <div class="rc-top">
+            <span class="rc-name">Ritika Taneja</span>
+            <span class="rc-handle">@ritika.style</span>
+            <span class="tier-pill micro">Micro</span>
+            <span class="rc-city">· Pune</span>
+          </div>
+          <div class="rc-niches">
+            <span class="niche-chip">fashion</span>
+            <span class="niche-chip">beauty</span>
+            <span class="niche-chip">lifestyle</span>
+          </div>
+          <div class="rc-pitch-t">Festive collection unboxing</div>
+          <div class="rc-pitch-m">Would love to do a try-on haul for your festive collection — 1 reel, 4 stories, posted around Diwali week. My audience is 90% women 22-35, mostly tier-2.</div>
+        </div>
+        <div class="rc-right">
+          <div class="rc-ask">₹8,500</div>
+          <div class="rc-ask-sub">flat fee</div>
+          <span class="status-pill sent">● New</span>
+          <div class="rc-dt">5 hours ago</div>
+        </div>
+      </div>
+
+      <!-- Row 3: VIEWED -->
+      <div class="rc">
+        <div class="av">SK</div>
+        <div class="rc-mid">
+          <div class="rc-top">
+            <span class="rc-name">Sneha Kapoor</span>
+            <span class="rc-handle">@snekkapoor</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="rc-city">· Bengaluru</span>
+          </div>
+          <div class="rc-niches">
+            <span class="niche-chip">fashion</span>
+            <span class="niche-chip">travel</span>
+            <span class="niche-chip">lifestyle</span>
+            <span class="niche-chip overflow">+1</span>
+          </div>
+          <div class="rc-pitch-t">Workwear lookbook · partnership pitch</div>
+          <div class="rc-pitch-m">I'm building a workwear/travel-light series for working women. Your line of office-friendly tunics would be a fit. Open to commission-heavy structure.</div>
+        </div>
+        <div class="rc-right">
+          <div class="rc-ask">₹12,000</div>
+          <div class="rc-ask-sub">+ 8% comm</div>
+          <span class="status-pill viewed">● Viewed</span>
+          <div class="rc-dt">Yesterday</div>
+        </div>
+      </div>
+
+      <!-- Row 4: COUNTERED -->
+      <div class="rc">
+        <div class="av">AM</div>
+        <div class="rc-mid">
+          <div class="rc-top">
+            <span class="rc-name">Anjali Mehta</span>
+            <span class="rc-handle">@anj.lifestyle</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="rc-city">· Mumbai</span>
+          </div>
+          <div class="rc-niches">
+            <span class="niche-chip">lifestyle</span>
+            <span class="niche-chip">beauty</span>
+          </div>
+          <div class="rc-pitch-t">Diwali gifting GRWM</div>
+          <div class="rc-pitch-m">3-reel series across Diwali week. Asked for ₹25K; you countered with ₹18K + 6% comm. Awaiting their response.</div>
+        </div>
+        <div class="rc-right">
+          <div class="rc-ask">₹18,000</div>
+          <div class="rc-ask-sub">+ 6% (your counter)</div>
+          <span class="status-pill countered">● Countered</span>
+          <div class="rc-dt">2 days ago</div>
+        </div>
+      </div>
+
+      <!-- Row 5: ACCEPTED -->
+      <div class="rc">
+        <div class="av">DV</div>
+        <div class="rc-mid">
+          <div class="rc-top">
+            <span class="rc-name">Divya Verma</span>
+            <span class="rc-handle">@divya.eats</span>
+            <span class="tier-pill micro">Micro</span>
+            <span class="rc-city">· Chennai</span>
+          </div>
+          <div class="rc-niches">
+            <span class="niche-chip">food</span>
+          </div>
+          <div class="rc-pitch-t">Sunday brunch reel</div>
+          <div class="rc-pitch-m">Accepted · contract draft created. Check campaigns to finalise + send for signing.</div>
+        </div>
+        <div class="rc-right">
+          <div class="rc-ask">₹9,500</div>
+          <div class="rc-ask-sub">flat</div>
+          <span class="status-pill accepted">● Accepted</span>
+          <div class="rc-dt">3 days ago</div>
+        </div>
+      </div>
+
+      <!-- Row 6: REJECTED -->
+      <div class="rc">
+        <div class="av">NV</div>
+        <div class="rc-mid">
+          <div class="rc-top">
+            <span class="rc-name">Neha Verma</span>
+            <span class="rc-handle">@neha.style</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="rc-city">· Delhi</span>
+          </div>
+          <div class="rc-niches">
+            <span class="niche-chip">fashion</span>
+          </div>
+          <div class="rc-pitch-t">Brand ambassador pitch</div>
+          <div class="rc-pitch-m">Asked for a long-term ambassador deal at ₹2L/quarter. Declined — outside budget for Q3.</div>
+        </div>
+        <div class="rc-right">
+          <div class="rc-ask">₹200,000</div>
+          <div class="rc-ask-sub">quarterly</div>
+          <span class="status-pill rejected">● Rejected</span>
+          <div class="rc-dt">5 days ago</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 2 — SETTINGS PANEL OPEN ──────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 4</span>
+  <span class="title">Settings panel · open · filters configured</span>
+  <span class="note">tier=Micro+ · niches=Fashion+Beauty+Lifestyle · city-match=on · min ER=3.5%</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / proposals</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link act"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>proposals</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">6 pending</span>
+          <h1>Influencer Proposals</h1>
+          <div class="rule"></div>
+        </div>
+        <div class="hdr-r">
+          <button class="btn-ghost">✕ Hide settings</button>
+        </div>
+      </div>
+
+      <div class="set-panel">
+        <h3>Proposal settings</h3>
+
+        <label class="set-switch">
+          <input type="checkbox" checked>
+          <div>
+            <div class="set-switch-t">Accept proposals from influencers</div>
+            <div class="set-switch-s">When on, influencers matching your filters can pitch you. Turn off to pause new inbound proposals entirely.</div>
+          </div>
+        </label>
+
+        <div class="set-row">
+          <div class="set-lbl">Minimum tier</div>
+          <div class="chip-row">
+            <button class="chip">Any</button>
+            <button class="chip">Nano</button>
+            <button class="chip act">Micro</button>
+            <button class="chip">Macro</button>
+            <button class="chip">Mega</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-lbl">Allowed niches <span style="font-weight:500;color:var(--muted-2);font-size:10.5px;margin-left:5px">empty = any</span></div>
+          <div class="chip-row">
+            <button class="chip">Food</button>
+            <button class="chip act">Fashion</button>
+            <button class="chip">Fitness</button>
+            <button class="chip">Travel</button>
+            <button class="chip act">Lifestyle</button>
+            <button class="chip act">Beauty</button>
+            <button class="chip">Tech</button>
+            <button class="chip">Gaming</button>
+            <button class="chip">Finance</button>
+            <button class="chip">Parenting</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-lbl">Additional filters</div>
+          <div class="set-2col">
+            <label class="set-check"><input type="checkbox" checked>City match required</label>
+            <label class="set-check"><input type="checkbox">Only influencers I've worked with before</label>
+            <label class="set-er-input">Min engagement %<input type="number" step="0.1" value="3.5"></label>
+          </div>
+        </div>
+
+        <button class="set-save">Save settings</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 3 — DETAIL MODAL ─────────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 4</span>
+  <span class="title">Detail modal · Sneha Kapoor pitch · status=Viewed</span>
+  <span class="note">Action footer enabled (status in [sent, viewed])</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / proposals</div>
+  </div>
+  <div style="position:relative;min-height:680px;background:var(--bg)">
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:1"></div>
+    <div style="position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;padding:24px">
+      <div class="mod">
+        <div class="mod-h">
+          <div>
+            <div class="mod-t">Workwear lookbook · partnership pitch</div>
+            <div class="mod-s">Sneha Kapoor · @snekkapoor · Bengaluru</div>
+          </div>
+          <button class="mod-x">×</button>
+        </div>
+        <div class="mod-b">
+
+          <div class="mod-stats">
+            <div class="mod-stat">
+              <div class="mod-stat-v">208K</div>
+              <div class="mod-stat-l">Followers</div>
+            </div>
+            <div class="mod-stat">
+              <div class="mod-stat-v">6.2%</div>
+              <div class="mod-stat-l">Engagement</div>
+            </div>
+            <div class="mod-stat">
+              <div class="mod-stat-v">Macro</div>
+              <div class="mod-stat-l">Tier</div>
+            </div>
+          </div>
+
+          <div class="mod-sec">
+            <div class="mod-sec-h">Pitch</div>
+            <div class="mod-pitch">I'm building a workwear/travel-light series for working women aged 24-38. Your line of office-friendly tunics would be a fit for the next 4-week run.
+
+Planning: 2 reels (try-on + styling tips), 4 stories (Q&A + outfit-of-the-day). Posting window flexible — would love to hit week of 15 Sep.
+
+Open to a commission-heavy structure since my audience converts well on apparel. Happy to share past campaign analytics privately.</div>
+          </div>
+
+          <div class="mod-sec">
+            <div class="mod-sec-h">Proposed terms</div>
+            <div class="kv"><span class="kv-k">Goal</span><span class="kv-v">Hybrid (fee + commission)</span></div>
+            <div class="kv"><span class="kv-k">Fee</span><span class="kv-v mono">₹12,000</span></div>
+            <div class="kv"><span class="kv-k">Commission</span><span class="kv-v mono">8% per conversion</span></div>
+            <div class="kv"><span class="kv-k">Deliverables</span><span class="kv-v">2 × reel · 4 × stories</span></div>
+            <div class="kv"><span class="kv-k">Posting window</span><span class="kv-v mono">15 Sep → 12 Oct 2026</span></div>
+          </div>
+
+          <div class="mod-sec">
+            <div class="mod-sec-h">Portfolio samples</div>
+            <div class="port">
+              <a href="#">instagram.com/p/CxK2m8aBz4Q</a>
+              <a href="#">instagram.com/reel/CzN5p1xLzM3</a>
+              <a href="#">instagram.com/reel/Cy8Kr9tBfWp</a>
+            </div>
+          </div>
+
+        </div>
+        <div class="mod-f">
+          <button class="btn-decline">Decline</button>
+          <button class="btn-counter">Counter</button>
+          <button class="btn-accept">Accept →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 4 — EMPTY (accepts_proposals = false variant) ─────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 4 / 4</span>
+  <span class="title">Empty · accepts_proposals = false · warning + empty CTA</span>
+  <span class="note">First-run state for new brands</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / proposals</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link act"><span class="ic">⊞</span>Proposals</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>proposals</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">0 pending</span>
+          <h1>Influencer Proposals</h1>
+          <div class="rule"></div>
+          <div class="sub">Pitches sent to you by influencers. Toggle settings to control who can pitch you.</div>
+        </div>
+        <div class="hdr-r">
+          <button class="btn-ghost">⚙ Settings</button>
+        </div>
+      </div>
+
+      <div class="warn">
+        <div class="ic">!</div>
+        <div class="t"><b>You're not accepting proposals yet.</b> Influencers can't pitch you until you turn this on.</div>
+        <button class="cta">Open settings →</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab act">All <span class="ct">0</span></button>
+        <button class="tab">New <span class="ct">0</span></button>
+        <button class="tab">Viewed <span class="ct">0</span></button>
+        <button class="tab">Countered <span class="ct">0</span></button>
+        <button class="tab">Accepted <span class="ct">0</span></button>
+        <button class="tab">Rejected <span class="ct">0</span></button>
+      </div>
+
+      <div class="empty">
+        <div class="ic">📨</div>
+        <div class="h">No proposals yet</div>
+        <div class="t">When an influencer pitches you, it'll show up here. Turn on proposals in Settings and influencers matching your filters can start reaching out.</div>
+        <button class="cta">⚙ Turn on proposals →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>NEW in this redesign vs OLD:</b><br/>
+  · Row cards instead of HTML table → better for variable-length pitch content + responsive on smaller screens<br/>
+  · <b>Niche chips</b> from <code>influencer_niches</code> — backend already loads this field via <code>listForBrand</code> SELECT but OLD page never renders. Gives brands instant audience-fit signal before opening the modal.<br/>
+  · <b>Per-tab counts</b> derived client-side from already-loaded array (zero extra API call)<br/>
+  · Settings panel restyled to locked-palette chip-selectors with explicit yellow-accent checkboxes<br/>
+  · Detail modal uses 3-tile mono stats (vs the OLD compact row) + clearer k/v rows for terms<br/>
+  · <b>CSS scoping discipline from day 1</b>: all rules will be scoped under <code>.prp</code> wrapper in the React impl, every <code>:hover:not(:disabled)</code> re-asserts <code>color</code>, every <code>:disabled</code> locks both bg + color. Same locked rule as Flow 7 patch / Flow 8 preventive / Flow 9 day-1.<br/>
+  <br/>
+  <b>Zero functional change</b>: all 8 endpoints + every request body shape + settings JSON shape + modal action gating + tab keys + tier thresholds + view-mark semantics preserved verbatim from OLD.
+</div>
+
+</div>
+</body>
+</html>
