@@ -28,7 +28,7 @@
     "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
     "deploy": {
       "vercel_brand_web": {
-        "commit": "see-commit-message",
+        "commit": "7644758",
         "pushed_at": "2026-05-24",
         "trigger": "git push origin main → Vercel auto-deploy",
         "scope": "brand-web (admin-web not touched, backend not touched)"
