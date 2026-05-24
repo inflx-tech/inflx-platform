@@ -25,8 +25,19 @@
     "released": false,
     "released_by": null,
     "released_at": null,
+    "release_state": "deployed-pending-certification",
+    "release_state_note": "Wallet code IS LIVE on Vercel via e5c6025 (founder approved push 2026-05-24 chat 'Go with your recommendation'). release.released stays false because gov-check Rule 2 requires qa_all_green !== false to flip released=true, and 3 pre-existing backend-defect failures in qa/api/* (Window A territory, carved as features/backend-defect-auth-verify-otp-role-validation/) block that. When Window A resolves the backend-defect → pnpm qa goes green → this contract closes by flipping released=true with proper Rule 2 evidence in a follow-up close-out commit.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "e5c6025",
+        "pushed_at": "2026-05-24T04:08:00Z",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web (admin-web not touched, backend not touched)",
+        "founder_explicit_go": "2026-05-24 chat \"Go with your recommendation\" (option A push with backend-defect carve-out attached)"
+      }
+    }
   }
 }
