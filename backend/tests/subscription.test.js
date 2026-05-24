@@ -14,7 +14,7 @@
 const request = require('supertest');
 const app = require('../src/app');
 const { truncateAll, query } = require('./helpers/db');
-const { createBrandUser, registerBrand } = require('./helpers/factories');
+const { createBrandUser, registerBrand, createAdminUser } = require('./helpers/factories');
 const { subscriptionRenewalJob } = require('../src/jobs');
 
 beforeEach(async () => {

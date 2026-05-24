@@ -441,6 +441,28 @@ export const adminApi = {
   markInvitationContacted: (id)    => api.post(`/admin/creator-invitations/${id}/contacted`),
   expireInvitation:       (id)     => api.post(`/admin/creator-invitations/${id}/expire`),
 
+  // ─── Subscription tiers (L1) — Phase A7-admin ──────────────────────────────
+  listSubscriptionTiers:    () => api.get('/admin/subscription-tiers'),
+  updateSubscriptionTier:   (tierKey, data) => api.patch(`/admin/subscription-tiers/${encodeURIComponent(tierKey)}`, data),
+
+  // ─── Marketplace categories (L3) — Phase A7-admin ──────────────────────────
+  listCategories:           () => api.get('/admin/categories'),
+  createCategory:           (data) => api.post('/admin/categories', data),
+  updateCategory:           (key, data) => api.patch(`/admin/categories/${encodeURIComponent(key)}`, data),
+  deleteCategory:           (key) => api.delete(`/admin/categories/${encodeURIComponent(key)}`),
+
+  // ─── Active subscriptions queue + invoice history — Phase A7-admin ─────────
+  listActiveSubscriptions:  (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/subscriptions?${q.toString()}`);
+  },
+  listSubscriptionInvoices: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/subscription-invoices?${q.toString()}`);
+  },
+
   bulkUploadInfluencers: async (file) => {
     const token = getToken();
     const formData = new FormData();

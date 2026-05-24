@@ -1,0 +1,35 @@
+{
+  "feature": "billing-admin-ui",
+  "area": "backend+admin-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-23) — directive 'now go and complete admin UI where we are not planning any UI/UX change'. Phase A7-admin of the revenue model rollout. Step-5 lock decision delegated per broad-autonomy directive; mockup attestation reflects founder's explicit 'no UI/UX change' scope.",
+  "approved_at": "2026-05-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend/src/** + Packages/brand-web/app/admin/**. Render redeploys backend with new admin endpoints; Vercel redeploys brand-web with new admin pages. No DB migration. No mobile change. Pushed only after pnpm qa green.",
+  "fix": "Phase A7-admin — 8 admin endpoints + 4 admin pages + nav updates + 7 backend tests + 4 Playwright nav-sweep routes. Brand-web pages remain deferred until Window B foundation merges.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-column-rename",
+    "features/billing-pricing-service",
+    "features/billing-quota-middleware",
+    "features/billing-attribution-l3",
+    "features/billing-subscription-mandate",
+    "features/billing-revenue-reconciliation"
+  ],
+  "result": "8 admin endpoints + categories.controller.js new + subscription.controller.js extended + admin.routes.js extended; 4 admin pages (pricing/tiers, pricing/categories, subscriptions, billing/invoices); layout.js nav (FINANCE +2, PRICING new with 2); brand-web/lib/api.js adminApi (+7 methods); nav-sweep.spec.ts (+4 routes); subscription.test.js (+7 admin assertions). pnpm qa 71/71 GREEN STATE=GREEN gate=0 (29.7s). First-run flake on pre-existing auth API tests (60s timeouts; classic P8b load-environmental) confirmed transient by clean re-run — surfaced not hidden. Ready to push.",
+  "regression_proof": "Coordinated change: new endpoints + new pages in same commit. Nav-sweep adds 4 routes that prove pages resolve. Existing pages untouched (brand-web/app/dashboard unchanged). pricing.service caching pattern matches M037 escrow_fee_tiers (60s TTL + bust on mutation).",
+  "discipline": "Contract-first; admin role-gating follows feedback_admin_role_gates.md (any admin reads + superadmin mutates); mockup attestation honest per founder explicit scope. UI-governed contract with full Rule 3 + Rule 4 fields.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; 4 admin pages + 8 admin endpoints go live on Vercel + Render)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-23) — admin pages mirror existing /admin/escrow-fees pattern; no new visual design surface introduced (founder explicit 'no UI/UX change' scope for admin).",
+  "mockup_locked_at": "2026-05-23"
+}

@@ -223,4 +223,150 @@ const listInvoices = asyncHandler(async (req, res) => {
   return success(res, { invoices: rows });
 });
 
-module.exports = { listTiers, getSubscription, upgrade, listInvoices };
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN ENDPOINTS  (Phase A7-admin)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── GET /v1/admin/subscription-tiers ─────────────────────────────────────────
+const adminListTiers = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT id, tier_key, name, monthly_price_inr, max_campaigns,
+            max_sets_per_campaign, max_influencers_per_cycle, max_products,
+            is_enterprise, active, sort_order, description, updated_at, updated_by
+       FROM subscription_tiers
+      ORDER BY sort_order ASC, monthly_price_inr ASC`
+  );
+  return success(res, { tiers: rows });
+});
+
+// ── PATCH /v1/admin/subscription-tiers/:tierKey ──────────────────────────────
+const adminUpdateTier = asyncHandler(async (req, res) => {
+  const { tierKey } = req.params;
+  const allowed = ['name', 'monthly_price_inr', 'max_campaigns', 'max_sets_per_campaign',
+                   'max_influencers_per_cycle', 'max_products', 'is_enterprise',
+                   'active', 'sort_order', 'description'];
+
+  // Validation
+  if (req.body.monthly_price_inr !== undefined) {
+    const v = parseFloat(req.body.monthly_price_inr);
+    if (isNaN(v) || v < 0) {
+      throw new AppError('VALIDATION_ERROR', 'monthly_price_inr must be ≥ 0', 422, 'monthly_price_inr');
+    }
+  }
+  for (const k of ['max_campaigns', 'max_sets_per_campaign',
+                   'max_influencers_per_cycle', 'max_products']) {
+    if (req.body[k] !== undefined) {
+      const v = parseInt(req.body[k], 10);
+      if (isNaN(v) || (v !== -1 && v < 0)) {
+        throw new AppError('VALIDATION_ERROR',
+          `${k} must be -1 (unlimited) or a non-negative integer`, 422, k);
+      }
+    }
+  }
+
+  const sets = [], params = [];
+  for (const k of allowed) {
+    if (req.body[k] !== undefined) {
+      params.push(req.body[k]);
+      sets.push(`${k} = $${params.length}`);
+    }
+  }
+  if (!sets.length) throw new AppError('VALIDATION_ERROR', 'No editable fields supplied', 422);
+
+  sets.push(`updated_at = now()`);
+  params.push(req.user.sub);
+  sets.push(`updated_by = $${params.length}`);
+  params.push(tierKey);
+
+  const { rows } = await db.query(
+    `UPDATE subscription_tiers SET ${sets.join(', ')}
+      WHERE tier_key = $${params.length} RETURNING *`,
+    params
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', `Tier '${tierKey}' not found`, 404);
+  return success(res, { tier: rows[0] });
+});
+
+// ── GET /v1/admin/subscriptions ──────────────────────────────────────────────
+const adminListSubscriptions = asyncHandler(async (req, res) => {
+  const { status, tier_key } = req.query;
+  const limit  = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+  const offset = parseInt(req.query.offset, 10) || 0;
+
+  const params = [];
+  const where = [];
+  if (status)   { params.push(status);   where.push(`bs.status = $${params.length}`); }
+  if (tier_key) { params.push(tier_key); where.push(`t.tier_key = $${params.length}`); }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  params.push(limit, offset);
+  const { rows } = await db.query(
+    `SELECT bs.id, bs.brand_id, bs.status, bs.current_cycle_start,
+            bs.current_cycle_end, bs.next_charge_at, bs.razorpay_subscription_id,
+            bs.razorpay_mandate_id, bs.mandate_status, bs.last_charged_at,
+            bs.cancelled_at, bs.created_at,
+            t.tier_key, t.name AS tier_name, t.monthly_price_inr,
+            b.business_name
+       FROM brand_subscriptions bs
+       JOIN subscription_tiers t ON t.id = bs.tier_id
+       JOIN brands b             ON b.id = bs.brand_id
+      ${whereSql}
+      ORDER BY bs.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+
+  const countParams = params.slice(0, -2);
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int AS c
+       FROM brand_subscriptions bs
+       JOIN subscription_tiers t ON t.id = bs.tier_id
+      ${whereSql}`,
+    countParams
+  );
+  return success(res, { subscriptions: rows, total: countRows[0].c });
+});
+
+// ── GET /v1/admin/subscription-invoices ──────────────────────────────────────
+const adminListInvoices = asyncHandler(async (req, res) => {
+  const { status, tier_key, brand_id, since } = req.query;
+  const limit  = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+  const offset = parseInt(req.query.offset, 10) || 0;
+
+  const params = [];
+  const where = [];
+  if (status)    { params.push(status);   where.push(`si.status = $${params.length}`); }
+  if (tier_key)  { params.push(tier_key); where.push(`si.tier_key = $${params.length}`); }
+  if (brand_id)  { params.push(brand_id); where.push(`si.brand_id = $${params.length}`); }
+  if (since)     { params.push(since);    where.push(`si.created_at >= $${params.length}`); }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  params.push(limit, offset);
+  const { rows } = await db.query(
+    `SELECT si.id, si.brand_id, si.tier_key, si.amount_inr, si.gst_amount_inr,
+            si.total_inr, si.period_start, si.period_end, si.status,
+            si.paid_at, si.razorpay_payment_id, si.razorpay_invoice_id,
+            si.invoice_pdf_r2_key, si.failure_reason, si.created_at,
+            b.business_name
+       FROM subscription_invoices si
+       JOIN brands b ON b.id = si.brand_id
+      ${whereSql}
+      ORDER BY si.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  );
+
+  const countParams = params.slice(0, -2);
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int AS c FROM subscription_invoices si ${whereSql}`,
+    countParams
+  );
+  return success(res, { invoices: rows, total: countRows[0].c });
+});
+
+module.exports = {
+  // Public + brand
+  listTiers, getSubscription, upgrade, listInvoices,
+  // Admin (Phase A7-admin)
+  adminListTiers, adminUpdateTier, adminListSubscriptions, adminListInvoices,
+};
