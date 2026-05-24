@@ -70,7 +70,7 @@ const listTiers = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT tier_key, name, monthly_price_inr, max_campaigns, max_sets_per_campaign,
             max_influencers_per_cycle, max_products, is_enterprise, description,
-            sort_order
+            features_json, sort_order
        FROM subscription_tiers
       WHERE active = true
       ORDER BY sort_order`
@@ -89,7 +89,8 @@ const getSubscription = asyncHandler(async (req, res) => {
             bs.razorpay_subscription_id, bs.last_charged_at,
             t.tier_key, t.name AS tier_name, t.monthly_price_inr,
             t.max_campaigns, t.max_sets_per_campaign,
-            t.max_influencers_per_cycle, t.max_products, t.is_enterprise
+            t.max_influencers_per_cycle, t.max_products, t.is_enterprise,
+            t.description, t.features_json
        FROM brand_subscriptions bs
        JOIN subscription_tiers t ON t.id = bs.tier_id
       WHERE bs.brand_id = $1 AND bs.status = 'active'
@@ -232,7 +233,8 @@ const adminListTiers = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT id, tier_key, name, monthly_price_inr, max_campaigns,
             max_sets_per_campaign, max_influencers_per_cycle, max_products,
-            is_enterprise, active, sort_order, description, updated_at, updated_by
+            is_enterprise, active, sort_order, description, features_json,
+            updated_at, updated_by
        FROM subscription_tiers
       ORDER BY sort_order ASC, monthly_price_inr ASC`
   );
@@ -244,7 +246,7 @@ const adminUpdateTier = asyncHandler(async (req, res) => {
   const { tierKey } = req.params;
   const allowed = ['name', 'monthly_price_inr', 'max_campaigns', 'max_sets_per_campaign',
                    'max_influencers_per_cycle', 'max_products', 'is_enterprise',
-                   'active', 'sort_order', 'description'];
+                   'active', 'sort_order', 'description', 'features_json'];
 
   // Validation
   if (req.body.monthly_price_inr !== undefined) {
@@ -263,12 +265,26 @@ const adminUpdateTier = asyncHandler(async (req, res) => {
       }
     }
   }
+  // features_json must be an array of strings (we store as jsonb).
+  if (req.body.features_json !== undefined) {
+    const v = req.body.features_json;
+    if (!Array.isArray(v) || !v.every(s => typeof s === 'string' && s.trim().length > 0 && s.length <= 200)) {
+      throw new AppError('VALIDATION_ERROR',
+        'features_json must be an array of non-empty strings (max 200 chars each)', 422, 'features_json');
+    }
+  }
 
   const sets = [], params = [];
   for (const k of allowed) {
     if (req.body[k] !== undefined) {
-      params.push(req.body[k]);
-      sets.push(`${k} = $${params.length}`);
+      // jsonb columns need explicit cast in node-postgres.
+      if (k === 'features_json') {
+        params.push(JSON.stringify(req.body[k]));
+        sets.push(`${k} = $${params.length}::jsonb`);
+      } else {
+        params.push(req.body[k]);
+        sets.push(`${k} = $${params.length}`);
+      }
     }
   }
   if (!sets.length) throw new AppError('VALIDATION_ERROR', 'No editable fields supplied', 422);

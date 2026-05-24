@@ -205,7 +205,7 @@ export default function BrandDashboardHome() {
             <div className="text-sm font-bold text-[#0A0A0A]">Account needs a fix</div>
             <div className="text-xs text-[#52525B] mt-0.5 leading-relaxed">
               Your application wasn't approved.{' '}
-              <a href="/dashboard/profile" className="font-semibold text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">Review your profile</a> and resubmit.
+              <a href="/dashboard/settings/profile" className="font-semibold text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">Review your profile</a> and resubmit.
             </div>
           </div>
         </div>

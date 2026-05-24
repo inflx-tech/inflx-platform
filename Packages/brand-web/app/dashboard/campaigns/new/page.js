@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { campaignApi, brandApi, influencerApi, creatorInvitationApi, fmtNum } from '../../../../lib/api';
 import GalleryPicker from '../../gallery/components/GalleryPicker';
+import { QuotaWallModal, useQuotaWall } from '../../../../components/QuotaWallModal';
 
 // ─── Creator response mapper (preserved verbatim) ────────────────────────────
 function mapCreator(c) {
@@ -926,6 +927,9 @@ function NewCampaignPageInner() {
     setTimeout(() => setDuplicateToast(null), 3500);
   };
 
+  // Phase A9 — quota-wall popup for createCampaign / createSet / inviteInfluencer.
+  const { quota, showFromResponse, close: closeQuota } = useQuotaWall();
+
   // Save
   const saveDraft = async () => {
     if (!name.trim()) { setError('Campaign name is required'); return null; }
@@ -936,7 +940,11 @@ function NewCampaignPageInner() {
       let cid = campaignId;
       if (!cid) {
         const res = await campaignApi.create({ name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null, allow_negotiation: allowNegotiation });
-        if (!res.ok) { setError(res.error?.message || 'Failed to save campaign'); return null; }
+        if (!res.ok) {
+          // Quota wall — e.g. Free plan's 1-active-campaign cap.
+          if (showFromResponse(res)) return null;
+          setError(res.error?.message || 'Failed to save campaign'); return null;
+        }
         cid = res.data.campaign.id; setCampaignId(cid);
       } else {
         await campaignApi.update(cid, { name, start_date: startDate, end_date: endDate, total_budget: totalBudget || null, allow_negotiation: allowNegotiation });
@@ -1000,7 +1008,11 @@ function NewCampaignPageInner() {
       let setBackendId = s.backendId;
       if (!setBackendId) {
         const res = await campaignApi.createSet(cid, setPayload);
-        if (!res.success && !res.ok) throw new Error(res.error?.message || `Failed to save set "${s.name}"`);
+        if (!res.success && !res.ok) {
+          // Quota wall — e.g. Free plan's 1-set-per-campaign cap.
+          if (showFromResponse(res)) return updatedSets;
+          throw new Error(res.error?.message || `Failed to save set "${s.name}"`);
+        }
         setBackendId = res.data.set.id;
         updatedSets[si] = { ...updatedSets[si], backendId: setBackendId };
       } else {
@@ -1025,7 +1037,12 @@ function NewCampaignPageInner() {
             await campaignApi.updateInfluencer(cid, setBackendId, inf.backendId, infPayload);
           } else {
             const res = await campaignApi.inviteInfluencer(cid, setBackendId, infPayload);
-            if (res.success || res.ok) updatedSets[si].influencers[ii] = { ...inf, backendId: res.data?.campaign_influencer?.id || true };
+            if (res.success || res.ok) {
+              updatedSets[si].influencers[ii] = { ...inf, backendId: res.data?.campaign_influencer?.id || true };
+            } else if (showFromResponse(res)) {
+              // Quota wall — e.g. Growth plan's 25-influencers-per-cycle cap.
+              return updatedSets;
+            }
           }
         }
       }
@@ -2244,6 +2261,7 @@ function NewCampaignPageInner() {
       />
 
       {duplicateToast && <div className="toast">{duplicateToast}</div>}
+      <QuotaWallModal quota={quota} onClose={closeQuota} />
     </div>
   );
 }

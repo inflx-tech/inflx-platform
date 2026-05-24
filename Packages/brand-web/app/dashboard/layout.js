@@ -19,10 +19,8 @@ const NAV = [
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '▢' },
   { href: '/dashboard/proposals',   label: 'Proposals',   icon: '✉' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
-  { href: '/dashboard/wallet',        label: 'Wallet',        icon: '◫' },
-  { href: '/dashboard/subscription',  label: 'Subscription',  icon: '◆' },
-  { href: '/dashboard/billing',       label: 'Billing',       icon: '◧' },
-  { href: '/dashboard/profile',       label: 'Profile',       icon: '◉' },
+  { href: '/dashboard/wallet',                 label: 'Wallet',   icon: '◫' },
+  { href: '/dashboard/settings/profile',       label: 'Settings', icon: '⚙' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -177,7 +175,7 @@ export default function DashboardLayout({ children }) {
           <span className="text-[13px] text-[#1F1F22]">
             <strong className="text-[#0A0A0A] font-bold">Account needs a fix.</strong>{' '}
             Your application wasn't approved. Please review and resubmit from the{' '}
-            <Link href="/dashboard/profile" className="font-semibold text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">
+            <Link href="/dashboard/settings/profile" className="font-semibold text-[#0A0A0A] border-b border-dotted border-[#A1A1AA]">
               Profile page
             </Link>.
           </span>

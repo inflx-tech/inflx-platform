@@ -1,0 +1,21 @@
+tier_key,bullet_index,bullet_text
+free,1,Browse + discover influencers
+free,2,1 campaign at a time
+free,3,10 product listings
+free,4,Self-serve onboarding
+free,5,Email support
+growth,1,Everything in Free
+growth,2,Bulk influencer outreach
+growth,3,Email templates
+growth,4,Campaign analytics
+growth,5,Priority email support
+pro,1,Everything in Growth
+pro,2,Advanced analytics + revenue reports
+pro,3,WhatsApp templates
+pro,4,Custom reports
+pro,5,Dedicated onboarding call
+enterprise,1,Everything in Pro
+enterprise,2,Dedicated Customer Success Manager
+enterprise,3,REST API access
+enterprise,4,Custom integrations
+enterprise,5,24x7 phone support

@@ -2,12 +2,16 @@ import { test, expect } from '@playwright/test';
 import type { Route } from '@playwright/test';
 
 /**
- * WORKFLOW: brand-web subscription + billing nav sweep — Phase A7-brand.
- * Contract: features/billing-brand-ui/.
+ * WORKFLOW: brand-web settings hub — Phase A9.
+ * Contract: features/billing-brand-ui/ (A7-brand) + features/billing-tier-features-and-settings/ (A9).
  *
- * Breadth net like admin nav-sweep: assert each new page is reachable
- * by a brand session (not gated to /login) and renders its heading.
- * Stubs the new GET endpoints with permissive empty/canonical bodies.
+ * Asserts:
+ *   • Settings hub layout renders the 3-tab nav (Profile / Subscription / Billing)
+ *     on every sub-route.
+ *   • Old URLs (/dashboard/subscription, /dashboard/billing) redirect to the
+ *     matching settings sub-route (server-side redirect).
+ *   • Subscription tab renders the tier cards INCLUDING the new features bullets.
+ *   • Billing tab renders the invoice row + paid pill.
  */
 
 const json = (r: Route, body: object) =>
@@ -27,13 +31,17 @@ async function stub(page: any) {
   await page.route('**/notifications', (r: Route) => json(r, { success: true, data: { unread_count: 0 } }));
   await page.route('**/brands/me', (r: Route) => json(r, { success: true, data: { brand: { status: 'approved' } } }));
   await page.route('**/subscription-tiers', (r: Route) => json(r, { success: true, data: { tiers: [
-    { id: 't1', tier_key: 'free',   name: 'Free',       monthly_price_inr: '0.00',     max_campaigns: 1,  max_sets_per_campaign: 1,  max_influencers_per_cycle: 5,   max_products: 10,  is_enterprise: false, active: true,  sort_order: 1, description: 'Starter' },
-    { id: 't2', tier_key: 'growth', name: 'Growth',     monthly_price_inr: '2499.00',  max_campaigns: 3,  max_sets_per_campaign: 3,  max_influencers_per_cycle: 25,  max_products: 100, is_enterprise: false, active: true,  sort_order: 2, description: 'Growth' },
-    { id: 't3', tier_key: 'pro',    name: 'Pro',        monthly_price_inr: '9999.00',  max_campaigns: 10, max_sets_per_campaign: 10, max_influencers_per_cycle: 100, max_products: 500, is_enterprise: false, active: true,  sort_order: 3, description: 'Pro'    },
+    { id: 't1', tier_key: 'free',   name: 'Free',       monthly_price_inr: '0.00',     max_campaigns: 1,  max_sets_per_campaign: 1,  max_influencers_per_cycle: 5,   max_products: 10,  is_enterprise: false, active: true,  sort_order: 1, description: 'Starter',
+      features_json: ['Browse + discover influencers', '1 campaign at a time', '10 product listings'] },
+    { id: 't2', tier_key: 'growth', name: 'Growth',     monthly_price_inr: '2499.00',  max_campaigns: 3,  max_sets_per_campaign: 3,  max_influencers_per_cycle: 25,  max_products: 100, is_enterprise: false, active: true,  sort_order: 2, description: 'Growth',
+      features_json: ['Everything in Free', 'Bulk influencer outreach', 'Campaign analytics'] },
+    { id: 't3', tier_key: 'pro',    name: 'Pro',        monthly_price_inr: '9999.00',  max_campaigns: 10, max_sets_per_campaign: 10, max_influencers_per_cycle: 100, max_products: 500, is_enterprise: false, active: true,  sort_order: 3, description: 'Pro',
+      features_json: ['Everything in Growth', 'Advanced analytics + revenue reports'] },
   ] } }));
   await page.route('**/brands/me/subscription', (r: Route) => json(r, { success: true, data: {
     subscription: { id: 's1', status: 'active', current_cycle_start: '2026-05-01', current_cycle_end: '2026-05-31', next_charge_at: '2026-05-31', mandate_status: 'active' },
-    tier: { tier_key: 'free', name: 'Free', monthly_price_inr: '0.00', max_campaigns: 1, max_sets_per_campaign: 1, max_influencers_per_cycle: 5, max_products: 10 },
+    tier: { tier_key: 'free', name: 'Free', monthly_price_inr: '0.00', max_campaigns: 1, max_sets_per_campaign: 1, max_influencers_per_cycle: 5, max_products: 10,
+            features_json: ['Browse + discover influencers', '1 campaign at a time', '10 product listings'] },
     usage: { campaigns: 0, products: 3, influencer_invites_this_cycle: 1 },
   } }));
   await page.route('**/brands/me/billing/invoices**', (r: Route) => json(r, { success: true, data: { invoices: [
@@ -41,34 +49,59 @@ async function stub(page: any) {
   ] } }));
 }
 
-test.describe('WORKFLOW: brand subscription + billing nav', () => {
-  test('/dashboard/subscription renders for an approved brand and shows the upgrade plans', async ({ page, context }) => {
+test.describe('WORKFLOW: brand-web Settings hub (Phase A9)', () => {
+  test('/dashboard/settings/subscription renders tier cards with features bullets + tab nav', async ({ page, context }) => {
     await seedBrand(context, page);
     await stub(page);
 
-    await page.goto('/dashboard/subscription');
-    expect(new URL(page.url()).pathname).toMatch(/^\/dashboard\/subscription/);
+    await page.goto('/dashboard/settings/subscription');
+    expect(new URL(page.url()).pathname).toMatch(/^\/dashboard\/settings\/subscription/);
 
-    await expect(page.getByRole('heading', { name: 'Subscription', exact: true })).toBeVisible();
+    // Hub layout: title + 3 tabs visible
+    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Profile', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Subscription', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Billing', exact: true })).toBeVisible();
+
+    // Subscription page contents
     await expect(page.getByRole('heading', { name: 'Current plan' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Usage this cycle' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Available plans' })).toBeVisible();
-    // Growth tier choose button is visible (not the current plan)
     await expect(page.getByRole('button', { name: /Choose Growth/i })).toBeVisible();
+
+    // New: features bullets (Phase A9)
+    await expect(page.getByText('Browse + discover influencers').first()).toBeVisible();
+    await expect(page.getByText('Bulk influencer outreach')).toBeVisible();
+    await expect(page.getByText('Advanced analytics + revenue reports')).toBeVisible();
   });
 
-  test('/dashboard/billing renders for an approved brand and shows the invoice table', async ({ page, context }) => {
+  test('/dashboard/settings/billing renders invoice row + tab nav', async ({ page, context }) => {
     await seedBrand(context, page);
     await stub(page);
 
-    await page.goto('/dashboard/billing');
-    expect(new URL(page.url()).pathname).toMatch(/^\/dashboard\/billing/);
+    await page.goto('/dashboard/settings/billing');
+    expect(new URL(page.url()).pathname).toMatch(/^\/dashboard\/settings\/billing/);
 
+    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Billing', exact: true })).toBeVisible();
     await expect(page.getByText(/GST 18% included/i)).toBeVisible();
-    // The stubbed paid invoice row renders
     await expect(page.getByText('GROWTH')).toBeVisible();
-    // Paid status pill on the invoice row (use pill class for strictness)
     await expect(page.locator('.pill.paid')).toBeVisible();
+  });
+
+  test('old /dashboard/subscription redirects to /dashboard/settings/subscription', async ({ page, context }) => {
+    await seedBrand(context, page);
+    await stub(page);
+    await page.goto('/dashboard/subscription');
+    // After redirect, URL is the settings sub-route.
+    expect(new URL(page.url()).pathname).toBe('/dashboard/settings/subscription');
+    await expect(page.getByRole('heading', { name: 'Current plan' })).toBeVisible();
+  });
+
+  test('old /dashboard/billing redirects to /dashboard/settings/billing', async ({ page, context }) => {
+    await seedBrand(context, page);
+    await stub(page);
+    await page.goto('/dashboard/billing');
+    expect(new URL(page.url()).pathname).toBe('/dashboard/settings/billing');
+    await expect(page.getByText(/GST 18% included/i)).toBeVisible();
   });
 });

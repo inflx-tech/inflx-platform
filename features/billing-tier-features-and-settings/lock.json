@@ -1,0 +1,32 @@
+{
+  "feature": "billing-tier-features-and-settings",
+  "area": "backend-migration+brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-24) — explicit direction 'first lets add some dummy things as you mentioned in each plan ... later we decide which one should be under which plan and we wire it correctly'. Step-5 lock decision delegated under standing autonomy.",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — M060 + 4 controller edits + 3 brand pages moved + quota-wall wiring. Render + Vercel redeploy on push. Mobile untouched; OTA skipped. RAZORPAY_MOCK stays true.",
+  "fix": "Phase A9 — features list per tier (display-only, admin-editable) + quota popup wired to products/campaigns mutations + Settings hub consolidating Profile/Subscription/Billing with redirects from old URLs.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-admin-ui",
+    "features/billing-brand-ui",
+    "features/billing-quota-middleware"
+  ],
+  "result": "M060 applied locally — 4 tiers × 5 bullets each. Admin tier editor + brand subscription cards render features bullets. Quota wall wired into products createProduct ×2 + campaigns/new createCampaign + createSet + inviteInfluencer (4 trigger sites). Settings hub at /dashboard/settings/{profile,subscription,billing} with old URLs 308-redirecting. Nav consolidated 14→12. pnpm qa 75/75 GREEN STATE=GREEN gate=0. Ready to push.",
+  "regression_proof": "M060 additive only; SELECT extensions add a column (no consumer loses fields). 3 pages moved with import-path fix only (no logic change). Redirects preserve old URLs. Quota wiring is 5 small if-branches across 2 pages (purely additive, never throws).",
+  "discipline": "Contract-first; verify-twice on link references (greppped Packages/brand-web for all 3 old route strings before moving); CSV-first seeds (backend/seeds/tier_features_draft.csv); production-impacting push surfaced under founder broad-delegation ('go and complete all phases, but test and go forward' carrying through into A9).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; M060 runs on Supabase, backend redeploys with controller edits, Vercel redeploys with moved pages + Settings hub)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-24) — visual baseline matches existing dashboard pages (wave2 locked palette + Settings hub mirrors common tab-layout patterns). Founder will restyle later.",
+  "mockup_locked_at": "2026-05-24"
+}

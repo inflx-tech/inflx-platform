@@ -48,6 +48,8 @@ export default function PricingTiersPage() {
           max_products:               t.max_products,
           active:                     t.active,
           description:                t.description || '',
+          // features_json is an array on the wire; render as one-per-line textarea
+          features_text:              Array.isArray(t.features_json) ? t.features_json.join('\n') : '',
         };
       });
       setForm(f);
@@ -90,6 +92,11 @@ export default function PricingTiersPage() {
     let allOk = true;
     for (const t of tiers) {
       const f = form[t.tier_key];
+      // Split the textarea by newline → array of non-empty trimmed strings.
+      const features = (f.features_text || '')
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && s.length <= 200);
       const body = {
         name:                       f.name,
         monthly_price_inr:          parseFloat(f.monthly_price_inr),
@@ -99,6 +106,7 @@ export default function PricingTiersPage() {
         max_products:               parseInt(f.max_products, 10),
         active:                     !!f.active,
         description:                f.description || null,
+        features_json:              features,
       };
       const res = await adminApi.updateSubscriptionTier(t.tier_key, body);
       if (!res.success) {
@@ -169,9 +177,10 @@ export default function PricingTiersPage() {
           {tiers.map((t, i) => {
             const f = form[t.tier_key] || {};
             const err = (field) => errors[`${t.tier_key}.${field}`];
+            const featuresArr = Array.isArray(t.features_json) ? t.features_json : [];
             return (
-              <div key={t.tier_key}
-                   className={`grid grid-cols-12 gap-2 px-4 py-3 items-center ${i < tiers.length - 1 ? 'border-b border-border' : ''}`}>
+              <div key={t.tier_key} className={i < tiers.length - 1 ? 'border-b border-border' : ''}>
+              <div className="grid grid-cols-12 gap-2 px-4 py-3 items-center">
                 <div className="col-span-2">
                   <div className="text-sm font-bold text-t1 capitalize">{t.tier_key}</div>
                   {editing ? (
@@ -245,6 +254,28 @@ export default function PricingTiersPage() {
                 <div className="col-span-1 text-right">
                   <div className="text-[10px] text-t3 leading-tight">{t.description || '—'}</div>
                 </div>
+              </div>
+              {/* Features list — admin-editable bullets shown to brands on /dashboard/settings/subscription */}
+              <div className="px-4 pb-3">
+                <div className="text-[10px] text-t3 uppercase tracking-wide font-bold mb-1">Features (shown to brand)</div>
+                {editing ? (
+                  <textarea
+                    rows={5}
+                    placeholder="One feature per line, e.g.&#10;Bulk influencer outreach&#10;Campaign analytics"
+                    value={f.features_text ?? ''}
+                    onChange={e => setField(t.tier_key, 'features_text', e.target.value)}
+                    className="w-full px-3 py-2 text-sm text-t1 border-2 border-navy/30 rounded-lg outline-none focus:border-navy resize-y"
+                  />
+                ) : (
+                  featuresArr.length === 0 ? (
+                    <div className="text-[11px] text-t3 italic">No features listed — edit to add bullets.</div>
+                  ) : (
+                    <ul className="text-[12px] text-t2 list-disc pl-5 space-y-0.5">
+                      {featuresArr.map((bullet, idx) => <li key={idx}>{bullet}</li>)}
+                    </ul>
+                  )
+                )}
+              </div>
               </div>
             );
           })}

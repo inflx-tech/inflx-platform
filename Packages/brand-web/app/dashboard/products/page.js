@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { brandApi, fmtRupees } from '../../../lib/api';
 import ListingWizard from './components/ListingWizard';
+import { QuotaWallModal, useQuotaWall } from '../../../components/QuotaWallModal';
 
 // ─── Dynamic Field Renderer (for non-catalogue categories) ───────────────────
 
@@ -521,6 +522,8 @@ export default function ProductsPage() {
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState('');
   const [section,   setSection]   = useState('');
+  // Phase A9 — quota-wall modal state for createProduct hitting Free plan's 10-product cap.
+  const { quota, showFromResponse, close: closeQuota } = useQuotaWall();
 
   const showToast = useCallback((msg, type = 'ok') => {
     setToast({ msg, type });
@@ -594,8 +597,10 @@ export default function ProductsPage() {
     const isEdit = modal && modal !== 'add';
     const res = isEdit ? await brandApi.updateProduct(modal.id, form) : await brandApi.createProduct(form);
     setSaving(false);
-    if (res.success) { showToast(isEdit ? 'Updated!' : 'Added!'); setModal(null); load(); }
-    else showToast(res.error?.message || 'Failed to save', 'err');
+    if (res.success) { showToast(isEdit ? 'Updated!' : 'Added!'); setModal(null); load(); return; }
+    // Quota wall fires for createProduct on Free plan's 10-product cap.
+    if (showFromResponse(res)) { setModal(null); return; }
+    showToast(res.error?.message || 'Failed to save', 'err');
   }
   async function handleDelete(product) {
     if (!confirm(`Delete "${product.name}"?`)) return;
@@ -614,8 +619,9 @@ export default function ProductsPage() {
     setSaving(true);
     const res = await brandApi.createProduct(payload);
     setSaving(false);
-    if (res.success) { showToast('Added to your listing!'); load(); }
-    else showToast(res.error?.message || 'Failed to add', 'err');
+    if (res.success) { showToast('Added to your listing!'); load(); return; }
+    if (showFromResponse(res)) return;
+    showToast(res.error?.message || 'Failed to add', 'err');
   }
   async function handleUpdatePrice(pid, data) {
     setSaving(true);
@@ -782,6 +788,7 @@ export default function ProductsPage() {
           onSave={handleSave}
         />
       )}
+      <QuotaWallModal quota={quota} onClose={closeQuota} />
     </div>
   );
 }

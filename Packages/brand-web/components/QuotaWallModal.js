@@ -127,7 +127,7 @@ export function QuotaWallModal({ quota, onClose }) {
 
         <div className="qwm-actions">
           <button className="qwm-btn" onClick={onClose}>Close</button>
-          <Link href="/dashboard/subscription" className="qwm-btn primary" onClick={onClose}>
+          <Link href="/dashboard/settings/subscription" className="qwm-btn primary" onClick={onClose}>
             View plans
           </Link>
         </div>
