@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 8 · brand-web wallet — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --shadow:0 1px 3px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{padding:32px 24px 64px}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.mono{font-family:'JetBrains Mono',monospace}
+.display{font-family:'Outfit',sans-serif}
+
+/* preview banner */
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800;letter-spacing:-.2px}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:640px;line-height:1.5}
+
+/* simulated dashboard frame */
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+/* dashboard layout shell — mocked, the real dashboard nav lives in app/dashboard/layout.js */
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:720px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center;opacity:.9}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+/* page area */
+.page{padding:30px 36px;background:var(--bg);overflow-y:auto}
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+.page h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 18px}
+
+/* 2-column wallet layout */
+.wcols{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
+.wmain{display:flex;flex-direction:column;gap:14px}
+.wrail{display:flex;flex-direction:column;gap:14px;position:sticky;top:24px}
+
+/* hero wallet card */
+.hero{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:20px;padding:26px 28px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:var(--yellow);border-radius:50%;opacity:.22}
+.hero::after{content:'';position:absolute;top:-20px;right:60px;width:90px;height:90px;background:var(--yellow);border-radius:50%;opacity:.14}
+.hero > *{position:relative;z-index:2}
+.hero-eb{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.hero-bal{font-family:'JetBrains Mono';font-size:48px;font-weight:800;color:var(--ink);letter-spacing:-1.2px;line-height:1;margin-bottom:6px}
+.hero-bal .cur{font-size:32px;color:var(--muted)}
+.hero-sub{font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:18px}
+.hero-sub .last{font-family:'JetBrains Mono';color:var(--ink);font-weight:700}
+.hero-cta{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:var(--yellow);padding:10px 18px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer}
+.hero-cta:hover{background:var(--ink-2)}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi-lbl{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.kpi-v{font-family:'JetBrains Mono';font-size:20px;font-weight:800;color:var(--ink);letter-spacing:-.3px;line-height:1.1}
+.kpi-v.ink{color:var(--ink)}
+.kpi-v.warn{color:var(--yellow-text)}
+.kpi-sub{font-size:10.5px;color:var(--muted-2);margin-top:4px}
+
+/* low-balance warning */
+.warn-card{background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:12px}
+.warn-card .ic{width:30px;height:30px;background:var(--yellow);color:var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:14px;flex-shrink:0}
+.warn-card .t{flex:1;font-size:12px;color:var(--ink);line-height:1.5}
+.warn-card .t b{font-weight:700}
+.warn-card .cta{font-size:11.5px;font-weight:700;color:var(--yellow-text);text-decoration:underline}
+
+/* card */
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:20px 22px;box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card h3{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.card .sh{font-size:11.5px;color:var(--muted-2);margin-top:2px}
+.card .count{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--muted-2)}
+
+/* top-up form */
+.tu-row{display:flex;gap:10px;margin-bottom:12px}
+.tu-input{flex:1;display:flex;align-items:center;border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--white);transition:all .15s}
+.tu-input:focus-within{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.tu-input .cur{padding:11px 14px;background:var(--bg);color:var(--muted);font-family:'JetBrains Mono';font-weight:700;border-right:1px solid var(--border)}
+.tu-input input{flex:1;padding:11px 14px;font:inherit;font-size:14px;font-family:'JetBrains Mono';font-weight:700;outline:none;border:0;color:var(--ink)}
+.tu-input input::placeholder{color:var(--muted-3);font-weight:500}
+.tu-cta{padding:11px 22px;background:var(--ink);color:var(--yellow);border-radius:11px;font-size:12.5px;font-weight:700;white-space:nowrap}
+.tu-cta:hover{background:var(--ink-2)}
+.tu-cta:disabled{opacity:.4;cursor:not-allowed}
+.tu-picks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tu-pick{padding:8px;background:var(--white);border:1px solid var(--border);border-radius:9px;font-family:'JetBrains Mono';font-size:11.5px;font-weight:700;color:var(--ink);text-align:center;transition:all .15s}
+.tu-pick:hover{border-color:var(--ink);background:var(--yellow-50)}
+.tu-pick.act{background:var(--yellow);border-color:var(--yellow)}
+.tu-hint{font-size:10.5px;color:var(--muted-2);margin-top:10px;line-height:1.5}
+.tu-hint b{color:var(--ink);font-weight:700}
+
+/* filter chips */
+.fchips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.fchip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted)}
+.fchip:hover{border-color:var(--ink);color:var(--ink)}
+.fchip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:700}
+.fchip .ct{font-family:'JetBrains Mono';margin-left:5px;opacity:.65;font-size:10px}
+.fchip.act .ct{color:var(--yellow);opacity:.85}
+
+/* transaction list */
+.tx{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border-soft)}
+.tx:first-of-type{border-top:0;padding-top:4px}
+.tx-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:14px;flex-shrink:0}
+.tx-ic.credit{background:var(--success-pale);color:var(--success-text)}
+.tx-ic.debit{background:var(--bg2);color:var(--ink)}
+.tx-ic.escrow{background:var(--yellow-pale);color:var(--yellow-text)}
+.tx-meta{flex:1;min-width:0}
+.tx-t{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.tx-d{font-size:11px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
+.tx-dt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+.tx-amt{font-family:'JetBrains Mono';font-size:13.5px;font-weight:800;text-align:right;white-space:nowrap}
+.tx-amt.credit{color:var(--success-text)}
+.tx-amt.debit{color:var(--ink)}
+
+/* form inputs */
+.f{display:flex;flex-direction:column;margin-bottom:14px}
+.f:last-child{margin-bottom:0}
+.flbl{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:6px;letter-spacing:.1px}
+.flbl .req{color:var(--danger);margin-left:2px}
+.flbl .opt{color:var(--muted-2);font-weight:500;font-size:10.5px;margin-left:5px}
+.inp{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);outline:none;transition:all .15s}
+.inp:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.inp::placeholder{color:var(--muted-3)}
+.inp.mono{font-family:'JetBrains Mono';font-weight:700;font-size:13.5px}
+.fhint{font-size:10.5px;color:var(--muted-2);margin-top:5px;font-family:'JetBrains Mono'}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* bank rail */
+.bank-cta{padding:9px 16px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:11.5px;font-weight:700;float:right;margin-top:6px}
+.bank-cta:hover{background:var(--ink-2)}
+
+/* how-it-works rail card */
+.howr{padding-left:16px;font-size:11.5px;color:var(--muted);line-height:1.65}
+.howr li{list-style:none;position:relative;padding-left:0;margin-bottom:10px}
+.howr li b{color:var(--ink);font-weight:700;font-family:'Outfit'}
+.howr li::before{content:'';position:absolute;left:-14px;top:8px;width:6px;height:6px;background:var(--yellow);border-radius:50%}
+
+/* annotations */
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+
+/* variant section heading */
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 8 · brand-web wallet — wave2 mockup</h1>
+  <span class="sub">Locked palette · 2-column layout · hero wallet card · KPI strip · top-up with Razorpay theme=yellow · transaction history with filter chips · bank-rail · adjacent-fix for stale paise-era threshold</span>
+</div>
+
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">Full page</span>
+  <span class="title">Wallet · normal state (₹ 312,500 balance)</span>
+  <span class="note">Single scrollable surface · 2-column on desktop</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / wallet</div>
+  </div>
+  <div class="dash">
+    <!-- Mocked dashboard sidebar (real one from app/dashboard/layout.js) -->
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link act"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">✉</span>Inbox</a>
+      <a class="side-link"><span class="ic">⚙</span>Profile</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>wallet</b></div>
+      <h1>Wallet</h1>
+      <div class="rule"></div>
+
+      <div class="wcols">
+        <!-- Main column -->
+        <div class="wmain">
+
+          <!-- Hero wallet card -->
+          <div class="hero">
+            <div class="hero-eb">Available balance</div>
+            <div class="hero-bal"><span class="cur">₹</span>312,500</div>
+            <div class="hero-sub">Last topped up <span class="last">Jun 12, 2026 · ₹50,000</span></div>
+            <button class="hero-cta">+ Top up wallet</button>
+          </div>
+
+          <!-- KPI strip -->
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-lbl">Available</div>
+              <div class="kpi-v ink">₹312,500</div>
+              <div class="kpi-sub">spendable now</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Locked in escrow</div>
+              <div class="kpi-v warn">₹142,560</div>
+              <div class="kpi-sub">across 2 active campaigns</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Total deposited</div>
+              <div class="kpi-v ink">₹525,000</div>
+              <div class="kpi-sub">all-time top-ups</div>
+            </div>
+          </div>
+
+          <!-- Top-up section -->
+          <div class="card">
+            <div class="card-head">
+              <h3>Top up wallet</h3>
+              <span class="count">via Razorpay</span>
+            </div>
+            <div class="tu-row">
+              <label class="tu-input">
+                <span class="cur">₹</span>
+                <input type="number" placeholder="Amount in rupees" value="25000" />
+              </label>
+              <button class="tu-cta">Top up</button>
+            </div>
+            <div class="tu-picks">
+              <button class="tu-pick">₹5,000</button>
+              <button class="tu-pick">₹10,000</button>
+              <button class="tu-pick act">₹25,000</button>
+              <button class="tu-pick">₹50,000</button>
+            </div>
+            <div class="tu-hint">Funds appear <b>instantly</b> after payment. Razorpay handles UPI · cards · netbanking. Minimum <b>₹1</b>.</div>
+          </div>
+
+          <!-- Transaction history -->
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <h3>Transaction history</h3>
+                <div class="sh">Most recent 20 entries</div>
+              </div>
+              <span class="count">20 of 87 total</span>
+            </div>
+            <div class="fchips">
+              <button class="fchip act">All <span class="ct">20</span></button>
+              <button class="fchip">Top-ups <span class="ct">4</span></button>
+              <button class="fchip">Escrow <span class="ct">9</span></button>
+              <button class="fchip">Releases <span class="ct">5</span></button>
+              <button class="fchip">Refunds <span class="ct">1</span></button>
+              <button class="fchip">Fees <span class="ct">1</span></button>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic credit">↑</div>
+              <div class="tx-meta">
+                <div class="tx-t">Top-up</div>
+                <div class="tx-d">Razorpay order pay_RHk8x… · UPI · @sandeep@upi</div>
+                <div class="tx-dt">12 Jun 2026 · 14:32</div>
+              </div>
+              <div class="tx-amt credit">+ ₹50,000</div>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic escrow">🔒</div>
+              <div class="tx-meta">
+                <div class="tx-t">Escrow lock</div>
+                <div class="tx-d">Monsoon Glow 2026 · T1 across 5 influencers (25% of allocated)</div>
+                <div class="tx-dt">12 Jun 2026 · 14:35</div>
+              </div>
+              <div class="tx-amt debit">− ₹35,640</div>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic debit">📊</div>
+              <div class="tx-meta">
+                <div class="tx-t">Platform fee</div>
+                <div class="tx-d">Monsoon Glow 2026 · 8% on allocated escrow</div>
+                <div class="tx-dt">12 Jun 2026 · 14:35</div>
+              </div>
+              <div class="tx-amt debit">− ₹2,851</div>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic credit">🔓</div>
+              <div class="tx-meta">
+                <div class="tx-t">Escrow release · T2</div>
+                <div class="tx-d">Summer Café · @priyareels · live URL confirmed</div>
+                <div class="tx-dt">8 Jun 2026 · 19:14</div>
+              </div>
+              <div class="tx-amt credit">+ ₹3,750</div>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic credit">↩</div>
+              <div class="tx-meta">
+                <div class="tx-t">Refund</div>
+                <div class="tx-d">Glow Pre-launch · campaign cancelled · unreleased escrow returned</div>
+                <div class="tx-dt">5 Jun 2026 · 10:22</div>
+              </div>
+              <div class="tx-amt credit">+ ₹12,000</div>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic escrow">🔒</div>
+              <div class="tx-meta">
+                <div class="tx-t">Escrow lock</div>
+                <div class="tx-d">Summer Café · T1 across 3 influencers (25% of allocated)</div>
+                <div class="tx-dt">1 Jun 2026 · 11:05</div>
+              </div>
+              <div class="tx-amt debit">− ₹18,750</div>
+            </div>
+
+            <div class="tx">
+              <div class="tx-ic credit">↑</div>
+              <div class="tx-meta">
+                <div class="tx-t">Top-up</div>
+                <div class="tx-d">Razorpay order pay_RGw2t… · Card · HDFC ****1234</div>
+                <div class="tx-dt">28 May 2026 · 16:48</div>
+              </div>
+              <div class="tx-amt credit">+ ₹100,000</div>
+            </div>
+
+            <div style="text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft)">
+              <button style="font-size:11.5px;font-weight:700;color:var(--ink);background:var(--white);border:1px solid var(--border);border-radius:99px;padding:7px 16px">Load more transactions</button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Right rail -->
+        <aside class="wrail">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:6px">
+              <h3>Bank account</h3>
+            </div>
+            <div class="sh" style="margin-bottom:14px">For follower-payment settlements after our commission deduction.</div>
+
+            <div class="f">
+              <label class="flbl">Account holder name <span class="req">*</span></label>
+              <input class="inp" value="Sandeep Kumar Marketing" />
+            </div>
+            <div class="f">
+              <label class="flbl">Bank name</label>
+              <input class="inp" value="HDFC Bank" />
+            </div>
+            <div class="f">
+              <label class="flbl">Account number <span class="req">*</span></label>
+              <input class="inp mono" value="50100123456789" />
+              <div class="fhint">Displayed as ••••••••6789</div>
+            </div>
+            <div class="f">
+              <label class="flbl">IFSC <span class="req">*</span></label>
+              <input class="inp mono" value="HDFC0001234" />
+            </div>
+            <div class="f">
+              <label class="flbl">UPI ID <span class="opt">optional · faster settlements</span></label>
+              <input class="inp" value="sandeep.k@okhdfc" />
+            </div>
+            <button class="bank-cta">Save bank details</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head" style="margin-bottom:10px">
+              <h3>How wallet works</h3>
+            </div>
+            <ul class="howr">
+              <li><b>Top-ups</b> · instant via Razorpay (UPI · card · netbanking). Min ₹1.</li>
+              <li><b>Escrow lock</b> · happens automatically at publish. T1 = 25% of each influencer's agreed fee.</li>
+              <li><b>Escrow release</b> · T2 fires when you confirm a live URL. T3 auto-releases 30 days after content goes live.</li>
+              <li><b>Bank account</b> · used only for follower-payment settlements (separate from campaign escrow).</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">Empty / low state</span>
+  <span class="title">Wallet · low balance (₹ 4,200) · adjacent-fix in action</span>
+  <span class="note">Warning renders for balance < ₹10K (was always-on at ₹10L pre-fix)</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / wallet</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link act"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>wallet</b></div>
+      <h1>Wallet</h1>
+      <div class="rule"></div>
+
+      <div class="wcols">
+        <div class="wmain">
+
+          <div class="hero">
+            <div class="hero-eb">Available balance</div>
+            <div class="hero-bal"><span class="cur">₹</span>4,200</div>
+            <div class="hero-sub" style="color:var(--danger-text)">Below the ₹10K floor to publish a new campaign.</div>
+            <button class="hero-cta">+ Top up wallet</button>
+          </div>
+
+          <div class="warn-card">
+            <div class="ic">!</div>
+            <div class="t"><b>Below ₹10,000</b> — you can't publish a new campaign at this level. Existing campaigns continue normally.</div>
+            <a class="cta">Top up now →</a>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-lbl">Available</div>
+              <div class="kpi-v warn">₹4,200</div>
+              <div class="kpi-sub">below publish floor</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Locked in escrow</div>
+              <div class="kpi-v ink">₹84,500</div>
+              <div class="kpi-sub">across 1 active campaign</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-lbl">Total deposited</div>
+              <div class="kpi-v ink">₹100,000</div>
+              <div class="kpi-sub">all-time top-ups</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Top up wallet</h3>
+              <span class="count">via Razorpay</span>
+            </div>
+            <div class="tu-row">
+              <label class="tu-input">
+                <span class="cur">₹</span>
+                <input type="number" placeholder="Amount in rupees" value="" />
+              </label>
+              <button class="tu-cta" disabled>Top up</button>
+            </div>
+            <div class="tu-picks">
+              <button class="tu-pick">₹5,000</button>
+              <button class="tu-pick">₹10,000</button>
+              <button class="tu-pick">₹25,000</button>
+              <button class="tu-pick">₹50,000</button>
+            </div>
+            <div class="tu-hint">Funds appear <b>instantly</b>. ₹10K covers a small handpick campaign (3-4 influencers + 8% platform fee).</div>
+          </div>
+
+        </div>
+
+        <aside class="wrail">
+          <div class="card">
+            <div class="card-head" style="margin-bottom:6px">
+              <h3>Bank account</h3>
+            </div>
+            <div class="sh" style="margin-bottom:14px">Set this once — used for follower-payment settlements.</div>
+            <div style="padding:18px;text-align:center;background:var(--bg);border-radius:10px;border:1px dashed var(--border)">
+              <div style="font-size:30px;color:var(--muted-3);margin-bottom:6px">🏦</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-bottom:12px">No bank account on file yet.<br/>Add one to receive settlements.</div>
+              <button class="bank-cta" style="float:none;margin-top:0">+ Add bank account</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head" style="margin-bottom:10px">
+              <h3>How wallet works</h3>
+            </div>
+            <ul class="howr">
+              <li><b>Top-ups</b> · instant via Razorpay (UPI · card · netbanking). Min ₹1.</li>
+              <li><b>Escrow lock</b> · happens automatically at publish. T1 = 25% of each influencer's agreed fee.</li>
+              <li><b>Escrow release</b> · T2 fires when you confirm a live URL. T3 auto-releases 30 days after content goes live.</li>
+              <li><b>Bank account</b> · used only for follower-payment settlements (separate from campaign escrow).</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>Adjacent-fix called out:</b> OLD line 195 reads <code>{balance &lt; 1000000 && &lt;Warning&gt;}</code> with a stale comment "<i>balance is in paise; 10000 paise = ₹100</i>". Since migration 021 wallet_balance is rupees, so this threshold means "warn under ₹10 lakhs" — basically always-on. NEW threshold is <code>10000</code> rupees (₹10K covers a small handpick campaign with 8% platform fee headroom). Warning surfaces both in the hero (red sub-line) and as a dedicated card under it.<br/><br/>
+  <b>Razorpay theme color:</b> <code>options.theme.color</code> swapped from <code>#F47920</code> (wave1 orange) to <code>#FFC107</code> (locked yellow). Single-line change inside the existing options block. Zero impact on signature verification or payment flow.
+</div>
+
+</div>
+</body>
+</html>

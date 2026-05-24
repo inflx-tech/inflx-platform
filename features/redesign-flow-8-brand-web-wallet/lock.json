@@ -1,0 +1,32 @@
+{
+  "feature": "redesign-flow-8-brand-web-wallet",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat \"go with fix and give me mockups\" + \"ok pls proceed\" — confirmed hero card + 2-col + filter chips + bank rail + how-it-works + ₹10K threshold",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat — locked Flow 8 mockup (hero card + 2-col layout + bank rail + adjacent-fix)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand wallet page. Restyles 348-LOC wave1 page to locked wave2 palette + 2-column layout (main + bank-rail). Backend-first audit confirms zero phantom fields. Includes 1-line adjacent-fix to a stale paise-era low-balance threshold (1000000 → 10000 after migration 021 made everything rupees). Zero backend / API / schema / DB change.",
+  "release": {
+    "qa_all_green": false,
+    "qa_classification": "Wallet-isolated workflows all GREEN. 3 pre-existing failures in qa/api/* (auth/verify-otp role validation) carved as backend-defect-auth-verify-otp-role-validation — Window A territory, caused by their commit 3920772 (Phase A7-admin). Not caused by this flow; would not be fixed by reverting this flow.",
+    "qa_evidence": {
+      "ran_at": "2026-05-24T04:00:10Z",
+      "result": "67/71 passed · 3 failed (pre-existing backend-defect) · 1 skipped · gate 1",
+      "duration_seconds": 32,
+      "report": "qa/reports/2026-05-24T04-00-10-842Z/QA-REPORT.md",
+      "first_run_clean_for_wallet_paths": true,
+      "carve_out_contract": "features/backend-defect-auth-verify-otp-role-validation/"
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}

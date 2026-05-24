@@ -1,0 +1,16 @@
+{
+  "feature": "backend-defect-auth-verify-otp-role-validation",
+  "spec_version": "1.0.0",
+  "status": "open",
+  "approved": true,
+  "approved_by": "Window B · 2026-05-24 — carved per feedback_qa_governance.md when 3 auth tests went RED post Window A's 3920772 push",
+  "approved_at": "2026-05-24",
+  "owner": "Window A (backend territory)",
+  "notes": "3 QA workflows in qa/api/* fail consistently after Window A's commit 3920772 (Phase A7-admin). Failure is in POST /auth/verify-otp role validation envelope shape. Window B carries on with isolated frontend redesign work; each subsequent flow records 'qa_classification: pre-existing backend-defect' instead of qa_all_green=true. Contract closes when Window A restores the typed-422 + field=role envelope OR updates the 3 spec assertions if the new shape is intentional.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "deploy_class": "backend (Window A territory)",
+    "maestro_green": "n/a"
+  }
+}
