@@ -277,11 +277,35 @@ export default function LoginPage() {
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
+                      // Only the first input advertises one-time-code so the
+                      // browser's SMS autofill fills all 6 in one go via the
+                      // onChange paste branch below. Subsequent inputs are
+                      // off-autocomplete to stop WebOTP from racing keystrokes.
+                      autoComplete={i === 0 ? 'one-time-code' : 'off'}
                       value={otp[i] || ''}
                       onChange={e => {
-                        const v = e.target.value.replace(/\D/g, '');
-                        const a = otp.split(''); a[i] = v;
-                        const j = a.join('').slice(0, 6); setOtp(j);
+                        // Functional state update — guarantees we read the
+                        // latest committed `otp`, not a stale closure when
+                        // user types faster than React re-renders.
+                        const raw = e.target.value.replace(/\D/g, '');
+                        if (raw.length > 1) {
+                          // Paste / SMS autofill — distribute starting at box i.
+                          setOtp(prev => {
+                            const a = prev.split('');
+                            for (let k = 0; k < raw.length && i + k < 6; k++) a[i + k] = raw[k];
+                            return a.join('').slice(0, 6);
+                          });
+                          const focusIdx = Math.min(5, i + raw.length - 1);
+                          document.getElementById(`otp-${focusIdx}`)?.focus();
+                          return;
+                        }
+                        // Single-digit keystroke (the fast-typing path).
+                        const v = raw.slice(0, 1);
+                        setOtp(prev => {
+                          const a = prev.split('');
+                          a[i] = v;
+                          return a.join('').slice(0, 6);
+                        });
                         if (v && i < 5) document.getElementById(`otp-${i + 1}`)?.focus();
                       }}
                       onKeyDown={e => {

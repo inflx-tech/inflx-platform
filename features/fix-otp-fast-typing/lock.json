@@ -1,0 +1,29 @@
+{
+  "feature": "fix-otp-fast-typing",
+  "area": "brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-24) — explicit bug report 'while filling OTP earlier i used to enter fastly, now it is not taking from keyboard fastly, it is coming zero i need to select manually'. Standing autonomy + bug-fix scope; production-impacting push surfaced separately for go.",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING via Vercel (brand-web redeploy). Backend untouched. Mobile untouched.",
+  "fix": "Replace closure-captured otp in /login OTP onChange with React functional update form; add autoComplete one-time-code on first box (off on others); accept paste/multi-char input by distributing across boxes.",
+  "related": [
+    "features/billing-tier-features-and-settings"
+  ],
+  "result": "1 onChange handler rewritten (closure→functional update + paste branch + autoComplete tightening). pnpm qa 75/75 GREEN STATE=GREEN gate=0 (37.3s). Ready to push.",
+  "regression_proof": "1 onChange handler rewritten with same I/O contract (string → string of 0-6 digits). No styling change. No other handler/state/effect touched. pnpm qa baseline 75/75 expected unchanged.",
+  "discipline": "Adjacent functional bug fix; tiny contract scope; verified via git log that the surrounding redesign (cca6cf2) preserved the old (buggy) handler verbatim and this fix doesn't conflict with Window B styling territory (logic-only edit).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (brand-web Vercel redeploy; independent of the parallel api.inflx.in DEPLOYMENT_NOT_FOUND outage)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-24) — N/A logic-only fix; visual baseline identical to cca6cf2.",
+  "mockup_locked_at": "2026-05-24"
+}
