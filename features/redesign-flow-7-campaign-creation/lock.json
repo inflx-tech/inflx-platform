@@ -1,0 +1,30 @@
+{
+  "feature": "redesign-flow-7-campaign-creation",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat (\"ok pls go and implement\") — confirmed mockup v2 multi-step Step 2 + 3-column shell + What-X-will-see preview",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat — locked v2 (multi-step within Step 2 pattern + 3-column shell adopted from founder reference)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand campaign creation wizard. Restyles the 2570-LOC 3-step single-page wizard to the locked wave2 palette + restructures Step 2 from tabbed sets to vertical accordion sets with side drawers for browse + offer config. Backend-first audit confirms 11 endpoints all real, zero phantom fields. Zero backend / API / schema / DB change. Awaiting mockup + founder lock.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-24T02:57:41Z",
+      "result": "67/67 passed · gate 0 · STATE=GREEN",
+      "duration_seconds": 78,
+      "report": "qa/reports/2026-05-24T02-57-41-710Z/QA-REPORT.md",
+      "first_run_clean": true
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}

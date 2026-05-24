@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 7 · Campaign creation — wave2 mockup v2 (multi-step Step 2)</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg-2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --hyb:#6B5A00; --hyb-pale:#FFF7CC;
+  --shadow:0 1px 3px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;font-size:13px}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.mono{font-family:'JetBrains Mono',monospace}
+.display{font-family:'Outfit',sans-serif}
+.hide{display:none !important}
+
+/* preview banner (mockup chrome only — not in product) */
+.banner{background:var(--ink);color:var(--white);padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800;letter-spacing:-.2px}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:560px;line-height:1.5}
+
+/* demo view switcher (mockup chrome only) */
+.demo-switch{display:flex;align-items:center;gap:6px;padding:10px 22px;background:var(--ink-2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.demo-switch b{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow);font-weight:800;letter-spacing:.4px;margin-right:8px;text-transform:uppercase}
+.dpill{padding:5px 11px;border-radius:99px;background:transparent;color:rgba(255,255,255,.6);font-size:11px;font-weight:700;border:1px solid rgba(255,255,255,.15)}
+.dpill:hover{color:var(--white);border-color:rgba(255,255,255,.3)}
+.dpill.act{background:var(--yellow);color:var(--ink);border-color:var(--yellow)}
+
+/* topbar */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 26px;background:var(--ink);color:var(--white)}
+.logo{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px}
+.main-steps{display:flex;align-items:center;gap:8px}
+.ms{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:99px;font-size:11px;font-weight:700;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.12);letter-spacing:.2px}
+.ms.done{color:var(--success);background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.3)}
+.ms.act{color:var(--ink);background:var(--yellow);border-color:var(--yellow)}
+.ms-line{width:32px;height:1.5px;background:rgba(255,255,255,.15);border-radius:99px}
+.ms-line.done{background:var(--success)}
+.exit{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);border-radius:99px;padding:6px 14px;background:transparent}
+.exit:hover{color:var(--white);border-color:rgba(255,255,255,.3)}
+
+/* shell */
+.shell{display:grid;grid-template-columns:260px 1fr 340px;background:var(--bg);min-height:calc(100vh - 100px)}
+.col{padding:24px 22px;overflow-y:auto}
+.col.left{border-right:1px solid var(--border);background:var(--white)}
+.col.right{border-left:1px solid var(--border);background:var(--white)}
+.col.center{padding:32px 40px;background:var(--bg)}
+
+/* left rail */
+.rail-lbl{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);letter-spacing:.5px;text-transform:uppercase;margin:0 0 12px 4px}
+.rail-lbl:not(:first-child){margin-top:24px}
+.substep{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;font-size:12.5px;font-weight:600;color:var(--muted-2);cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:all .15s}
+.substep:hover{background:var(--bg);color:var(--ink)}
+.substep.act{background:var(--yellow-50);border-color:var(--yellow);color:var(--ink);font-weight:700}
+.substep.done{color:var(--success-text)}
+.substep-idx{width:22px;height:22px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted);flex-shrink:0}
+.substep.act .substep-idx{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.substep.done .substep-idx{background:var(--success);border-color:var(--success);color:var(--white)}
+.substep.done .substep-idx::before{content:'✓';font-size:11px}
+.substep.done .substep-idx-num{display:none}
+.substep.locked{opacity:.45;cursor:not-allowed}
+
+.set-card{border:1px solid var(--border);border-radius:12px;padding:11px 13px;background:var(--bg);margin-bottom:6px;cursor:pointer;transition:all .15s}
+.set-card.act{border-color:var(--ink);background:var(--yellow-50)}
+.set-card:hover:not(.act){border-color:var(--muted-3)}
+.set-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.set-card-name{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--ink)}
+.set-card-pill{font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.set-card-pill.conv{background:var(--conv-pale);color:var(--conv)}
+.set-card-pill.eng{background:var(--eng-pale);color:var(--eng)}
+.set-card-pill.hyb{background:var(--hyb-pale);color:var(--hyb)}
+.set-card-pill.draft{background:var(--bg-2);color:var(--muted-2)}
+.set-card-meta{font-size:10.5px;color:var(--muted-2);font-family:'JetBrains Mono'}
+.set-add-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border:1.5px dashed var(--border);border-radius:12px;color:var(--muted-2);font-size:11.5px;font-weight:700;background:transparent;margin-top:6px}
+.set-add-btn:hover{border-color:var(--ink);color:var(--ink);background:var(--yellow-50)}
+.rail-note{font-size:10.5px;color:var(--muted-2);line-height:1.5;margin-top:10px;padding:0 4px}
+
+/* center */
+.center h1{font-family:'Outfit';font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-.5px;margin-bottom:6px}
+.center .subh{font-size:13px;color:var(--muted);line-height:1.65;margin-bottom:26px;max-width:660px}
+.subh-tag{display:inline-block;font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--yellow-text);background:var(--yellow-pale);padding:3px 9px;border-radius:99px;letter-spacing:.4px;margin-bottom:10px;text-transform:uppercase}
+.subh-tag.green{color:var(--success-text);background:var(--success-pale)}
+
+/* goal picker */
+.goal-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.goal-card{border:1.5px solid var(--border);border-radius:16px;padding:22px 20px;background:var(--white);cursor:pointer;transition:all .2s}
+.goal-card:hover{border-color:var(--muted-3);transform:translateY(-2px);box-shadow:var(--shadow)}
+.goal-card.sel{border-color:var(--ink);background:var(--yellow-50);box-shadow:0 0 0 3px var(--yellow-pale)}
+.goal-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:20px;margin-bottom:14px}
+.goal-icon.conv{background:var(--conv-pale);color:var(--conv)}
+.goal-icon.eng{background:var(--eng-pale);color:var(--eng)}
+.goal-icon.hyb{background:var(--hyb-pale);color:var(--hyb)}
+.goal-tag{font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted-2);margin-bottom:6px}
+.goal-title{font-family:'Outfit';font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.goal-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.goal-ex{font-size:11px;color:var(--muted);line-height:1.55;padding:9px 12px;background:var(--bg);border-radius:8px;border-left:2px solid var(--muted-3)}
+.goal-ex b{color:var(--ink);font-weight:700}
+.goal-fields{margin-top:12px;font-size:10.5px;color:var(--muted-2);line-height:1.6}
+.goal-fields b{color:var(--ink);font-weight:700}
+
+/* section cards (basics, terms etc) */
+.section-card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section-card h3{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.section-card .sh{font-size:11.5px;color:var(--muted-2);margin-bottom:16px;line-height:1.5}
+
+/* forms */
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-bottom:4px}
+.form-1col{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:4px}
+.f{display:flex;flex-direction:column}
+.flbl{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:6px;letter-spacing:.1px}
+.flbl .opt{color:var(--muted-2);font-weight:500;font-size:10.5px;margin-left:5px}
+.fhint{font-size:10.5px;color:var(--muted-2);margin-top:5px;line-height:1.4}
+.inp{width:100%;font-size:13px;font-family:inherit;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--white);color:var(--ink);outline:none;transition:all .15s}
+.inp:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.inp::placeholder{color:var(--muted-3)}
+.inp.mono{font-family:'JetBrains Mono';font-size:14px;font-weight:700}
+textarea.inp{resize:vertical;min-height:84px;line-height:1.55;font-size:12px}
+
+/* format chips + counters */
+.fmt-row{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.fmt-chip{padding:7px 13px;border:1px solid var(--border);border-radius:99px;font-size:11px;font-weight:600;color:var(--muted);background:var(--white);cursor:pointer}
+.fmt-chip:hover{border-color:var(--ink);color:var(--ink)}
+.fmt-chip.sel{background:var(--ink);color:var(--yellow);border-color:var(--ink);font-weight:700}
+.fmt-counts{display:flex;flex-direction:column;gap:6px}
+.fmt-cnt-row{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
+.fmt-cnt-name{font-size:12px;font-weight:600;color:var(--ink)}
+.counter{display:flex;align-items:center;gap:8px}
+.cbtn{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);background:var(--white);color:var(--muted);font-size:14px;font-weight:700;line-height:1}
+.cbtn:hover{border-color:var(--ink);color:var(--ink)}
+.cval{font-family:'JetBrains Mono';font-size:13px;font-weight:800;min-width:22px;text-align:center;color:var(--ink)}
+
+/* dropzone */
+.dropzone{border:1.5px dashed var(--border);border-radius:12px;padding:22px;background:var(--bg);text-align:center;cursor:pointer}
+.dropzone:hover{border-color:var(--ink);background:var(--yellow-50)}
+.dropzone-icon{font-size:22px;color:var(--muted-2);margin-bottom:6px}
+.dropzone-hint{font-size:11px;color:var(--muted-2);margin-top:4px;line-height:1.5}
+.dropzone-btn{font-size:11px;font-weight:700;color:var(--ink);background:var(--white);border:1px solid var(--border);border-radius:99px;padding:6px 14px;margin-top:10px}
+.dropzone-btn:hover{border-color:var(--ink)}
+
+/* fork cards (assignment mode) */
+.fork-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.fork-card{border:1.5px solid var(--border);border-radius:16px;padding:22px;background:var(--white);cursor:pointer;transition:all .2s}
+.fork-card:hover{border-color:var(--muted-3);transform:translateY(-2px);box-shadow:var(--shadow)}
+.fork-card.sel{border-color:var(--ink);background:var(--yellow-50);box-shadow:0 0 0 3px var(--yellow-pale)}
+.fork-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.fork-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:18px}
+.fork-icon.hp{background:var(--yellow-pale);color:var(--yellow-text)}
+.fork-icon.grp{background:var(--success-pale);color:var(--success-text)}
+.fork-title{font-family:'Outfit';font-size:16px;font-weight:700;color:var(--ink)}
+.fork-sub{font-size:11px;color:var(--muted-2);margin-top:2px}
+.fork-body{font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:16px}
+.fork-pros{font-size:11.5px;color:var(--muted);line-height:1.85}
+.fork-pros li{list-style:none;padding-left:20px;position:relative}
+.fork-pros li::before{content:'✓';position:absolute;left:0;color:var(--success);font-weight:800}
+.fork-pros b{color:var(--ink);font-weight:700}
+
+/* browse panel */
+.browse-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.browse-search{flex:1;min-width:240px;font-size:13px;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:var(--white);outline:none;font-family:inherit;color:var(--ink)}
+.browse-search:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.filter-chip{font-size:11px;font-weight:700;color:var(--muted);background:var(--white);border:1px solid var(--border);border-radius:99px;padding:7px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.filter-chip:hover{border-color:var(--ink);color:var(--ink)}
+.filter-chip.act{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.filter-chip .cnt{background:var(--bg-2);color:var(--muted-2);font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:3px}
+.filter-chip.act .cnt{background:rgba(0,0,0,.15);color:var(--ink)}
+.filter-chip.clear{color:var(--muted-2);background:transparent;border-color:transparent;text-decoration:underline}
+
+.browse-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.browse-card{display:flex;align-items:flex-start;gap:10px;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:all .15s}
+.browse-card:hover{border-color:var(--muted-3)}
+.browse-card.sel{border-color:var(--ink);background:var(--yellow-50)}
+.browse-chk{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:transparent;font-size:11px;font-weight:800;margin-top:2px}
+.browse-card.sel .browse-chk{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.browse-av{width:38px;height:38px;border-radius:10px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:11px;flex-shrink:0}
+.browse-info{flex:1;min-width:0}
+.browse-name{font-size:12px;font-weight:700;color:var(--ink)}
+.browse-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:1px}
+.browse-stats{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.browse-stat{font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--bg-2);color:var(--ink)}
+.browse-stat.er-high{background:var(--success-pale);color:var(--success-text)}
+.badge-verified{font-size:8.5px;font-weight:800;padding:1.5px 5px;border-radius:4px;background:var(--eng-pale);color:var(--eng);margin-left:4px}
+.badge-invite{font-size:8.5px;font-weight:800;padding:1.5px 5px;border-radius:4px;background:var(--conv-pale);color:var(--conv);margin-left:4px}
+
+.browse-pager{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;font-size:11px}
+.browse-pager .left{color:var(--muted-2)}
+.browse-pager .sel-count{font-weight:800;color:var(--ink);margin-right:8px;font-family:'JetBrains Mono'}
+
+/* terms editor (split list+editor) */
+.terms-wrap{display:grid;grid-template-columns:240px 1fr;gap:18px}
+.terms-list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.terms-list-head .ct{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.bulk-btn{font-size:11px;font-weight:700;color:var(--ink);background:var(--white);border:1px solid var(--border);border-radius:99px;padding:5px 11px}
+.bulk-btn:hover{border-color:var(--ink);background:var(--yellow-pale)}
+
+.terms-list{display:flex;flex-direction:column;gap:6px;margin-bottom:0}
+.terms-inf{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--white);cursor:pointer;transition:all .15s}
+.terms-inf:hover{border-color:var(--muted-3)}
+.terms-inf.act{border-color:var(--ink);background:var(--yellow-50)}
+.terms-inf.incomplete{border-left:3px solid var(--yellow)}
+.terms-inf-meta{flex:1;min-width:0}
+.terms-inf-name{font-size:12px;font-weight:700;color:var(--ink)}
+.terms-inf-handle{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:1px}
+.terms-inf-status{font-size:10px;font-weight:800;color:var(--yellow-text);text-align:right;white-space:nowrap}
+.terms-inf-status.ok{color:var(--success-text)}
+
+.terms-editor{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:18px 22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.terms-editor h4{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.terms-editor .sh{font-size:11px;color:var(--muted-2);margin-bottom:14px}
+
+/* open group panel */
+.grp-panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:22px 24px;margin-bottom:14px;box-shadow:var(--shadow)}
+.grp-row{margin-bottom:16px}
+.grp-row:last-child{margin-bottom:0}
+.grp-row-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.grp-row-title{font-size:11.5px;font-weight:700;color:var(--ink)}
+.grp-row-sub{font-size:10.5px;color:var(--muted-2)}
+.grp-chips{display:flex;flex-wrap:wrap;gap:6px}
+.match-panel{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:14px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:14px;position:relative;overflow:hidden}
+.match-panel::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:var(--yellow);border-radius:50%;opacity:.18}
+.match-panel > *{position:relative;z-index:2}
+.match-n{font-family:'JetBrains Mono';font-size:38px;font-weight:800;color:var(--ink);line-height:1;letter-spacing:-.6px}
+.match-lbl{font-size:11.5px;color:var(--muted);margin-top:4px;font-weight:600}
+.match-avs{display:flex}
+.match-avs .browse-av{margin-left:-8px;border:2px solid var(--white)}
+
+/* nav footer */
+.nav-foot{display:flex;align-items:center;justify-content:space-between;padding-top:22px;margin-top:8px;border-top:1px solid var(--border)}
+.btn{padding:10px 22px;border-radius:11px;font-size:12px;font-weight:700;font-family:inherit;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-prim{background:var(--ink);color:var(--yellow)}
+.btn-prim:hover{background:var(--ink-2)}
+.btn-prim:disabled{opacity:.4;cursor:not-allowed}
+.btn-back{background:var(--white);border:1px solid var(--border);color:var(--ink)}
+.btn-back:hover{border-color:var(--ink)}
+.btn-draft{background:var(--white);border:1px solid var(--border);color:var(--muted)}
+.btn-draft:hover{border-color:var(--ink);color:var(--ink)}
+.btn-pub{background:var(--yellow);color:var(--ink)}
+.btn-pub:hover{background:var(--yellow-hover)}
+.step-ctr{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);font-weight:800;letter-spacing:.3px}
+
+/* right rail */
+.rail-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.rail-card h4{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px;display:flex;align-items:center;gap:8px}
+.rail-card .rh{font-size:10.5px;color:var(--muted-2);margin-bottom:12px}
+
+/* budget strip */
+.bstrip-row{display:flex;align-items:baseline;justify-content:space-between}
+.bstrip-v{font-family:'JetBrains Mono';font-size:18px;font-weight:800;color:var(--ink)}
+.bstrip-v.ok{color:var(--success-text)}
+.bstrip-v.warn{color:var(--yellow-text)}
+.bstrip-v.over{color:var(--danger-text)}
+.bstrip-of{font-size:10px;color:var(--muted-2);font-family:'JetBrains Mono'}
+.bbar{height:6px;border-radius:99px;background:var(--bg-2);overflow:hidden;margin:8px 0}
+.bfill{height:100%;background:var(--ink);border-radius:99px}
+.bfill.warn{background:var(--yellow)}
+.bfill.over{background:var(--danger)}
+.bstrip-note{font-size:10px;color:var(--muted-2);font-family:'JetBrains Mono'}
+
+/* preview card (what influencer sees) */
+.preview-wrap{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)}
+.preview-hd{padding:10px 14px;background:var(--bg-2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.preview-body{padding:14px 16px}
+.preview-brand{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.preview-logo{width:34px;height:34px;border-radius:9px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:13px}
+.preview-name{font-size:12.5px;font-weight:700;color:var(--ink)}
+.preview-cat{font-size:10.5px;color:var(--muted-2);font-family:'JetBrains Mono'}
+.preview-msg{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+.preview-msg b{color:var(--ink);font-weight:700}
+.preview-offer{background:var(--yellow-50);border:1px dashed var(--yellow);border-radius:10px;padding:11px 12px;margin:10px 0;font-size:11.5px;color:var(--ink);line-height:1.6}
+.preview-offer b{color:var(--yellow-text);font-weight:800}
+.preview-offer .mono{color:var(--ink);font-weight:800}
+.preview-row{display:flex;justify-content:space-between;padding:5px 0;font-size:11px;border-bottom:1px solid var(--border-soft)}
+.preview-row:last-child{border:0}
+.preview-k{color:var(--muted-2)}
+.preview-v{color:var(--ink);font-weight:700}
+.preview-cta{display:flex;gap:6px;margin-top:12px}
+.preview-cta .b{flex:1;padding:8px;text-align:center;font-size:11px;font-weight:700;border-radius:9px;border:1px solid var(--border);color:var(--muted-2)}
+.preview-cta .b.prim{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+
+/* checklist */
+.check-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0;font-size:11.5px}
+.check-dot{width:15px;height:15px;border-radius:50%;flex-shrink:0;margin-top:1px;background:var(--bg-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800}
+.check-dot.done{background:var(--success);border-color:var(--success);color:var(--white)}
+.check-dot.done::before{content:'✓'}
+.check-dot.warn{background:var(--yellow-pale);border-color:var(--yellow);color:var(--yellow-text)}
+.check-dot.warn::before{content:'!'}
+.check-text{color:var(--muted);line-height:1.5}
+.check-text.done{color:var(--muted-2);text-decoration:line-through}
+
+/* wallet card for step 3 */
+.wallet-card{background:var(--ink);color:var(--white);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.wallet-card h4{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--white);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.wallet-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid rgba(255,255,255,.1)}
+.wallet-row:first-of-type{border:0;padding-top:0}
+.wallet-row .k{font-size:11px;color:rgba(255,255,255,.65)}
+.wallet-row .v{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--white)}
+.wallet-row .v.yellow{color:var(--yellow)}
+.wallet-pill{margin-top:10px;padding:6px 11px;background:rgba(16,185,129,.18);color:var(--success);border-radius:99px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:5px}
+
+/* review specifics */
+.review-hero{padding:24px;background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;position:relative;overflow:hidden;margin-bottom:14px}
+.review-hero::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.22}
+.review-hero::after{content:'';position:absolute;top:-20px;right:50px;width:80px;height:80px;background:var(--yellow);border-radius:50%;opacity:.14}
+.review-hero > *{position:relative;z-index:2}
+.review-hero h2{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px;margin-bottom:4px}
+.review-hero .dates{font-family:'JetBrains Mono';font-size:12px;color:var(--muted);margin-bottom:18px;font-weight:600}
+.review-set{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow)}
+.review-set-head{padding:14px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-soft);flex-wrap:wrap}
+.review-set-name{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);margin-right:auto}
+.rv-row{display:flex;justify-content:space-between;padding:8px 18px;font-size:12px}
+.rv-row + .rv-row{border-top:1px solid var(--border-soft)}
+.rv-row .k{color:var(--muted-2);font-weight:500}
+.rv-row .v{color:var(--ink);font-weight:700}
+.rv-row .v.mono{font-family:'JetBrains Mono'}
+
+/* annotation */
+.anno-final{padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6;margin:24px 22px}
+.anno-final b{color:var(--yellow);font-weight:700}
+</style>
+</head>
+
+<body>
+
+<!-- preview banner (mockup chrome — not in product) -->
+<div class="banner">
+  <h1>Flow 7 v2 · Campaign creation — multi-step Step 2</h1>
+  <span class="sub">Locked wave2 palette · 3-column shell · Step 2 split into 5 mini-steps · sets-in-left-rail switcher · live "What influencer will see" preview · per-set checklist · all 11 API endpoints preserved</span>
+</div>
+
+<!-- view switcher (mockup only) -->
+<div class="demo-switch">
+  <b>VIEW →</b>
+  <button class="dpill" data-view="step1">Step 1 · Basics</button>
+  <button class="dpill act" data-view="goal">Step 2.1 · Goal</button>
+  <button class="dpill" data-view="basics">Step 2.2 · Set basics</button>
+  <button class="dpill" data-view="fork">Step 2.3 · Who posts?</button>
+  <button class="dpill" data-view="handpick">Step 2.4a · Browse</button>
+  <button class="dpill" data-view="open">Step 2.4b · Open group</button>
+  <button class="dpill" data-view="terms">Step 2.5 · Terms</button>
+  <button class="dpill" data-view="step3">Step 3 · Review & publish</button>
+</div>
+
+<!-- topbar (constant) -->
+<div class="topbar">
+  <div class="logo">[LOGO]</div>
+  <div class="main-steps">
+    <div class="ms done"><span>Campaign</span></div>
+    <div class="ms-line done"></div>
+    <div class="ms act"><span>Build sets</span></div>
+    <div class="ms-line"></div>
+    <div class="ms"><span>Review</span></div>
+  </div>
+  <button class="exit">✕ Exit</button>
+</div>
+
+<div class="shell">
+
+  <!-- ─── LEFT RAIL ─────────────────────────────────────────────────── -->
+  <aside class="col left">
+    <!-- Step 1 left rail variant -->
+    <div data-rail="step1" class="hide">
+      <div class="rail-lbl">Campaign creation</div>
+      <div class="substep act"><div class="substep-idx"><span class="substep-idx-num">1</span></div>Campaign basics</div>
+      <div class="substep locked"><div class="substep-idx"><span class="substep-idx-num">2</span></div>Build deliverable sets</div>
+      <div class="substep locked"><div class="substep-idx"><span class="substep-idx-num">3</span></div>Review & publish</div>
+      <div class="rail-note">Top-level basics first. Then we build one or more sets — each set is a chunk of work with its own goal, influencers, and terms.</div>
+    </div>
+
+    <!-- Step 2 sub-step rail (the common case) -->
+    <div data-rail="step2">
+      <div class="rail-lbl">Build this set</div>
+      <div class="substep act" data-jump="goal"><div class="substep-idx"><span class="substep-idx-num">1</span></div>Pick a goal</div>
+      <div class="substep" data-jump="basics"><div class="substep-idx"><span class="substep-idx-num">2</span></div>Set basics</div>
+      <div class="substep" data-jump="fork"><div class="substep-idx"><span class="substep-idx-num">3</span></div>Who posts?</div>
+      <div class="substep" data-jump="handpick"><div class="substep-idx"><span class="substep-idx-num">4</span></div>Pick influencers</div>
+      <div class="substep" data-jump="terms"><div class="substep-idx"><span class="substep-idx-num">5</span></div>Set their terms</div>
+
+      <div class="rail-lbl">Sets in this campaign</div>
+      <div class="set-card act">
+        <div class="set-card-top">
+          <span class="set-card-name">Set A — Reels</span>
+          <span class="set-card-pill hyb">Hybrid</span>
+        </div>
+        <div class="set-card-meta">In progress · sub-step 1/5</div>
+      </div>
+      <div class="set-card">
+        <div class="set-card-top">
+          <span class="set-card-name">Set B — Stories</span>
+          <span class="set-card-pill conv">Conversion</span>
+        </div>
+        <div class="set-card-meta">Open group · 0/5 · draft</div>
+      </div>
+      <button class="set-add-btn">+ Add another set</button>
+      <div class="rail-note">Most campaigns need only 1–2 sets. Add more to split by format or audience.</div>
+    </div>
+
+    <!-- Step 3 left rail variant -->
+    <div data-rail="step3" class="hide">
+      <div class="rail-lbl">Campaign creation</div>
+      <div class="substep done"><div class="substep-idx"><span class="substep-idx-num">1</span></div>Campaign basics</div>
+      <div class="substep done"><div class="substep-idx"><span class="substep-idx-num">2</span></div>Build deliverable sets</div>
+      <div class="substep act"><div class="substep-idx"><span class="substep-idx-num">3</span></div>Review & publish</div>
+      <div class="rail-lbl">Final check</div>
+      <div class="rail-note">All sets locked. Wallet balance verified. Publish triggers T1 escrow lock + invitation fan-out.</div>
+    </div>
+  </aside>
+
+  <!-- ─── CENTER ─────────────────────────────────────────────────────── -->
+  <section class="col center">
+
+    <!-- ═══════════════ STEP 1 — BASICS ═══════════════ -->
+    <div data-view="step1" class="hide">
+      <div class="subh-tag">Step 1 of 3</div>
+      <h1>Campaign basics</h1>
+      <div class="subh">Set the top-level details. Budget covers engagement &amp; hybrid sets only — conversion sets run on commission, no upfront budget needed.</div>
+
+      <div class="section-card">
+        <h3>Name &amp; dates</h3>
+        <div class="sh">Pick a clear internal name and the campaign's run window. Influencers can only post inside this window.</div>
+        <div class="form-1col">
+          <div class="f">
+            <label class="flbl">Campaign name</label>
+            <input class="inp" value="Monsoon Glow 2026" />
+          </div>
+        </div>
+        <div class="form-2col">
+          <div class="f">
+            <label class="flbl">Start date</label>
+            <input class="inp mono" type="date" value="2026-06-15" />
+            <div class="fhint">Must start at least 7 days from today.</div>
+          </div>
+          <div class="f">
+            <label class="flbl">End date</label>
+            <input class="inp mono" type="date" value="2026-07-31" />
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>Budget &amp; negotiation</h3>
+        <div class="sh">This covers engagement + hybrid sets. Conversion-only campaigns can leave it at zero.</div>
+        <div class="form-2col">
+          <div class="f">
+            <label class="flbl">Total campaign budget</label>
+            <input class="inp mono" value="₹ 250,000" />
+            <div class="fhint">Allocated across paid sets in Step 2.</div>
+          </div>
+          <div class="f">
+            <label class="flbl">Allow negotiation?</label>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--white);font-size:12px">
+              <input type="checkbox" checked style="accent-color:var(--yellow);width:16px;height:16px" />
+              <div>
+                <div style="font-weight:700;color:var(--ink)">Allow Accept · Decline · Negotiate</div>
+                <div style="font-size:10.5px;color:var(--muted-2);margin-top:2px">Uncheck for fixed-terms-only large rosters.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back to campaigns</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="step-ctr">Step 1 / 3</span>
+          <button class="btn btn-prim">Build deliverable sets →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2.1 — GOAL ═══════════════ -->
+    <div data-view="goal">
+      <div class="subh-tag">Step 2 · Sub-step 1 of 5</div>
+      <h1>What should this set achieve?</h1>
+      <div class="subh">Your choice here decides how you pay influencers and what info we collect in the next sub-steps. You can add more sets later with different goals.</div>
+
+      <div class="goal-row">
+        <div class="goal-card">
+          <div class="goal-icon conv">%</div>
+          <div class="goal-tag">Commission only</div>
+          <div class="goal-title">Drive sales</div>
+          <div class="goal-desc">Pay only when customers buy. Each influencer gets a unique coupon code — you pay a % of every sale they bring.</div>
+          <div class="goal-ex"><b>Best for:</b> restaurants, salons, retail — anyone wanting no upfront cost.</div>
+          <div class="goal-fields"><b>You'll configure:</b> coupon prefix · commission %</div>
+        </div>
+        <div class="goal-card">
+          <div class="goal-icon eng">♦</div>
+          <div class="goal-tag">Flat fee</div>
+          <div class="goal-title">Boost awareness</div>
+          <div class="goal-desc">Pay a fixed fee for content creation. No coupons, no sales tracking — just great posts about your brand.</div>
+          <div class="goal-ex"><b>Best for:</b> new launches, event promos, anyone buying reach not sales.</div>
+          <div class="goal-fields"><b>You'll configure:</b> total budget · per-influencer pay</div>
+        </div>
+        <div class="goal-card sel">
+          <div class="goal-icon hyb">~</div>
+          <div class="goal-tag">Fee + commission</div>
+          <div class="goal-title">Both — content &amp; sales</div>
+          <div class="goal-desc">Pay a base fee to guarantee posting, plus commission on tracked sales. Most predictable for both sides.</div>
+          <div class="goal-ex"><b>Best for:</b> considered purchases — fashion, electronics, services.</div>
+          <div class="goal-fields"><b>You'll configure:</b> budget · coupon · commission %</div>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back to Step 1</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="step-ctr">1 / 5</span>
+          <button class="btn btn-prim">Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2.2 — SET BASICS ═══════════════ -->
+    <div data-view="basics" class="hide">
+      <div class="subh-tag">Step 2 · Sub-step 2 of 5</div>
+      <h1>Set basics</h1>
+      <div class="subh">Name it, pick the posting window, choose the content format, optionally add a brief and brand assets. Fields adapt to your goal (<b>Hybrid</b> selected — so we'll ask for a coupon prefix).</div>
+
+      <div class="section-card">
+        <h3>Identity &amp; timing</h3>
+        <div class="sh">A clear name helps you spot this set later. The window controls when influencers can post.</div>
+        <div class="form-2col">
+          <div class="f">
+            <label class="flbl">Set name</label>
+            <input class="inp" value="Set A — Reels" />
+          </div>
+          <div class="f">
+            <label class="flbl">Coupon prefix <span class="opt">we append the influencer's first name</span></label>
+            <input class="inp mono" value="MONSOON" />
+            <div class="fhint">Example: MONSOON_PRIYA, MONSOON_RAHUL</div>
+          </div>
+          <div class="f">
+            <label class="flbl">Window starts</label>
+            <input class="inp mono" type="date" value="2026-06-20" />
+          </div>
+          <div class="f">
+            <label class="flbl">Window ends</label>
+            <input class="inp mono" type="date" value="2026-07-15" />
+          </div>
+          <div class="f">
+            <label class="flbl">Set budget <span class="opt">engagement portion only</span></label>
+            <input class="inp mono" value="₹ 80,000" />
+            <div class="fhint">₹65K of ₹80K allocated — ₹15K remaining</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>Content format</h3>
+        <div class="sh">Pick which formats this set needs. Use + / − to set how many of each.</div>
+        <div class="fmt-row">
+          <div class="fmt-chip sel">Instagram reel</div>
+          <div class="fmt-chip sel">Instagram stories</div>
+          <div class="fmt-chip">Instagram post</div>
+          <div class="fmt-chip">YouTube short</div>
+          <div class="fmt-chip">YouTube video</div>
+        </div>
+        <div class="fmt-counts">
+          <div class="fmt-cnt-row"><span class="fmt-cnt-name">Instagram reel</span><div class="counter"><button class="cbtn">−</button><span class="cval">2</span><button class="cbtn">+</button></div></div>
+          <div class="fmt-cnt-row"><span class="fmt-cnt-name">Instagram stories</span><div class="counter"><button class="cbtn">−</button><span class="cval">3</span><button class="cbtn">+</button></div></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <h3>Brief &amp; brand assets <span style="font-size:10px;font-weight:500;color:var(--muted-2);margin-left:6px">— optional, editable later</span></h3>
+        <div class="form-1col">
+          <div class="f">
+            <label class="flbl">Content brief <span class="opt">tone, do's &amp; don'ts</span></label>
+            <textarea class="inp" placeholder="e.g. Show the monsoon look — natural lighting, no filters. Mention 'rainy-day glow' once in caption.">Show the monsoon look — natural lighting, no filters. Mention "rainy-day glow" once in caption. Tag @inflx and use the coupon at the end.</textarea>
+          </div>
+          <div class="dropzone">
+            <div class="dropzone-icon">📎</div>
+            <div class="dropzone-hint">Drag &amp; drop logos, raw footage, reference images, brand guidelines</div>
+            <button class="dropzone-btn">+ Add from Gallery</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-draft">Save draft</button>
+          <span class="step-ctr">2 / 5</span>
+          <button class="btn btn-prim">Continue →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2.3 — FORK ═══════════════ -->
+    <div data-view="fork" class="hide">
+      <div class="subh-tag">Step 2 · Sub-step 3 of 5</div>
+      <h1>Who will post this?</h1>
+      <div class="subh">Two ways to find influencers for this set. Pick whichever feels right — you can change before publishing.</div>
+
+      <div class="fork-row">
+        <div class="fork-card sel">
+          <div class="fork-head">
+            <div class="fork-icon hp">★</div>
+            <div>
+              <div class="fork-title">Handpick influencers</div>
+              <div class="fork-sub">You choose each person yourself</div>
+            </div>
+          </div>
+          <div class="fork-body">Browse our roster, filter by niche / city / followers / ER, pick the exact people you want. You'll set individual terms (pay, offer) for each.</div>
+          <ul class="fork-pros">
+            <li><b>Precise control</b> over who represents your brand</li>
+            <li>Set different pay for different influencers</li>
+            <li>Best if you already know your audience</li>
+          </ul>
+        </div>
+
+        <div class="fork-card">
+          <div class="fork-head">
+            <div class="fork-icon grp">⊞</div>
+            <div>
+              <div class="fork-title">Open group (broadcast)</div>
+              <div class="fork-sub">Influencers matching your filters apply</div>
+            </div>
+          </div>
+          <div class="fork-body">Set criteria (tier · niche · city · engagement). We invite everyone who matches — first N to accept get the slots. Same terms for all.</div>
+          <ul class="fork-pros">
+            <li><b>Fast</b> — no manual picking needed</li>
+            <li>Great for bulk campaigns with a fixed cap</li>
+            <li>Best when you don't care who, as long as they fit</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="step-ctr">3 / 5</span>
+          <button class="btn btn-prim">Continue with Handpick →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2.4a — HANDPICK BROWSE ═══════════════ -->
+    <div data-view="handpick" class="hide">
+      <div class="subh-tag">Step 2 · Sub-step 4 of 5 · Handpick</div>
+      <h1>Pick your influencers</h1>
+      <div class="subh">Search + filter to narrow down. Tap a card to add. You'll configure individual terms in the next sub-step.</div>
+
+      <div class="browse-head">
+        <input class="browse-search" placeholder="Search by name or @handle…" />
+        <div class="filter-chip act">Niche <span class="cnt">2</span></div>
+        <div class="filter-chip act">Tier · Macro</div>
+        <div class="filter-chip">City</div>
+        <div class="filter-chip act">Followers <span class="cnt">50K–500K</span></div>
+        <div class="filter-chip">Min ER</div>
+        <button class="filter-chip clear">Clear all</button>
+      </div>
+
+      <div class="browse-grid">
+        <div class="browse-card sel">
+          <div class="browse-chk">✓</div>
+          <div class="browse-av">PR</div>
+          <div class="browse-info">
+            <div class="browse-name">Priya Ravi</div>
+            <div class="browse-meta">@priyareels · Hyderabad · Macro</div>
+            <div class="browse-stats"><span class="browse-stat">142K</span><span class="browse-stat er-high">5.8% ER</span><span class="browse-stat">Fashion</span></div>
+          </div>
+        </div>
+        <div class="browse-card sel">
+          <div class="browse-chk">✓</div>
+          <div class="browse-av">SK</div>
+          <div class="browse-info">
+            <div class="browse-name">Sneha Kapoor<span class="badge-verified">✓ VRF</span></div>
+            <div class="browse-meta">@snekkapoor · Bengaluru · Macro</div>
+            <div class="browse-stats"><span class="browse-stat">208K</span><span class="browse-stat er-high">6.2% ER</span><span class="browse-stat">Fashion</span></div>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-chk"></div>
+          <div class="browse-av">AM</div>
+          <div class="browse-info">
+            <div class="browse-name">Anjali Mehta</div>
+            <div class="browse-meta">@anj.lifestyle · Mumbai · Macro</div>
+            <div class="browse-stats"><span class="browse-stat">312K</span><span class="browse-stat">4.1% ER</span><span class="browse-stat">Lifestyle</span></div>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-chk"></div>
+          <div class="browse-av">RT</div>
+          <div class="browse-info">
+            <div class="browse-name">Ritika Taneja<span class="badge-invite">✉ INV</span></div>
+            <div class="browse-meta">@ritika.style · Pune · scraped</div>
+            <div class="browse-stats"><span class="browse-stat">96K</span><span class="browse-stat">5.0% ER</span><span class="browse-stat">Fashion</span></div>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-chk"></div>
+          <div class="browse-av">NV</div>
+          <div class="browse-info">
+            <div class="browse-name">Neha Verma</div>
+            <div class="browse-meta">@neha.style · Delhi · Macro</div>
+            <div class="browse-stats"><span class="browse-stat">178K</span><span class="browse-stat">3.7% ER</span><span class="browse-stat">Fashion</span></div>
+          </div>
+        </div>
+        <div class="browse-card">
+          <div class="browse-chk"></div>
+          <div class="browse-av">AS</div>
+          <div class="browse-info">
+            <div class="browse-name">Aanya Sharma</div>
+            <div class="browse-meta">@aanya.wears · Mumbai · Macro</div>
+            <div class="browse-stats"><span class="browse-stat">256K</span><span class="browse-stat er-high">5.4% ER</span><span class="browse-stat">Fashion</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="browse-pager">
+        <div class="left">Page <b style="color:var(--ink);font-family:'JetBrains Mono'">1</b> of 24 · 478 total matches</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="sel-count">2 selected</span>
+          <button class="btn btn-back" style="padding:6px 12px;font-size:11px">‹ Prev</button>
+          <button class="btn btn-back" style="padding:6px 12px;font-size:11px">Next ›</button>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="step-ctr">4 / 5</span>
+          <button class="btn btn-prim">Set their terms →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2.4b — OPEN GROUP ═══════════════ -->
+    <div data-view="open" class="hide">
+      <div class="subh-tag green">Step 2 · Sub-step 4 of 5 · Open group</div>
+      <h1>Who can apply?</h1>
+      <div class="subh">Set the filters — we'll invite everyone who matches. First to accept wins the slot. You'll set shared terms in the next sub-step.</div>
+
+      <div class="grp-panel">
+        <div class="grp-row">
+          <div class="grp-row-head">
+            <div class="grp-row-title">Influencer tier</div>
+            <div class="grp-row-sub">Pick one or more</div>
+          </div>
+          <div class="grp-chips">
+            <div class="filter-chip">Nano <span class="cnt">1K–10K</span></div>
+            <div class="filter-chip act">Micro <span class="cnt">10K–100K</span></div>
+            <div class="filter-chip act">Macro <span class="cnt">100K–1M</span></div>
+            <div class="filter-chip">Mega <span class="cnt">1M+</span></div>
+          </div>
+        </div>
+
+        <div class="grp-row">
+          <div class="grp-row-head"><div class="grp-row-title">Niche</div></div>
+          <div class="grp-chips">
+            <div class="filter-chip act">Fashion</div>
+            <div class="filter-chip act">Beauty</div>
+            <div class="filter-chip">Food</div>
+            <div class="filter-chip">Fitness</div>
+            <div class="filter-chip">Lifestyle</div>
+            <div class="filter-chip">Travel</div>
+          </div>
+        </div>
+
+        <div class="grp-row">
+          <div class="grp-row-head"><div class="grp-row-title">City</div></div>
+          <div class="grp-chips">
+            <div class="filter-chip act">Hyderabad</div>
+            <div class="filter-chip act">Bengaluru</div>
+            <div class="filter-chip">Mumbai</div>
+            <div class="filter-chip">Delhi</div>
+            <div class="filter-chip">Chennai</div>
+          </div>
+        </div>
+
+        <div class="form-2col" style="margin-top:14px">
+          <div class="f">
+            <label class="flbl">Minimum engagement rate (%)</label>
+            <input class="inp mono" value="4.0" />
+          </div>
+          <div class="f">
+            <label class="flbl">Gender <span class="opt">optional</span></label>
+            <select class="inp"><option>Any</option><option>Female</option><option>Male</option><option>Non-binary</option></select>
+          </div>
+          <div class="f">
+            <label class="flbl">Max influencers to invite</label>
+            <input class="inp mono" value="20" />
+            <div class="fhint">First 20 to accept fill the slots.</div>
+          </div>
+          <div class="f">
+            <label class="flbl">Per-influencer fee cap</label>
+            <input class="inp mono" value="₹ 3,350" />
+            <div class="fhint">Total escrow lock: ₹67,000 (₹3,350 × 20).</div>
+          </div>
+        </div>
+
+        <div class="match-panel">
+          <div>
+            <div class="match-n">27</div>
+            <div class="match-lbl">influencers match these filters right now</div>
+          </div>
+          <div class="match-avs">
+            <div class="browse-av">PR</div>
+            <div class="browse-av">SK</div>
+            <div class="browse-av">AM</div>
+            <div class="browse-av">RT</div>
+            <div class="browse-av" style="background:var(--ink);color:var(--yellow)">+23</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="step-ctr">4 / 5</span>
+          <button class="btn btn-prim">Set shared terms →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2.5 — TERMS ═══════════════ -->
+    <div data-view="terms" class="hide">
+      <div class="subh-tag">Step 2 · Sub-step 5 of 5</div>
+      <h1>Set their terms</h1>
+      <div class="subh">Pick an influencer from the left to configure their pay, post date, and offer. Use <b>Apply to all</b> to copy settings across everyone.</div>
+
+      <div class="terms-wrap">
+        <!-- Left: influencer list -->
+        <div>
+          <div class="terms-list-head">
+            <span class="ct">5 added</span>
+            <button class="bulk-btn">Apply to all</button>
+          </div>
+          <div class="terms-list">
+            <div class="terms-inf act">
+              <div class="browse-av">PR</div>
+              <div class="terms-inf-meta">
+                <div class="terms-inf-name">Priya Ravi</div>
+                <div class="terms-inf-handle">@priyareels</div>
+              </div>
+              <span class="terms-inf-status ok">✓</span>
+            </div>
+            <div class="terms-inf incomplete">
+              <div class="browse-av">SK</div>
+              <div class="terms-inf-meta">
+                <div class="terms-inf-name">Sneha Kapoor</div>
+                <div class="terms-inf-handle">@snekkapoor</div>
+              </div>
+              <span class="terms-inf-status">2 missing</span>
+            </div>
+            <div class="terms-inf">
+              <div class="browse-av">AM</div>
+              <div class="terms-inf-meta">
+                <div class="terms-inf-name">Anjali Mehta</div>
+                <div class="terms-inf-handle">@anj.lifestyle</div>
+              </div>
+              <span class="terms-inf-status ok">✓</span>
+            </div>
+            <div class="terms-inf incomplete">
+              <div class="browse-av">RT</div>
+              <div class="terms-inf-meta">
+                <div class="terms-inf-name">Ritika Taneja</div>
+                <div class="terms-inf-handle">@ritika · invite</div>
+              </div>
+              <span class="terms-inf-status">3 missing</span>
+            </div>
+            <div class="terms-inf">
+              <div class="browse-av">DV</div>
+              <div class="terms-inf-meta">
+                <div class="terms-inf-name">Divya Verma</div>
+                <div class="terms-inf-handle">@divya.eats</div>
+              </div>
+              <span class="terms-inf-status ok">✓</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: editor for selected -->
+        <div>
+          <div class="terms-editor">
+            <h4>Priya Ravi · pay &amp; post</h4>
+            <div class="sh">What you agree to pay her and when she should post.</div>
+            <div class="form-2col">
+              <div class="f">
+                <label class="flbl">Engagement fee (₹)</label>
+                <input class="inp mono" value="15000" />
+              </div>
+              <div class="f">
+                <label class="flbl">Commission % per sale</label>
+                <input class="inp mono" value="5.0" />
+              </div>
+              <div class="f">
+                <label class="flbl">Post date</label>
+                <input class="inp mono" type="date" value="2026-07-02" />
+                <div class="fhint">Submit for review by Jul 1 (auto: posting − 1)</div>
+              </div>
+              <div class="f">
+                <label class="flbl">Coupon code <span class="opt">default: MONSOON_PRIYA</span></label>
+                <div style="display:flex;gap:6px"><input class="inp mono" value="MONSOON_PRIYA" style="flex:1" /><button class="btn btn-back" style="padding:9px 14px;font-size:11px">Edit</button></div>
+              </div>
+              <div class="f" style="grid-column:span 2">
+                <label class="flbl">Physical product delivery?</label>
+                <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--white);font-size:12px">
+                  <input type="checkbox" checked style="accent-color:var(--yellow);width:16px;height:16px" />
+                  <div>
+                    <div style="font-weight:700;color:var(--ink)">Send product samples</div>
+                    <div style="font-size:10.5px;color:var(--muted-2);margin-top:2px">Set up visit / shipment after both parties sign.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="terms-editor">
+            <h4>Offer for her audience</h4>
+            <div class="sh">What her followers get when they use her coupon code.</div>
+            <div class="fmt-row">
+              <div class="fmt-chip sel">Discount</div>
+              <div class="fmt-chip">Volume</div>
+              <div class="fmt-chip">BOGO</div>
+              <div class="fmt-chip">Bundle</div>
+              <div class="fmt-chip">Free gift</div>
+            </div>
+            <div class="form-2col">
+              <div class="f">
+                <label class="flbl">Discount type</label>
+                <select class="inp"><option>Percentage off</option><option>Flat ₹ off</option></select>
+              </div>
+              <div class="f">
+                <label class="flbl">Discount value</label>
+                <input class="inp mono" value="20" />
+                <div class="fhint">20% off on selected products</div>
+              </div>
+              <div class="f" style="grid-column:span 2">
+                <label class="flbl">Applies to products</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1.5px dashed var(--border);border-radius:10px;background:var(--bg)">
+                  <span class="fmt-chip sel">Monsoon Tee</span>
+                  <span class="fmt-chip sel">Rain Jacket</span>
+                  <span class="fmt-chip">Boots</span>
+                  <span class="fmt-chip" style="border-style:dashed;background:transparent">+ Pick from catalogue</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-draft">Save draft</button>
+          <span class="step-ctr">5 / 5</span>
+          <button class="btn btn-prim">Finish set → Review</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 3 — REVIEW & PUBLISH ═══════════════ -->
+    <div data-view="step3" class="hide">
+      <div class="subh-tag">Step 3 of 3</div>
+      <h1>Review &amp; publish</h1>
+      <div class="subh">Everything looks good? Publishing locks T1 escrow per influencer and fires invitations immediately.</div>
+
+      <div class="review-hero">
+        <h2>Monsoon Glow 2026</h2>
+        <div class="dates">15 Jun → 31 Jul 2026 · 2 sets · 5 handpick + up to 20 open-group</div>
+        <div style="background:rgba(255,255,255,.65);border-radius:10px;padding:12px">
+          <div class="bstrip-row">
+            <span style="font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">Campaign budget</span>
+            <span class="bstrip-v ok" style="font-size:13px">₹118,000 of ₹250,000 remaining</span>
+          </div>
+          <div class="bbar" style="background:rgba(0,0,0,.08);margin:8px 0 4px"><div class="bfill" style="width:53%"></div></div>
+          <div class="bstrip-note">₹132,000 allocated across 2 paid set(s)</div>
+        </div>
+      </div>
+
+      <!-- Per-set review card A -->
+      <div class="review-set">
+        <div class="review-set-head">
+          <span class="review-set-name">Set A — Reels</span>
+          <span class="set-card-pill hyb">Hybrid</span>
+          <span class="set-card-pill" style="background:var(--bg-2);color:var(--muted)">Handpick · 5</span>
+        </div>
+        <div class="rv-row"><span class="k">Formats</span><span class="v">Instagram reel ×2 · Instagram stories ×3</span></div>
+        <div class="rv-row"><span class="k">Window</span><span class="v mono">2026-06-20 → 2026-07-15</span></div>
+        <div class="rv-row"><span class="k">Set budget</span><span class="v mono">₹80,000</span></div>
+        <div class="rv-row"><span class="k">Coupon prefix</span><span class="v mono">MONSOON</span></div>
+        <div class="rv-row"><span class="k">Brand assets</span><span class="v">2 file(s)</span></div>
+        <div class="rv-row"><span class="k">Avg per influencer</span><span class="v mono">₹13,000</span></div>
+      </div>
+
+      <!-- Per-set review card B -->
+      <div class="review-set">
+        <div class="review-set-head">
+          <span class="review-set-name">Set B — Stories</span>
+          <span class="set-card-pill conv">Conversion</span>
+          <span class="set-card-pill" style="background:var(--success-pale);color:var(--success-text)">Open group · up to 20</span>
+        </div>
+        <div class="rv-row"><span class="k">Formats</span><span class="v">Instagram stories ×4</span></div>
+        <div class="rv-row"><span class="k">Window</span><span class="v mono">2026-07-01 → 2026-07-25</span></div>
+        <div class="rv-row"><span class="k">Group filter</span><span class="v">Macro · Fashion + Beauty · Hyderabad + Bengaluru</span></div>
+        <div class="rv-row"><span class="k">Cap</span><span class="v mono">20</span></div>
+        <div class="rv-row"><span class="k">Per-influencer cap</span><span class="v mono">₹3,350</span></div>
+        <div class="rv-row"><span class="k">Coupon pattern</span><span class="v mono">MONSOON_FIRSTNAME</span></div>
+      </div>
+
+      <div class="nav-foot">
+        <button class="btn btn-back">← Back</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-draft">Save draft</button>
+          <button class="btn btn-pub">🚀 Publish campaign</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── RIGHT RAIL ────────────────────────────────────────────────── -->
+  <aside class="col right">
+
+    <!-- ── Step 1 right rail ── -->
+    <div data-rail-r="step1" class="hide">
+      <div class="rail-card">
+        <h4>💰 Wallet status</h4>
+        <div class="bstrip-row">
+          <div class="bstrip-v">₹312,500</div>
+          <div class="bstrip-of">available</div>
+        </div>
+        <div class="rh" style="margin-top:10px">Enough for a ~₹250K campaign at 8% platform fee.</div>
+      </div>
+      <div class="rail-card">
+        <h4>📋 Onboarding tips</h4>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Wallet topped up</div></div>
+        <div class="check-row"><div class="check-dot"></div><div class="check-text">Products listed in catalogue</div></div>
+        <div class="check-row"><div class="check-dot"></div><div class="check-text">Brand logo + brief assets uploaded</div></div>
+      </div>
+    </div>
+
+    <!-- ── Step 2 right rail (the common one) ── -->
+    <div data-rail-r="step2">
+      <div class="rail-card">
+        <h4>💰 Campaign budget</h4>
+        <div class="bstrip-row">
+          <div class="bstrip-v ok">₹118,000</div>
+          <div class="bstrip-of">of ₹250,000</div>
+        </div>
+        <div class="bbar"><div class="bfill" style="width:53%"></div></div>
+        <div class="bstrip-note">₹132,000 allocated · 2 paid sets · ₹118,000 remaining</div>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="preview-hd">👁  What Priya will see</div>
+        <div class="preview-body">
+          <div class="preview-brand">
+            <div class="preview-logo">M</div>
+            <div>
+              <div class="preview-name">Monsoon Glow</div>
+              <div class="preview-cat">Fashion · Mumbai</div>
+            </div>
+          </div>
+          <div class="preview-msg">You're invited to <b>Monsoon Glow 2026 — Set A · Reels</b></div>
+          <div class="preview-offer">
+            Post <b>2 reels + 3 stories</b> between Jun 20 – Jul 15<br />
+            Earn <span class="mono">₹15,000</span> base + <b>5% commission</b> per sale via your code <span class="mono">MONSOON_PRIYA</span>
+          </div>
+          <div class="preview-row"><span class="preview-k">Window</span><span class="preview-v">Jun 20 – Jul 15</span></div>
+          <div class="preview-row"><span class="preview-k">Your pay</span><span class="preview-v">₹15,000 + 5%</span></div>
+          <div class="preview-row"><span class="preview-k">Offer for fans</span><span class="preview-v">20% off · 2 products</span></div>
+          <div class="preview-cta">
+            <div class="b">Decline</div>
+            <div class="b">Negotiate</div>
+            <div class="b prim">Accept</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-card">
+        <h4>📋 Set A checklist</h4>
+        <div class="rh">What's still needed for this set.</div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Goal picked — Hybrid</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Set name &amp; window</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Formats selected</div></div>
+        <div class="check-row"><div class="check-dot warn"></div><div class="check-text">Brief added (optional)</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Assignment mode picked</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">5 influencers added</div></div>
+        <div class="check-row"><div class="check-dot warn"></div><div class="check-text">2 missing terms</div></div>
+      </div>
+    </div>
+
+    <!-- ── Step 3 right rail ── -->
+    <div data-rail-r="step3" class="hide">
+      <div class="wallet-card">
+        <h4>💰 Wallet &amp; escrow</h4>
+        <div class="wallet-row"><span class="k">Balance</span><span class="v">₹312,500</span></div>
+        <div class="wallet-row"><span class="k">Escrow lock</span><span class="v yellow">₹142,560</span></div>
+        <div class="wallet-row"><span class="k">After publish</span><span class="v">₹169,940</span></div>
+        <div class="wallet-pill">● Sufficient — covers all T1</div>
+      </div>
+      <div class="rail-card">
+        <h4>📋 Final checks</h4>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">All sets have goal + window</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">All handpick infs have terms</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Open group filters are valid</div></div>
+        <div class="check-row"><div class="check-dot done"></div><div class="check-text done">Wallet covers escrow + 8% fee</div></div>
+      </div>
+      <div class="rail-card">
+        <h4>📣 On publish</h4>
+        <div style="font-size:11px;color:var(--muted);line-height:1.6">Locks T1 (25%) for each handpick influencer + the open-group cap · fires invitations · campaign flips <span class="mono">draft → published</span> · all 27 invited creators get a notification immediately.</div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<div class="anno-final">
+  <b>What changed vs v1:</b> the 3-column shell adopts the founder's reference structure — <b>Step 2 is now 5 progressive sub-steps</b> (Goal · Basics · Who posts? · Pick infs · Terms) inside the same shell, the <b>left rail</b> hosts the sub-step checklist + a compact switcher for sets-in-this-campaign (no more accordion stacking — clicking a set in the rail jumps focus to it), and the <b>right rail</b> hosts a live <b>"What &lt;influencer&gt; will see"</b> preview that updates as you set fee / commission / offer. This solves the 10-sets density problem AND the form-density problem at the same time. <b>All 11 API endpoints + every field shape preserved.</b>
+</div>
+
+<script>
+// view switcher (mockup only — not in product)
+const VIEWS = ['step1','goal','basics','fork','handpick','open','terms','step3'];
+const SUB = ['goal','basics','fork','handpick','open','terms'];
+const RAIL = { step1:'step1', goal:'step2', basics:'step2', fork:'step2', handpick:'step2', open:'step2', terms:'step2', step3:'step3' };
+function setView(v){
+  document.querySelectorAll('.dpill').forEach(p => p.classList.toggle('act', p.dataset.view === v));
+  document.querySelectorAll('[data-view]').forEach(el => {
+    if (el.classList.contains('dpill')) return;
+    el.classList.toggle('hide', el.dataset.view !== v);
+  });
+  const r = RAIL[v];
+  document.querySelectorAll('[data-rail]').forEach(el => el.classList.toggle('hide', el.dataset.rail !== r));
+  document.querySelectorAll('[data-rail-r]').forEach(el => el.classList.toggle('hide', el.getAttribute('data-rail-r') !== r));
+  // sub-step pill states in left rail
+  if (r === 'step2') {
+    const idx = SUB.indexOf(v);
+    document.querySelectorAll('[data-rail="step2"] .substep').forEach((el, i) => {
+      el.classList.remove('act','done');
+      // open and handpick share index 3
+      const effective = (v === 'open') ? 3 : idx;
+      if (i < effective) el.classList.add('done');
+      if (i === effective) el.classList.add('act');
+    });
+  }
+}
+document.querySelectorAll('.dpill').forEach(p => p.addEventListener('click', () => setView(p.dataset.view)));
+document.querySelectorAll('[data-jump]').forEach(el => el.addEventListener('click', () => setView(el.dataset.jump)));
+// init
+setView('goal');
+</script>
+</body>
+</html>
