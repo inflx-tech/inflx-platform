@@ -1,0 +1,38 @@
+{
+  "feature": "redesign-flow-9-brand-web-contracts",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat \"ok pls build\" + \"push\" — confirmed scope (wallet strip · sticky bulk bar · contract rows with formats+followers chips · empty state) + production-impacting deploy",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat — locked Flow 9 mockup (single-column inbox + always-visible wallet status strip + sticky bulk bar + format/followers chips)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand contracts inbox. Restyles 194-LOC wave1 page to 390-LOC locked-palette page with always-visible wallet status strip + surfaces 2 backend fields (formats_json + followers_count) already loaded but unused. CSS-block approach (under .cts wrapper) with the now-locked discipline: scope all rules, re-assert color on :hover, lock bg+color on :disabled. Zero backend / API / schema / DB change.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-24T06:30:32Z",
+      "result": "71/71 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 72,
+      "report": "qa/reports/2026-05-24T06-30-32-722Z/QA-REPORT.md",
+      "first_run_clean": true
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-24 chat \"push\" (production-impacting deploy approved with carve-out context)",
+    "released_at": "2026-05-24",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "see-commit-message",
+        "pushed_at": "2026-05-24",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web (admin-web not touched, backend not touched)"
+      }
+    }
+  }
+}

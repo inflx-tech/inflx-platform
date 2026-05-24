@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 9 · brand-web contracts inbox — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --hyb:#6B5A00; --hyb-pale:#FFF7CC;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{padding:32px 24px 64px}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.mono{font-family:'JetBrains Mono',monospace}
+.display{font-family:'Outfit',sans-serif}
+
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800;letter-spacing:-.2px}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:640px;line-height:1.5}
+
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+/* dashboard shell (mocked sidebar) */
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:780px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center;opacity:.9}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+.page{padding:30px 36px;background:var(--bg);overflow-y:auto;max-width:1100px}
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+
+/* header */
+.hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.hdr h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.hdr .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 6px}
+.hdr .sub{font-size:12px;color:var(--muted-2);max-width:520px;line-height:1.5}
+.hdr .right{display:flex;align-items:center;gap:8px}
+.cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:800;margin-bottom:6px}
+.btn-ghost{padding:7px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink)}
+.btn-ghost:hover{border-color:var(--ink)}
+
+/* wallet strip */
+.ws{background:var(--ink);color:var(--white);border-radius:14px;padding:16px 20px;margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr auto;gap:20px;align-items:center}
+.ws-cell{}
+.ws-lbl{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:.4px;text-transform:uppercase;margin-bottom:4px}
+.ws-v{font-family:'JetBrains Mono';font-size:18px;font-weight:800;color:var(--white)}
+.ws-v.yellow{color:var(--yellow)}
+.ws-v.warn{color:var(--danger)}
+.ws-bar-wrap{margin-top:8px}
+.ws-bar{height:4px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden}
+.ws-bar-fill{height:100%;background:var(--yellow);border-radius:99px;transition:width .25s}
+.ws-bar-fill.warn{background:var(--danger)}
+.ws-bar-note{font-size:10px;color:rgba(255,255,255,.5);margin-top:4px;font-family:'JetBrains Mono'}
+.ws-cell.action{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.ws-short-chip{display:inline-flex;align-items:center;padding:4px 10px;background:rgba(232,64,26,.22);color:var(--danger);border-radius:99px;font-family:'JetBrains Mono';font-size:11px;font-weight:800}
+.ws-topup-link{font-size:11px;font-weight:700;color:var(--yellow);border:1px solid rgba(255,193,7,.35);padding:6px 12px;border-radius:9px;background:transparent;text-decoration:none;display:inline-block}
+.ws-topup-link:hover{background:rgba(255,193,7,.12)}
+
+/* bulk bar */
+.bb{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;position:sticky;top:0;z-index:5;transition:all .15s}
+.bb.has-sel{border-color:var(--ink);box-shadow:0 4px 12px -6px rgba(0,0,0,.1)}
+.bb-left{display:flex;align-items:center;gap:10px}
+.cb{width:18px;height:18px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);accent-color:var(--yellow);cursor:pointer;flex-shrink:0}
+.bb-lbl{font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+.bb-lbl.has-sel{color:var(--ink);font-weight:700}
+.bb-lbl b{font-family:'JetBrains Mono';color:var(--ink)}
+.bb-right{display:flex;align-items:center;gap:10px}
+.btn-sign{padding:9px 18px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;transition:all .15s}
+.btn-sign:hover:not(:disabled){background:var(--ink-2)}
+.btn-sign:disabled{opacity:.4;cursor:not-allowed}
+
+/* contract row */
+.cr{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;transition:all .15s;margin-bottom:8px}
+.cr:hover{border-color:var(--muted-3)}
+.cr.sel{border-color:var(--ink);background:var(--yellow-50);box-shadow:0 0 0 3px var(--yellow-pale)}
+.cr-mid{min-width:0}
+.cr-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.cr-handle{font-family:'JetBrains Mono';font-size:13.5px;font-weight:800;color:var(--ink)}
+.tier-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--bg2);color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.tier-pill.nano{background:var(--bg2);color:var(--muted)}
+.tier-pill.micro{background:var(--eng-pale);color:var(--eng)}
+.tier-pill.macro{background:var(--yellow-pale);color:var(--yellow-text)}
+.tier-pill.mega{background:var(--conv-pale);color:var(--conv)}
+.goal-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.goal-pill.engagement{background:var(--eng-pale);color:var(--eng)}
+.goal-pill.conversion{background:var(--conv-pale);color:var(--conv)}
+.goal-pill.hybrid{background:var(--hyb-pale);color:var(--hyb)}
+.verified-pill{font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;background:var(--success-pale);color:var(--success-text)}
+.cr-meta{font-size:11px;color:var(--muted-2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cr-meta .mono{color:var(--ink);font-weight:700}
+.cr-meta .dot{color:var(--muted-3);margin:0 2px}
+.mode-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;background:var(--bg2);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.cr-extras{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.fmt-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--white);border:1px solid var(--border);border-radius:99px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:700;color:var(--ink)}
+.followers-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:var(--white);border:1px solid var(--border);border-radius:99px;font-size:10.5px;font-weight:700;color:var(--ink)}
+.followers-chip .mono{font-family:'JetBrains Mono'}
+.cr-amt{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.cr-amt-lbl{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.cr-amt-v{font-family:'JetBrains Mono';font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.cr-amt-sub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+.cr-review{display:inline-flex;align-items:center;padding:7px 13px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:11.5px;font-weight:700;color:var(--ink);text-decoration:none}
+.cr-review:hover{border-color:var(--ink);background:var(--yellow-50)}
+
+/* empty state */
+.empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:40px;text-align:center;margin-top:14px;position:relative;overflow:hidden}
+.empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
+.empty > *{position:relative;z-index:2}
+.empty .ic{width:60px;height:60px;background:var(--ink);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:26px;margin:0 auto 14px}
+.empty .h{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty .t{font-size:12px;color:var(--muted);line-height:1.55;max-width:440px;margin:0 auto 16px}
+.empty .cta{display:inline-flex;align-items:center;padding:9px 16px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;text-decoration:none}
+.empty .cta:hover{background:var(--ink-2)}
+
+/* annotations */
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 9 · brand-web contracts inbox — wave2 mockup</h1>
+  <span class="sub">Locked palette · always-visible wallet strip · sticky bulk action bar · contract row cards · format chips + followers count (NEW from already-loaded backend fields) · 4 states (normal / selected / wallet-short / empty)</span>
+</div>
+
+<!-- ════════════════════ STATE 1 — NORMAL (6 pending, nothing selected) ════════════════════ -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 4</span>
+  <span class="title">Contracts inbox · 6 pending · nothing selected</span>
+  <span class="note">Wallet strip shows balance · Sign-selected button inert</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / contracts</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link act"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">✉</span>Inbox</a>
+      <a class="side-link"><span class="ic">⚙</span>Profile</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>contracts</b></div>
+
+      <div class="hdr">
+        <div>
+          <span class="cnt-chip">6 pending</span>
+          <h1>Contracts</h1>
+          <div class="rule"></div>
+          <div class="sub">Influencers have signed. Counter-sign to lock funds and start the campaign.</div>
+        </div>
+        <div class="right">
+          <button class="btn-ghost">↻ Refresh</button>
+        </div>
+      </div>
+
+      <!-- Wallet strip -->
+      <div class="ws">
+        <div class="ws-cell">
+          <div class="ws-lbl">Wallet</div>
+          <div class="ws-v">₹312,500</div>
+          <div class="ws-bar-note" style="margin-top:6px;color:rgba(255,255,255,.5)">available to lock</div>
+        </div>
+        <div class="ws-cell">
+          <div class="ws-lbl">Selected lock</div>
+          <div class="ws-v yellow">₹0</div>
+          <div class="ws-bar-wrap">
+            <div class="ws-bar"><div class="ws-bar-fill" style="width:0%"></div></div>
+          </div>
+          <div class="ws-bar-note">0% of wallet · headroom ₹312,500</div>
+        </div>
+        <div class="ws-cell action">
+          <a class="ws-topup-link" href="#">+ Top up</a>
+        </div>
+      </div>
+
+      <!-- Bulk bar -->
+      <div class="bb">
+        <div class="bb-left">
+          <input type="checkbox" class="cb" />
+          <span class="bb-lbl">Select all (6)</span>
+        </div>
+        <div class="bb-right">
+          <button class="btn-sign" disabled>Sign selected</button>
+        </div>
+      </div>
+
+      <!-- Contract rows -->
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@priyareels</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill hybrid">Hybrid</span>
+            <span class="verified-pill">✓ VRF</span>
+          </div>
+          <div class="cr-meta">
+            <span>Monsoon Glow 2026</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">12 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Visit</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">2 reels</span>
+            <span class="fmt-chip">3 stories</span>
+            <span class="followers-chip"><span class="mono">142K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹17,280</div>
+          <div class="cr-amt-sub">₹15,000 + ₹1,000 bonus</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@snekkapoor</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill hybrid">Hybrid</span>
+          </div>
+          <div class="cr-meta">
+            <span>Monsoon Glow 2026</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">12 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Shipment</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">2 reels</span>
+            <span class="fmt-chip">3 stories</span>
+            <span class="followers-chip"><span class="mono">208K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹19,440</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@anj.lifestyle</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill engagement">Engagement</span>
+            <span class="verified-pill">✓ VRF</span>
+          </div>
+          <div class="cr-meta">
+            <span>Glow Pre-launch</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">11 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Remote</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">1 reel</span>
+            <span class="fmt-chip">2 posts</span>
+            <span class="followers-chip"><span class="mono">312K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹12,960</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@divya.eats</span>
+            <span class="tier-pill micro">Micro</span>
+            <span class="goal-pill conversion">Conversion</span>
+          </div>
+          <div class="cr-meta">
+            <span>Summer Café</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">10 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Visit</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">1 reel</span>
+            <span class="fmt-chip">2 stories</span>
+            <span class="followers-chip"><span class="mono">48K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹10,800</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@rahul.eats</span>
+            <span class="tier-pill nano">Nano</span>
+            <span class="goal-pill conversion">Conversion</span>
+          </div>
+          <div class="cr-meta">
+            <span>Summer Café</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">10 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Visit</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">1 reel</span>
+            <span class="followers-chip"><span class="mono">8.1K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹4,320</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@meera.foods</span>
+            <span class="tier-pill micro">Micro</span>
+            <span class="goal-pill hybrid">Hybrid</span>
+          </div>
+          <div class="cr-meta">
+            <span>Glow Pre-launch</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">9 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Shipment</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">2 reels</span>
+            <span class="followers-chip"><span class="mono">45K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹9,720</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ STATE 2 — SELECTED (3 of 6 ticked, wallet OK) ════════════════════ -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 4</span>
+  <span class="title">3 of 6 selected · wallet headroom OK</span>
+  <span class="note">Selected rows highlighted yellow-50 · wallet strip live-updates lock total · button enabled</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / contracts</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act" style="margin-top:200px"><span class="ic">✎</span>Contracts</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>contracts</b></div>
+
+      <div class="hdr">
+        <div>
+          <span class="cnt-chip">6 pending</span>
+          <h1>Contracts</h1>
+          <div class="rule"></div>
+          <div class="sub">Influencers have signed. Counter-sign to lock funds and start the campaign.</div>
+        </div>
+      </div>
+
+      <!-- Wallet strip: 3 selected -->
+      <div class="ws">
+        <div class="ws-cell">
+          <div class="ws-lbl">Wallet</div>
+          <div class="ws-v">₹312,500</div>
+          <div class="ws-bar-note" style="margin-top:6px;color:rgba(255,255,255,.5)">available to lock</div>
+        </div>
+        <div class="ws-cell">
+          <div class="ws-lbl">Selected lock</div>
+          <div class="ws-v yellow">₹49,680</div>
+          <div class="ws-bar-wrap">
+            <div class="ws-bar"><div class="ws-bar-fill" style="width:16%"></div></div>
+          </div>
+          <div class="ws-bar-note">16% of wallet · headroom ₹262,820</div>
+        </div>
+        <div class="ws-cell action">
+          <a class="ws-topup-link" href="#">+ Top up</a>
+        </div>
+      </div>
+
+      <!-- Bulk bar -->
+      <div class="bb has-sel">
+        <div class="bb-left">
+          <input type="checkbox" class="cb" />
+          <span class="bb-lbl has-sel"><b>3</b> selected · lock total <b>₹49,680</b></span>
+        </div>
+        <div class="bb-right">
+          <button class="btn-sign">Sign selected (3)</button>
+        </div>
+      </div>
+
+      <!-- Rows: first 3 selected -->
+      <div class="cr sel">
+        <input type="checkbox" class="cb" checked />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@priyareels</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill hybrid">Hybrid</span>
+            <span class="verified-pill">✓ VRF</span>
+          </div>
+          <div class="cr-meta">
+            <span>Monsoon Glow 2026</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">12 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Visit</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">2 reels</span>
+            <span class="fmt-chip">3 stories</span>
+            <span class="followers-chip"><span class="mono">142K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹17,280</div>
+          <div class="cr-amt-sub">₹15,000 + ₹1,000 bonus</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr sel">
+        <input type="checkbox" class="cb" checked />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@snekkapoor</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill hybrid">Hybrid</span>
+          </div>
+          <div class="cr-meta">
+            <span>Monsoon Glow 2026</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">12 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Shipment</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">2 reels</span>
+            <span class="fmt-chip">3 stories</span>
+            <span class="followers-chip"><span class="mono">208K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹19,440</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr sel">
+        <input type="checkbox" class="cb" checked />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@anj.lifestyle</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill engagement">Engagement</span>
+            <span class="verified-pill">✓ VRF</span>
+          </div>
+          <div class="cr-meta">
+            <span>Glow Pre-launch</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">11 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Remote</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">1 reel</span>
+            <span class="fmt-chip">2 posts</span>
+            <span class="followers-chip"><span class="mono">312K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹12,960</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div class="cr">
+        <input type="checkbox" class="cb" />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@divya.eats</span>
+            <span class="tier-pill micro">Micro</span>
+            <span class="goal-pill conversion">Conversion</span>
+          </div>
+          <div class="cr-meta">
+            <span>Summer Café</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">10 Jun</span></span>
+            <span class="dot">·</span>
+            <span class="mode-pill">Visit</span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">1 reel</span>
+            <span class="fmt-chip">2 stories</span>
+            <span class="followers-chip"><span class="mono">48K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹10,800</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div style="text-align:center;color:var(--muted-2);font-size:11px;padding:10px;font-style:italic">… 2 more rows not shown for brevity …</div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ STATE 3 — WALLET SHORT (all 6 selected) ════════════════════ -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 4</span>
+  <span class="title">All 6 selected · wallet short by ₹17,300 · Sign disabled</span>
+  <span class="note">Bar fill turns red · "Short by ₹X" chip · Top-up link prominent · button disabled</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / contracts</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act" style="margin-top:200px"><span class="ic">✎</span>Contracts</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>contracts</b></div>
+
+      <div class="hdr">
+        <div>
+          <span class="cnt-chip">6 pending</span>
+          <h1>Contracts</h1>
+          <div class="rule"></div>
+        </div>
+      </div>
+
+      <div class="ws">
+        <div class="ws-cell">
+          <div class="ws-lbl">Wallet</div>
+          <div class="ws-v">₹57,000</div>
+          <div class="ws-bar-note" style="margin-top:6px;color:rgba(255,255,255,.5)">available to lock</div>
+        </div>
+        <div class="ws-cell">
+          <div class="ws-lbl">Selected lock</div>
+          <div class="ws-v warn">₹74,520</div>
+          <div class="ws-bar-wrap">
+            <div class="ws-bar"><div class="ws-bar-fill warn" style="width:100%"></div></div>
+          </div>
+          <div class="ws-bar-note" style="color:rgba(255,99,71,.85)">130% of wallet · over by ₹17,520</div>
+        </div>
+        <div class="ws-cell action">
+          <span class="ws-short-chip">Short ₹17,520</span>
+          <a class="ws-topup-link" href="#">+ Top up</a>
+        </div>
+      </div>
+
+      <div class="bb has-sel">
+        <div class="bb-left">
+          <input type="checkbox" class="cb" />
+          <span class="bb-lbl has-sel"><b>6</b> selected · lock total <b>₹74,520</b></span>
+        </div>
+        <div class="bb-right">
+          <span style="font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--danger)">Top up to enable</span>
+          <button class="btn-sign" disabled>Sign selected (6)</button>
+        </div>
+      </div>
+
+      <div class="cr sel">
+        <input type="checkbox" class="cb" checked />
+        <div class="cr-mid">
+          <div class="cr-top">
+            <span class="cr-handle">@priyareels</span>
+            <span class="tier-pill macro">Macro</span>
+            <span class="goal-pill hybrid">Hybrid</span>
+          </div>
+          <div class="cr-meta">
+            <span>Monsoon Glow 2026</span>
+            <span class="dot">·</span>
+            <span>signed <span class="mono">12 Jun</span></span>
+          </div>
+          <div class="cr-extras">
+            <span class="fmt-chip">2 reels</span>
+            <span class="fmt-chip">3 stories</span>
+            <span class="followers-chip"><span class="mono">142K</span> followers</span>
+          </div>
+        </div>
+        <div class="cr-amt">
+          <div class="cr-amt-lbl">Lock</div>
+          <div class="cr-amt-v">₹17,280</div>
+        </div>
+        <a class="cr-review" href="#">Review →</a>
+      </div>
+
+      <div style="text-align:center;color:var(--muted-2);font-size:11px;padding:10px;font-style:italic">… 5 more rows all selected, all yellow-50 …</div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ STATE 4 — EMPTY ════════════════════ -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 4 / 4</span>
+  <span class="title">Empty state — no pending contracts</span>
+  <span class="note">Yellow-pale card · friendly copy · link to /dashboard/campaigns to check status</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / contracts</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act" style="margin-top:200px"><span class="ic">✎</span>Contracts</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>contracts</b></div>
+
+      <div class="hdr">
+        <div>
+          <span class="cnt-chip">0 pending</span>
+          <h1>Contracts</h1>
+          <div class="rule"></div>
+          <div class="sub">Influencers have signed. Counter-sign to lock funds and start the campaign.</div>
+        </div>
+        <div class="right">
+          <button class="btn-ghost">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="empty">
+        <div class="ic">✓</div>
+        <div class="h">All caught up</div>
+        <div class="t">No contracts waiting on your signature right now. When an influencer signs, it'll show up here for your countersignature.</div>
+        <a class="cta" href="/dashboard/campaigns">See all your campaigns →</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>2 fields surfaced that were already loaded but unused:</b><br/>
+  · <code>formats_json</code> from <code>campaign_sets</code> (joined in <code>listBrandPending</code> SELECT) → rendered as small mono chips per row ("2 reels", "3 stories") so brand sees the workload at a glance before signing<br/>
+  · <code>followers_count</code> from <code>influencers</code> (also already in SELECT) → mono number with "followers" suffix + derives a tier pill (Nano/Micro/Macro/Mega via standard 10K/100K/1M thresholds)<br/><br/>
+  <b>Wallet strip is always-visible</b> instead of only-when-selected: gives brands instant wallet awareness on landing — they immediately see they have headroom (or don't) before they start ticking checkboxes. Selected-lock value updates live; bar fill turns red when over capacity. <b>Sign-selected button stays disabled when walletShort</b> (same behaviour as today; just clearer visual story).<br/><br/>
+  <b>Zero functional change.</b> Same 3 endpoints, same selection set semantics, same bulk-sign confirm dialog, same wallet-short gating, same Review link target (Flow 6 hub). Pure visual + UX restyle.
+</div>
+
+</div>
+</body>
+</html>
