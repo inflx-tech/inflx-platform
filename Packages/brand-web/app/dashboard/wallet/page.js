@@ -82,7 +82,7 @@ const CSS = `
 .w .hero-sub .last{font-family:'JetBrains Mono';color:var(--ink);font-weight:700}
 .w .hero-sub.warn{color:var(--danger-text)}
 .w .hero-cta{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:var(--yellow);padding:10px 18px;border-radius:11px;font-size:12.5px;font-weight:700;cursor:pointer;border:0}
-.w .hero-cta:hover{background:var(--ink-2)}
+.w .hero-cta:hover{background:var(--ink-2);color:var(--yellow)}
 
 /* warning card */
 .w .warn-card{background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:12px}
@@ -117,8 +117,8 @@ const CSS = `
 .w .tu-input input{flex:1;padding:11px 14px;font:inherit;font-size:14px;font-family:'JetBrains Mono';font-weight:700;outline:none;border:0;color:var(--ink);background:transparent;width:100%}
 .w .tu-input input::placeholder{color:var(--muted-3);font-weight:500}
 .w .tu-cta{padding:11px 22px;background:var(--ink);color:var(--yellow);border-radius:11px;font-size:12.5px;font-weight:700;white-space:nowrap;cursor:pointer;border:0}
-.w .tu-cta:hover{background:var(--ink-2)}
-.w .tu-cta:disabled{opacity:.4;cursor:not-allowed}
+.w .tu-cta:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.w .tu-cta:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);color:var(--yellow)}
 .w .tu-picks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .w .tu-pick{padding:8px;background:var(--white);border:1px solid var(--border);border-radius:9px;font-family:'JetBrains Mono';font-size:11.5px;font-weight:700;color:var(--ink);text-align:center;transition:all .15s;cursor:pointer}
 .w .tu-pick:hover{border-color:var(--ink);background:var(--yellow-50)}
@@ -164,8 +164,8 @@ const CSS = `
 
 /* bank rail */
 .w .bank-cta{padding:9px 16px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:11.5px;font-weight:700;border:0;cursor:pointer;margin-top:6px;float:right}
-.w .bank-cta:hover{background:var(--ink-2)}
-.w .bank-cta:disabled{opacity:.4;cursor:not-allowed}
+.w .bank-cta:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.w .bank-cta:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);color:var(--yellow)}
 .w .bank-empty{padding:18px;text-align:center;background:var(--bg);border-radius:10px;border:1px dashed var(--border)}
 .w .bank-empty-ic{font-size:30px;color:var(--muted-3);margin-bottom:6px}
 .w .bank-empty-t{font-size:11.5px;color:var(--muted);margin-bottom:12px;line-height:1.5}

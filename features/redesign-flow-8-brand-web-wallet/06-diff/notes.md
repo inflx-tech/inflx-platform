@@ -111,3 +111,35 @@ PRODUCTION-IMPACTING (web only). `git push origin main` → Vercel
 auto-deploys brand-web. NO mobile, NO OTA, NO backend rebuild. The
 3 backend-defect failures are surfaced for explicit-go before push
 (never silently shipped).
+
+---
+
+## Post-release preventive patch — 2026-05-24
+
+After Flow 7 hit a hover-invisibility bug in production (live brand-web,
+founder reproduced), I audited Flow 8 for the same fragility class.
+Three CSS rules had the same shape — `:hover{background:var(--ink-2)}`
+without re-asserting `color`. The rules were scoped under `.w` so the
+bug wasn't actually reproducing today, but a future Tailwind upgrade or
+layout change could introduce a competing `:hover` color rule and
+silently drop the yellow text → ink-on-ink invisible.
+
+**Defensive fix applied** (no JSX change, 5-line CSS-block patch):
+
+- `.w .hero-cta:hover` — added explicit `color:var(--yellow)`
+- `.w .tu-cta:hover:not(:disabled)` — added explicit `color:var(--yellow)`
+- `.w .tu-cta:disabled` — locked bg + color (not just opacity)
+- `.w .bank-cta:hover:not(:disabled)` — added explicit `color:var(--yellow)`
+- `.w .bank-cta:disabled` — locked bg + color
+
+**Durable rule recorded for future CSS-block flows:**
+1. Scope CSS rules under the page's wrapper class (here `.w`, in Flow 7 `.cc`)
+2. On every `:hover` rule for buttons, explicitly re-assert `color`
+3. On every `:disabled` rule, explicitly re-assert bg + color (not just `opacity`)
+
+QA: pnpm qa stayed green from the earlier 71/71 run. This change is
+purely additive CSS — added `color` property to existing hover rules,
+locked disabled state. No tests would detect a difference.
+
+Deploy: founder approved push 2026-05-24 chat "push it first, next we
+concentrate on flow 9".

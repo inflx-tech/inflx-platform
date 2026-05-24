@@ -44,6 +44,17 @@
         "scope": "brand-web (admin-web not touched, backend not touched)",
         "founder_explicit_go": "2026-05-24 chat \"Go with your recommendation\" (option A push with backend-defect carve-out attached)"
       }
-    }
+    },
+    "patches": [
+      {
+        "id": "p1-hover-color-reassert",
+        "applied_at": "2026-05-24",
+        "type": "preventive-css",
+        "approved_by": "founder · 2026-05-24 chat \"push it first, next we concentrate on flow 9\"",
+        "summary": "Defensive hover-color re-assertion on 3 ink-bg buttons (.hero-cta, .tu-cta, .bank-cta). Audit fallout from Flow 7's hover-invisibility bug found same fragility class — rules were scoped under .w but :hover only set background, not color. Patch re-asserts color:var(--yellow) on every :hover:not(:disabled) and locks bg+color on every :disabled.",
+        "diff_note_ref": "06-diff/notes.md → 'Post-release preventive patch — 2026-05-24' section",
+        "scope": "5-line CSS-block patch; no JSX change; no logic change"
+      }
+    ]
   }
 }
