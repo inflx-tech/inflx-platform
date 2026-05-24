@@ -1,0 +1,31 @@
+{
+  "feature": "redesign-flow-11-brand-web-conversions",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat \"ok locked , go and implement\" — confirmed 3-KPI ink hero · inline expand for both Orders + Enquiries · clickable channel chips · status filter chips added (best-decision call by agent) · row-card feed · rental-block surfaced · deal_value surfaced",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat \"ok locked\" — locked Flow 11 mockup (3-KPI ink hero · clickable channel chips · 5-chip status filter · row-card feed · inline expand · rental block · deal_value · empty state)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand conversions page. Restyles 393-LOC wave1 page (multi-color summary grid + table + modal) to locked wave2 page (ink hero KPIs + clickable channel chips + status filter + row-card feed + inline expand). Surfaces 5 already-loaded-but-unused backend fields (pickup_date / return_date / duration_days / pickup_type / booking_notes on rental rows + deal_value on converted enquiry rows). CSS scoping discipline under .cnv wrapper from day 1. Zero backend / API / schema / DB change. Adjacent-fix: drop dead OLD-UI 'new'/'contacted' enquiry status colors (backend never writes them; canonical values = submitted/responded/converted/closed).",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-24T13:54:31Z",
+      "result": "75/75 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 35,
+      "report": "qa/reports/2026-05-24T13-54-31-724Z/QA-REPORT.md",
+      "first_run_clean": true,
+      "note": "Test count grew 73 → 75 from Window A's Phase A9 push (80ba29c). All pass; Flow 11 changes don't touch those surfaces."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}
