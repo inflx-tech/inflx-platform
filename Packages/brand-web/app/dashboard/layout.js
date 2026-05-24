@@ -19,8 +19,10 @@ const NAV = [
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '▢' },
   { href: '/dashboard/proposals',   label: 'Proposals',   icon: '✉' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
-  { href: '/dashboard/wallet',      label: 'Wallet',      icon: '◫' },
-  { href: '/dashboard/profile',     label: 'Profile',     icon: '◉' },
+  { href: '/dashboard/wallet',        label: 'Wallet',        icon: '◫' },
+  { href: '/dashboard/subscription',  label: 'Subscription',  icon: '◆' },
+  { href: '/dashboard/billing',       label: 'Billing',       icon: '◧' },
+  { href: '/dashboard/profile',       label: 'Profile',       icon: '◉' },
 ];
 
 export default function DashboardLayout({ children }) {

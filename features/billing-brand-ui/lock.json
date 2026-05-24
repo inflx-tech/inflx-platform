@@ -1,0 +1,32 @@
+{
+  "feature": "billing-brand-ui",
+  "area": "brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-24) — explicit override 'do one thing, you start design pages, later i will change'. Window B foundation block on §7 of the original brief explicitly waived for this contract.",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Vercel redeploys brand-web with 2 new dashboard pages + 2 nav entries + 1 reusable modal. No backend change (endpoints shipped in A6). No mobile change. Pushed only after pnpm qa green.",
+  "fix": "Phase A7-brand — /dashboard/subscription + /dashboard/billing + QuotaWallModal component + 4 brandApi methods + 2 nav entries + Playwright spec (2 tests). Visual baseline mirrors /dashboard/wallet wave2 palette so it slots into existing dashboard cleanly; founder will restyle later.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-admin-ui",
+    "features/billing-subscription-mandate",
+    "features/billing-quota-middleware"
+  ],
+  "result": "2 brand pages + QuotaWallModal component + 4 brandApi methods + 2 nav entries + 1 spec (2 tests). First run hit 2 strict-mode locator violations (getByText matched multiple elements); fixed to getByRole heading + locator.pill.paid. Re-run clean. pnpm qa 73/73 GREEN STATE=GREEN gate=0 (34.5s). Ready to push.",
+  "regression_proof": "No existing brand-web page modified except layout.js NAV (append-only). Backend untouched (endpoints already live from A6). Mobile untouched. Window B collision avoided — quota modal not wired into existing pages in this commit.",
+  "discipline": "Contract-first; founder override on §7 sequencing recorded explicitly in 01-spec.md + lock.json approved_by. Production-impacting push surfaced as part of the broad-delegation chain ('go and complete all phases, but test and go forward' carrying through into A7-brand).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; 2 new brand pages + nav + modal go live on Vercel)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-24) — visual baseline explicitly matches existing /dashboard/wallet wave2 palette; founder will restyle later per 'do one thing, you start design pages, later i will change'.",
+  "mockup_locked_at": "2026-05-24"
+}

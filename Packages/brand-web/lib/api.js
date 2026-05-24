@@ -149,6 +149,11 @@ export const brandApi = {
   createProduct: (data) => api.post('/brands/me/products', data),
   updateProduct: (id, data) => api.patch(`/brands/me/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/brands/me/products/${id}`),
+  // ── Subscription + billing (Phase A7-brand) ───────────────────────────────
+  listSubscriptionTiers: () => api.get('/subscription-tiers'),
+  getMySubscription:     () => api.get('/brands/me/subscription'),
+  upgradeSubscription:   (tier_key) => api.post('/brands/me/subscription/upgrade', { tier_key }),
+  getMyInvoices:         (params) => api.get(`/brands/me/billing/invoices${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
 // ─── INFLX Meals (admin platform settings) ──────────────────────────────────
