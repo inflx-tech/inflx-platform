@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 12 · brand-web influencers bundle (list + profile + analytics) — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --hyb:#6B5A00; --hyb-pale:#FFF7CC;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --shadow:0 1px 3px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{padding:32px 24px 64px}
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.mono{font-family:'JetBrains Mono',monospace}
+
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800;letter-spacing:-.2px}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:780px;line-height:1.5}
+
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:30px}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:920px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center;opacity:.9}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+.page{padding:30px 36px;background:var(--bg);overflow-y:auto}
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+.crumb a{color:var(--muted-2)}
+.crumb a:hover{color:var(--ink)}
+
+.hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.hdr-l h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.hdr-l .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.hdr-l .sub{font-size:12px;color:var(--muted-2);max-width:600px;line-height:1.5}
+.hdr-r{display:flex;gap:8px}
+.cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:800;margin-bottom:6px}
+.btn-ghost{padding:8px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+.btn-ghost:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.btn-ink{padding:8px 14px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-ink:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.btn-yel{padding:8px 14px;background:var(--yellow);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-yel:hover:not(:disabled){background:var(--yellow-hover);color:var(--ink)}
+
+/* INK HERO KPI strip */
+.hero{background:var(--ink);color:var(--white);border-radius:16px;padding:22px 26px;margin-bottom:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:var(--yellow);border-radius:50%;opacity:.06}
+.hero-cell{position:relative;z-index:2;border-left:1px solid rgba(255,255,255,.08);padding-left:18px}
+.hero-cell:first-child{border-left:0;padding-left:0}
+.hero-v{font-family:'JetBrains Mono';font-size:28px;font-weight:800;letter-spacing:-.6px;color:var(--white);line-height:1.1}
+.hero-v.yel{color:var(--yellow)}
+.hero-l{font-family:'Outfit';font-size:10.5px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+.hero-s{font-family:'JetBrains Mono';font-size:10.5px;color:rgba(255,255,255,.4);margin-top:3px}
+
+/* SEARCH BAR */
+.sbar{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.sbar-top{display:flex;gap:8px;margin-bottom:10px}
+.sbar-top .qin{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none}
+.sbar-top .qin:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.sbar-top select{padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--ink);min-width:180px;font-weight:600}
+.sbar-row{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.sbar-f{display:flex;flex-direction:column;gap:4px;min-width:120px}
+.sbar-f-l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.sbar-f-i{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none}
+.sbar-f-i:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.sbar-more{padding:7px 12px;background:transparent;border:1px dashed var(--muted-3);border-radius:8px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.sbar-more:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--bg)}
+.sbar-clear{padding:7px 10px;background:transparent;border:0;font-size:11px;font-weight:700;color:var(--muted-2);text-decoration:underline}
+.sbar-clear:hover{color:var(--danger-text)}
+.sbar-advanced{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+.sbar-checks{display:flex;flex-wrap:wrap;gap:18px;margin-top:8px}
+.sbar-check{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink);font-weight:600;cursor:pointer}
+.sbar-check input{accent-color:var(--yellow);width:14px;height:14px}
+
+/* TIER chip row */
+.tier-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tier-chip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.tier-chip:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
+.tier-chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.tier-chip .dot{width:7px;height:7px;border-radius:50%;background:var(--muted-3)}
+.tier-chip .ct{font-family:'JetBrains Mono';font-size:10px;font-weight:800;opacity:.7;margin-left:2px}
+
+/* TIER badges (per-card) */
+.tier-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}
+.tier-pill.nano{background:var(--bg2);color:var(--muted)}
+.tier-pill.micro{background:var(--info-pale);color:var(--info)}
+.tier-pill.mid{background:var(--eng-pale);color:var(--eng)}
+.tier-pill.macro{background:var(--conv-pale);color:var(--conv)}
+.tier-pill.mega{background:var(--yellow-pale);color:var(--yellow-text)}
+.tier-pill.celebrity{background:var(--danger-pale);color:var(--danger-text)}
+.tier-pill .d{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
+
+/* Influencer ROW CARD — compact single-line */
+.ic{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:44px 1fr auto auto auto;gap:14px;align-items:center;margin-bottom:6px;transition:all .15s;cursor:pointer;min-height:64px}
+.ic:hover{border-color:var(--ink)}
+.av{width:40px;height:40px;border-radius:10px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:13px;flex-shrink:0;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.ic-mid{min-width:0;display:flex;flex-direction:column;gap:3px}
+.ic-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ic-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink)}
+.ic-handle{font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted-2)}
+.ic-verify{display:inline-flex;align-items:center;font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:1px 5px;border-radius:5px;background:var(--info-pale);color:var(--info);text-transform:uppercase;letter-spacing:.3px}
+.ic-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ic-meta b{color:var(--ink);font-weight:600}
+.ic-meta .sep{color:var(--muted-3)}
+.ic-tag{font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;color:var(--muted-2);padding:1px 5px;border-radius:4px;background:var(--bg2);font-style:italic}
+
+/* Tiny inline rank badge — the ONE intel signal inline (default sort = rank) */
+.rank-mini{display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;background:var(--yellow-pale);color:var(--yellow-text)}
+
+/* Stats trio — compact, inline */
+.ic-stats{display:flex;gap:14px;align-items:center;flex-shrink:0}
+.ic-st{text-align:center;min-width:50px}
+.ic-st-v{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink);letter-spacing:-.2px;line-height:1.1}
+.ic-st-v.er-high{color:var(--success-text)}
+.ic-st-v.er-mid{color:var(--info)}
+.ic-st-l{font-family:'Outfit';font-size:8.5px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
+
+/* Right rail: rate + single action button */
+.ic-rate-mini{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink);text-align:right;flex-shrink:0;min-width:90px;line-height:1.15}
+.ic-rate-mini .l{font-family:'Outfit';font-size:8.5px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;display:block}
+.ic-action-btn{padding:7px 12px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;border:0;flex-shrink:0;white-space:nowrap}
+.ic-action-btn.add{background:var(--ink);color:var(--yellow)}
+.ic-action-btn.add:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.ic-action-btn.invite{background:var(--yellow);color:var(--ink)}
+.ic-action-btn.invite:hover:not(:disabled){background:var(--yellow-hover);color:var(--ink)}
+
+/* Pagination + spinner */
+.pager{display:flex;justify-content:center;align-items:center;gap:14px;margin-top:18px}
+.pg-btn{padding:8px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:11.5px;font-weight:700;color:var(--ink)}
+.pg-btn:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.pg-btn:disabled{opacity:.3;cursor:not-allowed;background:var(--white);color:var(--ink)}
+.pg-info{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+
+/* PROFILE PAGE — hero card */
+.prof-hero{background:var(--ink);color:var(--white);border-radius:18px;padding:24px 28px;display:flex;gap:22px;align-items:flex-start;position:relative;overflow:hidden;margin-bottom:16px}
+.prof-hero::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:var(--yellow);border-radius:50%;opacity:.07}
+.prof-hero > *{position:relative;z-index:2}
+.prof-av{width:96px;height:96px;border-radius:20px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:32px;flex-shrink:0;overflow:hidden}
+.prof-av img{width:100%;height:100%;object-fit:cover}
+.prof-info{flex:1;min-width:0}
+.prof-info h1{font-family:'Outfit';font-size:26px;font-weight:700;color:var(--white);letter-spacing:-.4px;margin-bottom:6px}
+.prof-info .row{display:flex;flex-wrap:wrap;gap:14px;align-items:center;font-family:'JetBrains Mono';font-size:11.5px;color:rgba(255,255,255,.65);margin-bottom:8px}
+.prof-info .row .yel{color:var(--yellow)}
+.prof-info .bio{font-size:13px;color:rgba(255,255,255,.85);line-height:1.55;margin-bottom:10px;max-width:560px}
+.prof-info .tags{display:flex;flex-wrap:wrap;gap:5px}
+.prof-info .tags .niche-chip{background:rgba(255,255,255,.08);color:var(--white);border-color:rgba(255,255,255,.12)}
+.prof-info .tags .niche-chip.brand{background:var(--yellow);color:var(--ink);border-color:var(--yellow)}
+.prof-cta{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+
+/* Profile stats strip */
+.prof-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.prof-stat{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.prof-stat-v{font-family:'JetBrains Mono';font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.prof-stat-v.green{color:var(--success-text)}
+.prof-stat-v.yel{color:var(--yellow-text)}
+.prof-stat-l{font-family:'Outfit';font-size:10px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:4px}
+.prof-stat-s{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:3px}
+
+/* Profile 2-col grid */
+.prof-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.prof-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px}
+.prof-card h3{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.prof-card h3 .ind{font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;color:var(--muted-2);padding:2px 6px;background:var(--bg);border-radius:5px;margin-left:auto}
+
+/* Engagement bar list */
+.eb-row{margin-bottom:10px}
+.eb-row:last-child{margin-bottom:0}
+.eb-top{display:flex;justify-content:space-between;font-family:'JetBrains Mono';font-size:11px;color:var(--muted);margin-bottom:4px}
+.eb-top b{color:var(--ink);font-weight:700}
+.eb-track{height:6px;background:var(--bg);border-radius:99px;overflow:hidden}
+.eb-fill{height:100%;background:var(--yellow);border-radius:99px}
+.eb-fill.ink{background:var(--ink)}
+.eb-fill.green{background:var(--success)}
+.eb-fill.info{background:var(--info)}
+.eb-fill.conv{background:var(--conv)}
+
+/* k/v list */
+.kv-list .kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-soft);font-size:12px}
+.kv-list .kv:last-child{border-bottom:0}
+.kv-list .kv-k{color:var(--muted-2);font-weight:500}
+.kv-list .kv-v{color:var(--ink);font-weight:700;font-family:'JetBrains Mono';font-size:12px;text-align:right}
+
+/* Past brands grid */
+.brands-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.brand-card{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border-soft);border-radius:10px}
+.brand-av{width:24px;height:24px;border-radius:6px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:10px;flex-shrink:0}
+.brand-h{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Activity freshness card */
+.fresh-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.fresh{padding:10px 12px;background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;text-align:center}
+.fresh-v{font-family:'JetBrains Mono';font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.2px;line-height:1.2}
+.fresh-l{font-family:'Outfit';font-size:9.5px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.fresh-note{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);text-align:center}
+
+/* Pricing card */
+.price-big{font-family:'JetBrains Mono';font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.4px;margin-bottom:4px}
+.price-sub{font-size:11.5px;color:var(--muted-2);margin-bottom:14px}
+.price-bar{display:flex;align-items:center;gap:8px}
+.price-bar-t{flex:1;height:6px;background:var(--bg);border-radius:99px;overflow:hidden}
+.price-bar-f{height:100%;background:linear-gradient(90deg,var(--yellow) 0%,var(--yellow-hover) 100%);border-radius:99px}
+.price-bar-l{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2)}
+
+/* Sticky bottom CTA bar */
+.sticky-cta{position:sticky;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:14px 36px;display:flex;justify-content:space-between;align-items:center;gap:14px;margin:24px -36px -30px}
+.sticky-cta-l{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+.sticky-cta-l b{color:var(--ink);font-weight:700}
+.sticky-cta-r{display:flex;gap:8px}
+
+/* ANALYTICS — scope filter strip */
+.scope{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.scope-l{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin-right:6px}
+.scope input,.scope select{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;outline:none;background:var(--white);color:var(--ink)}
+.scope input:focus,.scope select:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+
+/* Analytics top stats */
+.an-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.an-stat{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.an-stat-l{font-family:'Outfit';font-size:10px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.an-stat-v{font-family:'JetBrains Mono';font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.3px;margin-top:4px}
+.an-stat-v.yel{color:var(--yellow-text)}
+.an-stat-v.green{color:var(--success-text)}
+.an-stat-s{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:4px}
+
+/* Chart card */
+.chart{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px}
+.chart h3{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink);display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.chart h3 .more{font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--yellow-text);text-decoration:none;background:var(--yellow-pale);padding:3px 8px;border-radius:6px}
+.chart .csub{font-size:11px;color:var(--muted-2);margin-bottom:14px}
+
+/* Donut */
+.donut-wrap{display:flex;gap:18px;align-items:center}
+.donut{position:relative;width:130px;height:130px;flex-shrink:0}
+.donut svg{transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-center-v{font-family:'JetBrains Mono';font-size:22px;font-weight:800;color:var(--ink)}
+.donut-center-l{font-family:'Outfit';font-size:9.5px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.donut-legend{flex:1;min-width:0}
+.dl-row{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:11.5px}
+.dl-sw{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.dl-lbl{flex:1;color:var(--ink);font-weight:600;text-transform:capitalize}
+.dl-n{font-family:'JetBrains Mono';font-weight:700;color:var(--muted)}
+.dl-pct{font-family:'JetBrains Mono';color:var(--muted-2);width:42px;text-align:right;font-size:10.5px}
+
+/* Bar list */
+.bar-row{display:flex;align-items:center;gap:10px;font-size:11.5px;margin-bottom:6px}
+.bar-lbl{width:130px;color:var(--ink);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:20px;background:var(--bg);border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;background:var(--ink);border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding:0 8px;color:var(--yellow);font-family:'JetBrains Mono';font-size:10.5px;font-weight:700}
+.bar-fill.yel{background:var(--yellow);color:var(--ink)}
+.bar-fill.info{background:var(--info);color:var(--white)}
+.bar-fill.conv{background:var(--conv);color:var(--white)}
+.bar-fill.green{background:var(--success);color:var(--white)}
+.bar-n{width:50px;text-align:right;font-family:'JetBrains Mono';font-size:11px;color:var(--muted);font-weight:700}
+
+/* Rate table */
+.rt-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.rt-table thead th{text-align:left;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;padding:6px 10px;border-bottom:1px solid var(--border)}
+.rt-table tbody td{padding:8px 10px;border-bottom:1px solid var(--border-soft);font-family:'JetBrains Mono';color:var(--ink);font-weight:700}
+.rt-table tbody td:first-child{font-family:inherit;display:flex;align-items:center;gap:6px;text-transform:capitalize}
+.rt-table tbody td .dot{width:7px;height:7px;border-radius:50%}
+.rt-table tbody td.muted{color:var(--muted-2);font-weight:600}
+.rt-table tbody td.right{text-align:right}
+
+/* Leaderboard */
+.lb{display:flex;flex-direction:column;gap:2px}
+.lb-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer}
+.lb-row:hover{background:var(--bg)}
+.lb-rank{width:18px;text-align:center;font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-3)}
+.lb-rank.top{color:var(--yellow-text)}
+.lb-av{width:30px;height:30px;border-radius:8px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:11px;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-family:'JetBrains Mono';font-size:12px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-metric{text-align:right;flex-shrink:0}
+.lb-metric-v{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink)}
+.lb-metric-v.yel{color:var(--yellow-text)}
+.lb-metric-v.green{color:var(--success-text)}
+.lb-metric-v.info{color:var(--info)}
+.lb-metric-l{font-family:'Outfit';font-size:9px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+
+/* Variant heading */
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+
+.empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;margin-top:14px;position:relative;overflow:hidden}
+.empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
+.empty > *{position:relative;z-index:2}
+.empty .ic{width:60px;height:60px;background:var(--ink);color:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:24px;margin:0 auto 14px}
+.empty .h{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty .t{font-size:12px;color:var(--muted);line-height:1.55;max-width:480px;margin:0 auto}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 12 · brand-web influencers bundle — wave2 mockup</h1>
+  <span class="sub">3 routes: <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/dashboard/influencers</code> · <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">[id]</code> · <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/analytics</code>. Locked palette · ink hero · row-cards (NEW) · backend-first tiles · 13 already-loaded fields surfaced · CSS scoped under <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">.inf</code></span>
+</div>
+
+<!-- ─── State 1 — LIST · DEFAULT ───────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 5 — LIST</span>
+  <span class="title">/dashboard/influencers · default search</span>
+  <span class="note">Empty filters · sorted by rank · 5 results shown</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / influencers</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <div class="side-sep"></div>
+      <a class="side-link act"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>influencers</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">2,418 searchable</span>
+          <h1>Find Creators</h1>
+          <div class="rule"></div>
+          <div class="sub">Search across onboarded + scraped creators. Invite unclaimed ones and Inflx admin will run outreach.</div>
+        </div>
+        <div class="hdr-r">
+          <button class="btn-ghost">📊 Market Analytics</button>
+        </div>
+      </div>
+
+      <!-- INK HERO -->
+      <div class="hero">
+        <div class="hero-cell">
+          <div class="hero-v">2,418</div>
+          <div class="hero-l">Total Searchable</div>
+          <div class="hero-s">across cities + niches</div>
+        </div>
+        <div class="hero-cell">
+          <div class="hero-v yel">312</div>
+          <div class="hero-l">Verified by Inflx</div>
+          <div class="hero-s">12.9% of pool · 2,106 scraped</div>
+        </div>
+        <div class="hero-cell">
+          <div class="hero-v">₹8,500</div>
+          <div class="hero-l">Median min rate</div>
+          <div class="hero-s">per post · across all tiers</div>
+        </div>
+      </div>
+
+      <!-- SEARCH BAR -->
+      <div class="sbar">
+        <div class="sbar-top">
+          <input class="qin" placeholder="Search by name or @handle…" />
+          <select>
+            <option>Best fit (rank)</option>
+            <option>Best engagement</option>
+            <option>Most followers</option>
+            <option>Most active</option>
+            <option>Highest growth potential</option>
+            <option>Lowest est. rate</option>
+            <option>Most brand collabs</option>
+          </select>
+          <button class="btn-ink">Search</button>
+        </div>
+        <div class="sbar-row">
+          <div class="sbar-f"><div class="sbar-f-l">City</div><input class="sbar-f-i" placeholder="Vijayawada, Mumbai…" /></div>
+          <div class="sbar-f"><div class="sbar-f-l">Niche</div><input class="sbar-f-i" placeholder="food_blogger, fashion…" /></div>
+          <div class="sbar-f"><div class="sbar-f-l">Tier</div>
+            <select class="sbar-f-i" style="background:var(--white)"><option>All</option><option>Nano</option><option>Micro</option><option>Mid</option><option>Macro</option><option>Mega</option><option>Celebrity</option></select>
+          </div>
+          <div class="sbar-f"><div class="sbar-f-l">Min ER %</div><input class="sbar-f-i" type="number" step="0.1" placeholder="2.0" /></div>
+          <button class="sbar-more">More filters ▾</button>
+        </div>
+      </div>
+
+      <!-- Tier chip row -->
+      <div class="tier-row">
+        <button class="tier-chip act"><span class="dot"></span>All <span class="ct">2418</span></button>
+        <button class="tier-chip"><span class="dot" style="background:var(--muted)"></span>Nano <span class="ct">820</span></button>
+        <button class="tier-chip"><span class="dot" style="background:var(--info)"></span>Micro <span class="ct">1080</span></button>
+        <button class="tier-chip"><span class="dot" style="background:var(--eng)"></span>Mid <span class="ct">340</span></button>
+        <button class="tier-chip"><span class="dot" style="background:var(--conv)"></span>Macro <span class="ct">152</span></button>
+        <button class="tier-chip"><span class="dot" style="background:var(--yellow)"></span>Mega <span class="ct">22</span></button>
+        <button class="tier-chip"><span class="dot" style="background:var(--danger)"></span>Celebrity <span class="ct">4</span></button>
+      </div>
+
+      <!-- ROW 1 — verified macro -->
+      <div class="ic">
+        <div class="av">PR</div>
+        <div class="ic-mid">
+          <div class="ic-top">
+            <span class="ic-name">Priya Ravi</span>
+            <span class="ic-handle">@priyareels</span>
+            <span class="ic-verify">✓</span>
+            <span class="tier-pill macro"><span class="d"></span>Macro</span>
+            <span class="rank-mini">⭐ 92.4</span>
+          </div>
+          <div class="ic-meta">📍 <b>Hyderabad</b> <span class="sep">·</span> 🎨 <b>food</b> <span class="sep">·</span> 12 brand collabs</div>
+        </div>
+        <div class="ic-stats">
+          <div class="ic-st"><div class="ic-st-v">142K</div><div class="ic-st-l">Followers</div></div>
+          <div class="ic-st"><div class="ic-st-v er-high">5.8%</div><div class="ic-st-l">View ER</div></div>
+          <div class="ic-st"><div class="ic-st-v">48K</div><div class="ic-st-l">Avg Views</div></div>
+        </div>
+        <div class="ic-rate-mini">₹12K – ₹25K<span class="l">Est. rate</span></div>
+        <button class="ic-action-btn add">+ Add</button>
+      </div>
+
+      <!-- ROW 2 — unclaimed scraped macro -->
+      <div class="ic">
+        <div class="av">SK</div>
+        <div class="ic-mid">
+          <div class="ic-top">
+            <span class="ic-name">Sneha Kapoor</span>
+            <span class="ic-handle">@snekkapoor</span>
+            <span class="tier-pill macro"><span class="d"></span>Macro</span>
+            <span class="rank-mini">⭐ 88.1</span>
+            <span class="ic-tag">scraped</span>
+          </div>
+          <div class="ic-meta">📍 <b>Bengaluru</b> <span class="sep">·</span> 🎨 <b>fashion</b> <span class="sep">·</span> 14 brand collabs</div>
+        </div>
+        <div class="ic-stats">
+          <div class="ic-st"><div class="ic-st-v">208K</div><div class="ic-st-l">Followers</div></div>
+          <div class="ic-st"><div class="ic-st-v er-high">6.2%</div><div class="ic-st-l">View ER</div></div>
+          <div class="ic-st"><div class="ic-st-v">62K</div><div class="ic-st-l">Avg Views</div></div>
+        </div>
+        <div class="ic-rate-mini">₹15K – ₹30K<span class="l">Est. rate</span></div>
+        <button class="ic-action-btn invite">✉ Invite</button>
+      </div>
+
+      <!-- ROW 3 — verified micro -->
+      <div class="ic">
+        <div class="av">RT</div>
+        <div class="ic-mid">
+          <div class="ic-top">
+            <span class="ic-name">Ritika Taneja</span>
+            <span class="ic-handle">@ritika.style</span>
+            <span class="ic-verify">✓</span>
+            <span class="tier-pill micro"><span class="d"></span>Micro</span>
+            <span class="rank-mini">⭐ 81.2</span>
+          </div>
+          <div class="ic-meta">📍 <b>Pune</b> <span class="sep">·</span> 🎨 <b>fashion</b> <span class="sep">·</span> 7 brand collabs</div>
+        </div>
+        <div class="ic-stats">
+          <div class="ic-st"><div class="ic-st-v">42K</div><div class="ic-st-l">Followers</div></div>
+          <div class="ic-st"><div class="ic-st-v er-mid">3.4%</div><div class="ic-st-l">View ER</div></div>
+          <div class="ic-st"><div class="ic-st-v">14K</div><div class="ic-st-l">Avg Views</div></div>
+        </div>
+        <div class="ic-rate-mini">₹4K – ₹9K<span class="l">Est. rate</span></div>
+        <button class="ic-action-btn add">+ Add</button>
+      </div>
+
+      <!-- ROW 4 — unclaimed nano -->
+      <div class="ic">
+        <div class="av">DV</div>
+        <div class="ic-mid">
+          <div class="ic-top">
+            <span class="ic-name">Divya Verma</span>
+            <span class="ic-handle">@divya.eats</span>
+            <span class="tier-pill nano"><span class="d"></span>Nano</span>
+            <span class="rank-mini">⭐ 64.0</span>
+            <span class="ic-tag">scraped</span>
+          </div>
+          <div class="ic-meta">📍 <b>Chennai</b> <span class="sep">·</span> 🎨 <b>food_blogger</b> <span class="sep">·</span> 2 brand collabs</div>
+        </div>
+        <div class="ic-stats">
+          <div class="ic-st"><div class="ic-st-v">8.2K</div><div class="ic-st-l">Followers</div></div>
+          <div class="ic-st"><div class="ic-st-v er-high">8.1%</div><div class="ic-st-l">View ER</div></div>
+          <div class="ic-st"><div class="ic-st-v">4.1K</div><div class="ic-st-l">Avg Views</div></div>
+        </div>
+        <div class="ic-rate-mini">₹1.5K – ₹3K<span class="l">Est. rate</span></div>
+        <button class="ic-action-btn invite">✉ Invite</button>
+      </div>
+
+      <!-- ROW 5 — verified macro with stale signal -->
+      <div class="ic">
+        <div class="av">AM</div>
+        <div class="ic-mid">
+          <div class="ic-top">
+            <span class="ic-name">Anjali Mehta</span>
+            <span class="ic-handle">@anj.lifestyle</span>
+            <span class="ic-verify">✓</span>
+            <span class="tier-pill macro"><span class="d"></span>Macro</span>
+            <span class="rank-mini">⭐ 76.5</span>
+            <span class="ic-tag" style="color:var(--danger-text);background:var(--danger-pale)">data 14d old</span>
+          </div>
+          <div class="ic-meta">📍 <b>Mumbai</b> <span class="sep">·</span> 🎨 <b>lifestyle</b> <span class="sep">·</span> 18 brand collabs</div>
+        </div>
+        <div class="ic-stats">
+          <div class="ic-st"><div class="ic-st-v">156K</div><div class="ic-st-l">Followers</div></div>
+          <div class="ic-st"><div class="ic-st-v er-mid">4.1%</div><div class="ic-st-l">View ER</div></div>
+          <div class="ic-st"><div class="ic-st-v">38K</div><div class="ic-st-l">Avg Views</div></div>
+        </div>
+        <div class="ic-rate-mini">₹10K – ₹22K<span class="l">Est. rate</span></div>
+        <button class="ic-action-btn add">+ Add</button>
+      </div>
+
+      <div class="pager">
+        <button class="pg-btn" disabled>← Previous</button>
+        <span class="pg-info">Page 1 of 49</span>
+        <button class="pg-btn">Next →</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 2 — LIST · ADVANCED FILTERS OPEN ────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 5 — LIST</span>
+  <span class="title">/dashboard/influencers · advanced filters drawer open</span>
+  <span class="note">9 additional filters · "Has worked with brands" + "Verified only" toggled</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / influencers</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link act"><span class="ic">★</span>Influencers</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>influencers</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">68 matches</span>
+          <h1>Find Creators</h1>
+          <div class="rule"></div>
+        </div>
+        <div class="hdr-r">
+          <button class="btn-ghost">📊 Market Analytics</button>
+        </div>
+      </div>
+
+      <div class="sbar">
+        <div class="sbar-top">
+          <input class="qin" placeholder="Search by name or @handle…" value="food" />
+          <select><option>Best engagement</option></select>
+          <button class="btn-ink">Search</button>
+        </div>
+        <div class="sbar-row">
+          <div class="sbar-f"><div class="sbar-f-l">City</div><input class="sbar-f-i" value="Hyderabad" /></div>
+          <div class="sbar-f"><div class="sbar-f-l">Niche</div><input class="sbar-f-i" value="food_blogger" /></div>
+          <div class="sbar-f"><div class="sbar-f-l">Tier</div><select class="sbar-f-i" style="background:var(--white)"><option>Micro</option></select></div>
+          <div class="sbar-f"><div class="sbar-f-l">Min ER %</div><input class="sbar-f-i" type="number" value="3.0" /></div>
+          <button class="sbar-more" style="background:var(--bg);border-style:solid;border-color:var(--ink);color:var(--ink)">More filters ▴</button>
+          <button class="sbar-clear">Clear (6) ✕</button>
+        </div>
+        <div class="sbar-advanced">
+          <div class="sbar-row">
+            <div class="sbar-f"><div class="sbar-f-l">Language</div><input class="sbar-f-i" placeholder="english,telugu" /></div>
+            <div class="sbar-f"><div class="sbar-f-l">Use case</div><select class="sbar-f-i" style="background:var(--white)"><option>Conversion</option></select></div>
+            <div class="sbar-f"><div class="sbar-f-l">Min followers</div><input class="sbar-f-i" type="number" placeholder="10000" /></div>
+            <div class="sbar-f"><div class="sbar-f-l">Max followers</div><input class="sbar-f-i" type="number" placeholder="500000" /></div>
+            <div class="sbar-f"><div class="sbar-f-l">Min rate ₹</div><input class="sbar-f-i" type="number" placeholder="2000" /></div>
+            <div class="sbar-f"><div class="sbar-f-l">Max rate ₹</div><input class="sbar-f-i" type="number" placeholder="50000" /></div>
+            <div class="sbar-f"><div class="sbar-f-l">Worked with brand</div><input class="sbar-f-i" placeholder="@swiggy" /></div>
+          </div>
+          <div class="sbar-checks">
+            <label class="sbar-check"><input type="checkbox" checked>Has worked with brands</label>
+            <label class="sbar-check"><input type="checkbox" checked>Verified by Inflx only</label>
+            <label class="sbar-check"><input type="checkbox">Instagram business account only</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="tier-row">
+        <button class="tier-chip act"><span class="dot" style="background:var(--info)"></span>Micro <span class="ct">68</span></button>
+      </div>
+
+      <div class="ic">
+        <div class="av">RT</div>
+        <div class="ic-mid">
+          <div class="ic-top">
+            <span class="ic-name">Ritika Taneja</span>
+            <span class="ic-handle">@ritika.style</span>
+            <span class="ic-verify">✓</span>
+            <span class="tier-pill micro"><span class="d"></span>Micro</span>
+            <span class="rank-mini">⭐ 81.2</span>
+          </div>
+          <div class="ic-meta">📍 <b>Hyderabad</b> <span class="sep">·</span> 🎨 <b>food_blogger</b> <span class="sep">·</span> 6 brand collabs</div>
+        </div>
+        <div class="ic-stats">
+          <div class="ic-st"><div class="ic-st-v">38K</div><div class="ic-st-l">Followers</div></div>
+          <div class="ic-st"><div class="ic-st-v er-high">5.1%</div><div class="ic-st-l">View ER</div></div>
+          <div class="ic-st"><div class="ic-st-v">18K</div><div class="ic-st-l">Avg Views</div></div>
+        </div>
+        <div class="ic-rate-mini">₹3K – ₹7K<span class="l">Est. rate</span></div>
+        <button class="ic-action-btn add">+ Add</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 3 — PROFILE ─────────────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 5 — PROFILE</span>
+  <span class="title">/dashboard/influencers/[id] · scraped creator detail</span>
+  <span class="note">All 9 already-loaded-but-unused fields surfaced (activity freshness card)</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / influencers / cp_a7d2f9e1...</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link act"><span class="ic">★</span>Influencers</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb"><a>/dashboard</a> <span class="sep">/</span> <a>influencers</a> <span class="sep">/</span> <b>@snekkapoor</b></div>
+
+      <!-- HERO -->
+      <div class="prof-hero">
+        <div class="prof-av">SK</div>
+        <div class="prof-info">
+          <h1>Sneha Kapoor</h1>
+          <div class="row">
+            <span class="yel">@snekkapoor</span>
+            <span>📸 Instagram</span>
+            <span>📍 Bengaluru, Karnataka</span>
+            <span>🎂 28 yrs · ⚤ female</span>
+            <span style="font-style:italic">scraped · data updated 3d ago</span>
+          </div>
+          <div class="bio">Working-women-first workwear curator. Try-on hauls, styling tips, and the occasional Sunday brunch reel. Open to long-form collabs with apparel + lifestyle brands.</div>
+          <div class="tags">
+            <span class="niche-chip" style="background:rgba(255,255,255,.08);color:var(--white);border-color:rgba(255,255,255,.12)">fashion</span>
+            <span class="niche-chip" style="background:rgba(255,255,255,.08);color:var(--white);border-color:rgba(255,255,255,.12)">workwear</span>
+            <span class="niche-chip" style="background:rgba(255,255,255,.08);color:var(--white);border-color:rgba(255,255,255,.12)">travel</span>
+            <span class="niche-chip" style="background:rgba(255,255,255,.08);color:var(--white);border-color:rgba(255,255,255,.12)">lifestyle</span>
+            <span class="niche-chip lang" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.12)">EN</span>
+            <span class="niche-chip lang" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.12)">HI</span>
+          </div>
+        </div>
+        <div class="prof-cta">
+          <button class="btn-yel">+ Invite to Campaign</button>
+          <button class="btn-ghost" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--white)">View on Instagram ↗</button>
+        </div>
+      </div>
+
+      <!-- STATS STRIP -->
+      <div class="prof-stats">
+        <div class="prof-stat">
+          <div class="prof-stat-v">208K</div>
+          <div class="prof-stat-l">Followers</div>
+          <div class="prof-stat-s">Macro tier · 100K–1M</div>
+        </div>
+        <div class="prof-stat">
+          <div class="prof-stat-v green">6.2%</div>
+          <div class="prof-stat-l">Engagement Rate</div>
+          <div class="prof-stat-s">🔥 Excellent · view-based</div>
+        </div>
+        <div class="prof-stat">
+          <div class="prof-stat-v">62K</div>
+          <div class="prof-stat-l">Avg Views</div>
+          <div class="prof-stat-s">per post · last 90d</div>
+        </div>
+        <div class="prof-stat">
+          <div class="prof-stat-v">1,247</div>
+          <div class="prof-stat-l">Total Posts</div>
+          <div class="prof-stat-s">lifetime</div>
+        </div>
+      </div>
+
+      <!-- 2-COL GRID -->
+      <div class="prof-grid">
+        <!-- LEFT COL -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- Engagement breakdown -->
+          <div class="prof-card">
+            <h3>📊 Avg Engagement per Post <span class="ind">view-based</span></h3>
+            <div class="eb-row">
+              <div class="eb-top"><span>❤ Likes</span><b>12,890</b></div>
+              <div class="eb-track"><div class="eb-fill" style="width:100%"></div></div>
+            </div>
+            <div class="eb-row">
+              <div class="eb-top"><span>💬 Comments</span><b>892</b></div>
+              <div class="eb-track"><div class="eb-fill info" style="width:14%"></div></div>
+            </div>
+            <div class="eb-row">
+              <div class="eb-top"><span>🔁 Shares</span><b>340</b></div>
+              <div class="eb-track"><div class="eb-fill green" style="width:6%"></div></div>
+            </div>
+            <div class="eb-row">
+              <div class="eb-top"><span>🔖 Saves</span><b>620</b></div>
+              <div class="eb-track"><div class="eb-fill conv" style="width:10%"></div></div>
+            </div>
+          </div>
+
+          <!-- Pricing -->
+          <div class="prof-card">
+            <h3>💰 Pricing (per post)</h3>
+            <div class="price-big">₹15,000 – ₹30,000</div>
+            <div class="price-sub">Indicative rate · final fee via negotiation</div>
+            <div class="price-bar">
+              <div class="price-bar-t"><div class="price-bar-f" style="width:60%"></div></div>
+              <div class="price-bar-l">Macro avg</div>
+            </div>
+          </div>
+
+          <!-- Collab types -->
+          <div class="prof-card">
+            <h3>🎬 Collaboration Types</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:6px">
+              <span class="niche-chip use">awareness</span>
+              <span class="niche-chip use">conversion</span>
+              <span class="niche-chip use">engagement</span>
+              <span class="niche-chip">reels</span>
+              <span class="niche-chip">stories</span>
+              <span class="niche-chip">long-form</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+
+          <!-- Past brands -->
+          <div class="prof-card">
+            <h3>🏆 Past Brand Collaborations <span class="ind">14 collabs · 11 unique</span></h3>
+            <div class="brands-grid">
+              <div class="brand-card"><div class="brand-av">S</div><div class="brand-h">@swiggy</div></div>
+              <div class="brand-card"><div class="brand-av">N</div><div class="brand-h">@nykaa</div></div>
+              <div class="brand-card"><div class="brand-av">M</div><div class="brand-h">@myntra</div></div>
+              <div class="brand-card"><div class="brand-av">A</div><div class="brand-h">@ajio</div></div>
+              <div class="brand-card"><div class="brand-av">U</div><div class="brand-h">@urban_company</div></div>
+              <div class="brand-card"><div class="brand-av">F</div><div class="brand-h">@foxyin</div></div>
+              <div class="brand-card"><div class="brand-av">L</div><div class="brand-h">@licious</div></div>
+              <div class="brand-card"><div class="brand-av">B</div><div class="brand-h">@boatlifestyle</div></div>
+              <div class="brand-card"><div class="brand-av">+</div><div class="brand-h" style="color:var(--muted-2)">+3 more</div></div>
+            </div>
+          </div>
+
+          <!-- Audience -->
+          <div class="prof-card">
+            <h3>👥 Audience Insights</h3>
+            <div class="kv-list">
+              <div class="kv"><span class="kv-k">Platform</span><span class="kv-v">Instagram</span></div>
+              <div class="kv"><span class="kv-k">Primary Location</span><span class="kv-v">Bengaluru</span></div>
+              <div class="kv"><span class="kv-k">Languages</span><span class="kv-v">EN · HI</span></div>
+              <div class="kv"><span class="kv-k">Gender</span><span class="kv-v">female</span></div>
+              <div class="kv"><span class="kv-k">Content Niches</span><span class="kv-v">fashion · workwear · travel</span></div>
+              <div class="kv"><span class="kv-k">Use cases</span><span class="kv-v">awareness · conversion</span></div>
+            </div>
+          </div>
+
+          <!-- Activity freshness — NEW CARD surfacing 5 unused fields -->
+          <div class="prof-card">
+            <h3>📈 Activity Signal <span class="ind">scraped data</span></h3>
+            <div class="fresh-row">
+              <div class="fresh"><div class="fresh-v">4</div><div class="fresh-l">posts/wk</div></div>
+              <div class="fresh"><div class="fresh-v">38</div><div class="fresh-l">posts (90d)</div></div>
+              <div class="fresh"><div class="fresh-v">24%</div><div class="fresh-l">commercial %</div></div>
+            </div>
+            <div class="fresh-row">
+              <div class="fresh"><div class="fresh-v">88.1</div><div class="fresh-l">rank score</div></div>
+              <div class="fresh"><div class="fresh-v" style="color:var(--success-text)">76</div><div class="fresh-l">growth /100</div></div>
+              <div class="fresh"><div class="fresh-v">●</div><div class="fresh-l">active</div></div>
+            </div>
+            <div class="fresh-note">Data last refreshed 3d ago · auto re-scraped every 7d</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- STICKY BOTTOM CTA -->
+      <div class="sticky-cta">
+        <div class="sticky-cta-l">Ready to collaborate? <b>Sneha Kapoor</b> will see your invite in their offer inbox.</div>
+        <div class="sticky-cta-r">
+          <button class="btn-ghost">Save for later</button>
+          <button class="btn-ink">+ Invite to Campaign</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 4 — ANALYTICS · TOP HALF ─────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 4 / 5 — ANALYTICS</span>
+  <span class="title">/dashboard/influencers/analytics · top half (overview + distributions)</span>
+  <span class="note">Scope filters · 4 stat tiles · 2 donuts · city + niche bars</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / influencers / analytics</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link act"><span class="ic">★</span>Influencers</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb"><a>/dashboard</a> <span class="sep">/</span> <a>influencers</a> <span class="sep">/</span> <b>analytics</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">2,418 creators</span>
+          <h1>Creator Market Analytics</h1>
+          <div class="rule"></div>
+          <div class="sub">Aggregate stats across the searchable pool · use to scope realistic budgets + spot trends.</div>
+        </div>
+        <div class="hdr-r">
+          <button class="btn-ghost">← Back to search</button>
+        </div>
+      </div>
+
+      <!-- SCOPE -->
+      <div class="scope">
+        <span class="scope-l">SCOPE</span>
+        <input placeholder="City (e.g. Vijayawada)" />
+        <input placeholder="Niche (e.g. food_blogger)" />
+        <select><option>All tiers</option><option>Nano</option><option>Micro</option></select>
+        <button class="btn-ink" style="padding:7px 14px">Apply</button>
+        <button class="sbar-clear" style="margin-left:auto">Clear all</button>
+      </div>
+
+      <!-- 4 STAT TILES -->
+      <div class="an-stats">
+        <div class="an-stat">
+          <div class="an-stat-l">Total Creators</div>
+          <div class="an-stat-v">2,418</div>
+          <div class="an-stat-s">312 verified · 2106 scraped</div>
+        </div>
+        <div class="an-stat">
+          <div class="an-stat-l">Avg Engagement</div>
+          <div class="an-stat-v yel">3.8%</div>
+          <div class="an-stat-s">view-based · across pool</div>
+        </div>
+        <div class="an-stat">
+          <div class="an-stat-l">Distinct Cities</div>
+          <div class="an-stat-v">142</div>
+          <div class="an-stat-s">38 niches</div>
+        </div>
+        <div class="an-stat">
+          <div class="an-stat-l">Rate Range</div>
+          <div class="an-stat-v green">₹500 – ₹2.4L</div>
+          <div class="an-stat-s">per post · est.</div>
+        </div>
+      </div>
+
+      <!-- 2 DONUTS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart">
+          <h3>Tier distribution</h3>
+          <div class="csub">Creators by follower tier</div>
+          <div class="donut-wrap">
+            <div class="donut">
+              <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#F4F4F5" stroke-width="16" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#52525B" stroke-width="16" stroke-dasharray="106 314" stroke-dashoffset="0" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#1D4ED8" stroke-width="16" stroke-dasharray="140 314" stroke-dashoffset="-106" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#0E7490" stroke-width="16" stroke-dasharray="44 314" stroke-dashoffset="-246" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#7E22CE" stroke-width="16" stroke-dasharray="20 314" stroke-dashoffset="-290" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#FFC107" stroke-width="16" stroke-dasharray="3 314" stroke-dashoffset="-310" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#E8401A" stroke-width="16" stroke-dasharray="1 314" stroke-dashoffset="-313" />
+              </svg>
+              <div class="donut-center">
+                <div class="donut-center-v">2,418</div>
+                <div class="donut-center-l">creators</div>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="dl-row"><div class="dl-sw" style="background:#52525B"></div><div class="dl-lbl">nano</div><div class="dl-n">820</div><div class="dl-pct">34%</div></div>
+              <div class="dl-row"><div class="dl-sw" style="background:#1D4ED8"></div><div class="dl-lbl">micro</div><div class="dl-n">1,080</div><div class="dl-pct">45%</div></div>
+              <div class="dl-row"><div class="dl-sw" style="background:#0E7490"></div><div class="dl-lbl">mid</div><div class="dl-n">340</div><div class="dl-pct">14%</div></div>
+              <div class="dl-row"><div class="dl-sw" style="background:#7E22CE"></div><div class="dl-lbl">macro</div><div class="dl-n">152</div><div class="dl-pct">6%</div></div>
+              <div class="dl-row"><div class="dl-sw" style="background:#FFC107"></div><div class="dl-lbl">mega</div><div class="dl-n">22</div><div class="dl-pct">1%</div></div>
+              <div class="dl-row"><div class="dl-sw" style="background:#E8401A"></div><div class="dl-lbl">celebrity</div><div class="dl-n">4</div><div class="dl-pct">0%</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <h3>Verification</h3>
+          <div class="csub">Verified by Inflx vs scraped/pending</div>
+          <div class="donut-wrap">
+            <div class="donut">
+              <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#F4F4F5" stroke-width="16" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#FFC107" stroke-width="16" stroke-dasharray="40 314" stroke-dashoffset="0" />
+                <circle cx="65" cy="65" r="50" fill="none" stroke="#D4D4D8" stroke-width="16" stroke-dasharray="274 314" stroke-dashoffset="-40" />
+              </svg>
+              <div class="donut-center">
+                <div class="donut-center-v">2,418</div>
+                <div class="donut-center-l">creators</div>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <div class="dl-row"><div class="dl-sw" style="background:#FFC107"></div><div class="dl-lbl">Verified by Inflx</div><div class="dl-n">312</div><div class="dl-pct">13%</div></div>
+              <div class="dl-row"><div class="dl-sw" style="background:#D4D4D8"></div><div class="dl-lbl">Not verified</div><div class="dl-n">2,106</div><div class="dl-pct">87%</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CITY + NICHE BARS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart">
+          <h3>Top cities <span class="more">📍 15 max</span></h3>
+          <div class="csub">Where creators are based</div>
+          <div class="bar-row"><div class="bar-lbl">📍 Hyderabad</div><div class="bar-track"><div class="bar-fill" style="width:100%">412</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">📍 Mumbai</div><div class="bar-track"><div class="bar-fill" style="width:84%">348</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">📍 Bengaluru</div><div class="bar-track"><div class="bar-fill" style="width:68%">280</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">📍 Pune</div><div class="bar-track"><div class="bar-fill" style="width:48%">198</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">📍 Chennai</div><div class="bar-track"><div class="bar-fill" style="width:42%">174</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">📍 Delhi</div><div class="bar-track"><div class="bar-fill" style="width:38%">156</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">📍 Kolkata</div><div class="bar-track"><div class="bar-fill" style="width:26%">108</div></div></div>
+        </div>
+        <div class="chart">
+          <h3>Top niches <span class="more">🎨 15 max</span></h3>
+          <div class="csub">What creators make</div>
+          <div class="bar-row"><div class="bar-lbl">🎨 food_blogger</div><div class="bar-track"><div class="bar-fill yel" style="width:100%">418</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">🎨 fashion</div><div class="bar-track"><div class="bar-fill yel" style="width:78%">325</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">🎨 lifestyle</div><div class="bar-track"><div class="bar-fill yel" style="width:64%">268</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">🎨 beauty</div><div class="bar-track"><div class="bar-fill yel" style="width:42%">175</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">🎨 fitness</div><div class="bar-track"><div class="bar-fill yel" style="width:38%">158</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">🎨 travel</div><div class="bar-track"><div class="bar-fill yel" style="width:32%">132</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">🎨 tech</div><div class="bar-track"><div class="bar-fill yel" style="width:24%">100</div></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 5 — ANALYTICS · BOTTOM HALF (ER buckets / rates / leaderboards / trending) ─ -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 5 / 5 — ANALYTICS</span>
+  <span class="title">/dashboard/influencers/analytics · bottom half</span>
+  <span class="note">ER buckets · languages · rate-by-tier table · 4 leaderboards · trending brands</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / influencers / analytics</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">★</span>Influencers</a>
+    </aside>
+
+    <div class="page">
+
+      <!-- ER + LANGUAGE bars -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart">
+          <h3>Engagement rate distribution</h3>
+          <div class="csub">How creators spread by view-based ER</div>
+          <div class="bar-row"><div class="bar-lbl">&lt;1%</div><div class="bar-track"><div class="bar-fill" style="width:18%">112</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">1–2%</div><div class="bar-track"><div class="bar-fill" style="width:38%">238</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">2–3%</div><div class="bar-track"><div class="bar-fill" style="width:66%">412</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">3–5%</div><div class="bar-track"><div class="bar-fill yel" style="width:100%">624</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">5–8%</div><div class="bar-track"><div class="bar-fill green" style="width:74%">462</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">8%+</div><div class="bar-track"><div class="bar-fill green" style="width:52%">324</div></div></div>
+        </div>
+
+        <div class="chart">
+          <h3>Languages <span class="more">10 max</span></h3>
+          <div class="csub">Audience reach by language</div>
+          <div class="bar-row"><div class="bar-lbl">English</div><div class="bar-track"><div class="bar-fill info" style="width:100%">1,820</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">Hindi</div><div class="bar-track"><div class="bar-fill info" style="width:62%">1,128</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">Telugu</div><div class="bar-track"><div class="bar-fill info" style="width:36%">655</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">Tamil</div><div class="bar-track"><div class="bar-fill info" style="width:30%">548</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">Marathi</div><div class="bar-track"><div class="bar-fill info" style="width:22%">395</div></div></div>
+          <div class="bar-row"><div class="bar-lbl">Kannada</div><div class="bar-track"><div class="bar-fill info" style="width:18%">325</div></div></div>
+        </div>
+      </div>
+
+      <!-- RATE TABLE -->
+      <div class="chart">
+        <h3>Pricing benchmarks by tier</h3>
+        <div class="csub">Use this to set realistic campaign budgets</div>
+        <table class="rt-table">
+          <thead>
+            <tr><th>Tier</th><th class="right">Creators</th><th class="right">Avg min ₹</th><th class="right">Avg max ₹</th><th class="right">Median min</th><th class="right">Median max</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="dot" style="background:var(--muted)"></span>nano</td><td class="right">820</td><td class="right">₹800</td><td class="right">₹2,400</td><td class="right muted">₹600</td><td class="right muted">₹2,000</td></tr>
+            <tr><td><span class="dot" style="background:var(--info)"></span>micro</td><td class="right">1,080</td><td class="right">₹3,500</td><td class="right">₹8,200</td><td class="right muted">₹3,000</td><td class="right muted">₹7,500</td></tr>
+            <tr><td><span class="dot" style="background:var(--eng)"></span>mid</td><td class="right">340</td><td class="right">₹9,800</td><td class="right">₹22,000</td><td class="right muted">₹9,000</td><td class="right muted">₹20,000</td></tr>
+            <tr><td><span class="dot" style="background:var(--conv)"></span>macro</td><td class="right">152</td><td class="right">₹18,500</td><td class="right">₹42,000</td><td class="right muted">₹16,000</td><td class="right muted">₹38,000</td></tr>
+            <tr><td><span class="dot" style="background:var(--yellow)"></span>mega</td><td class="right">22</td><td class="right">₹68,000</td><td class="right">₹1,40,000</td><td class="right muted">₹65,000</td><td class="right muted">₹1,30,000</td></tr>
+            <tr><td><span class="dot" style="background:var(--danger)"></span>celebrity</td><td class="right">4</td><td class="right">₹1,80,000</td><td class="right">₹2,40,000</td><td class="right muted">—</td><td class="right muted">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 2 LEADERBOARDS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart">
+          <h3>🏆 Top by rank score <a class="more">View all →</a></h3>
+          <div class="csub">Composite quality ranking · Inflx default sort</div>
+          <div class="lb">
+            <div class="lb-row"><div class="lb-rank top">1</div><div class="lb-av">PR</div><div class="lb-info"><div class="lb-name">@priyareels ✓</div><div class="lb-meta">macro · Hyderabad · food</div></div><div class="lb-metric"><div class="lb-metric-v yel">92.4</div><div class="lb-metric-l">rank</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">2</div><div class="lb-av">SK</div><div class="lb-info"><div class="lb-name">@snekkapoor</div><div class="lb-meta">macro · Bengaluru · fashion</div></div><div class="lb-metric"><div class="lb-metric-v yel">88.1</div><div class="lb-metric-l">rank</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">3</div><div class="lb-av">RT</div><div class="lb-info"><div class="lb-name">@ritika.style ✓</div><div class="lb-meta">micro · Pune · fashion</div></div><div class="lb-metric"><div class="lb-metric-v yel">81.2</div><div class="lb-metric-l">rank</div></div></div>
+            <div class="lb-row"><div class="lb-rank">4</div><div class="lb-av">AM</div><div class="lb-info"><div class="lb-name">@anj.lifestyle ✓</div><div class="lb-meta">macro · Mumbai · lifestyle</div></div><div class="lb-metric"><div class="lb-metric-v yel">76.5</div><div class="lb-metric-l">rank</div></div></div>
+            <div class="lb-row"><div class="lb-rank">5</div><div class="lb-av">KP</div><div class="lb-info"><div class="lb-name">@karandrives</div><div class="lb-meta">micro · Chennai · automotive</div></div><div class="lb-metric"><div class="lb-metric-v yel">74.0</div><div class="lb-metric-l">rank</div></div></div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <h3>🚀 Top by growth potential <a class="more">View all →</a></h3>
+          <div class="csub">Creators worth investing in early</div>
+          <div class="lb">
+            <div class="lb-row"><div class="lb-rank top">1</div><div class="lb-av">DV</div><div class="lb-info"><div class="lb-name">@divya.eats</div><div class="lb-meta">nano · Chennai · food_blogger</div></div><div class="lb-metric"><div class="lb-metric-v green">91</div><div class="lb-metric-l">/100</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">2</div><div class="lb-av">RT</div><div class="lb-info"><div class="lb-name">@ritika.style ✓</div><div class="lb-meta">micro · Pune · fashion</div></div><div class="lb-metric"><div class="lb-metric-v green">84</div><div class="lb-metric-l">/100</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">3</div><div class="lb-av">PR</div><div class="lb-info"><div class="lb-name">@priyareels ✓</div><div class="lb-meta">macro · Hyderabad · food</div></div><div class="lb-metric"><div class="lb-metric-v green">78</div><div class="lb-metric-l">/100</div></div></div>
+            <div class="lb-row"><div class="lb-rank">4</div><div class="lb-av">SK</div><div class="lb-info"><div class="lb-name">@snekkapoor</div><div class="lb-meta">macro · Bengaluru · fashion</div></div><div class="lb-metric"><div class="lb-metric-v green">76</div><div class="lb-metric-l">/100</div></div></div>
+            <div class="lb-row"><div class="lb-rank">5</div><div class="lb-av">VK</div><div class="lb-info"><div class="lb-name">@viral.kitchen</div><div class="lb-meta">nano · Vijayawada · food</div></div><div class="lb-metric"><div class="lb-metric-v green">73</div><div class="lb-metric-l">/100</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 MORE LEADERBOARDS -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="chart">
+          <h3>💎 Best cost-efficiency <a class="more">View all →</a></h3>
+          <div class="csub">Most views per ₹1,000 spent</div>
+          <div class="lb">
+            <div class="lb-row"><div class="lb-rank top">1</div><div class="lb-av">DV</div><div class="lb-info"><div class="lb-name">@divya.eats</div><div class="lb-meta">nano · Chennai</div></div><div class="lb-metric"><div class="lb-metric-v info">2,733</div><div class="lb-metric-l">views/₹1k</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">2</div><div class="lb-av">VK</div><div class="lb-info"><div class="lb-name">@viral.kitchen</div><div class="lb-meta">nano · Vijayawada</div></div><div class="lb-metric"><div class="lb-metric-v info">2,150</div><div class="lb-metric-l">views/₹1k</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">3</div><div class="lb-av">RT</div><div class="lb-info"><div class="lb-name">@ritika.style ✓</div><div class="lb-meta">micro · Pune</div></div><div class="lb-metric"><div class="lb-metric-v info">1,800</div><div class="lb-metric-l">views/₹1k</div></div></div>
+          </div>
+        </div>
+
+        <div class="chart">
+          <h3>💰 Cheapest creators <a class="more">View all →</a></h3>
+          <div class="csub">Lowest est. min rate</div>
+          <div class="lb">
+            <div class="lb-row"><div class="lb-rank top">1</div><div class="lb-av">VK</div><div class="lb-info"><div class="lb-name">@viral.kitchen</div><div class="lb-meta">nano · Vijayawada · food</div></div><div class="lb-metric"><div class="lb-metric-v green">₹1.2K</div><div class="lb-metric-l">min rate</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">2</div><div class="lb-av">DV</div><div class="lb-info"><div class="lb-name">@divya.eats</div><div class="lb-meta">nano · Chennai · food_blogger</div></div><div class="lb-metric"><div class="lb-metric-v green">₹1.5K</div><div class="lb-metric-l">min rate</div></div></div>
+            <div class="lb-row"><div class="lb-rank top">3</div><div class="lb-av">NS</div><div class="lb-info"><div class="lb-name">@neha.shorts</div><div class="lb-meta">nano · Kolkata · comedy</div></div><div class="lb-metric"><div class="lb-metric-v green">₹1.8K</div><div class="lb-metric-l">min rate</div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRENDING BRANDS -->
+      <div class="chart">
+        <h3>🔗 Trending brands</h3>
+        <div class="csub">Brands most-collabbed across this creator pool</div>
+        <div class="bar-row"><div class="bar-lbl">@swiggy</div><div class="bar-track"><div class="bar-fill yel" style="width:100%">62 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@zomato</div><div class="bar-track"><div class="bar-fill yel" style="width:80%">49 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@nykaa</div><div class="bar-track"><div class="bar-fill yel" style="width:74%">46 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@myntra</div><div class="bar-track"><div class="bar-fill yel" style="width:62%">38 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@urban_company</div><div class="bar-track"><div class="bar-fill yel" style="width:48%">30 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@boatlifestyle</div><div class="bar-track"><div class="bar-fill yel" style="width:42%">26 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@licious</div><div class="bar-track"><div class="bar-fill yel" style="width:38%">24 creators</div></div></div>
+        <div class="bar-row"><div class="bar-lbl">@foxyin</div><div class="bar-track"><div class="bar-fill yel" style="width:32%">20 creators</div></div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>3 routes covered:</b> list (states 1+2) · profile (state 3) · analytics (states 4+5)<br/>
+  <br/>
+  <b>Backend-first tile audit:</b> every visible number traces to <code>v_searchable_creators</code> (search), influencer/creator_profiles JOIN (profile), or creatorAnalytics.controller's 13 parallel queries (analytics). Zero phantoms.<br/>
+  <br/>
+  <b>List card density — compact-by-default (iterated 2026-05-24 per founder feedback):</b><br/>
+  Initial draft put 6 mini-badges + 6 chip rows inline per card (too dense). Pivoted to a <b>compact single-line row card</b> (~64px tall) showing only: avatar · @handle · verify · tier · <b>rank score (the one inline intel signal — matches default sort)</b> · scraped/stale tag · 1-line meta (city · niche · collab count) · mono trio (followers/ER/views) · mono rate · single action button.<br/>
+  All other intelligence (growth, posting freq, 90d posts, commercial%, biz acct, use-cases, languages, past-brand chips) moved to the <b>Profile page</b> where it lives in proper detail (already drawn — see state 3 activity-signal card + past-brands grid + audience k/v).<br/>
+  <br/>
+  <b>Backend fields surfaced on LIST card (only 1 NEW from OLD):</b> <code>rank_score</code> (compact ⭐ badge) + <code>last_calculated_at</code> staleness flag (only when ≥7d old). The other 11 fields stay loaded and are rendered on Profile.<br/>
+  <br/>
+  <b>Backend fields surfaced on PROFILE (9 NEW from OLD):</b> <code>posting_frequency_per_week</code>, <code>total_posts_90d</code>, <code>commercial_post_rate</code>, <code>rank_score</code>, <code>growth_potential_score</code>, <code>activity_status</code>, <code>last_calculated_at</code>, <code>unique_brands_count</code> (header context on past-brands), <code>recommended_use_cases</code><br/>
+  <br/>
+  <b>Locked-palette tier system</b> (replaces 6-color rainbow):<br/>
+  · nano=bg2/muted · micro=info-pale/info · mid=eng-pale/eng · macro=conv-pale/conv · mega=yellow-pale/yellow-text · celebrity=danger-pale/danger-text<br/>
+  <br/>
+  <b>Adjacent-fixes (silent):</b><br/>
+  · Dead IG verified tick (text-blue-500 cascade trap) on profile page<br/>
+  · Hardcoded 6-color analytics donut → use locked-palette colors<br/>
+  <br/>
+  <b>CSS scoping discipline</b> (day 1): all rules under <code>.inf</code> wrapper; every <code>:hover:not(:disabled)</code> re-asserts color; every <code>:disabled</code> locks bg + color. Same lineage as Flow 7 patch / Flow 8 preventive / Flow 9 + 10 + 11 day-1.<br/>
+  <br/>
+  <b>Zero functional change:</b> 4 endpoints + 1 mutation preserved verbatim (<code>GET /influencers/search</code>, <code>GET /influencers/:id</code>, <code>GET /influencers/analytics</code>, <code>GET /brands/me</code>, <code>POST /brands/me/creator-invitations</code>). Every query param, response field, and body shape consumed exactly as today.
+</div>
+
+</div>
+</body>
+</html>

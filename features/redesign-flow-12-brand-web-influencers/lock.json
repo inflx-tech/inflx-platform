@@ -1,0 +1,31 @@
+{
+  "feature": "redesign-flow-12-brand-web-influencers",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat \"locked\" — confirmed 3-route bundle: compact single-line row cards on list (iterated from initial dense draft per founder feedback \"too over data on single card\") · activity-signal card on profile · locked-palette restyle of analytics · 13 already-loaded backend fields surfaced",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat \"locked\" — locked Flow 12 mockup (5 states: list default · list advanced · profile · analytics top · analytics bottom)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand influencers bundle — 3 routes (1,236 LOC OLD → 1,586 LOC NEW). Restyles wave1 multi-color grid cards / gradient orange CTAs / 6-color tier rainbow into wave2 locked-palette compact row cards (list) + ink-hero profile + locked-palette analytics charts. Iteration history: initial mockup put 6 mini-badges + 6 chip rows per list card (too dense per founder); pivoted to compact single-line cards (~64-72px tall) with only rank-score inline + stale-tag conditional; all other intel moved to profile activity-signal card. Surfaces 9 already-loaded-but-unused fields on profile (posting_frequency_per_week / total_posts_90d / commercial_post_rate / rank_score / growth_potential_score / activity_status / last_calculated_at / unique_brands_count / recommended_use_cases) + 2 on list (rank_score / last_calculated_at). Zero backend / API / schema / DB change. CSS scoping discipline under .inf wrapper from day 1 across all 3 pages. Adjacent-fixes: dead text-blue-500 IG verified tick cascade trap on profile + hardcoded 6-color analytics donut.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-24T16:17:40Z",
+      "result": "75/75 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 90,
+      "report": "qa/reports/2026-05-24T16-17-40-347Z/QA-REPORT.md",
+      "first_run_clean": false,
+      "note": "Three prior runs were RED-environmental (16 web-test hydration timeouts in stale dev-server state). Resolved by killing stale node processes (port 3002/3000 reuse from earlier qa runs). Final clean run after fresh dev-server boot = 75/75 GREEN gate 0. Lesson recorded in 06-diff/notes.md: consecutive pnpm qa runs may need explicit dev-server kill between runs to avoid stale-hydration failures on routes added by recent commits."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}
