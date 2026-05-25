@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-22-brand-mobile-campaign-deep-dives",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"pls proceed\"",
   "approved_at": "2026-05-25",
@@ -10,14 +10,56 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-25 chat — Flow 22 mockup locked",
   "mockup_locked_at": "2026-05-25",
-  "notes": "Fifth flow of the mobile-brand bucket. Campaign deep-dives cluster: CampaignInfluencersList + CampaignReviewQueue. Consume Flow 21 components. StatusPill canonical map extended with 7 additive entries.",
+  "notes": "Fifth flow of the mobile-brand bucket. Campaign deep-dives cluster: CampaignInfluencersList + CampaignReviewQueue. Consume Flow 21 components. StatusPill canonical map extended additively with 7 entries. Behavior preserved 1:1. RELEASED 2026-05-25 with full QA GREEN on warm-backend re-run.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "run_at": "2026-05-25",
+      "report_path": "qa/reports/2026-05-25T13-52-45-222Z/QA-REPORT.md",
+      "pw_tests": 76,
+      "passed": 76,
+      "failed": 0,
+      "gate": 0,
+      "state": "GREEN",
+      "note": "First run had 1 cold-backend flake (contract-invariants.spec.ts:58 W2 follower-txn attribution test). Warm-backend re-run cleared it — 76 passed gate 0 STATE=GREEN."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"pls proceed\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 22"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — mobile-brand bucket ships with manual founder smoke-test; Maestro setup deferred to its own contract'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "35f8734", "note": "auto-redeploy on push; no-op for Flow 22 (no Packages/brand-web/** changes)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "35f8734", "note": "auto-redeploy on push; no-op for Flow 22", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "35f8734", "note": "auto-redeploy on push; no-op for Flow 22", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 72,
+        "previous_version": 71,
+        "bundle_hash": "sha256:4845c566c07e8c2b87e759cfb0af6e1665ba6d4b5e4f94e1414761c1b97ad039",
+        "published_at": "2026-05-25T13:55:15.982Z",
+        "bundle_size_kb": 2280,
+        "trigger": "pnpm publish-ota:all -m 'Flow 22 — brand-mobile Campaign deep-dives (CampaignInfluencersList + ReviewQueue + StatusPill extension)'",
+        "scope": "brand audience manifest (shared bundle with influencer + follower)"
+      },
+      "ota_influencer": {
+        "version": 61,
+        "previous_version": 60,
+        "bundle_hash": "sha256:4845c566c07e8c2b87e759cfb0af6e1665ba6d4b5e4f94e1414761c1b97ad039",
+        "published_at": "2026-05-25T13:55:23.887Z",
+        "bundle_size_kb": 2280,
+        "trigger": "pnpm publish-ota:all -m 'Flow 22 — brand-mobile Campaign deep-dives (CampaignInfluencersList + ReviewQueue + StatusPill extension)'",
+        "scope": "influencer audience manifest (shared bundle)"
+      },
+      "ota_follower": {
+        "version": 35,
+        "previous_version": 34,
+        "bundle_hash": "sha256:4845c566c07e8c2b87e759cfb0af6e1665ba6d4b5e4f94e1414761c1b97ad039",
+        "published_at": "2026-05-25T13:55:32.690Z",
+        "bundle_size_kb": 2280,
+        "trigger": "pnpm publish-ota:all -m 'Flow 22 — brand-mobile Campaign deep-dives (CampaignInfluencersList + ReviewQueue + StatusPill extension)'",
+        "scope": "follower audience manifest (shared bundle)"
+      }
+    }
   }
 }
