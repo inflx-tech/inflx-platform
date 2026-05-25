@@ -1,0 +1,645 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 19 · brand-mobile Store Preview + Campaign Sets List — wave2 mockup (phone 375px)</title>
+<meta name="viewport" content="width=1480" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+
+.wrap{max-width:1480px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1100px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:30px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:14px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center}
+.col-label b{color:var(--ink);font-weight:800}
+
+/* Phone frame */
+.phone{
+  width:375px;background:var(--ink);border-radius:42px;padding:10px;
+  box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05);
+}
+.phone-inner{
+  background:var(--bg);border-radius:34px;overflow:hidden;height:744px;
+  position:relative;display:flex;flex-direction:column;
+}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{
+  height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0;
+}
+.status-bar .ind{display:flex;gap:5px;align-items:center}
+.status-bar .ind .bars{display:inline-flex;gap:2px;align-items:flex-end}
+.status-bar .ind .bars span{width:3px;background:var(--white);border-radius:1px}
+.status-bar .ind .bars span:nth-child(1){height:4px}
+.status-bar .ind .bars span:nth-child(2){height:6px}
+.status-bar .ind .bars span:nth-child(3){height:8px}
+.status-bar .ind .bars span:nth-child(4){height:10px}
+.status-bar .ind .wifi{font-size:10px}
+.status-bar .ind .bat{border:1px solid var(--white);border-radius:3px;padding:1px 3px;font-size:9px;line-height:1}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none}
+.home-bar .pill{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* Topbar (shared) */
+.topbar{background:var(--ink);color:var(--white);padding:14px 18px 14px;flex-shrink:0}
+.topbar-back{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:rgba(255,255,255,.6);padding:2px 0 6px}
+.topbar-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.topbar-l{display:flex;flex-direction:column;gap:5px;flex-shrink:1;min-width:0}
+.topbar h1{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--white);letter-spacing:-.2px}
+.topbar h1.lg{font-size:22px}
+.topbar .rule{width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.topbar .crumb{font-family:'JetBrains Mono';font-size:9.5px;color:rgba(255,255,255,.4);letter-spacing:.3px}
+.topbar .sub{font-family:'Plus Jakarta Sans';font-size:11px;color:rgba(255,255,255,.55)}
+.topbar-count{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--yellow);background:rgba(255,255,255,.08);padding:4px 10px;border-radius:99px;white-space:nowrap}
+.topbar-back-arrow{
+  width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;color:var(--white);font-family:'JetBrains Mono';font-weight:700;font-size:13px;
+  margin-right:6px;flex-shrink:0;
+}
+.topbar-with-back{display:flex;align-items:center;gap:0}
+
+/* Body scroll */
+.body{flex:1;overflow-y:auto;background:var(--bg)}
+.bodyp{padding:14px}
+
+/* ─── StorePreview specific ─────────────────────────────────── */
+
+.brand-card{
+  background:var(--white);border:1px solid var(--border);border-radius:16px;
+  margin:14px;padding:14px;display:flex;align-items:center;gap:12px;
+}
+.brand-tile{
+  width:48px;height:48px;border-radius:12px;background:var(--yellow);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Outfit';font-size:20px;font-weight:800;color:var(--ink);
+}
+.brand-info{flex:1;min-width:0}
+.brand-name-row{display:flex;align-items:center;gap:6px}
+.brand-name{font-family:'Outfit';font-size:16px;font-weight:800;color:var(--ink)}
+.verified-badge{width:16px;height:16px;border-radius:50%;background:var(--success);display:flex;align-items:center;justify-content:center}
+.verified-badge .check{color:var(--white);font-size:9px;font-weight:900;line-height:1}
+.brand-meta{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:3px;letter-spacing:.2px}
+
+.stats-strip{
+  background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  display:flex;padding:12px 0;
+}
+.stat{flex:1;text-align:center;border-left:1px solid var(--border-soft)}
+.stat:first-child{border-left:0}
+.stat .v{font-family:'JetBrains Mono';font-size:20px;font-weight:800;color:var(--ink)}
+.stat .l{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+.section{margin:18px 14px 0}
+.sec-title{font-family:'Outfit';font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.sec-title b{color:var(--ink);font-weight:800}
+
+.creators-list{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.creator-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid var(--border-soft)}
+.creator-row:last-child{border-bottom:0}
+.creator-av{
+  width:32px;height:32px;border-radius:50%;background:var(--yellow-pale);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Outfit';font-size:12px;font-weight:800;color:var(--yellow-text);
+}
+.creator-mid{flex:1;min-width:0}
+.creator-name{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--ink)}
+.creator-handle{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:1px}
+.creator-offers{
+  font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;color:var(--yellow-text);
+  background:var(--yellow-pale);padding:3px 8px;border-radius:99px;
+}
+
+.products-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.product{
+  background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+}
+.product-img{
+  height:96px;background:var(--bg2);display:flex;align-items:center;justify-content:center;
+  font-size:32px;border-bottom:1px solid var(--border-soft);
+}
+.product-img.real{background-size:cover;background-position:center}
+.product-body{padding:9px 10px}
+.product-name{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:700;color:var(--ink);line-height:1.3;min-height:30px}
+.product-price{font-family:'JetBrains Mono';font-size:12.5px;font-weight:800;color:var(--ink);margin-top:5px}
+
+/* Empty state — shared */
+.empty{
+  margin:30px 14px;background:var(--white);border:1.5px dashed var(--yellow-pale);
+  border-radius:18px;padding:36px 22px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.empty .ic{
+  width:52px;height:52px;border-radius:13px;background:var(--yellow-pale);
+  color:var(--yellow-text);display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-weight:800;font-size:11px;letter-spacing:.4px;
+}
+.empty .ttl{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.empty .sub{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);max-width:260px;line-height:1.5}
+
+/* ─── CampaignSetsList specific ─────────────────────────────── */
+
+.set-card{
+  background:var(--white);border:1px solid var(--border);border-radius:14px;
+  padding:13px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px;
+}
+.set-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.set-l{flex:1;min-width:0}
+.set-name{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.set-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+.set-meta .item{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2)}
+.set-meta .item .v{color:var(--ink);font-weight:600}
+.set-meta .sep{color:var(--muted-3);font-family:'JetBrains Mono';font-size:10.5px}
+
+.goal-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:99px;white-space:nowrap}
+.goal-badge .dot{width:5px;height:5px;border-radius:50%}
+.goal-badge .l{font-family:'JetBrains Mono';font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.goal-eng{background:var(--yellow-pale)}.goal-eng .dot{background:var(--yellow-hover)}.goal-eng .l{color:var(--yellow-text)}
+.goal-conv{background:var(--success-pale)}.goal-conv .dot{background:var(--success)}.goal-conv .l{color:var(--success-text)}
+.goal-hyb{background:var(--bg2)}.goal-hyb .dot{background:var(--muted-2)}.goal-hyb .l{color:var(--ink-2)}
+
+.funnel{
+  display:flex;background:var(--bg2);border-radius:10px;padding:9px 0;
+}
+.funnel-cell{flex:1;text-align:center;border-left:1px solid var(--border)}
+.funnel-cell:first-child{border-left:0}
+.funnel-cell .l{font-family:'JetBrains Mono';font-size:9px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px}
+.funnel-cell .v{font-family:'JetBrains Mono';font-size:16px;font-weight:800;color:var(--ink);margin-top:2px}
+.funnel-cell .v .mute{color:var(--muted-2);font-weight:500;font-size:12px}
+
+.roster-label{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.roster-row{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:11px}
+.roster-row .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.roster-row .name{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:var(--ink);max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.roster-row .handle{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.roster-row .status{font-family:'Plus Jakarta Sans';font-size:10px;font-weight:600;color:var(--muted);text-transform:capitalize;flex-shrink:0}
+.roster-more{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);padding-left:12px;padding-top:4px}
+.status-active{background:var(--success)}
+.status-pending{background:var(--yellow-hover)}
+.status-other{background:var(--muted-2)}
+.status-cancel{background:var(--danger)}
+.status-dim{background:var(--muted-3)}
+
+.viewall-btn{
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--yellow-pale);border-radius:10px;padding:10px 13px;margin-top:4px;
+}
+.viewall-btn .l{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:700;color:var(--yellow-text);letter-spacing:.2px}
+.viewall-btn .arr{font-family:'JetBrains Mono';font-size:13px;color:var(--yellow-text);font-weight:800}
+
+/* Side legend / notes */
+.side{display:flex;flex-direction:column;gap:14px;width:300px;align-items:stretch}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
+.panel h3{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+
+.legend-row{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--border-soft);font-size:11px}
+.legend-row:first-of-type{border-top:0}
+.legend-row .sw{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-weight:800;font-size:8px;letter-spacing:.3px}
+.legend-row .name{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--ink);font-weight:600}
+.legend-row .tag{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">
+    <h1>Flow 19 · brand-mobile Store Preview + Campaign Sets List · wave2 redesign</h1>
+    <div class="sub">
+      <b>2nd flow of the mobile-brand bucket</b> (after Flow 18 Notifications shipped 2026-05-25, HEAD <b>88cf532</b>).
+      <b>Bundle of 2 read-only displays</b>. Both consume Flow 18's <b>brandPalette</b> export from
+      <code style="color:var(--yellow);font-family:'JetBrains Mono'">theme/tokens.js</code> — <b>no tokens.js change in this flow</b>.
+      StorePreview migrates navy + orange legacy palette → locked ink + yellow. SetsList already on inline locked palette → consolidate to
+      brandPalette import + Outfit/PJS/JetBrains-Mono fonts. <b>Behavior preserved 1:1</b>.
+    </div>
+  </div>
+
+  <div class="row">
+
+    <!-- ═══ PHONE 1 — BrandStorePreviewScreen populated ═══ -->
+    <div class="col">
+      <div class="col-label">Phone <b>375 × 812</b> · BrandStorePreviewScreen · populated</div>
+      <div class="phone">
+        <div class="phone-inner">
+          <div class="notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="ind">
+              <span class="bars"><span></span><span></span><span></span><span></span></span>
+              <span class="wifi">📶</span><span class="bat">87</span>
+            </div>
+          </div>
+
+          <div class="topbar">
+            <div class="topbar-with-back">
+              <div class="topbar-back-arrow">←</div>
+              <div class="topbar-l">
+                <h1>My Store</h1>
+                <div class="rule"></div>
+                <div class="sub">This is what customers see</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="body">
+            <!-- Brand card -->
+            <div class="brand-card">
+              <div class="brand-tile">S</div>
+              <div class="brand-info">
+                <div class="brand-name-row">
+                  <span class="brand-name">Sukh Sagar Tiffins</span>
+                  <span class="verified-badge"><span class="check">✓</span></span>
+                </div>
+                <div class="brand-meta">restaurant · Bengaluru</div>
+              </div>
+            </div>
+
+            <!-- Stats strip -->
+            <div class="stats-strip">
+              <div class="stat"><div class="v">14</div><div class="l">Products</div></div>
+              <div class="stat"><div class="v">3</div><div class="l">Sections</div></div>
+              <div class="stat"><div class="v">7</div><div class="l">Creators</div></div>
+            </div>
+
+            <!-- Creators section -->
+            <div class="section">
+              <div class="sec-title"><b>Creators on your store</b></div>
+              <div class="creators-list">
+                <div class="creator-row">
+                  <div class="creator-av">A</div>
+                  <div class="creator-mid">
+                    <div class="creator-name">Aakash</div>
+                    <div class="creator-handle">@aakash.eats</div>
+                  </div>
+                  <div class="creator-offers">3 offers</div>
+                </div>
+                <div class="creator-row">
+                  <div class="creator-av">R</div>
+                  <div class="creator-mid">
+                    <div class="creator-name">Riya Sharma</div>
+                    <div class="creator-handle">@riya.foodlog</div>
+                  </div>
+                  <div class="creator-offers">2 offers</div>
+                </div>
+                <div class="creator-row">
+                  <div class="creator-av">S</div>
+                  <div class="creator-mid">
+                    <div class="creator-name">Sneha</div>
+                    <div class="creator-handle">@sneha.bites</div>
+                  </div>
+                  <div class="creator-offers">1 offer</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Products section -->
+            <div class="section">
+              <div class="sec-title">Mains <b>(6)</b></div>
+              <div class="products-grid">
+                <div class="product">
+                  <div class="product-img">🍽️</div>
+                  <div class="product-body">
+                    <div class="product-name">Family Mixed Pack</div>
+                    <div class="product-price">₹450</div>
+                  </div>
+                </div>
+                <div class="product">
+                  <div class="product-img">🍛</div>
+                  <div class="product-body">
+                    <div class="product-name">Mini Thali (2 sides)</div>
+                    <div class="product-price">₹220</div>
+                  </div>
+                </div>
+                <div class="product">
+                  <div class="product-img">🍽️</div>
+                  <div class="product-body">
+                    <div class="product-name">Veg Mini Combo</div>
+                    <div class="product-price">₹180</div>
+                  </div>
+                </div>
+                <div class="product">
+                  <div class="product-img">🍛</div>
+                  <div class="product-body">
+                    <div class="product-name">South Special Plate</div>
+                    <div class="product-price">₹280</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="sec-title">Desserts <b>(3)</b></div>
+              <div class="products-grid">
+                <div class="product">
+                  <div class="product-img">🧁</div>
+                  <div class="product-body">
+                    <div class="product-name">Gulab Jamun</div>
+                    <div class="product-price">₹80</div>
+                  </div>
+                </div>
+                <div class="product">
+                  <div class="product-img">🍮</div>
+                  <div class="product-body">
+                    <div class="product-name">Caramel Custard</div>
+                    <div class="product-price">₹120</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:30px"></div>
+          </div>
+          <div class="home-bar"><span class="pill"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PHONE 2 — BrandCampaignSetsListScreen populated ═══ -->
+    <div class="col">
+      <div class="col-label">Phone <b>375 × 812</b> · BrandCampaignSetsListScreen · 3 sets</div>
+      <div class="phone">
+        <div class="phone-inner">
+          <div class="notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="ind">
+              <span class="bars"><span></span><span></span><span></span><span></span></span>
+              <span class="wifi">📶</span><span class="bat">87</span>
+            </div>
+          </div>
+
+          <div class="topbar">
+            <div class="topbar-back">← Diwali Combo Push</div>
+            <div class="topbar-row">
+              <div class="topbar-l">
+                <h1>Campaign sets</h1>
+                <div class="rule"></div>
+                <div class="crumb">/campaigns/8a2f1c34/sets</div>
+              </div>
+              <div class="topbar-count">3 SETS</div>
+            </div>
+          </div>
+
+          <div class="body bodyp">
+
+            <!-- Set 1: handpick + engagement goal -->
+            <div class="set-card">
+              <div class="set-head">
+                <div class="set-l">
+                  <div class="set-name">Tier-1 city macro reels</div>
+                  <div class="set-meta">
+                    <span class="item">22 Oct → 12 Nov</span>
+                    <span class="sep">·</span>
+                    <span class="item">Budget: <span class="v">₹35,000</span></span>
+                  </div>
+                </div>
+                <div class="goal-badge goal-eng"><span class="dot"></span><span class="l">Engagement</span></div>
+              </div>
+              <div>
+                <div class="roster-label">Influencers · 3</div>
+                <div class="roster-row">
+                  <span class="dot status-active"></span>
+                  <span class="name">Aakash</span>
+                  <span class="handle">@aakash.eats</span>
+                  <span class="status">active</span>
+                </div>
+                <div class="roster-row">
+                  <span class="dot status-active"></span>
+                  <span class="name">Riya Sharma</span>
+                  <span class="handle">@riya.foodlog</span>
+                  <span class="status">contracted</span>
+                </div>
+                <div class="roster-row">
+                  <span class="dot status-pending"></span>
+                  <span class="name">Sneha</span>
+                  <span class="handle">@sneha.bites</span>
+                  <span class="status">negotiating</span>
+                </div>
+              </div>
+              <div class="viewall-btn">
+                <span class="l">View all influencers in this set</span>
+                <span class="arr">→</span>
+              </div>
+            </div>
+
+            <!-- Set 2: open_group + conversion goal -->
+            <div class="set-card">
+              <div class="set-head">
+                <div class="set-l">
+                  <div class="set-name">Open call: micro food creators</div>
+                  <div class="set-meta">
+                    <span class="item">25 Oct → 20 Nov</span>
+                    <span class="sep">·</span>
+                    <span class="item">Budget: <span class="v">₹50,000</span></span>
+                  </div>
+                </div>
+                <div class="goal-badge goal-conv"><span class="dot"></span><span class="l">Conversion</span></div>
+              </div>
+              <div class="funnel">
+                <div class="funnel-cell"><div class="l">Broadcast</div><div class="v">28</div></div>
+                <div class="funnel-cell"><div class="l">Applied</div><div class="v">12</div></div>
+                <div class="funnel-cell"><div class="l">Approved</div><div class="v">5<span class="mute"> / 10</span></div></div>
+              </div>
+              <div>
+                <div class="roster-label">Top applicants</div>
+                <div class="roster-row">
+                  <span class="dot status-active"></span>
+                  <span class="name">Karan Doe</span>
+                  <span class="handle">@karan.bites</span>
+                  <span class="status">contracted</span>
+                </div>
+                <div class="roster-row">
+                  <span class="dot status-pending"></span>
+                  <span class="name">Nidhi</span>
+                  <span class="handle">@nidhibites</span>
+                  <span class="status">applied</span>
+                </div>
+                <div class="roster-row">
+                  <span class="dot status-pending"></span>
+                  <span class="name">Veer</span>
+                  <span class="handle">@veer.tales</span>
+                  <span class="status">applied</span>
+                </div>
+                <div class="roster-row">
+                  <span class="dot status-active"></span>
+                  <span class="name">Tara M.</span>
+                  <span class="handle">@taraeats</span>
+                  <span class="status">accepted</span>
+                </div>
+                <div class="roster-row">
+                  <span class="dot status-active"></span>
+                  <span class="name">Pooja</span>
+                  <span class="handle">@pooja.kitchen</span>
+                  <span class="status">contracted</span>
+                </div>
+                <div class="roster-more">+ 7 more</div>
+              </div>
+              <div class="viewall-btn">
+                <span class="l">View all influencers in this set</span>
+                <span class="arr">→</span>
+              </div>
+            </div>
+
+            <!-- Set 3: hybrid goal, no window -->
+            <div class="set-card">
+              <div class="set-head">
+                <div class="set-l">
+                  <div class="set-name">Hybrid pilot — nano + macro</div>
+                  <div class="set-meta">
+                    <span class="item">Budget: <span class="v">₹18,000</span></span>
+                  </div>
+                </div>
+                <div class="goal-badge goal-hyb"><span class="dot"></span><span class="l">Hybrid</span></div>
+              </div>
+              <div>
+                <div class="roster-label">Influencers · 1</div>
+                <div class="roster-row">
+                  <span class="dot status-pending"></span>
+                  <span class="name">Anita</span>
+                  <span class="handle">@anita.cooks</span>
+                  <span class="status">invited</span>
+                </div>
+              </div>
+              <div class="viewall-btn">
+                <span class="l">View all influencers in this set</span>
+                <span class="arr">→</span>
+              </div>
+            </div>
+
+            <div style="height:30px"></div>
+          </div>
+          <div class="home-bar"><span class="pill"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Side column: empty-state phones + legend + notes ═══ -->
+    <div class="side">
+
+      <!-- Mini phone: StorePreview empty -->
+      <div class="panel" style="padding:14px">
+        <h3>Empty states</h3>
+        <div class="ph">both screens · zero-data fallbacks</div>
+        <div style="display:flex;gap:14px;justify-content:center;margin-top:6px">
+          <div style="text-align:center">
+            <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);margin-bottom:6px">STORE · no products</div>
+            <div style="width:120px;background:var(--ink);border-radius:14px;padding:4px">
+              <div style="background:var(--bg);border-radius:11px;overflow:hidden;height:200px;display:flex;flex-direction:column">
+                <div style="background:var(--ink);height:36px"></div>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px">
+                  <div style="background:var(--white);border:1.5px dashed var(--yellow-pale);border-radius:10px;padding:14px 10px;text-align:center;width:100%">
+                    <div style="width:28px;height:28px;background:var(--yellow-pale);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-size:8px;font-weight:800;color:var(--yellow-text)">[STORE]</div>
+                    <div style="font-family:'Outfit';font-size:9.5px;font-weight:700;color:var(--ink);margin-top:5px">No products yet</div>
+                    <div style="font-family:'Plus Jakarta Sans';font-size:7.5px;color:var(--muted);margin-top:3px;line-height:1.3">Add from your web dashboard.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);margin-bottom:6px">SETS · no sets</div>
+            <div style="width:120px;background:var(--ink);border-radius:14px;padding:4px">
+              <div style="background:var(--bg);border-radius:11px;overflow:hidden;height:200px;display:flex;flex-direction:column">
+                <div style="background:var(--ink);height:36px"></div>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:8px">
+                  <div style="background:var(--white);border:1.5px dashed var(--yellow-pale);border-radius:10px;padding:14px 10px;text-align:center;width:100%">
+                    <div style="width:28px;height:28px;background:var(--yellow-pale);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-size:8px;font-weight:800;color:var(--yellow-text)">[DOT]</div>
+                    <div style="font-family:'Outfit';font-size:9.5px;font-weight:700;color:var(--ink);margin-top:5px">No sets yet</div>
+                    <div style="font-family:'Plus Jakarta Sans';font-size:7.5px;color:var(--muted);margin-top:3px;line-height:1.3">Sets organise influencers.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal + status legend -->
+      <div class="panel">
+        <h3>Goal + status colour key</h3>
+        <div class="ph">SetsList only · 3 goals · 5 status clusters</div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--yellow-pale);color:var(--yellow-text)">ENG</span>
+          <span class="name">Engagement goal</span>
+          <span class="tag">goal</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--success-pale);color:var(--success-text)">CON</span>
+          <span class="name">Conversion goal</span>
+          <span class="tag">goal</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--bg2);color:var(--ink-2)">HYB</span>
+          <span class="name">Hybrid goal</span>
+          <span class="tag">goal</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--success)"></span>
+          <span class="name">Active · live · contracted · accepted</span>
+          <span class="tag">status</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--yellow-hover)"></span>
+          <span class="name">Negotiating · applied · pending</span>
+          <span class="tag">status</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--muted-2)"></span>
+          <span class="name">Invited · draft · completed</span>
+          <span class="tag">status</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--danger)"></span>
+          <span class="name">Declined · rejected · cancelled</span>
+          <span class="tag">status</span>
+        </div>
+        <div class="legend-row">
+          <span class="sw" style="background:var(--muted-3)"></span>
+          <span class="name">Expired · slots_filled · unknown</span>
+          <span class="tag">status</span>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="panel">
+        <h3>What's preserved · what's new</h3>
+        <div class="ph">behavior 1:1 · visual + font only</div>
+        <ul>
+          <li><b>Preserved 1:1:</b> StorePreview's <code>getMyStorePreview</code>, product section grouping, image/emoji fallback, creator list, empty state branch. SetsList's <code>useFocusEffect</code> refetch, <code>getCampaign</code>, OPEN_GROUP_HIDDEN mini-roster filter, +N more, "View all" nav with <code>setIdFilter</code>, goal badges, funnel for open_group, error-state for missing campaign.</li>
+          <li><b>NEW visual (StorePreview):</b> ink topbar replaces navy, yellow brand tile (was orange), success-green verified ✓ (unchanged colour), JetBrains Mono stats digits + uppercase labels, yellow-pale creator avatars + yellow-text "N offers" pill (was teal), dashed-yellow empty state.</li>
+          <li><b>NEW visual (SetsList):</b> ink topbar already correct → add Outfit/PJS/JetBrains-Mono fonts everywhere (was default + bare 'monospace'). Drop inline <code>P</code> const; import <code>brandPalette</code> instead. Goal badges, funnel, mini-roster, status dots — all keep their existing semantics, just re-anchored to <code>brandPalette</code>.</li>
+          <li><b>NO tokens.js change:</b> Flow 18's <code>brandPalette</code> export covers every colour needed. Status-dot mapping (active/pending/other/cancel/dim) maps cleanly onto brandPalette success / yellowHover / muted2 / danger / muted3.</li>
+          <li><b>Pattern watch:</b> after this flow, 3 screens (Notifications + StorePreview + SetsList) share ink-topbar + dashed-yellow-empty patterns. Flow 20 will likely extract <code>&lt;ScreenHeader /&gt;</code> + <code>&lt;EmptyState /&gt;</code> reusables.</li>
+          <li><b>Deploy:</b> push triggers OTA × 3 via <code>publish-ota:all</code> per <a href="#" style="color:var(--yellow-text);text-decoration:none">feedback_ota_publish_strategy</a> (learned Flow 18). Maestro Rule 5: <code>GOVERNANCE_OVERRIDE</code> on close-out.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
