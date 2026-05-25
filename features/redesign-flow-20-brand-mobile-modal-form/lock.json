@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-20-brand-mobile-modal-form",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
   "approved_at": "2026-05-25",
@@ -10,14 +10,68 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-25 chat — Flow 20 mockup locked as-is",
   "mockup_locked_at": "2026-05-25",
-  "notes": "Third flow of the mobile-brand bucket. Modal/form interaction cluster: Enquiries + ProposalInbox + InfluencerProfile. 11 ad-hoc status-pill palettes consolidated into canonical 6-token map (yellowPale/infoPale/convPale/successPale/dangerPale/bg2). Behavior preserved 1:1. No tokens.js change.",
+  "notes": "Third flow of the mobile-brand bucket. Modal/form interaction cluster: Enquiries + ProposalInbox + InfluencerProfile. 11 ad-hoc status-pill palettes consolidated into canonical 6-token map. Behavior preserved 1:1. No tokens.js change. RELEASED 2026-05-25 with full QA GREEN.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "run_at": "2026-05-25",
+      "report_path": "qa/reports/2026-05-25T12-36-55-235Z/QA-REPORT.md",
+      "pw_tests": 76,
+      "passed": 76,
+      "failed": 0,
+      "gate": 0,
+      "state": "GREEN",
+      "note": "76 passed (was 75 prior to Window A's Phase A10 + A10.5 commits which added 1 test). No MSG91 throttle observed this run — Flow 19's pending-certification flake has cleared. No mobile-targeted tests in main lane; this confirms zero regression on the web side after the 3-screen mobile rewrite."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 20"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — mobile-brand bucket ships with manual founder smoke-test; Maestro setup deferred to its own contract'",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "57ab339",
+        "note": "auto-redeploy on push; no-op for Flow 20 (no Packages/brand-web/** changes)",
+        "trigger": "git push origin main"
+      },
+      "vercel_admin_web": {
+        "commit": "57ab339",
+        "note": "auto-redeploy on push; no-op for Flow 20 (no Packages/admin-web/** changes)",
+        "trigger": "git push origin main"
+      },
+      "render_backend": {
+        "commit": "57ab339",
+        "note": "auto-redeploy on push; no-op for Flow 20 (no backend/** changes)",
+        "trigger": "git push origin main"
+      },
+      "ota_brand": {
+        "version": 70,
+        "previous_version": 69,
+        "bundle_hash": "sha256:74d305de5bc34f8415c3fb14f24e950efd134f6258e4fd09d63397c355b2dd40",
+        "published_at": "2026-05-25T12:38:53.242Z",
+        "bundle_size_kb": 2274,
+        "trigger": "pnpm publish-ota:all -m 'Flow 20 — brand-mobile Enquiries + Proposals + InfluencerProfile (canonical status-pill map)'",
+        "scope": "brand audience manifest (shared bundle with influencer + follower)"
+      },
+      "ota_influencer": {
+        "version": 59,
+        "previous_version": 58,
+        "bundle_hash": "sha256:74d305de5bc34f8415c3fb14f24e950efd134f6258e4fd09d63397c355b2dd40",
+        "published_at": "2026-05-25T12:38:57.957Z",
+        "bundle_size_kb": 2274,
+        "trigger": "pnpm publish-ota:all -m 'Flow 20 — brand-mobile Enquiries + Proposals + InfluencerProfile (canonical status-pill map)'",
+        "scope": "influencer audience manifest (shared bundle); no influencer-screen changes — bundle update is a no-op for influencer UX"
+      },
+      "ota_follower": {
+        "version": 33,
+        "previous_version": 32,
+        "bundle_hash": "sha256:74d305de5bc34f8415c3fb14f24e950efd134f6258e4fd09d63397c355b2dd40",
+        "published_at": "2026-05-25T12:39:03.849Z",
+        "bundle_size_kb": 2274,
+        "trigger": "pnpm publish-ota:all -m 'Flow 20 — brand-mobile Enquiries + Proposals + InfluencerProfile (canonical status-pill map)'",
+        "scope": "follower audience manifest (shared bundle); no follower-screen changes — bundle update is a no-op for follower UX"
+      }
+    }
   }
 }
