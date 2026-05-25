@@ -1,0 +1,32 @@
+{
+  "feature": "billing-brand-period-toggle",
+  "area": "brand-web+backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-25) — explicit 'as a admin now i can able to edit the plans , but in brands web i am not able to see yearly toggle...Is this in another phase? if yes implement remaining phases'. Standing autonomy applied.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Vercel redeploys brand-web (page rewrite + api client extension); Render redeploys backend (extended listTiers + upgrade endpoints). No DB migration. No mobile. No quota popup wiring change (A9 already wired).",
+  "fix": "Phase A11 — brand subscription page renders from entitlements with Monthly/Yearly toggle; backend listTiers returns prices + entitlements joined per tier; upgrade endpoint accepts billing_period; honest correction in 06-diff that quota popup wiring was already done in A9.",
+  "related": [
+    "features/billing-tier-features-and-prices",
+    "features/fix-tier-list-and-create-flow",
+    "features/billing-brand-ui",
+    "features/billing-admin-ui"
+  ],
+  "result": "Brand subscription page rewritten (entitlement render + Monthly/Yearly toggle + graceful legacy fallback). Backend listTiers extended with prices+entitlements joins. upgrade endpoint accepts billing_period. Test stub updated for post-A11 shape. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (41.8s) after rate-limit cooldown. Backend boot smoke clean. Ready to push.",
+  "regression_proof": "API responses additive (new fields on existing shape). Upgrade endpoint billing_period optional with monthly default. Page rewrite preserves path + component name. Backend boot smoke clean (node -e require('./src/app') OK).",
+  "discipline": "Verify-twice on quota popup wiring (A9 already did it, not A11 work). Page rewrite reads entitlements with graceful degradation if array empty.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Vercel + Render redeploy; no migration)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-25) — visual baseline matches existing /dashboard/wallet wave2 palette; founder will restyle later.",
+  "mockup_locked_at": "2026-05-25"
+}

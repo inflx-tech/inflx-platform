@@ -66,16 +66,78 @@ async function _countUsage(brandId, cycleStart) {
 }
 
 // ── GET /v1/subscription-tiers ───────────────────────────────────────────────
+// Phase A11: response now includes per-tier `prices` (array of monthly/yearly
+// rows from subscription_prices) + `entitlements` (array of feature rows from
+// tier_features × features catalog). Lets the brand UI render the full
+// upgrade page from a single call. Legacy `monthly_price_inr` + `features_json`
+// retained for back-compat with anything still consuming the old shape.
 const listTiers = asyncHandler(async (req, res) => {
-  const { rows } = await db.query(
-    `SELECT tier_key, name, monthly_price_inr, max_campaigns, max_sets_per_campaign,
+  const { rows: tiers } = await db.query(
+    `SELECT id, tier_key, name, monthly_price_inr, max_campaigns, max_sets_per_campaign,
             max_influencers_per_cycle, max_products, is_enterprise, description,
             features_json, sort_order
        FROM subscription_tiers
       WHERE active = true
       ORDER BY sort_order`
   );
-  return success(res, { tiers: rows });
+
+  if (tiers.length === 0) return success(res, { tiers: [] });
+
+  const tierIds = tiers.map(t => t.id);
+
+  // Prices per tier
+  const { rows: priceRows } = await db.query(
+    `SELECT tier_id, billing_period, price_inr, active, sort_order
+       FROM subscription_prices
+      WHERE tier_id = ANY($1::uuid[])
+      ORDER BY billing_period`,
+    [tierIds]
+  );
+  const pricesByTier = new Map();
+  for (const p of priceRows) {
+    if (!pricesByTier.has(p.tier_id)) pricesByTier.set(p.tier_id, []);
+    pricesByTier.get(p.tier_id).push({
+      billing_period: p.billing_period,
+      price_inr:      p.price_inr,
+      active:         p.active,
+      sort_order:     p.sort_order,
+    });
+  }
+
+  // Entitlements per tier (tier_features × features catalog)
+  const { rows: entRows } = await db.query(
+    `SELECT tf.tier_id, tf.included, tf.quota_value, tf.config,
+            f.feature_key, f.label, f.category, f.feature_type, f.unit,
+            f.default_quota, f.sort_order AS feature_sort
+       FROM tier_features tf
+       JOIN features f ON f.id = tf.feature_id
+      WHERE tf.tier_id = ANY($1::uuid[])
+        AND f.active = true
+      ORDER BY f.sort_order ASC`,
+    [tierIds]
+  );
+  const entsByTier = new Map();
+  for (const e of entRows) {
+    if (!entsByTier.has(e.tier_id)) entsByTier.set(e.tier_id, []);
+    entsByTier.get(e.tier_id).push({
+      feature_key:  e.feature_key,
+      label:        e.label,
+      category:     e.category,
+      feature_type: e.feature_type,
+      unit:         e.unit,
+      included:     e.included,
+      quota_value:  e.quota_value != null ? parseFloat(e.quota_value) : null,
+      config:       e.config || {},
+    });
+  }
+
+  const enriched = tiers.map(t => ({
+    ...t,
+    prices:        pricesByTier.get(t.id) || [],
+    entitlements:  entsByTier.get(t.id) || [],
+  }));
+
+  return success(res, { tiers: enriched });
 });
 
 // ── GET /v1/brands/me/subscription ───────────────────────────────────────────
@@ -131,10 +193,14 @@ const upgrade = asyncHandler(async (req, res) => {
   const brandId = await _getBrandIdFromUser(req.user.sub);
   if (!brandId) throw new AppError('FORBIDDEN', 'No brand profile for this user', 403);
 
-  const { tier_key } = req.body;
+  const { tier_key, billing_period: rawPeriod } = req.body;
   if (!tier_key || typeof tier_key !== 'string') {
     throw new AppError('VALIDATION_ERROR', 'tier_key required', 422, 'tier_key');
   }
+  // Phase A11: billing_period optional, defaults to 'monthly' for back-compat
+  // with pre-A11 clients that only sent tier_key.
+  const billing_period = (rawPeriod && ['monthly','yearly'].includes(String(rawPeriod)))
+    ? String(rawPeriod) : 'monthly';
 
   const { rows: tierRows } = await db.query(
     `SELECT id, tier_key, name, monthly_price_inr, is_enterprise
@@ -144,7 +210,32 @@ const upgrade = asyncHandler(async (req, res) => {
   );
   if (!tierRows[0]) throw new AppError('NOT_FOUND', `Tier '${tier_key}' not found`, 404, 'tier_key');
   const tier = tierRows[0];
-  const amount = parseFloat(tier.monthly_price_inr);
+
+  // Phase A11: look up the active subscription_price for the chosen period.
+  // Falls back to legacy monthly_price_inr if no price row exists yet
+  // (preserves behaviour for tiers that haven't had prices seeded).
+  const { rows: priceRows } = await db.query(
+    `SELECT id, price_inr
+       FROM subscription_prices
+      WHERE tier_id = $1 AND billing_period = $2 AND active = true
+      LIMIT 1`,
+    [tier.id, billing_period]
+  );
+  let subscriptionPriceId = priceRows[0]?.id || null;
+  let amount = priceRows[0]
+    ? parseFloat(priceRows[0].price_inr)
+    : (billing_period === 'monthly' ? parseFloat(tier.monthly_price_inr) : null);
+
+  if (amount == null) {
+    // Yearly chosen but no yearly price configured by admin yet.
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `Tier '${tier_key}' has no active ${billing_period} price configured`,
+      422, 'billing_period'
+    );
+  }
+  // Cycle length: 30 days monthly, 365 days yearly.
+  const cycleDays = billing_period === 'yearly' ? 365 : 30;
 
   const isMock = String(env.RAZORPAY_MOCK).toLowerCase() === 'true';
 
@@ -173,13 +264,17 @@ const upgrade = asyncHandler(async (req, res) => {
 
     const { rows: subRows } = await client.query(
       `INSERT INTO brand_subscriptions
-         (brand_id, tier_id, status, current_cycle_start, current_cycle_end,
-          next_charge_at, mandate_status, last_charged_at,
+         (brand_id, tier_id, subscription_price_id, status,
+          current_cycle_start, current_cycle_end, next_charge_at,
+          mandate_status, last_charged_at,
           razorpay_subscription_id, razorpay_mandate_id)
-       VALUES ($1, $2, 'active', current_date, current_date + 30,
-               current_date + 30, 'active', now(), $3, $4)
+       VALUES ($1, $2, $3, 'active', current_date,
+               current_date + ($4 || ' days')::interval,
+               current_date + ($4 || ' days')::interval,
+               'active', now(), $5, $6)
        RETURNING id`,
-      [brandId, tier.id, `sub_mock_${Date.now()}`, `mandate_mock_${Date.now()}`]
+      [brandId, tier.id, subscriptionPriceId, String(cycleDays),
+       `sub_mock_${Date.now()}`, `mandate_mock_${Date.now()}`]
     );
     createdSubId = subRows[0].id;
 
@@ -189,13 +284,13 @@ const upgrade = asyncHandler(async (req, res) => {
       `INSERT INTO subscription_invoices
          (brand_subscription_id, brand_id, tier_key, amount_inr, gst_amount_inr,
           period_start, period_end, status, paid_at, razorpay_payment_id)
-       VALUES ($1, $2, $3, $4, $5, current_date, current_date + 30,
-               $6, now(), $7)
+       VALUES ($1, $2, $3, $4, $5, current_date,
+               current_date + ($6 || ' days')::interval,
+               'paid', now(), $7)
        RETURNING id, total_inr`,
       [
         createdSubId, brandId, tier.tier_key, amount, gstAmount,
-        amount > 0 ? 'paid' : 'paid',     // free still "paid" — zero invoice closes the cycle
-        `pay_mock_${Date.now()}`,
+        String(cycleDays), `pay_mock_${Date.now()}`,
       ]
     );
     invoiceId = invRows[0].id;
@@ -207,10 +302,11 @@ const upgrade = asyncHandler(async (req, res) => {
     subscription_id: createdSubId,
     invoice_id:    invoiceId,
     tier_key:      tier.tier_key,
+    billing_period,
     amount_inr:    amount,
     gst_amount_inr: parseFloat((amount * GST_PCT / 100).toFixed(2)),
     total_inr:     parseFloat((amount * (1 + GST_PCT / 100)).toFixed(2)),
-    message:       `Subscribed to ${tier.name} (mock mode — no real Razorpay charge).`,
+    message:       `Subscribed to ${tier.name} ${billing_period} (mock mode — no real Razorpay charge).`,
   }, 201);
 });
 
