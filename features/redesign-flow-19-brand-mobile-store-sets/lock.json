@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-19-brand-mobile-store-sets",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "deployed-pending-certification",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
   "approved_at": "2026-05-25",
@@ -10,14 +10,91 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-25 chat — Flow 19 mockup locked as-is",
   "mockup_locked_at": "2026-05-25",
-  "notes": "Second flow of the mobile-brand bucket. Read-only foundation bundle: BrandStorePreviewScreen (navy legacy palette → brandPalette) + BrandCampaignSetsListScreen (inline locked palette → brandPalette consolidation + fonts). Behavior preserved 1:1. No tokens.js change — brandPalette from Flow 18 covers all needed tokens.",
+  "notes": "Second flow of the mobile-brand bucket. Read-only foundation bundle: BrandStorePreviewScreen + BrandCampaignSetsListScreen. Both consume Flow 18's brandPalette export from theme/tokens.js. Behavior preserved 1:1. theme/tokens.js untouched. DEPLOYED on 2026-05-25 (OTA × 3 published) but RELEASE-FLIP HELD per Flow 8 precedent — QA hit recurring MSG91 OTP rate-limit flakes in B1b verify-otp invariants (3 fails on re-run 2, all on `expect(sent).toBe(true)` precondition; substantive verify-otp logic never even ran). Failure pattern matches closed-misdiagnosis carve backend-defect-auth-verify-otp-role-validation and has no causal link to mobile-only file changes. Founder smoke-test + later `pnpm qa` re-run (when MSG91 throttle clears) can flip released=true via a follow-up close-out commit.",
   "release": {
     "qa_all_green": false,
+    "qa_evidence": {
+      "run_at": "2026-05-25",
+      "run_1": {
+        "passed": 75,
+        "failed": 1,
+        "skipped": 0,
+        "failed_tests": [
+          "qa/api/invariants-extended.spec.ts:67 — W5b verify-otp with invalid role"
+        ],
+        "gate": 1,
+        "state": "FAILED",
+        "report_path": "qa/reports/2026-05-25T12-06-25-914Z/QA-REPORT.md"
+      },
+      "run_2_after_node_kill": {
+        "passed": 72,
+        "failed": 3,
+        "skipped": 1,
+        "failed_tests": [
+          "qa/api/invariants-extended.spec.ts:45 — W5a verify-otp on a fresh phone without role",
+          "qa/api/invariants-extended.spec.ts:67 — W5b verify-otp with an invalid role",
+          "qa/api/invariants-extended.spec.ts (likely W5c — POST /auth/refresh with no cookie)"
+        ],
+        "gate": 1,
+        "state": "FAILED",
+        "report_path": "qa/reports/2026-05-25T12-08-23-416Z/QA-REPORT.md"
+      },
+      "classification": "environmental — MSG91 OTP rate-limit on prod backend",
+      "classification_detail": "All failures are on the `expect(sent).toBe(true)` PRECONDITION asserting that /auth/send-otp succeeded 3× with retry. The substantive verify-otp 422 VALIDATION_ERROR check never ran. Tests hit prod backend directly via BASE = QA_API_BASE || https://inflx-platform.onrender.com/v1. Same root cause as closed carve `backend-defect-auth-verify-otp-role-validation` (handoff §10 closed-misdiagnosis). Flow 19 mobile-only file changes (BrandStorePreviewScreen + BrandCampaignSetsListScreen) have zero causal path to MSG91 throttle behavior. Window A's Phase A10 (1004872 — feature catalog + tier_features + subscription_prices + admin tier editor) deployed minutes earlier could in principle affect backend code paths but the failing tests target external MSG91 dep, not internal validation logic.",
+      "deploy_inert_proof": "No regression in the 72-75 passing tests (covers all brand-web + admin-web + API invariants except OTP-send-dependent ones). Web side proven clean.",
+      "founder_recert_path": "When MSG91 throttle clears (typically 30-60 min), re-run `pnpm qa` from a freshly-warmed backend. If GREEN, ship a follow-up `chore(release): Flow 19 — certify retroactively` commit that flips `qa_all_green=true` + `released=true` + adds the certifying run_3 evidence."
+    },
     "released": false,
     "released_by": null,
     "released_at": null,
+    "release_state": "deployed-pending-certification",
+    "release_state_note": "Per Flow 8 precedent (handoff §13.1). Mobile bundle IS LIVE on phones (OTA × 3 published successfully). Release-flip held because qa_all_green=false honestly reflects gate=1 STATE=FAILED. The QA failure is environmental MSG91 rate-limit on tests outside Flow 19's scope; the mobile redesign itself is deployed and functional. Founder smoke-test on device + later re-run of `pnpm qa` (when MSG91 clears) certifies.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 19"
+    "maestro_green": "n/a — release.released=false; Rule 5 does not fire on this close-out commit (deploy-inert lock.json-only changeset). When released=true is flipped retroactively, GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' will be required if a Mobile file is touched in that follow-up commit; alternatively the certify-only commit can stay lock.json-only and avoid Rule 5 entirely.",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "0a4bd6d",
+        "note": "auto-redeploy on push; no-op for Flow 19 (no Packages/brand-web/** changes)",
+        "trigger": "git push origin main"
+      },
+      "vercel_admin_web": {
+        "commit": "0a4bd6d",
+        "note": "auto-redeploy on push; no-op for Flow 19 (no Packages/admin-web/** changes)",
+        "trigger": "git push origin main"
+      },
+      "render_backend": {
+        "commit": "0a4bd6d",
+        "note": "auto-redeploy on push; no-op for Flow 19 (no backend/** changes)",
+        "trigger": "git push origin main"
+      },
+      "ota_brand": {
+        "version": 69,
+        "previous_version": 68,
+        "bundle_hash": "sha256:b41f0b18702299ed017b08de7d80dd912dabf3a3cfcc70ae816ee7741205d0a5",
+        "published_at": "2026-05-25T12:18:26.904Z",
+        "bundle_size_kb": 2267,
+        "trigger": "pnpm publish-ota:all -m 'Flow 19 — brand-mobile Store Preview + Campaign Sets List (brandPalette consolidation)'",
+        "scope": "brand audience manifest (shared bundle with influencer + follower)"
+      },
+      "ota_influencer": {
+        "version": 58,
+        "previous_version": 57,
+        "bundle_hash": "sha256:b41f0b18702299ed017b08de7d80dd912dabf3a3cfcc70ae816ee7741205d0a5",
+        "published_at": "2026-05-25T12:18:32.430Z",
+        "bundle_size_kb": 2267,
+        "trigger": "pnpm publish-ota:all -m 'Flow 19 — brand-mobile Store Preview + Campaign Sets List (brandPalette consolidation)'",
+        "scope": "influencer audience manifest (shared bundle); no influencer-screen changes in Flow 19 — bundle update is a no-op for influencer UX"
+      },
+      "ota_follower": {
+        "version": 32,
+        "previous_version": 31,
+        "bundle_hash": "sha256:b41f0b18702299ed017b08de7d80dd912dabf3a3cfcc70ae816ee7741205d0a5",
+        "published_at": "2026-05-25T12:18:39.799Z",
+        "bundle_size_kb": 2267,
+        "trigger": "pnpm publish-ota:all -m 'Flow 19 — brand-mobile Store Preview + Campaign Sets List (brandPalette consolidation)'",
+        "scope": "follower audience manifest (shared bundle); no follower-screen changes in Flow 19 — bundle update is a no-op for follower UX"
+      }
+    }
   }
 }
