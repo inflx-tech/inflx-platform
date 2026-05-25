@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-18-brand-mobile-notifications",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
   "approved_at": "2026-05-25",
@@ -10,14 +10,66 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-25 chat — Flow 18 mockup locked as-is",
   "mockup_locked_at": "2026-05-25",
-  "notes": "First flow of the mobile-brand bucket (after brand-web COMPLETE 17/17 on 2026-05-25). Single-screen scope to validate mobile rhythm: RN StyleSheet adaptation, new brandPalette export in theme/tokens.js (locked 8-hex spec), OTA × 3 deploy ceremony, Maestro posture (GOVERNANCE_OVERRIDE for this release; Maestro setup deferred to its own contract). Behavior preserved 1:1 — visual + UX only.",
+  "notes": "First flow of the mobile-brand bucket (after brand-web COMPLETE 17/17 on 2026-05-25). Single-screen scope to validate mobile rhythm: RN StyleSheet adaptation, new brandPalette export in theme/tokens.js (locked 8-hex spec), OTA × 3 deploy ceremony, Maestro posture (GOVERNANCE_OVERRIDE for this release; Maestro setup deferred to its own contract). Behavior preserved 1:1 — visual + UX only. RELEASED 2026-05-25.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "run_at": "2026-05-25",
+      "report_path": "qa/reports/2026-05-25T08-17-12-342Z/QA-REPORT.md",
+      "pw_tests": 75,
+      "passed": 75,
+      "failed": 0,
+      "gate": 0,
+      "state": "GREEN",
+      "note": "No mobile-targeted tests in main lane; pnpm qa confirms zero regression on the web side after the additive brandPalette export. Mobile-side verification: founder smoke-test on device post-OTA pickup."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"Yes, ship it\" (OTA × 3 + close-out approved)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 18"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — first mobile flow ships with manual founder smoke-test; Maestro setup deferred to its own contract'",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "acb7232",
+        "note": "auto-redeploy on push; no-op for Flow 18 (no Packages/brand-web/** changes)",
+        "trigger": "git push origin main"
+      },
+      "vercel_admin_web": {
+        "commit": "acb7232",
+        "note": "auto-redeploy on push; no-op for Flow 18 (no Packages/admin-web/** changes)",
+        "trigger": "git push origin main"
+      },
+      "render_backend": {
+        "commit": "acb7232",
+        "note": "auto-redeploy on push; no-op for Flow 18 (no backend/** changes)",
+        "trigger": "git push origin main"
+      },
+      "ota_brand": {
+        "version": 68,
+        "previous_version": 67,
+        "bundle_hash": "sha256:c1bea89e8ada60ec3ebd1c82838c92a552880d949453eed5990c2872cfd2e4e6",
+        "published_at": "2026-05-25T09:27:18.627Z",
+        "trigger": "pnpm publish-ota:all -m 'Flow 18 — brand-mobile notifications (locked palette + brandPalette)'",
+        "scope": "brand audience manifest (shared bundle with influencer + follower)"
+      },
+      "ota_influencer": {
+        "version": 57,
+        "previous_version": 56,
+        "bundle_hash": "sha256:c1bea89e8ada60ec3ebd1c82838c92a552880d949453eed5990c2872cfd2e4e6",
+        "published_at": "2026-05-25T09:27:39.930Z",
+        "trigger": "pnpm publish-ota:all -m 'Flow 18 — brand-mobile notifications (locked palette + brandPalette)'",
+        "scope": "influencer audience manifest (shared bundle); no influencer-screen changes in Flow 18 — bundle update is a no-op for influencer UX"
+      },
+      "ota_follower": {
+        "version": 31,
+        "previous_version": 30,
+        "bundle_hash": "sha256:c1bea89e8ada60ec3ebd1c82838c92a552880d949453eed5990c2872cfd2e4e6",
+        "published_at": "2026-05-25T09:28:01.654Z",
+        "trigger": "pnpm publish-ota:all -m 'Flow 18 — brand-mobile notifications (locked palette + brandPalette)'",
+        "scope": "follower audience manifest (shared bundle); no follower-screen changes in Flow 18 — bundle update is a no-op for follower UX"
+      }
+    },
+    "publish_note": "Used `publish-ota:all` (single Node process, 1 bundle build, 3 sequential uploads → 3 manifest writes + 3 audit registrations) after a 3-separate retry hit `fetch failed` on each invocation (Render TCP-reset mid-upload of ~3MB base64 JSON body). :all keeps the Node process alive across the loop, avoiding repeated cold-starts. Outcome is identical to the 3-separate discipline: per-flavor version bumps + per-flavor manifest entries with the same bundle hash."
   }
 }
