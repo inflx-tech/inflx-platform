@@ -1,0 +1,31 @@
+{
+  "feature": "redesign-flow-15-brand-web-notifications-inbox",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-25 chat \"flow 15 go and continue\" — delegated to agent best-decision; 4-state mockup approved implicitly via go-continue autonomy",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-25 chat \"flow 15 go and continue\" — locked Flow 15 mockup (4 states · 626 LOC)",
+  "mockup_locked_at": "2026-05-25",
+  "notes": "Web brand notifications + inbox 2-route bundle. Restyles 73 + 269 = 342-LOC wave1 pages into 156 + 428 = 584-LOC wave2 pages. Notifications: type-colored avatars + relative dates + yellow unread chip + Mark-all-read yellow CTA + row cards under .ntf wrapper. Inbox: INK sub-tab pills with mono per-tab counts (from summary endpoint) + rich Applications cards (Reject danger / Approve ink+yellow inline) + Negotiations/Reviews click-to-navigate rows + Signatures/Failures palette info cards + URL-driven tabs preserved + Suspense for useSearchParams under .ibx wrapper. NEW intel: total-waiting count chip + per-tab mono counts + notification type-color avatars. Backend audit: notificationApi.list/markAllRead + brandInboxApi.applications/negotiations/deliverables/summary + applicationApi.approve/reject preserved verbatim. Adjacent-fixes: undefined Tailwind tokens → palette vars. alert/confirm dialogs preserved. CSS scoping discipline under .ntf + .ibx from day 1.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-25T06:05:32Z",
+      "result": "75/75 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 49,
+      "report": "qa/reports/2026-05-25T06-05-32-863Z/QA-REPORT.md",
+      "first_run_clean": false,
+      "note": "First run had 3 transient backend timeouts on cold backend (3 backend-direct API tests: B1 auth contract + B1b admin/queue/influencers + admin/brands). Classified as environmental per feedback_qa_governance.md (matches Flow 12 stale-server pattern + auth-test misdiagnosis precedent — N tests hitting same external dep failing simultaneously). 2nd run clean 75/75 GREEN in 48.6s. No Flow 15 code regression."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}

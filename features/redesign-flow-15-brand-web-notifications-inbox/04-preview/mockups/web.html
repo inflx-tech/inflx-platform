@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 15 · brand-web notifications + inbox — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:780px;line-height:1.5;margin-top:4px}
+
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:30px}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:780px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+.page{padding:30px 36px;background:var(--bg);overflow-y:auto;max-width:920px;margin:0 auto;width:100%}
+
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+
+.hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.hdr-l h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.hdr-l .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.hdr-l .sub{font-size:12px;color:var(--muted-2);max-width:560px}
+.cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:800;margin-bottom:6px}
+.cnt-chip.unread{background:var(--yellow);color:var(--ink)}
+.btn-ink{padding:8px 14px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-yel{padding:8px 14px;background:var(--yellow);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+.btn-ghost{padding:8px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer}
+
+/* Sub-tab pills (inbox) */
+.subtabs{display:inline-flex;gap:2px;background:var(--bg2);border-radius:12px;padding:4px;margin-bottom:14px;flex-wrap:wrap;max-width:100%}
+.subtab{padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);background:transparent;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.subtab.act{background:var(--ink);color:var(--yellow)}
+.subtab .ct{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;background:rgba(255,255,255,.12);color:inherit;padding:2px 7px;border-radius:99px}
+.subtab:not(.act) .ct{background:var(--white);color:var(--muted-2)}
+.tab-desc{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-bottom:14px}
+
+/* Compact row card */
+.rc{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:40px 1fr auto auto;gap:12px;align-items:center;margin-bottom:6px;min-height:60px;cursor:pointer}
+.rc:hover{border-color:var(--ink)}
+.rc.unread{background:var(--yellow-50);border-color:var(--yellow-pale)}
+.rc-av{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-weight:800;font-size:14px;flex-shrink:0;background:var(--yellow-pale);color:var(--yellow-text)}
+.rc-av.offer{background:var(--info-pale);color:var(--info)}
+.rc-av.campaign{background:var(--conv-pale);color:var(--conv)}
+.rc-av.contract{background:var(--eng-pale);color:var(--eng)}
+.rc-av.content{background:var(--success-pale);color:var(--success-text)}
+.rc-av.money{background:var(--yellow-pale);color:var(--yellow-text)}
+.rc-av.danger{background:var(--danger-pale);color:var(--danger-text)}
+.rc-mid{min-width:0;display:flex;flex-direction:column;gap:3px}
+.rc-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink)}
+.rc-body{font-family:'JetBrains Mono';font-size:11px;color:var(--muted);line-height:1.4}
+.rc-dt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-align:right;min-width:74px}
+.rc-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);flex-shrink:0}
+.rc-spacer{width:8px}
+
+/* Inbox row card (richer) */
+.ic{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px}
+.ic:hover{border-color:var(--muted-3)}
+.ic-clickable{cursor:pointer}
+.ic-clickable:hover{border-color:var(--ink)}
+.ic-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.ic-top-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.ic-top-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ic-handle{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.ic-tier-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.ic-tier-pill.nano{background:var(--bg2);color:var(--muted)}
+.ic-tier-pill.micro{background:var(--info-pale);color:var(--info)}
+.ic-tier-pill.mid{background:var(--eng-pale);color:var(--eng)}
+.ic-tier-pill.macro{background:var(--conv-pale);color:var(--conv)}
+.ic-tier-pill.mega{background:var(--yellow-pale);color:var(--yellow-text)}
+.ic-camp{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+.ic-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);display:flex;flex-wrap:wrap;gap:8px}
+.ic-meta b{color:var(--ink);font-weight:600}
+.ic-niche{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px}
+.ic-niche b{color:var(--ink)}
+.ic-view{font-family:inherit;font-size:11.5px;font-weight:700;color:var(--ink);text-decoration:none;background:transparent;border:0;cursor:pointer;white-space:nowrap;padding:4px 0}
+.ic-view:hover{color:var(--yellow-text)}
+.ic-actions{display:flex;gap:8px;margin-top:8px}
+.ic-btn{flex:1;padding:8px;font-size:11.5px;font-weight:700;border-radius:10px;border:1px solid;cursor:pointer;font-family:inherit}
+.ic-btn.reject{background:var(--danger-pale);border-color:rgba(232,64,26,.3);color:var(--danger-text)}
+.ic-btn.reject:hover:not(:disabled){background:var(--danger);border-color:var(--danger);color:var(--white)}
+.ic-btn.approve{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.ic-btn.approve:hover:not(:disabled){background:var(--ink-2);border-color:var(--ink-2);color:var(--yellow)}
+.ic-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Clickable inbox row (navigate) */
+.ic-nav{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:12px 14px}
+.ic-nav-l{min-width:0;display:flex;flex-direction:column;gap:3px}
+.ic-nav-name{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.ic-nav-name .handle{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink)}
+.ic-nav-name .sep{color:var(--muted-3);font-size:11px}
+.ic-nav-name .camp{font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted-2)}
+.ic-nav-name .rev{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:5px;background:var(--yellow-pale);color:var(--yellow-text);text-transform:uppercase;letter-spacing:.3px}
+.ic-nav-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+.ic-nav-meta b{color:var(--ink);font-weight:600}
+.ic-nav-meta .exp{color:var(--danger-text);font-weight:700;margin-left:8px}
+.ic-nav-fee{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--ink);text-align:right;min-width:90px}
+.ic-nav-fee .l{font-family:'Outfit';font-size:9px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;display:block}
+.ic-nav-chev{color:var(--yellow);font-size:18px;font-weight:800;flex-shrink:0}
+
+/* Info card (signatures / failures) */
+.info-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+.info-card.success{border-left:3px solid var(--success)}
+.info-card.warn{border-left:3px solid var(--yellow)}
+.info-card.danger{border-left:3px solid var(--danger)}
+.info-card .em{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.info-card.success .em{background:var(--success-pale);color:var(--success-text)}
+.info-card.warn .em{background:var(--yellow-pale);color:var(--yellow-text)}
+.info-card.danger .em{background:var(--danger-pale);color:var(--danger-text)}
+.info-card .body{flex:1;min-width:0}
+.info-card .ti{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.info-card .ti .ct{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink);background:var(--bg2);padding:2px 8px;border-radius:6px;margin-left:6px}
+.info-card .ti .ct.warn{background:var(--yellow-pale);color:var(--yellow-text)}
+.info-card .ti .ct.danger{background:var(--danger-pale);color:var(--danger-text)}
+.info-card p{font-size:12px;color:var(--muted);line-height:1.5}
+.info-card p b{color:var(--ink);font-weight:600;font-family:'JetBrains Mono';background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:11px}
+
+/* Empty state */
+.empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;margin-top:14px}
+.empty .em{font-size:48px;margin-bottom:10px}
+.empty .h{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty .t{font-size:12px;color:var(--muted);max-width:480px;margin:0 auto}
+
+/* variant heading */
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 15 · brand-web notifications + inbox — wave2 mockup</h1>
+  <div class="sub">2 routes: <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/dashboard/notifications</code> · <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/dashboard/inbox</code>. Locked palette · type-colored avatars · INK sub-tab pills with mono counts · compact row cards · info cards for placeholder tabs.</div>
+</div>
+
+<!-- ─── State 1 — NOTIFICATIONS ─────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 4</span>
+  <span class="title">/dashboard/notifications · mix of read/unread</span>
+  <span class="note">Yellow unread chip · type-colored avatars · "Mark all read" yellow CTA · unread dot on right</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / notifications</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <a class="side-link"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+      <div class="side-sep"></div>
+      <a class="side-link"><span class="ic">✉</span>Inbox</a>
+      <a class="side-link act"><span class="ic">🔔</span>Notifications</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>notifications</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip unread">4 unread · 12 total</span>
+          <h1>Notifications</h1>
+          <div class="rule"></div>
+          <div class="sub">Campaign updates, offer responses, content reviews, wallet activity, and more.</div>
+        </div>
+        <button class="btn-yel">✓ Mark all read</button>
+      </div>
+
+      <!-- Unread notifications -->
+      <div class="rc unread">
+        <div class="rc-av offer">📩</div>
+        <div class="rc-mid">
+          <div class="rc-name">New offer accepted</div>
+          <div class="rc-body">@priyareels accepted your offer for Monsoon snack series · ₹18,000 flat fee</div>
+        </div>
+        <div class="rc-dt">2h ago</div>
+        <div class="rc-unread-dot"></div>
+      </div>
+
+      <div class="rc unread">
+        <div class="rc-av content">🎬</div>
+        <div class="rc-mid">
+          <div class="rc-name">Content submitted for review</div>
+          <div class="rc-body">@anj.lifestyle submitted Reel #2 for Diwali GRWM series · awaiting your approval</div>
+        </div>
+        <div class="rc-dt">5h ago</div>
+        <div class="rc-unread-dot"></div>
+      </div>
+
+      <div class="rc unread">
+        <div class="rc-av money">💰</div>
+        <div class="rc-mid">
+          <div class="rc-name">Wallet recharged</div>
+          <div class="rc-body">₹50,000 credited via Razorpay · transaction pay_OqK9bZ12mNxY</div>
+        </div>
+        <div class="rc-dt">Yesterday</div>
+        <div class="rc-unread-dot"></div>
+      </div>
+
+      <div class="rc unread">
+        <div class="rc-av campaign">📣</div>
+        <div class="rc-mid">
+          <div class="rc-name">Campaign reached 80% commission cap</div>
+          <div class="rc-body">"Festive collection unboxing" — ₹40K of ₹50K commission spent</div>
+        </div>
+        <div class="rc-dt">Yesterday</div>
+        <div class="rc-unread-dot"></div>
+      </div>
+
+      <!-- Read notifications -->
+      <div class="rc">
+        <div class="rc-av contract">📝</div>
+        <div class="rc-mid">
+          <div class="rc-name">Contract signed by influencer</div>
+          <div class="rc-body">@snekkapoor counter-signed Workwear lookbook contract · awaiting your countersign</div>
+        </div>
+        <div class="rc-dt">2d ago</div>
+        <div class="rc-spacer"></div>
+      </div>
+
+      <div class="rc">
+        <div class="rc-av offer">📩</div>
+        <div class="rc-mid">
+          <div class="rc-name">Counter-offer received</div>
+          <div class="rc-body">@ritika.style countered with ₹9,500 (you asked ₹8,500)</div>
+        </div>
+        <div class="rc-dt">3d ago</div>
+        <div class="rc-spacer"></div>
+      </div>
+
+      <div class="rc">
+        <div class="rc-av money">💵</div>
+        <div class="rc-mid">
+          <div class="rc-name">Commission paid out</div>
+          <div class="rc-body">₹3,200 commission released to @divya.eats for 2 confirmed sales</div>
+        </div>
+        <div class="rc-dt">4d ago</div>
+        <div class="rc-spacer"></div>
+      </div>
+
+      <div class="rc">
+        <div class="rc-av danger">⚠</div>
+        <div class="rc-mid">
+          <div class="rc-name">Refund processed</div>
+          <div class="rc-body">Sanya Kapoor · Premium Facial — ₹2,200 refunded · commission reversed</div>
+        </div>
+        <div class="rc-dt">6d ago</div>
+        <div class="rc-spacer"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 2 — INBOX · APPLICATIONS ─────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 4</span>
+  <span class="title">/dashboard/inbox · Applications tab</span>
+  <span class="note">Open-group applicants · approve/reject inline · tier pills · niche meta</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / inbox?tab=applications</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link act"><span class="ic">✉</span>Inbox</a>
+      <a class="side-link"><span class="ic">🔔</span>Notifications</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>inbox</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">8 items waiting</span>
+          <h1>Inbox</h1>
+          <div class="rule"></div>
+          <div class="sub">Items waiting on your action across applications, negotiations, content reviews, contract signing, and failures.</div>
+        </div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab act">Applications <span class="ct">3</span></button>
+        <button class="subtab">Negotiations <span class="ct">2</span></button>
+        <button class="subtab">Content reviews <span class="ct">1</span></button>
+        <button class="subtab">Contract signs <span class="ct">2</span></button>
+        <button class="subtab">Failures <span class="ct">0</span></button>
+      </div>
+
+      <div class="tab-desc">Open-group applicants waiting on your approve / reject</div>
+
+      <!-- Application 1 -->
+      <div class="ic">
+        <div class="ic-top">
+          <div class="ic-top-l">
+            <div class="ic-top-row">
+              <span class="ic-handle">@priyareels</span>
+              <span class="ic-tier-pill macro">Macro</span>
+              <span class="ic-camp">· Monsoon snack series · Set 1 (Open group)</span>
+            </div>
+            <div class="ic-meta">Priya Ravi <span>·</span> <b>142K</b> followers <span>·</span> <b>5.8%</b> ER <span>·</span> Hyderabad</div>
+            <div class="ic-niche">Niche: <b>food, lifestyle</b></div>
+          </div>
+          <button class="ic-view">View profile →</button>
+        </div>
+        <div class="ic-actions">
+          <button class="ic-btn reject">Reject</button>
+          <button class="ic-btn approve">Approve</button>
+        </div>
+      </div>
+
+      <!-- Application 2 -->
+      <div class="ic">
+        <div class="ic-top">
+          <div class="ic-top-l">
+            <div class="ic-top-row">
+              <span class="ic-handle">@ritika.style</span>
+              <span class="ic-tier-pill micro">Micro</span>
+              <span class="ic-camp">· Festive collection unboxing · Set 2</span>
+            </div>
+            <div class="ic-meta">Ritika Taneja <span>·</span> <b>42K</b> followers <span>·</span> <b>3.4%</b> ER <span>·</span> Pune</div>
+            <div class="ic-niche">Niche: <b>fashion, beauty, lifestyle</b></div>
+          </div>
+          <button class="ic-view">View profile →</button>
+        </div>
+        <div class="ic-actions">
+          <button class="ic-btn reject">Reject</button>
+          <button class="ic-btn approve">Approve</button>
+        </div>
+      </div>
+
+      <!-- Application 3 -->
+      <div class="ic">
+        <div class="ic-top">
+          <div class="ic-top-l">
+            <div class="ic-top-row">
+              <span class="ic-handle">@divya.eats</span>
+              <span class="ic-tier-pill nano">Nano</span>
+              <span class="ic-camp">· Sunday brunch reel · Set 1 (Open group)</span>
+            </div>
+            <div class="ic-meta">Divya Verma <span>·</span> <b>8.2K</b> followers <span>·</span> <b>8.1%</b> ER <span>·</span> Chennai</div>
+            <div class="ic-niche">Niche: <b>food_blogger, south_indian</b></div>
+          </div>
+          <button class="ic-view">View profile →</button>
+        </div>
+        <div class="ic-actions">
+          <button class="ic-btn reject">Reject</button>
+          <button class="ic-btn approve">Approve</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 3 — INBOX · NEGOTIATIONS + REVIEWS ───────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 4</span>
+  <span class="title">/dashboard/inbox · Negotiations + Content reviews</span>
+  <span class="note">Click-to-navigate row cards · mono fees · expires-at danger tag · revision badge</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / inbox?tab=negotiations</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">✉</span>Inbox</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>inbox</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">8 items waiting</span>
+          <h1>Inbox</h1>
+          <div class="rule"></div>
+        </div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab">Applications <span class="ct">3</span></button>
+        <button class="subtab act">Negotiations <span class="ct">2</span></button>
+        <button class="subtab">Content reviews <span class="ct">1</span></button>
+        <button class="subtab">Contract signs <span class="ct">2</span></button>
+        <button class="subtab">Failures <span class="ct">0</span></button>
+      </div>
+
+      <div class="tab-desc">Counter-offers waiting for your response</div>
+
+      <!-- Negotiation 1 -->
+      <div class="ic ic-clickable">
+        <div class="ic-nav">
+          <div class="ic-nav-l">
+            <div class="ic-nav-name">
+              <span class="handle">@snekkapoor</span>
+              <span class="sep">·</span>
+              <span class="camp">Workwear lookbook</span>
+            </div>
+            <div class="ic-nav-meta">Last counter: <b>₹12,000</b> + 8% comm <span>·</span> 22 May · 14:32 <span class="exp">expires 25 May · 23:59</span></div>
+          </div>
+          <div class="ic-nav-fee">₹12,000<span class="l">last counter</span></div>
+          <div class="ic-nav-chev">›</div>
+        </div>
+      </div>
+
+      <!-- Negotiation 2 -->
+      <div class="ic ic-clickable">
+        <div class="ic-nav">
+          <div class="ic-nav-l">
+            <div class="ic-nav-name">
+              <span class="handle">@anj.lifestyle</span>
+              <span class="sep">·</span>
+              <span class="camp">Diwali GRWM 3-reel series</span>
+            </div>
+            <div class="ic-nav-meta">Last counter: <b>₹25,000</b> flat <span>·</span> 21 May · 10:15</div>
+          </div>
+          <div class="ic-nav-fee">₹25,000<span class="l">last counter</span></div>
+          <div class="ic-nav-chev">›</div>
+        </div>
+      </div>
+
+      <!-- spacer to show next tab below -->
+      <div style="height:14px"></div>
+
+      <div class="subtabs">
+        <button class="subtab">Applications <span class="ct">3</span></button>
+        <button class="subtab">Negotiations <span class="ct">2</span></button>
+        <button class="subtab act">Content reviews <span class="ct">1</span></button>
+        <button class="subtab">Contract signs <span class="ct">2</span></button>
+        <button class="subtab">Failures <span class="ct">0</span></button>
+      </div>
+
+      <div class="tab-desc">Submitted deliverables to approve / revise</div>
+
+      <!-- Review 1 -->
+      <div class="ic ic-clickable">
+        <div class="ic-nav">
+          <div class="ic-nav-l">
+            <div class="ic-nav-name">
+              <span class="handle">@anj.lifestyle</span>
+              <span class="sep">·</span>
+              <span class="camp">reel</span>
+              <span class="rev">REV 1</span>
+            </div>
+            <div class="ic-nav-meta">Diwali GRWM 3-reel series <span>·</span> submitted 23 May · 18:42</div>
+          </div>
+          <div class="ic-nav-chev">›</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 4 — INBOX · SIGNATURES + FAILURES ─────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 4 / 4</span>
+  <span class="title">/dashboard/inbox · Signatures + Failures placeholder tabs</span>
+  <span class="note">Locked-palette info cards · mono counts · instruction copy preserved</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / inbox?tab=signatures</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">✉</span>Inbox</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>inbox</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">8 items waiting</span>
+          <h1>Inbox</h1>
+          <div class="rule"></div>
+        </div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab">Applications <span class="ct">3</span></button>
+        <button class="subtab">Negotiations <span class="ct">2</span></button>
+        <button class="subtab">Content reviews <span class="ct">1</span></button>
+        <button class="subtab act">Contract signs <span class="ct">2</span></button>
+        <button class="subtab">Failures <span class="ct">3</span></button>
+      </div>
+
+      <div class="tab-desc">Contracts the influencer signed; needs you to countersign</div>
+
+      <div class="info-card success">
+        <div class="em">📝</div>
+        <div class="body">
+          <div class="ti">Contract sign-offs <span class="ct">2 pending</span></div>
+          <p>Contracts requiring your signature appear inside each campaign's hierarchy. Open the campaign and click the influencer row marked <b>pending_brand</b> to countersign.</p>
+        </div>
+      </div>
+
+      <!-- spacer -->
+      <div style="height:14px"></div>
+
+      <div class="subtabs">
+        <button class="subtab">Applications <span class="ct">3</span></button>
+        <button class="subtab">Negotiations <span class="ct">2</span></button>
+        <button class="subtab">Content reviews <span class="ct">1</span></button>
+        <button class="subtab">Contract signs <span class="ct">2</span></button>
+        <button class="subtab act">Failures <span class="ct">3</span></button>
+      </div>
+
+      <div class="tab-desc">Contracts / PDFs that failed to generate; retry them</div>
+
+      <div class="info-card warn">
+        <div class="em">⚠</div>
+        <div class="body">
+          <div class="ti">Contracts that failed to auto-create <span class="ct warn">2</span></div>
+          <p>Open the affected campaign and click the influencer row — you'll see a <b>Retry contract</b> button when this happens.</p>
+        </div>
+      </div>
+
+      <div class="info-card danger">
+        <div class="em">📄</div>
+        <div class="body">
+          <div class="ti">Contracts whose PDF failed to generate <span class="ct danger">1</span></div>
+          <p>Open the contract modal and click <b>Regenerate</b>. The error is shown beneath the PDF preview.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>Scope:</b> 2 routes · 73 + 269 = 342 LOC OLD → ~530 LOC NEW. Single-page restyles each scoped under <code>.ntf</code> (notifications) + <code>.ibx</code> (inbox).<br/>
+  <br/>
+  <b>Backend-first audit:</b> All endpoints preserved verbatim:<br/>
+  · <code>notificationApi.list / markAllRead</code><br/>
+  · <code>brandInboxApi.applications / negotiations / deliverables / summary</code><br/>
+  · <code>applicationApi.approve / reject</code><br/>
+  <br/>
+  <b>NEW intel surfaced:</b><br/>
+  · Inbox total-waiting count chip in header (derived from <code>brandInboxApi.summary()</code>)<br/>
+  · Per-tab mono counts in sub-tab pills (also from summary)<br/>
+  · Notifications: total + unread split in count chip<br/>
+  · Notification type → palette-colored avatar (offer=info / campaign=conv / contract=eng / content=success / money=yellow / danger=danger)<br/>
+  <br/>
+  <b>Adjacent-fixes:</b><br/>
+  · Undefined Tailwind tokens (<code>text-t1</code>, <code>text-orange</code>, <code>bg-surface2</code>, <code>bg-navy-pale</code>, <code>text-navy</code>, etc.) → palette vars<br/>
+  · <code>alert()</code> and <code>confirm()</code> preserved (replacing with modals would expand scope)<br/>
+  · Loading/empty state pattern aligned with Flows 11-14<br/>
+  <br/>
+  <b>CSS scoping discipline</b> (day 1): All rules under <code>.ntf</code> / <code>.ibx</code> wrappers. Every <code>:hover:not(:disabled)</code> re-asserts color · every <code>:disabled</code> locks bg + color. Same lineage as Flows 7-14.<br/>
+  <br/>
+  <b>Zero functional change:</b> All API call shapes preserved. URL-driven tabs (<code>?tab=</code>) preserved. <code>Suspense</code> wrapper preserved (needed for <code>useSearchParams</code>). Click-to-navigate behaviors on negotiations/reviews rows preserved exactly. Approve/reject mutation flow preserved (including confirm() for reject + alert() for slot-filled response).
+</div>
+
+</div>
+</body>
+</html>
