@@ -1,0 +1,23 @@
+{
+  "feature": "redesign-flow-21-brand-mobile-conversions-browse",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-25 chat — Flow 21 mockup locked as-is",
+  "mockup_locked_at": "2026-05-25",
+  "notes": "Fourth flow of the mobile-brand bucket. 2 screens + 3 NEW components extracted into Packages/Mobile/src/components/brand/. Behavior preserved 1:1. No tokens.js change. Flows 18-20 untouched.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 21"
+  }
+}

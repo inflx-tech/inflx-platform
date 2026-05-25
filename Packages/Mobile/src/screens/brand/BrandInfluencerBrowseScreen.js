@@ -4,8 +4,16 @@ import {
   ActivityIndicator, RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import ScreenHeader from '../../components/brand/ScreenHeader';
+import EmptyState from '../../components/brand/EmptyState';
+
+/**
+ * BrandInfluencerBrowseScreen — influencer search + filter + nav to profile.
+ * Flow 21 (2026-05-25): navy + orange legacy → brandPalette + extracted
+ * components (ScreenHeader + EmptyState).
+ */
 
 const NICHES = ['Food', 'Fashion', 'Beauty', 'Lifestyle', 'Fitness', 'Travel', 'Tech', 'Gaming', 'Finance', 'Parenting', 'Education'];
 const TIERS  = [
@@ -16,8 +24,6 @@ const TIERS  = [
   { key: 'mega',  label: 'Mega' },
 ];
 
-// Sort modes match the brand-web influencer search dropdown. The backend
-// /influencers/search endpoint accepts these keys via ?sort=...
 const SORTS = [
   { key: 'rank',         label: 'Best fit' },
   { key: 'view_er',      label: 'Best ER' },
@@ -34,7 +40,6 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [expandFilters, setExpandFilters] = useState(false);
 
-  // Filter state
   const [q, setQ]                 = useState('');
   const [niche, setNiche]         = useState('');
   const [tier, setTier]           = useState('');
@@ -57,11 +62,7 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
     const res = await brandApi.searchInfluencers(params);
     setLoading(false);
     if (!res?.success) return;
-    // The /influencers/search endpoint now queries v_searchable_creators and
-    // returns { creators: [...] } with view-shape field names. Older code
-    // expected { influencers: [...] } with legacy field names. Normalise so
-    // the card render keeps working in both worlds — and the profile screen
-    // can resolve the id either way.
+    // Response normalization (creators[] from v_searchable_creators OR legacy influencers[])
     const raw = res.data?.creators || res.data?.influencers || [];
     setInfluencers(raw.map(r => ({
       ...r,
@@ -73,11 +74,7 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
     })));
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [])
-  );
+  useFocusEffect(useCallback(() => { load(); }, []));
 
   function handleSearchSubmit() {
     setLoading(true);
@@ -88,7 +85,6 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
     if (newSort === sort) return;
     setSort(newSort);
     setLoading(true);
-    // Pass the new sort directly so we don't race React's state batching.
     load({ sort: newSort });
   }
 
@@ -105,191 +101,185 @@ export default function BrandInfluencerBrowseScreen({ navigation }) {
   const activeFilterCount = [q, niche, tier, minFollowers, minER, city].filter(Boolean).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<'} Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Find Influencers</Text>
-        <Text style={styles.subtitle}>Search and invite to your campaigns</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: P.bg }}>
+      <ScreenHeader
+        title="Find Influencers"
+        sub="Search and invite to your campaigns"
+        back onBack={() => navigation.goBack()}
+      />
 
-      {/* Search bar */}
-      <View style={styles.searchBar}>
+      <View style={s.searchBar}>
         <TextInput
-          style={styles.searchInput}
+          style={s.searchInput}
           value={q}
           onChangeText={setQ}
           onSubmitEditing={handleSearchSubmit}
           placeholder="Search by name or @handle"
-          placeholderTextColor={colors.t3}
+          placeholderTextColor={P.muted3}
           returnKeyType="search"
           autoCapitalize="none"
         />
-        <TouchableOpacity style={styles.searchBtn} onPress={handleSearchSubmit}>
-          <Text style={styles.searchBtnText}>Search</Text>
+        <TouchableOpacity style={s.searchBtn} onPress={handleSearchSubmit} activeOpacity={0.85}>
+          <Text style={s.searchBtnText}>Search</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Sort chips — server-side via /influencers/search?sort=... */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.sortRow}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
+        horizontal showsHorizontalScrollIndicator={false}
+        style={s.sortRow}
+        contentContainerStyle={{ paddingHorizontal: 14, gap: 6 }}
       >
-        {SORTS.map(s => (
+        {SORTS.map(item => (
           <TouchableOpacity
-            key={s.key}
-            style={[styles.sortChip, sort === s.key && styles.sortChipActive]}
-            onPress={() => changeSort(s.key)}
+            key={item.key}
+            style={[s.sortChip, sort === item.key && s.sortChipActive]}
+            onPress={() => changeSort(item.key)}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.sortChipText, sort === s.key && styles.sortChipTextActive]}>
-              {s.label}
-            </Text>
+            <Text style={[s.sortChipText, sort === item.key && s.sortChipTextActive]}>{item.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Filter toggle */}
-      <TouchableOpacity style={styles.filterToggle} onPress={() => setExpandFilters(!expandFilters)}>
-        <Text style={styles.filterToggleText}>
-          Filters{activeFilterCount > 0 ? `  ·  ${activeFilterCount} active` : ''}
+      <TouchableOpacity style={s.filterToggle} onPress={() => setExpandFilters(!expandFilters)} activeOpacity={0.7}>
+        <Text style={s.filterToggleText}>
+          Filters{activeFilterCount > 0 ? ` · ${activeFilterCount} active` : ''}
         </Text>
-        <Text style={styles.filterToggleArrow}>{expandFilters ? '▲' : '▼'}</Text>
+        <Text style={s.filterToggleArrow}>{expandFilters ? '▲' : '▼'}</Text>
       </TouchableOpacity>
 
       {expandFilters && (
-        <View style={styles.filtersCard}>
-          <Text style={styles.filterLabel}>Niche</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 6 }}>
+        <View style={s.filtersCard}>
+          <Text style={s.filterLabel}>Niche</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }} contentContainerStyle={{ gap: 5 }}>
             <TouchableOpacity
-              style={[styles.chipSm, niche === '' && styles.chipSmActive]}
+              style={[s.chipSm, niche === '' && s.chipSmActive]}
               onPress={() => setNiche('')}
             >
-              <Text style={[styles.chipSmText, niche === '' && styles.chipSmTextActive]}>Any</Text>
+              <Text style={[s.chipSmText, niche === '' && s.chipSmTextActive]}>Any</Text>
             </TouchableOpacity>
             {NICHES.map(n => (
               <TouchableOpacity
                 key={n}
-                style={[styles.chipSm, niche === n && styles.chipSmActive]}
+                style={[s.chipSm, niche === n && s.chipSmActive]}
                 onPress={() => setNiche(niche === n ? '' : n)}
               >
-                <Text style={[styles.chipSmText, niche === n && styles.chipSmTextActive]}>{n}</Text>
+                <Text style={[s.chipSmText, niche === n && s.chipSmTextActive]}>{n}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          <Text style={styles.filterLabel}>Tier</Text>
-          <View style={styles.tierRow}>
+          <Text style={s.filterLabel}>Tier</Text>
+          <View style={s.tierRow}>
             {TIERS.map(t => (
               <TouchableOpacity
                 key={t.key || 'any'}
-                style={[styles.chipSm, tier === t.key && styles.chipSmActive]}
+                style={[s.chipSm, tier === t.key && s.chipSmActive]}
                 onPress={() => setTier(t.key)}
               >
-                <Text style={[styles.chipSmText, tier === t.key && styles.chipSmTextActive]}>{t.label}</Text>
+                <Text style={[s.chipSmText, tier === t.key && s.chipSmTextActive]}>{t.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <View style={styles.filterTwoCol}>
+          <View style={s.filterTwoCol}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.filterLabel}>Min Followers</Text>
+              <Text style={s.filterLabel}>Min Followers</Text>
               <TextInput
-                style={styles.filterInput}
+                style={s.filterInput}
                 value={minFollowers}
                 onChangeText={t => setMinFollowers(t.replace(/\D/g, ''))}
                 placeholder="e.g. 10000"
-                placeholderTextColor={colors.t3}
+                placeholderTextColor={P.muted3}
                 keyboardType="number-pad"
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.filterLabel}>Min ER %</Text>
+              <Text style={s.filterLabel}>Min ER %</Text>
               <TextInput
-                style={styles.filterInput}
+                style={s.filterInput}
                 value={minER}
                 onChangeText={setMinER}
                 placeholder="e.g. 3.5"
-                placeholderTextColor={colors.t3}
+                placeholderTextColor={P.muted3}
                 keyboardType="decimal-pad"
               />
             </View>
           </View>
 
-          <Text style={styles.filterLabel}>City</Text>
+          <Text style={s.filterLabel}>City</Text>
           <TextInput
-            style={styles.filterInput}
+            style={s.filterInput}
             value={city}
             onChangeText={setCity}
             placeholder="e.g. Bangalore"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
           />
 
-          <View style={styles.filterActions}>
-            <TouchableOpacity style={styles.clearBtn} onPress={() => { clearFilters(); setLoading(true); setTimeout(load, 0); }}>
-              <Text style={styles.clearBtnText}>Clear All</Text>
+          <View style={s.filterActions}>
+            <TouchableOpacity style={s.clearBtn} onPress={() => { clearFilters(); setLoading(true); setTimeout(load, 0); }} activeOpacity={0.85}>
+              <Text style={s.clearBtnText}>Clear All</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.applyBtn} onPress={() => { setLoading(true); load(); }}>
-              <Text style={styles.applyBtnText}>Apply</Text>
+            <TouchableOpacity style={s.applyBtn} onPress={() => { setLoading(true); load(); }} activeOpacity={0.85}>
+              <Text style={s.applyBtnText}>Apply</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
-      {/* Results */}
       <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
       >
         {loading ? (
           <View style={{ padding: 40, alignItems: 'center' }}>
-            <ActivityIndicator color={colors.navy} />
+            <ActivityIndicator color={P.yellow} size="large" />
           </View>
         ) : influencers.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No influencers match</Text>
-            <Text style={styles.emptySub}>Try loosening your filters or searching by handle.</Text>
+          <View style={{ margin: 16 }}>
+            <EmptyState
+              icon="[NONE]"
+              title="No influencers match"
+              sub="Try loosening your filters or searching by handle."
+            />
           </View>
         ) : (
           influencers.map(inf => (
             <TouchableOpacity
               key={inf.id}
-              style={styles.card}
-              activeOpacity={0.8}
+              style={s.card}
+              activeOpacity={0.85}
               onPress={() => navigation.navigate('BrandInfluencerProfile', { influencerId: inf.id })}
             >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
+              <View style={s.avatar}>
+                <Text style={s.avatarText}>
                   {(inf.instagram_handle || inf.full_name || 'IN').slice(0, 2).toUpperCase()}
                 </Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <View style={styles.cardTop}>
-                  <Text style={styles.cardHandle} numberOfLines={1}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={s.cardTop}>
+                  <Text style={s.cardHandle} numberOfLines={1}>
                     @{inf.instagram_handle || 'handle'}
-                    {inf.verified ? '  ✓' : ''}
+                    {inf.verified ? ' ✓' : ''}
                   </Text>
-                  {inf.tier ? <Text style={styles.cardTier}>{inf.tier}</Text> : null}
+                  {inf.tier ? <Text style={s.cardTier}>{inf.tier}</Text> : null}
                 </View>
-                {inf.full_name && <Text style={styles.cardName} numberOfLines={1}>{inf.full_name}</Text>}
-                <View style={styles.cardStatsRow}>
+                {inf.full_name && <Text style={s.cardName} numberOfLines={1}>{inf.full_name}</Text>}
+                <View style={s.cardStatsRow}>
                   {inf.followers_count != null && (
-                    <Text style={styles.cardStat}>{fmtCompact(inf.followers_count)} followers</Text>
+                    <Text style={s.cardStat}>{fmtCompact(inf.followers_count)} followers</Text>
                   )}
                   {inf.engagement_rate != null && (
-                    <Text style={styles.cardStat}>{parseFloat(inf.engagement_rate).toFixed(1)}% ER</Text>
+                    <Text style={s.cardStat}>{parseFloat(inf.engagement_rate).toFixed(1)}% ER</Text>
                   )}
                 </View>
                 {(inf.niche || inf.city) && (
-                  <Text style={styles.cardMeta} numberOfLines={1}>
+                  <Text style={s.cardMeta} numberOfLines={1}>
                     {[Array.isArray(inf.niche) ? inf.niche.join(', ') : inf.niche, inf.city].filter(Boolean).join(' · ')}
                   </Text>
                 )}
               </View>
-              <Text style={styles.chev}>›</Text>
+              <Text style={s.chev}>›</Text>
             </TouchableOpacity>
           ))
         )}
@@ -308,56 +298,47 @@ function fmtCompact(n) {
   return String(num);
 }
 
-const styles = StyleSheet.create({
-  header:   { backgroundColor: colors.navyDeep, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16 },
-  back:     { marginBottom: 8 },
-  backText: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
-  title:    { fontSize: 22, fontWeight: '800', color: colors.white },
-  subtitle: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+const s = StyleSheet.create({
+  searchBar: { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 6, backgroundColor: P.bg },
+  searchInput: { flex: 1, backgroundColor: P.white, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontFamily: fonts.sansMedium, fontSize: 13, color: P.ink, borderWidth: 1, borderColor: P.border },
+  searchBtn: { backgroundColor: P.ink, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  searchBtnText: { fontFamily: fonts.monoBold, color: P.yellow, fontWeight: '800', fontSize: 11.5 },
 
-  searchBar:  { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6, backgroundColor: colors.bg },
-  searchInput:{ flex: 1, backgroundColor: colors.white, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 13, color: colors.t1, borderWidth: 1, borderColor: colors.border },
-  searchBtn:  { backgroundColor: colors.navy, borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  searchBtnText: { color: colors.white, fontWeight: '800', fontSize: 12 },
+  sortRow: { backgroundColor: P.bg, paddingTop: 6, paddingBottom: 4, flexGrow: 0 },
+  sortChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: P.white, borderWidth: 1, borderColor: P.border },
+  sortChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  sortChipText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.muted },
+  sortChipTextActive: { color: P.yellow, fontFamily: fonts.monoBold, fontWeight: '800' },
 
-  sortRow:           { backgroundColor: colors.bg, paddingTop: 6, paddingBottom: 4, flexGrow: 0 },
-  sortChip:          { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border },
-  sortChipActive:    { backgroundColor: colors.t1, borderColor: colors.t1 },
-  sortChipText:      { fontSize: 11, fontWeight: '600', color: colors.t3 },
-  sortChipTextActive:{ color: colors.white },
-  filterToggle:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: colors.bg },
-  filterToggleText: { fontSize: 12, fontWeight: '700', color: colors.t2 },
-  filterToggleArrow:{ fontSize: 10, color: colors.t3 },
+  filterToggle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8, backgroundColor: P.bg },
+  filterToggleText: { fontFamily: fonts.sansBold, fontSize: 11.5, fontWeight: '700', color: P.ink2 },
+  filterToggleArrow: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted3 },
 
-  filtersCard:   { marginHorizontal: 16, backgroundColor: colors.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 6 },
-  filterLabel:   { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 6 },
-  filterInput:   { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13, color: colors.t1 },
-  filterTwoCol:  { flexDirection: 'row', gap: 10 },
+  filtersCard: { marginHorizontal: 14, backgroundColor: P.white, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: P.border, marginBottom: 6 },
+  filterLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 5, marginTop: 6 },
+  filterInput: { fontFamily: fonts.monoMedium, borderWidth: 1, borderColor: P.border, backgroundColor: P.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 12, color: P.ink },
+  filterTwoCol: { flexDirection: 'row', gap: 10 },
   filterActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  clearBtn:      { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
-  clearBtnText:  { fontSize: 12, fontWeight: '700', color: colors.t2 },
-  applyBtn:      { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.navy, alignItems: 'center' },
-  applyBtnText:  { fontSize: 12, fontWeight: '800', color: colors.white },
+  clearBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: P.bg2, alignItems: 'center' },
+  clearBtnText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '800', color: P.muted },
+  applyBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: P.yellow, alignItems: 'center' },
+  applyBtnText: { fontFamily: fonts.displayBold, fontSize: 11, fontWeight: '800', color: P.ink },
 
-  tierRow:       { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  chipSm:        { backgroundColor: colors.bg, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.border },
-  chipSmActive:  { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipSmText:    { fontSize: 10, fontWeight: '700', color: colors.t2 },
-  chipSmTextActive:{ color: colors.white },
+  tierRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 10 },
+  chipSm: { backgroundColor: P.bg2, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: P.border },
+  chipSmActive: { backgroundColor: P.ink, borderColor: P.ink },
+  chipSmText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.muted },
+  chipSmTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
 
-  emptyCard: { margin: 16, backgroundColor: colors.white, borderRadius: 16, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  emptyText: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 6 },
-  emptySub:  { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
-
-  card:      { backgroundColor: colors.white, borderRadius: 14, padding: 12, marginHorizontal: 16, marginTop: 8, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar:    { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  avatarText:{ fontSize: 14, fontWeight: '900', color: colors.white },
-  cardTop:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 6 },
-  cardHandle:{ fontSize: 14, fontWeight: '800', color: colors.t1, flex: 1 },
-  cardTier:  { fontSize: 9, fontWeight: '800', color: colors.navy, backgroundColor: colors.navyPale || '#EDF1FA', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, textTransform: 'capitalize' },
-  cardName:  { fontSize: 11, color: colors.t3, marginTop: 1 },
-  cardStatsRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  cardStat:  { fontSize: 11, color: colors.navy, fontWeight: '700' },
-  cardMeta:  { fontSize: 10, color: colors.t3, marginTop: 3 },
-  chev:      { fontSize: 22, color: colors.t3 },
+  card: { backgroundColor: P.white, borderRadius: 14, padding: 12, marginHorizontal: 14, marginTop: 8, borderWidth: 1, borderColor: P.border, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '900', color: P.ink },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 6 },
+  cardHandle: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '800', color: P.ink, flex: 1 },
+  cardTier: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.yellowText, backgroundColor: P.yellowPale, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, textTransform: 'capitalize' },
+  cardName: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted2, marginTop: 1 },
+  cardStatsRow: { flexDirection: 'row', gap: 11, marginTop: 4 },
+  cardStat: { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.ink, fontWeight: '700' },
+  cardMeta: { fontFamily: fonts.sansMedium, fontSize: 9.5, color: P.muted3, marginTop: 3 },
+  chev: { fontFamily: fonts.monoBold, fontSize: 22, color: P.muted3, fontWeight: '800' },
 });

@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 21 · brand-mobile Conversions + InfluencerBrowse + component extraction — wave2 mockup</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1100px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:14px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:744px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none}
+.home-bar .pill{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* Topbar (ScreenHeader component) */
+.topbar{background:var(--ink);color:var(--white);padding:14px 18px;flex-shrink:0}
+.topbar-back{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:rgba(255,255,255,.6);padding-bottom:6px}
+.topbar h1{font-family:'Outfit';font-size:22px;font-weight:700;color:var(--white);letter-spacing:-.3px}
+.topbar .rule{width:30px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.topbar .sub{font-family:'Plus Jakarta Sans';font-size:11px;color:rgba(255,255,255,.55)}
+
+/* Body */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:0}
+
+/* Conversions summary tiles */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+.sum-tile{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:11px}
+.sum-tile .l{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+.sum-tile .v{font-family:'JetBrains Mono';font-size:17px;font-weight:900;color:var(--ink);margin-top:3px}
+
+/* Channel breakdown */
+.channel-row{display:flex;gap:8px;padding:0 12px}
+.channel-tile{flex:1;background:var(--bg2);border-radius:10px;padding:9px;align-items:center;text-align:center}
+.channel-count{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--ink)}
+.channel-label{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);margin-top:2px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+
+/* Filter chips */
+.chips{background:var(--white);padding:8px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);display:flex;gap:6px;overflow-x:auto;margin-top:10px}
+.chip{padding:6px 12px;border-radius:99px;background:var(--bg2);border:1px solid var(--border);font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;color:var(--muted);white-space:nowrap}
+.chip.act{background:var(--ink);color:var(--yellow);border-color:var(--ink);font-family:'JetBrains Mono'}
+
+/* Transaction card */
+.tx-list{padding:10px 14px}
+.tx-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:13px;margin-bottom:8px}
+.tx-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.tx-type{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.5px}
+.tx-body{display:flex;justify-content:space-between;gap:10px}
+.tx-l{flex:1;min-width:0}
+.tx-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink)}
+.tx-via{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px}
+.tx-campaign{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--muted-3);margin-top:2px}
+.tx-product{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--yellow-text);font-weight:700;margin-top:2px}
+.tx-r{text-align:right}
+.tx-amount{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--ink)}
+.tx-date{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-3);margin-top:2px}
+.tx-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.tx-detail-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px}
+.tx-detail-row .l{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);font-weight:600}
+.tx-detail-row .v{font-family:'JetBrains Mono';font-size:11px;color:var(--ink);font-weight:600}
+.tx-detail-row.bold .v{color:var(--ink);font-weight:900}
+
+/* Status pill — canonical */
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.pill.completed{background:var(--success-pale);color:var(--success-text)}
+.pill.pending  {background:var(--yellow-pale);color:var(--yellow-text)}
+.pill.cancelled{background:var(--danger-pale);color:var(--danger-text)}
+.pill.refunded {background:var(--bg2);color:var(--muted-2)}
+.pill.new      {background:var(--yellow-pale);color:var(--yellow-text)}
+.pill.contacted{background:var(--info-pale);color:var(--info)}
+.pill.countered{background:var(--conv-pale);color:var(--conv)}
+.pill.rejected {background:var(--danger-pale);color:var(--danger-text)}
+
+/* InfluencerBrowse — search bar */
+.search-bar{display:flex;gap:8px;padding:12px 14px 6px;background:var(--bg)}
+.search-input{flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'Plus Jakarta Sans';font-size:13px;color:var(--muted-2)}
+.search-btn{background:var(--ink);color:var(--yellow);padding:10px 16px;border-radius:10px;font-family:'JetBrains Mono';font-size:11px;font-weight:800}
+
+/* Sort chips */
+.sort-row{display:flex;gap:6px;padding:6px 14px 4px;background:var(--bg);overflow-x:auto}
+.sort-chip{padding:5px 12px;border-radius:14px;background:var(--white);border:1px solid var(--border);font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.sort-chip.act{background:var(--ink);color:var(--yellow);border-color:var(--ink);font-family:'JetBrains Mono';font-weight:800}
+
+/* Filter toggle + card */
+.filter-toggle{display:flex;justify-content:space-between;padding:8px 20px;background:var(--bg);font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:700;color:var(--ink-2)}
+.filter-card{margin:0 14px 6px;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px}
+.filter-label{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:6px;margin-bottom:5px}
+.tier-row{display:flex;flex-wrap:wrap;gap:5px}
+.chip-sm{background:var(--bg2);border:1px solid var(--border);border-radius:99px;padding:4px 10px;font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;color:var(--muted)}
+.chip-sm.act{background:var(--ink);color:var(--yellow);border-color:var(--ink);font-family:'JetBrains Mono'}
+.f-input{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted-3)}
+.f-twocol{display:flex;gap:10px;margin-top:6px}
+.f-twocol > div{flex:1}
+
+/* InfluencerBrowse result card */
+.inf-card{margin:0 14px 8px;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;align-items:center;gap:11px}
+.inf-av{width:44px;height:44px;border-radius:22px;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:14px;font-weight:900;color:var(--ink);flex-shrink:0}
+.inf-mid{flex:1;min-width:0}
+.inf-top{display:flex;justify-content:space-between;align-items:center;gap:5px}
+.inf-handle{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink);flex:1}
+.inf-tier{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--yellow-text);background:var(--yellow-pale);padding:2px 7px;border-radius:5px;text-transform:capitalize}
+.inf-name{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--muted-2);margin-top:1px}
+.inf-stats{display:flex;gap:11px;margin-top:4px}
+.inf-stat{font-family:'JetBrains Mono';font-size:10.5px;color:var(--ink);font-weight:700}
+.inf-meta{font-family:'Plus Jakarta Sans';font-size:9.5px;color:var(--muted-3);margin-top:3px}
+.inf-chev{font-family:'JetBrains Mono';font-size:18px;color:var(--muted-3);font-weight:800;flex-shrink:0}
+
+/* Side panel */
+.side{display:flex;flex-direction:column;gap:14px;width:320px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
+.panel h3{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+.comp-block{background:var(--bg2);border-radius:12px;padding:11px;margin-top:10px;border:1px solid var(--border)}
+.comp-block .ttl{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.comp-block .api{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);line-height:1.5}
+.comp-block .api b{color:var(--ink);font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">
+    <h1>Flow 21 · brand-mobile Conversions + InfluencerBrowse + component extraction · wave2</h1>
+    <div class="sub">
+      <b>4th flow</b> of the mobile-brand bucket (after Flow 20 shipped 2026-05-25 GREEN · HEAD <b>3091954</b>). <b>2 screens + 3 NEW shared components</b>
+      extracted into <code style="color:var(--yellow);font-family:'JetBrains Mono'">Packages/Mobile/src/components/brand/</code>: <b>&lt;StatusPill&gt;</b>, <b>&lt;EmptyState&gt;</b>, <b>&lt;ScreenHeader&gt;</b>.
+      Conversions + InfluencerBrowse are the <b>FIRST consumers</b>. Flows 18-20 keep their inline patterns (visually identical → no user-visible diff;
+      retroactive migration deferred to a polish pass). <b>Behavior preserved 1:1</b>. No tokens.js change.
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Phone 1: Conversions -->
+    <div class="col">
+      <div class="col-label">Phone <b>BrandConversionsScreen</b> · summary + filter + expanded card</div>
+      <div class="phone"><div class="phone-inner">
+        <div class="notch"></div>
+        <div class="status-bar"><span>9:41</span><span>87</span></div>
+        <div class="topbar">
+          <div class="topbar-back">‹ Back</div>
+          <h1>Conversions</h1>
+          <div class="rule"></div>
+          <div class="sub">Every transaction your influencers have driven</div>
+        </div>
+
+        <div class="body">
+          <div class="sum-grid">
+            <div class="sum-tile"><div class="l">Transactions</div><div class="v">147</div></div>
+            <div class="sum-tile"><div class="l">Revenue</div><div class="v">₹1,84,500</div></div>
+            <div class="sum-tile"><div class="l">Commission Paid</div><div class="v">₹14,760</div></div>
+            <div class="sum-tile"><div class="l">Brand Net</div><div class="v">₹1,55,000</div></div>
+          </div>
+          <div class="channel-row">
+            <div class="channel-tile"><div class="channel-count">82</div><div class="channel-label">Walk-in</div></div>
+            <div class="channel-tile"><div class="channel-count">23</div><div class="channel-label">Pre-book</div></div>
+            <div class="channel-tile"><div class="channel-count">42</div><div class="channel-label">Online</div></div>
+          </div>
+
+          <div class="chips">
+            <div class="chip act">All</div>
+            <div class="chip">Walk-in</div>
+            <div class="chip">Pre-book</div>
+            <div class="chip">Online</div>
+          </div>
+
+          <div class="tx-list">
+            <!-- Expanded card -->
+            <div class="tx-card">
+              <div class="tx-head">
+                <span class="tx-type">WALK-IN</span>
+                <span class="pill completed">COMPLETED</span>
+              </div>
+              <div class="tx-body">
+                <div class="tx-l">
+                  <div class="tx-name">Rohit Verma</div>
+                  <div class="tx-via">via @aakash.eats</div>
+                  <div class="tx-campaign">Diwali Combo Push</div>
+                  <div class="tx-product">Family Mixed Pack</div>
+                </div>
+                <div class="tx-r">
+                  <div class="tx-amount">₹450</div>
+                  <div class="tx-date">25 May</div>
+                </div>
+              </div>
+              <div class="tx-detail">
+                <div class="tx-detail-row"><span class="l">Bill amount</span><span class="v">₹500</span></div>
+                <div class="tx-detail-row"><span class="l">Discount</span><span class="v">− ₹50</span></div>
+                <div class="tx-detail-row bold"><span class="l">Customer paid</span><span class="v">₹450</span></div>
+                <div class="tx-detail-row"><span class="l">Platform fee</span><span class="v">₹36</span></div>
+                <div class="tx-detail-row"><span class="l">Influencer commission</span><span class="v">₹40</span></div>
+                <div class="tx-detail-row bold"><span class="l">Your net</span><span class="v">₹374</span></div>
+                <div class="tx-detail-row"><span class="l">Coupon</span><span class="v">AAKASH10</span></div>
+              </div>
+            </div>
+
+            <div class="tx-card">
+              <div class="tx-head">
+                <span class="tx-type">PRE-BOOKING</span>
+                <span class="pill pending">PENDING</span>
+              </div>
+              <div class="tx-body">
+                <div class="tx-l">
+                  <div class="tx-name">Priya Sharma</div>
+                  <div class="tx-via">via @riya.foodlog</div>
+                  <div class="tx-campaign">Diwali Combo Push</div>
+                </div>
+                <div class="tx-r">
+                  <div class="tx-amount">₹1,800</div>
+                  <div class="tx-date">24 May</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tx-card">
+              <div class="tx-head">
+                <span class="tx-type">ONLINE ORDER</span>
+                <span class="pill completed">COMPLETED</span>
+              </div>
+              <div class="tx-body">
+                <div class="tx-l">
+                  <div class="tx-name">Karan Doshi</div>
+                  <div class="tx-via">via @sneha.bites</div>
+                  <div class="tx-product">South Special Plate</div>
+                </div>
+                <div class="tx-r">
+                  <div class="tx-amount">₹280</div>
+                  <div class="tx-date">23 May</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="tx-card">
+              <div class="tx-head">
+                <span class="tx-type">WALK-IN</span>
+                <span class="pill refunded">REFUNDED</span>
+              </div>
+              <div class="tx-body">
+                <div class="tx-l">
+                  <div class="tx-name">Anita Joshi</div>
+                  <div class="tx-via">via @aakash.eats</div>
+                  <div class="tx-product">Veg Mini Combo</div>
+                </div>
+                <div class="tx-r">
+                  <div class="tx-amount">₹0</div>
+                  <div class="tx-date">22 May</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-bar"><span class="pill"></span></div>
+      </div></div>
+    </div>
+
+    <!-- Phone 2: InfluencerBrowse -->
+    <div class="col">
+      <div class="col-label">Phone <b>BrandInfluencerBrowseScreen</b> · search + sort + filter + results</div>
+      <div class="phone"><div class="phone-inner">
+        <div class="notch"></div>
+        <div class="status-bar"><span>9:41</span><span>87</span></div>
+        <div class="topbar">
+          <div class="topbar-back">‹ Back</div>
+          <h1>Find Influencers</h1>
+          <div class="rule"></div>
+          <div class="sub">Search and invite to your campaigns</div>
+        </div>
+
+        <div class="body">
+          <div class="search-bar">
+            <div class="search-input">Search by name or @handle</div>
+            <div class="search-btn">Search</div>
+          </div>
+
+          <div class="sort-row">
+            <div class="sort-chip act">Best fit</div>
+            <div class="sort-chip">Best ER</div>
+            <div class="sort-chip">Most followers</div>
+            <div class="sort-chip">Most active</div>
+            <div class="sort-chip">Highest growth</div>
+            <div class="sort-chip">Lowest rate</div>
+            <div class="sort-chip">Most collabs</div>
+          </div>
+
+          <div class="filter-toggle">
+            <span>Filters · 2 active</span>
+            <span style="color:var(--muted-3)">▲</span>
+          </div>
+
+          <div class="filter-card">
+            <div class="filter-label">Niche</div>
+            <div class="tier-row">
+              <div class="chip-sm">Any</div>
+              <div class="chip-sm act">Food</div>
+              <div class="chip-sm">Fashion</div>
+              <div class="chip-sm">Beauty</div>
+              <div class="chip-sm">Lifestyle</div>
+            </div>
+            <div class="filter-label">Tier</div>
+            <div class="tier-row">
+              <div class="chip-sm act">Any tier</div>
+              <div class="chip-sm">Nano</div>
+              <div class="chip-sm">Micro</div>
+              <div class="chip-sm">Macro</div>
+              <div class="chip-sm">Mega</div>
+            </div>
+            <div class="f-twocol">
+              <div>
+                <div class="filter-label">Min Followers</div>
+                <div class="f-input">10000</div>
+              </div>
+              <div>
+                <div class="filter-label">Min ER %</div>
+                <div class="f-input">e.g. 3.5</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:11px">
+              <div style="flex:1;padding:9px 0;text-align:center;background:var(--bg2);border-radius:9px;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:800;color:var(--muted)">Clear All</div>
+              <div style="flex:1;padding:9px 0;text-align:center;background:var(--yellow);border-radius:9px;font-family:'Outfit';font-size:11px;font-weight:800;color:var(--ink)">Apply</div>
+            </div>
+          </div>
+
+          <div style="padding-top:4px">
+            <div class="inf-card">
+              <div class="inf-av">AK</div>
+              <div class="inf-mid">
+                <div class="inf-top">
+                  <span class="inf-handle">@aakash.eats ✓</span>
+                  <span class="inf-tier">micro</span>
+                </div>
+                <div class="inf-name">Aakash Krishna</div>
+                <div class="inf-stats">
+                  <span class="inf-stat">82.4K followers</span>
+                  <span class="inf-stat">5.1% ER</span>
+                </div>
+                <div class="inf-meta">food, lifestyle · Bengaluru</div>
+              </div>
+              <span class="inf-chev">›</span>
+            </div>
+
+            <div class="inf-card">
+              <div class="inf-av">SN</div>
+              <div class="inf-mid">
+                <div class="inf-top">
+                  <span class="inf-handle">@sneha.bites ✓</span>
+                  <span class="inf-tier">micro</span>
+                </div>
+                <div class="inf-name">Sneha Nair</div>
+                <div class="inf-stats">
+                  <span class="inf-stat">68.4K followers</span>
+                  <span class="inf-stat">4.2% ER</span>
+                </div>
+                <div class="inf-meta">food, lifestyle · Bengaluru</div>
+              </div>
+              <span class="inf-chev">›</span>
+            </div>
+
+            <div class="inf-card">
+              <div class="inf-av">RI</div>
+              <div class="inf-mid">
+                <div class="inf-top">
+                  <span class="inf-handle">@riya.foodlog</span>
+                  <span class="inf-tier">nano</span>
+                </div>
+                <div class="inf-name">Riya Sharma</div>
+                <div class="inf-stats">
+                  <span class="inf-stat">8.6K followers</span>
+                  <span class="inf-stat">6.8% ER</span>
+                </div>
+                <div class="inf-meta">food · Bengaluru</div>
+              </div>
+              <span class="inf-chev">›</span>
+            </div>
+
+            <div class="inf-card">
+              <div class="inf-av">VE</div>
+              <div class="inf-mid">
+                <div class="inf-top">
+                  <span class="inf-handle">@veer.tales</span>
+                  <span class="inf-tier">nano</span>
+                </div>
+                <div class="inf-name">Veer Mehta</div>
+                <div class="inf-stats">
+                  <span class="inf-stat">9.2K followers</span>
+                  <span class="inf-stat">5.4% ER</span>
+                </div>
+                <div class="inf-meta">food, travel · Bengaluru</div>
+              </div>
+              <span class="inf-chev">›</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-bar"><span class="pill"></span></div>
+      </div></div>
+    </div>
+
+    <!-- Side panel: extracted components -->
+    <div class="side">
+      <div class="panel">
+        <h3>NEW · 3 components extracted</h3>
+        <div class="ph">Packages/Mobile/src/components/brand/</div>
+
+        <div class="comp-block">
+          <div class="ttl">&lt;StatusPill /&gt;</div>
+          <div class="api">
+            <b>Props:</b> status, mode?<br/>
+            <b>Map:</b> 6 canonical tokens.<br/>
+            <b>Used by:</b> Conversions (completed/pending/cancelled/refunded) + future flows.<br/>
+            Pill <span class="pill completed">COMPLETED</span> <span class="pill pending">PENDING</span> <span class="pill cancelled">CANCELLED</span> <span class="pill refunded">REFUNDED</span>
+          </div>
+        </div>
+
+        <div class="comp-block">
+          <div class="ttl">&lt;EmptyState /&gt;</div>
+          <div class="api">
+            <b>Props:</b> icon, title, sub<br/>
+            <b>Renders:</b> 52×52 yellowPale tile + Outfit title + PJS sub. Dashed yellowPale border card.<br/>
+            <b>Used by:</b> Conversions (zero-state), InfluencerBrowse (no-results).
+          </div>
+        </div>
+
+        <div class="comp-block">
+          <div class="ttl">&lt;ScreenHeader /&gt;</div>
+          <div class="api">
+            <b>Props:</b> title, sub?, back?, onBack?, count?, countLabel?<br/>
+            <b>Variants:</b> 5 — title-only · title+sub · title+back+sub · title+count · title+back+count.<br/>
+            <b>Used by:</b> Conversions, InfluencerBrowse. Future flows.
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>What's preserved</h3>
+        <div class="ph">behavior 1:1 · 2 new screens</div>
+        <ul>
+          <li><b>Conversions:</b> listTransactions + useFocusEffect + filter-driven reload + inline expand-collapse (no modal) + pull-to-refresh + 4-tile summary + 3-channel breakdown.</li>
+          <li><b>InfluencerBrowse:</b> searchInfluencers + 7-sort dropdown + 6-filter card + response normalization (creators || influencers) + nav to BrandInfluencerProfile + pull-to-refresh.</li>
+          <li><b>Flows 18-20 untouched:</b> their inline ink-topbar / status-pill / empty-state markup is byte-equivalent to the new components. No retroactive migration in this flow — defer to a "polish" pass where inline → component swap is purely cosmetic.</li>
+          <li><b>NOT extracted yet:</b> BottomSheet (3 uses, varied structure) · FilterChips (3 shapes) · Card+InfoRow (low value). Wait for more screens.</li>
+          <li><b>Deploy:</b> OTA × 3 via <code>publish-ota:all</code>. Maestro Rule 5: GOVERNANCE_OVERRIDE.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
