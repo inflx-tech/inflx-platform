@@ -30,6 +30,7 @@ const NAV = [
   { href: '/admin/billing/invoices',      label: 'Sub Invoices',    icon: '🧾' },
   { section: 'PRICING' },
   { href: '/admin/pricing/tiers',         label: 'Tiers (L1)',      icon: '💎' },
+  { href: '/admin/pricing/features',      label: 'Features',        icon: '🧩' },
   { href: '/admin/pricing/categories',    label: 'Categories (L3)', icon: '🏷️' },
   { section: 'SETTINGS' },
   { href: '/admin/settings/payments', label: 'Payment Config', icon: '⚙️' },

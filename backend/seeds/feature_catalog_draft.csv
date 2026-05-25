@@ -1,0 +1,14 @@
+feature_key,label,category,feature_type,unit,default_quota,sort_order,description
+discover_filter,Discover filter,influencer,config,,,1,Limits which influencers a brand can see by niche and area
+search_filters_advanced,Advanced search filters,influencer,boolean,,,2,Access to collaboration history + engagement-tier filters on top of basic search
+bulk_outreach,Bulk influencer outreach,influencer,boolean,,,3,Send invitations to many influencers in one action
+invitations_per_cycle,Influencer invitations per cycle,influencer,quota,per_cycle,5,4,Max number of influencer invites a brand can issue per subscription cycle
+open_group_broadcast,Open-group campaign broadcast,influencer,config,,,5,Publish a campaign as open-group with area scope + recipient cap
+active_campaigns,Active campaigns,campaigns,quota,count,1,6,Max simultaneously active campaigns
+sets_per_campaign,Sets per campaign,campaigns,quota,count,1,7,Max influencer sets a brand can create within one campaign
+products_in_store,Products in store,products,quota,count,10,8,Max active product listings visible to followers
+media_gallery_items,Media gallery items,products,quota,count,20,9,Max images/videos uploadable to a brand gallery
+multi_branch_support,Multi-branch support,brand_store,boolean,,,10,Manage multiple physical branches under one brand account
+self_serve_onboarding,Self-serve onboarding,support,baseline,,,11,Default account creation flow available to everyone
+dedicated_onboarding_call,Dedicated onboarding call,support,boolean,,,12,One-on-one onboarding call with INFLX team at sign-up
+phone_support_24x7,24x7 phone support,support,boolean,,,13,Round-the-clock phone support hotline

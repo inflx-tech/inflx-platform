@@ -1,0 +1,34 @@
+{
+  "feature": "billing-tier-features-and-prices",
+  "area": "backend-migration+controllers+brand-web-admin",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-25) — explicit 'Ok go a10 with brand level override feature in a14'. Data model + admin UX rebuild after the prompt-grounded analysis/research turn.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend image + Render runs M061 on Supabase prod (3 new tables + 3 enums + 60 seed rows + 1 column add + brand_subscriptions backfill) + Vercel redeploys brand-web admin pages. No mobile change. Pushed only after pnpm qa green; prod migration run gated on separate founder go after push (per standing carve-out).",
+  "fix": "Phase A10 — feature catalog (13 rows) + tier_features mapping (52 rows) + subscription_prices (4 monthly seeded) + entitlements service + 10 admin endpoints + rebuilt admin tier editor (3-section) + features catalog page. Per-brand override deferred to A14 per founder.",
+  "related": [
+    "features/billing-subscriptions-schema",
+    "features/billing-column-rename",
+    "features/billing-pricing-service",
+    "features/billing-admin-ui",
+    "features/billing-brand-ui",
+    "features/billing-quota-middleware"
+  ],
+  "result": "M061 applied to LOCAL dev DB clean (3 tables + 3 enums + 13 features + 52 tier_features + 4 monthly prices + brand_subscriptions.subscription_price_id column + backfill). entitlements.service.js + features.controller.js (10 endpoints) + subscription.controller.js extension + admin.routes.js wiring. 3 admin UI pages (features catalog, tier list, 3-section editor) + nav entry + nav-sweep route. features-and-entitlements.test.js authored. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (48.6s). Ready to push.",
+  "regression_proof": "Existing tier editor surface replaced; data preserved. entitlements field added to brand subscription endpoint (additive, ignored by current frontend). Legacy quotaCheck middleware unchanged (will migrate to entitlements in A12 per-feature). Brand subscription page renders identically (A11 will rewire). New tables initialized empty/seed-only; no existing prod tables modified except brand_subscriptions which gains one nullable column + backfill.",
+  "discipline": "Contract-first; founder-confirmed catalog (12 controlled + 1 baseline) via inline edit of the spec sketch; CSV-first per backend/seeds/feature_catalog_draft.csv; production-impacting migration surfaced for explicit go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Vercel redeploys brand-web admin pages, Render redeploys backend image). Prod M061 migration run gated on SEPARATE explicit founder go after push — same pattern as M060 earlier."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-25) — visual baseline matches existing admin-web tailwind palette (white cards / navy primary / mid-tone gray), explicit no-new-design-surface per founder's standing 'admin no UI/UX change' direction.",
+  "mockup_locked_at": "2026-05-25"
+}

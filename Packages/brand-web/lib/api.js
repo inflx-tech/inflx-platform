@@ -450,6 +450,20 @@ export const adminApi = {
   listSubscriptionTiers:    () => api.get('/admin/subscription-tiers'),
   updateSubscriptionTier:   (tierKey, data) => api.patch(`/admin/subscription-tiers/${encodeURIComponent(tierKey)}`, data),
 
+  // ─── Features catalog + tier_features + prices — Phase A10 ────────────────
+  listFeatures:             () => api.get('/admin/features'),
+  createFeature:            (data) => api.post('/admin/features', data),
+  updateFeature:            (key, data) => api.patch(`/admin/features/${encodeURIComponent(key)}`, data),
+  deleteFeature:            (key) => api.delete(`/admin/features/${encodeURIComponent(key)}`),
+
+  listTierFeatures:         (tierKey) => api.get(`/admin/tiers/${encodeURIComponent(tierKey)}/features`),
+  upsertTierFeatures:       (tierKey, items) => request('PUT', `/admin/tiers/${encodeURIComponent(tierKey)}/features`, { items }),
+
+  listTierPrices:           (tierKey) => api.get(`/admin/tiers/${encodeURIComponent(tierKey)}/prices`),
+  createTierPrice:          (tierKey, data) => api.post(`/admin/tiers/${encodeURIComponent(tierKey)}/prices`, data),
+  updatePrice:              (priceId, data) => api.patch(`/admin/prices/${encodeURIComponent(priceId)}`, data),
+  deletePrice:              (priceId) => api.delete(`/admin/prices/${encodeURIComponent(priceId)}`),
+
   // ─── Marketplace categories (L3) — Phase A7-admin ──────────────────────────
   listCategories:           () => api.get('/admin/categories'),
   createCategory:           (data) => api.post('/admin/categories', data),

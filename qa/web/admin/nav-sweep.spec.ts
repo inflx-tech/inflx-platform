@@ -39,6 +39,7 @@ const ROUTES = [
   '/admin/subscriptions',
   '/admin/billing/invoices',
   '/admin/pricing/tiers',
+  '/admin/pricing/features',
   '/admin/pricing/categories',
   '/admin/settings/payments',
   '/admin/users',

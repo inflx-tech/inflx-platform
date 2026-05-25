@@ -98,6 +98,10 @@ const getSubscription = asyncHandler(async (req, res) => {
     [brandId]
   );
 
+  // Entitlements (Phase A10): effective feature map for the brand's active tier.
+  const entitlementsService = require('../services/entitlements.service');
+  const entResult = await entitlementsService.getEntitlementsPlain(db, brandId);
+
   if (!rows[0]) {
     // No active sub — return a synthetic Free view (matches lazy-create default)
     const { rows: freeRows } = await db.query(
@@ -109,12 +113,16 @@ const getSubscription = asyncHandler(async (req, res) => {
       subscription: null,
       tier: freeRows[0] || null,
       usage: await _countUsage(brandId, new Date(Date.now() - 30 * 86400_000)),
+      entitlements: entResult.entitlements,
+      tier_key: entResult.tier_key,
     });
   }
 
   return success(res, {
     subscription: rows[0],
     usage: await _countUsage(brandId, rows[0].current_cycle_start),
+    entitlements: entResult.entitlements,
+    tier_key: entResult.tier_key,
   });
 });
 

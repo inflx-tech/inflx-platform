@@ -92,4 +92,19 @@ router.post  ('/master-dishes',           authenticate, requireAdminRole('review
 router.patch ('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.updateMasterDish);
 router.delete('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.deleteMasterDish);
 
+// ── Features catalog + tier_features + subscription_prices — Phase A10 ───────
+const featuresCtrl = require('../controllers/features.controller');
+router.get   ('/features',                       authenticate, requireAnyAdminRole,            featuresCtrl.listFeatures);
+router.post  ('/features',                       authenticate, requireAdminRole('superadmin'), featuresCtrl.createFeature);
+router.patch ('/features/:feature_key',          authenticate, requireAdminRole('superadmin'), featuresCtrl.updateFeature);
+router.delete('/features/:feature_key',          authenticate, requireAdminRole('superadmin'), featuresCtrl.softDeleteFeature);
+
+router.get   ('/tiers/:tier_key/features',       authenticate, requireAnyAdminRole,            featuresCtrl.listTierFeatures);
+router.put   ('/tiers/:tier_key/features',       authenticate, requireAdminRole('superadmin'), featuresCtrl.upsertTierFeatures);
+
+router.get   ('/tiers/:tier_key/prices',         authenticate, requireAnyAdminRole,            featuresCtrl.listTierPrices);
+router.post  ('/tiers/:tier_key/prices',         authenticate, requireAdminRole('superadmin'), featuresCtrl.createPrice);
+router.patch ('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.updatePrice);
+router.delete('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.softDeletePrice);
+
 module.exports = router;

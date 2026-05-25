@@ -1,0 +1,182 @@
+'use strict';
+
+/**
+ * entitlements.service.js — Phase A10
+ *
+ * Resolves a brand's effective entitlements (what features they have,
+ * what quotas, what config). Reads tier_features for the brand's
+ * active tier; per-feature is_enforced gating handled by callers via
+ * requireFeature middleware (Phase A12).
+ *
+ * Per-brand override (brand_feature_overrides table) is intentionally
+ * NOT yet implemented — Phase A14 will add a 3rd layer to this lookup.
+ * The shape of getEntitlements() will stay the same; A14 just adds
+ * one query layer above the tier_features read.
+ *
+ * Layered lookup today (A10):
+ *   1. brand → active subscription → tier_id
+ *   2. tier_features (tier_id, feature_id) for every catalog feature
+ *   3. fall back to features.default_quota / included=false if no row
+ */
+
+const db = require('../config/db');
+
+const CACHE_TTL_MS = 60_000;
+let _catalogCache    = null;
+let _catalogCacheT   = 0;
+
+async function _loadCatalog(client = db) {
+  const now = Date.now();
+  if (_catalogCache && (now - _catalogCacheT) < CACHE_TTL_MS) return _catalogCache;
+  const { rows } = await client.query(
+    `SELECT id, feature_key, label, category, feature_type, unit,
+            default_quota, is_enforced, active, sort_order, description
+       FROM features
+      WHERE active = true
+      ORDER BY sort_order`
+  );
+  _catalogCache = {
+    byId:  new Map(rows.map(r => [r.id, r])),
+    byKey: new Map(rows.map(r => [r.feature_key, r])),
+    list:  rows,
+  };
+  _catalogCacheT = now;
+  return _catalogCache;
+}
+
+function bustCatalogCache() {
+  _catalogCache  = null;
+  _catalogCacheT = 0;
+}
+
+/**
+ * Look up a brand's active subscription tier_id.
+ * Returns null if the brand has no active subscription (caller should
+ * treat as Free tier — lazy create handled by quotaCheck middleware).
+ */
+async function getActiveTierId(client, brandId) {
+  const { rows } = await client.query(
+    `SELECT tier_id FROM brand_subscriptions
+      WHERE brand_id = $1 AND status = 'active'
+      LIMIT 1`,
+    [brandId]
+  );
+  if (rows[0]) return rows[0].tier_id;
+  // Fall back to free tier
+  const { rows: free } = await client.query(
+    `SELECT id FROM subscription_tiers WHERE tier_key = 'free' LIMIT 1`
+  );
+  return free[0]?.id || null;
+}
+
+/**
+ * Effective entitlements for a brand.
+ *
+ * Returns:
+ *   {
+ *     tier_id,
+ *     tier_key,
+ *     entitlements: Map<feature_key, {
+ *       included, quota_value, config, feature_type,
+ *       is_enforced, category, label
+ *     }>
+ *   }
+ */
+async function getEntitlements(client, brandId) {
+  const c = client || db;
+  const catalog = await _loadCatalog(c);
+
+  const tierId = await getActiveTierId(c, brandId);
+  if (!tierId) {
+    // No tier resolved — return all features as not-included with catalog defaults
+    const ents = new Map();
+    for (const f of catalog.list) {
+      ents.set(f.feature_key, {
+        included:     false,
+        quota_value:  f.default_quota,
+        config:       {},
+        feature_type: f.feature_type,
+        is_enforced:  f.is_enforced,
+        category:     f.category,
+        label:        f.label,
+      });
+    }
+    return { tier_id: null, tier_key: 'free', entitlements: ents };
+  }
+
+  const { rows: tierRows } = await c.query(
+    `SELECT tier_key FROM subscription_tiers WHERE id = $1 LIMIT 1`,
+    [tierId]
+  );
+  const tierKey = tierRows[0]?.tier_key || 'free';
+
+  const { rows: tfRows } = await c.query(
+    `SELECT tf.feature_id, tf.included, tf.quota_value, tf.config
+       FROM tier_features tf
+      WHERE tf.tier_id = $1`,
+    [tierId]
+  );
+  const tfByFid = new Map(tfRows.map(r => [r.feature_id, r]));
+
+  const ents = new Map();
+  for (const f of catalog.list) {
+    const tf = tfByFid.get(f.id);
+    ents.set(f.feature_key, {
+      included:     tf ? tf.included : false,
+      quota_value:  tf && tf.quota_value != null ? parseFloat(tf.quota_value) : f.default_quota,
+      config:       tf ? (tf.config || {}) : {},
+      feature_type: f.feature_type,
+      is_enforced:  f.is_enforced,
+      category:     f.category,
+      label:        f.label,
+    });
+  }
+
+  return { tier_id: tierId, tier_key: tierKey, entitlements: ents };
+}
+
+/**
+ * Boolean check: does the brand's active tier grant this feature?
+ * Returns true for non-enforced features (so flipping is_enforced=true
+ * is the only switch needed to make a gate go live).
+ */
+async function hasFeature(client, brandId, featureKey) {
+  const c = client || db;
+  const catalog = await _loadCatalog(c);
+  const f = catalog.byKey.get(featureKey);
+  if (!f) return true;                  // unknown feature → ungated (defensive)
+  if (!f.is_enforced) return true;      // not yet wired for enforcement
+  const { entitlements } = await getEntitlements(c, brandId);
+  const e = entitlements.get(featureKey);
+  return !!(e && e.included);
+}
+
+/**
+ * Quota lookup for a feature (returns the effective limit; -1 = unlimited).
+ * For non-quota features returns null.
+ */
+async function quotaFor(client, brandId, featureKey) {
+  const c = client || db;
+  const { entitlements } = await getEntitlements(c, brandId);
+  const e = entitlements.get(featureKey);
+  return e ? e.quota_value : null;
+}
+
+/**
+ * Plain object form of getEntitlements — for JSON responses.
+ */
+async function getEntitlementsPlain(client, brandId) {
+  const r = await getEntitlements(client || db, brandId);
+  const ent = {};
+  for (const [key, val] of r.entitlements.entries()) ent[key] = val;
+  return { tier_id: r.tier_id, tier_key: r.tier_key, entitlements: ent };
+}
+
+module.exports = {
+  getEntitlements,
+  getEntitlementsPlain,
+  hasFeature,
+  quotaFor,
+  getActiveTierId,
+  bustCatalogCache,
+};
