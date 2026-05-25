@@ -3,10 +3,21 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { colors } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { brandApi, clearSession } from '../../services/api';
 import { AuthContext } from '../../../App';
 import { openWebDashboard } from '../../utils/openWebDashboard';
+import StatusPill from '../../components/brand/StatusPill';
+
+/**
+ * BrandProfileScreen — brand profile editor (business info, main branch,
+ * additional branches) + Other links + Logout.
+ *
+ * Flow 24 (2026-05-25): navy + orange → brandPalette + StatusPill + fonts.
+ * Behavior preserved 1:1 (diff-based save, listing_data flatten with
+ * branches[0]=Main, branch list CRUD with Alert confirmation, AuthContext
+ * logout via clearSession + setAppRole('')).
+ */
 
 const EMPTY_BRANCH = {
   name: '', state: '', city: '', pincode: '', address: '', phone: '', google_maps_url: '',
@@ -18,32 +29,23 @@ export default function BrandProfileScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
 
-  // Editable fields (flat)
   const [businessName, setBusinessName] = useState('');
   const [contactName,  setContactName]  = useState('');
   const [gstin,        setGstin]        = useState('');
   const [logoUrl,      setLogoUrl]      = useState('');
 
-  // Main branch (structured, flattened into top-level address_line + pincode on save)
   const [mainBranch, setMainBranch] = useState({
     state: '', city: '', pincode: '', address: '', google_maps_url: '',
   });
-
-  // Additional branches
   const [branches, setBranches] = useState([]);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
+  useEffect(() => { loadProfile(); }, []);
 
   async function loadProfile() {
     setLoading(true);
     const res = await brandApi.getMe();
     setLoading(false);
-    if (!res.success) {
-      Alert.alert('Error', res.error?.message || 'Failed to load profile');
-      return;
-    }
+    if (!res.success) { Alert.alert('Error', res.error?.message || 'Failed to load profile'); return; }
     const b = res.data?.brand || res.data;
     setBrand(b);
     setBusinessName(b.business_name || '');
@@ -83,10 +85,7 @@ export default function BrandProfileScreen({ navigation }) {
   }
 
   async function handleSave() {
-    if (!businessName.trim()) {
-      Alert.alert('Missing info', 'Business name is required.');
-      return;
-    }
+    if (!businessName.trim()) { Alert.alert('Missing info', 'Business name is required.'); return; }
 
     const payload = {};
     if (businessName.trim() !== (brand?.business_name || '')) payload.business_name = businessName.trim();
@@ -128,10 +127,7 @@ export default function BrandProfileScreen({ navigation }) {
       payload.listing_data = newLd;
     }
 
-    if (Object.keys(payload).length === 0) {
-      Alert.alert('Nothing to save', 'No changes detected.');
-      return;
-    }
+    if (Object.keys(payload).length === 0) { Alert.alert('Nothing to save', 'No changes detected.'); return; }
 
     setSaving(true);
     const res = await brandApi.updateMe(payload);
@@ -154,12 +150,12 @@ export default function BrandProfileScreen({ navigation }) {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
   if (!brand) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.loadingText}>Brand profile not found. Please complete registration first.</Text>
+      <View style={s.center}>
+        <Text style={s.loadingText}>Brand profile not found. Please complete registration first.</Text>
       </View>
     );
   }
@@ -168,33 +164,24 @@ export default function BrandProfileScreen({ navigation }) {
   const rejectionReason = brand.rejection_reason;
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView style={s.container} keyboardShouldPersistTaps="handled">
+        <View style={s.hero}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>
               {(businessName || 'BR').slice(0, 2).toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.brandName}>{businessName || '—'}</Text>
-          <View style={[styles.statusChip, status === 'approved' ? styles.statusApproved : styles.statusPending]}>
-            <Text style={[styles.statusChipText, status === 'approved' ? styles.statusApprovedText : styles.statusPendingText]}>
-              {status}
-            </Text>
-          </View>
+          <Text style={s.brandName}>{businessName || '—'}</Text>
+          <StatusPill status={status} />
         </View>
 
-        {/* Status banner for pending / rejected */}
         {(status === 'pending' || status === 'rejected') && (
-          <View style={[styles.statusBanner, status === 'rejected' ? styles.statusBannerError : styles.statusBannerWarn]}>
-            <Text style={[styles.statusBannerTitle, status === 'rejected' ? styles.statusBannerErrorText : styles.statusBannerWarnText]}>
+          <View style={[s.statusBanner, status === 'rejected' ? s.statusBannerError : s.statusBannerWarn]}>
+            <Text style={[s.statusBannerTitle, status === 'rejected' ? s.statusBannerErrorText : s.statusBannerWarnText]}>
               {status === 'pending' ? 'Account pending review' : 'Account not approved'}
             </Text>
-            <Text style={[styles.statusBannerBody, status === 'rejected' ? styles.statusBannerErrorText : styles.statusBannerWarnText]}>
+            <Text style={[s.statusBannerBody, status === 'rejected' ? s.statusBannerErrorText : s.statusBannerWarnText]}>
               {status === 'pending'
                 ? 'An admin will approve your account soon. You can update your profile in the meantime.'
                 : (rejectionReason ? `Reason: ${rejectionReason}` : 'Please contact support for details.')}
@@ -202,53 +189,32 @@ export default function BrandProfileScreen({ navigation }) {
           </View>
         )}
 
-        {/* Business Information */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Business Information</Text>
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Business Information</Text>
 
           <Field label="Business Name *">
-            <TextInput
-              style={styles.input}
-              value={businessName}
-              onChangeText={setBusinessName}
-              placeholder="Your business name"
-              placeholderTextColor={colors.t3}
-            />
+            <TextInput style={s.input} value={businessName} onChangeText={setBusinessName} placeholder="Your business name" placeholderTextColor={P.muted3} />
           </Field>
 
           <Field label="Contact Person">
-            <TextInput
-              style={styles.input}
-              value={contactName}
-              onChangeText={setContactName}
-              placeholder="Primary contact name"
-              placeholderTextColor={colors.t3}
-            />
+            <TextInput style={s.input} value={contactName} onChangeText={setContactName} placeholder="Primary contact name" placeholderTextColor={P.muted3} />
           </Field>
 
           <Field label="Phone" hint="Linked to your login — cannot be changed here.">
-            <TextInput
-              style={[styles.input, styles.inputReadOnly]}
-              value={brand.phone || ''}
-              editable={false}
-            />
+            <TextInput style={[s.input, s.inputReadOnly]} value={brand.phone || ''} editable={false} />
           </Field>
 
           <Field label="Category" hint="Locked after registration.">
-            <TextInput
-              style={[styles.input, styles.inputReadOnly]}
-              value={brand.category || ''}
-              editable={false}
-            />
+            <TextInput style={[s.input, s.inputReadOnly]} value={brand.category || ''} editable={false} />
           </Field>
 
           <Field label="GSTIN">
             <TextInput
-              style={styles.input}
+              style={[s.input, { fontFamily: fonts.monoMedium }]}
               value={gstin}
               onChangeText={t => setGstin(t.toUpperCase())}
               placeholder="22AAAAA0000A1Z5"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               autoCapitalize="characters"
               maxLength={15}
             />
@@ -256,216 +222,154 @@ export default function BrandProfileScreen({ navigation }) {
 
           <Field label="Logo URL" hint="Direct image URL. File upload coming soon.">
             <TextInput
-              style={styles.input}
+              style={[s.input, { fontFamily: fonts.monoMedium, fontSize: 11.5 }]}
               value={logoUrl}
               onChangeText={setLogoUrl}
               placeholder="https://example.com/logo.png"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               autoCapitalize="none"
               keyboardType="url"
             />
           </Field>
         </View>
 
-        {/* Main Branch */}
-        <View style={styles.card}>
-          <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Main Branch</Text>
-            <Text style={styles.primaryChip}>Primary</Text>
+        <View style={s.card}>
+          <View style={s.cardTitleRow}>
+            <Text style={s.cardTitle}>Main Branch</Text>
+            <Text style={s.primaryChip}>PRIMARY</Text>
           </View>
 
           <Field label="State">
-            <TextInput
-              style={styles.input}
-              value={mainBranch.state}
-              onChangeText={t => setMainField('state', t)}
-              placeholder="e.g. Karnataka"
-              placeholderTextColor={colors.t3}
-            />
+            <TextInput style={s.input} value={mainBranch.state} onChangeText={t => setMainField('state', t)} placeholder="e.g. Karnataka" placeholderTextColor={P.muted3} />
           </Field>
-
           <Field label="City / District">
-            <TextInput
-              style={styles.input}
-              value={mainBranch.city}
-              onChangeText={t => setMainField('city', t)}
-              placeholder="e.g. Bangalore"
-              placeholderTextColor={colors.t3}
-            />
+            <TextInput style={s.input} value={mainBranch.city} onChangeText={t => setMainField('city', t)} placeholder="e.g. Bangalore" placeholderTextColor={P.muted3} />
           </Field>
-
           <Field label="Pincode">
             <TextInput
-              style={styles.input}
+              style={[s.input, { fontFamily: fonts.monoMedium }]}
               value={mainBranch.pincode}
               onChangeText={t => setMainField('pincode', t.replace(/\D/g, '').slice(0, 6))}
-              placeholder="560001"
-              placeholderTextColor={colors.t3}
-              keyboardType="number-pad"
-              maxLength={6}
+              placeholder="560001" placeholderTextColor={P.muted3}
+              keyboardType="number-pad" maxLength={6}
             />
           </Field>
-
           <Field label="Full Address">
             <TextInput
-              style={[styles.input, styles.inputTextarea]}
-              value={mainBranch.address}
-              onChangeText={t => setMainField('address', t)}
-              placeholder="Street, landmark, area..."
-              placeholderTextColor={colors.t3}
-              multiline
-              numberOfLines={3}
+              style={[s.input, s.inputTextarea]}
+              value={mainBranch.address} onChangeText={t => setMainField('address', t)}
+              placeholder="Street, landmark, area..." placeholderTextColor={P.muted3}
+              multiline numberOfLines={3}
             />
           </Field>
-
           <Field label="Google Maps URL">
             <TextInput
-              style={styles.input}
-              value={mainBranch.google_maps_url}
-              onChangeText={t => setMainField('google_maps_url', t)}
-              placeholder="Paste Google Maps link"
-              placeholderTextColor={colors.t3}
-              autoCapitalize="none"
-              keyboardType="url"
+              style={[s.input, { fontFamily: fonts.monoMedium, fontSize: 11.5 }]}
+              value={mainBranch.google_maps_url} onChangeText={t => setMainField('google_maps_url', t)}
+              placeholder="Paste Google Maps link" placeholderTextColor={P.muted3}
+              autoCapitalize="none" keyboardType="url"
             />
           </Field>
         </View>
 
-        {/* Additional Branches */}
-        <View style={styles.card}>
-          <View style={styles.cardTitleRow}>
-            <Text style={styles.cardTitle}>Additional Branches</Text>
-            <TouchableOpacity onPress={addBranch} style={styles.addBranchBtn}>
-              <Text style={styles.addBranchBtnText}>+ Add Branch</Text>
+        <View style={s.card}>
+          <View style={s.cardTitleRow}>
+            <Text style={s.cardTitle}>Additional Branches</Text>
+            <TouchableOpacity onPress={addBranch} style={s.addBranchBtn} activeOpacity={0.7}>
+              <Text style={s.addBranchBtnText}>+ Add Branch</Text>
             </TouchableOpacity>
           </View>
 
           {branches.length === 0 && (
-            <Text style={styles.emptyText}>No additional branches. Tap &quot;+ Add Branch&quot; to add one.</Text>
+            <Text style={s.emptyText}>No additional branches. Tap "+ Add Branch" to add one.</Text>
           )}
 
           {branches.map((b, idx) => (
-            <View key={idx} style={styles.branchBox}>
-              <View style={styles.cardTitleRow}>
-                <Text style={styles.branchIndex}>Branch {idx + 1}</Text>
+            <View key={idx} style={s.branchBox}>
+              <View style={s.branchHead}>
+                <Text style={s.branchIndex}>BRANCH {idx + 1}</Text>
                 <TouchableOpacity onPress={() => removeBranch(idx)}>
-                  <Text style={styles.removeText}>Remove</Text>
+                  <Text style={s.removeText}>Remove</Text>
                 </TouchableOpacity>
               </View>
 
               <Field label="Branch Name">
-                <TextInput
-                  style={styles.input}
-                  value={b.name}
-                  onChangeText={t => updateBranch(idx, 'name', t)}
-                  placeholder="e.g. Indiranagar Branch"
-                  placeholderTextColor={colors.t3}
-                />
+                <TextInput style={s.input} value={b.name} onChangeText={t => updateBranch(idx, 'name', t)} placeholder="e.g. Indiranagar Branch" placeholderTextColor={P.muted3} />
               </Field>
-
               <Field label="State">
-                <TextInput
-                  style={styles.input}
-                  value={b.state}
-                  onChangeText={t => updateBranch(idx, 'state', t)}
-                  placeholder="e.g. Karnataka"
-                  placeholderTextColor={colors.t3}
-                />
+                <TextInput style={s.input} value={b.state} onChangeText={t => updateBranch(idx, 'state', t)} placeholder="e.g. Karnataka" placeholderTextColor={P.muted3} />
               </Field>
-
               <Field label="City / District">
-                <TextInput
-                  style={styles.input}
-                  value={b.city}
-                  onChangeText={t => updateBranch(idx, 'city', t)}
-                  placeholder="e.g. Bangalore"
-                  placeholderTextColor={colors.t3}
-                />
+                <TextInput style={s.input} value={b.city} onChangeText={t => updateBranch(idx, 'city', t)} placeholder="e.g. Bangalore" placeholderTextColor={P.muted3} />
               </Field>
-
               <Field label="Pincode">
                 <TextInput
-                  style={styles.input}
+                  style={[s.input, { fontFamily: fonts.monoMedium }]}
                   value={b.pincode}
                   onChangeText={t => updateBranch(idx, 'pincode', t.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="560001"
-                  placeholderTextColor={colors.t3}
-                  keyboardType="number-pad"
-                  maxLength={6}
+                  placeholder="560001" placeholderTextColor={P.muted3}
+                  keyboardType="number-pad" maxLength={6}
                 />
               </Field>
-
               <Field label="Address">
                 <TextInput
-                  style={[styles.input, styles.inputTextarea]}
-                  value={b.address}
-                  onChangeText={t => updateBranch(idx, 'address', t)}
-                  placeholder="Full address"
-                  placeholderTextColor={colors.t3}
-                  multiline
-                  numberOfLines={2}
+                  style={[s.input, s.inputTextarea]}
+                  value={b.address} onChangeText={t => updateBranch(idx, 'address', t)}
+                  placeholder="Full address" placeholderTextColor={P.muted3}
+                  multiline numberOfLines={2}
                 />
               </Field>
-
               <Field label="Phone">
                 <TextInput
-                  style={styles.input}
-                  value={b.phone}
-                  onChangeText={t => updateBranch(idx, 'phone', t)}
-                  placeholder="+91 9876543210"
-                  placeholderTextColor={colors.t3}
+                  style={[s.input, { fontFamily: fonts.monoMedium }]}
+                  value={b.phone} onChangeText={t => updateBranch(idx, 'phone', t)}
+                  placeholder="+91 9876543210" placeholderTextColor={P.muted3}
                   keyboardType="phone-pad"
                 />
               </Field>
-
               <Field label="Google Maps URL">
                 <TextInput
-                  style={styles.input}
-                  value={b.google_maps_url}
-                  onChangeText={t => updateBranch(idx, 'google_maps_url', t)}
-                  placeholder="Paste Google Maps link"
-                  placeholderTextColor={colors.t3}
-                  autoCapitalize="none"
-                  keyboardType="url"
+                  style={[s.input, { fontFamily: fonts.monoMedium, fontSize: 11.5 }]}
+                  value={b.google_maps_url} onChangeText={t => updateBranch(idx, 'google_maps_url', t)}
+                  placeholder="Paste Google Maps link" placeholderTextColor={P.muted3}
+                  autoCapitalize="none" keyboardType="url"
                 />
               </Field>
             </View>
           ))}
         </View>
 
-        {/* Save button */}
-        <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-          {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+        <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving} activeOpacity={0.85}>
+          {saving ? <ActivityIndicator color={P.ink} /> : <Text style={s.saveBtnText}>Save Changes</Text>}
         </TouchableOpacity>
 
-        {/* Quick Links / Logout */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Other</Text>
-          <TouchableOpacity style={styles.linkRow} onPress={() => openWebDashboard('/dashboard')}>
-            <Text style={styles.linkIcon}>[W]</Text>
-            <Text style={styles.linkLabel}>Open Web Dashboard</Text>
-            <Text style={styles.linkArrow}>›</Text>
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Other</Text>
+          <TouchableOpacity style={s.linkRow} onPress={() => openWebDashboard('/dashboard')}>
+            <Text style={s.linkIcon}>[W]</Text>
+            <Text style={s.linkLabel}>Open Web Dashboard</Text>
+            <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
-          <Text style={styles.hintSubtle}>For campaign creation and product/menu management.</Text>
-          <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.linkIcon}>[N]</Text>
-            <Text style={styles.linkLabel}>Notifications</Text>
-            <Text style={styles.linkArrow}>›</Text>
+          <Text style={s.hintSubtle}>For campaign creation and product/menu management.</Text>
+          <TouchableOpacity style={s.linkRow} onPress={() => navigation.navigate('Notifications')}>
+            <Text style={s.linkIcon}>[N]</Text>
+            <Text style={s.linkLabel}>Notifications</Text>
+            <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('MediaGallery')}>
-            <Text style={styles.linkIcon}>[G]</Text>
-            <Text style={styles.linkLabel}>Media Gallery</Text>
-            <Text style={styles.linkArrow}>›</Text>
+          <TouchableOpacity style={s.linkRow} onPress={() => navigation.navigate('MediaGallery')}>
+            <Text style={s.linkIcon}>[G]</Text>
+            <Text style={s.linkLabel}>Media Gallery</Text>
+            <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.linkRow} onPress={() => navigation.navigate('ProposalInbox')}>
-            <Text style={styles.linkIcon}>[P]</Text>
-            <Text style={styles.linkLabel}>Influencer Proposals</Text>
-            <Text style={styles.linkArrow}>›</Text>
+          <TouchableOpacity style={[s.linkRow, s.linkRowLast]} onPress={() => navigation.navigate('ProposalInbox')}>
+            <Text style={s.linkIcon}>[P]</Text>
+            <Text style={s.linkLabel}>Influencer Proposals</Text>
+            <Text style={s.linkArrow}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity style={s.logoutBtn} onPress={logout} activeOpacity={0.85}>
+          <Text style={s.logoutText}>Logout</Text>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -476,66 +380,62 @@ export default function BrandProfileScreen({ navigation }) {
 
 function Field({ label, hint, children }) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={s.field}>
+      <Text style={s.fieldLabel}>{label}</Text>
       {children}
-      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
+      {hint ? <Text style={s.fieldHint}>{hint}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.bg },
-  center:       { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText:  { fontSize: 13, color: colors.t2, textAlign: 'center' },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, textAlign: 'center' },
 
-  header:       { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52, alignItems: 'center' },
-  avatar:       { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  avatarText:   { fontSize: 26, fontWeight: '900', color: colors.white },
-  brandName:    { fontSize: 20, fontWeight: '800', color: colors.white, marginBottom: 8 },
-  statusChip:   { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 },
-  statusApproved: { backgroundColor: colors.teal + '30' },
-  statusApprovedText: { color: colors.teal, fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
-  statusPending:      { backgroundColor: colors.orange + '30' },
-  statusPendingText:  { color: colors.orange, fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
-  statusChipText:     { fontSize: 11, fontWeight: '700', textTransform: 'capitalize' },
+  hero: { backgroundColor: P.ink, padding: 20, paddingTop: 52, alignItems: 'center' },
+  avatar: { width: 72, height: 72, borderRadius: 36, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 11 },
+  avatarText: { fontFamily: fonts.displayBold, fontSize: 24, fontWeight: '900', color: P.ink },
+  brandName: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.white, marginBottom: 8, letterSpacing: -0.3 },
 
-  statusBanner:        { margin: 16, marginBottom: 0, padding: 12, borderRadius: 12, borderWidth: 1 },
-  statusBannerWarn:    { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
-  statusBannerError:   { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
-  statusBannerTitle:   { fontSize: 13, fontWeight: '800', marginBottom: 4 },
-  statusBannerBody:    { fontSize: 12, lineHeight: 16 },
-  statusBannerWarnText:{ color: '#92400E' },
-  statusBannerErrorText:{ color: '#991B1B' },
+  statusBanner: { margin: 14, marginBottom: 0, padding: 12, borderRadius: 12, borderWidth: 1 },
+  statusBannerWarn: { backgroundColor: P.yellowPale, borderColor: P.yellow },
+  statusBannerError: { backgroundColor: P.dangerPale, borderColor: P.dangerPale },
+  statusBannerTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', marginBottom: 3 },
+  statusBannerBody: { fontFamily: fonts.sansMedium, fontSize: 11, lineHeight: 16 },
+  statusBannerWarnText: { color: P.yellowText },
+  statusBannerErrorText: { color: P.dangerText },
 
-  card:         { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle:    { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  primaryChip:  { backgroundColor: colors.tealPale, color: colors.tealDeep, fontSize: 10, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' },
+  card: { margin: 14, marginBottom: 0, backgroundColor: P.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: P.border },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 11 },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
+  primaryChip: { fontFamily: fonts.monoBold, backgroundColor: P.successPale, color: P.successText, fontSize: 9, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden', letterSpacing: 0.3 },
 
-  field:        { marginBottom: 12 },
-  fieldLabel:   { fontSize: 11, fontWeight: '700', color: colors.t2, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.3 },
-  fieldHint:    { fontSize: 10, color: colors.t3, marginTop: 4 },
-  input:        { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: colors.t1 },
-  inputReadOnly:{ backgroundColor: colors.bg, color: colors.t3 },
-  inputTextarea:{ minHeight: 72, textAlignVertical: 'top' },
+  field: { marginBottom: 11 },
+  fieldLabel: { fontFamily: fonts.monoBold, fontSize: 9.5, fontWeight: '800', color: P.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
+  fieldHint: { fontFamily: fonts.sansMedium, fontSize: 9.5, color: P.muted2, marginTop: 4 },
+  input: { fontFamily: fonts.sansMedium, borderWidth: 1.5, borderColor: P.border, backgroundColor: P.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 12.5, color: P.ink, minHeight: 38 },
+  inputReadOnly: { backgroundColor: P.bg2, color: P.muted3 },
+  inputTextarea: { minHeight: 68, textAlignVertical: 'top' },
 
-  addBranchBtn: { borderWidth: 1, borderColor: colors.orange, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5 },
-  addBranchBtnText: { fontSize: 11, fontWeight: '700', color: colors.orange },
-  branchBox:    { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 12, marginBottom: 12 },
-  branchIndex:  { fontSize: 10, fontWeight: '800', color: colors.t3, letterSpacing: 0.5, textTransform: 'uppercase' },
-  removeText:   { fontSize: 12, color: colors.red, fontWeight: '700' },
-  emptyText:    { fontSize: 12, color: colors.t3, textAlign: 'center', paddingVertical: 8 },
+  addBranchBtn: { borderWidth: 1, borderColor: P.yellow, borderRadius: 99, paddingHorizontal: 11, paddingVertical: 5 },
+  addBranchBtnText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText },
+  branchBox: { borderWidth: 1, borderColor: P.border, borderRadius: 12, padding: 11, marginBottom: 10, backgroundColor: P.bg },
+  branchHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 },
+  branchIndex: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase' },
+  removeText: { fontFamily: fonts.sansBold, fontSize: 11, color: P.dangerText, fontWeight: '700' },
+  emptyText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, textAlign: 'center', paddingVertical: 10 },
 
-  saveBtn:      { margin: 16, backgroundColor: colors.orange, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText:  { fontSize: 14, fontWeight: '800', color: colors.white },
+  saveBtn: { margin: 14, backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  saveBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
 
-  linkRow:      { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10 },
-  linkIcon:     { fontSize: 12, fontWeight: '800', color: colors.t2, width: 24 },
-  linkLabel:    { flex: 1, fontSize: 13, fontWeight: '600', color: colors.t1 },
-  linkArrow:    { fontSize: 18, color: colors.t3 },
-  hintSubtle:   { fontSize: 10, color: colors.t3, marginTop: 4, marginLeft: 34 },
+  linkRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: P.border, gap: 10 },
+  linkRowLast: { borderBottomWidth: 0 },
+  linkIcon: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.muted, width: 24 },
+  linkLabel: { flex: 1, fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.ink },
+  linkArrow: { fontFamily: fonts.monoBold, fontSize: 16, color: P.muted3, fontWeight: '800' },
+  hintSubtle: { fontFamily: fonts.sansMedium, fontSize: 9.5, color: P.muted2, marginTop: 3, marginLeft: 34, marginBottom: 4 },
 
-  logoutBtn:    { margin: 16, borderWidth: 1, borderColor: colors.red, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  logoutText:   { fontSize: 14, fontWeight: '700', color: colors.red },
+  logoutBtn: { margin: 14, borderWidth: 1.5, borderColor: P.dangerPale, borderRadius: 14, paddingVertical: 13, alignItems: 'center', backgroundColor: P.white },
+  logoutText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.dangerText },
 });
