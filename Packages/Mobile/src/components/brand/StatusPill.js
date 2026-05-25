@@ -21,6 +21,8 @@ export const STATUS_MAP_DEFAULT = {
   new:       { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
   submitted: { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
   sent:      { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
+  applied:   { bg: P.yellowPale,  fg: P.yellowText,  label: 'APPLIED' },     // Flow 22
+  negotiating: { bg: P.yellowPale, fg: P.yellowText, label: 'NEGOTIATING' }, // Flow 22
   pending:   { bg: P.bg2,         fg: P.muted2,      label: 'PENDING' },
 
   // viewed / responded / contacted (engaged)
@@ -32,21 +34,26 @@ export const STATUS_MAP_DEFAULT = {
   countered: { bg: P.convPale,    fg: P.conv,        label: 'COUNTERED' },
 
   // success / converted / accepted / completed
-  converted: { bg: P.successPale, fg: P.successText, label: 'CONVERTED' },
-  accepted:  { bg: P.successPale, fg: P.successText, label: 'ACCEPTED' },
-  completed: { bg: P.successPale, fg: P.successText, label: 'COMPLETED' },
-  live:      { bg: P.successPale, fg: P.successText, label: 'LIVE' },
+  converted:  { bg: P.successPale, fg: P.successText, label: 'CONVERTED' },
+  accepted:   { bg: P.successPale, fg: P.successText, label: 'ACCEPTED' },
+  contracted: { bg: P.successPale, fg: P.successText, label: 'CONTRACTED' }, // Flow 22
+  active:     { bg: P.successPale, fg: P.successText, label: 'ACTIVE' },     // Flow 22
+  completed:  { bg: P.successPale, fg: P.successText, label: 'COMPLETED' },
+  live:       { bg: P.successPale, fg: P.successText, label: 'LIVE' },
 
   // negative / terminal
-  rejected:  { bg: P.dangerPale,  fg: P.dangerText,  label: 'REJECTED' },
-  declined:  { bg: P.dangerPale,  fg: P.dangerText,  label: 'DECLINED' },
-  cancelled: { bg: P.dangerPale,  fg: P.dangerText,  label: 'CANCELLED' },
+  rejected:           { bg: P.dangerPale, fg: P.dangerText, label: 'REJECTED' },
+  rejected_by_brand:  { bg: P.dangerPale, fg: P.dangerText, label: 'REJECTED' }, // Flow 22 alias
+  declined:           { bg: P.dangerPale, fg: P.dangerText, label: 'DECLINED' },
+  cancelled:          { bg: P.dangerPale, fg: P.dangerText, label: 'CANCELLED' },
 
   // terminal-grey
-  closed:    { bg: P.bg2,         fg: P.muted2,      label: 'CLOSED' },
-  expired:   { bg: P.bg2,         fg: P.muted2,      label: 'EXPIRED' },
-  withdrawn: { bg: P.bg2,         fg: P.muted2,      label: 'WITHDRAWN' },
-  refunded:  { bg: P.bg2,         fg: P.muted2,      label: 'REFUNDED' },
+  invited:      { bg: P.bg2, fg: P.muted2, label: 'INVITED' },      // Flow 22
+  closed:       { bg: P.bg2, fg: P.muted2, label: 'CLOSED' },
+  expired:      { bg: P.bg2, fg: P.muted2, label: 'EXPIRED' },
+  withdrawn:    { bg: P.bg2, fg: P.muted2, label: 'WITHDRAWN' },
+  refunded:     { bg: P.bg2, fg: P.muted2, label: 'REFUNDED' },
+  slots_filled: { bg: P.bg2, fg: P.muted2, label: 'SLOTS FILLED' }, // Flow 22
 };
 
 const FALLBACK = { bg: P.bg2, fg: P.muted2 };

@@ -4,19 +4,19 @@ import {
   RefreshControl, ActivityIndicator, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+import ScreenHeader from '../../components/brand/ScreenHeader';
+import EmptyState from '../../components/brand/EmptyState';
 
-const P = {
-  bg:'#FAFAFA', surface:'#FFFFFF', surface2:'#F4F4F5',
-  ink:'#0A0A0A', ink2:'#1F1F22',
-  muted:'#52525B', muted2:'#71717A', muted3:'#A1A1AA',
-  border:'#E4E4E7', border2:'#D4D4D8',
-  yellow:'#FFC107', yellowHover:'#E0A800', yellowPale:'#FFF7CC', yellowText:'#6B5A00',
-  success:'#10B981', successPale:'#D1FAE5', successDeep:'#047857',
-  danger:'#E8401A', dangerPale:'#FDEEE9', dangerDeep:'#B91C1C',
-  white:'#FFFFFF',
-};
+/**
+ * BrandCampaignReviewQueueScreen — content review + confirm-live queues
+ * for a single campaign. 2-tab switcher (To review / Confirm live).
+ *
+ * Flow 22 (2026-05-25): drop inline P; consume brandPalette + ScreenHeader
+ * + EmptyState. Outfit/PJS/JetBrains-Mono fonts. Behavior preserved 1:1
+ * (tranche-2 release alert variants, Alert.prompt fallback, hint banner).
+ */
 
 const DELIVERABLE_LABELS = {
   reel: 'Instagram Reel',
@@ -36,7 +36,7 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
   const [campaign, setCampaign]   = useState(null);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab]             = useState(initialTab || 'reviews'); // 'reviews' | 'live'
+  const [tab, setTab]             = useState(initialTab || 'reviews');
   const [actionLoading, setActionLoading] = useState(null);
 
   async function load() {
@@ -53,7 +53,6 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
     setRefreshing(false);
   }, [campaignId]);
 
-  // Action handlers
   async function handleReviewDeliverable(deliverableId, action, feedback) {
     setActionLoading(deliverableId);
     const body = action === 'approve'
@@ -117,27 +116,34 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={P.ink} /></View>;
+    return (
+      <View style={s.container}>
+        <ScreenHeader title="Review queue" back onBack={() => navigation.goBack()} />
+        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+      </View>
+    );
   }
   if (!campaign) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Campaign not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.goBackBtn}>
-          <Text style={styles.goBackBtnText}>← Back</Text>
-        </TouchableOpacity>
+      <View style={s.container}>
+        <ScreenHeader title="Review queue" back onBack={() => navigation.goBack()} />
+        <View style={s.center}>
+          <Text style={s.errorText}>Campaign not found</Text>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.goBackBtn}>
+            <Text style={s.goBackBtnText}>← Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
-  // Flatten deliverable queues from sets[*].influencers[*].deliverables[*]
   const sets = campaign.sets || [];
   const reviewQueue = [];
   const liveQueue   = [];
-  for (const s of sets) {
-    for (const ci of (s.influencers || [])) {
+  for (const set of sets) {
+    for (const ci of (set.influencers || [])) {
       for (const d of (ci.deliverables || [])) {
-        const enriched = { ...d, influencer_name: ci.influencer_name, instagram_handle: ci.instagram_handle, set_name: s.name };
+        const enriched = { ...d, influencer_name: ci.influencer_name, instagram_handle: ci.instagram_handle, set_name: set.name };
         if (d.status === 'submitted' || d.status === 'under_review') reviewQueue.push(enriched);
         if (d.status === 'approved' && d.live_url) liveQueue.push(enriched);
       }
@@ -147,117 +153,102 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
   const currentQueue = tab === 'reviews' ? reviewQueue : liveQueue;
 
   return (
-    <View style={styles.container}>
-      {/* Ink header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← {campaign.name || 'Campaign'}</Text>
-        </TouchableOpacity>
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.headerTitle}>Review queue</Text>
-            <Text style={styles.headerCrumb}>/dashboard/campaigns/{campaignId?.slice(0, 8)}/reviews</Text>
-          </View>
-        </View>
-      </View>
+    <View style={s.container}>
+      <ScreenHeader
+        title="Review queue"
+        sub={`← ${campaign.name || 'Campaign'}`}
+        back onBack={() => navigation.goBack()}
+      />
 
-      {/* Tab switcher */}
-      <View style={styles.tabBar}>
+      <View style={s.tabBar}>
         <TouchableOpacity
-          style={[styles.tab, tab === 'reviews' && styles.tabActive]}
+          style={[s.tab, tab === 'reviews' && s.tabActive]}
           onPress={() => setTab('reviews')}
           activeOpacity={0.85}
         >
-          <Text style={[styles.tabText, tab === 'reviews' && styles.tabTextActive]}>To review</Text>
-          <Text style={[styles.tabCount, tab === 'reviews' && styles.tabCountActive]}>{reviewQueue.length}</Text>
+          <Text style={[s.tabText, tab === 'reviews' && s.tabTextActive]}>To review</Text>
+          <Text style={[s.tabCount, tab === 'reviews' && s.tabCountActive]}>{reviewQueue.length}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, tab === 'live' && styles.tabActive]}
+          style={[s.tab, tab === 'live' && s.tabActive]}
           onPress={() => setTab('live')}
           activeOpacity={0.85}
         >
-          <Text style={[styles.tabText, tab === 'live' && styles.tabTextActive]}>Confirm live</Text>
-          <Text style={[styles.tabCount, tab === 'live' && styles.tabCountActive]}>{liveQueue.length}</Text>
+          <Text style={[s.tabText, tab === 'live' && s.tabTextActive]}>Confirm live</Text>
+          <Text style={[s.tabCount, tab === 'live' && s.tabCountActive]}>{liveQueue.length}</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
+        contentContainerStyle={s.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
       >
-        {/* Helpful hint per tab */}
         {tab === 'live' && liveQueue.length > 0 && (
-          <View style={styles.hint}>
-            <View style={styles.hintIcon}><Text style={styles.hintIconGlyph}>!</Text></View>
-            <Text style={styles.hintText}>
-              Influencers posted live URLs. Confirm every deliverable — <Text style={styles.hintTextV}>Tranche 2 releases</Text> once all are live.
+          <View style={s.hint}>
+            <View style={s.hintIcon}><Text style={s.hintIconGlyph}>!</Text></View>
+            <Text style={s.hintText}>
+              Influencers posted live URLs. Confirm every deliverable — <Text style={s.hintTextV}>Tranche 2 releases</Text> once all are live.
             </Text>
           </View>
         )}
 
         {currentQueue.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <View style={styles.emptyIcon}><Text style={styles.emptyIconGlyph}>✓</Text></View>
-            <Text style={styles.emptyText}>
-              {tab === 'reviews' ? 'No content awaiting review' : 'No live URLs awaiting confirmation'}
-            </Text>
-            <Text style={styles.emptySubText}>You're all caught up.</Text>
-          </View>
+          <EmptyState
+            icon="[✓]"
+            title={tab === 'reviews' ? 'No content awaiting review' : 'No live URLs awaiting confirmation'}
+            sub="You're all caught up."
+          />
         ) : (
           currentQueue.map(d => {
             const isBusy = actionLoading === d.id;
             return (
-              <View key={d.id} style={styles.card}>
-                <View style={styles.cardTop}>
+              <View key={d.id} style={s.card}>
+                <View style={s.cardTop}>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.cardType}>{DELIVERABLE_LABELS[d.type] || d.type}</Text>
-                    <Text style={styles.cardInf}>
-                      @{d.instagram_handle || '—'} <Text style={styles.cardInfName}>· {d.influencer_name || 'Influencer'}</Text>
+                    <Text style={s.cardType}>{DELIVERABLE_LABELS[d.type] || d.type}</Text>
+                    <Text style={s.cardInf}>
+                      @{d.instagram_handle || '—'} <Text style={s.cardInfName}>· {d.influencer_name || 'Influencer'}</Text>
                     </Text>
-                    {d.set_name ? <Text style={styles.cardSet}>{d.set_name}</Text> : null}
+                    {d.set_name ? <Text style={s.cardSet}>{d.set_name}</Text> : null}
                   </View>
                   {tab === 'reviews' && d.submitted_at && (
-                    <Text style={styles.cardDate}>{formatDate(d.submitted_at)}</Text>
+                    <Text style={s.cardDate}>{formatDate(d.submitted_at)}</Text>
                   )}
                 </View>
 
                 {(tab === 'reviews' && d.content_url) || (tab === 'live' && d.live_url) ? (
-                  <View style={styles.urlRow}>
-                    <Text style={styles.urlLabel}>{tab === 'live' ? 'Live URL' : 'Content URL'}</Text>
-                    <Text style={styles.urlText} numberOfLines={1}>{tab === 'live' ? d.live_url : d.content_url}</Text>
+                  <View style={s.urlRow}>
+                    <Text style={s.urlLabel}>{tab === 'live' ? 'Live URL' : 'Content URL'}</Text>
+                    <Text style={s.urlText} numberOfLines={1}>{tab === 'live' ? d.live_url : d.content_url}</Text>
                   </View>
                 ) : null}
 
-                <View style={styles.actionRow}>
+                <View style={s.actionRow}>
                   {tab === 'reviews' ? (
                     <>
                       <TouchableOpacity
-                        style={[styles.btnRevise, isBusy && { opacity: 0.4 }]}
+                        style={[s.btnRevise, isBusy && { opacity: 0.4 }]}
                         onPress={() => promptRevisionFeedback(d.id)}
                         disabled={isBusy}
                       >
-                        <Text style={styles.btnReviseText}>Revise</Text>
+                        <Text style={s.btnReviseText}>Revise</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.btnApprove, isBusy && { opacity: 0.4 }]}
+                        style={[s.btnApprove, isBusy && { opacity: 0.4 }]}
                         onPress={() => handleReviewDeliverable(d.id, 'approve')}
                         disabled={isBusy}
                       >
-                        {isBusy
-                          ? <ActivityIndicator size="small" color={P.yellow} />
-                          : <Text style={styles.btnApproveText}>Approve</Text>}
+                        {isBusy ? <ActivityIndicator size="small" color={P.yellow} /> : <Text style={s.btnApproveText}>Approve</Text>}
                       </TouchableOpacity>
                     </>
                   ) : (
                     <TouchableOpacity
-                      style={[styles.btnConfirmLive, isBusy && { opacity: 0.4 }]}
+                      style={[s.btnConfirmLive, isBusy && { opacity: 0.4 }]}
                       onPress={() => handleConfirmLive(d.id, d.live_url)}
                       disabled={isBusy}
                     >
-                      {isBusy
-                        ? <ActivityIndicator size="small" color={P.white} />
-                        : <Text style={styles.btnConfirmLiveText}>Confirm live</Text>}
+                      {isBusy ? <ActivityIndicator size="small" color={P.white} /> : <Text style={s.btnConfirmLiveText}>Confirm live</Text>}
                     </TouchableOpacity>
                   )}
                 </View>
@@ -271,60 +262,46 @@ export default function BrandCampaignReviewQueueScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
-  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 24 },
-  errorText: { fontSize: 13, color: P.dangerDeep, marginBottom: 16, textAlign: 'center' },
-  goBackBtn: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: P.surface2, borderRadius: 10 },
-  goBackBtnText: { fontSize: 13, fontWeight: '700', color: P.ink },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  errorText: { fontFamily: fonts.sansBold, fontSize: 13, color: P.dangerText, marginBottom: 16, textAlign: 'center' },
+  goBackBtn: { paddingHorizontal: 18, paddingVertical: 10, backgroundColor: P.yellow, borderRadius: 10 },
+  goBackBtnText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.ink },
 
-  header: { backgroundColor: P.ink, paddingHorizontal: 16, paddingTop: 52, paddingBottom: 14 },
-  backBtn: { paddingVertical: 4 },
-  backBtnText: { fontSize: 12.5, fontWeight: '600', color: 'rgba(255,255,255,0.65)' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
-  headerCrumb: { fontFamily: 'monospace', fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.3, marginTop: 3 },
-
-  // Tab bar
-  tabBar: { flexDirection: 'row', backgroundColor: P.surface, borderBottomWidth: 1, borderBottomColor: P.border, paddingHorizontal: 14, gap: 8, paddingTop: 8, paddingBottom: 0 },
+  tabBar: { flexDirection: 'row', backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border, paddingHorizontal: 14, gap: 14, paddingTop: 8, paddingBottom: 0 },
   tab: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: P.yellow },
-  tabText: { fontSize: 13, fontWeight: '600', color: P.muted2 },
+  tabText: { fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.muted2 },
   tabTextActive: { color: P.ink, fontWeight: '700' },
-  tabCount: { fontFamily: 'monospace', fontSize: 11, fontWeight: '700', color: P.muted3, backgroundColor: P.surface2, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 100 },
+  tabCount: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: P.muted3, backgroundColor: P.bg2, paddingHorizontal: 7, paddingVertical: 1, borderRadius: 99 },
   tabCountActive: { color: P.ink, backgroundColor: P.yellowPale },
 
-  list: { padding: 14, gap: 10 },
+  list: { padding: 14, gap: 8 },
 
-  hint: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, borderLeftWidth: 3, borderLeftColor: P.yellow },
+  hint: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, borderLeftWidth: 3, borderLeftColor: P.yellow, marginBottom: 4 },
   hintIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  hintIconGlyph: { fontSize: 12, fontWeight: '800', color: P.yellow },
-  hintText: { flex: 1, fontSize: 11.5, color: P.ink2, lineHeight: 16 },
-  hintTextV: { fontWeight: '700', color: P.ink },
+  hintIconGlyph: { fontFamily: fonts.displayBold, fontSize: 12, fontWeight: '800', color: P.yellow },
+  hintText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.ink2, lineHeight: 16 },
+  hintTextV: { fontFamily: fonts.sansBold, fontWeight: '700', color: P.ink },
 
-  emptyCard: { backgroundColor: P.surface, borderRadius: 16, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: P.border },
-  emptyIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: P.successPale, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  emptyIconGlyph: { fontSize: 22, fontWeight: '700', color: P.successDeep },
-  emptyText: { fontSize: 13.5, fontWeight: '700', color: P.ink, marginBottom: 4, textAlign: 'center' },
-  emptySubText: { fontSize: 11, color: P.muted, textAlign: 'center' },
-
-  card: { backgroundColor: P.surface, borderWidth: 1, borderColor: P.border, borderRadius: 14, padding: 12, gap: 10 },
+  card: { backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 14, padding: 12, gap: 10 },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  cardType: { fontSize: 13, fontWeight: '700', color: P.ink, marginBottom: 2 },
-  cardInf: { fontFamily: 'monospace', fontSize: 11, color: P.muted2 },
-  cardInfName: { fontFamily: 'System' },
-  cardSet: { fontSize: 10.5, color: P.muted, fontStyle: 'italic', marginTop: 3 },
-  cardDate: { fontFamily: 'monospace', fontSize: 10, color: P.muted2 },
+  cardType: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink, marginBottom: 2 },
+  cardInf: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2 },
+  cardInfName: { fontFamily: fonts.sansMedium, color: P.muted2 },
+  cardSet: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted, fontStyle: 'italic', marginTop: 3 },
+  cardDate: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2 },
 
-  urlRow: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: P.surface2, borderRadius: 8 },
-  urlLabel: { fontSize: 9, fontWeight: '700', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2 },
-  urlText: { fontFamily: 'monospace', fontSize: 10.5, color: P.yellowHover },
+  urlRow: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: P.bg2, borderRadius: 8 },
+  urlLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '700', color: P.muted2, letterSpacing: 0.4, textTransform: 'uppercase', marginBottom: 2 },
+  urlText: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.yellowHover },
 
   actionRow: { flexDirection: 'row', gap: 6, justifyContent: 'flex-end' },
-  btnRevise: { backgroundColor: P.surface2, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: P.border },
-  btnReviseText: { fontSize: 11, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
+  btnRevise: { backgroundColor: P.bg2, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: P.border },
+  btnReviseText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.ink, letterSpacing: 0.2 },
   btnApprove: { backgroundColor: P.ink, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 8 },
-  btnApproveText: { fontSize: 11, fontWeight: '700', color: P.yellow, letterSpacing: 0.2 },
+  btnApproveText: { fontFamily: fonts.monoBold, fontSize: 11, fontWeight: '700', color: P.yellow, letterSpacing: 0.2 },
   btnConfirmLive: { backgroundColor: P.success, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 },
-  btnConfirmLiveText: { fontSize: 11, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
+  btnConfirmLiveText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.white, letterSpacing: 0.2 },
 });
