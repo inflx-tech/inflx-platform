@@ -1,0 +1,31 @@
+{
+  "feature": "billing-enforce-quota-features",
+  "area": "backend-middleware+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-25) — explicit 'go A12.1' after diagnosis of the active_campaigns enforcement gap on 'Aveen food paradise'. Standing autonomy applied.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with refactored quotaCheck middleware. M062 (is_enforced=true on 4 features) runs separately against Supabase prod on explicit founder go after push (same trap+restore pattern as M060/M061).",
+  "fix": "Phase A12.1 — migrate quotaCheck middleware from legacy subscription_tiers.max_* columns to tier_features.quota_value via entitlements.service.quotaFor. M062 flips is_enforced=true on the 4 quota features. Closes the founder-reported active_campaigns gap.",
+  "related": [
+    "features/billing-quota-middleware",
+    "features/billing-tier-features-and-prices",
+    "features/fix-tier-list-and-create-flow"
+  ],
+  "result": "Middleware rewritten to use entitlements.service.quotaFor; M062 applied locally; backend boot clean; quotaCheck.test.js beforeEach extended to seed tier_features matching legacy values; pnpm qa 76/76 GREEN STATE=GREEN gate=0 (108s). Ready to push.",
+  "regression_proof": "Backend boot smoke (node -e require) clean. M062 applied to local dev DB cleanly (sanity probe shows all 4 quota features is_enforced=true). Middleware shape preserved (same exports, same call sites). Test setup extended to seed tier_features so existing assertions continue to hold against new data source.",
+  "discipline": "Verify-twice: confirmed the bug by reading actual middleware code lines 65, 78, 107 (all reading legacy columns). Confirmed entitlements.service.quotaFor exists and falls back to catalog default. Confirmed AppError + response.js plumbing for details payload (always worked, founder-side modal consumes res.error.details).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with refactored middleware). M062 prod run gated on SEPARATE explicit founder go after push — same pattern as M060/M061."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-25) — N/A backend-only contract; attestation set to satisfy gov-check Rule 3 if bundled with UI-governed changesets later.",
+  "mockup_locked_at": "2026-05-25"
+}

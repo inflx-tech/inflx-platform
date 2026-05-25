@@ -23,6 +23,7 @@ beforeEach(async () => {
   await truncateAll();
   // Re-seed subscription_tiers (admin-config preserved by truncateAll but
   // a prior test could have PATCHed values — reset to canonical seed).
+  // Cascade deletes tier_features rows too; we re-seed those below.
   await query(`DELETE FROM subscription_tiers`);
   await query(
     `INSERT INTO subscription_tiers
@@ -33,6 +34,31 @@ beforeEach(async () => {
        ('pro',        'Pro',         9999.00, 10, 10, 100, 500, false, 3),
        ('enterprise', 'Enterprise', 29999.00, -1, -1,  -1,  -1, true,  4)`
   );
+
+  // Phase A12.1: middleware now reads tier_features (the entitlements table)
+  // for quota values, not the legacy max_* columns above. We must seed
+  // tier_features rows matching the legacy values so the existing assertions
+  // (limit=10 free / 100 growth / 500 pro / -1 enterprise on products etc.)
+  // continue to hold against the new code path. The features catalog rows
+  // themselves (M061) are NOT cascade-deleted by the subscription_tiers reset
+  // above (features.id is not referenced by subscription_tiers).
+  await query(`
+    INSERT INTO tier_features (tier_id, feature_id, included, quota_value, config)
+    SELECT t.id, f.id, true,
+           CASE f.feature_key
+             WHEN 'active_campaigns'      THEN t.max_campaigns
+             WHEN 'sets_per_campaign'     THEN t.max_sets_per_campaign
+             WHEN 'invitations_per_cycle' THEN t.max_influencers_per_cycle
+             WHEN 'products_in_store'     THEN t.max_products
+           END,
+           '{}'::jsonb
+      FROM subscription_tiers t, features f
+     WHERE f.feature_key IN ('active_campaigns','sets_per_campaign','invitations_per_cycle','products_in_store')
+       AND t.tier_key IN ('free','growth','pro','enterprise')
+    ON CONFLICT (tier_id, feature_id) DO UPDATE
+      SET quota_value = EXCLUDED.quota_value,
+          included    = true
+  `);
 });
 
 // Per-worker pool cleanup is handled centrally by tests/jest.afterEnv.js.

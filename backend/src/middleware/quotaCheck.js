@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * quotaCheck.js — Phase A4 of the INFLX 3-Layer Revenue Model.
+ * quotaCheck.js — Phase A12.1 of the INFLX 3-Layer Revenue Model.
  *
  * Express middleware factory: gates a create-action behind the active
  * subscription tier's quota limit. Returns 422 QUOTA_EXCEEDED with a
@@ -14,12 +14,20 @@
  *     checkQuota('createCampaign'),
  *     campaignController.create);
  *
+ * Phase A12.1 migration: limits now come from the entitlements system
+ * (features × tier_features → tf.quota_value) — the same numbers admin
+ * edits in Section C of the /admin/pricing/tiers/[tier_key] page. The
+ * legacy subscription_tiers.max_* columns are no longer read for gating.
+ *
  * Lazy-creates a 'free' tier brand_subscriptions row on first call for
  * any brand that doesn't have one yet — the "every existing brand keeps
  * working" guarantee from features/billing-subscriptions-schema/05-impact.md.
  *
  * Limit value `-1` is the sentinel for "unlimited" (enterprise tier);
- * checkQuota passes immediately.
+ * checkQuota passes immediately. Limit value `null` (no entitlement row
+ * AND no catalog default) is treated as "not configured" → passes
+ * (defensive — would only happen if admin removed all rows for the
+ * feature, which the catalog UI prevents).
  *
  * QUOTA_EXCEEDED response body:
  *   {
@@ -30,6 +38,7 @@
  *       field: '<action>',
  *       details: {
  *         action: '<action>',
+ *         feature_key: '<feature_key>',
  *         used:   <int>,
  *         limit:  <int>,
  *         current_tier: '<tier_key>',
@@ -42,6 +51,7 @@
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const entitlementsService = require('../services/entitlements.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Subscription helpers
@@ -56,14 +66,15 @@ async function _getBrandIdFromUser(client, userId) {
 }
 
 /**
- * Returns the brand's active subscription joined with its tier limits.
+ * Returns the brand's active subscription (identity only — tier_id,
+ * tier_key, cycle dates). Quota limits are NOT loaded here — the
+ * middleware calls entitlements.service.quotaFor per action.
  * Lazy-creates a 'free' row if none exists.
  */
 async function _ensureSubscription(client, brandId) {
   const { rows: existing } = await client.query(
     `SELECT bs.id AS sub_id, bs.tier_id, bs.current_cycle_start, bs.current_cycle_end,
-            t.tier_key, t.max_campaigns, t.max_sets_per_campaign,
-            t.max_influencers_per_cycle, t.max_products
+            t.tier_key
        FROM brand_subscriptions bs
        JOIN subscription_tiers t ON t.id = bs.tier_id
       WHERE bs.brand_id = $1
@@ -75,8 +86,7 @@ async function _ensureSubscription(client, brandId) {
 
   // Lazy-create on the 'free' tier.
   const { rows: freeTier } = await client.query(
-    `SELECT id, tier_key, max_campaigns, max_sets_per_campaign,
-            max_influencers_per_cycle, max_products
+    `SELECT id, tier_key
        FROM subscription_tiers
       WHERE tier_key = 'free'
       LIMIT 1`
@@ -99,15 +109,11 @@ async function _ensureSubscription(client, brandId) {
   );
 
   return {
-    sub_id:                    created[0]?.sub_id || null,
-    tier_id:                   freeTier[0].id,
-    tier_key:                  freeTier[0].tier_key,
-    current_cycle_start:       created[0]?.current_cycle_start || new Date(),
-    current_cycle_end:         created[0]?.current_cycle_end   || new Date(Date.now() + 30 * 86400_000),
-    max_campaigns:             freeTier[0].max_campaigns,
-    max_sets_per_campaign:     freeTier[0].max_sets_per_campaign,
-    max_influencers_per_cycle: freeTier[0].max_influencers_per_cycle,
-    max_products:              freeTier[0].max_products,
+    sub_id:              created[0]?.sub_id || null,
+    tier_id:             freeTier[0].id,
+    tier_key:            freeTier[0].tier_key,
+    current_cycle_start: created[0]?.current_cycle_start || new Date(),
+    current_cycle_end:   created[0]?.current_cycle_end   || new Date(Date.now() + 30 * 86400_000),
   };
 }
 
@@ -156,33 +162,58 @@ async function _countInvitesThisCycle(client, brandId, cycleStart) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Action registry
+// Action registry — each action maps to a feature_key in the catalog.
+// Phase A12.1: limits read live from tier_features.quota_value via the
+// entitlements service. Admin's Section C edits drive enforcement.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ACTIONS = {
   createCampaign: {
-    limitField: 'max_campaigns',
-    counter:    (client, sub, brandId) => _countCampaigns(client, brandId),
-    label:      'active campaigns',
+    feature_key: 'active_campaigns',
+    counter:     (client, sub, brandId) => _countCampaigns(client, brandId),
+    label:       'active campaigns',
   },
   createProduct: {
-    limitField: 'max_products',
-    counter:    (client, sub, brandId) => _countProducts(client, brandId),
-    label:      'products',
+    feature_key: 'products_in_store',
+    counter:     (client, sub, brandId) => _countProducts(client, brandId),
+    label:       'products',
   },
   createSet: {
-    limitField: 'max_sets_per_campaign',
-    counter:    (client, sub, brandId, req) =>
-                  _countSetsInCampaign(client, req.params.campaignId || req.params.id || req.body?.campaign_id),
-    label:      'sets per campaign',
+    feature_key: 'sets_per_campaign',
+    counter:     (client, sub, brandId, req) =>
+                   _countSetsInCampaign(client, req.params.campaignId || req.params.id || req.body?.campaign_id),
+    label:       'sets per campaign',
   },
   inviteInfluencer: {
-    limitField: 'max_influencers_per_cycle',
-    counter:    (client, sub, brandId) =>
-                  _countInvitesThisCycle(client, brandId, sub.current_cycle_start),
-    label:      'influencer invites this cycle',
+    feature_key: 'invitations_per_cycle',
+    counter:     (client, sub, brandId) =>
+                   _countInvitesThisCycle(client, brandId, sub.current_cycle_start),
+    label:       'influencer invites this cycle',
   },
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// "Upgrade-to" query — tiers that allow MORE than the current limit for the
+// given feature. Reads tier_features (the same surface admin edits) so the
+// upgrade suggestion is always consistent with what they actually configured.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function _findUpgradeTiers(client, featureKey, currentTierKey, currentLimit) {
+  const { rows } = await client.query(
+    `SELECT t.tier_key
+       FROM subscription_tiers t
+       JOIN tier_features tf ON tf.tier_id = t.id
+       JOIN features f       ON f.id       = tf.feature_id
+      WHERE t.active        = true
+        AND t.tier_key     <> $1
+        AND f.feature_key   = $2
+        AND tf.included     = true
+        AND (tf.quota_value = -1 OR tf.quota_value > $3)
+      ORDER BY t.sort_order`,
+    [currentTierKey, featureKey, currentLimit]
+  );
+  return rows.map(r => r.tier_key);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Middleware factory
@@ -201,25 +232,18 @@ function checkQuota(action) {
       return next(new AppError('FORBIDDEN', 'No brand profile for this user', 403));
     }
 
-    const sub   = await _ensureSubscription(db, brandId);
-    const limit = sub[cfg.limitField];
+    const sub = await _ensureSubscription(db, brandId);
+    // Live entitlement lookup — picks up admin's tier_features edits.
+    const limit = await entitlementsService.quotaFor(db, brandId, cfg.feature_key);
 
-    // -1 sentinel = unlimited (enterprise tier or future custom tiers).
+    // -1 sentinel = unlimited (enterprise + future custom tiers).
+    // null = no entitlement row AND no catalog default → defensive pass.
     if (limit === -1 || limit == null) return next();
 
     const used = await cfg.counter(db, sub, brandId, req);
 
     if (used >= limit) {
-      // Find tiers that would unblock this action.
-      const { rows: upgrades } = await db.query(
-        `SELECT tier_key
-           FROM subscription_tiers
-          WHERE active = true
-            AND tier_key <> $2
-            AND (${cfg.limitField} = -1 OR ${cfg.limitField} > $1)
-          ORDER BY sort_order`,
-        [limit, sub.tier_key]
-      );
+      const upgrade_to = await _findUpgradeTiers(db, cfg.feature_key, sub.tier_key, limit);
       throw new AppError(
         'QUOTA_EXCEEDED',
         `Limit reached on the ${sub.tier_key} plan: ${cfg.label} (${used} / ${limit}). Upgrade to continue.`,
@@ -227,10 +251,11 @@ function checkQuota(action) {
         action,
         {
           action,
+          feature_key:  cfg.feature_key,
           used,
           limit,
           current_tier: sub.tier_key,
-          upgrade_to:   upgrades.map(r => r.tier_key),
+          upgrade_to,
         }
       );
     }
