@@ -21,11 +21,19 @@
       "first_run_clean": false,
       "note": "1st run had 3 transient backend-direct API test timeouts (environmental cold-backend pattern, same as Flow 15 1st run). 2nd run clean 75/75 GREEN in 44s. No Flow 17 code regression."
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"pls push\" (production-impacting deploy approved · BRAND-WEB FINALE · same pattern as Flows 8-16)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "1cb87a9",
+        "pushed_at": "2026-05-25",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web · campaign escrow page (FINALE — brand-web bucket complete 17/17)"
+      }
+    }
   }
 }
