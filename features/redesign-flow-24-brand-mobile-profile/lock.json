@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-24-brand-mobile-profile",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"ok pls go\"",
   "approved_at": "2026-05-25",
@@ -10,14 +10,56 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-25 chat — Flow 24 mockup locked",
   "mockup_locked_at": "2026-05-25",
-  "notes": "Seventh flow. Form-heavy single screen: BrandProfileScreen. Consume brandPalette + StatusPill + fonts. Behavior preserved 1:1 (diff-based save, listing_data flatten, branch list CRUD, AuthContext logout).",
+  "notes": "Seventh flow. Form-heavy single screen: BrandProfileScreen. Consume brandPalette + StatusPill + fonts. Behavior preserved 1:1 (diff-based save, listing_data flatten, branch list CRUD, AuthContext logout). RELEASED 2026-05-25 with full QA GREEN on pre-warmed-backend first run.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "run_at": "2026-05-25",
+      "report_path": "qa/reports/2026-05-25T15-15-11-125Z/QA-REPORT.md",
+      "pw_tests": 76,
+      "passed": 76,
+      "failed": 0,
+      "gate": 0,
+      "state": "GREEN",
+      "note": "Clear-testing posture rewarded — pre-warmed backend via manifest probe (2s, hot) + killed stale node procs → 76 passed gate 0 STATE=GREEN on FIRST run. No MSG91 throttle, no cold-backend hydration timeout. The subscription-billing-nav tests that flaked in Flows 22/23 all passed cleanly (Window A's A11/A12.1/A12.1.5 work fully stabilized)."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"ok pls go\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 24"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — mobile-brand bucket ships with manual founder smoke-test; Maestro setup deferred to its own contract'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "814fdc0", "note": "auto-redeploy on push; no-op for Flow 24", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "814fdc0", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "814fdc0", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 74,
+        "previous_version": 73,
+        "bundle_hash": "sha256:b782205d56deed6838da7688174edd5093b8da92078d78c7f343b188de4572a7",
+        "published_at": "2026-05-25T15:19:14.578Z",
+        "bundle_size_kb": 2285,
+        "trigger": "pnpm publish-ota:all -m 'Flow 24 — brand-mobile Profile (brandPalette + StatusPill)'",
+        "scope": "brand audience manifest (shared bundle)"
+      },
+      "ota_influencer": {
+        "version": 63,
+        "previous_version": 62,
+        "bundle_hash": "sha256:b782205d56deed6838da7688174edd5093b8da92078d78c7f343b188de4572a7",
+        "published_at": "2026-05-25T15:19:20.827Z",
+        "bundle_size_kb": 2285,
+        "trigger": "pnpm publish-ota:all -m 'Flow 24 — brand-mobile Profile (brandPalette + StatusPill)'",
+        "scope": "influencer audience manifest (shared bundle); no influencer-screen changes"
+      },
+      "ota_follower": {
+        "version": 37,
+        "previous_version": 36,
+        "bundle_hash": "sha256:b782205d56deed6838da7688174edd5093b8da92078d78c7f343b188de4572a7",
+        "published_at": "2026-05-25T15:19:27.276Z",
+        "bundle_size_kb": 2285,
+        "trigger": "pnpm publish-ota:all -m 'Flow 24 — brand-mobile Profile (brandPalette + StatusPill)'",
+        "scope": "follower audience manifest (shared bundle); no follower-screen changes"
+      }
+    }
   }
 }
