@@ -21,11 +21,19 @@
       "first_run_clean": true,
       "note": "First-run clean after applying Flow 12 lesson — killed stale node processes before run. No /settings/profile spec exists; regression gate covers no-existing-route-broke (subscription-billing-nav.spec.ts confirms Settings hub renders correctly)."
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"push\" (production-impacting deploy approved · same pattern as Flows 8 / 9 / 10 / 11 / 12 / 13)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "f041eab",
+        "pushed_at": "2026-05-25",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web · settings/profile only (settings layout + subscription + billing preserved)"
+      }
+    }
   }
 }
