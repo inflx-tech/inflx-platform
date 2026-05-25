@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 25 · brand-mobile MediaGallery — wave2 mockup</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1280px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1050px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:28px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:14px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:744px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* Topbar */
+.topbar{background:var(--ink);color:var(--white);padding:14px 18px;flex-shrink:0}
+.topbar h1{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--white);text-align:center}
+.topbar .rule{width:30px;height:3px;background:var(--yellow);border-radius:2px;margin:6px auto 0}
+
+/* Tabs */
+.tabs{display:flex;background:var(--white);border-bottom:1px solid var(--border);padding:0 14px;gap:18px}
+.tab{padding:11px 4px;border-bottom:2px solid transparent;font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--muted-2);font-weight:600}
+.tab.act{border-bottom-color:var(--yellow);color:var(--ink);font-weight:700}
+
+/* Body */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:14px}
+
+/* Usage bar */
+.usage{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+.usage-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.usage-l{font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;color:var(--ink)}
+.usage-r{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2)}
+.usage-track{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.usage-fill{height:100%;background:var(--ink);border-radius:3px}
+.usage-fill.warn{background:var(--yellow-hover)}
+.usage-fill.danger{background:var(--danger)}
+.usage-warn{font-family:'Plus Jakarta Sans';font-size:9.5px;color:var(--danger-text);margin-top:6px}
+
+/* Filter chips */
+.filter-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+.filter-chip{padding:6px 12px;border-radius:99px;background:var(--bg2);font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;color:var(--muted);white-space:nowrap}
+.filter-chip.act{background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono'}
+
+/* Upload button */
+.upload-btn{background:var(--ink);color:var(--yellow);padding:13px;border-radius:10px;font-family:'Outfit';font-size:13.5px;font-weight:800;text-align:center;margin-bottom:6px}
+.upload-hint{font-family:'Plus Jakarta Sans';font-size:9.5px;color:var(--muted-2);text-align:center;margin-bottom:14px;line-height:1.4}
+
+/* Asset grid */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.thumb{aspect-ratio:1;background:var(--bg2);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border-soft);font-size:28px;color:var(--muted-2);font-family:'JetBrains Mono';font-weight:800}
+.thumb.real{background-size:cover;background-position:center}
+.card-body{padding:9px 10px}
+.card-ttl{font-family:'Outfit';font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-meta{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px}
+.card-actions{display:flex;justify-content:space-between;margin-top:7px;padding-top:6px;border-top:1px solid var(--border-soft)}
+.act-link{font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700}
+.act-link.open{color:var(--yellow-text)}
+.act-link.delete{color:var(--danger-text)}
+
+/* Empty state — using dashed-yellow pattern */
+.empty{margin:30px 0;background:var(--white);border:1.5px dashed var(--yellow-pale);border-radius:18px;padding:36px 22px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty .e-ic{width:52px;height:52px;border-radius:13px;background:var(--yellow-pale);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-weight:800;color:var(--yellow-text);font-size:11px;letter-spacing:.4px}
+.empty .e-ttl{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.empty .e-sub{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);max-width:240px;line-height:1.5}
+
+/* Link card */
+.link-card{display:flex;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;gap:12px;margin-bottom:8px;align-items:flex-start}
+.link-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+.link-mid{flex:1;min-width:0}
+.link-title{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-url{font-family:'JetBrains Mono';font-size:10px;color:var(--info);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-desc{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+.link-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+
+/* Modal */
+.modal-thumb{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;width:300px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.modal-thumb-head{background:var(--ink);color:var(--white);padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+.modal-thumb-head h4{font-family:'Outfit';font-size:13px;font-weight:800}
+.modal-thumb-head .x{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:rgba(255,255,255,.55)}
+.modal-thumb-body{padding:14px}
+.f-lbl{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:8px;margin-bottom:4px}
+.f-inp{background:var(--bg2);border-radius:10px;padding:9px 12px;font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted-3)}
+.f-inp.ta{height:54px}
+.btn-row{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;padding:11px;border-radius:10px;text-align:center;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:800}
+.btn.alt{background:var(--bg2);color:var(--muted)}
+.btn.primary{background:var(--yellow);color:var(--ink);font-family:'Outfit'}
+
+/* Contract card */
+.con-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px}
+.con-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.con-l{flex:1;min-width:0}
+.con-camp{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.con-inf{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.con-foot{display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border-soft)}
+.con-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--muted)}
+.con-amt{font-family:'JetBrains Mono';font-size:12.5px;font-weight:800;color:var(--ink)}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.pill.draft{background:var(--bg2);color:var(--muted-2)}
+.pill.pending{background:var(--yellow-pale);color:var(--yellow-text)}
+.pill.active{background:var(--success-pale);color:var(--success-text)}
+.pill.cancel{background:var(--danger-pale);color:var(--danger-text)}
+
+/* Search wrap */
+.search-wrap{margin-bottom:10px}
+.search-input{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--muted-3)}
+
+/* Side panel */
+.side{display:flex;flex-direction:column;gap:14px;width:320px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px 18px}
+.panel h3{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+.leg-row{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:5px 0;border-top:1px solid var(--border-soft)}
+.leg-row:first-of-type{border-top:0}
+.leg-name{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--ink);font-weight:600}
+.leg-tok{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);font-weight:700}
+.leg-new{display:inline-block;background:var(--yellow);color:var(--ink);font-family:'JetBrains Mono';font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;margin-left:4px;letter-spacing:.3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">
+    <h1>Flow 25 · brand-mobile MediaGallery (3 tabs + R2 upload SDK) · wave2</h1>
+    <div class="sub">
+      <b>8th flow</b> of the mobile-brand bucket (after Flow 24 GREEN · HEAD <b>05e5d64</b>). <b>Single screen · 654 LOC · 3 tabs</b>:
+      Assets (R2 image upload), Links (URL CRUD modal), Contracts (PDF nav). Consume Flow 21 components. <b>Extends StatusPill</b> with 3 contract statuses
+      (draft, pending_influencer, pending_brand). SDK boundary (launchImageLibrary + uploadFile to R2) preserved verbatim. Behavior preserved 1:1.
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Phone: Assets tab populated -->
+    <div class="col">
+      <div class="col-label">Phone <b>MediaGallery · Assets tab</b> · populated · 75% storage</div>
+      <div class="phone"><div class="phone-inner">
+        <div class="notch"></div>
+        <div class="status-bar"><span>9:41</span><span>87</span></div>
+        <div class="topbar">
+          <h1>Media Gallery</h1>
+          <div class="rule"></div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab act">Assets</div>
+          <div class="tab">Links</div>
+          <div class="tab">Contracts</div>
+        </div>
+
+        <div class="body">
+          <div class="usage">
+            <div class="usage-row">
+              <div class="usage-l">187.5 MB of 250 MB used</div>
+              <div class="usage-r">62 MB free</div>
+            </div>
+            <div class="usage-track"><div class="usage-fill warn" style="width:75%"></div></div>
+          </div>
+
+          <div class="filter-row">
+            <div class="filter-chip act">All</div>
+            <div class="filter-chip">Logo</div>
+            <div class="filter-chip">Brand Kit</div>
+            <div class="filter-chip">Product</div>
+            <div class="filter-chip">Document</div>
+            <div class="filter-chip">Other</div>
+          </div>
+
+          <div class="upload-btn">+ Upload Photo</div>
+          <div class="upload-hint">Photos only · max 25 MB. For videos, add a Reference Link. For PDFs and ZIPs, use the web dashboard.</div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="thumb" style="font-size:34px">[PHOTO]</div>
+              <div class="card-body">
+                <div class="card-ttl">Diwali Hero Banner</div>
+                <div class="card-meta">2.4 MB</div>
+                <div class="card-actions">
+                  <div class="act-link open">Open</div>
+                  <div class="act-link delete">Delete</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="thumb" style="font-size:34px">[PHOTO]</div>
+              <div class="card-body">
+                <div class="card-ttl">Family Combo Pack</div>
+                <div class="card-meta">1.8 MB</div>
+                <div class="card-actions">
+                  <div class="act-link open">Open</div>
+                  <div class="act-link delete">Delete</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="thumb" style="font-size:34px">[PHOTO]</div>
+              <div class="card-body">
+                <div class="card-ttl">Brand Logo (Black)</div>
+                <div class="card-meta">486 KB</div>
+                <div class="card-actions">
+                  <div class="act-link open">Open</div>
+                  <div class="act-link delete">Delete</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="thumb" style="font-size:34px">[PHOTO]</div>
+              <div class="card-body">
+                <div class="card-ttl">South Plate Hero</div>
+                <div class="card-meta">3.1 MB</div>
+                <div class="card-actions">
+                  <div class="act-link open">Open</div>
+                  <div class="act-link delete">Delete</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="home-bar"><span class="hb"></span></div>
+      </div></div>
+    </div>
+
+    <!-- Phone: Contracts tab populated -->
+    <div class="col">
+      <div class="col-label">Phone <b>MediaGallery · Contracts tab</b> · 4 contracts</div>
+      <div class="phone"><div class="phone-inner">
+        <div class="notch"></div>
+        <div class="status-bar"><span>9:41</span><span>87</span></div>
+        <div class="topbar">
+          <h1>Media Gallery</h1>
+          <div class="rule"></div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab">Assets</div>
+          <div class="tab">Links</div>
+          <div class="tab act">Contracts</div>
+        </div>
+
+        <div class="body">
+          <div class="search-wrap">
+            <div class="search-input">Search campaigns or influencers…</div>
+          </div>
+
+          <div class="con-card">
+            <div class="con-head">
+              <div class="con-l">
+                <div class="con-camp">Diwali Combo Push</div>
+                <div class="con-inf">Sneha Nair · @sneha.bites</div>
+              </div>
+              <span class="pill active">ACTIVE</span>
+            </div>
+            <div class="con-foot">
+              <span class="con-meta">22 May 2026 · engagement</span>
+              <span class="con-amt">₹5,000</span>
+            </div>
+          </div>
+
+          <div class="con-card">
+            <div class="con-head">
+              <div class="con-l">
+                <div class="con-camp">Diwali Combo Push</div>
+                <div class="con-inf">Aakash Krishna · @aakash.eats</div>
+              </div>
+              <span class="pill pending">YOUR TURN</span>
+            </div>
+            <div class="con-foot">
+              <span class="con-meta">24 May 2026 · engagement</span>
+              <span class="con-amt">₹4,500</span>
+            </div>
+          </div>
+
+          <div class="con-card">
+            <div class="con-head">
+              <div class="con-l">
+                <div class="con-camp">Brunch Series</div>
+                <div class="con-inf">Tara M. · @taraeats</div>
+              </div>
+              <span class="pill pending">AWAITING INFLUENCER</span>
+            </div>
+            <div class="con-foot">
+              <span class="con-meta">20 May 2026 · hybrid</span>
+              <span class="con-amt">₹5,500</span>
+            </div>
+          </div>
+
+          <div class="con-card">
+            <div class="con-head">
+              <div class="con-l">
+                <div class="con-camp">Vegan Bowl Launch</div>
+                <div class="con-inf">Riya Sharma · @riya.foodlog</div>
+              </div>
+              <span class="pill draft">DRAFT</span>
+            </div>
+            <div class="con-foot">
+              <span class="con-meta">15 May 2026 · conversion</span>
+              <span class="con-amt">₹3,000</span>
+            </div>
+          </div>
+
+          <div class="con-card">
+            <div class="con-head">
+              <div class="con-l">
+                <div class="con-camp">Old Promo (Apr)</div>
+                <div class="con-inf">Karan Doe · @karan.bites</div>
+              </div>
+              <span class="pill cancel">CANCELLED</span>
+            </div>
+            <div class="con-foot">
+              <span class="con-meta">14 Apr 2026 · engagement</span>
+              <span class="con-amt">₹2,500</span>
+            </div>
+          </div>
+        </div>
+        <div class="home-bar"><span class="hb"></span></div>
+      </div></div>
+    </div>
+
+    <!-- Side: Links tab card + LinkEditor modal + legend -->
+    <div class="side">
+      <div class="panel">
+        <h3>Links tab</h3>
+        <div class="ph">URL CRUD card + emoji icon</div>
+        <div class="link-card">
+          <div class="link-icon">▶️</div>
+          <div class="link-mid">
+            <div class="link-title">Diwali launch hero reel</div>
+            <div class="link-url">https://youtu.be/abc123_diwali</div>
+            <div class="link-desc">Final cut for influencer reference.</div>
+          </div>
+          <div class="link-actions">
+            <span class="act-link open">Edit</span>
+            <span class="act-link delete">Delete</span>
+          </div>
+        </div>
+        <div class="link-card">
+          <div class="link-icon">🎨</div>
+          <div class="link-mid">
+            <div class="link-title">Brand kit · Figma</div>
+            <div class="link-url">figma.com/file/SukhSagarBrandKit</div>
+          </div>
+          <div class="link-actions">
+            <span class="act-link open">Edit</span>
+            <span class="act-link delete">Delete</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-thumb">
+        <div class="modal-thumb-head">
+          <h4>Add Reference Link</h4>
+          <span class="x">×</span>
+        </div>
+        <div class="modal-thumb-body">
+          <div class="f-lbl">Title</div>
+          <div class="f-inp">Diwali launch hero reel</div>
+          <div class="f-lbl">URL</div>
+          <div class="f-inp">https://youtu.be/abc123_diwali</div>
+          <div class="f-lbl">Description (optional)</div>
+          <div class="f-inp ta">Final cut for influencer reference.</div>
+          <div class="btn-row">
+            <div class="btn alt">Cancel</div>
+            <div class="btn primary">Save</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>StatusPill +3 (contract)</h3>
+        <div class="ph">Flow 21:19 · 22:+7 · 23:+5 · 25:+3 = 34 total</div>
+        <div class="leg-row">
+          <span class="pill draft">DRAFT</span>
+          <span class="leg-name">draft <span class="leg-new">NEW</span></span>
+          <span class="leg-tok">bg2</span>
+        </div>
+        <div class="leg-row">
+          <span class="pill pending">YOUR TURN</span>
+          <span class="leg-name">pending_brand <span class="leg-new">NEW</span></span>
+          <span class="leg-tok">yellowPale</span>
+        </div>
+        <div class="leg-row">
+          <span class="pill pending">AWAITING INFLUENCER</span>
+          <span class="leg-name">pending_influencer <span class="leg-new">NEW</span></span>
+          <span class="leg-tok">yellowPale</span>
+        </div>
+        <div class="leg-row">
+          <span class="pill active">ACTIVE</span>
+          <span class="leg-name">active (existing)</span>
+          <span class="leg-tok">successPale</span>
+        </div>
+        <div class="leg-row">
+          <span class="pill cancel">CANCELLED</span>
+          <span class="leg-name">cancelled (existing)</span>
+          <span class="leg-tok">dangerPale</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>What's preserved</h3>
+        <div class="ph">behavior 1:1 · SDK boundary intact</div>
+        <ul>
+          <li><b>SDK preserved:</b> <code>launchImageLibrary({mediaType:'photo',selectionLimit:1,includeBase64:false})</code> → <code>getMediaUploadUrl</code> → <code>uploadFile</code> to R2 signed URL → <code>createMediaAsset</code>. Try/catch preserved. QUOTA_EXCEEDED error code → "Storage full" Alert.</li>
+          <li><b>Usage bar:</b> threshold colors ≥90% danger / ≥75% yellow-hover / else ink. Warning line at 90%.</li>
+          <li><b>Tag filter:</b> 6 chips (All/Logo/Brand Kit/Product/Document/Other) drive listMediaAssets(tagFilter).</li>
+          <li><b>Empty states</b> via <code>&lt;EmptyState&gt;</code> with mono icon placeholders [PHOTOS]/[LINKS]/[DOCS].</li>
+          <li><b>Link CRUD:</b> bottom-sheet modal with KeyboardAvoidingView + title/url required validation + create OR update via id presence.</li>
+          <li><b>Contract nav:</b> <code>c.pdf_url</code> truthy → navigate('ContractPdf', {contractId, role:'brand'}); else "No PDF" Alert. Search filters by campaign_name + influencer_name + influencer_handle.</li>
+          <li><b>NO tokens.js change.</b> NO NATIVE_RUNTIME bump (no native modules added).</li>
+          <li><b>Deploy:</b> OTA × 3 via <code>publish-ota:all</code>. Maestro Rule 5: GOVERNANCE_OVERRIDE.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

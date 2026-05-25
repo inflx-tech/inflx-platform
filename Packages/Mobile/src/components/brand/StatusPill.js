@@ -61,6 +61,11 @@ export const STATUS_MAP_DEFAULT = {
   awaiting_influencer: { bg: P.infoPale,   fg: P.info,       label: 'WAITING' },    // Flow 23
   agreed:              { bg: P.successPale,fg: P.successText, label: 'AGREED' },    // Flow 23
   open:                { bg: P.yellowPale, fg: P.yellowText, label: 'OPEN' },       // Flow 23
+
+  // Contract lifecycle (Flow 25)
+  draft:              { bg: P.bg2,        fg: P.muted2,     label: 'DRAFT' },                // Flow 25
+  pending_influencer: { bg: P.yellowPale, fg: P.yellowText, label: 'AWAITING INFLUENCER' }, // Flow 25
+  pending_brand:      { bg: P.yellowPale, fg: P.yellowText, label: 'YOUR TURN' },           // Flow 25
 };
 
 const FALLBACK = { bg: P.bg2, fg: P.muted2 };

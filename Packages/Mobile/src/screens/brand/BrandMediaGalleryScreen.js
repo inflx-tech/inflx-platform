@@ -5,8 +5,19 @@ import {
   Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { colors, spacing, radius, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi, uploadFile } from '../../services/api';
+import ScreenHeader from '../../components/brand/ScreenHeader';
+import StatusPill from '../../components/brand/StatusPill';
+import EmptyState from '../../components/brand/EmptyState';
+
+/**
+ * BrandMediaGalleryScreen — 3-tab gallery (Assets / Links / Contracts).
+ *
+ * Flow 25 (2026-05-25): navy + orange → brandPalette + ScreenHeader +
+ * StatusPill + EmptyState + fonts. SDK boundary preserved verbatim
+ * (launchImageLibrary + uploadFile to R2 signed URL + 3-step upload flow).
+ */
 
 const TABS = [
   { key: 'assets',    label: 'Assets' },
@@ -23,20 +34,12 @@ const TAG_OPTIONS = [
   { value: 'other',        label: 'Other' },
 ];
 
-const STATUS_COLORS = {
-  draft:              { bg: '#EEF1FB', fg: '#4A5278' },
-  pending_influencer: { bg: '#FFF4D6', fg: '#B8860B' },
-  pending_brand:      { bg: '#DBE5FF', fg: '#1B2D5E' },
-  active:             { bg: '#E0FAF5', fg: '#007A63' },
-  cancelled:          { bg: '#FDEEE9', fg: '#E8401A' },
-};
-
 function iconFor(type) {
-  if (!type) return '📄';
-  if (type.startsWith('image/')) return '🖼️';
-  if (type === 'application/pdf') return '📄';
-  if (type.includes('zip')) return '📦';
-  return '📄';
+  if (!type) return '[DOC]';
+  if (type.startsWith('image/')) return '[PHOTO]';
+  if (type === 'application/pdf') return '[PDF]';
+  if (type.includes('zip')) return '[ZIP]';
+  return '[DOC]';
 }
 function iconForUrl(url) {
   const u = (url || '').toLowerCase();
@@ -64,22 +67,18 @@ export default function BrandMediaGalleryScreen({ navigation }) {
   const [tab, setTab] = useState('assets');
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Media Gallery</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <View style={s.container}>
+      <ScreenHeader title="Media Gallery" back onBack={() => navigation.goBack()} />
 
-      <View style={styles.tabs}>
+      <View style={s.tabs}>
         {TABS.map(t => (
           <TouchableOpacity
             key={t.key}
-            style={[styles.tab, tab === t.key && styles.tabActive]}
-            onPress={() => setTab(t.key)}>
-            <Text style={[styles.tabLabel, tab === t.key && styles.tabLabelActive]}>{t.label}</Text>
+            style={[s.tab, tab === t.key && s.tabActive]}
+            onPress={() => setTab(t.key)}
+            activeOpacity={0.7}
+          >
+            <Text style={[s.tabLabel, tab === t.key && s.tabLabelActive]}>{t.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -91,35 +90,27 @@ export default function BrandMediaGalleryScreen({ navigation }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Usage bar
-// ─────────────────────────────────────────────────────────────────────────────
-
 function UsageBar({ usage }) {
   if (!usage) return null;
   const pct = Math.min(100, usage.used_pct || 0);
   const usedMb   = (usage.used_bytes / (1024 * 1024)).toFixed(1);
   const quotaMb  = Math.floor(usage.quota_bytes / (1024 * 1024));
-  const color = pct >= 90 ? colors.red : pct >= 75 ? colors.orange : colors.navy;
+  const color = pct >= 90 ? P.danger : pct >= 75 ? P.yellowHover : P.ink;
   return (
-    <View style={styles.usageWrap}>
-      <View style={styles.usageRow}>
-        <Text style={styles.usageLabel}>{usedMb} MB of {quotaMb} MB used</Text>
-        <Text style={styles.usageRemaining}>{(usage.remaining_bytes / (1024 * 1024)).toFixed(0)} MB free</Text>
+    <View style={s.usageWrap}>
+      <View style={s.usageRow}>
+        <Text style={s.usageLabel}>{usedMb} MB of {quotaMb} MB used</Text>
+        <Text style={s.usageRemaining}>{(usage.remaining_bytes / (1024 * 1024)).toFixed(0)} MB free</Text>
       </View>
-      <View style={styles.usageTrack}>
-        <View style={[styles.usageFill, { width: `${pct}%`, backgroundColor: color }]} />
+      <View style={s.usageTrack}>
+        <View style={[s.usageFill, { width: `${pct}%`, backgroundColor: color }]} />
       </View>
       {pct >= 90 && (
-        <Text style={styles.usageWarning}>Near the limit. Delete unused assets to free space.</Text>
+        <Text style={s.usageWarning}>Near the limit. Delete unused assets to free space.</Text>
       )}
     </View>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Brand Assets tab
-// ─────────────────────────────────────────────────────────────────────────────
 
 function AssetsTab() {
   const [assets, setAssets]   = useState([]);
@@ -162,8 +153,7 @@ function AssetsTab() {
     setUploading(true);
     try {
       const guessedType = (file.type && /^[a-z]+\/[a-z0-9.+-]+$/i.test(file.type))
-        ? file.type
-        : 'image/jpeg';
+        ? file.type : 'image/jpeg';
       const fileType = guessedType;
       const fileName = file.fileName || `asset_${Date.now()}.${fileType.split('/')[1] || 'bin'}`;
       const fileSize = Number(file.fileSize) || 0;
@@ -231,7 +221,7 @@ function AssetsTab() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
 
   return (
@@ -239,77 +229,79 @@ function AssetsTab() {
       data={assets}
       keyExtractor={a => a.id}
       numColumns={2}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
       ListHeaderComponent={
         <View>
           <UsageBar usage={usage} />
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterRow}>
             {TAG_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt.value}
-                style={[styles.filterChip, tagFilter === opt.value && styles.filterChipActive]}
-                onPress={() => setTagFilter(opt.value)}>
-                <Text style={[styles.filterChipLabel, tagFilter === opt.value && styles.filterChipLabelActive]}>{opt.label}</Text>
+                style={[s.filterChip, tagFilter === opt.value && s.filterChipActive]}
+                onPress={() => setTagFilter(opt.value)}
+                activeOpacity={0.7}
+              >
+                <Text style={[s.filterChipLabel, tagFilter === opt.value && s.filterChipLabelActive]}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
           <TouchableOpacity
-            style={[styles.uploadBtn, uploading && { opacity: 0.6 }]}
+            style={[s.uploadBtn, uploading && { opacity: 0.6 }]}
             onPress={handleUpload}
-            disabled={uploading}>
-            <Text style={styles.uploadBtnText}>{uploading ? 'Uploading…' : '+ Upload Photo'}</Text>
+            disabled={uploading}
+            activeOpacity={0.85}
+          >
+            <Text style={s.uploadBtnText}>{uploading ? 'Uploading…' : '+ Upload Photo'}</Text>
           </TouchableOpacity>
-          <Text style={styles.uploadHint}>Photos only · max 25 MB. For videos, add a Reference Link. For PDFs and ZIPs, use the web dashboard.</Text>
+          <Text style={s.uploadHint}>Photos only · max 25 MB. For videos, add a Reference Link. For PDFs and ZIPs, use the web dashboard.</Text>
         </View>
       }
       renderItem={({ item: a }) => (
-        <View style={styles.card}>
+        <View style={s.card}>
           <TouchableOpacity onPress={() => openAsset(a)} activeOpacity={0.85}>
-            <View style={styles.thumb}>
+            <View style={s.thumb}>
               {(a.file_type || '').startsWith('image/') && a.download_url ? (
-                <Image source={{ uri: a.download_url }} style={styles.thumbImg} />
+                <Image source={{ uri: a.download_url }} style={s.thumbImg} />
               ) : (
-                <Text style={styles.thumbIcon}>{iconFor(a.file_type)}</Text>
+                <Text style={s.thumbIcon}>{iconFor(a.file_type)}</Text>
               )}
             </View>
           </TouchableOpacity>
-          <View style={styles.cardBody}>
-            <Text numberOfLines={1} style={styles.cardTitle}>{a.title}</Text>
-            <Text style={styles.cardMeta}>{sizeLabel(a.file_size_bytes)}</Text>
-            <View style={styles.cardActions}>
-              <TouchableOpacity onPress={() => openAsset(a)} style={styles.actionBtn}>
-                <Text style={styles.actionTxt}>Open</Text>
+          <View style={s.cardBody}>
+            <Text numberOfLines={1} style={s.cardTitle}>{a.title}</Text>
+            <Text style={s.cardMeta}>{sizeLabel(a.file_size_bytes)}</Text>
+            <View style={s.cardActions}>
+              <TouchableOpacity onPress={() => openAsset(a)} style={s.actionBtn}>
+                <Text style={s.actionTxtOpen}>Open</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => confirmDelete(a)} style={styles.actionBtn}>
-                <Text style={[styles.actionTxt, { color: colors.red }]}>Delete</Text>
+              <TouchableOpacity onPress={() => confirmDelete(a)} style={s.actionBtn}>
+                <Text style={s.actionTxtDelete}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       )}
       ListEmptyComponent={
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🖼️</Text>
-          <Text style={styles.emptyTitle}>No assets yet</Text>
-          <Text style={styles.emptySub}>Upload logos and product shots to reuse in campaigns.</Text>
+        <View style={{ marginTop: 24 }}>
+          <EmptyState
+            icon="[PHOTOS]"
+            title="No assets yet"
+            sub="Upload logos and product shots to reuse in campaigns."
+          />
         </View>
       }
-      contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl }}
+      contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}
     />
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Reference Links tab
-// ─────────────────────────────────────────────────────────────────────────────
 
 function LinksTab() {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editing, setEditing] = useState(null); // null | {} | {id,...}
+  const [editing, setEditing] = useState(null);
 
   const load = useCallback(async () => {
     const res = await brandApi.listReferenceLinks();
@@ -322,8 +314,7 @@ function LinksTab() {
 
   function confirmDelete(link) {
     Alert.alert(
-      'Delete link?',
-      link.title,
+      'Delete link?', link.title,
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: async () => {
@@ -336,7 +327,7 @@ function LinksTab() {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
 
   return (
@@ -344,44 +335,45 @@ function LinksTab() {
       <FlatList
         data={links}
         keyExtractor={l => l.id}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
         ListHeaderComponent={
           <View>
-            <Text style={styles.sectionHint}>
-              URLs to YouTube, Drive, Figma, Notion — anything you'd normally share by link.
-              {' '}Zero storage cost.
+            <Text style={s.sectionHint}>
+              URLs to YouTube, Drive, Figma, Notion — anything you'd normally share by link. Zero storage cost.
             </Text>
-            <TouchableOpacity style={styles.uploadBtn} onPress={() => setEditing({})}>
-              <Text style={styles.uploadBtnText}>+ Add Link</Text>
+            <TouchableOpacity style={s.uploadBtn} onPress={() => setEditing({})} activeOpacity={0.85}>
+              <Text style={s.uploadBtnText}>+ Add Link</Text>
             </TouchableOpacity>
           </View>
         }
         renderItem={({ item: l }) => (
-          <TouchableOpacity style={styles.linkCard} onPress={() => Linking.openURL(l.url)}>
-            <Text style={styles.linkIcon}>{iconForUrl(l.url)}</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.linkTitle} numberOfLines={1}>{l.title}</Text>
-              <Text style={styles.linkUrl} numberOfLines={1}>{l.url}</Text>
-              {l.description ? <Text style={styles.linkDesc} numberOfLines={2}>{l.description}</Text> : null}
+          <TouchableOpacity style={s.linkCard} onPress={() => Linking.openURL(l.url)} activeOpacity={0.85}>
+            <Text style={s.linkIconText}>{iconForUrl(l.url)}</Text>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={s.linkTitle} numberOfLines={1}>{l.title}</Text>
+              <Text style={s.linkUrl} numberOfLines={1}>{l.url}</Text>
+              {l.description ? <Text style={s.linkDesc} numberOfLines={2}>{l.description}</Text> : null}
             </View>
-            <View style={styles.linkActions}>
-              <TouchableOpacity onPress={() => setEditing(l)} style={styles.actionBtn}>
-                <Text style={styles.actionTxt}>Edit</Text>
+            <View style={s.linkActions}>
+              <TouchableOpacity onPress={() => setEditing(l)} style={s.actionBtn}>
+                <Text style={s.actionTxtOpen}>Edit</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => confirmDelete(l)} style={styles.actionBtn}>
-                <Text style={[styles.actionTxt, { color: colors.red }]}>Delete</Text>
+              <TouchableOpacity onPress={() => confirmDelete(l)} style={s.actionBtn}>
+                <Text style={s.actionTxtDelete}>Delete</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>🔗</Text>
-            <Text style={styles.emptyTitle}>No links yet</Text>
-            <Text style={styles.emptySub}>Tap "Add Link" to save a YouTube reel, Drive folder, or any other URL.</Text>
+          <View style={{ marginTop: 24 }}>
+            <EmptyState
+              icon="[LINKS]"
+              title="No links yet"
+              sub='Tap "Add Link" to save a YouTube reel, Drive folder, or any other URL.'
+            />
           </View>
         }
-        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl }}
+        contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}
       />
 
       {editing && (
@@ -402,10 +394,7 @@ function LinkEditorModal({ link, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
 
   async function save() {
-    if (!title.trim() || !url.trim()) {
-      Alert.alert('Missing info', 'Title and URL are required.');
-      return;
-    }
+    if (!title.trim() || !url.trim()) { Alert.alert('Missing info', 'Title and URL are required.'); return; }
     setSaving(true);
     const payload = { title: title.trim(), url: url.trim(), description: description.trim() || null };
     const res = link?.id
@@ -418,54 +407,49 @@ function LinkEditorModal({ link, onClose, onSaved }) {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.modalWrap}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.modalBody}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>{link?.id ? 'Edit Link' : 'Add Reference Link'}</Text>
-            <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>×</Text></TouchableOpacity>
+      <KeyboardAvoidingView style={s.modalWrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={s.modalBody}>
+          <View style={s.modalHeader}>
+            <Text style={s.modalTitle}>{link?.id ? 'Edit Link' : 'Add Reference Link'}</Text>
+            <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>×</Text></TouchableOpacity>
           </View>
 
-          <Text style={styles.formLabel}>Title</Text>
+          <Text style={s.formLabel}>Title</Text>
           <TextInput
-            style={styles.formInput}
+            style={s.formInput}
             placeholder="e.g. Product launch hero video"
-            placeholderTextColor={colors.t3}
-            value={title}
-            onChangeText={setTitle}
+            placeholderTextColor={P.muted3}
+            value={title} onChangeText={setTitle}
           />
 
-          <Text style={styles.formLabel}>URL</Text>
+          <Text style={s.formLabel}>URL</Text>
           <TextInput
-            style={styles.formInput}
+            style={[s.formInput, { fontFamily: fonts.monoMedium, fontSize: 12 }]}
             placeholder="https://…"
-            placeholderTextColor={colors.t3}
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={url}
-            onChangeText={setUrl}
+            placeholderTextColor={P.muted3}
+            autoCapitalize="none" autoCorrect={false}
+            value={url} onChangeText={setUrl}
           />
 
-          <Text style={styles.formLabel}>Description (optional)</Text>
+          <Text style={s.formLabel}>Description (optional)</Text>
           <TextInput
-            style={[styles.formInput, { height: 80, textAlignVertical: 'top' }]}
+            style={[s.formInput, { height: 80, textAlignVertical: 'top' }]}
             multiline
             placeholder="What's this link for?"
-            placeholderTextColor={colors.t3}
-            value={description}
-            onChangeText={setDescription}
+            placeholderTextColor={P.muted3}
+            value={description} onChangeText={setDescription}
           />
 
-          <View style={styles.modalFooter}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={onClose}>
-              <Text style={styles.secondaryBtnText}>Cancel</Text>
+          <View style={s.modalFooter}>
+            <TouchableOpacity style={s.secondaryBtn} onPress={onClose} activeOpacity={0.85}>
+              <Text style={s.secondaryBtnText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.primaryBtn, saving && { opacity: 0.6 }]}
-              onPress={save}
-              disabled={saving}>
-              <Text style={styles.primaryBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
+              style={[s.primaryBtn, saving && { opacity: 0.6 }]}
+              onPress={save} disabled={saving}
+              activeOpacity={0.85}
+            >
+              <Text style={s.primaryBtnText}>{saving ? 'Saving…' : 'Save'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -473,10 +457,6 @@ function LinkEditorModal({ link, onClose, onSaved }) {
     </Modal>
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Contracts tab
-// ─────────────────────────────────────────────────────────────────────────────
 
 function ContractsTab({ navigation }) {
   const [contracts, setContracts] = useState([]);
@@ -495,160 +475,142 @@ function ContractsTab({ navigation }) {
 
   const filtered = contracts.filter(c => {
     if (!search) return true;
-    const s = search.toLowerCase();
-    return (c.campaign_name || '').toLowerCase().includes(s) ||
-           (c.influencer_name || '').toLowerCase().includes(s) ||
-           (c.influencer_handle || '').toLowerCase().includes(s);
+    const q = search.toLowerCase();
+    return (c.campaign_name || '').toLowerCase().includes(q) ||
+           (c.influencer_name || '').toLowerCase().includes(q) ||
+           (c.influencer_handle || '').toLowerCase().includes(q);
   });
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
 
   return (
     <FlatList
       data={filtered}
       keyExtractor={c => c.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
       ListHeaderComponent={
-        <View style={styles.searchWrap}>
+        <View style={s.searchWrap}>
           <TextInput
-            style={styles.searchInput}
+            style={s.searchInput}
             placeholder="Search campaigns or influencers…"
-            placeholderTextColor={colors.t3}
-            value={search}
-            onChangeText={setSearch}
+            placeholderTextColor={P.muted3}
+            value={search} onChangeText={setSearch}
           />
         </View>
       }
       renderItem={({ item: c }) => {
         const total = Number(c.influencer_fee || 0) + Number(c.bonus_amount || 0);
-        const statusStyle = STATUS_COLORS[c.status] || STATUS_COLORS.draft;
         return (
           <TouchableOpacity
-            style={styles.contractCard}
+            style={s.contractCard}
             onPress={() => {
               if (c.pdf_url) navigation.navigate('ContractPdf', { contractId: c.id, role: 'brand' });
               else Alert.alert('No PDF', 'This contract does not have a PDF yet.');
-            }}>
-            <View style={styles.contractHead}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.contractCampaign} numberOfLines={1}>{c.campaign_name}</Text>
-                <Text style={styles.contractInf} numberOfLines={1}>
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={s.contractHead}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={s.contractCampaign} numberOfLines={1}>{c.campaign_name}</Text>
+                <Text style={s.contractInf} numberOfLines={1}>
                   {c.influencer_name}{c.influencer_handle ? ` · @${c.influencer_handle}` : ''}
                 </Text>
               </View>
-              <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
-                <Text style={[styles.statusTxt, { color: statusStyle.fg }]}>
-                  {String(c.status || '').replace(/_/g, ' ')}
-                </Text>
-              </View>
+              <StatusPill status={c.status} />
             </View>
-            <View style={styles.contractFoot}>
-              <Text style={styles.contractMeta}>{fmtDate(c.brand_signed_at || c.created_at)} · {c.campaign_goal}</Text>
-              <Text style={styles.contractAmount}>{fmtRupees(total)}</Text>
+            <View style={s.contractFoot}>
+              <Text style={s.contractMeta}>{fmtDate(c.brand_signed_at || c.created_at)} · {c.campaign_goal}</Text>
+              <Text style={s.contractAmount}>{fmtRupees(total)}</Text>
             </View>
           </TouchableOpacity>
         );
       }}
       ListEmptyComponent={
-        <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>📝</Text>
-          <Text style={styles.emptyTitle}>No contracts yet</Text>
-          <Text style={styles.emptySub}>Signed contracts with influencers appear here for quick access.</Text>
+        <View style={{ marginTop: 24 }}>
+          <EmptyState
+            icon="[DOCS]"
+            title="No contracts yet"
+            sub="Signed contracts with influencers appear here for quick access."
+          />
         </View>
       }
-      contentContainerStyle={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xxl }}
+      contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}
     />
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.bg },
-  center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:      { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon:     { fontSize: 28, color: colors.t1, fontWeight: '400' },
-  headerTitle:  { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '700', color: colors.t1 },
+  tabs: { flexDirection: 'row', backgroundColor: P.white, paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: P.border, gap: 18 },
+  tab: { paddingVertical: 11, paddingHorizontal: 4, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: P.yellow },
+  tabLabel: { fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.muted2 },
+  tabLabelActive: { color: P.ink, fontWeight: '700' },
 
-  tabs:         { flexDirection: 'row', backgroundColor: colors.surface, paddingHorizontal: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
-  tab:          { paddingVertical: spacing.md, paddingHorizontal: spacing.lg, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive:    { borderBottomColor: colors.navy },
-  tabLabel:     { fontSize: 13, fontWeight: '600', color: colors.t3 },
-  tabLabelActive:{ color: colors.navy },
+  usageWrap: { backgroundColor: P.white, borderRadius: 12, borderWidth: 1, borderColor: P.border, padding: 12, marginVertical: 12 },
+  usageRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 },
+  usageLabel: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.ink },
+  usageRemaining: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2 },
+  usageTrack: { height: 6, backgroundColor: P.bg2, borderRadius: 3, overflow: 'hidden' },
+  usageFill: { height: '100%', borderRadius: 3 },
+  usageWarning: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.dangerText, marginTop: 6 },
 
-  // Usage bar
-  usageWrap:    { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginVertical: spacing.md },
-  usageRow:     { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  usageLabel:   { fontSize: 11, fontWeight: '700', color: colors.t1 },
-  usageRemaining: { fontSize: 10, color: colors.t3 },
-  usageTrack:   { height: 6, backgroundColor: colors.surface2, borderRadius: 3, overflow: 'hidden' },
-  usageFill:    { height: '100%' },
-  usageWarning: { fontSize: 10, color: colors.red, marginTop: 6 },
+  sectionHint: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 12, marginBottom: 8, lineHeight: 16 },
 
-  sectionHint:  { fontSize: 11, color: colors.t3, marginTop: spacing.md, marginBottom: spacing.sm, lineHeight: 16 },
+  filterRow: { paddingVertical: 8, gap: 6 },
+  filterChip: { paddingHorizontal: 11, paddingVertical: 6, borderRadius: 99, backgroundColor: P.bg2, marginRight: 6 },
+  filterChipActive: { backgroundColor: P.ink },
+  filterChipLabel: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.muted },
+  filterChipLabelActive: { color: P.yellow, fontFamily: fonts.monoBold },
 
-  filterRow:    { paddingVertical: spacing.sm, gap: 6 },
-  filterChip:   { paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.lg, backgroundColor: colors.surface2, marginRight: 6 },
-  filterChipActive: { backgroundColor: colors.navy },
-  filterChipLabel: { fontSize: 11, fontWeight: '600', color: colors.t2 },
-  filterChipLabelActive: { color: colors.white },
+  uploadBtn: { backgroundColor: P.ink, paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginTop: 4 },
+  uploadBtnText: { fontFamily: fonts.displayBold, color: P.yellow, fontWeight: '800', fontSize: 13.5, letterSpacing: 0.3 },
+  uploadHint: { fontFamily: fonts.sansMedium, marginTop: 5, marginBottom: 12, fontSize: 9.5, color: P.muted2, textAlign: 'center', lineHeight: 14 },
 
-  uploadBtn:    { backgroundColor: colors.navy, paddingVertical: 12, borderRadius: radius.md, alignItems: 'center', marginTop: spacing.xs },
-  uploadBtnText:{ color: colors.white, fontWeight: '700', fontSize: 13 },
-  uploadHint:   { marginTop: 4, marginBottom: spacing.md, fontSize: 10, color: colors.t3, textAlign: 'center' },
+  card: { flex: 1, backgroundColor: P.white, borderRadius: 12, margin: 5, borderWidth: 1, borderColor: P.border, overflow: 'hidden' },
+  thumb: { aspectRatio: 1, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: P.borderSoft },
+  thumbImg: { width: '100%', height: '100%' },
+  thumbIcon: { fontFamily: fonts.monoBold, fontSize: 14, fontWeight: '800', color: P.muted2, letterSpacing: 0.5 },
+  cardBody: { padding: 9 },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 12, fontWeight: '700', color: P.ink },
+  cardMeta: { fontFamily: fonts.monoMedium, fontSize: 9.5, color: P.muted2, marginTop: 2 },
+  cardActions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 7, paddingTop: 6, borderTopWidth: 1, borderTopColor: P.borderSoft },
+  actionBtn: { paddingVertical: 3, paddingHorizontal: 4 },
+  actionTxtOpen: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.yellowText },
+  actionTxtDelete: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.dangerText },
 
-  card:         { flex: 1, backgroundColor: colors.surface, borderRadius: radius.md, margin: spacing.xs, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' },
-  thumb:        { aspectRatio: 1, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  thumbImg:     { width: '100%', height: '100%' },
-  thumbIcon:    { fontSize: 38 },
-  cardBody:     { padding: 10 },
-  cardTitle:    { fontSize: 12, fontWeight: '700', color: colors.t1 },
-  cardMeta:     { fontSize: 10, color: colors.t3, marginTop: 2 },
-  cardActions:  { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.border },
-  actionBtn:    { paddingVertical: 4, paddingHorizontal: 4 },
-  actionTxt:    { fontSize: 11, fontWeight: '700', color: colors.navy },
+  linkCard: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: P.white, borderRadius: 12, borderWidth: 1, borderColor: P.border, padding: 12, marginBottom: 8, gap: 12 },
+  linkIconText: { fontSize: 22, marginTop: 2 },
+  linkTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink },
+  linkUrl: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.info, marginTop: 2 },
+  linkDesc: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted, marginTop: 4, lineHeight: 14 },
+  linkActions: { alignItems: 'flex-end', gap: 4 },
 
-  // Link card
-  linkCard:     { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm, gap: spacing.md },
-  linkIcon:     { fontSize: 22 },
-  linkTitle:    { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  linkUrl:      { fontSize: 10, color: colors.navy, marginTop: 2 },
-  linkDesc:     { fontSize: 11, color: colors.t3, marginTop: 4 },
-  linkActions:  { alignItems: 'flex-end', gap: 4 },
+  modalWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalBody: { backgroundColor: P.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, paddingBottom: 32 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingHorizontal: 2 },
+  modalTitle: { fontFamily: fonts.displayBold, fontSize: 16, fontWeight: '700', color: P.ink },
+  modalClose: { fontFamily: fonts.monoBold, fontSize: 22, color: P.muted2, paddingHorizontal: 4, lineHeight: 22 },
+  formLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted, marginBottom: 4, marginTop: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
+  formInput: { fontFamily: fonts.sansMedium, backgroundColor: P.bg2, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: P.ink },
+  modalFooter: { flexDirection: 'row', gap: 8, marginTop: 16 },
+  primaryBtn: { flex: 1, backgroundColor: P.yellow, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  primaryBtnText: { fontFamily: fonts.displayBold, color: P.ink, fontWeight: '800', fontSize: 13 },
+  secondaryBtn: { flex: 1, backgroundColor: P.bg2, paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  secondaryBtnText: { fontFamily: fonts.sansBold, color: P.muted, fontWeight: '800', fontSize: 13 },
 
-  // Modal
-  modalWrap:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalBody:    { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: spacing.lg, paddingBottom: 32 },
-  modalHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
-  modalTitle:   { fontSize: 16, fontWeight: '700', color: colors.t1 },
-  modalClose:   { fontSize: 24, color: colors.t3, fontWeight: '300' },
-  formLabel:    { fontSize: 11, fontWeight: '700', color: colors.t2, marginBottom: 4, marginTop: spacing.sm },
-  formInput:    { backgroundColor: colors.surface2, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 13, color: colors.t1 },
-  modalFooter:  { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
-  primaryBtn:   { flex: 1, backgroundColor: colors.navy, paddingVertical: 12, borderRadius: radius.md, alignItems: 'center' },
-  primaryBtnText:{ color: colors.white, fontWeight: '700', fontSize: 13 },
-  secondaryBtn: { flex: 1, backgroundColor: colors.surface2, paddingVertical: 12, borderRadius: radius.md, alignItems: 'center' },
-  secondaryBtnText:{ color: colors.t2, fontWeight: '700', fontSize: 13 },
+  searchWrap: { paddingVertical: 12 },
+  searchInput: { fontFamily: fonts.sansMedium, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, paddingHorizontal: 12, paddingVertical: 10, fontSize: 12.5, color: P.ink },
 
-  // Contracts
-  searchWrap:   { padding: spacing.md },
-  searchInput:  { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 13, color: colors.t1 },
-
-  contractCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
-  contractHead: { flexDirection: 'row', alignItems: 'flex-start' },
-  contractCampaign: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  contractInf:  { fontSize: 11, color: colors.t3, marginTop: 2 },
-  statusPill:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm, marginLeft: 8 },
-  statusTxt:    { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
-  contractFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
-  contractMeta: { fontSize: 10, color: colors.t3 },
-  contractAmount:{ fontSize: 13, fontWeight: '700', color: colors.navy },
-
-  empty:        { alignItems: 'center', padding: spacing.xxl * 2 },
-  emptyIcon:    { fontSize: 40, marginBottom: spacing.md },
-  emptyTitle:   { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptySub:     { fontSize: 11, color: colors.t3, textAlign: 'center', paddingHorizontal: spacing.xl },
+  contractCard: { backgroundColor: P.white, borderRadius: 12, borderWidth: 1, borderColor: P.border, padding: 12, marginBottom: 8 },
+  contractHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  contractCampaign: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '700', color: P.ink },
+  contractInf: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.muted2, marginTop: 2 },
+  contractFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: P.borderSoft },
+  contractMeta: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted },
+  contractAmount: { fontFamily: fonts.monoBold, fontSize: 12.5, fontWeight: '800', color: P.ink },
 });
