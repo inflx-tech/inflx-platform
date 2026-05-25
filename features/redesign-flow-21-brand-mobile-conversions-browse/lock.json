@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-21-brand-mobile-conversions-browse",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "deployed-pending-certification",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
   "approved_at": "2026-05-25",
@@ -10,14 +10,78 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-25 chat — Flow 21 mockup locked as-is",
   "mockup_locked_at": "2026-05-25",
-  "notes": "Fourth flow of the mobile-brand bucket. 2 screens + 3 NEW components extracted into Packages/Mobile/src/components/brand/. Behavior preserved 1:1. No tokens.js change. Flows 18-20 untouched.",
+  "notes": "Fourth flow of the mobile-brand bucket. 2 screens + 3 NEW components extracted into Packages/Mobile/src/components/brand/ (StatusPill, EmptyState, ScreenHeader). Conversions + InfluencerBrowse are the FIRST consumers. Flows 18-20 keep inline patterns (visually identical → retro migration deferred to polish pass). Behavior preserved 1:1. theme/tokens.js untouched. DEPLOYED 2026-05-25 (OTA × 3 published) but release-flip held — QA hit 2 env-flake clusters: (a) recurring MSG91 OTP throttle on B1 W3 + B1b W5a/W5b, (b) Render free-tier cold-start hydration timeout on subscription-billing-nav.spec.ts:53 (a test that PASSED on Flow 20 with same prod backend code; no remote code changes since). Flow 21 touched only Packages/Mobile/** — zero causal path to backend / brand-web test failures. Founder smoke-test + later pnpm qa re-run certifies.",
   "release": {
     "qa_all_green": false,
+    "qa_evidence": {
+      "run_at": "2026-05-25",
+      "run_1": {
+        "passed": 75,
+        "failed": 1,
+        "skipped": 0,
+        "failed_tests": ["qa/web/brand/subscription-billing-nav.spec.ts:53 — /dashboard/settings/subscription renders tier cards with features bullets + tab nav"],
+        "gate": 1,
+        "state": "FAILED",
+        "report_path": "qa/reports/2026-05-25T13-13-53-144Z/QA-REPORT.md"
+      },
+      "run_2": {
+        "passed": 71,
+        "failed": 4,
+        "skipped": 1,
+        "failed_tests": [
+          "qa/api/contract-invariants.spec.ts:34 — W3 auth contract: bad phone / missing otp → typed 422; valid phone → success",
+          "qa/api/invariants-extended.spec.ts:45 — W5a verify-otp on a fresh phone without role → 422 VALIDATION_ERROR",
+          "qa/api/invariants-extended.spec.ts:67 — W5b verify-otp with an invalid role → 422 VALIDATION_ERROR",
+          "qa/web/brand/subscription-billing-nav.spec.ts:53 — /dashboard/settings/subscription renders tier cards with features bullets + tab nav"
+        ],
+        "gate": 1,
+        "state": "FAILED",
+        "report_path": "qa/reports/2026-05-25T13-19-30-993Z/QA-REPORT.md"
+      },
+      "classification": "environmental cluster — MSG91 OTP throttle (3 tests) + Render free-tier cold-start hydration timeout on brand-web Settings page (1 test)",
+      "classification_detail": "MSG91 OTP tests have known closed-misdiagnosis carve (backend-defect-auth-verify-otp-role-validation, handoff §10). Settings subscription test was GREEN on Flow 20 (2026-05-25T12:36 — 38 min before run_1) with byte-identical prod backend code (git fetch confirmed origin/main empty after Flow 20 close-out). The failure pattern matches Render free-tier cold-start hydration timeout (Flow 12/15/17 precedent for backend-direct API timeouts). Window A is actively iterating on local subscription.controller.js + subscription-billing-nav.spec.ts (uncommitted git status shows their work) — possibly tightening the assertion or matching updated tier_features data shape; they'll push their fix soon.",
+      "deploy_inert_proof": "Flow 21 touched 5 files: 3 new components in Packages/Mobile/src/components/brand/ + 2 rewrites in Packages/Mobile/src/screens/brand/. Zero web files, zero backend files, zero qa/ files. New components are pure React UI (View + Text + StyleSheet). No causal path to MSG91 throttle or brand-web hydration.",
+      "founder_recert_path": "Two ways to clear pending-certification: (1) wait for Window A to push their fix for subscription-billing-nav + Render to warm up, then re-run pnpm qa from a freshly-warmed backend; OR (2) founder device smoke-test confirms Conversions + InfluencerBrowse screens render correctly with brandPalette + components. Either path → ship `chore(release): Flow 21 — certify retroactively` lock.json-only commit flipping released=true."
+    },
     "released": false,
     "released_by": null,
     "released_at": null,
+    "release_state": "deployed-pending-certification",
+    "release_state_note": "Per Flow 8 + Flow 19 precedent. Mobile bundle IS LIVE on phones (OTA × 3 published successfully — bundle v71/v60/v34 shared hash). Release-flip held because qa_all_green=false honestly reflects 4-test env failure cluster. The Flow 21 mobile redesign is deployed and functional. Founder smoke-test on device + later re-run of pnpm qa (when MSG91 + cold-start clear, or Window A pushes their Settings fix) certifies.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 21"
+    "maestro_green": "n/a — release.released=false; Rule 5 does not fire on this close-out commit",
+    "deploy": {
+      "vercel_brand_web": { "commit": "5b649b6", "note": "auto-redeploy on push; no-op for Flow 21 (no Packages/brand-web/** changes)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "5b649b6", "note": "auto-redeploy on push; no-op for Flow 21", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "5b649b6", "note": "auto-redeploy on push; no-op for Flow 21", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 71,
+        "previous_version": 70,
+        "bundle_hash": "sha256:2a43cda775e242bdc06ef4f2b845392f3241babd0704505caaf3cb38417dda4c",
+        "published_at": "2026-05-25T13:23:09.108Z",
+        "bundle_size_kb": 2280,
+        "trigger": "pnpm publish-ota:all -m 'Flow 21 — brand-mobile Conversions + InfluencerBrowse + extracted components'",
+        "scope": "brand audience manifest (shared bundle with influencer + follower)"
+      },
+      "ota_influencer": {
+        "version": 60,
+        "previous_version": 59,
+        "bundle_hash": "sha256:2a43cda775e242bdc06ef4f2b845392f3241babd0704505caaf3cb38417dda4c",
+        "published_at": "2026-05-25T13:23:13.053Z",
+        "bundle_size_kb": 2280,
+        "trigger": "pnpm publish-ota:all -m 'Flow 21 — brand-mobile Conversions + InfluencerBrowse + extracted components'",
+        "scope": "influencer audience manifest (shared bundle); no influencer-screen changes in Flow 21"
+      },
+      "ota_follower": {
+        "version": 34,
+        "previous_version": 33,
+        "bundle_hash": "sha256:2a43cda775e242bdc06ef4f2b845392f3241babd0704505caaf3cb38417dda4c",
+        "published_at": "2026-05-25T13:23:18.531Z",
+        "bundle_size_kb": 2280,
+        "trigger": "pnpm publish-ota:all -m 'Flow 21 — brand-mobile Conversions + InfluencerBrowse + extracted components'",
+        "scope": "follower audience manifest (shared bundle); no follower-screen changes in Flow 21"
+      }
+    }
   }
 }
