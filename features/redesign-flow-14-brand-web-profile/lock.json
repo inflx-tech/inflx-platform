@@ -1,0 +1,31 @@
+{
+  "feature": "redesign-flow-14-brand-web-profile",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-25 chat \"locked pls proceed\" — confirmed 3-state mockup: approved/filled · pending banner · rejected banner with reason. Single-page restyle scope (settings layout NOT touched, sub-pages NOT touched). Brand ID + Status dot as NEW intel in Account Details.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-25 chat \"locked pls proceed\" — locked Flow 14 mockup (3 states · 661 LOC)",
+  "mockup_locked_at": "2026-05-25",
+  "notes": "Web brand settings/profile single-page restyle. ROUTE: /dashboard/settings/profile (moved from /dashboard/profile by Window A's Phase A9 Settings hub consolidation; old path is now a 6-LOC server redirect, preserved). Restyles 603-LOC wave1 form (multi-card with undefined Tailwind tokens `bg-gold`/`text-t1`/`border-border2`/`bg-surface2`/`bg-red`/`bg-teal-100`/`bg-yellow-100`) into 678-LOC wave2 form (4 section cards: Logo · Business Info · Branches · Account Details · scoped under .prf wrapper). NO-TOUCH preserved: settings/layout.js (Window A's hub shell, palette-aligned), settings/subscription/page.js, settings/billing/page.js, profile/page.js (redirect). Backend audit: brandApi.getMe / updateMe preserved verbatim; listing_data.branches[0].name === 'Main Branch' literal preserved (backend Primary identifier). NEW intel: Brand ID (truncated) + Status dot in Account Details — both already-loaded fields. Adjacent-fixes: undefined Tailwind tokens replaced with palette vars, inline SVG lock icons replaced with 🔒 unicode, redundant H1 removed (layout provides Settings), status banner amber/red/teal Tailwind → palette pills, loading skeleton + toast restyled. CSS scoping discipline under .prf from day 1.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-25T05:05:57Z",
+      "result": "75/75 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 53,
+      "report": "qa/reports/2026-05-25T05-05-57-511Z/QA-REPORT.md",
+      "first_run_clean": true,
+      "note": "First-run clean after applying Flow 12 lesson — killed stale node processes before run. No /settings/profile spec exists; regression gate covers no-existing-route-broke (subscription-billing-nav.spec.ts confirms Settings hub renders correctly)."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}

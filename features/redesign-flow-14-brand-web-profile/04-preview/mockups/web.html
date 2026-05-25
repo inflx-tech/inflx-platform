@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 14 · brand-web settings/profile — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{padding:32px 24px 64px}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800;letter-spacing:-.2px}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:780px;line-height:1.5}
+
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:30px}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:920px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+.page{padding:0;background:var(--bg);overflow-y:auto}
+
+/* Settings hub layout (Window A's Phase A9 — not touched, just shown for context) */
+.shub-head{padding:30px 36px 0;max-width:1200px}
+.shub-head h1{font-family:'Outfit';font-size:24px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.shub-head .sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+.shub-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);max-width:1200px;padding-left:36px}
+.shub-tab{padding:10px 20px;font-size:14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;text-decoration:none;transition:all .1s}
+.shub-tab:hover{color:var(--ink)}
+.shub-tab.active{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+
+/* PROFILE content area (Flow 14 territory) */
+.prf-wrap{padding:28px 36px;max-width:920px;margin:0 auto}
+
+.prf-crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.prf-crumb b{color:var(--ink);font-weight:800}
+.prf-crumb .sep{color:var(--muted-3);margin:0 6px}
+
+/* Status banner */
+.prf-status{border-radius:14px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;font-family:'JetBrains Mono';font-size:12px;line-height:1.5}
+.prf-status.pending{background:var(--yellow-pale);color:var(--yellow-text);border:1px solid var(--yellow)}
+.prf-status.rejected{background:var(--danger-pale);color:var(--danger-text);border:1px solid var(--danger)}
+.prf-status .em{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Outfit';font-weight:800;font-size:14px}
+.prf-status.pending .em{background:var(--yellow);color:var(--ink)}
+.prf-status.rejected .em{background:var(--danger);color:var(--white)}
+.prf-status b{font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.prf-status .reason{display:block;margin-top:4px;font-size:11px;color:var(--muted);font-family:inherit}
+
+/* Card */
+.prf-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
+.prf-card-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:14px;flex-wrap:wrap}
+.prf-card-t{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+.prf-card-t .em{font-size:16px}
+
+/* Logo section */
+.prf-logo-row{display:flex;align-items:flex-start;gap:18px}
+.prf-logo-thumb{width:80px;height:80px;border-radius:14px;border:2px dashed var(--border);background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.prf-logo-thumb.has{border-style:solid;border-color:var(--yellow-pale);background:var(--yellow-pale)}
+.prf-logo-thumb .em{font-family:'Outfit';font-size:18px;font-weight:800;color:var(--ink)}
+.prf-logo-thumb .none{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;text-align:center;padding:0 4px}
+.prf-logo-info{flex:1;min-width:0}
+
+/* Field */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field-l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.field-l .req{color:var(--danger);font-weight:800}
+.field-l .lock{font-size:10px;color:var(--muted-3)}
+.field input,.field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;color:var(--ink);background:var(--white)}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.field input.mono,.field textarea.mono{font-family:'JetBrains Mono';font-size:13px;font-weight:600}
+.field input[readonly],.field input.locked,.field select[disabled]{background:var(--bg2);color:var(--muted);cursor:not-allowed;border-color:var(--border)}
+.field input[readonly]:focus,.field input.locked:focus{border-color:var(--border);box-shadow:none}
+.field-help{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:4px}
+.field-help .tip{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:var(--muted-2);border:1px solid var(--border);border-radius:6px;padding:2px 7px;cursor:pointer}
+.field-help .tip:hover{border-color:var(--ink);color:var(--ink)}
+.field textarea{resize:vertical}
+
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Save row */
+.prf-save{display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--border-soft);gap:14px;flex-wrap:wrap}
+.prf-save .ts{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2)}
+.btn-ink{padding:10px 18px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+.btn-yel{padding:8px 14px;background:var(--yellow);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+.btn-yel-ghost{padding:7px 13px;background:transparent;border:1.5px solid var(--yellow);color:var(--yellow-text);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-yel-ghost:hover{background:var(--yellow-pale)}
+.btn-ghost{padding:7px 13px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+
+/* Branch card */
+.br-card{border:1.5px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.br-card:last-child{margin-bottom:0}
+.br-card.main{border-color:var(--success);background:linear-gradient(180deg,var(--success-pale) 0%,var(--white) 30%)}
+.br-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.br-tag{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.br-pill{font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--success);color:var(--white);text-transform:uppercase;letter-spacing:.3px;margin-left:8px}
+.br-remove{font-family:inherit;font-size:11px;font-weight:700;color:var(--danger-text);background:transparent;border:0;cursor:pointer}
+.br-remove:hover{text-decoration:underline}
+
+/* Account details */
+.kv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 24px}
+.kv{display:flex;flex-direction:column;gap:3px}
+.kv-k{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.kv-v{font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--ink)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--white);padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:50;box-shadow:0 10px 25px rgba(0,0,0,.15);display:flex;align-items:center;gap:8px}
+.toast.err{background:var(--danger);color:var(--white)}
+.toast .em{font-size:14px}
+
+/* variant heading */
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 14 · brand-web settings/profile — wave2 mockup</h1>
+  <span class="sub">Single isolated form page · 4 section cards (Logo · Business Info · Branches · Account Details) · locked palette · mono everywhere · scoped under <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">.prf</code>. Settings hub layout (Window A's Phase A9) NOT touched — just shown for context above.</span>
+</div>
+
+<!-- ─── State 1 — APPROVED BRAND · FILLED FORM ───────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 3</span>
+  <span class="title">/dashboard/settings/profile · approved brand · 1 additional branch</span>
+  <span class="note">Full form populated · no status banner · save row with mono "Last updated" timestamp</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / settings / profile</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <a class="side-link"><span class="ic">★</span>Influencers</a>
+      <a class="side-link"><span class="ic">▣</span>Products</a>
+      <a class="side-link"><span class="ic">▥</span>Gallery</a>
+      <div class="side-sep"></div>
+      <a class="side-link act"><span class="ic">⚙</span>Settings</a>
+    </aside>
+
+    <div class="page">
+      <!-- Settings hub layout (preserved verbatim from Window A's Phase A9) -->
+      <div class="shub-head">
+        <h1>Settings</h1>
+        <div class="sub">Manage your profile, subscription, and billing in one place.</div>
+      </div>
+      <div class="shub-tabs">
+        <a class="shub-tab active">Profile</a>
+        <a class="shub-tab">Subscription</a>
+        <a class="shub-tab">Billing</a>
+      </div>
+
+      <!-- PROFILE content (Flow 14 territory) -->
+      <div class="prf-wrap">
+
+        <!-- LOGO card -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">🏷</span>Brand Logo</div>
+          </div>
+          <div class="prf-logo-row">
+            <div class="prf-logo-thumb has">
+              <span class="em">AB</span>
+            </div>
+            <div class="prf-logo-info">
+              <div class="field">
+                <label class="field-l">Logo URL</label>
+                <input type="url" value="https://cdn.aurora-brand.com/assets/logo-primary.svg" />
+                <div class="field-help">Direct image URL for your business logo<span class="tip">Upload File</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BUSINESS INFO card -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">🏢</span>Business Information</div>
+          </div>
+
+          <div class="field">
+            <label class="field-l">Business Name<span class="req">*</span></label>
+            <input type="text" value="Aurora Brand Co." />
+          </div>
+
+          <div class="field">
+            <label class="field-l">Contact Person</label>
+            <input type="text" value="Aveen Swamy" />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-l">Phone <span class="lock">🔒 locked</span></label>
+              <input type="text" value="+91 98455 12300" readonly class="mono" />
+              <div class="field-help">Linked to your login · cannot be changed</div>
+            </div>
+            <div class="field">
+              <label class="field-l">Category <span class="lock">🔒 locked</span></label>
+              <input type="text" value="restaurant" readonly />
+              <div class="field-help">Cannot be changed after registration</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-l">GSTIN</label>
+            <input type="text" value="29ABCDE1234F1Z5" maxlength="15" class="mono" placeholder="22AAAAA0000A1Z5" />
+          </div>
+
+          <div class="prf-save">
+            <div class="ts">Last updated · 18 May 2026 · 14:32 IST</div>
+            <button class="btn-ink">Save Changes</button>
+          </div>
+        </div>
+
+        <!-- BRANCHES card -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">📍</span>Branches &amp; Outlets</div>
+            <button class="btn-yel-ghost">+ Add Branch</button>
+          </div>
+
+          <!-- MAIN BRANCH (structured) -->
+          <div class="br-card main">
+            <div class="br-head">
+              <div>
+                <span class="br-tag">Main Branch</span>
+                <span class="br-pill">Primary</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-l">Country <span class="lock">🔒 locked</span></label>
+              <input type="text" value="India" readonly />
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-l">State</label>
+                <select>
+                  <option>Karnataka</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-l">City / District</label>
+                <input type="text" value="Bangalore" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-l">Pincode</label>
+              <input type="text" value="560001" maxlength="6" class="mono" placeholder="560001" />
+            </div>
+
+            <div class="field">
+              <label class="field-l">Full Address</label>
+              <textarea rows="3">12, MG Road, Indiranagar, Opp. Phoenix Mall · Landmark: BMTC depot</textarea>
+            </div>
+
+            <div class="field">
+              <label class="field-l">Google Maps URL</label>
+              <input type="url" value="https://maps.google.com/?q=aurora+brand+indiranagar+560001" />
+            </div>
+
+            <div class="field">
+              <label class="field-l">Phone <span class="lock">🔒 inherited from profile</span></label>
+              <input type="text" value="+91 98455 12300" readonly class="mono" />
+            </div>
+          </div>
+
+          <!-- ADDITIONAL BRANCH 1 -->
+          <div class="br-card">
+            <div class="br-head">
+              <span class="br-tag">Branch 1</span>
+              <button class="br-remove">Remove</button>
+            </div>
+
+            <div class="field">
+              <label class="field-l">Branch Name</label>
+              <input type="text" value="Whitefield Outlet" placeholder="e.g. Indiranagar Branch" />
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-l">State</label>
+                <select>
+                  <option>Karnataka</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-l">City / District</label>
+                <input type="text" value="Bangalore" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-l">Pincode</label>
+              <input type="text" value="560066" maxlength="6" class="mono" />
+            </div>
+
+            <div class="field">
+              <label class="field-l">Address</label>
+              <textarea rows="2">8, Whitefield Main Rd, near ITPL · Ground floor</textarea>
+            </div>
+
+            <div class="field-row">
+              <div class="field">
+                <label class="field-l">Phone</label>
+                <input type="text" value="+91 80422 95500" class="mono" placeholder="+91 9876543210" />
+              </div>
+              <div class="field">
+                <label class="field-l">Google Maps URL</label>
+                <input type="url" value="https://maps.google.com/?q=aurora+brand+whitefield" placeholder="Paste Google Maps link" />
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ACCOUNT DETAILS card -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">📋</span>Account Details</div>
+          </div>
+          <div class="kv-grid">
+            <div class="kv">
+              <span class="kv-k">Registered</span>
+              <span class="kv-v">15 Feb 2026</span>
+            </div>
+            <div class="kv">
+              <span class="kv-k">Approved On</span>
+              <span class="kv-v">17 Feb 2026</span>
+            </div>
+            <div class="kv">
+              <span class="kv-k">Brand ID</span>
+              <span class="kv-v">br_8f3a2c91…</span>
+            </div>
+            <div class="kv">
+              <span class="kv-k">Status</span>
+              <span class="kv-v" style="color:var(--success-text)">● approved</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 2 — PENDING BRAND with status banner ────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 3</span>
+  <span class="title">Pending account · status banner shown</span>
+  <span class="note">Yellow-pale banner with ! icon · save still enabled (brand can fill profile while under review)</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / settings / profile</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link act"><span class="ic">⚙</span>Settings</a>
+    </aside>
+
+    <div class="page">
+      <div class="shub-head">
+        <h1>Settings</h1>
+        <div class="sub">Manage your profile, subscription, and billing in one place.</div>
+      </div>
+      <div class="shub-tabs">
+        <a class="shub-tab active">Profile</a>
+        <a class="shub-tab">Subscription</a>
+        <a class="shub-tab">Billing</a>
+      </div>
+
+      <div class="prf-wrap">
+
+        <!-- STATUS BANNER · pending -->
+        <div class="prf-status pending">
+          <div class="em">!</div>
+          <div>
+            <b>Pending</b> — Your account is under review. You'll be notified once approved (usually within 24 hours). You can fill your profile in the meantime.
+          </div>
+        </div>
+
+        <!-- LOGO card (empty) -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">🏷</span>Brand Logo</div>
+          </div>
+          <div class="prf-logo-row">
+            <div class="prf-logo-thumb">
+              <span class="none">No logo</span>
+            </div>
+            <div class="prf-logo-info">
+              <div class="field">
+                <label class="field-l">Logo URL</label>
+                <input type="url" value="" placeholder="https://example.com/logo.png" />
+                <div class="field-help">Direct image URL for your business logo<span class="tip">Upload File</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BUSINESS INFO (partially filled) -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">🏢</span>Business Information</div>
+          </div>
+
+          <div class="field">
+            <label class="field-l">Business Name<span class="req">*</span></label>
+            <input type="text" value="" placeholder="Your business name" />
+          </div>
+
+          <div class="field">
+            <label class="field-l">Contact Person</label>
+            <input type="text" value="" placeholder="Contact person name" />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-l">Phone <span class="lock">🔒 locked</span></label>
+              <input type="text" value="+91 98455 12300" readonly class="mono" />
+              <div class="field-help">Linked to your login · cannot be changed</div>
+            </div>
+            <div class="field">
+              <label class="field-l">Category <span class="lock">🔒 locked</span></label>
+              <input type="text" value="restaurant" readonly />
+              <div class="field-help">Cannot be changed after registration</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-l">GSTIN</label>
+            <input type="text" value="" maxlength="15" class="mono" placeholder="22AAAAA0000A1Z5" />
+          </div>
+
+          <div class="prf-save">
+            <div class="ts">Last updated · Never</div>
+            <button class="btn-ink">Save Changes</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- toast example (success) -->
+      <div style="position:relative;height:0">
+        <div class="toast" style="position:absolute;bottom:-90px;right:-12px">
+          <span class="em">✓</span>Profile updated successfully
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 3 — REJECTED BRAND with reason ─────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 3</span>
+  <span class="title">Rejected account · status banner with reason</span>
+  <span class="note">Danger-pale banner · rejection_reason rendered as sub-line · main branch only (no additional branches)</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / settings / profile</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">⚙</span>Settings</a>
+    </aside>
+
+    <div class="page">
+      <div class="shub-head">
+        <h1>Settings</h1>
+        <div class="sub">Manage your profile, subscription, and billing in one place.</div>
+      </div>
+      <div class="shub-tabs">
+        <a class="shub-tab active">Profile</a>
+        <a class="shub-tab">Subscription</a>
+        <a class="shub-tab">Billing</a>
+      </div>
+
+      <div class="prf-wrap">
+
+        <!-- STATUS BANNER · rejected with reason -->
+        <div class="prf-status rejected">
+          <div class="em">✕</div>
+          <div>
+            <b>Rejected</b> — Your account was not approved.
+            <span class="reason">Reason: GSTIN does not match registered business name. Please update your details and contact admin support to re-submit.</span>
+          </div>
+        </div>
+
+        <!-- BUSINESS INFO -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">🏢</span>Business Information</div>
+          </div>
+          <div class="field">
+            <label class="field-l">Business Name<span class="req">*</span></label>
+            <input type="text" value="Sneha Sarees" />
+          </div>
+          <div class="field">
+            <label class="field-l">Contact Person</label>
+            <input type="text" value="Sneha Kapoor" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-l">Phone <span class="lock">🔒 locked</span></label>
+              <input type="text" value="+91 87654 32100" readonly class="mono" />
+              <div class="field-help">Linked to your login · cannot be changed</div>
+            </div>
+            <div class="field">
+              <label class="field-l">Category <span class="lock">🔒 locked</span></label>
+              <input type="text" value="fashion" readonly />
+              <div class="field-help">Cannot be changed after registration</div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-l">GSTIN</label>
+            <input type="text" value="29SNEHA1234X1Z5" maxlength="15" class="mono" />
+          </div>
+          <div class="prf-save">
+            <div class="ts">Last updated · 23 May 2026 · 09:14 IST</div>
+            <button class="btn-ink">Save Changes</button>
+          </div>
+        </div>
+
+        <!-- BRANCHES — main only -->
+        <div class="prf-card">
+          <div class="prf-card-h">
+            <div class="prf-card-t"><span class="em">📍</span>Branches &amp; Outlets</div>
+            <button class="btn-yel-ghost">+ Add Branch</button>
+          </div>
+
+          <div class="br-card main">
+            <div class="br-head">
+              <div>
+                <span class="br-tag">Main Branch</span>
+                <span class="br-pill">Primary</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-l">Country <span class="lock">🔒 locked</span></label>
+              <input type="text" value="India" readonly />
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="field-l">State</label>
+                <select><option>Maharashtra</option></select>
+              </div>
+              <div class="field">
+                <label class="field-l">City / District</label>
+                <input type="text" value="Mumbai" />
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-l">Pincode</label>
+              <input type="text" value="400050" maxlength="6" class="mono" />
+            </div>
+            <div class="field">
+              <label class="field-l">Full Address</label>
+              <textarea rows="3">Linking Rd, Bandra West · Above Cafe Coffee Day</textarea>
+            </div>
+            <div class="field">
+              <label class="field-l">Google Maps URL</label>
+              <input type="url" value="" placeholder="📍 Paste Google Maps link" />
+            </div>
+            <div class="field">
+              <label class="field-l">Phone <span class="lock">🔒 inherited from profile</span></label>
+              <input type="text" value="+91 87654 32100" readonly class="mono" />
+            </div>
+          </div>
+
+          <p style="text-align:center;font-size:11.5px;color:var(--muted-2);padding:14px 0 0;font-family:'JetBrains Mono'">No additional branches · click "+ Add Branch" to add one</p>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>Scope clarity:</b> Restyles ONLY <code>Packages/brand-web/app/dashboard/settings/profile/page.js</code> (603 LOC). Window A's <code>settings/layout.js</code> (the hub shell with H1 + tabs) is NOT touched — shown for context above each frame. Subscription + Billing tabs (Window A's territory) untouched.<br/>
+  <br/>
+  <b>Backend-first audit:</b> All fields trace to <code>brandApi.getMe()</code> response shape (business_name / contact_person_name in listing_data / category / gstin / logo_url / phone / pincode / address_line / listing_data.branches[] / created_at / approved_at / updated_at / user_status / rejection_reason) and <code>brandApi.updateMe()</code> payload shape preserved verbatim.<br/>
+  <br/>
+  <b>NEW intel:</b> 2 small additions, both already-loaded:<br/>
+  · Brand ID (truncated to first 12 chars + ellipsis) in Account Details<br/>
+  · Status indicator dot (●) in Account Details (replaces the OLD status-banner-only display for approved brands)<br/>
+  <br/>
+  <b>Adjacent-fixes:</b><br/>
+  · OLD page references undefined Tailwind tokens (<code>bg-gold</code>, <code>text-t1/t2/t3</code>, <code>bg-surface2</code>, <code>border-border2</code>, <code>bg-red</code>, etc.) — replaced with locked palette CSS vars<br/>
+  · Redundant <code>&lt;h1&gt;Profile &amp; Settings&lt;/h1&gt;</code> removed (settings layout already renders "Settings" H1)<br/>
+  · Inline SVG lock icons replaced with 🔒 unicode for consistency<br/>
+  · OLD's read-only category had a "lock" SVG inside the label — now a clean "🔒 locked" tag<br/>
+  · Status banner: amber/red/teal Tailwind → palette pills (yellow-pale/danger-pale/success-pale)<br/>
+  <br/>
+  <b>CSS scoping discipline</b> (day 1): All rules under <code>.prf</code> wrapper. Every <code>:hover:not(:disabled)</code> re-asserts color · every read-only/locked input locks bg + color · every disabled button locks bg + color. Same lineage as Flows 7-13.<br/>
+  <br/>
+  <b>Zero functional change:</b> brandApi.getMe + brandApi.updateMe preserved verbatim. Every form field, validation rule, branch array manipulation, payload diff logic preserved. <code>listing_data.contact_person_name</code> + <code>listing_data.branches[]</code> JSON shape unchanged.
+</div>
+
+</div>
+</body>
+</html>
