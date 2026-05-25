@@ -21,11 +21,19 @@
       "first_run_clean": false,
       "note": "First run had 3 transient backend timeouts on cold backend (3 backend-direct API tests: B1 auth contract + B1b admin/queue/influencers + admin/brands). Classified as environmental per feedback_qa_governance.md (matches Flow 12 stale-server pattern + auth-test misdiagnosis precedent — N tests hitting same external dep failing simultaneously). 2nd run clean 75/75 GREEN in 48.6s. No Flow 15 code regression."
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"push\" (production-impacting deploy approved · same pattern as Flows 8-14)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "7e522f2",
+        "pushed_at": "2026-05-25",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web · notifications + inbox only"
+      }
+    }
   }
 }
