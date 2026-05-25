@@ -4,33 +4,238 @@ import { brandApi, fmtRupees } from '../../../lib/api';
 import ListingWizard from './components/ListingWizard';
 import { QuotaWallModal, useQuotaWall } from '../../../components/QuotaWallModal';
 
-// ─── Dynamic Field Renderer (for non-catalogue categories) ───────────────────
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const SEGMENT_ICONS = {
+  'Hatchback': '🚙', 'Sedan': '🚗', 'SUV': '🚐', 'MUV': '🚌',
+  'Luxury': '🏎', 'Mini Bus': '🚌',
+  'Hair Men': '💈', 'Hair Women': '💇', 'Skin': '✨', 'Nails': '💅', 'Makeup': '💄', 'Spa': '🧖',
+};
+
+// ─── Locked palette CSS scoped under .prd — day-1 discipline ────────────────
+const CSS = `
+.prd *{box-sizing:border-box}
+.prd{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;
+  color:var(--ink); font-size:13px; line-height:1.45;
+}
+.prd .mono{font-family:'JetBrains Mono','Menlo','Consolas',monospace}
+
+.prd .hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.prd .hdr-l h1{font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.prd .hdr-l .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.prd .hdr-l .sub{font-size:12px;color:var(--muted-2);max-width:600px;line-height:1.5}
+.prd .cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;margin-bottom:6px}
+.prd .btn-ink{padding:8px 14px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+.prd .btn-ink:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.prd .btn-ink:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);color:var(--yellow)}
+.prd .btn-yel{padding:8px 14px;background:var(--yellow);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+.prd .btn-yel:hover:not(:disabled){background:var(--yellow-hover);color:var(--ink)}
+.prd .btn-ghost{padding:8px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+.prd .btn-ghost:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+
+/* INK schema info bar */
+.prd .info-bar{background:var(--ink);color:var(--white);border-radius:14px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;position:relative;overflow:hidden}
+.prd .info-bar::before{content:'';position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:var(--yellow);border-radius:50%;opacity:.06}
+.prd .info-bar > *{position:relative;z-index:2}
+.prd .info-bar .ti{display:flex;align-items:center;gap:10px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:700}
+.prd .info-bar .ti .em{font-size:22px}
+.prd .info-bar .meta{display:flex;gap:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.65);flex-wrap:wrap}
+.prd .info-bar .meta b{color:var(--yellow);font-weight:700}
+.prd .info-bar .badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px;background:var(--yellow);color:var(--ink);text-transform:uppercase;letter-spacing:.3px}
+
+/* Enquiry notice */
+.prd .enq-notice{background:var(--info-pale);border:1px solid rgba(29,78,216,.2);border-radius:14px;padding:16px;margin-bottom:14px;display:flex;gap:14px;align-items:flex-start}
+.prd .enq-notice .em{font-size:22px;flex-shrink:0}
+.prd .enq-notice h4{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--info);margin-bottom:4px}
+.prd .enq-notice p{font-size:12px;color:var(--info);line-height:1.5}
+
+/* Section heading */
+.prd .sec-h{display:flex;align-items:center;gap:8px;margin:18px 0 12px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
+.prd .sec-h .pip{width:6px;height:6px;border-radius:50%;background:var(--yellow)}
+.prd .sec-h .ct{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;color:var(--muted-2);background:var(--bg2);padding:2px 7px;border-radius:5px;margin-left:6px}
+.prd .sec-h .right{margin-left:auto;font-size:11px;color:var(--muted-2);font-weight:600}
+
+/* Chip rows */
+.prd .chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.prd .chip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;font-family:inherit}
+.prd .chip:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.prd .chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.prd .chip.act:hover:not(:disabled){background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.prd .chip .ct{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;opacity:.7}
+
+/* Image card grid (master catalogue) */
+.prd .pc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.prd .pc-grid.cols3{grid-template-columns:repeat(3,1fr)}
+@media (max-width: 1100px){.prd .pc-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width: 880px){.prd .pc-grid,.prd .pc-grid.cols3{grid-template-columns:repeat(2,1fr)}}
+.prd .pc{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .15s}
+.prd .pc:hover{border-color:var(--muted-3)}
+.prd .pc.act{border-color:var(--success);box-shadow:0 0 0 1px var(--success-pale)}
+.prd .pc.dim{opacity:.7;border-style:dashed}
+.prd .pc-img{height:120px;background:linear-gradient(135deg,var(--bg2) 0%,var(--bg) 100%);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.prd .pc-img.tall{height:140px}
+.prd .pc-img img{width:100%;height:100%;object-fit:cover}
+.prd .pc-img .em{font-size:40px;opacity:.4}
+.prd .pc-img .overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 50%)}
+.prd .pc-img .label{position:absolute;bottom:8px;left:10px;right:10px;color:var(--white);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prd .pc-img .topbadge{position:absolute;top:8px;left:8px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,.5);color:var(--white);text-transform:uppercase;letter-spacing:.3px}
+.prd .pc-img .price{position:absolute;bottom:8px;right:10px;color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.prd .pc-img .live{position:absolute;top:8px;right:8px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--success);color:var(--white);text-transform:uppercase;letter-spacing:.3px}
+.prd .pc-img .live.hidden{background:var(--muted-3);color:var(--white)}
+.prd .pc-body{padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:4px}
+.prd .pc-spec{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.prd .pc-pkgs{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prd .pc-actions{border-top:1px solid var(--border-soft);display:flex}
+.prd .pc-actions button{flex:1;padding:7px;font-size:11px;font-weight:700;background:transparent;color:var(--ink);border:0;cursor:pointer;font-family:inherit}
+.prd .pc-actions button:hover:not(:disabled){background:var(--bg);color:var(--ink)}
+.prd .pc-actions button.del{color:var(--danger-text)}
+.prd .pc-actions button.del:hover:not(:disabled){background:var(--danger-pale);color:var(--danger-text)}
+.prd .pc-actions button + button{border-left:1px solid var(--border-soft)}
+.prd .pc-cta{padding:8px 12px;background:var(--ink);color:var(--yellow);border:0;font-size:11px;font-weight:700;display:block;text-align:center;width:100%;cursor:pointer;font-family:inherit}
+.prd .pc-cta:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+
+/* Compact row card */
+.prd .rc{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:40px 1fr auto auto auto;gap:12px;align-items:center;margin-bottom:6px;min-height:60px}
+.prd .rc:hover{border-color:var(--ink)}
+.prd .rc.dim{opacity:.6;border-style:dashed}
+.prd .rc-av{width:36px;height:36px;border-radius:8px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:800;font-size:14px;flex-shrink:0;overflow:hidden}
+.prd .rc-av.veg{background:var(--success-pale);color:var(--success-text)}
+.prd .rc-av.nonveg{background:var(--danger-pale);color:var(--danger-text)}
+.prd .rc-av.na{background:var(--bg2);color:var(--muted)}
+.prd .rc-mid{min-width:0;display:flex;flex-direction:column;gap:3px}
+.prd .rc-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.prd .rc-name{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;color:var(--ink)}
+.prd .rc-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prd .rc-meta b{color:var(--ink);font-weight:600}
+.prd .rc-meta .sep{color:var(--muted-3)}
+.prd .rc-tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--bg2);color:var(--muted);text-transform:capitalize}
+.prd .rc-price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--ink);min-width:80px;text-align:right}
+.prd .rc-price .l{font-family:'Outfit',sans-serif;font-size:9px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:1px;display:block}
+.prd .status-pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.prd .status-pill.live{background:var(--success-pale);color:var(--success-text)}
+.prd .status-pill.hidden{background:var(--bg2);color:var(--muted-2)}
+.prd .rc-action{display:flex;gap:4px}
+.prd .rc-action button{padding:5px 9px;font-size:11px;font-weight:700;border-radius:6px;background:transparent;color:var(--muted);border:0;cursor:pointer;font-family:inherit}
+.prd .rc-action button:hover:not(:disabled){color:var(--ink);background:var(--bg)}
+.prd .rc-action button.danger{color:var(--danger-text)}
+.prd .rc-action button.danger:hover:not(:disabled){color:var(--danger-text);background:var(--danger-pale)}
+
+/* Add card (dashed) */
+.prd .add-card{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:var(--muted-2);background:transparent;font-family:inherit;width:100%}
+.prd .add-card:hover:not(:disabled){border-color:var(--yellow);color:var(--yellow-text);background:var(--yellow-50)}
+.prd .add-card .em{font-size:22px;display:block;margin-bottom:4px}
+.prd .add-card .t{font-size:11.5px;font-weight:700}
+
+/* Empty state */
+.prd .empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;margin-top:14px;position:relative;overflow:hidden}
+.prd .empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
+.prd .empty > *{position:relative;z-index:2}
+.prd .empty .em{font-size:48px;margin-bottom:10px}
+.prd .empty .h{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.prd .empty .t{font-size:12px;color:var(--muted);line-height:1.55;max-width:480px;margin:0 auto 16px}
+
+/* Spinner */
+.prd .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:prd-spin .8s linear infinite;margin:80px auto}
+@keyframes prd-spin{to{transform:rotate(360deg)}}
+.prd .skel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.prd .skel{height:200px;border-radius:14px;background:linear-gradient(90deg,var(--bg) 0%,var(--bg2) 50%,var(--bg) 100%);background-size:200% 100%;animation:prd-pulse 1.4s linear infinite}
+@keyframes prd-pulse{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Modal */
+.prd .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:0}
+@media (min-width: 768px){.prd .modal-bg{align-items:center;padding:16px}}
+.prd .modal{background:var(--white);border-radius:16px 16px 0 0;max-width:600px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+@media (min-width: 768px){.prd .modal{border-radius:16px}}
+.prd .modal.sm{max-width:420px}
+.prd .modal-h{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:sticky;top:0;background:var(--white);z-index:5}
+.prd .modal-h h3{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;color:var(--ink)}
+.prd .modal-h .s{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);margin-top:3px}
+.prd .modal-x{width:30px;height:30px;border-radius:50%;color:var(--muted-2);font-size:20px;background:transparent;border:0;cursor:pointer;font-family:inherit}
+.prd .modal-x:hover{background:var(--bg);color:var(--ink)}
+.prd .modal-b{flex:1;overflow-y:auto;padding:18px 22px}
+.prd .modal-hero{height:140px;background:linear-gradient(135deg,var(--ink) 0%,var(--ink-2) 100%);position:relative;display:flex;align-items:flex-end;padding:14px;overflow:hidden}
+.prd .modal-hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.prd .modal-hero .em{font-size:48px;opacity:.4;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--white)}
+.prd .modal-hero .overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7) 0%,rgba(0,0,0,.1) 100%)}
+.prd .modal-hero .ti{position:relative;z-index:2;color:var(--white)}
+.prd .modal-hero .ti .n{font-family:'Outfit',sans-serif;font-size:16px;font-weight:700;line-height:1.2}
+.prd .modal-hero .ti .s{font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.65);margin-top:4px}
+.prd .modal-hero .x{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.5);color:var(--white);font-size:20px;border:0;cursor:pointer;font-family:inherit;z-index:3}
+.prd .modal-hero .x:hover{background:rgba(0,0,0,.7)}
+.prd .modal-f{padding:14px 22px;border-top:1px solid var(--border);background:var(--bg);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.prd .modal-f button{padding:9px 16px;font-size:12px;font-weight:700;border-radius:10px;border:0;cursor:pointer;font-family:inherit}
+.prd .modal-f .cancel{background:var(--white);border:1px solid var(--border);color:var(--ink)}
+.prd .modal-f .cancel:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.prd .modal-f .submit{background:var(--ink);color:var(--yellow)}
+.prd .modal-f .submit:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.prd .modal-f .submit:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);color:var(--yellow)}
+
+/* Field */
+.prd .field{margin-bottom:14px}
+.prd .field-l{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;display:block}
+.prd .field-l .req{color:var(--danger);margin-left:3px}
+.prd .field-err{font-size:11px;color:var(--danger-text);margin-top:4px}
+.prd .field input,.prd .field textarea,.prd .field select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;outline:none;color:var(--ink);background:var(--white);resize:vertical}
+.prd .field input:focus,.prd .field textarea:focus,.prd .field select:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.prd .field input.err,.prd .field textarea.err,.prd .field select.err{border-color:var(--danger);background:var(--danger-pale)}
+.prd .field .veg-row{display:flex;gap:6px}
+.prd .field .veg-row button{flex:1;padding:9px;border:1.5px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--muted);background:var(--white);cursor:pointer;font-family:inherit}
+.prd .field .veg-row button:hover:not(:disabled){border-color:var(--muted-3);color:var(--ink);background:var(--white)}
+.prd .field .veg-row button.act.veg{border-color:var(--success);background:var(--success-pale);color:var(--success-text)}
+.prd .field .veg-row button.act.nonveg{border-color:var(--danger);background:var(--danger-pale);color:var(--danger-text)}
+.prd .field .veg-row button.act.na{border-color:var(--muted-3);background:var(--bg2);color:var(--muted)}
+.prd .field .dur-row{display:flex;flex-wrap:wrap;gap:6px}
+.prd .field .dur-row button{padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:700;color:var(--muted);background:var(--white);cursor:pointer;font-family:inherit}
+.prd .field .dur-row button:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--white)}
+.prd .field .dur-row button.act{border-color:var(--ink);background:var(--ink);color:var(--yellow)}
+.prd .field .variant-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+.prd .field .variant-row input{flex:1}
+.prd .field .variant-row input.price{width:90px;flex:0 0 auto;font-family:'JetBrains Mono',monospace}
+.prd .field .variant-row button.del{width:30px;height:30px;border-radius:6px;background:transparent;color:var(--danger-text);border:0;cursor:pointer;font-size:18px;line-height:1;font-family:inherit}
+.prd .field .variant-row button.del:hover:not(:disabled){background:var(--danger-pale);color:var(--danger-text)}
+.prd .field .add-var{padding:6px 10px;font-size:11.5px;font-weight:700;color:var(--ink);background:transparent;border:0;cursor:pointer;font-family:inherit}
+.prd .field .add-var:hover:not(:disabled){color:var(--yellow-text);background:transparent}
+.prd .toggle{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--border-soft)}
+.prd .toggle-l{font-size:13px;font-weight:700;color:var(--ink)}
+.prd .toggle-s{font-size:11px;color:var(--muted-2);margin-top:2px}
+.prd .toggle-sw{width:44px;height:24px;background:var(--muted-3);border-radius:99px;position:relative;cursor:pointer;transition:background .15s;border:0;font-family:inherit}
+.prd .toggle-sw.on{background:var(--success)}
+.prd .toggle-sw .dot{position:absolute;top:2px;left:2px;width:20px;height:20px;background:var(--white);border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.prd .toggle-sw.on .dot{transform:translateX(20px)}
+
+/* Toast */
+.prd .toast{position:fixed;top:24px;right:24px;background:var(--ink);color:var(--white);padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;z-index:100;box-shadow:0 10px 25px rgba(0,0,0,.15)}
+.prd .toast.err{background:var(--danger);color:var(--white)}
+`;
+
+// ─── DynamicField (preserved field types, locked palette restyle) ───────────
 
 function DynamicField({ field, value, onChange, error }) {
-  const base = 'w-full border-2 rounded-xl px-3 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-orange-400';
-  const borderCls = error ? 'border-red-400 bg-red-50' : 'border-gray-200 bg-white';
+  const cls = `${error ? 'err' : ''}`;
 
   if (field.type === 'text' || field.type === 'url') {
-    return (
-      <input type={field.type === 'url' ? 'url' : 'text'} value={value || ''} onChange={e => onChange(field.key, e.target.value)}
-        placeholder={field.placeholder || ''} className={`${base} ${borderCls}`} />
-    );
+    return <input type={field.type === 'url' ? 'url' : 'text'} value={value || ''} onChange={(e) => onChange(field.key, e.target.value)} placeholder={field.placeholder || ''} className={cls} />;
   }
   if (field.type === 'number') {
-    return (
-      <input type="number" value={value ?? ''} onChange={e => onChange(field.key, e.target.value === '' ? '' : Number(e.target.value))}
-        placeholder={field.placeholder || '0'} min={0} className={`${base} ${borderCls}`} />
-    );
+    return <input type="number" value={value ?? ''} onChange={(e) => onChange(field.key, e.target.value === '' ? '' : Number(e.target.value))} placeholder={field.placeholder || '0'} min={0} className={cls} />;
   }
   if (field.type === 'textarea') {
-    return (
-      <textarea value={value || ''} onChange={e => onChange(field.key, e.target.value)} placeholder={field.placeholder || ''}
-        rows={3} className={`${base} ${borderCls} resize-none`} />
-    );
+    return <textarea value={value || ''} onChange={(e) => onChange(field.key, e.target.value)} placeholder={field.placeholder || ''} rows={3} className={cls} />;
   }
   if (field.type === 'select') {
     return (
-      <select value={value || ''} onChange={e => onChange(field.key, e.target.value)} className={`${base} ${borderCls}`}>
+      <select value={value || ''} onChange={(e) => onChange(field.key, e.target.value)} className={cls}>
         <option value="">— Select {field.label} —</option>
         {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
       </select>
@@ -38,13 +243,14 @@ function DynamicField({ field, value, onChange, error }) {
   }
   if (field.type === 'veg_toggle') {
     return (
-      <div className="flex gap-2">
-        {[{ value:'veg', label:'🟢 Veg', color:'border-green-500 bg-green-50 text-green-700' },
-          { value:'non_veg', label:'🔴 Non-Veg', color:'border-red-400 bg-red-50 text-red-700' },
-          { value:'na', label:'⬜ N/A', color:'border-gray-300 bg-gray-50 text-gray-600' }].map(opt => (
-          <button key={opt.value} type="button" onClick={() => onChange(field.key, opt.value)}
-            className={`flex-1 py-2 rounded-xl border-2 text-xs font-bold transition-all ${value === opt.value ? opt.color : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'}`}>
-            {opt.label}
+      <div className="veg-row">
+        {[
+          { v: 'veg',     l: '🟢 Veg',     c: 'veg' },
+          { v: 'non_veg', l: '🔴 Non-Veg', c: 'nonveg' },
+          { v: 'na',      l: '⬜ N/A',      c: 'na' },
+        ].map(opt => (
+          <button key={opt.v} type="button" onClick={() => onChange(field.key, opt.v)} className={value === opt.v ? `act ${opt.c}` : ''}>
+            {opt.l}
           </button>
         ))}
       </div>
@@ -53,10 +259,9 @@ function DynamicField({ field, value, onChange, error }) {
   if (field.type === 'duration_select') {
     const opts = field.options || [15, 30, 45, 60, 90, 120, 180];
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="dur-row">
         {opts.map(mins => (
-          <button key={mins} type="button" onClick={() => onChange(field.key, mins)}
-            className={`px-3 py-1.5 rounded-lg border-2 text-xs font-bold transition-all ${value === mins ? 'border-navy bg-navy/10 text-navy' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}>
+          <button key={mins} type="button" onClick={() => onChange(field.key, mins)} className={value === mins ? 'act' : ''}>
             {mins >= 60 ? `${Math.floor(mins/60)}h${mins%60 ? ` ${mins%60}m` : ''}` : `${mins}m`}
           </button>
         ))}
@@ -66,27 +271,25 @@ function DynamicField({ field, value, onChange, error }) {
   if (field.type === 'variant_builder') {
     const variants = Array.isArray(value) ? value : [];
     return (
-      <div className="space-y-2">
+      <div>
         {variants.map((v, i) => (
-          <div key={i} className="flex gap-2 items-center">
-            <input value={v.label||''} onChange={e => { const n=[...variants]; n[i]={...n[i],label:e.target.value}; onChange(field.key,n); }}
-              placeholder="Package (e.g. Full day)" className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-orange-400" />
-            <input type="number" value={v.price??''} onChange={e => { const n=[...variants]; n[i]={...n[i],price:Number(e.target.value)}; onChange(field.key,n); }}
-              placeholder="₹" className="w-24 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400" />
-            <button type="button" onClick={() => onChange(field.key, variants.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-lg px-1">×</button>
+          <div key={i} className="variant-row">
+            <input value={v.label || ''} onChange={(e) => { const n = [...variants]; n[i] = { ...n[i], label: e.target.value }; onChange(field.key, n); }} placeholder="Package (e.g. Full day)" />
+            <input type="number" className="price" value={v.price ?? ''} onChange={(e) => { const n = [...variants]; n[i] = { ...n[i], price: Number(e.target.value) }; onChange(field.key, n); }} placeholder="₹" />
+            <button type="button" className="del" onClick={() => onChange(field.key, variants.filter((_, j) => j !== i))}>×</button>
           </div>
         ))}
-        <button type="button" onClick={() => onChange(field.key, [...variants, {label:'',price:0}])}
-          className="text-xs font-semibold text-orange-600 hover:text-orange-700 flex items-center gap-1">+ Add Package</button>
+        <button type="button" className="add-var" onClick={() => onChange(field.key, [...variants, { label: '', price: 0 }])}>+ Add Package</button>
       </div>
     );
   }
-  return <input type="text" value={value||''} onChange={e => onChange(field.key, e.target.value)} placeholder={field.placeholder||''} className={`${base} ${borderCls}`} />;
+  return <input type="text" value={value || ''} onChange={(e) => onChange(field.key, e.target.value)} placeholder={field.placeholder || ''} className={cls} />;
 }
 
-// ─── Standard Product Form Modal (non-catalogue categories) ──────────────────
+// ─── Modals ─────────────────────────────────────────────────────────────────
 
 function ProductFormModal({ schema, product, onSave, onClose, saving }) {
+  const noun = schema?.product_noun || 'Product';
   const [form, setForm] = useState(() => {
     if (product) return { ...product };
     const d = {};
@@ -95,11 +298,10 @@ function ProductFormModal({ schema, product, onSave, onClose, saving }) {
     return d;
   });
   const [errors, setErrors] = useState({});
-  const noun = schema?.product_noun || 'Product';
 
   function setField(key, val) {
     setForm(f => ({ ...f, [key]: val }));
-    if (errors[key]) setErrors(e => { const n={...e}; delete n[key]; return n; });
+    if (errors[key]) setErrors(e => { const n = { ...e }; delete n[key]; return n; });
   }
   function validate() {
     const errs = {};
@@ -111,40 +313,35 @@ function ProductFormModal({ schema, product, onSave, onClose, saving }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-      <div className="bg-white w-full md:max-w-xl rounded-t-2xl md:rounded-2xl max-h-[92vh] overflow-y-auto shadow-2xl">
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between z-10">
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-h">
           <div>
-            <div className="font-bold text-gray-900">{product ? `Edit ${noun}` : `Add ${noun}`}</div>
-            {schema && <div className="text-[11px] text-gray-400 mt-0.5">{schema.icon} {schema.label}</div>}
+            <h3>{product ? `Edit ${noun}` : `Add ${noun}`}</h3>
+            {schema && <div className="s">{schema.icon} {schema.label}</div>}
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 text-lg">×</button>
+          <button className="modal-x" onClick={onClose}>×</button>
         </div>
-        <form onSubmit={e => { e.preventDefault(); if (validate()) onSave(form); }} className="p-5 space-y-4">
-          {(schema?.fields || []).map(field => (
-            <div key={field.key}>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5">
-                {field.label}{field.required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              <DynamicField field={field} value={form[field.key]} onChange={setField} error={errors[field.key]} />
-              {errors[field.key] && <p className="text-[11px] text-red-500 mt-1">{errors[field.key]}</p>}
+        <form onSubmit={(e) => { e.preventDefault(); if (validate()) onSave(form); }}>
+          <div className="modal-b">
+            {(schema?.fields || []).map(field => (
+              <div key={field.key} className="field">
+                <label className="field-l">{field.label}{field.required && <span className="req">*</span>}</label>
+                <DynamicField field={field} value={form[field.key]} onChange={setField} error={errors[field.key]} />
+                {errors[field.key] && <p className="field-err">{errors[field.key]}</p>}
+              </div>
+            ))}
+            <div className="toggle">
+              <div>
+                <div className="toggle-l">Active</div>
+                <div className="toggle-s">Show to followers</div>
+              </div>
+              <button type="button" className={`toggle-sw${form.is_active !== false ? ' on' : ''}`} onClick={() => setField('is_active', !form.is_active)}><span className="dot" /></button>
             </div>
-          ))}
-          <div className="flex items-center justify-between py-3 border-t border-gray-100">
-            <div>
-              <div className="text-sm font-semibold text-gray-700">Active</div>
-              <div className="text-[11px] text-gray-400">Show to followers</div>
-            </div>
-            <button type="button" onClick={() => setField('is_active', !form.is_active)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${form.is_active !== false ? 'bg-teal-500' : 'bg-gray-300'}`}>
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.is_active !== false ? 'translate-x-5' : 'translate-x-0.5'}`} />
-            </button>
           </div>
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 border-2 border-gray-200 text-gray-600 font-bold text-sm rounded-xl hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-sm rounded-xl disabled:opacity-50 hover:shadow-md">
-              {saving ? 'Saving…' : product ? 'Save Changes' : `Add ${noun}`}
-            </button>
+          <div className="modal-f">
+            <button type="button" className="cancel" onClick={onClose}>Cancel</button>
+            <button type="submit" className="submit" disabled={saving}>{saving ? 'Saving…' : product ? 'Save Changes' : `Add ${noun}`}</button>
           </div>
         </form>
       </div>
@@ -152,14 +349,10 @@ function ProductFormModal({ schema, product, onSave, onClose, saving }) {
   );
 }
 
-// ─── Activate Modal (master catalogue — vehicle or service) ──────────────────
-
 function ActivateModal({ item, category, onSave, onClose, saving }) {
   const isVehicle = category === 'car_rental';
   const [price, setPrice] = useState(item.activated_price || '');
-  const [packages, setPackages] = useState(() => {
-    try { return JSON.parse(item.variants_json || '[]'); } catch { return []; }
-  });
+  const [packages, setPackages] = useState(() => { try { return JSON.parse(item.variants_json || '[]'); } catch { return []; } });
   const [error, setError] = useState('');
 
   function submit(e) {
@@ -185,58 +378,50 @@ function ActivateModal({ item, category, onSave, onClose, saving }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-      <div className="bg-white w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden">
-        {/* Vehicle/Service preview */}
-        <div className="relative h-44 overflow-hidden">
-          {item.image_url
-            ? <img src={item.image_url} alt={item.display_name||item.name} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
-            : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/10" />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <div className="text-white font-bold text-lg leading-tight">{item.display_name || item.name}</div>
-            {isVehicle
-              ? <div className="text-white/75 text-xs mt-1">{item.segment} · {item.seats} seats · {item.fuel_type} · {item.transmission}</div>
-              : <div className="text-white/75 text-xs mt-1">{item.category} · {item.duration_mins_default} min</div>}
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal sm" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-hero">
+          {item.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image_url} alt={item.display_name || item.name} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+          ) : (
+            <span className="em">{SEGMENT_ICONS[item.segment || item.category] || '🚗'}</span>
+          )}
+          <div className="overlay" />
+          <div className="ti">
+            <div className="n">{item.display_name || item.name}</div>
+            <div className="s">
+              {isVehicle
+                ? `${item.segment} · ${item.seats} seats · ${item.fuel_type} · ${item.transmission}`
+                : `${item.category} · ${item.duration_mins_default} min`}
+            </div>
           </div>
-          <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 flex items-center justify-center text-white hover:bg-black/60">×</button>
+          <button className="x" onClick={onClose}>×</button>
         </div>
-
-        <form onSubmit={submit} className="p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-600 mb-1.5">
-              {isVehicle ? 'Price per Day (₹)' : 'Starting Price (₹)'} <span className="text-red-500">*</span>
-            </label>
-            <input type="number" min={1} value={price} onChange={e => { setPrice(e.target.value); setError(''); }}
-              placeholder={isVehicle ? '2500' : '499'}
-              className={`w-full border-2 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 ${error ? 'border-red-400 bg-red-50' : 'border-gray-200'}`} />
-            {error && <p className="text-[11px] text-red-500 mt-1">{error}</p>}
-          </div>
-
-          {isVehicle && (
-            <div>
-              <label className="block text-xs font-bold text-gray-600 mb-1.5">Duration Packages (optional)</label>
-              <div className="space-y-2">
+        <form onSubmit={submit}>
+          <div className="modal-b">
+            <div className="field">
+              <label className="field-l">{isVehicle ? 'Price per Day (₹)' : 'Starting Price (₹)'}<span className="req">*</span></label>
+              <input type="number" min={1} value={price} onChange={(e) => { setPrice(e.target.value); setError(''); }} placeholder={isVehicle ? '2500' : '499'} className={error ? 'err' : ''} />
+              {error && <p className="field-err">{error}</p>}
+            </div>
+            {isVehicle && (
+              <div className="field">
+                <label className="field-l">Duration Packages (optional)</label>
                 {packages.map((v, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <input value={v.label||''} onChange={e => { const n=[...packages]; n[i]={...n[i],label:e.target.value}; setPackages(n); }}
-                      placeholder="e.g. Half Day, Full Day" className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400" />
-                    <input type="number" value={v.price??''} onChange={e => { const n=[...packages]; n[i]={...n[i],price:Number(e.target.value)}; setPackages(n); }}
-                      placeholder="₹" className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400" />
-                    <button type="button" onClick={() => setPackages(packages.filter((_,j)=>j!==i))} className="text-red-400 hover:text-red-600 text-lg px-1">×</button>
+                  <div key={i} className="variant-row">
+                    <input value={v.label || ''} onChange={(e) => { const n = [...packages]; n[i] = { ...n[i], label: e.target.value }; setPackages(n); }} placeholder="e.g. Half Day, Full Day" />
+                    <input type="number" className="price" value={v.price ?? ''} onChange={(e) => { const n = [...packages]; n[i] = { ...n[i], price: Number(e.target.value) }; setPackages(n); }} placeholder="₹" />
+                    <button type="button" className="del" onClick={() => setPackages(packages.filter((_, j) => j !== i))}>×</button>
                   </div>
                 ))}
-                <button type="button" onClick={() => setPackages([...packages,{label:'',price:0}])}
-                  className="text-xs font-semibold text-orange-600 hover:text-orange-700">+ Add Package</button>
+                <button type="button" className="add-var" onClick={() => setPackages([...packages, { label: '', price: 0 }])}>+ Add Package</button>
               </div>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 py-3 border-2 border-gray-200 text-gray-600 font-bold text-sm rounded-xl hover:bg-gray-50">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-sm rounded-xl disabled:opacity-50 hover:shadow-md transition-shadow">
-              {saving ? 'Adding…' : `Add to My ${isVehicle ? 'Fleet' : 'Services'}`}
-            </button>
+            )}
+          </div>
+          <div className="modal-f">
+            <button type="button" className="cancel" onClick={onClose}>Cancel</button>
+            <button type="submit" className="submit" disabled={saving}>{saving ? 'Adding…' : `Add to My ${isVehicle ? 'Fleet' : 'Services'}`}</button>
           </div>
         </form>
       </div>
@@ -244,305 +429,234 @@ function ActivateModal({ item, category, onSave, onClose, saving }) {
   );
 }
 
-// ─── Edit Price Modal (already activated items) ───────────────────────────────
-
 function EditPriceModal({ item, category, productId, onSave, onClose, saving }) {
   const isVehicle = category === 'car_rental';
   const [price, setPrice] = useState(item.activated_price || '');
-  const [packages, setPackages] = useState(() => {
-    try { return JSON.parse(item.variants_json || '[]'); } catch { return []; }
-  });
+  const [packages, setPackages] = useState(() => { try { return JSON.parse(item.variants_json || '[]'); } catch { return []; } });
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end md:items-center justify-center z-50 p-0 md:p-4">
-      <div className="bg-white w-full md:max-w-sm rounded-t-2xl md:rounded-2xl shadow-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-bold text-gray-900">Update Pricing</div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200">×</button>
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal sm" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-h">
+          <div>
+            <h3>Update Pricing</h3>
+            <div className="s">{item.display_name || item.name}</div>
+          </div>
+          <button className="modal-x" onClick={onClose}>×</button>
         </div>
-        <div className="text-sm font-semibold text-gray-700 mb-4">{item.display_name || item.name}</div>
-        <div className="mb-4">
-          <label className="block text-xs font-bold text-gray-600 mb-1.5">{isVehicle ? 'Price per Day (₹)' : 'Price (₹)'}</label>
-          <input type="number" min={1} value={price} onChange={e => setPrice(e.target.value)}
-            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-orange-400" />
-        </div>
-        {isVehicle && (
-          <div className="mb-4">
-            <label className="block text-xs font-bold text-gray-600 mb-1.5">Duration Packages</label>
-            <div className="space-y-2">
+        <div className="modal-b">
+          <div className="field">
+            <label className="field-l">{isVehicle ? 'Price per Day (₹)' : 'Price (₹)'}</label>
+            <input type="number" min={1} value={price} onChange={(e) => setPrice(e.target.value)} />
+          </div>
+          {isVehicle && (
+            <div className="field">
+              <label className="field-l">Duration Packages</label>
               {packages.map((v, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input value={v.label||''} onChange={e => { const n=[...packages]; n[i]={...n[i],label:e.target.value}; setPackages(n); }}
-                    placeholder="Package name" className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400" />
-                  <input type="number" value={v.price??''} onChange={e => { const n=[...packages]; n[i]={...n[i],price:Number(e.target.value)}; setPackages(n); }}
-                    placeholder="₹" className="w-20 border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400" />
-                  <button type="button" onClick={() => setPackages(packages.filter((_,j)=>j!==i))} className="text-red-400 text-lg px-1">×</button>
+                <div key={i} className="variant-row">
+                  <input value={v.label || ''} onChange={(e) => { const n = [...packages]; n[i] = { ...n[i], label: e.target.value }; setPackages(n); }} placeholder="Package name" />
+                  <input type="number" className="price" value={v.price ?? ''} onChange={(e) => { const n = [...packages]; n[i] = { ...n[i], price: Number(e.target.value) }; setPackages(n); }} placeholder="₹" />
+                  <button type="button" className="del" onClick={() => setPackages(packages.filter((_, j) => j !== i))}>×</button>
                 </div>
               ))}
-              <button type="button" onClick={() => setPackages([...packages,{label:'',price:0}])} className="text-xs font-semibold text-orange-600">+ Add</button>
+              <button type="button" className="add-var" onClick={() => setPackages([...packages, { label: '', price: 0 }])}>+ Add</button>
             </div>
-          </div>
-        )}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 border-2 border-gray-200 text-gray-600 font-bold text-sm rounded-xl hover:bg-gray-50">Cancel</button>
-          <button onClick={() => onSave(productId, { price: Number(price), ...(isVehicle && packages.length ? { variants_json: packages } : {}) })}
-            disabled={saving} className="flex-1 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-sm rounded-xl disabled:opacity-50">
-            {saving ? 'Saving…' : 'Update'}
-          </button>
+          )}
+        </div>
+        <div className="modal-f">
+          <button type="button" className="cancel" onClick={onClose}>Cancel</button>
+          <button type="button" className="submit" disabled={saving} onClick={() => onSave(productId, { price: Number(price), ...(isVehicle && packages.length ? { variants_json: packages } : {}) })}>{saving ? 'Saving…' : 'Update'}</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Master Catalogue UI (car_rental + salon) ─────────────────────────────────
-
-const SEGMENT_ICONS = {
-  'Hatchback': '🚙', 'Sedan': '🚗', 'SUV': '🚐', 'MUV': '🚌',
-  'Luxury': '🏎', 'Mini Bus': '🚌',
-  'Hair Men': '💈', 'Hair Women': '💇', 'Skin': '✨', 'Nails': '💅', 'Makeup': '💄', 'Spa': '🧖',
-};
+// ─── Master Catalogue View ──────────────────────────────────────────────────
 
 function MasterCatalogueView({ schema, items, category, onActivate, onUpdatePrice, onDeactivate, saving }) {
-  const isVehicle  = category === 'car_rental';
-  const groups     = [...new Set(items.map(i => isVehicle ? i.segment : i.category))];
+  const isVehicle = category === 'car_rental';
+  const groups = [...new Set(items.map(i => isVehicle ? i.segment : i.category))].filter(Boolean);
   const [tab, setTab] = useState('');
-  const [activateItem,  setActivateItem]  = useState(null);
+  const [activateItem, setActivateItem] = useState(null);
   const [editPriceItem, setEditPriceItem] = useState(null);
 
-  const filtered = tab ? items.filter(i => (isVehicle ? i.segment : i.category) === tab) : items;
   const activated = items.filter(i => i.is_activated);
+  const available = items.filter(i => !i.is_activated);
+  const filtered = tab ? available.filter(i => (isVehicle ? i.segment : i.category) === tab) : available;
 
   return (
     <div>
-      {/* ── Activated / My Fleet ── */}
+      {/* MY FLEET */}
       {activated.length > 0 && (
-        <div className="mb-8">
-          <h2 className="font-bold text-gray-800 mb-3 text-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-teal-500 inline-block" />
-            {isVehicle ? `My Fleet (${activated.length})` : `My Services (${activated.length})`}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activated.map(item => (
-              <div key={item.id} className={`bg-white rounded-2xl border overflow-hidden flex flex-col ${item.is_active ? 'border-teal-200 shadow-sm' : 'border-dashed border-gray-200 opacity-70'}`}>
-                <div className="relative h-32 overflow-hidden bg-gray-100">
-                  {item.image_url && (
-                    <img src={item.image_url} alt={item.display_name||item.name} className="w-full h-full object-cover" onError={e => e.target.style.display='none'} />
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-2 left-3 right-3 flex items-end justify-between">
-                    <span className="text-white font-bold text-sm leading-tight drop-shadow-sm truncate">{item.display_name||item.name}</span>
-                    <span className="text-white font-extrabold text-sm drop-shadow-sm flex-shrink-0 ml-2">{fmtRupees(item.activated_price)}</span>
-                  </div>
-                  <div className="absolute top-2 right-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.is_active ? 'bg-teal-500 text-white' : 'bg-gray-400 text-white'}`}>
-                      {item.is_active ? 'Live' : 'Hidden'}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 flex-1">
-                  <div className="text-[11px] text-gray-400">
-                    {isVehicle
-                      ? `${item.seats} seats · ${item.fuel_type} · ${item.transmission}`
-                      : `${item.category} · ${item.duration_mins_default} min`}
-                  </div>
-                  {isVehicle && item.variants_json && (() => {
-                    try {
-                      const pkgs = JSON.parse(item.variants_json);
-                      return pkgs.length > 0
-                        ? <div className="text-[11px] text-gray-500 mt-1">📦 {pkgs.map(p => p.label).join(' · ')}</div>
-                        : null;
-                    } catch { return null; }
-                  })()}
-                </div>
-                <div className="border-t border-gray-100 flex">
-                  <button onClick={() => setEditPriceItem(item)} className="flex-1 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors">Edit Price</button>
-                  <button onClick={() => onDeactivate(item.product_id)} className="flex-1 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 border-l border-gray-100 transition-colors">Remove</button>
-                </div>
-              </div>
-            ))}
+        <>
+          <div className="sec-h">
+            <span className="pip" />
+            {isVehicle ? 'My Fleet' : 'My Services'}
+            <span className="ct">{activated.length}</span>
+            <span className="right">{activated.length} of {items.length} available {isVehicle ? 'models' : 'services'} added</span>
           </div>
-        </div>
+          <div className="pc-grid cols3">
+            {activated.map(item => {
+              const pkgs = (() => { try { return JSON.parse(item.variants_json || '[]'); } catch { return []; } })();
+              return (
+                <div key={item.id} className={`pc act${item.is_active ? '' : ' dim'}`}>
+                  <div className="pc-img">
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.image_url} alt={item.display_name || item.name} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                    ) : (
+                      <span className="em">{SEGMENT_ICONS[item.segment || item.category] || '🚗'}</span>
+                    )}
+                    <div className="overlay" />
+                    <span className="label">{item.display_name || item.name}</span>
+                    <span className="price">{fmtRupees(item.activated_price)}{isVehicle ? '/d' : ''}</span>
+                    <span className={`live${item.is_active ? '' : ' hidden'}`}>{item.is_active ? 'Live' : 'Hidden'}</span>
+                  </div>
+                  <div className="pc-body">
+                    <div className="pc-spec">
+                      {isVehicle
+                        ? <><span>🪑 {item.seats} seats</span><span>⛽ {item.fuel_type}</span><span>⚙️ {item.transmission}</span></>
+                        : <><span>⏱ {item.duration_mins_default} min</span><span className="capitalize">{item.gender === 'unisex' ? '👥 Unisex' : item.gender === 'men' ? '👨 Men' : '👩 Women'}</span></>
+                      }
+                    </div>
+                    {pkgs.length > 0 && <div className="pc-pkgs">📦 {pkgs.map(p => p.label).filter(Boolean).join(' · ') || `${pkgs.length} packages`}</div>}
+                  </div>
+                  <div className="pc-actions">
+                    <button onClick={() => setEditPriceItem(item)}>Edit price</button>
+                    <button className="del" onClick={() => onDeactivate(item.product_id)}>Remove</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
-      {/* ── Browse Catalogue ── */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="font-bold text-gray-800 text-sm">
-          {isVehicle ? '🔍 Browse Vehicles to Add' : '🔍 Browse Services to Add'}
-        </h2>
-        <span className="text-xs text-gray-400">{items.filter(i => !i.is_activated).length} available</span>
+      {/* BROWSE TO ADD */}
+      <div className="sec-h" style={{ marginTop: 24 }}>
+        <span className="pip" />
+        Browse to Add
+        <span className="ct">{available.length}</span>
+        <span className="right">{available.length} available · filter by {isVehicle ? 'segment' : 'category'}</span>
       </div>
 
-      {/* Segment/category tabs */}
-      <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
-        <button onClick={() => setTab('')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap flex-shrink-0 transition-colors ${tab === '' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-          All ({items.filter(i=>!i.is_activated).length})
-        </button>
+      {/* Segment chips */}
+      <div className="chip-row">
+        <button className={`chip${!tab ? ' act' : ''}`} onClick={() => setTab('')}>All <span className="ct">{available.length}</span></button>
         {groups.map(g => {
-          const cnt = items.filter(i => (isVehicle ? i.segment : i.category) === g && !i.is_activated).length;
+          const cnt = available.filter(i => (isVehicle ? i.segment : i.category) === g).length;
+          if (!cnt) return null;
           return (
-            <button key={g} onClick={() => setTab(g === tab ? '' : g)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap flex-shrink-0 transition-colors ${tab === g ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-              {SEGMENT_ICONS[g] || ''} {g} {cnt > 0 ? `(${cnt})` : ''}
+            <button key={g} className={`chip${tab === g ? ' act' : ''}`} onClick={() => setTab(g === tab ? '' : g)}>
+              {SEGMENT_ICONS[g] || ''} {g} <span className="ct">{cnt}</span>
             </button>
           );
         })}
       </div>
 
-      {/* Master item grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filtered.filter(i => !i.is_activated).map(item => (
-          <div key={item.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-md transition-all flex flex-col group">
-            <div className="relative h-40 overflow-hidden bg-gray-100">
-              {item.image_url
-                ? <img src={item.image_url} alt={item.display_name||item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={e => { e.target.style.display='none'; }} />
-                : <div className="w-full h-full flex items-center justify-center text-4xl">{SEGMENT_ICONS[item.segment||item.category]||'🚗'}</div>}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute bottom-2 left-3 right-3">
-                <div className="text-white font-bold text-sm leading-tight drop-shadow-sm">{item.display_name || item.name}</div>
+      {/* Master grid */}
+      <div className="pc-grid">
+        {filtered.map(item => (
+          <div key={item.id} className="pc">
+            <div className="pc-img tall">
+              {item.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={item.image_url} alt={item.display_name || item.name} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              ) : (
+                <span className="em">{SEGMENT_ICONS[item.segment || item.category] || '🚗'}</span>
+              )}
+              <div className="overlay" />
+              <span className="topbadge">{item.segment || item.category}</span>
+              <span className="label">{item.display_name || item.name}</span>
+            </div>
+            <div className="pc-body">
+              <div className="pc-spec">
+                {isVehicle
+                  ? <><span>🪑 {item.seats}</span><span>⛽ {item.fuel_type}</span><span>⚙️ {item.transmission}</span></>
+                  : <><span>⏱ {item.duration_mins_default} min</span><span className="capitalize">{item.gender === 'unisex' ? '👥' : item.gender === 'men' ? '👨' : '👩'} {item.gender}</span></>
+                }
               </div>
-              <div className="absolute top-2 left-2">
-                <span className="text-[10px] bg-black/40 text-white px-2 py-0.5 rounded-full font-semibold">{item.segment || item.category}</span>
-              </div>
             </div>
-            <div className="p-3 flex-1">
-              {isVehicle
-                ? (
-                  <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                    <span>🪑 {item.seats} seats</span>
-                    <span>⛽ {item.fuel_type}</span>
-                    <span>⚙️ {item.transmission}</span>
-                  </div>
-                )
-                : (
-                  <div className="flex items-center gap-3 text-[11px] text-gray-500">
-                    <span>⏱ {item.duration_mins_default} min</span>
-                    <span className="capitalize">{item.gender === 'unisex' ? '👥 Unisex' : item.gender === 'men' ? '👨 Men' : '👩 Women'}</span>
-                  </div>
-                )}
-            </div>
-            <div className="px-3 pb-3">
-              <button onClick={() => setActivateItem(item)}
-                className="w-full py-2 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-xs rounded-xl hover:shadow-md transition-shadow">
-                + Add to {isVehicle ? 'Fleet' : 'Services'}
-              </button>
-            </div>
+            <button className="pc-cta" onClick={() => setActivateItem(item)}>+ Add to {isVehicle ? 'Fleet' : 'Services'}</button>
           </div>
         ))}
-
-        {filtered.filter(i => !i.is_activated).length === 0 && (
-          <div className="col-span-full py-12 flex flex-col items-center text-gray-400">
-            <div className="text-4xl mb-3">✅</div>
-            <div className="font-semibold text-sm">All {tab || (isVehicle ? 'vehicle' : 'service')} options added!</div>
-            <div className="text-xs mt-1">Switch tabs to see other categories</div>
+        {filtered.length === 0 && (
+          <div style={{ gridColumn: '1 / -1' }} className="empty">
+            <div className="em">✅</div>
+            <div className="h">All {tab || (isVehicle ? 'vehicle' : 'service')} options added</div>
+            <div className="t">Switch tabs to see other categories</div>
           </div>
         )}
       </div>
 
-      {/* Activate Modal */}
-      {activateItem && (
-        <ActivateModal
-          item={activateItem}
-          category={category}
-          saving={saving}
-          onClose={() => setActivateItem(null)}
-          onSave={async (payload) => {
-            await onActivate(payload);
-            setActivateItem(null);
-          }}
-        />
-      )}
-
-      {/* Edit Price Modal */}
-      {editPriceItem && (
-        <EditPriceModal
-          item={editPriceItem}
-          category={category}
-          productId={editPriceItem.product_id}
-          saving={saving}
-          onClose={() => setEditPriceItem(null)}
-          onSave={async (pid, data) => {
-            await onUpdatePrice(pid, data);
-            setEditPriceItem(null);
-          }}
-        />
-      )}
+      {activateItem && <ActivateModal item={activateItem} category={category} saving={saving} onClose={() => setActivateItem(null)} onSave={async (payload) => { await onActivate(payload); setActivateItem(null); }} />}
+      {editPriceItem && <EditPriceModal item={editPriceItem} category={category} productId={editPriceItem.product_id} saving={saving} onClose={() => setEditPriceItem(null)} onSave={async (pid, data) => { await onUpdatePrice(pid, data); setEditPriceItem(null); }} />}
     </div>
   );
 }
 
-// ─── Standard product card (non-catalogue) ────────────────────────────────────
+// ─── Standard product row card ──────────────────────────────────────────────
 
-function ProductCard({ product, onEdit, onDelete, onToggle }) {
-  const VEG = { veg: '🟢', non_veg: '🔴', na: null };
-  const hasVariants = product.variants_json && (() => { try { return JSON.parse(product.variants_json)?.length > 0; } catch { return false; } })();
+function ProductRow({ product, onEdit, onDelete, onToggle, schema }) {
+  const VEG = { veg: { ic: '🟢', cls: 'veg' }, non_veg: { ic: '🔴', cls: 'nonveg' }, na: { ic: '⬜', cls: 'na' } };
+  const vegInfo = VEG[product.veg_flag] || null;
+  const hasVariants = (() => { try { return JSON.parse(product.variants_json || '[]').length > 0; } catch { return false; } })();
+  const metaBits = [];
+  if (product.description) metaBits.push(product.description);
+  if (product.duration_mins > 0) metaBits.push(`⏱ ${product.duration_mins >= 60 ? `${product.duration_mins/60}h` : `${product.duration_mins}m`}`);
+  if (product.stock > 0) metaBits.push(`📦 Stock: ${product.stock}`);
+  if (hasVariants) metaBits.push('🎛 Variants');
+  if (product.is_bookable) metaBits.push('📅 Bookable');
 
   return (
-    <div className={`bg-white rounded-xl border transition-all ${product.is_active ? 'border-gray-200 hover:border-gray-300 hover:shadow-sm' : 'border-dashed border-gray-200 opacity-60'}`}>
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3 mb-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              {VEG[product.veg_flag] && <span className="text-xs">{VEG[product.veg_flag]}</span>}
-              <span className="font-semibold text-sm text-gray-900 truncate">{product.name}</span>
-              {!product.is_active && <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Hidden</span>}
-            </div>
-            {product.section && <span className="text-[11px] text-gray-400 mt-0.5 block">{product.section}</span>}
-          </div>
-          {product.price != null && <div className="text-sm font-extrabold text-gray-900 flex-shrink-0">{fmtRupees(product.price)}</div>}
+    <div className={`rc${product.is_active ? '' : ' dim'}`}>
+      <div className={`rc-av${vegInfo ? ` ${vegInfo.cls}` : ''}`}>{vegInfo ? vegInfo.ic : (schema?.icon || '🏪')}</div>
+      <div className="rc-mid">
+        <div className="rc-top">
+          <span className="rc-name">{product.name}</span>
+          {product.section && <span className="rc-tag">{product.section}</span>}
+          {!product.is_active && <span className="rc-tag" style={{ background: 'var(--bg2)', color: 'var(--muted)' }}>Hidden</span>}
         </div>
-        {product.description && <p className="text-xs text-gray-500 line-clamp-2 mb-2">{product.description}</p>}
-        <div className="flex items-center gap-3 flex-wrap text-[11px] text-gray-400">
-          {product.duration_mins > 0 && <span>⏱ {product.duration_mins >= 60 ? `${product.duration_mins/60}h` : `${product.duration_mins}m`}</span>}
-          {product.stock > 0 && <span>📦 Stock: {product.stock}</span>}
-          {hasVariants && <span>🎛 Variants</span>}
-          {product.is_bookable && <span>📅 Bookable</span>}
-        </div>
+        <div className="rc-meta">{metaBits.join(' · ') || '—'}</div>
       </div>
-      <div className="border-t border-gray-100 flex">
-        <button onClick={() => onEdit(product)} className="flex-1 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors">Edit</button>
-        <button onClick={() => onToggle(product)} className="flex-1 py-2 text-xs font-semibold border-x border-gray-100 text-gray-500 hover:bg-gray-50 transition-colors">{product.is_active ? 'Hide' : 'Show'}</button>
-        <button onClick={() => onDelete(product)} className="flex-1 py-2 text-xs font-semibold text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">Delete</button>
+      <div className="rc-price">{product.price != null ? fmtRupees(product.price) : '—'}<span className="l">price</span></div>
+      <span className={`status-pill ${product.is_active ? 'live' : 'hidden'}`}>● {product.is_active ? 'Live' : 'Hidden'}</span>
+      <div className="rc-action">
+        <button onClick={() => onEdit(product)}>Edit</button>
+        <button onClick={() => onToggle(product)}>{product.is_active ? 'Hide' : 'Show'}</button>
+        <button className="danger" onClick={() => onDelete(product)}>Del</button>
       </div>
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
-  // ── ALL hooks must be declared at the top, before any conditional returns ──
-  const [useListingWizard, setUseListingWizard] = useState(null); // null = loading
+  const [useListingWizard, setUseListingWizard] = useState(null);
   const [schema,    setSchema]    = useState(null);
   const [products,  setProducts]  = useState([]);
   const [catalogue, setCatalogue] = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [modal,     setModal]     = useState(null);
   const [saving,    setSaving]    = useState(false);
-  const [toast,     setToast]     = useState('');
+  const [toast,     setToast]     = useState(null);
   const [section,   setSection]   = useState('');
-  // Phase A9 — quota-wall modal state for createProduct hitting Free plan's 10-product cap.
   const { quota, showFromResponse, close: closeQuota } = useQuotaWall();
 
   const showToast = useCallback((msg, type = 'ok') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(''), 3200);
+    setTimeout(() => setToast(null), 3200);
   }, []);
 
-  // ── Feature flag: check if listing engine is active for this brand ─────────
+  // Feature-flag check
   useEffect(() => {
     async function checkListingEngine() {
       try {
         const res = await brandApi.get('/brands/me/listing-config');
-        if (res.success && res.data?.listing_engine_active) {
-          setUseListingWizard(true);
-        } else {
-          setUseListingWizard(false);
-        }
-      } catch {
-        setUseListingWizard(false);
-      }
+        setUseListingWizard(!!(res.success && res.data?.listing_engine_active));
+      } catch { setUseListingWizard(false); }
     }
     checkListingEngine();
   }, []);
@@ -554,7 +668,6 @@ export default function ProductsPage() {
     const [schemaRes, prodRes] = await Promise.all([brandApi.getSchema(), brandApi.getProducts()]);
     if (schemaRes.success) setSchema(schemaRes.data?.schema);
     if (prodRes.success)   setProducts(prodRes.data?.products || []);
-
     const sch = schemaRes.data?.schema;
     if (sch?.features?.master_catalogue) {
       const catRes = await brandApi.getMasterCatalogue();
@@ -565,31 +678,31 @@ export default function ProductsPage() {
 
   useEffect(() => { if (useListingWizard === false) load(); }, [useListingWizard]);
 
-  // ── Conditional renders (AFTER all hooks) ──────────────────────────────────
-
-  // If listing engine is active, render the new ListingWizard
+  // ── Listing engine pass-through (PRESERVED VERBATIM in spirit; lightly restyled wrapper) ──
   if (useListingWizard === true) {
     return (
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-black text-gray-900">Listing Setup</h1>
-          <p className="text-sm text-gray-500 mt-1">Complete your store listing to attract followers</p>
+      <div className="prd">
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <div className="hdr">
+          <div className="hdr-l">
+            <span className="cnt-chip">Listing setup</span>
+            <h1>Complete Your Listing</h1>
+            <div className="rule" />
+            <div className="sub">Finish your store listing to attract followers and start showing up in influencer searches.</div>
+          </div>
         </div>
         <ListingWizard />
       </div>
     );
   }
-
-  // Loading state for feature flag check
   if (useListingWizard === null) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-3 border-orange-400 border-t-transparent rounded-full" />
+      <div className="prd">
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <div className="spinner" />
       </div>
     );
   }
-
-  // ── Original products page (for non-listing-engine categories) ─────────────
 
   // ── Handlers (standard) ──
   async function handleSave(form) {
@@ -598,7 +711,6 @@ export default function ProductsPage() {
     const res = isEdit ? await brandApi.updateProduct(modal.id, form) : await brandApi.createProduct(form);
     setSaving(false);
     if (res.success) { showToast(isEdit ? 'Updated!' : 'Added!'); setModal(null); load(); return; }
-    // Quota wall fires for createProduct on Free plan's 10-product cap.
     if (showFromResponse(res)) { setModal(null); return; }
     showToast(res.error?.message || 'Failed to save', 'err');
   }
@@ -613,8 +725,6 @@ export default function ProductsPage() {
     if (res.success) load();
     else showToast('Failed to update', 'err');
   }
-
-  // ── Handlers (master catalogue) ──
   async function handleActivate(payload) {
     setSaving(true);
     const res = await brandApi.createProduct(payload);
@@ -637,84 +747,80 @@ export default function ProductsPage() {
     else showToast(res.error?.message || 'Failed to remove', 'err');
   }
 
-  // ── Loading skeleton ──
+  // ── Loading ──
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto">
-        <div className="h-8 bg-gray-100 rounded-xl w-64 mb-5 animate-pulse" />
-        <div className="flex gap-2 mb-5">
-          {[1,2,3,4].map(i => <div key={i} className="h-8 w-24 bg-gray-100 rounded-full animate-pulse" />)}
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-52 bg-gray-100 rounded-2xl animate-pulse" />)}
+      <div className="prd">
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <div className="skel-grid">
+          {[1,2,3,4,5,6].map(i => <div key={i} className="skel" />)}
         </div>
       </div>
     );
   }
 
   const noun       = schema?.product_noun        || 'Product';
-  const nounPlural = schema?.product_noun_plural  || 'Products';
+  const nounPlural = schema?.product_noun_plural || 'Products';
   const icon       = schema?.icon                || '🏪';
   const sections   = schema?.sections            || [];
   const isEnquiry  = schema?.features?.enquiry_only;
 
-  // For non-catalogue: filter by section
-  const filtered   = section ? products.filter(p => p.section === section) : products;
-  const activeCount = (isMasterCatalogue ? (catalogue?.items||[]).filter(i=>i.is_activated) : products.filter(p => p.is_active)).length;
-  const totalCount  = isMasterCatalogue ? (catalogue?.items||[]).filter(i=>i.is_activated).length : products.length;
+  const filtered    = section ? products.filter(p => p.section === section) : products;
+  const activeCount = (isMasterCatalogue ? (catalogue?.items || []).filter(i => i.is_activated) : products.filter(p => p.is_active)).length;
+  const totalCount  = isMasterCatalogue ? (catalogue?.items || []).filter(i => i.is_activated).length : products.length;
+
+  const cntChip = isMasterCatalogue
+    ? `${activeCount} active in ${category === 'car_rental' ? 'fleet' : 'services'}`
+    : `${activeCount} active of ${totalCount}`;
 
   return (
-    <div className="max-w-6xl mx-auto pb-16">
+    <div className="prd">
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
       {/* Toast */}
-      {toast && (
-        <div className={`fixed top-5 right-5 z-[100] px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold transition-all ${toast.type === 'err' ? 'bg-red-500 text-white' : 'bg-teal-600 text-white'}`}>
-          {toast.type === 'err' ? '✗' : '✓'} {toast.msg}
-        </div>
-      )}
+      {toast && <div className={`toast${toast.type === 'err' ? ' err' : ''}`}>{toast.type === 'err' ? '✗' : '✓'} {toast.msg}</div>}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="font-bold text-2xl text-gray-900">{icon} {nounPlural}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {schema?.label} ·{' '}
-            {isMasterCatalogue
-              ? `${activeCount} active in your listing`
-              : `${products.filter(p=>p.is_active).length} active of ${products.length} total`}
-          </p>
+      <div className="hdr">
+        <div className="hdr-l">
+          <span className="cnt-chip">{cntChip}</span>
+          <h1>{icon} {nounPlural}</h1>
+          <div className="rule" />
+          <div className="sub">{isMasterCatalogue
+            ? `Add ${category === 'car_rental' ? 'vehicles' : 'services'} from the master catalogue to your bookable listing. Pricing per ${category === 'car_rental' ? 'day' : 'service'}.`
+            : `Items shown to followers when they tap your store link from an influencer's recommendation.`}</div>
         </div>
         {!isMasterCatalogue && !isEnquiry && (
-          <button onClick={() => setModal('add')}
-            className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-sm rounded-xl hover:shadow-md transition-shadow">
-            + Add {noun}
-          </button>
+          <button className="btn-ink" onClick={() => setModal('add')}>+ Add {noun}</button>
         )}
       </div>
 
+      {/* INK schema info bar */}
+      {schema && (
+        <div className="info-bar">
+          <div className="ti"><span className="em">{icon}</span>{schema.label}</div>
+          <div className="meta">
+            {schema.availing_modes?.length > 0 && (
+              <span>🛒 {schema.availing_modes.flatMap((m, i) => i === 0 ? [<b key={m}>{m}</b>] : [' · ', <b key={m}>{m}</b>])}</span>
+            )}
+            {schema.features?.booking && <span>📅 <b>{schema.booking_type}</b> booking</span>}
+          </div>
+          {isMasterCatalogue && <span className="badge">✦ Professional catalogue</span>}
+        </div>
+      )}
+
       {/* Enquiry-only notice */}
       {isEnquiry && (
-        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-5 flex gap-4 items-start">
-          <div className="text-2xl">📋</div>
+        <div className="enq-notice">
+          <span className="em">📋</span>
           <div>
-            <div className="font-bold text-blue-800 mb-1">This category uses enquiry forms only</div>
-            <div className="text-sm text-blue-700">Followers see a structured enquiry form. Leads appear in your Enquiries tab. You can still add packages below.</div>
+            <h4>This category uses enquiry forms only</h4>
+            <p>Followers see a structured enquiry form. Leads appear in your Enquiries tab. You can still add packages below.</p>
           </div>
         </div>
       )}
 
-      {/* Schema info bar */}
-      {schema && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 mb-6 flex items-center gap-4 flex-wrap text-xs text-gray-500">
-          <span className="font-semibold text-gray-700 text-sm">{icon} {schema.label}</span>
-          {schema.availing_modes?.length > 0 && (
-            <span>🛒 {schema.availing_modes.map(m => m.replace(/_/g,'  ')).join(' · ')}</span>
-          )}
-          {schema.features?.booking && <span>📅 {schema.booking_type} booking</span>}
-          {isMasterCatalogue && <span className="text-teal-600 font-semibold">✦ Professional catalogue</span>}
-        </div>
-      )}
-
-      {/* ── MASTER CATALOGUE VIEW ── */}
+      {/* MASTER CATALOGUE */}
       {isMasterCatalogue && catalogue && (
         <MasterCatalogueView
           schema={schema}
@@ -727,50 +833,40 @@ export default function ProductsPage() {
         />
       )}
 
-      {/* ── STANDARD VIEW (non-catalogue) ── */}
+      {/* STANDARD VIEW */}
       {!isMasterCatalogue && (
         <>
-          {/* Section filter tabs */}
+          {/* Section chips */}
           {sections.length > 0 && (
-            <div className="flex gap-2 mb-5 overflow-x-auto pb-1 scrollbar-none">
-              <button onClick={() => setSection('')}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap flex-shrink-0 transition-colors ${section === '' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                All ({products.length})
-              </button>
+            <div className="chip-row">
+              <button className={`chip${!section ? ' act' : ''}`} onClick={() => setSection('')}>All <span className="ct">{products.length}</span></button>
               {sections.map(s => {
                 const cnt = products.filter(p => p.section === s).length;
                 return (
-                  <button key={s} onClick={() => setSection(s === section ? '' : s)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap flex-shrink-0 transition-colors ${section === s ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}>
-                    {s} {cnt > 0 && `(${cnt})`}
+                  <button key={s} className={`chip${section === s ? ' act' : ''}`} onClick={() => setSection(s === section ? '' : s)}>
+                    {s} {cnt > 0 && <span className="ct">{cnt}</span>}
                   </button>
                 );
               })}
             </div>
           )}
 
-          {/* Product grid */}
           {filtered.length === 0 ? (
-            <div className="py-20 flex flex-col items-center text-gray-400">
-              <div className="text-5xl mb-4">{icon}</div>
-              <div className="font-semibold text-sm mb-1">No {nounPlural.toLowerCase()} yet</div>
-              <div className="text-xs mb-4">Add your first {noun.toLowerCase()} to show it on your store</div>
-              {!isEnquiry && (
-                <button onClick={() => setModal('add')} className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-orange-500 text-white font-bold text-sm rounded-xl hover:shadow-md transition-shadow">
-                  + Add {noun}
-                </button>
-              )}
+            <div className="empty">
+              <div className="em">{icon}</div>
+              <div className="h">No {nounPlural.toLowerCase()} yet</div>
+              <div className="t">Add your first {noun.toLowerCase()} to show it on your store.</div>
+              {!isEnquiry && <button className="btn-ink" onClick={() => setModal('add')}>+ Add {noun}</button>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
               {filtered.map(product => (
-                <ProductCard key={product.id} product={product} onEdit={setModal} onDelete={handleDelete} onToggle={handleToggle} />
+                <ProductRow key={product.id} product={product} schema={schema} onEdit={setModal} onDelete={handleDelete} onToggle={handleToggle} />
               ))}
               {!isEnquiry && (
-                <button onClick={() => setModal('add')}
-                  className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center text-gray-400 hover:border-orange-300 hover:text-orange-400 transition-colors flex flex-col items-center justify-center gap-2 min-h-[120px]">
-                  <span className="text-2xl">+</span>
-                  <span className="text-xs font-semibold">Add {noun}</span>
+                <button className="add-card" onClick={() => setModal('add')}>
+                  <span className="em">+</span>
+                  <span className="t">Add {noun}</span>
                 </button>
               )}
             </div>
@@ -778,7 +874,7 @@ export default function ProductsPage() {
         </>
       )}
 
-      {/* Standard Product Modal */}
+      {/* ProductFormModal (standard view) */}
       {modal && !isMasterCatalogue && (
         <ProductFormModal
           schema={schema}
@@ -788,6 +884,7 @@ export default function ProductsPage() {
           onSave={handleSave}
         />
       )}
+
       <QuotaWallModal quota={quota} onClose={closeQuota} />
     </div>
   );

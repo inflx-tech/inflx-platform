@@ -1,0 +1,31 @@
+{
+  "feature": "redesign-flow-13-brand-web-products-gallery",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-24 chat \"ok pls proceed, locked\" — confirmed 2-route bundle: image grids for visual catalogues (master + brand assets) + compact row cards for text-heavy (standard products + reference links + contracts). Listing engine spine preserved verbatim. Founder delegated 4 layout decisions to agent's best call (all defaulted to Recommended options).",
+  "approved_at": "2026-05-24",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-24 chat \"ok pls proceed, locked\" — locked Flow 13 mockup (6 states: products master / products standard / ProductFormModal / gallery assets / gallery links / gallery contracts + PDF modal)",
+  "mockup_locked_at": "2026-05-24",
+  "notes": "Web brand products + gallery dispatchers — 2 routes (794 + 624 = 1,418 LOC OLD → 891 + 769 = 1,660 LOC NEW). Restyles wave1 multi-color/gradient pages into wave2 locked-palette pages. CRITICAL SCOPE BOUNDARY: products/components/ directory (~5,500 LOC — the schema-driven listing engine spine per project_inflx_overview, including templateRegistry / ListingTemplateLayout / per-category drivers for restaurant/salon/car_rental/fashion) is PRESERVED VERBATIM. The ListingWizard pass-through path on /products when listing_engine_active=true is unchanged. Restyles only the dispatcher page.js files + their inline modals (ProductFormModal · ActivateModal · EditPriceModal · EditAssetModal · LinkModal · ContractPreviewModal). New: image-card grids restyled for master catalogue + brand assets (visual selection); compact row cards for standard products + reference links + contracts (Flow 9/10/11/12 pattern). NEW backend fields surfaced: relative upload date on asset cards + palette tag chips + campaign goal tag on contracts. Adjacent-fixes: gallery's duplicate fmtRupees helper removed (uses shared lib/api) + Tailwind contract status colors → palette + loading skeletons + no-op availing-modes regex. Zero backend / API / schema / DB change. CSS scoping discipline under .prd + .gal wrappers from day 1.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-25T04:22:37Z",
+      "result": "75/75 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 102,
+      "report": "qa/reports/2026-05-25T04-22-37-798Z/QA-REPORT.md",
+      "first_run_clean": true,
+      "note": "First-run clean after applying Flow 12 lesson — killed stale node processes before run to avoid environmental hydration flake. No web tests cover /dashboard/products or /dashboard/gallery directly; regression gate covers no-existing-route-broke."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}
