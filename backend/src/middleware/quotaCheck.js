@@ -216,6 +216,53 @@ async function _findUpgradeTiers(client, featureKey, currentTierKey, currentLimi
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Shared evaluator — returns the quota state without throwing.
+// Used by the middleware (which throws on would_block) AND by the
+// /brands/me/quota-preflight endpoint (which returns the state as JSON
+// so frontend can show the popup BEFORE the user fills a form).
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function evaluateQuota(req, action) {
+  const cfg = ACTIONS[action];
+  if (!cfg) throw new Error(`evaluateQuota: unknown action '${action}'`);
+  if (!req.user?.sub) throw new AppError('UNAUTHORIZED', 'Authentication required', 401);
+  const brandId = await _getBrandIdFromUser(db, req.user.sub);
+  if (!brandId) throw new AppError('FORBIDDEN', 'No brand profile for this user', 403);
+
+  const sub   = await _ensureSubscription(db, brandId);
+  const limit = await entitlementsService.quotaFor(db, brandId, cfg.feature_key);
+
+  // -1 = unlimited; null = neither tier_features nor catalog default set.
+  if (limit === -1 || limit == null) {
+    return {
+      action,
+      feature_key:  cfg.feature_key,
+      would_block:  false,
+      used:         0,
+      limit:        limit == null ? null : -1,
+      current_tier: sub.tier_key,
+      upgrade_to:   [],
+    };
+  }
+
+  const used = await cfg.counter(db, sub, brandId, req);
+  const would_block = used >= limit;
+  const upgrade_to = would_block
+    ? await _findUpgradeTiers(db, cfg.feature_key, sub.tier_key, limit)
+    : [];
+
+  return {
+    action,
+    feature_key:  cfg.feature_key,
+    would_block,
+    used,
+    limit,
+    current_tier: sub.tier_key,
+    upgrade_to,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Middleware factory
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -224,38 +271,20 @@ function checkQuota(action) {
   if (!cfg) throw new Error(`checkQuota: unknown action '${action}'`);
 
   return asyncHandler(async (req, res, next) => {
-    if (!req.user?.sub) {
-      return next(new AppError('UNAUTHORIZED', 'Authentication required', 401));
-    }
-    const brandId = await _getBrandIdFromUser(db, req.user.sub);
-    if (!brandId) {
-      return next(new AppError('FORBIDDEN', 'No brand profile for this user', 403));
-    }
-
-    const sub = await _ensureSubscription(db, brandId);
-    // Live entitlement lookup — picks up admin's tier_features edits.
-    const limit = await entitlementsService.quotaFor(db, brandId, cfg.feature_key);
-
-    // -1 sentinel = unlimited (enterprise + future custom tiers).
-    // null = no entitlement row AND no catalog default → defensive pass.
-    if (limit === -1 || limit == null) return next();
-
-    const used = await cfg.counter(db, sub, brandId, req);
-
-    if (used >= limit) {
-      const upgrade_to = await _findUpgradeTiers(db, cfg.feature_key, sub.tier_key, limit);
+    const r = await evaluateQuota(req, action);
+    if (r.would_block) {
       throw new AppError(
         'QUOTA_EXCEEDED',
-        `Limit reached on the ${sub.tier_key} plan: ${cfg.label} (${used} / ${limit}). Upgrade to continue.`,
+        `Limit reached on the ${r.current_tier} plan: ${cfg.label} (${r.used} / ${r.limit}). Upgrade to continue.`,
         422,
         action,
         {
-          action,
-          feature_key:  cfg.feature_key,
-          used,
-          limit,
-          current_tier: sub.tier_key,
-          upgrade_to,
+          action:       r.action,
+          feature_key:  r.feature_key,
+          used:         r.used,
+          limit:        r.limit,
+          current_tier: r.current_tier,
+          upgrade_to:   r.upgrade_to,
         }
       );
     }
@@ -263,4 +292,9 @@ function checkQuota(action) {
   });
 }
 
-module.exports = { checkQuota, _ACTIONS_FOR_TEST: ACTIONS, _ensureSubscriptionForTest: _ensureSubscription };
+module.exports = {
+  checkQuota,
+  evaluateQuota,
+  _ACTIONS_FOR_TEST: ACTIONS,
+  _ensureSubscriptionForTest: _ensureSubscription,
+};

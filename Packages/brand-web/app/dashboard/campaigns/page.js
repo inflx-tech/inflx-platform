@@ -2,7 +2,8 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { campaignApi, fmtRupees } from '../../../lib/api';
+import { campaignApi, brandApi, fmtRupees } from '../../../lib/api';
+import { QuotaWallModal, useQuotaWall } from '../../../components/QuotaWallModal';
 
 // ─── Status pill config (locked palette) ────────────────────────────────────
 
@@ -333,6 +334,7 @@ function StatusChip({ label, count, active, onClick }) {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function CampaignsPage() {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -347,6 +349,37 @@ export default function CampaignsPage() {
   // Modal state
   const [modal, setModal] = useState({ open: false, type: null });
   const [bulkLoading, setBulkLoading] = useState(false);
+
+  // Phase A12.1.5 — preflight quota on "+ New campaign" entry click so the
+  // upgrade popup fires BEFORE the brand fills out the campaign form.
+  const { quota, show: showQuota, close: closeQuota } = useQuotaWall();
+  const [preflighting, setPreflighting] = useState(false);
+  async function goCreate() {
+    if (preflighting) return;
+    setPreflighting(true);
+    try {
+      const pf = await brandApi.quotaPreflight('createCampaign');
+      if (pf?.success !== false && pf?.data?.would_block) {
+        showQuota({
+          action:       pf.data.action,
+          used:         pf.data.used,
+          limit:        pf.data.limit,
+          current_tier: pf.data.current_tier,
+          upgrade_to:   pf.data.upgrade_to || [],
+          message:      `You've used ${pf.data.used} of ${pf.data.limit} active campaigns on the ${pf.data.current_tier?.toUpperCase()} plan. Upgrade to create more.`,
+        });
+        return;
+      }
+      router.push('/dashboard/campaigns/new');
+    } catch (e) {
+      // On any preflight error, fail-open: navigate to the form so the
+      // brand isn't blocked by transient API hiccups; the form submit
+      // will still hit the real gate.
+      router.push('/dashboard/campaigns/new');
+    } finally {
+      setPreflighting(false);
+    }
+  }
 
   // Fetch campaigns
   const fetchCampaigns = useCallback(() => {
@@ -465,13 +498,15 @@ export default function CampaignsPage() {
             <span className="font-mono font-semibold text-[#0A0A0A]">{draftCount}</span> draft{draftCount !== 1 ? 's' : ''}
           </div>
         </div>
-        <Link
-          href="/dashboard/campaigns/new"
-          className="inline-flex items-center gap-1.5 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold text-[13.5px] px-[18px] py-[11px] rounded-[12px] transition-colors"
+        <button
+          type="button"
+          onClick={goCreate}
+          disabled={preflighting}
+          className="inline-flex items-center gap-1.5 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold text-[13.5px] px-[18px] py-[11px] rounded-[12px] transition-colors disabled:opacity-60"
         >
           <span className="font-mono font-bold">+</span>
-          New campaign
-        </Link>
+          {preflighting ? 'Checking…' : 'New campaign'}
+        </button>
       </div>
 
       {loading ? (
@@ -481,12 +516,14 @@ export default function CampaignsPage() {
           <div className="w-16 h-16 rounded-full bg-[#F4F4F5] mx-auto mb-4 inline-flex items-center justify-center font-display font-bold text-[#71717A] text-[24px]">·</div>
           <div className="font-display text-[18px] font-bold text-[#0A0A0A] mb-1.5">No campaigns yet</div>
           <div className="font-body text-sm text-[#52525B] mb-5">Create your first campaign to start working with influencers</div>
-          <Link
-            href="/dashboard/campaigns/new"
-            className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold text-sm rounded-[12px] transition-colors"
+          <button
+            type="button"
+            onClick={goCreate}
+            disabled={preflighting}
+            className="inline-flex items-center gap-1.5 px-6 py-3 bg-[#FFC107] hover:bg-[#E0A800] text-[#0A0A0A] font-display font-bold text-sm rounded-[12px] transition-colors disabled:opacity-60"
           >
-            Create campaign →
-          </Link>
+            {preflighting ? 'Checking…' : 'Create campaign →'}
+          </button>
         </div>
       ) : (
         <>
@@ -575,6 +612,8 @@ export default function CampaignsPage() {
         onCancel={() => setModal({ open: false, type: null })}
         loading={bulkLoading}
       />
+      {/* Phase A12.1.5 — quota popup for "+ New campaign" preflight */}
+      <QuotaWallModal quota={quota} onClose={closeQuota} />
     </div>
   );
 }

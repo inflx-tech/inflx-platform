@@ -1,0 +1,31 @@
+{
+  "feature": "billing-quota-preflight",
+  "area": "backend+brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-25) — explicit 'need a clarity this enforcement is while submitting campaign or even trying to create campaign.....if at submit pls change to while creating itself'. Standing autonomy applied.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Vercel redeploys brand-web (2 page wiring changes + 1 api client method); Render redeploys backend (1 new route + 1 controller fn + middleware refactor). No DB migration. No mobile.",
+  "fix": "Phase A12.1.5 — preflight quota check fires on entry-button click (+ New campaign, + Add product). Popup shows BEFORE the brand fills out the form when quota is exceeded. evaluateQuota extracted as shared helper; new GET /brands/me/quota-preflight endpoint; QuotaWallModal wired into campaigns page (products already had it).",
+  "related": [
+    "features/billing-enforce-quota-features",
+    "features/billing-quota-middleware",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "Backend evaluateQuota extracted + quotaPreflight endpoint wired. Frontend campaigns + products entry buttons preflight-gated. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (90s). Backend boot smoke clean. Ready to push.",
+  "regression_proof": "Middleware exports unchanged; checkQuota now thin wrapper around evaluateQuota. Same 4 routes use it. Submit-time enforcement unchanged. Frontend page rewrites scoped to entry-button click handlers; nothing else touched. Fail-open posture means preflight failures degrade gracefully. Backend boot smoke clean.",
+  "discipline": "Verify-twice on entry-button locations (campaigns page 2 sites at lines 469+485; products page 3 sites at 794, 859, 867). QuotaWallModal already imported in both pages from A9 — no new component dependencies.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Vercel + Render redeploy; no migration)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-25) — visual baseline identical (same QuotaWallModal component from A7-brand wave2 palette).",
+  "mockup_locked_at": "2026-05-25"
+}

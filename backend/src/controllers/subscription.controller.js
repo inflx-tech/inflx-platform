@@ -332,6 +332,33 @@ const listInvoices = asyncHandler(async (req, res) => {
 // ADMIN ENDPOINTS  (Phase A7-admin)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ── GET /v1/brands/me/quota-preflight?action=…&campaign_id=… ────────────────
+// Phase A12.1.5: frontend calls this on entry-button click (e.g. "+ New
+// campaign", "+ Add product") to decide whether to open the create flow
+// OR show the upgrade popup immediately. Same logic as the middleware
+// gate, but returns the state as JSON instead of throwing 422.
+const VALID_PREFLIGHT_ACTIONS = ['createCampaign', 'createProduct', 'createSet', 'inviteInfluencer'];
+const { evaluateQuota } = require('../middleware/quotaCheck');
+const quotaPreflight = asyncHandler(async (req, res) => {
+  const action = String(req.query.action || '').trim();
+  if (!VALID_PREFLIGHT_ACTIONS.includes(action)) {
+    throw new AppError(
+      'VALIDATION_ERROR',
+      `action must be one of: ${VALID_PREFLIGHT_ACTIONS.join(', ')}`,
+      422, 'action'
+    );
+  }
+  // For createSet preflight, frontend should pass ?campaign_id=… so the
+  // counter can compute sets-in-that-campaign correctly. The evaluator
+  // reads it from req.query just like the middleware would from req.params.
+  if (action === 'createSet' && req.query.campaign_id) {
+    req.params = req.params || {};
+    req.params.campaignId = req.query.campaign_id;
+  }
+  const r = await evaluateQuota(req, action);
+  return success(res, r);
+});
+
 // ── GET /v1/admin/subscription-tiers ─────────────────────────────────────────
 const adminListTiers = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
@@ -560,7 +587,7 @@ const adminListInvoices = asyncHandler(async (req, res) => {
 
 module.exports = {
   // Public + brand
-  listTiers, getSubscription, upgrade, listInvoices,
+  listTiers, getSubscription, upgrade, listInvoices, quotaPreflight,
   // Admin (Phase A7-admin)
   adminListTiers, adminCreateTier, adminUpdateTier, adminListSubscriptions, adminListInvoices,
 };

@@ -643,12 +643,41 @@ export default function ProductsPage() {
   const [saving,    setSaving]    = useState(false);
   const [toast,     setToast]     = useState(null);
   const [section,   setSection]   = useState('');
-  const { quota, showFromResponse, close: closeQuota } = useQuotaWall();
+  const { quota, showFromResponse, show: showQuota, close: closeQuota } = useQuotaWall();
+  const [preflighting, setPreflighting] = useState(false);
 
   const showToast = useCallback((msg, type = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3200);
   }, []);
+
+  // Phase A12.1.5 — preflight on the "+ Add product" entry click so the
+  // upgrade popup fires BEFORE the brand opens the add-product modal.
+  const openCreateProduct = useCallback(async () => {
+    if (preflighting) return;
+    setPreflighting(true);
+    try {
+      const pf = await brandApi.quotaPreflight('createProduct');
+      if (pf?.success !== false && pf?.data?.would_block) {
+        showQuota({
+          action:       pf.data.action,
+          used:         pf.data.used,
+          limit:        pf.data.limit,
+          current_tier: pf.data.current_tier,
+          upgrade_to:   pf.data.upgrade_to || [],
+          message:      `You've listed ${pf.data.used} of ${pf.data.limit} products on the ${pf.data.current_tier?.toUpperCase()} plan. Upgrade to add more.`,
+        });
+        return;
+      }
+      setModal('add');
+    } catch (e) {
+      // Fail-open: open the modal so transient API hiccups don't block
+      // the brand; the submit will hit the real gate.
+      setModal('add');
+    } finally {
+      setPreflighting(false);
+    }
+  }, [preflighting, showQuota]);
 
   // Feature-flag check
   useEffect(() => {
@@ -791,7 +820,7 @@ export default function ProductsPage() {
             : `Items shown to followers when they tap your store link from an influencer's recommendation.`}</div>
         </div>
         {!isMasterCatalogue && !isEnquiry && (
-          <button className="btn-ink" onClick={() => setModal('add')}>+ Add {noun}</button>
+          <button className="btn-ink" onClick={openCreateProduct} disabled={preflighting}>{preflighting ? 'Checking…' : `+ Add ${noun}`}</button>
         )}
       </div>
 
@@ -856,7 +885,7 @@ export default function ProductsPage() {
               <div className="em">{icon}</div>
               <div className="h">No {nounPlural.toLowerCase()} yet</div>
               <div className="t">Add your first {noun.toLowerCase()} to show it on your store.</div>
-              {!isEnquiry && <button className="btn-ink" onClick={() => setModal('add')}>+ Add {noun}</button>}
+              {!isEnquiry && <button className="btn-ink" onClick={openCreateProduct} disabled={preflighting}>{preflighting ? 'Checking…' : `+ Add ${noun}`}</button>}
             </div>
           ) : (
             <div>
@@ -864,9 +893,9 @@ export default function ProductsPage() {
                 <ProductRow key={product.id} product={product} schema={schema} onEdit={setModal} onDelete={handleDelete} onToggle={handleToggle} />
               ))}
               {!isEnquiry && (
-                <button className="add-card" onClick={() => setModal('add')}>
+                <button className="add-card" onClick={openCreateProduct} disabled={preflighting}>
                   <span className="em">+</span>
-                  <span className="t">Add {noun}</span>
+                  <span className="t">{preflighting ? 'Checking…' : `Add ${noun}`}</span>
                 </button>
               )}
             </div>
