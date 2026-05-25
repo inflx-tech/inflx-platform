@@ -1,0 +1,23 @@
+{
+  "feature": "redesign-flow-18-brand-mobile-notifications",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-25 chat — Flow 18 mockup locked as-is",
+  "mockup_locked_at": "2026-05-25",
+  "notes": "First flow of the mobile-brand bucket (after brand-web COMPLETE 17/17 on 2026-05-25). Single-screen scope to validate mobile rhythm: RN StyleSheet adaptation, new brandPalette export in theme/tokens.js (locked 8-hex spec), OTA × 3 deploy ceremony, Maestro posture (GOVERNANCE_OVERRIDE for this release; Maestro setup deferred to its own contract). Behavior preserved 1:1 — visual + UX only.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 18"
+  }
+}

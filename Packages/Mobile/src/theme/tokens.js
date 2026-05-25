@@ -141,6 +141,58 @@ export const lightColors = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Brand Palette (Wave 2 — brand-web → mobile-brand parity)
+// ─────────────────────────────────────────────────────────────────────────────
+// Locked 8-hex spec adopted across the 17 brand-web redesign flows shipped
+// 2026-04 → 2026-05-25. Mobile-brand bucket (Flows 18+) consumes this export
+// directly. Kept separate from `lightColors` so the 24 Wave-3 follower /
+// restaurant screens that already consume `lightColors` see zero visual
+// change (notable: `lightColors.yellow = #EAB308` vs brandPalette.yellow =
+// #FFC107 — different shades by design).
+
+export const brandPalette = {
+  // Surfaces
+  white:        '#FFFFFF',
+  bg:           '#FAFAFA',
+  bg2:          '#F4F4F5',
+
+  // Yellow ladder
+  yellow:       '#FFC107',
+  yellowHover:  '#E0A800',
+  yellowPale:   '#FFF7CC',
+  yellow50:     '#FFFDEB',
+  yellowText:   '#6B5A00',
+
+  // Ink + muted ladder
+  ink:          '#0A0A0A',
+  ink2:         '#1F1F22',
+  muted:        '#52525B',
+  muted2:       '#71717A',
+  muted3:       '#A1A1AA',
+  muted4:       '#D4D4D8',
+
+  // Borders
+  border:       '#E4E4E7',
+  borderSoft:   '#F4F4F5',
+
+  // Status pales (per Flow 15 brand-web pattern)
+  success:      '#10B981',
+  successPale:  '#D1FAE5',
+  successText:  '#047857',
+  danger:       '#E8401A',
+  dangerPale:   '#FDEEE9',
+  dangerText:   '#B91C1C',
+  conv:         '#7E22CE',
+  convPale:     '#F3E8FF',
+  eng:          '#0E7490',
+  engPale:      '#CFFAFE',
+  hyb:          '#6B5A00',
+  hybPale:      '#FFF7CC',
+  info:         '#1D4ED8',
+  infoPale:     '#DBEAFE',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Per-Business Accent Colors
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 18 · brand-mobile notifications — wave2 mockup (phone 375px)</title>
+<meta name="viewport" content="width=1280" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+
+.wrap{max-width:1280px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:980px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+/* ── Phone-frame chrome ──────────────────────────────────────────── */
+.row{display:flex;gap:32px;align-items:flex-start;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:14px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{
+  width:375px;
+  background:var(--ink);
+  border-radius:42px;
+  padding:10px;
+  box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05);
+}
+.phone-inner{
+  background:var(--bg);
+  border-radius:34px;
+  overflow:hidden;
+  height:744px;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+}
+.notch{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  width:118px;height:28px;background:var(--ink);border-radius:18px;
+  z-index:10;
+}
+.status-bar{
+  height:44px;background:var(--ink);color:var(--white);
+  display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;
+  flex-shrink:0;
+}
+.status-bar .ind{display:flex;gap:5px;align-items:center}
+.status-bar .ind .bars{display:inline-flex;gap:2px;align-items:flex-end}
+.status-bar .ind .bars span{width:3px;background:var(--white);border-radius:1px}
+.status-bar .ind .bars span:nth-child(1){height:4px}
+.status-bar .ind .bars span:nth-child(2){height:6px}
+.status-bar .ind .bars span:nth-child(3){height:8px}
+.status-bar .ind .bars span:nth-child(4){height:10px}
+.status-bar .ind .wifi{font-size:10px}
+.status-bar .ind .bat{border:1px solid var(--white);border-radius:3px;padding:1px 3px;font-size:9px;line-height:1}
+
+/* ── Topbar (replaces navy header) ──────────────────────────────── */
+.topbar{
+  background:var(--ink);color:var(--white);
+  padding:18px 20px 16px;
+  flex-shrink:0;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+}
+.topbar-l{display:flex;flex-direction:column;gap:6px}
+.topbar h1{
+  font-family:'Outfit';font-size:22px;font-weight:700;letter-spacing:-.3px;
+}
+.topbar .rule{width:36px;height:3px;background:var(--yellow);border-radius:2px}
+.cnt-chip{
+  display:inline-flex;align-items:center;padding:4px 10px;border-radius:99px;
+  background:var(--yellow);color:var(--ink);
+  font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;
+  margin-top:2px;width:max-content;
+}
+.cnt-chip.zero{background:rgba(255,255,255,.12);color:var(--white)}
+.mark-all-pill{
+  padding:8px 14px;border-radius:99px;
+  background:var(--yellow);color:var(--ink);
+  font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:700;
+  border:0;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.mark-all-pill .ic{font-family:'JetBrains Mono';font-size:10px;font-weight:800}
+
+/* ── Refresh affordance hint ─────────────────────────────────────── */
+.refresh-hint{
+  font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-3);
+  text-align:center;padding:8px 0 4px;background:var(--bg);flex-shrink:0;
+}
+.refresh-hint .arrow{display:inline-block;color:var(--yellow);font-weight:800;margin-right:4px}
+
+/* ── Scroll body ─────────────────────────────────────────────────── */
+.body{
+  flex:1;overflow-y:auto;background:var(--bg);
+  padding:6px 14px 24px;
+}
+
+/* ── Notification card ───────────────────────────────────────────── */
+.nc{
+  background:var(--white);border:1px solid var(--border);border-radius:14px;
+  padding:13px;margin-bottom:8px;
+  display:grid;grid-template-columns:38px 1fr auto;gap:11px;align-items:flex-start;
+  position:relative;
+}
+.nc.unread{background:var(--yellow-50);border-color:var(--yellow-pale)}
+.nc.unread::after{
+  content:'';position:absolute;top:14px;right:13px;
+  width:8px;height:8px;border-radius:50%;background:var(--yellow);
+}
+.nc-av{
+  width:38px;height:38px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;letter-spacing:.4px;
+  background:var(--yellow-pale);color:var(--yellow-text);
+}
+.nc-av.success{background:var(--success-pale);color:var(--success-text)}
+.nc-av.danger{background:var(--danger-pale);color:var(--danger-text)}
+.nc-av.conv{background:var(--conv-pale);color:var(--conv)}
+.nc-av.eng{background:var(--eng-pale);color:var(--eng)}
+.nc-av.info{background:var(--info-pale);color:var(--info)}
+.nc-av.fallback{background:var(--bg2);color:var(--muted-2)}
+
+.nc-mid{min-width:0;display:flex;flex-direction:column;gap:3px;padding-right:16px}
+.nc-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.nc-body{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted);line-height:1.45;font-weight:500}
+.nc-foot{display:flex;align-items:center;gap:10px;margin-top:4px}
+.nc-time{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-3);font-weight:600}
+.nc-link{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--yellow-text);font-weight:700;display:inline-flex;align-items:center;gap:2px}
+.nc-link b{font-family:'JetBrains Mono';color:var(--yellow);font-weight:800}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.empty{
+  margin:24px 16px;
+  background:var(--white);
+  border:1.5px dashed var(--yellow-pale);
+  border-radius:18px;
+  padding:42px 24px;
+  text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+}
+.empty .ic{
+  width:56px;height:56px;border-radius:14px;
+  background:var(--yellow-pale);color:var(--yellow-text);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-weight:800;font-size:12px;letter-spacing:.4px;
+}
+.empty .ttl{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.empty .sub{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);max-width:240px;line-height:1.5}
+
+/* ── Loading state ───────────────────────────────────────────────── */
+.loading{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;padding:80px 20px;flex:1;
+}
+.loading .sp{
+  width:38px;height:38px;border-radius:50%;
+  border:3px solid var(--yellow-pale);border-top-color:var(--yellow);
+}
+.loading .txt{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+
+/* ── Bottom safe-area hint ───────────────────────────────────────── */
+.home-bar{
+  position:absolute;bottom:0;left:0;right:0;height:24px;
+  display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;
+  pointer-events:none;
+}
+.home-bar .pill{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* ── Type legend (right column) ──────────────────────────────────── */
+.legend{
+  background:var(--white);border:1px solid var(--border);border-radius:16px;
+  padding:18px 18px 16px;width:320px;
+}
+.legend h2{
+  font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);
+  margin-bottom:4px;
+}
+.legend .sub{
+  font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);
+  margin-bottom:14px;text-transform:uppercase;letter-spacing:.4px;
+}
+.lg-row{
+  display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;
+  padding:7px 0;border-top:1px solid var(--border-soft);
+}
+.lg-row:first-of-type{border-top:0}
+.lg-av{
+  width:30px;height:30px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;letter-spacing:.3px;
+}
+.lg-row .name{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:var(--ink)}
+.lg-row .tag{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+
+/* ── Side notes panel ────────────────────────────────────────────── */
+.notes{
+  background:var(--white);border:1px solid var(--border);border-radius:16px;
+  padding:18px 20px;width:320px;margin-top:16px;
+}
+.notes h3{
+  font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink);
+  margin-bottom:4px;
+}
+.notes .sub{
+  font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);
+  margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;
+}
+.notes ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.notes li{
+  font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.5;
+  padding-left:14px;position:relative;
+}
+.notes li::before{
+  content:'';position:absolute;left:0;top:7px;
+  width:6px;height:6px;border-radius:50%;background:var(--yellow);
+}
+.notes li b{color:var(--ink);font-weight:700}
+.notes li code{font-family:'JetBrains Mono';font-size:10.5px;background:var(--bg2);padding:1px 5px;border-radius:4px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">
+    <h1>Flow 18 · brand-mobile notifications surface · wave2 redesign</h1>
+    <div class="sub">
+      First flow of the <b>mobile-brand bucket</b> (brand-web COMPLETE 17/17 on 2026-05-25 · HEAD <b>0806425</b>).
+      Single-screen scope to validate the mobile rhythm: <b>RN StyleSheet</b> adaptation, new <b>brandPalette</b> export
+      appended to <code style="color:var(--yellow);font-family:'JetBrains Mono'">theme/tokens.js</code> (locked 8-hex spec
+      — yellow / ink / paper / muted ladder / status pales), <b>OTA × 3</b> deploy ceremony, Maestro posture via
+      <b>GOVERNANCE_OVERRIDE</b> for this release. <b>Behavior preserved 1:1</b> — all 14 notification types, 5
+      data-driven nav routes, optimistic mark-read, pull-to-refresh, empty state.
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- ── PHONE 1 — populated state ─────────────────────────────── -->
+    <div class="col">
+      <div class="col-label">phone <b>375 × 812</b> · populated · <b>3 unread</b></div>
+      <div class="phone">
+        <div class="phone-inner">
+          <div class="notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="ind">
+              <span class="bars"><span></span><span></span><span></span><span></span></span>
+              <span class="wifi">📶</span>
+              <span class="bat">87</span>
+            </div>
+          </div>
+
+          <div class="topbar">
+            <div class="topbar-l">
+              <h1>Notifications</h1>
+              <span class="rule"></span>
+              <span class="cnt-chip">3 UNREAD</span>
+            </div>
+            <button class="mark-all-pill">
+              <span class="ic">✓</span> Mark all read
+            </button>
+          </div>
+
+          <div class="refresh-hint"><span class="arrow">↓</span> Pull to refresh</div>
+
+          <div class="body">
+
+            <!-- account_approved · unread -->
+            <div class="nc unread">
+              <div class="nc-av">[OK]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Brand account approved</div>
+                <div class="nc-body">Your brand is now live. You can publish your first campaign.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">5m ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- contract_signed · unread -->
+            <div class="nc unread">
+              <div class="nc-av eng">[DOC]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Aakash signed the contract</div>
+                <div class="nc-body">Tranche 1 of ₹4,500 will be released when both sides have signed.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">18m ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- tranche_released · unread -->
+            <div class="nc unread">
+              <div class="nc-av">[RS]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Tranche 1 released · ₹4,500</div>
+                <div class="nc-body">Influencer can now begin work on the deliverable for Diwali Combo Push.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">1h ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- offer_accepted -->
+            <div class="nc">
+              <div class="nc-av success">[+]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Riya accepted your offer</div>
+                <div class="nc-body">Reels Package · ₹3,000 fee + 8% commission. Ready to draft the contract.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">3h ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- negotiation_turn -->
+            <div class="nc">
+              <div class="nc-av conv">[CHAT]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Sneha sent a counter-offer</div>
+                <div class="nc-body">Proposed ₹5,500 fee, no commission. Your move (turn 3 of 6).</div>
+                <div class="nc-foot">
+                  <span class="nc-time">5h ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- content_live -->
+            <div class="nc">
+              <div class="nc-av success">[LIVE]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Content is live on Instagram</div>
+                <div class="nc-body">Aakash's reel for Diwali Combo Push went live. Confirm to release tranche 2.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">8h ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- offer_declined -->
+            <div class="nc">
+              <div class="nc-av danger">[X]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Nidhi declined your offer</div>
+                <div class="nc-body">Reason: budget below their floor. You can re-invite with a counter.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">Yesterday</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- commission_earned -->
+            <div class="nc">
+              <div class="nc-av">[RS]</div>
+              <div class="nc-mid">
+                <div class="nc-name">3 conversions in the last 24h · ₹847 commission</div>
+                <div class="nc-body">Attributed to Riya's reel — payout window opens in 30 days.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">Yesterday</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- low_wallet -->
+            <div class="nc">
+              <div class="nc-av danger">[!]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Wallet balance is low</div>
+                <div class="nc-body">₹2,300 remaining. Top up before your next campaign to avoid publish-block.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">2d ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- withdrawal_processed -->
+            <div class="nc">
+              <div class="nc-av">[$]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Withdrawal of ₹12,000 processed</div>
+                <div class="nc-body">Net ₹10,800 (after 10% TDS) credited to HDFC ••4521.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">3d ago</span>
+                  <span class="nc-link">Tap to open <b>›</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- content_submitted -->
+            <div class="nc">
+              <div class="nc-av info">[UP]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Aakash submitted draft content</div>
+                <div class="nc-body">2 deliverables waiting in your review queue.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">5d ago</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- account_rejected -->
+            <div class="nc">
+              <div class="nc-av danger">[X]</div>
+              <div class="nc-mid">
+                <div class="nc-name">Earlier brand registration was rejected</div>
+                <div class="nc-body">Reason: GSTIN mismatch. Resubmit from the profile screen.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">1w ago</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- fallback type -->
+            <div class="nc">
+              <div class="nc-av fallback">[*]</div>
+              <div class="nc-mid">
+                <div class="nc-name">System update applied</div>
+                <div class="nc-body">No action needed.</div>
+                <div class="nc-foot">
+                  <span class="nc-time">2w ago</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="home-bar"><span class="pill"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PHONE 2 — empty + loading states ──────────────────────── -->
+    <div class="col">
+      <div class="col-label">phone <b>375 × 812</b> · empty state</div>
+      <div class="phone">
+        <div class="phone-inner">
+          <div class="notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="ind">
+              <span class="bars"><span></span><span></span><span></span><span></span></span>
+              <span class="wifi">📶</span>
+              <span class="bat">87</span>
+            </div>
+          </div>
+
+          <div class="topbar">
+            <div class="topbar-l">
+              <h1>Notifications</h1>
+              <span class="rule"></span>
+              <span class="cnt-chip zero">0 UNREAD</span>
+            </div>
+          </div>
+
+          <div class="refresh-hint"><span class="arrow">↓</span> Pull to refresh</div>
+
+          <div class="body" style="display:flex;align-items:flex-start;justify-content:center">
+            <div class="empty">
+              <div class="ic">[BELL]</div>
+              <div class="ttl">No notifications yet</div>
+              <div class="sub">You'll see updates here when influencers respond, contracts move, or money flows.</div>
+            </div>
+          </div>
+          <div class="home-bar"><span class="pill"></span></div>
+        </div>
+      </div>
+
+      <div class="col-label" style="margin-top:14px">phone <b>375 × 812</b> · loading state</div>
+      <div class="phone">
+        <div class="phone-inner">
+          <div class="notch"></div>
+          <div class="status-bar">
+            <span>9:41</span>
+            <div class="ind">
+              <span class="bars"><span></span><span></span><span></span><span></span></span>
+              <span class="wifi">📶</span>
+              <span class="bat">87</span>
+            </div>
+          </div>
+
+          <div class="topbar">
+            <div class="topbar-l">
+              <h1>Notifications</h1>
+              <span class="rule"></span>
+            </div>
+          </div>
+
+          <div class="loading">
+            <div class="sp"></div>
+            <div class="txt">Loading…</div>
+          </div>
+          <div class="home-bar"><span class="pill"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Legend + notes (right column) ─────────────────────────── -->
+    <div class="col" style="align-items:flex-start">
+      <div class="legend">
+        <h2>Notification type → avatar</h2>
+        <div class="sub">14 backend types · all covered</div>
+
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--yellow-pale);color:var(--yellow-text)">[OK]</div>
+          <div class="name">Brand account approved</div>
+          <div class="tag">account</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--danger-pale);color:var(--danger-text)">[X]</div>
+          <div class="name">Account rejected</div>
+          <div class="tag">account</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--success-pale);color:var(--success-text)">[+]</div>
+          <div class="name">Offer accepted</div>
+          <div class="tag">offer</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--danger-pale);color:var(--danger-text)">[X]</div>
+          <div class="name">Offer declined</div>
+          <div class="tag">offer</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--conv-pale);color:var(--conv)">[CHAT]</div>
+          <div class="name">Negotiation turn</div>
+          <div class="tag">nego</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--eng-pale);color:var(--eng)">[DOC]</div>
+          <div class="name">Contract signed</div>
+          <div class="tag">contract</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--info-pale);color:var(--info)">[UP]</div>
+          <div class="name">Content submitted</div>
+          <div class="tag">content</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--success-pale);color:var(--success-text)">[OK]</div>
+          <div class="name">Content approved</div>
+          <div class="tag">content</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--success-pale);color:var(--success-text)">[LIVE]</div>
+          <div class="name">Content went live</div>
+          <div class="tag">content</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--yellow-pale);color:var(--yellow-text)">[RS]</div>
+          <div class="name">Tranche released</div>
+          <div class="tag">money</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--yellow-pale);color:var(--yellow-text)">[RS]</div>
+          <div class="name">Commission earned</div>
+          <div class="tag">money</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--danger-pale);color:var(--danger-text)">[!]</div>
+          <div class="name">Wallet low</div>
+          <div class="tag">money</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--yellow-pale);color:var(--yellow-text)">[$]</div>
+          <div class="name">Withdrawal processed</div>
+          <div class="tag">money</div>
+        </div>
+        <div class="lg-row">
+          <div class="lg-av" style="background:var(--bg2);color:var(--muted-2)">[*]</div>
+          <div class="name">Unknown / fallback</div>
+          <div class="tag">other</div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3>What's preserved · what's new</h3>
+        <div class="sub">behavior 1:1 · visual only</div>
+        <ul>
+          <li><b>Preserved 1:1:</b> <code>brandApi.getNotifications</code>, <code>markAllNotificationsRead</code>, the 5-case <code>routeNotification</code> data-driven nav, the <code>TYPE_ICONS</code> ASCII placeholders, optimistic mark-read on tap, pull-to-refresh, empty state.</li>
+          <li><b>NEW palette:</b> <code>brandPalette</code> appended to <code>theme/tokens.js</code> with the locked 8-hex spec. Existing <code>colors</code> / <code>lightColors</code> / <code>darkColors</code> are <b>untouched</b> — 24 Wave-3 follower/restaurant screens see zero change.</li>
+          <li><b>NEW visual:</b> ink topbar (replaces navy), type-coloured avatar tiles, mono timestamps in relative form ("2h ago"), yellow unread dot, yellow-pale unread card bg, yellow "Mark all read" pill, dashed-yellow empty state.</li>
+          <li><b>Fonts:</b> Outfit headings · Plus Jakarta body · JetBrains Mono digits — all already wired in <code>fonts.displayBold</code> / <code>sansRegular</code> / <code>monoBold</code> (Wave 3).</li>
+          <li><b>Deploy:</b> push triggers OTA × 3 (<code>publish-ota:brand</code> + <code>:influencer</code> + <code>:follower</code>; shared bundle, 3 audit registrations). Maestro Rule 5 satisfied via <code>GOVERNANCE_OVERRIDE</code> on this release.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
