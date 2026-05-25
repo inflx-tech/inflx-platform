@@ -21,11 +21,19 @@
       "first_run_clean": false,
       "note": "1st run had 1 GENUINE code regression (meals-setup.spec.ts: getByText('Family Mixed Pack', { exact: true }) failed because I put offer status pill inside the offer-name div, making text content 'Family Mixed Packactive' instead of exactly 'Family Mixed Pack'). Classified per feedback_qa_governance.md as assertion drift (real CSS regression caught by existing test). Fixed via 1-line CSS reorganization (moved status pill to offer-kind sibling div). 2nd run post-fix: 75/75 clean. Validates the no-fake-green discipline: real code defect caught + fixed + verified before deploy."
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-05-25 chat \"push\" (production-impacting deploy approved · same pattern as Flows 8-15)",
+    "released_at": "2026-05-25",
     "deploy_class": "production-impacting",
     "deploy_targets": ["vercel:brand-web"],
-    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched",
+    "deploy": {
+      "vercel_brand_web": {
+        "commit": "d99905d",
+        "pushed_at": "2026-05-25",
+        "trigger": "git push origin main → Vercel auto-deploy",
+        "scope": "brand-web · meals + orders + bookings + enquiries"
+      }
+    }
   }
 }
