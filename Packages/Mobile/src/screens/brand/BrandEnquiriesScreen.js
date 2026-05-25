@@ -4,8 +4,13 @@ import {
   ActivityIndicator, RefreshControl, Modal, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtMoney } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+
+/**
+ * BrandEnquiriesScreen — follower enquiries inbox + convert flow.
+ * Flow 20 (2026-05-25): navy + 4 ad-hoc status pills → brandPalette + canonical map.
+ */
 
 const STATUS_FILTERS = [
   { key: 'all',       label: 'All' },
@@ -15,13 +20,14 @@ const STATUS_FILTERS = [
   { key: 'closed',    label: 'Closed' },
 ];
 
-const STATUS_STYLES = {
-  submitted: { bg: '#FFF7ED', fg: '#C2410C' },
-  new:       { bg: '#FFF7ED', fg: '#C2410C' },
-  contacted: { bg: '#EFF6FF', fg: '#1D4ED8' },
-  responded: { bg: '#EFF6FF', fg: '#1D4ED8' },
-  converted: { bg: '#ECFDF5', fg: '#047857' },
-  closed:    { bg: '#F3F4F6', fg: '#4B5563' },
+// Canonical status → palette map (Flow 20)
+const STATUS_PILL = {
+  submitted: { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
+  new:       { bg: P.yellowPale,  fg: P.yellowText,  label: 'NEW' },
+  contacted: { bg: P.infoPale,    fg: P.info,        label: 'CONTACTED' },
+  responded: { bg: P.infoPale,    fg: P.info,        label: 'RESPONDED' },
+  converted: { bg: P.successPale, fg: P.successText, label: 'CONVERTED' },
+  closed:    { bg: P.bg2,         fg: P.muted2,      label: 'CLOSED' },
 };
 
 export default function BrandEnquiriesScreen({ navigation }) {
@@ -29,23 +35,20 @@ export default function BrandEnquiriesScreen({ navigation }) {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter]       = useState('all');
-
   const [detail, setDetail] = useState(null);
   const [converting, setConverting] = useState(false);
   const [convertAmount, setConvertAmount] = useState('');
 
   async function load(statusFilter = filter) {
-    const params = statusFilter === 'all' ? null : { status: statusFilter === 'new' ? 'submitted' : statusFilter };
+    const params = statusFilter === 'all'
+      ? null
+      : { status: statusFilter === 'new' ? 'submitted' : statusFilter };
     const res = await brandApi.getEnquiries(params);
     setLoading(false);
     if (res?.success) setEnquiries(res.data?.enquiries || []);
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      load(filter);
-    }, [filter])
-  );
+  useFocusEffect(useCallback(() => { load(filter); }, [filter]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -94,7 +97,6 @@ export default function BrandEnquiriesScreen({ navigation }) {
       return;
     }
     setConverting(true);
-    // Backend stores deal_value in rupees.
     const res = await brandApi.updateEnquiry(detail.id, { status: 'converted', deal_value: rupees });
     setConverting(false);
     if (res?.success) {
@@ -107,77 +109,70 @@ export default function BrandEnquiriesScreen({ navigation }) {
   }
 
   function StatusPill({ status }) {
-    const s = STATUS_STYLES[status] || STATUS_STYLES.closed;
+    const cfg = STATUS_PILL[status] || STATUS_PILL.closed;
     return (
-      <View style={[styles.statusPill, { backgroundColor: s.bg }]}>
-        <Text style={[styles.statusPillText, { color: s.fg }]}>
-          {status === 'submitted' ? 'new' : status}
-        </Text>
+      <View style={[s.statusPill, { backgroundColor: cfg.bg }]}>
+        <Text style={[s.statusPillText, { color: cfg.fg }]}>{cfg.label}</Text>
       </View>
     );
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return (
+      <View style={{ flex: 1, backgroundColor: P.bg }}>
+        <Header navigation={navigation} />
+        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
+      </View>
+    );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<'} Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Enquiries</Text>
-        <Text style={styles.subtitle}>Followers who asked about your business via your influencers</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: P.bg }}>
+      <Header navigation={navigation} />
 
-      {/* Filter chips */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.chipsRow} contentContainerStyle={s.chipsRowContent}>
         {STATUS_FILTERS.map(f => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.chip, filter === f.key && styles.chipActive]}
+            style={[s.chip, filter === f.key && s.chipActive]}
             onPress={() => setFilter(f.key)}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>{f.label}</Text>
+            <Text style={[s.chipText, filter === f.key && s.chipTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* List */}
       <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
+        contentContainerStyle={{ padding: 14 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
       >
         {enquiries.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No enquiries in this view</Text>
-            <Text style={styles.emptySub}>When followers submit enquiry forms on an influencer's store page, they'll show up here.</Text>
+          <View style={s.emptyCard}>
+            <View style={s.emptyIcon}><Text style={s.emptyIconText}>[MAIL]</Text></View>
+            <Text style={s.emptyText}>No enquiries in this view</Text>
+            <Text style={s.emptySub}>When followers submit enquiry forms on an influencer's store page, they'll show up here.</Text>
           </View>
         ) : (
           enquiries.map(enq => (
             <TouchableOpacity
               key={enq.id}
-              style={styles.card}
+              style={s.card}
               activeOpacity={0.8}
               onPress={() => openDetail(enq)}
             >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardName} numberOfLines={1}>{enq.follower_name || 'Unknown follower'}</Text>
+              <View style={s.cardHeader}>
+                <Text style={s.cardName} numberOfLines={1}>{enq.follower_name || 'Unknown follower'}</Text>
                 <StatusPill status={enq.status} />
               </View>
-              {enq.follower_phone && (
-                <Text style={styles.cardPhone}>{enq.follower_phone}</Text>
-              )}
-              {enq.influencer_name && (
-                <Text style={styles.cardMeta}>via @{enq.influencer_name}</Text>
-              )}
-              <Text style={styles.cardDate}>
+              {enq.follower_phone && <Text style={s.cardPhone}>{enq.follower_phone}</Text>}
+              {enq.influencer_name && <Text style={s.cardMeta}>via @{enq.influencer_name}</Text>}
+              <Text style={s.cardDate}>
                 {enq.created_at ? new Date(enq.created_at).toLocaleString('en-IN') : ''}
               </Text>
               {enq.status === 'converted' && enq.deal_value > 0 && (
-                <Text style={styles.cardDeal}>Deal value: {fmtMoney(enq.deal_value)}</Text>
+                <Text style={s.cardDeal}>Deal value: {fmtMoney(enq.deal_value)}</Text>
               )}
             </TouchableOpacity>
           ))
@@ -185,82 +180,71 @@ export default function BrandEnquiriesScreen({ navigation }) {
         <View style={{ height: 60 }} />
       </ScrollView>
 
-      {/* Detail modal */}
-      <Modal
-        visible={!!detail}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setDetail(null)}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalRoot}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={styles.modalBackdrop} />
-          <View style={styles.modalSheet}>
+      <Modal visible={!!detail} animationType="slide" transparent onRequestClose={() => setDetail(null)}>
+        <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={s.modalBackdrop} />
+          <View style={s.modalSheet}>
             <ScrollView>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Enquiry Details</Text>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Enquiry Details</Text>
                 <TouchableOpacity onPress={() => setDetail(null)}>
-                  <Text style={styles.modalClose}>{'X'}</Text>
+                  <Text style={s.modalClose}>×</Text>
                 </TouchableOpacity>
               </View>
 
               {detail && (
                 <>
                   <InfoRow label="Follower" value={detail.follower_name || '—'} />
-                  {detail.follower_phone && <InfoRow label="Phone" value={detail.follower_phone} copyable />}
+                  {detail.follower_phone && <InfoRow label="Phone" value={detail.follower_phone} mono />}
                   {detail.influencer_name && <InfoRow label="Referred by" value={`@${detail.influencer_name}`} />}
                   <InfoRow label="Status" value={(detail.status === 'submitted' ? 'new' : detail.status)} />
-                  <InfoRow label="Received" value={detail.created_at ? new Date(detail.created_at).toLocaleString('en-IN') : '—'} />
-                  {detail.deal_value > 0 && <InfoRow label="Deal value" value={fmtMoney(detail.deal_value)} />}
+                  <InfoRow label="Received" value={detail.created_at ? new Date(detail.created_at).toLocaleString('en-IN') : '—'} mono />
+                  {detail.deal_value > 0 && <InfoRow label="Deal value" value={fmtMoney(detail.deal_value)} mono />}
 
-                  {/* Form data */}
-                  <Text style={styles.formDataTitle}>What they asked</Text>
+                  <Text style={s.formDataTitle}>What they asked</Text>
                   {detail.form_data_json && Object.keys(detail.form_data_json).length > 0 ? (
                     Object.entries(detail.form_data_json).map(([k, v]) => (
                       <InfoRow key={k} label={k.replace(/_/g, ' ')} value={formatValue(v)} />
                     ))
                   ) : (
-                    <Text style={styles.noFormData}>No structured form data — contact the follower directly.</Text>
+                    <Text style={s.noFormData}>No structured form data — contact the follower directly.</Text>
                   )}
 
-                  {/* Actions — only show relevant ones */}
                   {detail.status !== 'converted' && detail.status !== 'closed' && (
                     <>
-                      <View style={styles.modalDivider} />
+                      <View style={s.modalDivider} />
                       {detail.status !== 'contacted' && (
-                        <TouchableOpacity style={styles.actionSecondary} onPress={handleMarkContacted}>
-                          <Text style={styles.actionSecondaryText}>Mark as Contacted</Text>
+                        <TouchableOpacity style={s.actionSecondary} onPress={handleMarkContacted}>
+                          <Text style={s.actionSecondaryText}>Mark as Contacted</Text>
                         </TouchableOpacity>
                       )}
 
-                      <View style={styles.convertBox}>
-                        <Text style={styles.convertLabel}>Deal value (rupees)</Text>
+                      <View style={s.convertBox}>
+                        <Text style={s.convertLabel}>Deal value (rupees)</Text>
                         <TextInput
-                          style={styles.convertInput}
+                          style={s.convertInput}
                           value={convertAmount}
                           onChangeText={setConvertAmount}
                           placeholder="e.g. 25000"
-                          placeholderTextColor={colors.t3}
+                          placeholderTextColor={P.muted3}
                           keyboardType="decimal-pad"
                         />
-                        <Text style={styles.convertHint}>
-                          Enter the final deal amount. Influencer commission is calculated from their negotiated % and credited to their pending balance.
+                        <Text style={s.convertHint}>
+                          Influencer commission credited to their pending balance on convert.
                         </Text>
                         <TouchableOpacity
-                          style={[styles.actionPrimary, converting && { opacity: 0.6 }]}
+                          style={[s.actionPrimary, converting && { opacity: 0.6 }]}
                           onPress={handleMarkConverted}
                           disabled={converting}
                         >
                           {converting
-                            ? <ActivityIndicator color={colors.white} />
-                            : <Text style={styles.actionPrimaryText}>Mark as Converted</Text>}
+                            ? <ActivityIndicator color={P.white} />
+                            : <Text style={s.actionPrimaryText}>Mark as Converted</Text>}
                         </TouchableOpacity>
                       </View>
 
-                      <TouchableOpacity style={styles.actionDanger} onPress={handleMarkClosed}>
-                        <Text style={styles.actionDangerText}>Close without converting</Text>
+                      <TouchableOpacity style={s.actionDanger} onPress={handleMarkClosed}>
+                        <Text style={s.actionDangerText}>Close without converting</Text>
                       </TouchableOpacity>
                     </>
                   )}
@@ -275,75 +259,92 @@ export default function BrandEnquiriesScreen({ navigation }) {
   );
 }
 
+function Header({ navigation }) {
+  return (
+    <View style={s.header}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={s.back}>
+        <Text style={s.backText}>‹ Back</Text>
+      </TouchableOpacity>
+      <Text style={s.title}>Enquiries</Text>
+      <View style={s.rule} />
+      <Text style={s.subtitle}>Followers who asked about your business via your influencers</Text>
+    </View>
+  );
+}
+
 function formatValue(v) {
   if (v == null || v === '') return '—';
   if (typeof v === 'object') return JSON.stringify(v);
   return String(v);
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value, mono }) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <View style={s.infoRow}>
+      <Text style={s.infoLabel}>{label}</Text>
+      <Text style={[s.infoValue, mono && { fontFamily: fonts.monoMedium }]}>{value}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  header:   { backgroundColor: colors.navyDeep, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 16 },
-  back:     { marginBottom: 8 },
-  backText: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
-  title:    { fontSize: 22, fontWeight: '800', color: colors.white },
-  subtitle: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 52, paddingBottom: 14 },
+  back: { paddingBottom: 6 },
+  backText: { fontFamily: fonts.sansMedium, fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
+  title: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '700', color: P.white, letterSpacing: -0.3 },
+  rule: { width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2, marginTop: 6 },
+  subtitle: { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6 },
 
-  chipsRow: { backgroundColor: colors.white, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border, maxHeight: 48 },
-  chip:     { backgroundColor: colors.bg, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: colors.border },
-  chipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText:   { fontSize: 11, fontWeight: '700', color: colors.t2 },
-  chipTextActive: { color: colors.white },
+  chipsRow: { backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border, maxHeight: 48 },
+  chipsRowContent: { paddingHorizontal: 14, gap: 6, alignItems: 'center', paddingVertical: 8 },
+  chip: { backgroundColor: P.bg2, borderRadius: 99, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: P.border },
+  chipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  chipText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.muted },
+  chipTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
 
-  emptyCard: { margin: 16, backgroundColor: colors.white, borderRadius: 16, padding: 28, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  emptyText: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 6 },
-  emptySub:  { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
+  emptyCard: { backgroundColor: P.white, borderWidth: 1.5, borderColor: P.yellowPale, borderStyle: 'dashed', borderRadius: 18, paddingVertical: 36, paddingHorizontal: 22, alignItems: 'center', gap: 10 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 13, backgroundColor: P.yellowPale, alignItems: 'center', justifyContent: 'center' },
+  emptyIconText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText, letterSpacing: 0.4 },
+  emptyText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '700', color: P.ink },
+  emptySub: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, maxWidth: 260 },
 
-  card:       { backgroundColor: colors.white, borderRadius: 14, padding: 14, marginHorizontal: 16, marginTop: 10, borderWidth: 1, borderColor: colors.border },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
-  cardName:   { fontSize: 14, fontWeight: '700', color: colors.t1, flex: 1, marginRight: 8 },
-  cardPhone:  { fontSize: 12, color: colors.navy, fontWeight: '600', marginBottom: 2 },
-  cardMeta:   { fontSize: 11, color: colors.t2, marginBottom: 2 },
-  cardDate:   { fontSize: 10, color: colors.t3, marginTop: 4 },
-  cardDeal:   { fontSize: 12, color: '#047857', fontWeight: '700', marginTop: 6 },
+  card: { backgroundColor: P.white, borderRadius: 14, padding: 13, marginBottom: 8, borderWidth: 1, borderColor: P.border },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, gap: 8 },
+  cardName: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '700', color: P.ink, flex: 1 },
+  cardPhone: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.ink, fontWeight: '600', marginBottom: 2 },
+  cardMeta: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginBottom: 2 },
+  cardDate: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted3, marginTop: 4 },
+  cardDeal: { fontFamily: fonts.monoBold, fontSize: 12, color: P.successText, fontWeight: '700', marginTop: 6 },
 
-  statusPill:     { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  statusPillText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  statusPill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 99 },
+  statusPillText: { fontFamily: fonts.monoBold, fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
 
-  modalRoot:     { flex: 1, justifyContent: 'flex-end' },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalSheet:    { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4, maxHeight: '90%' },
-  modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  modalTitle:    { fontSize: 17, fontWeight: '800', color: colors.t1 },
-  modalClose:    { fontSize: 20, fontWeight: '800', color: colors.t3, paddingHorizontal: 4 },
-  modalDivider:  { height: 1, backgroundColor: colors.border, marginVertical: 14 },
+  modalSheet: { backgroundColor: P.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4, maxHeight: '90%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  modalTitle: { fontFamily: fonts.displayBold, fontSize: 17, fontWeight: '800', color: P.ink },
+  modalClose: { fontFamily: fonts.monoBold, fontSize: 22, color: P.muted2, paddingHorizontal: 4, lineHeight: 22 },
+  modalDivider: { height: 1, backgroundColor: P.border, marginVertical: 14 },
 
-  infoRow:    { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 14 },
-  infoLabel:  { fontSize: 11, fontWeight: '700', color: colors.t3, textTransform: 'capitalize', flex: 0.9 },
-  infoValue:  { fontSize: 12, color: colors.t1, fontWeight: '500', flex: 1.3, textAlign: 'right' },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.borderSoft, gap: 14 },
+  infoLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '700', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3, flex: 0.9 },
+  infoValue: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink, fontWeight: '600', flex: 1.3, textAlign: 'right' },
 
-  formDataTitle: { fontSize: 12, fontWeight: '800', color: colors.t2, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 },
-  noFormData:    { fontSize: 11, color: colors.t3, fontStyle: 'italic' },
+  formDataTitle: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 16, marginBottom: 8 },
+  noFormData: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, fontStyle: 'italic' },
 
-  convertBox:    { backgroundColor: '#ECFDF5', borderRadius: 12, padding: 12, marginVertical: 12, borderWidth: 1, borderColor: '#A7F3D0' },
-  convertLabel:  { fontSize: 11, fontWeight: '800', color: '#047857', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
-  convertInput:  { backgroundColor: colors.white, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.t1, borderWidth: 1, borderColor: '#A7F3D0' },
-  convertHint:   { fontSize: 10, color: '#047857', marginTop: 6, lineHeight: 14 },
+  convertBox: { backgroundColor: P.successPale, borderRadius: 12, padding: 12, marginVertical: 12, borderWidth: 1, borderColor: '#A7F3D0' },
+  convertLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.successText, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  convertInput: { fontFamily: fonts.monoMedium, backgroundColor: P.white, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: P.ink, borderWidth: 1, borderColor: '#A7F3D0' },
+  convertHint: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.successText, marginTop: 6, lineHeight: 14 },
 
-  actionPrimary:   { backgroundColor: '#047857', borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
-  actionPrimaryText:{ fontSize: 13, fontWeight: '800', color: colors.white },
-  actionSecondary: { backgroundColor: colors.navyPale || colors.bg, borderRadius: 10, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.navy, marginBottom: 8 },
-  actionSecondaryText:{ fontSize: 13, fontWeight: '700', color: colors.navy },
-  actionDanger:    { paddingVertical: 10, alignItems: 'center', marginTop: 4 },
-  actionDangerText:{ fontSize: 12, fontWeight: '700', color: colors.red },
+  actionPrimary: { backgroundColor: P.success, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 10 },
+  actionPrimaryText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '800', color: P.white },
+  actionSecondary: { backgroundColor: P.bg2, borderRadius: 10, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: P.border, marginBottom: 8 },
+  actionSecondaryText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.ink },
+  actionDanger: { paddingVertical: 10, alignItems: 'center', marginTop: 4 },
+  actionDangerText: { fontFamily: fonts.sansBold, fontSize: 12, fontWeight: '700', color: P.dangerText },
 });

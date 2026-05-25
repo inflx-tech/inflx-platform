@@ -4,8 +4,13 @@ import {
   ActivityIndicator, Alert, RefreshControl, TextInput, Modal,
   ScrollView, Linking, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { colors, spacing, radius, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+
+/**
+ * BrandProposalInboxScreen — proposals from influencers + accept/reject/counter.
+ * Flow 20 (2026-05-25): navy + 7 ad-hoc status pills → brandPalette + canonical map.
+ */
 
 const STATUS_TABS = [
   { key: '',          label: 'All' },
@@ -15,14 +20,16 @@ const STATUS_TABS = [
   { key: 'accepted',  label: 'Accepted' },
   { key: 'rejected',  label: 'Rejected' },
 ];
+
+// Canonical status → palette (Flow 20)
 const STATUS_PILL = {
-  sent:      { bg: '#FFF4D6', fg: '#7A5500', label: 'New' },
-  viewed:    { bg: '#DBE5FF', fg: '#1B2D5E', label: 'Viewed' },
-  countered: { bg: '#EEEDFE', fg: '#5C50C8', label: 'Countered' },
-  accepted:  { bg: '#E0FAF5', fg: '#007A63', label: 'Accepted' },
-  rejected:  { bg: '#FDEEE9', fg: '#E8401A', label: 'Rejected' },
-  expired:   { bg: '#F2F4F9', fg: '#8B91AD', label: 'Expired' },
-  withdrawn: { bg: '#F2F4F9', fg: '#8B91AD', label: 'Withdrawn' },
+  sent:      { bg: P.yellowPale,  fg: P.yellowText,  label: 'New' },
+  viewed:    { bg: P.infoPale,    fg: P.info,        label: 'Viewed' },
+  countered: { bg: P.convPale,    fg: P.conv,        label: 'Countered' },
+  accepted:  { bg: P.successPale, fg: P.successText, label: 'Accepted' },
+  rejected:  { bg: P.dangerPale,  fg: P.dangerText,  label: 'Rejected' },
+  expired:   { bg: P.bg2,         fg: P.muted2,      label: 'Expired' },
+  withdrawn: { bg: P.bg2,         fg: P.muted2,      label: 'Withdrawn' },
 };
 
 function tierFromFollowers(n) {
@@ -32,6 +39,7 @@ function tierFromFollowers(n) {
   if (v < 1000000) return 'macro';
   return 'mega';
 }
+
 function fmtDate(iso) {
   if (!iso) return '—';
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -67,80 +75,80 @@ export default function BrandProposalInboxScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+    <View style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
+          <Text style={s.backIcon}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Proposals</Text>
+        <Text style={s.headerTitle}>Proposals</Text>
         <View style={{ width: 36 }} />
       </View>
 
       {settings && !settings.accepts_proposals && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>You're not accepting proposals yet.</Text>
-          <TouchableOpacity onPress={toggleAccepts} style={styles.bannerBtn}>
-            <Text style={styles.bannerBtnTxt}>Turn on</Text>
+        <View style={s.banner}>
+          <Text style={s.bannerText}>You're not accepting proposals yet.</Text>
+          <TouchableOpacity onPress={toggleAccepts} style={s.bannerBtn}>
+            <Text style={s.bannerBtnTxt}>Turn on</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {settings?.accepts_proposals && (
-        <View style={styles.acceptedBar}>
-          <Text style={styles.acceptedTxt}>✓ Accepting proposals · Adjust filters on the web dashboard.</Text>
+        <View style={s.acceptedBar}>
+          <Text style={s.acceptedTxt}>✓ Accepting proposals · Adjust filters on the web dashboard.</Text>
           <TouchableOpacity onPress={toggleAccepts}>
-            <Text style={styles.acceptedToggle}>Pause</Text>
+            <Text style={s.acceptedToggle}>Pause</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.tabsScrollWrap}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+      <View style={s.tabsScrollWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>
           {STATUS_TABS.map(t => (
-            <TouchableOpacity key={t.key} style={[styles.tab, tab === t.key && styles.tabActive]} onPress={() => setTab(t.key)}>
-              <Text style={[styles.tabLabel, tab === t.key && styles.tabLabelActive]}>{t.label}</Text>
+            <TouchableOpacity key={t.key} style={[s.tab, tab === t.key && s.tabActive]} onPress={() => setTab(t.key)}>
+              <Text style={[s.tabLabel, tab === t.key && s.tabLabelActive]}>{t.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>
+        <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>
       ) : (
         <FlatList
           data={proposals}
           keyExtractor={p => p.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={P.yellow} colors={[P.yellow]} />}
           renderItem={({ item: p }) => {
             const pill = STATUS_PILL[p.status] || STATUS_PILL.sent;
             return (
-              <TouchableOpacity style={styles.card} onPress={() => setActive(p)}>
-                <View style={styles.cardHead}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle} numberOfLines={1}>{p.pitch_title}</Text>
-                    <Text style={styles.cardInf}>{p.influencer_name} · @{p.influencer_handle} · {tierFromFollowers(p.followers_count)}</Text>
+              <TouchableOpacity style={s.card} onPress={() => setActive(p)} activeOpacity={0.85}>
+                <View style={s.cardHead}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.cardTitle} numberOfLines={1}>{p.pitch_title}</Text>
+                    <Text style={s.cardInf}>{p.influencer_name} · @{p.influencer_handle} · {tierFromFollowers(p.followers_count)}</Text>
                   </View>
-                  <View style={[styles.pill, { backgroundColor: pill.bg }]}>
-                    <Text style={[styles.pillTxt, { color: pill.fg }]}>{pill.label}</Text>
+                  <View style={[s.pill, { backgroundColor: pill.bg }]}>
+                    <Text style={[s.pillTxt, { color: pill.fg }]}>{pill.label}</Text>
                   </View>
                 </View>
-                <Text style={styles.cardMsg} numberOfLines={2}>{p.pitch_message}</Text>
-                <View style={styles.cardFoot}>
-                  {p.proposed_fee ? <Text style={styles.cardAsk}>{fmtRupees(p.proposed_fee)}</Text> : null}
-                  {p.proposed_commission_pct ? <Text style={styles.cardAsk}>{p.proposed_commission_pct}%</Text> : null}
-                  <Text style={styles.cardDate}>{fmtDate(p.created_at)}</Text>
+                <Text style={s.cardMsg} numberOfLines={2}>{p.pitch_message}</Text>
+                <View style={s.cardFoot}>
+                  {p.proposed_fee ? <Text style={s.cardAsk}>{fmtRupees(p.proposed_fee)}</Text> : null}
+                  {p.proposed_commission_pct ? <Text style={s.cardAsk}>{p.proposed_commission_pct}%</Text> : null}
+                  <Text style={s.cardDate}>{fmtDate(p.created_at)}</Text>
                 </View>
               </TouchableOpacity>
             );
           }}
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📨</Text>
-              <Text style={styles.emptyTitle}>No proposals here</Text>
-              <Text style={styles.emptySub}>{settings?.accepts_proposals ? 'No matches in this tab. Try All.' : 'Turn on proposals to start receiving pitches.'}</Text>
+            <View style={s.empty}>
+              <View style={s.emptyIcon}><Text style={s.emptyIconText}>[MAIL]</Text></View>
+              <Text style={s.emptyTitle}>No proposals here</Text>
+              <Text style={s.emptySub}>{settings?.accepts_proposals ? 'No matches in this tab. Try All.' : 'Turn on proposals to start receiving pitches.'}</Text>
             </View>
           }
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}
+          contentContainerStyle={{ padding: 14, paddingBottom: 24 }}
         />
       )}
 
@@ -151,7 +159,7 @@ export default function BrandProposalInboxScreen({ navigation }) {
 
 function ProposalModal({ proposal, onClose, onChanged }) {
   const [busy, setBusy] = useState(false);
-  const [mode, setMode] = useState(null); // 'reject' | 'counter' | null
+  const [mode, setMode] = useState(null);
   const [rejectMsg, setRejectMsg] = useState('');
   const [counterFee, setCounterFee] = useState(String(proposal.proposed_fee || ''));
   const [counterPct, setCounterPct] = useState(String(proposal.proposed_commission_pct || ''));
@@ -191,30 +199,30 @@ function ProposalModal({ proposal, onClose, onChanged }) {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={modalStyles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={modalStyles.body}>
-          <View style={modalStyles.head}>
-            <View style={{ flex: 1 }}>
-              <Text style={modalStyles.title} numberOfLines={1}>{proposal.pitch_title}</Text>
-              <Text style={modalStyles.sub}>{proposal.influencer_name} · @{proposal.influencer_handle}</Text>
+      <KeyboardAvoidingView style={ms.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={ms.body}>
+          <View style={ms.head}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={ms.title} numberOfLines={1}>{proposal.pitch_title}</Text>
+              <Text style={ms.sub}>{proposal.influencer_name} · @{proposal.influencer_handle}</Text>
             </View>
-            <TouchableOpacity onPress={onClose}><Text style={modalStyles.close}>×</Text></TouchableOpacity>
+            <TouchableOpacity onPress={onClose}><Text style={ms.close}>×</Text></TouchableOpacity>
           </View>
 
           <ScrollView style={{ maxHeight: 460 }}>
-            <View style={modalStyles.statsRow}>
+            <View style={ms.statsRow}>
               <Stat label="Followers" value={Number(proposal.followers_count || 0).toLocaleString('en-IN')} />
               <Stat label="ER" value={`${proposal.engagement_rate || 0}%`} />
               <Stat label="Tier" value={tierFromFollowers(proposal.followers_count)} />
             </View>
 
-            <Text style={modalStyles.sectionLabel}>Pitch</Text>
-            <Text style={modalStyles.body2}>{proposal.pitch_message}</Text>
+            <Text style={ms.sectionLabel}>Pitch</Text>
+            <Text style={ms.body2}>{proposal.pitch_message}</Text>
 
-            <Text style={modalStyles.sectionLabel}>Proposed terms</Text>
+            <Text style={ms.sectionLabel}>Proposed terms</Text>
             <Row label="Goal" value={proposal.goal || '—'} />
-            {proposal.proposed_fee ? <Row label="Fee" value={fmtRupees(proposal.proposed_fee)} /> : null}
-            {proposal.proposed_commission_pct ? <Row label="Commission" value={`${proposal.proposed_commission_pct}%`} /> : null}
+            {proposal.proposed_fee ? <Row label="Fee" value={fmtRupees(proposal.proposed_fee)} mono /> : null}
+            {proposal.proposed_commission_pct ? <Row label="Commission" value={`${proposal.proposed_commission_pct}%`} mono /> : null}
             {proposal.proposed_deliverables && (
               <Row label="Deliverables" value={
                 (Array.isArray(proposal.proposed_deliverables) ? proposal.proposed_deliverables : [])
@@ -224,70 +232,70 @@ function ProposalModal({ proposal, onClose, onChanged }) {
 
             {(proposal.portfolio_links || []).length > 0 && (
               <>
-                <Text style={modalStyles.sectionLabel}>Portfolio samples</Text>
+                <Text style={ms.sectionLabel}>Portfolio samples</Text>
                 {proposal.portfolio_links.map((u, i) => (
                   <TouchableOpacity key={i} onPress={() => Linking.openURL(u)}>
-                    <Text style={modalStyles.linkRow} numberOfLines={1}>{u}</Text>
+                    <Text style={ms.linkRow} numberOfLines={1}>{u}</Text>
                   </TouchableOpacity>
                 ))}
               </>
             )}
 
             {proposal.status === 'rejected' && proposal.brand_response_message && (
-              <View style={modalStyles.rejectBox}>
-                <Text style={modalStyles.rejectLabel}>You declined</Text>
-                <Text style={modalStyles.rejectMsg}>{proposal.brand_response_message}</Text>
+              <View style={ms.rejectBox}>
+                <Text style={ms.rejectLabel}>You declined</Text>
+                <Text style={ms.rejectMsg}>{proposal.brand_response_message}</Text>
               </View>
             )}
           </ScrollView>
 
           {canDecide && !mode && (
-            <View style={modalStyles.actionRow}>
-              <TouchableOpacity disabled={busy} style={modalStyles.btnAlt} onPress={() => setMode('reject')}>
-                <Text style={modalStyles.btnAltTxt}>Decline</Text>
+            <View style={ms.actionRow}>
+              <TouchableOpacity disabled={busy} style={ms.btnAlt} onPress={() => setMode('reject')}>
+                <Text style={ms.btnAltTxt}>Decline</Text>
               </TouchableOpacity>
-              <TouchableOpacity disabled={busy} style={modalStyles.btnCounter} onPress={() => setMode('counter')}>
-                <Text style={modalStyles.btnCounterTxt}>Counter</Text>
+              <TouchableOpacity disabled={busy} style={ms.btnCounter} onPress={() => setMode('counter')}>
+                <Text style={ms.btnCounterTxt}>Counter</Text>
               </TouchableOpacity>
-              <TouchableOpacity disabled={busy} style={modalStyles.btnAccept} onPress={accept}>
-                <Text style={modalStyles.btnAcceptTxt}>Accept</Text>
+              <TouchableOpacity disabled={busy} style={ms.btnAccept} onPress={accept}>
+                <Text style={ms.btnAcceptTxt}>Accept</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {mode === 'reject' && (
-            <View style={modalStyles.formBox}>
-              <Text style={modalStyles.formLabel}>Optional message</Text>
-              <TextInput style={modalStyles.formInput} multiline value={rejectMsg} onChangeText={setRejectMsg}
-                placeholder="Why this isn't a fit (visible to influencer)" placeholderTextColor={colors.t3} />
-              <View style={modalStyles.actionRow}>
-                <TouchableOpacity style={modalStyles.btnAlt} onPress={() => setMode(null)}>
-                  <Text style={modalStyles.btnAltTxt}>Cancel</Text>
+            <View style={ms.formBox}>
+              <Text style={ms.formLabel}>Optional message</Text>
+              <TextInput style={ms.formInput} multiline value={rejectMsg} onChangeText={setRejectMsg}
+                placeholder="Why this isn't a fit (visible to influencer)" placeholderTextColor={P.muted3} />
+              <View style={ms.actionRow}>
+                <TouchableOpacity style={ms.btnAlt} onPress={() => setMode(null)}>
+                  <Text style={ms.btnAltTxt}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity disabled={busy} style={modalStyles.btnRejectConfirm} onPress={submitReject}>
-                  <Text style={modalStyles.btnAcceptTxt}>{busy ? '…' : 'Confirm reject'}</Text>
+                <TouchableOpacity disabled={busy} style={ms.btnRejectConfirm} onPress={submitReject}>
+                  <Text style={ms.btnAcceptTxt}>{busy ? '…' : 'Confirm reject'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
           )}
 
           {mode === 'counter' && (
-            <View style={modalStyles.formBox}>
-              <Text style={modalStyles.formLabel}>Counter fee (₹)</Text>
-              <TextInput style={modalStyles.formInputSmall} keyboardType="numeric" value={counterFee} onChangeText={setCounterFee}
-                placeholder="0" placeholderTextColor={colors.t3} />
-              <Text style={modalStyles.formLabel}>Counter commission %</Text>
-              <TextInput style={modalStyles.formInputSmall} keyboardType="numeric" value={counterPct} onChangeText={setCounterPct}
-                placeholder="0" placeholderTextColor={colors.t3} />
-              <Text style={modalStyles.formLabel}>Note</Text>
-              <TextInput style={modalStyles.formInput} multiline value={counterMsg} onChangeText={setCounterMsg}
-                placeholder="Why this counter (visible to influencer)" placeholderTextColor={colors.t3} />
-              <View style={modalStyles.actionRow}>
-                <TouchableOpacity style={modalStyles.btnAlt} onPress={() => setMode(null)}>
-                  <Text style={modalStyles.btnAltTxt}>Cancel</Text>
+            <View style={ms.formBox}>
+              <Text style={ms.formLabel}>Counter fee (₹)</Text>
+              <TextInput style={ms.formInputSmall} keyboardType="numeric" value={counterFee} onChangeText={setCounterFee}
+                placeholder="0" placeholderTextColor={P.muted3} />
+              <Text style={ms.formLabel}>Counter commission %</Text>
+              <TextInput style={ms.formInputSmall} keyboardType="numeric" value={counterPct} onChangeText={setCounterPct}
+                placeholder="0" placeholderTextColor={P.muted3} />
+              <Text style={ms.formLabel}>Note</Text>
+              <TextInput style={ms.formInput} multiline value={counterMsg} onChangeText={setCounterMsg}
+                placeholder="Why this counter (visible to influencer)" placeholderTextColor={P.muted3} />
+              <View style={ms.actionRow}>
+                <TouchableOpacity style={ms.btnAlt} onPress={() => setMode(null)}>
+                  <Text style={ms.btnAltTxt}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity disabled={busy} style={modalStyles.btnCounter} onPress={submitCounter}>
-                  <Text style={modalStyles.btnCounterTxt}>{busy ? '…' : 'Send counter'}</Text>
+                <TouchableOpacity disabled={busy} style={ms.btnCounter} onPress={submitCounter}>
+                  <Text style={ms.btnCounterTxt}>{busy ? '…' : 'Send counter'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -300,96 +308,98 @@ function ProposalModal({ proposal, onClose, onChanged }) {
 
 function Stat({ label, value }) {
   return (
-    <View style={modalStyles.stat}>
-      <Text style={modalStyles.statValue}>{value}</Text>
-      <Text style={modalStyles.statLabel}>{label}</Text>
+    <View style={ms.stat}>
+      <Text style={ms.statValue}>{value}</Text>
+      <Text style={ms.statLabel}>{label}</Text>
     </View>
   );
 }
-function Row({ label, value }) {
+function Row({ label, value, mono }) {
   return (
-    <View style={modalStyles.row}>
-      <Text style={modalStyles.rowLabel}>{label}</Text>
-      <Text style={modalStyles.rowValue}>{value}</Text>
+    <View style={ms.row}>
+      <Text style={ms.rowLabel}>{label}</Text>
+      <Text style={[ms.rowValue, mono && { fontFamily: fonts.monoBold }]}>{value}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.bg },
-  center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:      { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon:     { fontSize: 28, color: colors.t1, fontWeight: '400' },
-  headerTitle:  { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '700', color: colors.t1 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  banner:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFF4D6', borderBottomWidth: 1, borderBottomColor: '#F0D987', paddingHorizontal: spacing.md, paddingVertical: 10 },
-  bannerText:   { fontSize: 11, color: '#7A5500', flex: 1 },
-  bannerBtn:    { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#B8860B', borderRadius: 6 },
-  bannerBtnTxt: { color: colors.white, fontSize: 11, fontWeight: '800' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 52, paddingBottom: 14, backgroundColor: P.ink },
+  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  backIcon: { fontFamily: fonts.monoBold, fontSize: 22, color: P.white, lineHeight: 22, fontWeight: '400' },
+  headerTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayBold, fontSize: 17, fontWeight: '700', color: P.white },
 
-  acceptedBar:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.tealPale, borderBottomWidth: 1, borderBottomColor: colors.teal, paddingHorizontal: spacing.md, paddingVertical: 8 },
-  acceptedTxt:  { fontSize: 11, color: colors.tealDeep, flex: 1 },
-  acceptedToggle:{ fontSize: 11, color: colors.tealDeep, fontWeight: '800' },
+  banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.yellowPale, borderBottomWidth: 1, borderBottomColor: P.yellow, paddingHorizontal: 14, paddingVertical: 10 },
+  bannerText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.yellowText, flex: 1 },
+  bannerBtn: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: P.ink, borderRadius: 99 },
+  bannerBtnTxt: { fontFamily: fonts.monoBold, color: P.yellow, fontSize: 10.5, fontWeight: '800' },
 
-  tabsScrollWrap:{ backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  tabs:         { paddingHorizontal: spacing.md },
-  tab:          { paddingVertical: spacing.md, paddingHorizontal: spacing.md, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive:    { borderBottomColor: colors.navy },
-  tabLabel:     { fontSize: 12, fontWeight: '600', color: colors.t3 },
-  tabLabelActive:{ color: colors.navy },
+  acceptedBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.successPale, borderBottomWidth: 1, borderBottomColor: P.success, paddingHorizontal: 14, paddingVertical: 8 },
+  acceptedTxt: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.successText, flex: 1 },
+  acceptedToggle: { fontFamily: fonts.monoBold, fontSize: 11, color: P.successText, fontWeight: '800' },
 
-  card:         { padding: spacing.md, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.sm },
-  cardHead:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 },
-  cardTitle:    { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  cardInf:      { fontSize: 11, color: colors.t3, marginTop: 2 },
-  pill:         { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, marginLeft: 8 },
-  pillTxt:      { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
-  cardMsg:      { fontSize: 11, color: colors.t2, lineHeight: 16, marginVertical: 4 },
-  cardFoot:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, gap: 8, flexWrap: 'wrap' },
-  cardAsk:      { fontSize: 12, fontWeight: '700', color: colors.navy },
-  cardDate:     { fontSize: 10, color: colors.t3, marginLeft: 'auto' },
+  tabsScrollWrap: { backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border },
+  tabs: { paddingHorizontal: 14 },
+  tab: { paddingVertical: 12, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: P.ink },
+  tabLabel: { fontFamily: fonts.sansBold, fontSize: 12, fontWeight: '600', color: P.muted2 },
+  tabLabelActive: { color: P.ink },
 
-  empty:        { alignItems: 'center', padding: spacing.xxl * 2 },
-  emptyIcon:    { fontSize: 40, marginBottom: spacing.md },
-  emptyTitle:   { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptySub:     { fontSize: 11, color: colors.t3, textAlign: 'center', paddingHorizontal: spacing.xl },
+  card: { padding: 12, backgroundColor: P.white, borderRadius: 12, borderWidth: 1, borderColor: P.border, marginBottom: 8 },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6, gap: 8 },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink },
+  cardInf: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.muted2, marginTop: 2 },
+  pill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 99, alignSelf: 'flex-start' },
+  pillTxt: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  cardMsg: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, lineHeight: 17, marginVertical: 4 },
+  cardFoot: { flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: P.borderSoft, gap: 10 },
+  cardAsk: { fontFamily: fonts.monoBold, fontSize: 11.5, fontWeight: '700', color: P.ink },
+  cardDate: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted3, marginLeft: 'auto' },
+
+  empty: { alignItems: 'center', padding: 30, marginTop: 30, gap: 10 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 13, backgroundColor: P.yellowPale, alignItems: 'center', justifyContent: 'center' },
+  emptyIconText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText, letterSpacing: 0.4 },
+  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '700', color: P.ink },
+  emptySub: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, textAlign: 'center', maxWidth: 260, lineHeight: 17 },
 });
 
-const modalStyles = StyleSheet.create({
-  wrap:         { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
-  body:         { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: spacing.lg, paddingBottom: 32 },
-  head:         { flexDirection: 'row', alignItems: 'flex-start', marginBottom: spacing.md },
-  title:        { fontSize: 16, fontWeight: '800', color: colors.t1 },
-  sub:          { fontSize: 11, color: colors.t3, marginTop: 2 },
-  close:        { fontSize: 24, color: colors.t3, fontWeight: '300', marginLeft: 8 },
+const ms = StyleSheet.create({
+  wrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  body: { backgroundColor: P.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 18, paddingBottom: 32 },
+  head: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 14, gap: 8 },
+  title: { fontFamily: fonts.displayBold, fontSize: 16, fontWeight: '800', color: P.ink },
+  sub: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2, marginTop: 2 },
+  close: { fontFamily: fonts.monoBold, fontSize: 22, color: P.muted2, paddingHorizontal: 4, lineHeight: 22 },
 
-  statsRow:     { flexDirection: 'row', gap: 8, marginBottom: spacing.md },
-  stat:         { flex: 1, padding: 10, borderRadius: 10, backgroundColor: colors.surface2, alignItems: 'center' },
-  statValue:    { fontSize: 14, fontWeight: '800', color: colors.t1 },
-  statLabel:    { fontSize: 9, color: colors.t3, textTransform: 'uppercase', marginTop: 2 },
+  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  stat: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: P.bg2, alignItems: 'center' },
+  statValue: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink },
+  statLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', marginTop: 2 },
 
-  sectionLabel: { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginTop: spacing.md, marginBottom: 4 },
-  body2:        { fontSize: 12, color: colors.t1, lineHeight: 18 },
-  row:          { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowLabel:     { fontSize: 11, color: colors.t3 },
-  rowValue:     { fontSize: 11, fontWeight: '700', color: colors.t1, textAlign: 'right', flex: 1, marginLeft: 8 },
-  linkRow:      { fontSize: 11, color: colors.navy, paddingVertical: 4 },
-  rejectBox:    { marginTop: 10, padding: 10, backgroundColor: '#FDEEE9', borderRadius: 10 },
-  rejectLabel:  { fontSize: 9, fontWeight: '800', color: '#A03020', textTransform: 'uppercase', marginBottom: 2 },
-  rejectMsg:    { fontSize: 11, color: '#80201A' },
+  sectionLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginTop: 14, marginBottom: 4, letterSpacing: 0.4 },
+  body2: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.ink, lineHeight: 18 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
+  rowLabel: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2 },
+  rowValue: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.ink, textAlign: 'right', flex: 1, marginLeft: 8 },
+  linkRow: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.info, paddingVertical: 4 },
+  rejectBox: { marginTop: 10, padding: 10, backgroundColor: P.dangerPale, borderRadius: 10 },
+  rejectLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.dangerText, textTransform: 'uppercase', marginBottom: 2, letterSpacing: 0.4 },
+  rejectMsg: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.dangerText },
 
-  actionRow:    { flexDirection: 'row', gap: 8, marginTop: spacing.md },
-  btnAlt:       { flex: 1, paddingVertical: 11, backgroundColor: colors.surface2, borderRadius: 10, alignItems: 'center' },
-  btnAltTxt:    { color: colors.t2, fontSize: 12, fontWeight: '800' },
-  btnCounter:   { flex: 1, paddingVertical: 11, backgroundColor: '#5C50C8', borderRadius: 10, alignItems: 'center' },
-  btnCounterTxt:{ color: colors.white, fontSize: 12, fontWeight: '800' },
-  btnAccept:    { flex: 1, paddingVertical: 11, backgroundColor: colors.teal, borderRadius: 10, alignItems: 'center' },
-  btnAcceptTxt: { color: colors.white, fontSize: 12, fontWeight: '800' },
-  btnRejectConfirm: { flex: 1, paddingVertical: 11, backgroundColor: colors.red, borderRadius: 10, alignItems: 'center' },
+  actionRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  btnAlt: { flex: 1, paddingVertical: 11, backgroundColor: P.bg2, borderRadius: 10, alignItems: 'center' },
+  btnAltTxt: { fontFamily: fonts.sansBold, color: P.muted, fontSize: 12, fontWeight: '800' },
+  btnCounter: { flex: 1, paddingVertical: 11, backgroundColor: P.convPale, borderRadius: 10, alignItems: 'center' },
+  btnCounterTxt: { fontFamily: fonts.sansBold, color: P.conv, fontSize: 12, fontWeight: '800' },
+  btnAccept: { flex: 1, paddingVertical: 11, backgroundColor: P.yellow, borderRadius: 10, alignItems: 'center' },
+  btnAcceptTxt: { fontFamily: fonts.sansBold, color: P.ink, fontSize: 12, fontWeight: '800' },
+  btnRejectConfirm: { flex: 1, paddingVertical: 11, backgroundColor: P.danger, borderRadius: 10, alignItems: 'center' },
 
-  formBox:      { marginTop: spacing.md, padding: 10, backgroundColor: colors.surface2, borderRadius: 12 },
-  formLabel:    { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginTop: 6, marginBottom: 4 },
-  formInput:    { backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 12, color: colors.t1, minHeight: 60, textAlignVertical: 'top' },
-  formInputSmall:{ backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border, borderRadius: 8, padding: 10, fontSize: 12, color: colors.t1 },
+  formBox: { marginTop: 14, padding: 10, backgroundColor: P.bg2, borderRadius: 12 },
+  formLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginTop: 6, marginBottom: 4, letterSpacing: 0.4 },
+  formInput: { fontFamily: fonts.sansMedium, backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 8, padding: 10, fontSize: 12, color: P.ink, minHeight: 60, textAlignVertical: 'top' },
+  formInputSmall: { fontFamily: fonts.monoMedium, backgroundColor: P.white, borderWidth: 1, borderColor: P.border, borderRadius: 8, padding: 10, fontSize: 12, color: P.ink },
 });

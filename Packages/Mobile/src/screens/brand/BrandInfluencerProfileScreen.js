@@ -3,8 +3,13 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   ActivityIndicator, Alert, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { colors, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
+
+/**
+ * BrandInfluencerProfileScreen — full influencer detail + invite-to-campaign modal.
+ * Flow 20 (2026-05-25): navy-deep hero + orange CTA → ink hero + yellow CTA.
+ */
 
 const OFFER_TYPES = [
   { key: 'flat',       label: 'Flat Discount (₹)' },
@@ -26,14 +31,14 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
   }, [influencerId]);
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
   if (!inf) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>Influencer not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtnFallback}>
-          <Text style={styles.backText}>Go Back</Text>
+      <View style={s.center}>
+        <Text style={s.errorText}>Influencer not found</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtnFallback}>
+          <Text style={s.backFallbackText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -44,33 +49,33 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
   const pastBrands = Array.isArray(inf.past_brands_json) ? inf.past_brands_json : [];
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: P.bg }}>
       <ScrollView style={{ flex: 1 }}>
-        {/* Hero */}
-        <View style={styles.hero}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-            <Text style={styles.backText}>{'<'} Back</Text>
+        {/* Ink hero */}
+        <View style={s.hero}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={s.heroBack}>
+            <Text style={s.heroBackText}>‹ Back</Text>
           </TouchableOpacity>
 
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>
               {(inf.instagram_handle || inf.full_name || 'IN').slice(0, 2).toUpperCase()}
             </Text>
           </View>
-          <Text style={styles.handle}>
-            @{inf.instagram_handle || 'handle'}
-            {inf.verified ? '  ✓' : ''}
-          </Text>
-          {inf.full_name && <Text style={styles.fullName}>{inf.full_name}</Text>}
+          <View style={s.handleRow}>
+            <Text style={s.handle}>@{inf.instagram_handle || 'handle'}</Text>
+            {inf.verified ? <Text style={s.verifiedTick}> ✓</Text> : null}
+          </View>
+          {inf.full_name && <Text style={s.fullName}>{inf.full_name}</Text>}
           {(inf.tier || inf.city) && (
-            <Text style={styles.heroMeta}>
-              {[inf.tier, inf.city, inf.state].filter(Boolean).join(' · ')}
+            <Text style={s.heroMeta}>
+              {[inf.tier, inf.city, inf.state].filter(Boolean).join(' · ').toUpperCase()}
             </Text>
           )}
         </View>
 
         {/* Stats grid */}
-        <View style={styles.statsGrid}>
+        <View style={s.statsGrid}>
           <Stat label="Followers" value={fmtCompact(inf.followers_count)} />
           <Stat label="ER %"      value={inf.engagement_rate != null ? `${parseFloat(inf.engagement_rate).toFixed(1)}%` : '—'} />
           <Stat label="Avg Views" value={fmtCompact(inf.avg_views)} />
@@ -79,28 +84,28 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
           <Stat label="Avg Cmts"  value={fmtCompact(inf.avg_comments)} />
         </View>
 
-        {/* Bio */}
         {inf.bio ? (
           <Card title="About">
-            <Text style={styles.bioText}>{inf.bio}</Text>
+            <Text style={s.bioText}>{inf.bio}</Text>
           </Card>
         ) : null}
 
-        {/* Niches + languages */}
         {(niches.length > 0 || langs.length > 0) && (
           <Card title="Niches & Languages">
             {niches.length > 0 && (
-              <View style={styles.chipList}>
+              <View style={s.chipList}>
                 {niches.map(n => (
-                  <View key={`n-${n}`} style={styles.chipSoft}><Text style={styles.chipSoftText}>{n}</Text></View>
+                  <View key={`n-${n}`} style={s.chipNiche}>
+                    <Text style={s.chipNicheText}>{n}</Text>
+                  </View>
                 ))}
               </View>
             )}
             {langs.length > 0 && (
-              <View style={[styles.chipList, { marginTop: 8 }]}>
+              <View style={[s.chipList, { marginTop: 8 }]}>
                 {langs.map(l => (
-                  <View key={`l-${l}`} style={[styles.chipSoft, { backgroundColor: colors.tealPale }]}>
-                    <Text style={[styles.chipSoftText, { color: colors.tealDeep }]}>{l}</Text>
+                  <View key={`l-${l}`} style={s.chipLang}>
+                    <Text style={s.chipLangText}>{l}</Text>
                   </View>
                 ))}
               </View>
@@ -108,23 +113,21 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
           </Card>
         )}
 
-        {/* Pricing */}
         {(inf.price_per_post_min || inf.price_per_post_max) && (
           <Card title="Typical Pricing (per post)">
-            <Text style={styles.bioText}>
+            <Text style={s.priceText}>
               {inf.price_per_post_min && inf.price_per_post_max
                 ? `${fmtRupees(inf.price_per_post_min)} – ${fmtRupees(inf.price_per_post_max)}`
                 : fmtRupees(inf.price_per_post_min || inf.price_per_post_max)}
             </Text>
-            <Text style={styles.hint}>Indicative range set by the influencer — you'll negotiate the actual fee.</Text>
+            <Text style={s.hint}>Indicative range set by the influencer — actual fee is negotiated.</Text>
           </Card>
         )}
 
-        {/* Past brands */}
         {pastBrands.length > 0 && (
           <Card title="Past Brands">
             {pastBrands.slice(0, 5).map((pb, i) => (
-              <Text key={i} style={styles.pastBrandRow}>• {typeof pb === 'string' ? pb : pb.name || JSON.stringify(pb)}</Text>
+              <Text key={i} style={s.pastBrandRow}>• {typeof pb === 'string' ? pb : pb.name || JSON.stringify(pb)}</Text>
             ))}
           </Card>
         )}
@@ -132,10 +135,9 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
         <View style={{ height: 90 }} />
       </ScrollView>
 
-      {/* Invite CTA (sticky footer) */}
-      <View style={styles.footerBar}>
-        <TouchableOpacity style={styles.inviteBtn} onPress={() => setInviteOpen(true)}>
-          <Text style={styles.inviteBtnText}>Invite to Campaign</Text>
+      <View style={s.footerBar}>
+        <TouchableOpacity style={s.inviteBtn} onPress={() => setInviteOpen(true)} activeOpacity={0.85}>
+          <Text style={s.inviteBtnText}>Invite to Campaign</Text>
         </TouchableOpacity>
       </View>
 
@@ -152,19 +154,16 @@ export default function BrandInfluencerProfileScreen({ route, navigation }) {
 function InviteModal({ visible, onClose, influencer, navigation }) {
   const [campaigns, setCampaigns] = useState([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
-
   const [pickedCampaign, setPickedCampaign] = useState(null);
   const [sets, setSets]         = useState([]);
   const [loadingSets, setLoadingSets] = useState(false);
-
   const [pickedSet, setPickedSet] = useState(null);
 
-  // Invite form
   const [agreedFee, setAgreedFee]     = useState('');
   const [commissionPct, setCommissionPct] = useState('');
   const [offerType, setOfferType]     = useState('flat');
   const [offerValue, setOfferValue]   = useState('');
-  const [postingDate, setPostingDate] = useState(''); // YYYY-MM-DD
+  const [postingDate, setPostingDate] = useState('');
   const [submitting, setSubmitting]   = useState(false);
 
   useEffect(() => {
@@ -183,9 +182,6 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
     const res = await brandApi.getCampaigns();
     setLoadingCampaigns(false);
     if (res?.success) {
-      // Only include campaigns that can accept new invites — published / active /
-      // live. Draft campaigns are being edited in the web wizard; cancelled /
-      // completed campaigns are terminal.
       const eligible = (res.data?.campaigns || []).filter(c =>
         ['published', 'active', 'live'].includes(c.status)
       );
@@ -202,12 +198,11 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
     if (res?.success) setSets(res.data?.sets || []);
   }
 
-  function pickSet(s) {
-    setPickedSet(s);
-    // Prefill the fee + commission where we can
-    if (s.per_influencer_budget) setAgreedFee(String(s.per_influencer_budget));
-    else if (s.set_budget) setAgreedFee('');
-    const goal = (s.goal || '').toLowerCase();
+  function pickSet(set) {
+    setPickedSet(set);
+    if (set.per_influencer_budget) setAgreedFee(String(set.per_influencer_budget));
+    else if (set.set_budget) setAgreedFee('');
+    const goal = (set.goal || '').toLowerCase();
     if (goal === 'conversion' || goal === 'hybrid') {
       setCommissionPct(influencer?.default_commission_pct ? String(influencer.default_commission_pct) : '10');
       setOfferType('flat');
@@ -218,7 +213,6 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
   async function submitInvite() {
     if (!pickedCampaign || !pickedSet) return;
     const goal = (pickedSet.goal || '').toLowerCase();
-
     const payload = { influencer_id: influencer.id };
     if (postingDate) payload.posting_date = postingDate;
 
@@ -262,95 +256,92 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.modalBackdrop} />
-        <View style={styles.modalSheet}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Invite to Campaign</Text>
-            <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>X</Text></TouchableOpacity>
+      <KeyboardAvoidingView style={s.modalRoot} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View style={s.modalBackdrop} />
+        <View style={s.modalSheet}>
+          <View style={s.modalHeader}>
+            <Text style={s.modalTitle}>Invite to Campaign</Text>
+            <TouchableOpacity onPress={onClose}><Text style={s.modalClose}>×</Text></TouchableOpacity>
           </View>
 
           <ScrollView>
-            {/* Step 1: pick campaign */}
             {!pickedCampaign && (
               <>
-                <Text style={styles.stepTitle}>1. Pick a campaign</Text>
+                <Text style={s.stepTitle}>1. Pick a campaign</Text>
                 {loadingCampaigns ? (
-                  <ActivityIndicator color={colors.navy} style={{ marginVertical: 20 }} />
+                  <ActivityIndicator color={P.yellow} style={{ marginVertical: 20 }} />
                 ) : campaigns.length === 0 ? (
-                  <View style={styles.emptyPanel}>
-                    <Text style={styles.emptyPanelTitle}>No eligible campaigns</Text>
-                    <Text style={styles.emptyPanelBody}>
+                  <View style={s.emptyPanel}>
+                    <Text style={s.emptyPanelTitle}>No eligible campaigns</Text>
+                    <Text style={s.emptyPanelBody}>
                       You need a published or active campaign to invite influencers. Create one from the web dashboard first.
                     </Text>
                   </View>
                 ) : (
                   campaigns.map(c => (
-                    <TouchableOpacity key={c.id} style={styles.pickRow} onPress={() => pickCampaign(c)}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.pickRowTitle} numberOfLines={1}>{c.name}</Text>
-                        <Text style={styles.pickRowMeta}>{(c.status || '').replace(/_/g, ' ')}{c.total_budget ? ` · ₹${Number(c.total_budget).toLocaleString('en-IN')}` : ''}</Text>
+                    <TouchableOpacity key={c.id} style={s.pickRow} onPress={() => pickCampaign(c)} activeOpacity={0.85}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={s.pickRowTitle} numberOfLines={1}>{c.name}</Text>
+                        <Text style={s.pickRowMeta}>{(c.status || '').replace(/_/g, ' ')}{c.total_budget ? ` · ₹${Number(c.total_budget).toLocaleString('en-IN')}` : ''}</Text>
                       </View>
-                      <Text style={styles.chev}>›</Text>
+                      <Text style={s.chev}>›</Text>
                     </TouchableOpacity>
                   ))
                 )}
               </>
             )}
 
-            {/* Step 2: pick set */}
             {pickedCampaign && !pickedSet && (
               <>
-                <TouchableOpacity onPress={() => setPickedCampaign(null)} style={styles.breadcrumbBack}>
-                  <Text style={styles.breadcrumbBackText}>‹ Change campaign</Text>
+                <TouchableOpacity onPress={() => setPickedCampaign(null)} style={s.breadcrumbBack}>
+                  <Text style={s.breadcrumbBackText}>‹ Change campaign</Text>
                 </TouchableOpacity>
-                <Text style={styles.stepTitle}>2. Pick a set in "{pickedCampaign.name}"</Text>
+                <Text style={s.stepTitle}>2. Pick a set in "{pickedCampaign.name}"</Text>
                 {loadingSets ? (
-                  <ActivityIndicator color={colors.navy} style={{ marginVertical: 20 }} />
+                  <ActivityIndicator color={P.yellow} style={{ marginVertical: 20 }} />
                 ) : sets.length === 0 ? (
-                  <Text style={styles.emptyPanelBody}>This campaign has no sets yet.</Text>
+                  <Text style={s.emptyPanelBody}>This campaign has no sets yet.</Text>
                 ) : (
-                  sets.map(s => (
-                    <TouchableOpacity key={s.id} style={styles.pickRow} onPress={() => pickSet(s)}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.pickRowTitle} numberOfLines={1}>{s.name}</Text>
-                        <Text style={styles.pickRowMeta}>
-                          {(s.goal || '').replace(/_/g, ' ')}
-                          {s.per_influencer_budget ? ` · ₹${Number(s.per_influencer_budget).toLocaleString('en-IN')} per influencer` : ''}
+                  sets.map(set => (
+                    <TouchableOpacity key={set.id} style={s.pickRow} onPress={() => pickSet(set)} activeOpacity={0.85}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={s.pickRowTitle} numberOfLines={1}>{set.name}</Text>
+                        <Text style={s.pickRowMeta}>
+                          {(set.goal || '').replace(/_/g, ' ')}
+                          {set.per_influencer_budget ? ` · ₹${Number(set.per_influencer_budget).toLocaleString('en-IN')} per influencer` : ''}
                         </Text>
                       </View>
-                      <Text style={styles.chev}>›</Text>
+                      <Text style={s.chev}>›</Text>
                     </TouchableOpacity>
                   ))
                 )}
               </>
             )}
 
-            {/* Step 3: confirm */}
             {pickedCampaign && pickedSet && (
               <>
-                <TouchableOpacity onPress={() => setPickedSet(null)} style={styles.breadcrumbBack}>
-                  <Text style={styles.breadcrumbBackText}>‹ Change set</Text>
+                <TouchableOpacity onPress={() => setPickedSet(null)} style={s.breadcrumbBack}>
+                  <Text style={s.breadcrumbBackText}>‹ Change set</Text>
                 </TouchableOpacity>
-                <Text style={styles.stepTitle}>3. Invite details</Text>
+                <Text style={s.stepTitle}>3. Invite details</Text>
 
-                <View style={styles.confirmCard}>
-                  <Text style={styles.confirmLabel}>Campaign</Text>
-                  <Text style={styles.confirmValue}>{pickedCampaign.name}</Text>
-                  <Text style={styles.confirmLabel}>Set · Goal</Text>
-                  <Text style={styles.confirmValue}>{pickedSet.name} · {(pickedSet.goal || '').replace(/_/g, ' ')}</Text>
-                  <Text style={styles.confirmLabel}>Influencer</Text>
-                  <Text style={styles.confirmValue}>@{influencer.instagram_handle}</Text>
+                <View style={s.confirmCard}>
+                  <Text style={s.confirmLabel}>Campaign</Text>
+                  <Text style={s.confirmValue}>{pickedCampaign.name}</Text>
+                  <Text style={s.confirmLabel}>Set · Goal</Text>
+                  <Text style={s.confirmValue}>{pickedSet.name} · {(pickedSet.goal || '').replace(/_/g, ' ')}</Text>
+                  <Text style={s.confirmLabel}>Influencer</Text>
+                  <Text style={s.confirmValue}>@{influencer.instagram_handle}</Text>
                 </View>
 
                 {needsFee && (
                   <Field label="Agreed fee (rupees)" hint="The influencer can counter this during negotiation.">
                     <TextInput
-                      style={styles.input}
+                      style={s.input}
                       value={agreedFee}
                       onChangeText={t => setAgreedFee(t.replace(/[^\d.]/g, ''))}
                       placeholder="e.g. 3000"
-                      placeholderTextColor={colors.t3}
+                      placeholderTextColor={P.muted3}
                       keyboardType="decimal-pad"
                     />
                   </Field>
@@ -362,31 +353,31 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
                         {OFFER_TYPES.map(t => (
                           <TouchableOpacity
                             key={t.key}
-                            style={[styles.offerTypeChip, offerType === t.key && styles.offerTypeChipActive]}
+                            style={[s.offerTypeChip, offerType === t.key && s.offerTypeChipActive]}
                             onPress={() => setOfferType(t.key)}
                           >
-                            <Text style={[styles.offerTypeChipText, offerType === t.key && styles.offerTypeChipTextActive]}>{t.label}</Text>
+                            <Text style={[s.offerTypeChipText, offerType === t.key && s.offerTypeChipTextActive]}>{t.label}</Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                     </Field>
                     <Field label={offerType === 'percentage' ? 'Discount %' : 'Discount amount (₹)'}>
                       <TextInput
-                        style={styles.input}
+                        style={s.input}
                         value={offerValue}
                         onChangeText={t => setOfferValue(t.replace(/[^\d.]/g, ''))}
                         placeholder={offerType === 'percentage' ? 'e.g. 15' : 'e.g. 100'}
-                        placeholderTextColor={colors.t3}
+                        placeholderTextColor={P.muted3}
                         keyboardType="decimal-pad"
                       />
                     </Field>
                     <Field label="Influencer commission %">
                       <TextInput
-                        style={styles.input}
+                        style={s.input}
                         value={commissionPct}
                         onChangeText={t => setCommissionPct(t.replace(/[^\d.]/g, ''))}
                         placeholder="e.g. 10"
-                        placeholderTextColor={colors.t3}
+                        placeholderTextColor={P.muted3}
                         keyboardType="decimal-pad"
                       />
                     </Field>
@@ -395,21 +386,22 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
 
                 <Field label="Posting date (optional)" hint="Format: YYYY-MM-DD. Influencer has 48 hours to accept — leave blank if flexible.">
                   <TextInput
-                    style={styles.input}
+                    style={s.input}
                     value={postingDate}
                     onChangeText={setPostingDate}
                     placeholder="e.g. 2026-05-15"
-                    placeholderTextColor={colors.t3}
+                    placeholderTextColor={P.muted3}
                     autoCapitalize="none"
                   />
                 </Field>
 
                 <TouchableOpacity
-                  style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+                  style={[s.submitBtn, submitting && { opacity: 0.6 }]}
                   onPress={submitInvite}
                   disabled={submitting}
+                  activeOpacity={0.85}
                 >
-                  {submitting ? <ActivityIndicator color={colors.white} /> : <Text style={styles.submitBtnText}>Send Invite</Text>}
+                  {submitting ? <ActivityIndicator color={P.ink} /> : <Text style={s.submitBtnText}>Send Invite</Text>}
                 </TouchableOpacity>
               </>
             )}
@@ -424,17 +416,17 @@ function InviteModal({ visible, onClose, influencer, navigation }) {
 
 function Stat({ label, value }) {
   return (
-    <View style={styles.statTile}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value ?? '—'}</Text>
+    <View style={s.statTile}>
+      <Text style={s.statLabel}>{label}</Text>
+      <Text style={s.statValue}>{value ?? '—'}</Text>
     </View>
   );
 }
 
 function Card({ title, children }) {
   return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{title}</Text>
+    <View style={s.card}>
+      <Text style={s.cardTitle}>{title}</Text>
       {children}
     </View>
   );
@@ -442,10 +434,10 @@ function Card({ title, children }) {
 
 function Field({ label, hint, children }) {
   return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={s.field}>
+      <Text style={s.fieldLabel}>{label}</Text>
       {children}
-      {hint ? <Text style={styles.fieldHint}>{hint}</Text> : null}
+      {hint ? <Text style={s.fieldHint}>{hint}</Text> : null}
     </View>
   );
 }
@@ -459,72 +451,77 @@ function fmtCompact(n) {
   return String(num);
 }
 
-const styles = StyleSheet.create({
-  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  errorText: { fontSize: 14, color: colors.t2, marginBottom: 12 },
-  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: colors.navy },
-  backText:  { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
-  back:      { alignSelf: 'flex-start', marginBottom: 8 },
+const s = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: P.bg },
+  errorText: { fontFamily: fonts.sansBold, fontSize: 14, color: P.muted, marginBottom: 12 },
+  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10, backgroundColor: P.yellow },
+  backFallbackText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink, fontWeight: '800' },
 
-  hero:      { backgroundColor: colors.navyDeep, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 24, alignItems: 'center' },
-  avatar:    { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  avatarText:{ fontSize: 26, fontWeight: '900', color: colors.white },
-  handle:    { fontSize: 20, fontWeight: '800', color: colors.white },
-  fullName:  { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 3 },
-  heroMeta:  { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 6, textTransform: 'capitalize' },
+  hero: { backgroundColor: P.ink, paddingHorizontal: 20, paddingTop: 52, paddingBottom: 24, alignItems: 'center' },
+  heroBack: { alignSelf: 'flex-start', marginBottom: 14 },
+  heroBackText: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.65)', fontWeight: '600' },
+  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  avatarText: { fontFamily: fonts.displayBold, fontSize: 26, fontWeight: '900', color: P.ink },
+  handleRow: { flexDirection: 'row', alignItems: 'center' },
+  handle: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.white, letterSpacing: -0.3 },
+  verifiedTick: { fontFamily: fonts.displayBold, fontSize: 14, color: P.yellow, fontWeight: '900' },
+  fullName: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 3 },
+  heroMeta: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: 'rgba(255,255,255,0.55)', marginTop: 6, letterSpacing: 0.4 },
 
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingTop: 12, gap: 8 },
-  statTile:  { width: '31.5%', backgroundColor: colors.white, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: colors.border },
-  statLabel: { fontSize: 9, color: colors.t3, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  statValue: { fontSize: 14, fontWeight: '900', color: colors.t1, marginTop: 4 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingTop: 12, gap: 7 },
+  statTile: { width: '31.8%', backgroundColor: P.white, borderRadius: 10, padding: 9, borderWidth: 1, borderColor: P.border },
+  statLabel: { fontFamily: fonts.monoBold, fontSize: 8.5, color: P.muted2, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  statValue: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '900', color: P.ink, marginTop: 3 },
 
-  card:      { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 12, fontWeight: '800', color: colors.t2, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  bioText:   { fontSize: 13, color: colors.t1, lineHeight: 19 },
-  hint:      { fontSize: 10, color: colors.t3, marginTop: 4 },
-  chipList:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chipSoft:  { backgroundColor: colors.orangePale || '#FEF0E4', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  chipSoftText: { fontSize: 11, fontWeight: '700', color: colors.orange },
-  pastBrandRow:{ fontSize: 12, color: colors.t2, lineHeight: 20 },
+  card: { margin: 12, marginBottom: 0, backgroundColor: P.white, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: P.border },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 10.5, fontWeight: '800', color: P.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 7 },
+  bioText: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.ink, lineHeight: 18 },
+  priceText: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink, fontWeight: '700' },
+  hint: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.muted2, marginTop: 4 },
+  chipList: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  chipNiche: { backgroundColor: P.yellowPale, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
+  chipNicheText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.yellowText },
+  chipLang: { backgroundColor: P.engPale, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 3 },
+  chipLangText: { fontFamily: fonts.sansBold, fontSize: 10.5, fontWeight: '700', color: P.eng },
+  pastBrandRow: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, lineHeight: 20 },
 
-  footerBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border, padding: 12 },
-  inviteBtn: { backgroundColor: colors.orange, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  inviteBtnText:{ fontSize: 14, fontWeight: '800', color: colors.white },
+  footerBar: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border, padding: 12 },
+  inviteBtn: { backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  inviteBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink },
 
-  // Modal
-  modalRoot:     { flex: 1, justifyContent: 'flex-end' },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalSheet:    { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4, maxHeight: '92%' },
-  modalHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  modalTitle:    { fontSize: 17, fontWeight: '800', color: colors.t1 },
-  modalClose:    { fontSize: 20, fontWeight: '800', color: colors.t3, paddingHorizontal: 4 },
-  stepTitle:     { fontSize: 13, fontWeight: '800', color: colors.navy, marginBottom: 10, marginTop: 4 },
-  breadcrumbBack:{ paddingVertical: 6 },
-  breadcrumbBackText:{ fontSize: 12, color: colors.navy, fontWeight: '700' },
+  modalSheet: { backgroundColor: P.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 18, paddingBottom: 4, maxHeight: '92%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  modalTitle: { fontFamily: fonts.displayBold, fontSize: 17, fontWeight: '800', color: P.ink },
+  modalClose: { fontFamily: fonts.monoBold, fontSize: 22, color: P.muted2, paddingHorizontal: 4, lineHeight: 22 },
+  stepTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink, marginBottom: 10, marginTop: 4 },
+  breadcrumbBack: { paddingVertical: 6 },
+  breadcrumbBackText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.yellowText, fontWeight: '700' },
 
-  pickRow:       { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 6, backgroundColor: colors.white },
-  pickRowTitle:  { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  pickRowMeta:   { fontSize: 11, color: colors.t3, marginTop: 2, textTransform: 'capitalize' },
-  chev:          { fontSize: 20, color: colors.t3 },
+  pickRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 6, backgroundColor: P.white },
+  pickRowTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink },
+  pickRowMeta: { fontFamily: fonts.monoMedium, fontSize: 10.5, color: P.muted2, marginTop: 2 },
+  chev: { fontFamily: fonts.monoBold, fontSize: 18, color: P.muted2, fontWeight: '800' },
 
-  emptyPanel:    { backgroundColor: colors.bg, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  emptyPanelTitle:{ fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 6 },
-  emptyPanelBody:{ fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
+  emptyPanel: { backgroundColor: P.bg2, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1.5, borderColor: P.yellowPale, borderStyle: 'dashed' },
+  emptyPanelTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink, marginBottom: 6 },
+  emptyPanelBody: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, textAlign: 'center', lineHeight: 16 },
 
-  confirmCard:   { backgroundColor: colors.navyPale || '#EDF1FA', borderRadius: 12, padding: 12, marginBottom: 14 },
-  confirmLabel:  { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 6 },
-  confirmValue:  { fontSize: 13, fontWeight: '700', color: colors.t1, marginTop: 2 },
+  confirmCard: { backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.yellowPale, borderRadius: 12, padding: 12, marginBottom: 14 },
+  confirmLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 6 },
+  confirmValue: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '700', color: P.ink, marginTop: 2 },
 
-  field:         { marginBottom: 12 },
-  fieldLabel:    { fontSize: 11, fontWeight: '700', color: colors.t2, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.3 },
-  fieldHint:     { fontSize: 10, color: colors.t3, marginTop: 4 },
-  input:         { borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: colors.t1 },
+  field: { marginBottom: 12 },
+  fieldLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '700', color: P.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
+  fieldHint: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.muted2, marginTop: 4 },
+  input: { fontFamily: fonts.sansMedium, borderWidth: 1.5, borderColor: P.border, backgroundColor: P.white, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: P.ink },
 
-  offerTypeChip: { flex: 1, backgroundColor: colors.bg, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  offerTypeChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  offerTypeChipText:   { fontSize: 11, fontWeight: '700', color: colors.t2 },
-  offerTypeChipTextActive:{ color: colors.white },
+  offerTypeChip: { flex: 1, backgroundColor: P.bg, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: P.border },
+  offerTypeChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  offerTypeChipText: { fontFamily: fonts.sansBold, fontSize: 11, fontWeight: '700', color: P.muted },
+  offerTypeChipTextActive: { color: P.yellow, fontFamily: fonts.monoBold },
 
-  submitBtn:     { backgroundColor: colors.orange, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
-  submitBtnText: { fontSize: 14, fontWeight: '800', color: colors.white },
+  submitBtn: { backgroundColor: P.yellow, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 6 },
+  submitBtnText: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink },
 });
