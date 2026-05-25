@@ -3,19 +3,17 @@
 /**
  * BookingsInbox — Wave 2 brand-side bookings dashboard.
  *
- * Renders 4 stat tiles (Pending / Today / Upcoming / Revenue 7d), tab
- * navigation, and a paginated list of booking cards with Confirm/Reject
- * actions for pending rows. Backend: GET/POST /brands/me/bookings/*
- * (brandBookings.controller.js).
+ * Renders 4 stat tiles (Pending / Today / Upcoming / Revenue 7d), INK
+ * sub-tab pills, and a list of date-badge booking cards with Confirm/Reject
+ * for pending rows. Backend: GET/POST /brands/me/bookings/*.
  *
- * Typography choices:
- *   - Outfit (display) for stat numbers + booking date headlines
- *   - JetBrains Mono for booking IDs, times, currency
- *   - Plus Jakarta Sans (default) for body
+ * All rules scoped under .bk wrapper per Flow 16 wave2 locked palette.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { brandApi, fmtRupees } from '../../../../lib/api';
+
+// ─── Constants ──────────────────────────────────────────────────────────────
 
 const TABS = [
   { key: 'pending',   label: 'Pending' },
@@ -24,6 +22,214 @@ const TABS = [
   { key: 'completed', label: 'Completed' },
   { key: 'cancelled', label: 'Cancelled' },
 ];
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function fmtMonth(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return MONTHS[d.getUTCMonth()];
+}
+function fmtDay(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return String(d.getUTCDate()).padStart(2, '0');
+}
+function fmtTime(timeStr) {
+  if (!timeStr) return '';
+  return String(timeStr).slice(0, 5);
+}
+
+// ─── Locked palette CSS scoped under .bk ────────────────────────────────────
+const CSS = `
+.bk *{box-sizing:border-box}
+.bk{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;
+  color:var(--ink); font-size:13px; line-height:1.45;
+  max-width:1080px; margin:0 auto;
+}
+.bk .mono{font-family:'JetBrains Mono','Menlo','Consolas',monospace}
+
+.bk .hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.bk .hdr-l h1{font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.bk .hdr-l .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.bk .hdr-l .sub{font-size:12px;color:var(--muted-2);max-width:560px;line-height:1.5}
+.bk .cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;margin-bottom:6px}
+
+.bk .st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+@media (max-width: 720px){.bk .st-grid{grid-template-columns:repeat(2,1fr)}}
+.bk .st{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.bk .st.attn{background:var(--yellow-50);border-color:var(--yellow)}
+.bk .st .l{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+.bk .st .v{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.3px;margin-top:4px}
+.bk .st .v.yel{color:var(--yellow-text)}
+.bk .st .v.green{color:var(--success-text)}
+.bk .st .s{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2);margin-top:4px}
+
+.bk .subtabs{display:inline-flex;gap:2px;background:var(--bg2);border-radius:12px;padding:4px;margin-bottom:14px;flex-wrap:wrap}
+.bk .subtab{padding:8px 16px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);background:transparent;display:inline-flex;align-items:center;gap:6px;border:0;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bk .subtab:hover:not(.act):not(:disabled){color:var(--ink);background:transparent}
+.bk .subtab.act{background:var(--ink);color:var(--yellow)}
+.bk .subtab.act:hover:not(:disabled){background:var(--ink);color:var(--yellow)}
+.bk .subtab .ct{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;background:rgba(255,255,255,.12);color:inherit;padding:2px 7px;border-radius:99px}
+.bk .subtab:not(.act) .ct{background:var(--white);color:var(--muted-2)}
+
+.bk .bc{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;display:flex;gap:14px;align-items:flex-start;transition:all .15s}
+.bk .bc:hover{border-color:var(--muted-3)}
+.bk .bc-date{flex-shrink:0;width:66px;text-align:center;background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;padding:8px 4px}
+.bk .bc-date .mo{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+.bk .bc-date .d{font-family:'Outfit',sans-serif;font-size:24px;font-weight:800;color:var(--ink);line-height:1.05;margin-top:2px}
+.bk .bc-date .t{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px}
+.bk .bc-body{flex:1;min-width:0}
+.bk .bc-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.bk .bc-name{font-family:'Outfit',sans-serif;font-size:14.5px;font-weight:700;color:var(--ink)}
+.bk .bc-party{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2)}
+.bk .bc-type{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--bg2);color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px}
+.bk .bc-attr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px}
+.bk .bc-attr .creator{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;background:var(--success-pale);color:var(--success-text);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700}
+.bk .bc-attr .direct{color:var(--muted-2);font-family:'JetBrains Mono',monospace;font-size:10px}
+.bk .bc-attr .ref{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2)}
+.bk .bc-attr .ref b{color:var(--ink);font-weight:700}
+.bk .bc-notes{margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);background:var(--bg);padding:6px 10px;border-radius:8px;font-style:italic}
+.bk .bc-brand-note{margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);background:var(--yellow-pale);padding:6px 10px;border-radius:8px}
+.bk .bc-brand-note b{font-size:9px;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:2px;font-weight:800}
+.bk .bc-right{flex-shrink:0;text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end;min-width:140px}
+.bk .bc-amt{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:800;color:var(--ink)}
+.bk .bc-advance{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2)}
+.bk .bc-actions{display:flex;flex-direction:column;gap:5px}
+.bk .bc-actions button{padding:6px 12px;font-size:11px;font-weight:700;border-radius:8px;border:0;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bk .bc-actions .confirm{background:var(--ink);color:var(--yellow)}
+.bk .bc-actions .confirm:hover:not(:disabled){background:var(--ink-2);color:var(--yellow)}
+.bk .bc-actions .reject{background:var(--white);border:1px solid var(--danger);color:var(--danger-text)}
+.bk .bc-actions .reject:hover:not(:disabled){background:var(--danger);border-color:var(--danger);color:var(--white)}
+.bk .bc-actions button:disabled{opacity:.4;cursor:not-allowed}
+.bk .bc-tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.bk .bc-tag.confirmed{color:var(--success-text)}
+.bk .bc-tag.cancelled{color:var(--danger-text)}
+.bk .status-pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.bk .status-pill.pending{background:var(--yellow-pale);color:var(--yellow-text)}
+.bk .status-pill.confirmed{background:var(--success-pale);color:var(--success-text)}
+.bk .status-pill.rejected{background:var(--danger-pale);color:var(--danger-text)}
+.bk .status-pill.cancelled{background:var(--danger-pale);color:var(--danger-text)}
+.bk .status-pill.unreviewed{background:var(--bg2);color:var(--muted-2)}
+
+.bk .empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;margin-top:14px}
+.bk .empty .em{font-size:48px;margin-bottom:10px}
+.bk .empty .h{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.bk .empty .t{font-size:12px;color:var(--muted);max-width:480px;margin:0 auto}
+.bk .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:bk-spin .8s linear infinite;margin:80px auto;display:block}
+@keyframes bk-spin{to{transform:rotate(360deg)}}
+.bk .err{padding:14px 16px;background:var(--danger-pale);border:1px solid #FBCBC4;border-radius:12px;font-size:12.5px;color:var(--danger-text);margin-bottom:14px}
+`;
+
+// ─── Empty state ────────────────────────────────────────────────────────────
+
+function EmptyState({ tab }) {
+  const COPY = {
+    pending:   { em: '✨', h: 'All caught up',         t: 'No bookings awaiting your confirmation.' },
+    today:     { em: '📅', h: 'Nothing booked today', t: 'Tomorrow may be busier.' },
+    upcoming:  { em: '🔮', h: 'No upcoming bookings', t: 'Run a campaign to bring in reservations.' },
+    completed: { em: '🗂',  h: 'No past bookings',     t: 'Completed bookings will archive here.' },
+    cancelled: { em: '✕',  h: 'No cancellations',     t: 'Cancelled bookings will appear here.' },
+  }[tab] || { em: '📋', h: 'No bookings', t: '' };
+  return (
+    <div className="empty">
+      <div className="em">{COPY.em}</div>
+      <div className="h">{COPY.h}</div>
+      <div className="t">{COPY.t}</div>
+    </div>
+  );
+}
+
+// ─── Booking card ───────────────────────────────────────────────────────────
+
+function BookingCard({ booking, acting, onConfirm, onReject }) {
+  const b = booking;
+  const reviewState = b.brand_status || 'unreviewed';
+  const date = b.booking_date || b.pickup_date;
+  const time = b.booking_time;
+  const guests = b.guest_count;
+  const isPending = reviewState === 'pending';
+  const isRejected = reviewState === 'rejected' || b.booking_status === 'cancelled';
+  const statusPillKey = (b.booking_status === 'cancelled') ? 'cancelled' : reviewState;
+
+  return (
+    <div className="bc">
+      <div className="bc-date">
+        <div className="mo">{fmtMonth(date)}</div>
+        <div className="d">{fmtDay(date)}</div>
+        {time && <div className="t">{fmtTime(time)}</div>}
+      </div>
+
+      <div className="bc-body">
+        <div className="bc-top">
+          <span className="bc-name">{b.follower_name || 'Follower'}</span>
+          {guests > 0 && <span className="bc-party">· party of {guests}</span>}
+          <span className={`status-pill ${statusPillKey}`}>● {statusPillKey === 'unreviewed' ? 'Confirmed' : statusPillKey}</span>
+          {b.booking_type && <span className="bc-type">{String(b.booking_type).replace(/_/g, ' ')}</span>}
+        </div>
+
+        <div className="bc-attr">
+          {b.instagram_handle ? (
+            <span className="creator">⭐ @{b.instagram_handle}</span>
+          ) : (
+            <span className="direct">direct booking</span>
+          )}
+          {b.reference_code && (
+            <span className="ref">REF <b>{b.reference_code}</b></span>
+          )}
+        </div>
+
+        {b.notes && (
+          <div className="bc-notes">"{b.notes}"</div>
+        )}
+
+        {b.brand_review_note && (
+          <div className="bc-brand-note">
+            <b>your note</b>
+            {b.brand_review_note}
+          </div>
+        )}
+      </div>
+
+      <div className="bc-right">
+        <div className="bc-amt">{fmtRupees(b.net_amount || b.gross_amount || 0)}</div>
+        {b.advance_paid && (
+          <div className="bc-advance">advance {fmtRupees(b.advance_paid)}</div>
+        )}
+        {isPending && !acting && (
+          <div className="bc-actions">
+            <button className="confirm" onClick={onConfirm}>✓ Confirm</button>
+            <button className="reject" onClick={onReject}>✕ Reject</button>
+          </div>
+        )}
+        {acting && (
+          <div className="bc-tag">working…</div>
+        )}
+        {!isPending && !isRejected && reviewState === 'confirmed' && (
+          <div className="bc-tag confirmed">confirmed</div>
+        )}
+        {isRejected && (
+          <div className="bc-tag cancelled">cancelled</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ───────────────────────────────────────────────────────────────────
 
 export default function BookingsInbox() {
   const [tab, setTab]           = useState('pending');
@@ -69,50 +275,69 @@ export default function BookingsInbox() {
     }
   }
 
+  const headerCount = stats.pending > 0
+    ? `${stats.pending} pending · ${stats.today} today`
+    : `${stats.today} today · ${stats.upcoming} upcoming`;
+
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="font-display text-3xl font-extrabold text-ink-1 tracking-tight">Bookings</h1>
-        <p className="text-sm text-ink-3 mt-1">Incoming reservations + creator-attributed orders</p>
+    <div className="bk">
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
+      <div className="hdr">
+        <div className="hdr-l">
+          <span className="cnt-chip">{headerCount}</span>
+          <h1>Bookings</h1>
+          <div className="rule" />
+          <div className="sub">Incoming reservations + creator-attributed orders.</div>
+        </div>
       </div>
 
-      {/* Stat tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <StatTile label="Pending"     value={stats.pending}
-                  hint={stats.pending > 0 ? 'Needs action' : 'All caught up'}
-                  accent={stats.pending > 0 ? 'yellow' : 'paper'} />
-        <StatTile label="Today"       value={stats.today}       hint="bookings"         accent="paper" />
-        <StatTile label="Upcoming"    value={stats.upcoming}    hint="future"           accent="paper" />
-        <StatTile label="Revenue 7d"  value={`₹${Math.round(Number(stats.revenue_7d || 0)).toLocaleString('en-IN')}`}
-                  hint="last 7 days" accent="paper" mono />
+      <div className="st-grid">
+        <div className={`st${stats.pending > 0 ? ' attn' : ''}`}>
+          <div className="l">Pending</div>
+          <div className={`v${stats.pending > 0 ? ' yel' : ''}`}>{stats.pending}</div>
+          <div className="s">{stats.pending > 0 ? 'Needs action' : 'All caught up'}</div>
+        </div>
+        <div className="st">
+          <div className="l">Today</div>
+          <div className="v">{stats.today}</div>
+          <div className="s">bookings</div>
+        </div>
+        <div className="st">
+          <div className="l">Upcoming</div>
+          <div className="v">{stats.upcoming}</div>
+          <div className="s">future</div>
+        </div>
+        <div className="st">
+          <div className="l">Revenue 7d</div>
+          <div className="v green">{fmtRupees(stats.revenue_7d || 0)}</div>
+          <div className="s">last 7 days</div>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+      <div className="subtabs" role="tablist">
         {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all whitespace-nowrap
-              ${tab === t.key
-                ? 'bg-yellow text-ink-1 shadow-sm'
-                : 'bg-paper-surface text-ink-2 hover:bg-paper-deep border border-line-soft'}`}>
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
+            className={`subtab${tab === t.key ? ' act' : ''}`}
+            onClick={() => setTab(t.key)}
+          >
             {t.label}
-            {t.key === 'pending' && stats.pending > 0 && (
-              <span className="ml-1.5 font-mono text-[10px] font-bold">{stats.pending}</span>
-            )}
+            {t.key === 'pending' && stats.pending > 0 && <span className="ct">{stats.pending}</span>}
           </button>
         ))}
       </div>
 
-      {/* List */}
+      {error && <div className="err">{error}</div>}
+
       {loading ? (
-        <div className="text-center py-12 text-ink-3 text-sm">Loading…</div>
-      ) : error ? (
-        <div className="bg-red-pale border border-red rounded-xl p-4 text-sm text-red">{error}</div>
+        <div className="spinner" />
       ) : bookings.length === 0 ? (
         <EmptyState tab={tab} />
       ) : (
-        <div className="space-y-3">
+        <div>
           {bookings.map(b => (
             <BookingCard
               key={b.id}
@@ -126,192 +351,4 @@ export default function BookingsInbox() {
       )}
     </div>
   );
-}
-
-// ── Sub-components ──────────────────────────────────────────────────────────
-
-function StatTile({ label, value, hint, accent, mono }) {
-  const accentClasses = {
-    yellow: 'bg-yellow-pale border-yellow text-yellow-deep',
-    teal:   'bg-teal-pale border-teal text-teal-deep',
-    ink:    'bg-paper-surface border-line-soft text-ink-1',
-    paper:  'bg-paper border-line-soft text-ink-1',
-  }[accent] || 'bg-paper border-line-soft text-ink-1';
-  return (
-    <div className={`rounded-xl border-2 p-4 ${accentClasses}`}>
-      <div className="font-mono text-[10px] uppercase tracking-wider opacity-70">{label}</div>
-      <div className={`font-display text-2xl font-extrabold mt-1 ${mono ? 'font-mono text-xl' : ''}`}>{value}</div>
-      <div className="text-[10px] opacity-60 mt-0.5">{hint}</div>
-    </div>
-  );
-}
-
-function EmptyState({ tab }) {
-  const COPY = {
-    all:      { icon: '📋', title: 'No bookings yet',      body: "When followers book a table, they'll show up here." },
-    pending:  { icon: '✨', title: 'All caught up',         body: 'No bookings awaiting your confirmation.' },
-    today:    { icon: '📅', title: 'Nothing booked today', body: 'Tomorrow may be busier.' },
-    upcoming: { icon: '🔮', title: 'No upcoming bookings', body: 'Run a campaign to bring in reservations.' },
-    past:     { icon: '🗂️', title: 'No past bookings',     body: 'Completed bookings will archive here.' },
-  }[tab] || { icon: '📋', title: 'No bookings', body: '' };
-  return (
-    <div className="text-center py-16 bg-paper-surface rounded-2xl border-2 border-dashed border-line-soft">
-      <div className="text-5xl mb-2">{COPY.icon}</div>
-      <div className="font-display text-base font-bold text-ink-1">{COPY.title}</div>
-      <div className="text-sm text-ink-3 mt-1">{COPY.body}</div>
-    </div>
-  );
-}
-
-function BookingCard({ booking, acting, onConfirm, onReject }) {
-  const b = booking;
-  const reviewState = b.brand_status || 'unreviewed';
-  const date = b.booking_date || b.pickup_date;
-  const time = b.booking_time;
-  const guests = b.guest_count;
-  const isPending = reviewState === 'pending';
-  const isRejected = reviewState === 'rejected' || b.booking_status === 'cancelled';
-
-  return (
-    <div className="bg-paper border border-line-soft rounded-2xl p-4 shadow-sm">
-      <div className="flex items-start gap-4">
-        {/* Date badge */}
-        <div className="flex-shrink-0 w-16 text-center bg-paper-surface border border-line-soft rounded-xl py-2">
-          <div className="font-mono text-[9px] uppercase tracking-wider text-ink-3">{fmtMonth(date)}</div>
-          <div className="font-display text-2xl font-extrabold text-ink-1 leading-none mt-0.5">{fmtDay(date)}</div>
-          {time && <div className="font-mono text-[10px] text-ink-2 mt-1">{fmtTime(time)}</div>}
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-display text-base font-extrabold text-ink-1 truncate">
-              {b.follower_name || 'Follower'}
-            </span>
-            {guests > 0 && (
-              <span className="font-mono text-xs text-ink-2">· party of {guests}</span>
-            )}
-            <BookingStatusPill state={reviewState} bookingStatus={b.booking_status} />
-            {b.booking_type && (
-              <span className="font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-paper-surface border border-line-soft text-ink-2">
-                {b.booking_type.replace('_', ' ')}
-              </span>
-            )}
-          </div>
-
-          {/* Creator attribution + tracking ID */}
-          <div className="flex items-center gap-2 flex-wrap mt-1.5 text-xs">
-            {b.instagram_handle ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-pale text-teal-deep font-mono text-[10px] font-bold">
-                <span>⭐</span>@{b.instagram_handle}
-              </span>
-            ) : (
-              <span className="text-ink-3 font-mono text-[10px]">direct booking</span>
-            )}
-            {b.reference_code && (
-              <span className="font-mono text-[10px] text-ink-3">
-                REF <span className="text-ink-2">{b.reference_code}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Notes from customer */}
-          {b.notes && (
-            <div className="mt-2 text-xs text-ink-2 italic bg-paper-surface rounded-lg px-3 py-2 border border-paper-deep">
-              "{b.notes}"
-            </div>
-          )}
-
-          {/* Brand review note */}
-          {b.brand_review_note && (
-            <div className="mt-2 text-xs text-ink-2 bg-yellow-pale rounded-lg px-3 py-2 border border-yellow">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-yellow-deep mr-1.5">your note</span>
-              {b.brand_review_note}
-            </div>
-          )}
-        </div>
-
-        {/* Amount + actions */}
-        <div className="flex-shrink-0 text-right space-y-2">
-          <div>
-            <div className="font-mono text-base font-extrabold text-ink-1">
-              {fmtRupees(b.net_amount || b.gross_amount || 0)}
-            </div>
-            {b.advance_paid && (
-              <div className="font-mono text-[10px] text-ink-3">
-                advance {fmtRupees(b.advance_paid)}
-              </div>
-            )}
-          </div>
-          {isPending && !acting && (
-            <div className="flex flex-col gap-1.5 items-end">
-              <button onClick={onConfirm}
-                className="px-3 py-1.5 rounded-lg bg-teal hover:bg-teal-deep text-white text-xs font-bold transition-colors">
-                ✓ Confirm
-              </button>
-              <button onClick={onReject}
-                className="px-3 py-1.5 rounded-lg bg-paper text-red text-xs font-bold border border-red hover:bg-red-pale transition-colors">
-                ✕ Reject
-              </button>
-            </div>
-          )}
-          {acting && (
-            <div className="text-[10px] text-ink-3 font-mono">working…</div>
-          )}
-          {!isPending && !isRejected && reviewState === 'confirmed' && (
-            <div className="font-mono text-[10px] uppercase text-teal-deep">confirmed</div>
-          )}
-          {isRejected && (
-            <div className="font-mono text-[10px] uppercase text-red">cancelled</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BookingStatusPill({ state, bookingStatus }) {
-  // Show the underlying cancellation if the brand rejected (the booking_status
-  // gets flipped to 'cancelled' by the reject API in the same transaction).
-  if (bookingStatus === 'cancelled') {
-    return <Pill bg="bg-red-pale" text="text-red" label="Cancelled" />;
-  }
-  if (state === 'pending')    return <Pill bg="bg-yellow-pale" text="text-yellow-deep" label="Pending" />;
-  if (state === 'confirmed')  return <Pill bg="bg-teal-pale"   text="text-teal-deep"   label="Confirmed" />;
-  if (state === 'rejected')   return <Pill bg="bg-red-pale"    text="text-red"         label="Rejected" />;
-  // Unreviewed / legacy NULL — display as confirmed since the underlying
-  // booking_status defaults to 'confirmed' the moment payment clears.
-  return <Pill bg="bg-paper-surface" text="text-ink-2" label="Confirmed" />;
-}
-
-function Pill({ bg, text, label }) {
-  return (
-    <span className={`font-mono text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold ${bg} ${text}`}>
-      {label}
-    </span>
-  );
-}
-
-// ── Date helpers ────────────────────────────────────────────────────────────
-
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function fmtMonth(dateStr) {
-  if (!dateStr) return '—';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '—';
-  return MONTHS[d.getUTCMonth()];
-}
-
-function fmtDay(dateStr) {
-  if (!dateStr) return '—';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '—';
-  return String(d.getUTCDate()).padStart(2, '0');
-}
-
-function fmtTime(timeStr) {
-  if (!timeStr) return '';
-  // timeStr looks like "19:30:00" — chop seconds.
-  return String(timeStr).slice(0, 5);
 }

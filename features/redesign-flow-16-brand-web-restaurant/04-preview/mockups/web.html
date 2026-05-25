@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 16 · brand-web restaurant bundle — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+  --eng:#0E7490; --eng-pale:#CFFAFE;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:780px;line-height:1.5;margin-top:4px}
+
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:30px}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:920px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px;display:flex;flex-direction:column;gap:4px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center}
+.side-sep{height:1px;background:rgba(255,255,255,.08);margin:10px 0}
+
+.page{padding:28px 36px;background:var(--bg);overflow-y:auto;max-width:1080px;margin:0 auto;width:100%}
+
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+
+.hdr{display:flex;align-items:end;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.hdr-l h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.hdr-l .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.hdr-l .sub{font-size:12px;color:var(--muted-2);max-width:560px;line-height:1.5}
+.cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:800;margin-bottom:6px}
+.btn-ink{padding:8px 14px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+.btn-yel{padding:8px 14px;background:var(--yellow);color:var(--ink);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer;font-family:inherit}
+.btn-ghost{padding:8px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit}
+
+/* Sub-tab pills */
+.subtabs{display:inline-flex;gap:2px;background:var(--bg2);border-radius:12px;padding:4px;margin-bottom:14px;flex-wrap:wrap}
+.subtab{padding:8px 18px;border-radius:9px;font-size:12.5px;font-weight:700;color:var(--muted);background:transparent;display:inline-flex;align-items:center;gap:7px}
+.subtab.act{background:var(--ink);color:var(--yellow)}
+.subtab .ct{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.12);color:inherit}
+.subtab:not(.act) .ct{background:var(--white);color:var(--muted-2)}
+
+/* Chip row */
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.chip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.chip .ct{font-family:'JetBrains Mono';font-size:10px;font-weight:800;opacity:.7}
+
+/* INK hero */
+.hero{background:var(--ink);color:var(--white);border-radius:16px;padding:22px 26px;margin-bottom:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:var(--yellow);border-radius:50%;opacity:.06}
+.hero-cell{position:relative;z-index:2;border-left:1px solid rgba(255,255,255,.08);padding-left:18px}
+.hero-cell:first-child{border-left:0;padding-left:0}
+.hero-v{font-family:'JetBrains Mono';font-size:28px;font-weight:800;color:var(--white);line-height:1.1;letter-spacing:-.6px}
+.hero-v.yel{color:var(--yellow)}
+.hero-l{font-family:'Outfit';font-size:10.5px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+.hero-s{font-family:'JetBrains Mono';font-size:10.5px;color:rgba(255,255,255,.4);margin-top:3px}
+
+/* Mono stat tiles (bookings) */
+.st-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.st{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.st.attn{background:var(--yellow-50);border-color:var(--yellow)}
+.st .l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+.st .v{font-family:'JetBrains Mono';font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.3px;margin-top:4px}
+.st .v.yel{color:var(--yellow-text)}
+.st .v.green{color:var(--success-text)}
+.st .s{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:4px}
+
+/* Channel chip card (orders) */
+.ch-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.ch-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:11px}
+.ch-card.act{background:var(--ink);border-color:var(--ink)}
+.ch-card.act .ch-v{color:var(--yellow)}
+.ch-card.act .ch-l{color:rgba(255,255,255,.65)}
+.ch-card.act .ch-ic{background:var(--yellow);color:var(--ink)}
+.ch-ic{width:34px;height:34px;border-radius:10px;background:var(--yellow-pale);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:15px}
+.ch-v{font-family:'JetBrains Mono';font-size:17px;font-weight:800;color:var(--ink);line-height:1.1}
+.ch-l{font-family:'Outfit';font-size:10px;font-weight:700;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+/* Transaction row card */
+.tc{background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.tc:hover{border-color:var(--ink)}
+.tc-row{padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto auto;gap:12px;align-items:center}
+.tc-badge{font-family:'JetBrains Mono';font-size:10px;font-weight:800;padding:5px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:.3px}
+.tc-badge.walk{background:var(--yellow-pale);color:var(--yellow-text)}
+.tc-badge.pre{background:var(--info-pale);color:var(--info)}
+.tc-badge.ord{background:var(--conv-pale);color:var(--conv)}
+.tc-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink)}
+.tc-name .dot{color:var(--muted-3);margin:0 6px}
+.tc-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:3px}
+.tc-amt-v{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--ink);text-align:right}
+.tc-amt-s{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:1px;text-align:right}
+.tc-amt-s b{color:var(--success-text)}
+.status-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.status-pill.completed{background:var(--success-pale);color:var(--success-text)}
+.status-pill.initiated{background:var(--yellow-pale);color:var(--yellow-text)}
+.status-pill.returned{background:var(--danger-pale);color:var(--danger-text)}
+.status-pill.submitted{background:var(--yellow-pale);color:var(--yellow-text)}
+.status-pill.responded{background:var(--info-pale);color:var(--info)}
+.status-pill.converted{background:var(--success-pale);color:var(--success-text)}
+.status-pill.closed{background:var(--bg2);color:var(--muted-2)}
+.status-pill.pending{background:var(--yellow-pale);color:var(--yellow-text)}
+.status-pill.confirmed{background:var(--success-pale);color:var(--success-text)}
+.status-pill.cancelled{background:var(--danger-pale);color:var(--danger-text)}
+.tc-dt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-align:right;min-width:78px}
+
+/* Booking card */
+.bc{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;display:flex;gap:14px;align-items:flex-start}
+.bc:hover{border-color:var(--muted-3)}
+.bc-date{flex-shrink:0;width:66px;text-align:center;background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;padding:8px 4px}
+.bc-date .mo{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+.bc-date .d{font-family:'Outfit';font-size:24px;font-weight:800;color:var(--ink);line-height:1.05;margin-top:2px}
+.bc-date .t{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:3px}
+.bc-body{flex:1;min-width:0}
+.bc-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px}
+.bc-name{font-family:'Outfit';font-size:14.5px;font-weight:700;color:var(--ink)}
+.bc-party{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+.bc-type{font-family:'JetBrains Mono';font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--bg2);color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px}
+.bc-attr{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px}
+.bc-attr .creator{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;background:var(--success-pale);color:var(--success-text);font-family:'JetBrains Mono';font-size:10px;font-weight:700}
+.bc-attr .ref{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2)}
+.bc-attr .ref b{color:var(--ink);font-weight:700}
+.bc-notes{margin-top:6px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted);background:var(--bg);padding:6px 10px;border-radius:8px;font-style:italic}
+.bc-right{flex-shrink:0;text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end;min-width:140px}
+.bc-amt{font-family:'JetBrains Mono';font-size:15px;font-weight:800;color:var(--ink)}
+.bc-advance{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2)}
+.bc-actions{display:flex;flex-direction:column;gap:5px}
+.bc-actions button{padding:6px 12px;font-size:11px;font-weight:700;border-radius:8px;border:0;cursor:pointer;font-family:inherit;white-space:nowrap}
+.bc-actions .confirm{background:var(--ink);color:var(--yellow)}
+.bc-actions .reject{background:var(--white);border:1px solid var(--danger);color:var(--danger-text)}
+.bc-pending-tag{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--success-text);text-transform:uppercase;letter-spacing:.3px}
+
+/* Meals offer card */
+.offer-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.offer{background:var(--white);border:1.5px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px}
+.offer.acc{border-color:var(--success);box-shadow:0 0 0 1px var(--success-pale)}
+.offer-img{width:64px;height:64px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--muted-3);flex-shrink:0;overflow:hidden}
+.offer-img.has{background:var(--yellow-pale);color:var(--yellow-text)}
+.offer-img.placeholder{border:1px dashed var(--muted-3);font-size:18px}
+.offer-body{flex:1;min-width:0}
+.offer-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.offer-kind{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px;text-transform:capitalize}
+.offer-status{font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;background:var(--bg2);color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;margin-left:5px}
+.offer-status.suggested{background:var(--conv-pale);color:var(--conv)}
+.offer-status.active{background:var(--success-pale);color:var(--success-text)}
+.offer-price{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--ink);margin-top:5px}
+.offer-price .old{color:var(--muted-3);text-decoration:line-through;font-weight:600;margin-right:6px;font-size:12px}
+.offer-actions{display:flex;gap:5px;margin-top:8px}
+.offer-actions button{flex:1;padding:6px;font-size:10.5px;font-weight:700;border-radius:7px;border:1px solid;cursor:pointer;font-family:inherit;background:var(--white)}
+.offer-actions .accept{background:var(--success);border-color:var(--success);color:var(--white)}
+.offer-actions .modify{background:var(--white);border-color:var(--border);color:var(--muted)}
+.offer-actions .reject{background:var(--white);border-color:rgba(232,64,26,.3);color:var(--danger-text)}
+.offer-actions .remove{background:var(--white);border-color:rgba(232,64,26,.3);color:var(--danger-text)}
+
+/* AI suggestions card */
+.ai-card{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ai-card-l{flex:1;min-width:200px}
+.ai-card-t{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px}
+.ai-card-s{font-family:'JetBrains Mono';font-size:11px;color:var(--yellow-text);margin-top:4px;line-height:1.5}
+
+/* Create-by-chat box */
+.chat-box{background:var(--white);border:2px dashed var(--yellow);border-radius:14px;padding:16px;margin-top:14px}
+.chat-box h3{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.chat-box .sub{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-bottom:10px;line-height:1.5}
+.chat-thread{background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px}
+.chat-msg{max-width:80%;padding:7px 12px;border-radius:14px;font-size:12px;line-height:1.45}
+.chat-msg.me{background:var(--ink);color:var(--white);align-self:flex-end;border-bottom-right-radius:4px}
+.chat-msg.bot{background:var(--white);color:var(--ink);align-self:flex-start;border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-input{display:flex;gap:8px;align-items:end}
+.chat-input textarea{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:12.5px;font-family:inherit;resize:none;outline:none;color:var(--ink)}
+.chat-input textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+
+/* Sidebar cards */
+.side-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+.side-card h3{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.side-card .row{display:flex;justify-content:space-between;padding:5px 0;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border-soft)}
+.side-card .row:last-child{border-bottom:0}
+.side-card .row b{color:var(--ink);font-weight:700;font-family:'JetBrains Mono'}
+
+/* Clock editor */
+.clock-row{display:flex;gap:5px;align-items:center;margin-bottom:6px}
+.clock-row input{width:42px;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;text-align:center;font-family:'JetBrains Mono';outline:none}
+.clock-row input:focus{border-color:var(--yellow)}
+.clock-row select{flex:1;padding:5px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--white);font-family:inherit;outline:none}
+.clock-row .pct{font-family:'JetBrains Mono';font-size:11px;color:var(--yellow-text);font-weight:800}
+.clock-row .x{padding:2px 6px;color:var(--muted-2);background:transparent;font-size:16px}
+.add-step{width:100%;margin-top:6px;padding:6px;font-size:11px;font-weight:700;color:var(--yellow-text);border:1px dashed var(--yellow);background:transparent;border-radius:8px;cursor:pointer;font-family:inherit}
+.save-clock{width:100%;margin-top:8px;padding:8px;font-size:11.5px;font-weight:700;background:var(--ink);color:var(--yellow);border-radius:9px;border:0;cursor:pointer;font-family:inherit}
+
+/* Today order progress */
+.progress-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px}
+.progress-card h3{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.progress-bar{height:10px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--yellow) 0%,var(--yellow-hover) 100%);border-radius:99px}
+.progress-meta{display:flex;justify-content:space-between;font-family:'JetBrains Mono';font-size:11px;color:var(--muted);margin-bottom:6px}
+.progress-meta b{color:var(--ink)}
+
+/* Incoming orders table */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl thead th{text-align:left;font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.tbl tbody td{padding:8px;border-bottom:1px solid var(--border-soft);font-family:'JetBrains Mono';font-weight:700;color:var(--ink)}
+.tbl tbody td:first-child{font-family:'Outfit';font-weight:700}
+.tbl .deliver{font-family:inherit;font-size:11px;font-weight:700;color:var(--yellow-text);background:transparent;cursor:pointer;border:0}
+.tbl .deliver:hover{color:var(--ink)}
+
+/* Inline expand */
+.tc-exp{background:var(--bg);border-top:1px solid var(--border-soft);padding:14px}
+.tc-exp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kv-l{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.kv-v{font-family:'JetBrains Mono';font-size:12px;font-weight:700;color:var(--ink);margin-top:3px}
+.kv-v.green{color:var(--success-text)}
+
+/* Two-col layout */
+.two-col{display:grid;grid-template-columns:1fr 280px;gap:18px}
+
+/* Empty */
+.empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;margin-top:14px}
+.empty .em{font-size:48px;margin-bottom:10px}
+.empty .h{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty .t{font-size:12px;color:var(--muted);max-width:480px;margin:0 auto}
+
+/* variant heading */
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 16 · brand-web restaurant bundle — wave2 mockup</h1>
+  <div class="sub">4 routes: <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/meals</code> · <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/orders</code> · <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/bookings</code> · <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/enquiries</code>. 1,123 LOC restaurant + order surface restyled to locked palette. /orders + /enquiries flagged as duplicating Conversions (Flow 11) in diff notes.</div>
+</div>
+
+<!-- ─── State 1 — MEALS · SETUP ─────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 5 — MEALS</span>
+  <span class="title">/dashboard/meals · Offers &amp; setup tab</span>
+  <span class="note">AI suggestions yellow-pale + party chips + offer cards + create-by-chat + sidebar (DiscountClock + Limits)</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / meals</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+      <a class="side-link"><span class="ic">✎</span>Contracts</a>
+      <a class="side-link"><span class="ic">⊞</span>Proposals</a>
+      <a class="side-link"><span class="ic">~</span>Conversions</a>
+      <div class="side-sep"></div>
+      <a class="side-link act"><span class="ic">🍽</span>Meals</a>
+      <a class="side-link"><span class="ic">📦</span>Orders</a>
+      <a class="side-link"><span class="ic">📅</span>Bookings</a>
+      <a class="side-link"><span class="ic">💬</span>Enquiries</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>meals</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">12 offers · 3 suggested</span>
+          <h1>🍽 INFLX Meals</h1>
+          <div class="rule"></div>
+          <div class="sub">Plan-ahead meals — your prices, your offers, self-delivery within 5 km.</div>
+        </div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab act">Offers &amp; setup <span class="ct">15</span></button>
+        <button class="subtab">Today's orders <span class="ct">8</span></button>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <!-- AI suggestions card -->
+          <div class="ai-card">
+            <div class="ai-card-l">
+              <div class="ai-card-t">✨ AI offer suggestions</div>
+              <div class="ai-card-s">3 suggested combos waiting for your review (Accept / Modify / Reject). <span style="opacity:.6">ai · llm-classic</span></div>
+            </div>
+            <button class="btn-ink">Generate more</button>
+          </div>
+
+          <!-- Suggested -->
+          <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:8px">✨ AI suggested — review &amp; accept</div>
+          <div class="offer-grid">
+            <div class="offer">
+              <div class="offer-img has">🍛</div>
+              <div class="offer-body">
+                <div class="offer-name">Festive family combo<span class="offer-status suggested">suggested</span></div>
+                <div class="offer-kind">Combo · family</div>
+                <div class="offer-price"><span class="old">₹890</span>₹720</div>
+                <div class="offer-actions">
+                  <button class="accept">Accept</button>
+                  <button class="modify">Modify</button>
+                  <button class="reject">Reject</button>
+                </div>
+              </div>
+            </div>
+            <div class="offer">
+              <div class="offer-img placeholder">📷</div>
+              <div class="offer-body">
+                <div class="offer-name">Office lunch pack<span class="offer-status suggested">suggested</span></div>
+                <div class="offer-kind">Combo · office</div>
+                <div class="offer-price"><span class="old">₹2,400</span>₹2,000</div>
+                <div class="offer-actions">
+                  <button class="accept">Accept</button>
+                  <button class="modify">Modify</button>
+                  <button class="reject">Reject</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Party-size chips -->
+          <div class="chip-row" style="margin-top:14px">
+            <button class="chip">🧍 Single <span class="ct">2</span></button>
+            <button class="chip">👥 For 2 <span class="ct">3</span></button>
+            <button class="chip">👨‍👩‍👦 For 3 <span class="ct">1</span></button>
+            <button class="chip act">👨‍👩‍👧‍👦 Family <span class="ct">4</span></button>
+            <button class="chip">🏢 Office <span class="ct">2</span></button>
+          </div>
+
+          <!-- Active offers -->
+          <div class="offer-grid">
+            <div class="offer acc">
+              <div class="offer-img has">🍛</div>
+              <div class="offer-body">
+                <div class="offer-name">Family thali pack<span class="offer-status active">active</span></div>
+                <div class="offer-kind">Combo · family</div>
+                <div class="offer-price"><span class="old">₹680</span>₹540</div>
+                <div class="offer-actions">
+                  <button class="modify">Modify</button>
+                  <button class="remove">Remove</button>
+                </div>
+              </div>
+            </div>
+            <div class="offer acc">
+              <div class="offer-img has">🍕</div>
+              <div class="offer-body">
+                <div class="offer-name">Pizza family meal<span class="offer-status active">active</span></div>
+                <div class="offer-kind">Combo · family</div>
+                <div class="offer-price">₹1,200</div>
+                <div class="offer-actions">
+                  <button class="modify">Modify</button>
+                  <button class="remove">Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Create by chat -->
+          <div class="chat-box">
+            <h3>✏️ Create your own offer — by chat</h3>
+            <div class="sub">Describe the offer in plain English. AI picks the combination + freebies from your menu; you stay in control of prices. Example: <i>"family pack with 2 chicken biryani + 2 veg biryani, ₹90 off, free raita"</i>.</div>
+            <div class="chat-thread">
+              <div class="chat-msg me">family pack with 2 chicken biryani + 2 veg biryani, ₹90 off, free raita</div>
+              <div class="chat-msg bot">Built "Family biryani feast" (family, base ₹890, ₹90 off, free raita). Review &amp; Accept it above ↑</div>
+            </div>
+            <div class="chat-input">
+              <textarea rows="2" placeholder="e.g. family pack with 2 chicken biryani + 2 veg biryani, ₹90 off, free raita"></textarea>
+              <button class="btn-ink">Build with chat</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div>
+          <div class="side-card">
+            <h3>Your discount clock</h3>
+            <div style="font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-bottom:10px">Editable — set how your price falls as the cutoff nears.</div>
+            <div class="clock-row"><input value="3" /><select><option>day(s) before</option></select><input value="0" /><span class="pct">%</span><button class="x">×</button></div>
+            <div class="clock-row"><input value="1" /><select><option>day(s) before</option></select><input value="5" /><span class="pct">%</span><button class="x">×</button></div>
+            <div class="clock-row"><input value="6" /><select><option>hour(s) before</option></select><input value="10" /><span class="pct">%</span><button class="x">×</button></div>
+            <div class="clock-row"><input value="2" /><select><option>hour(s) before</option></select><input value="15" /><span class="pct">%</span><button class="x">×</button></div>
+            <button class="add-step">+ Add a step</button>
+            <button class="save-clock">Save discount clock</button>
+          </div>
+
+          <div class="side-card">
+            <h3>Your limits (safety)</h3>
+            <div class="row">Never discount below cost <b>on</b></div>
+            <div class="row">Max total discount <b>25%</b></div>
+            <div class="row">Delivery radius <b>5 km</b></div>
+            <div class="row">Auto-offer <b style="color:var(--success-text)">ON</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 2 — MEALS · TODAY'S ORDERS ─────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 5 — MEALS</span>
+  <span class="title">/dashboard/meals · Today's orders tab</span>
+  <span class="note">4 mono stat tiles + INK order-book progress + incoming orders table + sidebar (prep + unmatched)</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / meals</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">🍽</span>Meals</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>meals</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">8 orders today · 60% capacity</span>
+          <h1>🍽 INFLX Meals</h1>
+          <div class="rule"></div>
+        </div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab">Offers &amp; setup <span class="ct">15</span></button>
+        <button class="subtab act">Today's orders <span class="ct">8</span></button>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="st-grid">
+            <div class="st"><div class="l">Confirmed</div><div class="v">8</div><div class="s">orders</div></div>
+            <div class="st attn"><div class="l">Capacity Left</div><div class="v yel">12</div><div class="s">of 20</div></div>
+            <div class="st"><div class="l">Locked Revenue</div><div class="v green">₹6,400</div><div class="s">incl. tax</div></div>
+            <div class="st"><div class="l">Meals to Cook</div><div class="v">32</div><div class="s">total items</div></div>
+          </div>
+
+          <div class="progress-card">
+            <h3>Order book filling</h3>
+            <div class="progress-meta"><span>8 of 20 orders · <b>40% full</b></span><span>12 slots open</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+          </div>
+
+          <div class="progress-card">
+            <h3>Incoming orders</h3>
+            <table class="tbl">
+              <thead><tr><th>Customer</th><th>Party</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>Anita Sharma</td><td>family</td><td>₹720</td><td><span class="status-pill confirmed">● paid</span></td><td><button class="deliver">Mark delivered</button></td></tr>
+                <tr><td>Vikram Iyer</td><td>duo</td><td>₹540</td><td><span class="status-pill pending">● preparing</span></td><td><button class="deliver">Mark delivered</button></td></tr>
+                <tr><td>Pooja Reddy</td><td>office</td><td>₹2,000</td><td><span class="status-pill pending">● out_for_delivery</span></td><td><button class="deliver">Mark delivered</button></td></tr>
+                <tr><td>Deepak Joshi</td><td>single</td><td>₹260</td><td><span class="status-pill completed">● delivered</span></td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div>
+          <div class="side-card">
+            <h3>Kitchen prep (so far)</h3>
+            <div class="row">Chicken Biryani <b>14</b></div>
+            <div class="row">Veg Biryani <b>8</b></div>
+            <div class="row">Paneer Tikka <b>6</b></div>
+            <div class="row">Raita <b>22</b></div>
+            <div class="row">Gulab Jamun <b>18</b></div>
+          </div>
+
+          <div class="side-card">
+            <h3>Unmatched requests</h3>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;font-family:'JetBrains Mono';font-size:11px;color:var(--ink)">"Family pack with extra raita · evening 7pm"</div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--ink)">"Single thali · vegetarian only"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 3 — ORDERS ───────────────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 5 — ORDERS</span>
+  <span class="title">/dashboard/orders · Flow 11 Conversions Orders pattern</span>
+  <span class="note">INK 3-KPI hero · clickable channel chips · status filter · row cards · DUPLICATES Conversions Orders tab — flagged in diff</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / orders</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">🍽</span>Meals</a>
+      <a class="side-link act"><span class="ic">📦</span>Orders</a>
+      <a class="side-link"><span class="ic">📅</span>Bookings</a>
+      <a class="side-link"><span class="ic">💬</span>Enquiries</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>orders</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">142 transactions</span>
+          <h1>Transactions</h1>
+          <div class="rule"></div>
+          <div class="sub">All follower payments across your campaigns. See also /conversions for a combined view with enquiries.</div>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="hero-cell">
+          <div class="hero-v">₹2,18,450</div>
+          <div class="hero-l">Total Revenue</div>
+          <div class="hero-s">gross customer pay</div>
+        </div>
+        <div class="hero-cell">
+          <div class="hero-v yel">₹1,84,128</div>
+          <div class="hero-l">Your Net</div>
+          <div class="hero-s">after commission + platform fee</div>
+        </div>
+        <div class="hero-cell">
+          <div class="hero-v">₹17,892</div>
+          <div class="hero-l">Commission Paid</div>
+        </div>
+      </div>
+
+      <div class="ch-row">
+        <div class="ch-card act">
+          <div class="ch-ic">🏪</div>
+          <div><div class="ch-v">68</div><div class="ch-l">Walk-in Payments</div></div>
+        </div>
+        <div class="ch-card">
+          <div class="ch-ic">📅</div>
+          <div><div class="ch-v">42</div><div class="ch-l">Pre-bookings</div></div>
+        </div>
+        <div class="ch-card">
+          <div class="ch-ic">📦</div>
+          <div><div class="ch-v">32</div><div class="ch-l">Online Orders</div></div>
+        </div>
+      </div>
+
+      <div class="chip-row">
+        <button class="chip act">All <span class="ct">142</span></button>
+        <button class="chip">Completed <span class="ct">131</span></button>
+        <button class="chip">Initiated <span class="ct">6</span></button>
+        <button class="chip">Returned <span class="ct">3</span></button>
+        <button class="chip">Refunded <span class="ct">2</span></button>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge walk">🏪 Walk-in</div>
+          <div>
+            <div class="tc-name">Anita Sharma <span class="dot">·</span> Veg Thali Combo</div>
+            <div class="tc-meta">via @riyakitchen · "Monsoon snack series"</div>
+          </div>
+          <div>
+            <div class="tc-amt-v">₹450</div>
+            <div class="tc-amt-s">net <b>₹342</b></div>
+          </div>
+          <span class="status-pill completed">● Completed</span>
+          <span class="tc-dt">2h ago</span>
+        </div>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge pre">📅 Pre-book</div>
+          <div>
+            <div class="tc-name">Vikram Iyer <span class="dot">·</span> Premium Pedicure</div>
+            <div class="tc-meta">via @anj.style · booking 28 May · 4:00 PM</div>
+          </div>
+          <div>
+            <div class="tc-amt-v">₹1,200</div>
+            <div class="tc-amt-s">net <b>₹912</b></div>
+          </div>
+          <span class="status-pill completed">● Completed</span>
+          <span class="tc-dt">Yesterday</span>
+        </div>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge ord">📦 Order</div>
+          <div>
+            <div class="tc-name">Pooja Reddy <span class="dot">·</span> Aishwarya Saree Set</div>
+            <div class="tc-meta">via @snekkapoor · order shipped</div>
+          </div>
+          <div>
+            <div class="tc-amt-v">₹3,499</div>
+            <div class="tc-amt-s">net <b>₹2,659</b></div>
+          </div>
+          <span class="status-pill completed">● Completed</span>
+          <span class="tc-dt">3d ago</span>
+        </div>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge walk">🏪 Walk-in</div>
+          <div>
+            <div class="tc-name">Deepak Joshi <span class="dot">·</span> Pizza Combo</div>
+            <div class="tc-meta">via @riyakitchen · awaiting Razorpay</div>
+          </div>
+          <div>
+            <div class="tc-amt-v">₹699</div>
+            <div class="tc-amt-s">pending</div>
+          </div>
+          <span class="status-pill initiated">● Initiated</span>
+          <span class="tc-dt">6h ago</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 4 — BOOKINGS ─────────────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 4 / 5 — BOOKINGS</span>
+  <span class="title">/dashboard/bookings · Pending tab with Confirm/Reject</span>
+  <span class="note">4 mono stat tiles · INK sub-tab pills · date-badge booking cards · Confirm ink+yellow / Reject danger</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / bookings</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">📅</span>Bookings</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>bookings</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">3 pending · 12 today</span>
+          <h1>Bookings</h1>
+          <div class="rule"></div>
+          <div class="sub">Incoming reservations + creator-attributed orders.</div>
+        </div>
+      </div>
+
+      <div class="st-grid">
+        <div class="st attn"><div class="l">Pending</div><div class="v yel">3</div><div class="s">Needs action</div></div>
+        <div class="st"><div class="l">Today</div><div class="v">12</div><div class="s">bookings</div></div>
+        <div class="st"><div class="l">Upcoming</div><div class="v">28</div><div class="s">future</div></div>
+        <div class="st"><div class="l">Revenue 7d</div><div class="v green">₹48,200</div><div class="s">last 7 days</div></div>
+      </div>
+
+      <div class="subtabs">
+        <button class="subtab act">Pending <span class="ct">3</span></button>
+        <button class="subtab">Today <span class="ct">12</span></button>
+        <button class="subtab">Upcoming <span class="ct">28</span></button>
+        <button class="subtab">Completed <span class="ct">142</span></button>
+        <button class="subtab">Cancelled <span class="ct">5</span></button>
+      </div>
+
+      <!-- Pending bookings -->
+      <div class="bc">
+        <div class="bc-date">
+          <div class="mo">May</div>
+          <div class="d">28</div>
+          <div class="t">19:30</div>
+        </div>
+        <div class="bc-body">
+          <div class="bc-top">
+            <span class="bc-name">Anita Sharma</span>
+            <span class="bc-party">· party of 6</span>
+            <span class="status-pill pending">● Pending</span>
+            <span class="bc-type">prebook</span>
+          </div>
+          <div class="bc-attr">
+            <span class="creator">⭐ @riyakitchen</span>
+            <span class="ref">REF <b>RES-A8X12K</b></span>
+          </div>
+          <div class="bc-notes">"Birthday dinner — please arrange a cake holder + window-side table"</div>
+        </div>
+        <div class="bc-right">
+          <div class="bc-amt">₹2,400</div>
+          <div class="bc-advance">advance ₹500</div>
+          <div class="bc-actions">
+            <button class="confirm">✓ Confirm</button>
+            <button class="reject">✕ Reject</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bc">
+        <div class="bc-date">
+          <div class="mo">May</div>
+          <div class="d">29</div>
+          <div class="t">13:00</div>
+        </div>
+        <div class="bc-body">
+          <div class="bc-top">
+            <span class="bc-name">Vikram Iyer</span>
+            <span class="bc-party">· party of 2</span>
+            <span class="status-pill pending">● Pending</span>
+            <span class="bc-type">prebook</span>
+          </div>
+          <div class="bc-attr">
+            <span class="creator">⭐ @anj.lifestyle</span>
+            <span class="ref">REF <b>RES-K4F77P</b></span>
+          </div>
+        </div>
+        <div class="bc-right">
+          <div class="bc-amt">₹1,800</div>
+          <div class="bc-actions">
+            <button class="confirm">✓ Confirm</button>
+            <button class="reject">✕ Reject</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bc">
+        <div class="bc-date">
+          <div class="mo">May</div>
+          <div class="d">30</div>
+          <div class="t">20:00</div>
+        </div>
+        <div class="bc-body">
+          <div class="bc-top">
+            <span class="bc-name">Karan Patel</span>
+            <span class="bc-party">· party of 4</span>
+            <span class="status-pill pending">● Pending</span>
+            <span class="bc-type">prebook</span>
+          </div>
+          <div class="bc-attr">
+            <span class="ref">direct booking</span>
+            <span class="ref">REF <b>RES-Z3A55Q</b></span>
+          </div>
+          <div class="bc-notes">"Anniversary — quiet corner if possible"</div>
+        </div>
+        <div class="bc-right">
+          <div class="bc-amt">₹3,200</div>
+          <div class="bc-advance">advance ₹800</div>
+          <div class="bc-actions">
+            <button class="confirm">✓ Confirm</button>
+            <button class="reject">✕ Reject</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 5 — ENQUIRIES ─────────────────────────────────────────── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 5 / 5 — ENQUIRIES</span>
+  <span class="title">/dashboard/enquiries · Flow 11 Conversions Enquiries pattern</span>
+  <span class="note">Status filter chips · compact row cards · inline expand (replaces modal) · canonical status values · DUPLICATES Conversions Enquiries tab</span>
+</div>
+
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / enquiries</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link act"><span class="ic">💬</span>Enquiries</a>
+    </aside>
+
+    <div class="page">
+      <div class="crumb">/dashboard <span class="sep">/</span> <b>enquiries</b></div>
+
+      <div class="hdr">
+        <div class="hdr-l">
+          <span class="cnt-chip">8 enquiries</span>
+          <h1>Enquiry Leads</h1>
+          <div class="rule"></div>
+          <div class="sub">Enquiries from followers. See also /conversions for a combined view with orders.</div>
+        </div>
+      </div>
+
+      <div class="chip-row">
+        <button class="chip act">All <span class="ct">8</span></button>
+        <button class="chip">Submitted <span class="ct">3</span></button>
+        <button class="chip">Responded <span class="ct">2</span></button>
+        <button class="chip">Converted <span class="ct">2</span></button>
+        <button class="chip">Closed <span class="ct">1</span></button>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge" style="background:var(--bg2);color:var(--muted)">💬 Enquiry</div>
+          <div>
+            <div class="tc-name">Aarav Sharma <span class="dot">·</span> Hair coloring + spa</div>
+            <div class="tc-meta">via @riyakitchen</div>
+          </div>
+          <div>
+            <div class="tc-amt-v" style="font-size:11.5px;color:var(--muted-2)">—</div>
+          </div>
+          <span class="status-pill submitted">● Submitted</span>
+          <span class="tc-dt">1h ago</span>
+        </div>
+      </div>
+
+      <div class="tc" style="border-color:var(--ink)">
+        <div class="tc-row">
+          <div class="tc-badge" style="background:var(--bg2);color:var(--muted)">💬 Enquiry</div>
+          <div>
+            <div class="tc-name">Meera Joshi <span class="dot">·</span> Wedding makeup</div>
+            <div class="tc-meta">via @snekkapoor · responded 6h ago</div>
+          </div>
+          <div>
+            <div class="tc-amt-v" style="font-size:11.5px;color:var(--muted-2)">—</div>
+          </div>
+          <span class="status-pill responded">● Responded</span>
+          <span class="tc-dt">2d ago</span>
+        </div>
+        <div class="tc-exp">
+          <div class="tc-exp-grid">
+            <div><div class="kv-l">Service Type</div><div class="kv-v">Wedding makeup + bridal</div></div>
+            <div><div class="kv-l">Preferred Date</div><div class="kv-v">14 Dec 2026</div></div>
+            <div><div class="kv-l">Guest Count</div><div class="kv-v">8 (bride + party)</div></div>
+            <div><div class="kv-l">Phone</div><div class="kv-v">+91 98765 04321</div></div>
+          </div>
+          <div style="font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted);margin-top:10px;background:var(--white);padding:8px 12px;border-radius:8px;border:1px solid var(--border-soft);font-style:italic">"Looking for full-day coverage. Need a quote with travel + on-site stylist. Open to either Bandra or Andheri venue."</div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button class="btn-yel">📧 Send response</button>
+            <button class="btn-ink">✓ Mark as Converted</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge" style="background:var(--bg2);color:var(--muted)">💬 Enquiry</div>
+          <div>
+            <div class="tc-name">Karan Verma <span class="dot">·</span> Bridal package</div>
+            <div class="tc-meta">via @anj.style · commission ₹6,800 triggered</div>
+          </div>
+          <div>
+            <div class="tc-amt-v">₹85,000</div>
+            <div class="tc-amt-s">deal value</div>
+          </div>
+          <span class="status-pill converted">● Converted</span>
+          <span class="tc-dt">4d ago</span>
+        </div>
+      </div>
+
+      <div class="tc">
+        <div class="tc-row">
+          <div class="tc-badge" style="background:var(--bg2);color:var(--muted)">💬 Enquiry</div>
+          <div>
+            <div class="tc-name">Neha Kulkarni <span class="dot">·</span> Salon membership</div>
+            <div class="tc-meta">prospect did not respond after follow-up</div>
+          </div>
+          <div>
+            <div class="tc-amt-v" style="font-size:11.5px;color:var(--muted-2)">—</div>
+          </div>
+          <span class="status-pill closed">● Closed</span>
+          <span class="tc-dt">8d ago</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>Scope:</b> 4 routes · 1,123 LOC OLD → ~1,500 LOC NEW. Each scoped under <code>.ml</code> (meals) / <code>.ord</code> (orders) / <code>.bk</code> (bookings) / <code>.enq</code> (enquiries).<br/>
+  <br/>
+  <b>Backend-first audit:</b> All endpoints preserved verbatim. mealsApi (8 endpoints) + brandApi.get/post bookings + brandApi.get transactions + brandApi.getEnquiries/updateEnquiry.<br/>
+  <br/>
+  <b>Duplication flagged in diff:</b> /orders + /enquiries duplicate the Conversions hub (Flow 11). Kept as separate routes per "preserve behavior" rule. Future cleanup flow can deprecate or pivot to deep-link variants.<br/>
+  <br/>
+  <b>Adjacent-fixes:</b><br/>
+  · /enquiries: dead OLD-UI status colors (new/contacted) → canonical submitted/responded/converted/closed (matches Flow 11 fix)<br/>
+  · /bookings: custom Tailwind tokens (paper-surface, yellow-pale, ink-1/2/3, font-mono, font-display) → locked palette CSS vars<br/>
+  · /meals: navy-deep / pink-700 / orange Tailwind → palette<br/>
+  · /orders: teal/blue/purple/green status tints → palette<br/>
+  <br/>
+  <b>CSS scoping discipline</b> (day 1): All rules under per-route wrappers. Every :hover:not(:disabled) re-asserts color · every :disabled locks bg + color. Same lineage as Flows 7-15.<br/>
+  <br/>
+  <b>Zero functional change:</b> All API call shapes preserved. AI restaurant-chat flow preserved verbatim. alert/confirm dialogs preserved. URL-driven nothing changed (no query params in these 4 pages).
+</div>
+
+</div>
+</body>
+</html>
