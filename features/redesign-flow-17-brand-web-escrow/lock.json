@@ -1,0 +1,31 @@
+{
+  "feature": "redesign-flow-17-brand-web-escrow",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-25 chat \"flow17 pls\" — delegated to agent best-decision; 3-state mockup approved implicitly via go-continue autonomy",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-25 chat \"flow17 pls\" — locked Flow 17 mockup (3 states · 292 LOC)",
+  "mockup_locked_at": "2026-05-25",
+  "notes": "BRAND-WEB FINALE. Single-route restyle of /dashboard/campaigns/[id]/escrow (155 LOC OLD → 239 NEW). INK 4-KPI hero + per-influencer cards with palette tranche rows + 3 conditional view states (conversion-only yellow-pale notice / empty yellow-pale card / normal data). Scope correction: handoff §11 mentioned /waiting but route doesn't exist; /billing + /subscription are Window A's Phase A9 server redirects (no restyle). After Flow 17: brand-web bucket COMPLETE per handoff §5 — next bucket is mobile brand. Backend: brandApi.getCampaignEscrow preserved verbatim. CSS scoping under .esc from day 1. Adjacent-fixes: undefined Tailwind tokens → palette vars + status color mappings palette-aligned + orange conversion notice → yellow-pale.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "ran_at": "2026-05-25T07:21:18Z",
+      "result": "75/75 passed · 0 failed · 0 skipped · gate 0 · STATE=GREEN",
+      "duration_seconds": 44,
+      "report": "qa/reports/2026-05-25T07-21-18-257Z/QA-REPORT.md",
+      "first_run_clean": false,
+      "note": "1st run had 3 transient backend-direct API test timeouts (environmental cold-backend pattern, same as Flow 15 1st run). 2nd run clean 75/75 GREEN in 44s. No Flow 17 code regression."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["vercel:brand-web"],
+    "maestro_green": "n/a — web-only flow, no Packages/Mobile/src/** touched"
+  }
+}

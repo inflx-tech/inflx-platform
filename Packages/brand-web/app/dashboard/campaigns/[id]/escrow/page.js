@@ -1,155 +1,239 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { brandApi, fmtMoney } from '../../../../../lib/api';
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  catch { return '—'; }
+}
+
+const STATUS_ICON = { queued: '⏳', locked: '🔒', released: '✓' };
+const STATUS_CLS  = { queued: 'queued', locked: 'locked', released: 'released' };
+
+// ─── Locked palette CSS scoped under .esc ───────────────────────────────────
+const CSS = `
+.esc *{box-sizing:border-box}
+.esc{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;
+  color:var(--ink); font-size:13px; line-height:1.45;
+  max-width:880px; margin:0 auto;
+}
+.esc .mono{font-family:'JetBrains Mono','Menlo','Consolas',monospace}
+
+.esc .crumb{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.esc .crumb b{color:var(--ink);font-weight:800}
+.esc .crumb .sep{color:var(--muted-3);margin:0 6px}
+.esc .crumb a{color:var(--muted-2);cursor:pointer;text-decoration:none}
+.esc .crumb a:hover{color:var(--ink)}
+
+.esc .hdr{margin-bottom:18px}
+.esc .hdr h1{font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.esc .hdr .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.esc .hdr .sub{font-size:12px;color:var(--muted-2);max-width:560px;line-height:1.5}
+.esc .cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;margin-bottom:6px}
+
+.esc .hero{background:var(--ink);color:var(--white);border-radius:16px;padding:22px 26px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative;overflow:hidden}
+@media (max-width: 640px){.esc .hero{grid-template-columns:repeat(2,1fr)}}
+.esc .hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:var(--yellow);border-radius:50%;opacity:.06}
+.esc .hero-cell{position:relative;z-index:2;border-left:1px solid rgba(255,255,255,.08);padding-left:18px}
+.esc .hero-cell:first-child{border-left:0;padding-left:0}
+.esc .hero-v{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;line-height:1.1;letter-spacing:-.4px;color:var(--white)}
+.esc .hero-v.yel{color:var(--yellow)}
+.esc .hero-v.green{color:#86EFAC}
+.esc .hero-v.info{color:#93C5FD}
+.esc .hero-l{font-family:'Outfit',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+
+.esc .inf-card{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.esc .inf-card:hover{border-color:var(--muted-3)}
+.esc .inf-head{padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.esc .inf-name{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;color:var(--ink)}
+.esc .inf-name .fullname{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);margin-left:8px;font-weight:500}
+.esc .inf-tcount{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted-2)}
+
+.esc .tr{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border-soft);align-items:center}
+.esc .tr:last-child{border-bottom:0}
+.esc .tr-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.esc .tr-ic.queued{background:var(--yellow-pale);color:var(--yellow-text)}
+.esc .tr-ic.locked{background:var(--info-pale);color:var(--info)}
+.esc .tr-ic.released{background:var(--success-pale);color:var(--success-text)}
+.esc .tr-ic.unknown{background:var(--bg2);color:var(--muted-2)}
+.esc .tr-mid{min-width:0}
+.esc .tr-num{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
+.esc .tr-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.esc .tr-amt{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--ink);text-align:right}
+.esc .status-pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.esc .status-pill.queued{background:var(--yellow-pale);color:var(--yellow-text)}
+.esc .status-pill.locked{background:var(--info-pale);color:var(--info)}
+.esc .status-pill.released{background:var(--success-pale);color:var(--success-text)}
+.esc .status-pill.unknown{background:var(--bg2);color:var(--muted)}
+
+.esc .notice-conv{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid var(--yellow);border-radius:14px;padding:18px;display:flex;gap:14px;align-items:flex-start}
+.esc .notice-conv .em{width:40px;height:40px;border-radius:10px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.esc .notice-conv .body{flex:1;min-width:0}
+.esc .notice-conv h4{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.esc .notice-conv p{font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:8px}
+.esc .notice-conv p strong{color:var(--ink);font-weight:700}
+.esc .notice-conv a{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--yellow-text);text-decoration:underline}
+.esc .notice-conv a:hover{color:var(--ink)}
+
+.esc .empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;position:relative;overflow:hidden}
+.esc .empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
+.esc .empty > *{position:relative;z-index:2}
+.esc .empty .em{font-size:48px;margin-bottom:10px}
+.esc .empty .h{font-family:'Outfit',sans-serif;font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.esc .empty .t{font-size:12px;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.55}
+
+.esc .err{padding:14px 16px;background:var(--danger-pale);border:1px solid #FBCBC4;border-radius:12px;font-size:12.5px;color:var(--danger-text)}
+.esc .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:esc-spin .8s linear infinite;margin:80px auto;display:block}
+@keyframes esc-spin{to{transform:rotate(360deg)}}
+`;
+
+// ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function EscrowDetailPage() {
   const { id } = useParams();
-  const [data, setData] = useState(null);
+  const router = useRouter();
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
   useEffect(() => {
     brandApi.getCampaignEscrow(id).then(res => {
       setLoading(false);
-      if (res.success) {
-        setData(res.data);
-      } else {
-        setError(res.error?.message || 'Failed to load escrow data');
-      }
+      if (res.success) setData(res.data);
+      else setError(res.error?.message || 'Failed to load escrow data');
     }).catch(() => {
       setLoading(false);
       setError('Failed to load escrow data');
     });
   }, [id]);
 
-  const statusColor = {
-    queued: 'text-yellow-600',
-    locked: 'text-blue-700',
-    released: 'text-emerald-600',
-  };
-  const statusBg = {
-    queued: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    locked: 'bg-blue-50 text-blue-700 border-blue-200',
-    released: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  };
-  const statusIcon = { queued: '\u23F3', locked: '\uD83D\uDD12', released: '\u2713' };
-
-  const summary = data?.summary;
+  const summary   = data?.summary;
   const breakdown = data?.influencer_breakdown || [];
-  const campaign = data?.campaign;
+  const campaign  = data?.campaign;
+  const totalTranches = breakdown.reduce((s, inf) => s + (inf.tranches?.length || 0), 0);
+
+  const headerCount = (() => {
+    if (campaign?.has_tranches === false) return 'No tranches';
+    if (!data?.entries || data.entries.length === 0) return '0 tranches';
+    return `${totalTranches} tranches across ${breakdown.length} influencer${breakdown.length === 1 ? '' : 's'}`;
+  })();
 
   return (
-    <div className="max-w-3xl mx-auto">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-4 text-xs">
-        <a href={`/dashboard/campaigns/${id}`} className="text-t3 hover:text-t2">&larr; Campaign</a>
-        <span className="text-t3">/</span>
-        <span className="text-t2 font-medium">Escrow</span>
+    <div className="esc">
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+
+      <div className="crumb">
+        <a onClick={() => router.push('/dashboard/campaigns')}>/dashboard</a>
+        <span className="sep">/</span>
+        <a onClick={() => router.push('/dashboard/campaigns')}>campaigns</a>
+        <span className="sep">/</span>
+        {campaign?.name && (
+          <>
+            <a onClick={() => router.push(`/dashboard/campaigns/${id}`)}>{campaign.name}</a>
+            <span className="sep">/</span>
+          </>
+        )}
+        <b>escrow</b>
       </div>
 
-      <h1 className="font-display text-xl font-bold text-t1 mb-1">Escrow Breakdown</h1>
-      {campaign && (
-        <p className="text-sm text-t3 mb-6">{campaign.name}</p>
-      )}
+      <div className="hdr">
+        <span className="cnt-chip">{headerCount}</span>
+        <h1>Escrow Breakdown</h1>
+        <div className="rule" />
+        {campaign && (
+          <div className="sub">{campaign.name}{campaign.has_tranches === false ? ' (commission-only campaign)' : ''}</div>
+        )}
+      </div>
 
       {loading ? (
-        <div className="text-center py-12 text-t3 text-sm">Loading...</div>
+        <div className="spinner" />
       ) : error ? (
-        <div className="bg-white rounded-xl border border-red-200 p-8 text-center text-red-600 text-sm">{error}</div>
+        <div className="err">{error}</div>
       ) : campaign?.has_tranches === false ? (
-        // Conversion-only campaign — no fee, no escrow tranches.
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">💸</div>
-            <div className="flex-1">
-              <div className="text-sm font-bold text-orange-900 mb-1">No escrow for conversion campaigns</div>
-              <p className="text-xs text-orange-800 leading-relaxed mb-2">
-                This campaign pays influencers <strong>commission per conversion</strong>, not a fixed fee — so there are no tranches
-                to lock up front. Earnings appear in the influencer's pending balance as conversions happen, and roll over to their
-                wallet after the 30-day return window.
-              </p>
-              <a href={`/dashboard/campaigns/${id}?tab=conversions`} className="text-xs font-semibold text-orange-700 hover:underline">
-                Open Conversions tab →
-              </a>
-            </div>
+        <div className="notice-conv">
+          <div className="em">💸</div>
+          <div className="body">
+            <h4>No escrow for conversion campaigns</h4>
+            <p>This campaign pays influencers <strong>commission per conversion</strong>, not a fixed fee — so there are no tranches to lock up front. Earnings appear in the influencer's pending balance as conversions happen, and roll over to their wallet after the 30-day return window.</p>
+            <a onClick={() => router.push(`/dashboard/campaigns/${id}?tab=conversions`)} style={{ cursor: 'pointer' }}>Open Conversions tab →</a>
           </div>
         </div>
       ) : (!data?.entries || data.entries.length === 0) ? (
-        <div className="bg-white rounded-xl border border-border p-8 text-center">
-          <div className="text-t3 text-sm mb-2">No escrow entries for this campaign</div>
-          <div className="text-t3 text-xs">Escrow entries are created when the campaign is published and influencers are contracted.</div>
+        <div className="empty">
+          <div className="em">🔒</div>
+          <div className="h">No escrow entries yet</div>
+          <div className="t">Escrow entries are created when the campaign is published and influencers are contracted.</div>
         </div>
       ) : (
         <>
-          {/* Summary cards */}
           {summary && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-              <SummaryCard label="Total Escrowed" amount={summary.total} />
-              <SummaryCard label="Locked" amount={summary.total_locked} color="text-blue-700" />
-              <SummaryCard label="Released" amount={summary.total_released} color="text-emerald-600" />
-              <SummaryCard label="Queued" amount={summary.total_queued} color="text-yellow-600" />
+            <div className="hero">
+              <div className="hero-cell">
+                <div className="hero-v mono">{fmtMoney(summary.total)}</div>
+                <div className="hero-l">Total Escrowed</div>
+              </div>
+              <div className="hero-cell">
+                <div className="hero-v yel mono">{fmtMoney(summary.total_locked)}</div>
+                <div className="hero-l">Locked</div>
+              </div>
+              <div className="hero-cell">
+                <div className="hero-v green mono">{fmtMoney(summary.total_released)}</div>
+                <div className="hero-l">Released</div>
+              </div>
+              <div className="hero-cell">
+                <div className="hero-v info mono">{fmtMoney(summary.total_queued)}</div>
+                <div className="hero-l">Queued</div>
+              </div>
             </div>
           )}
 
-          {/* Per-influencer breakdown */}
-          <div className="space-y-4">
+          <div>
             {breakdown.map(inf => (
-              <div key={inf.campaign_influencer_id} className="bg-white rounded-xl border border-border overflow-hidden">
-                {/* Influencer header */}
-                <div className="px-4 py-3 bg-gray-50 border-b border-border flex items-center justify-between">
-                  <div>
-                    <span className="text-sm font-semibold text-t1">
-                      {inf.instagram_handle ? `@${inf.instagram_handle}` : inf.influencer_name}
-                    </span>
+              <div key={inf.campaign_influencer_id} className="inf-card">
+                <div className="inf-head">
+                  <div className="inf-name">
+                    {inf.instagram_handle ? `@${inf.instagram_handle}` : inf.influencer_name}
                     {inf.influencer_name && inf.instagram_handle && (
-                      <span className="text-xs text-t3 ml-2">{inf.influencer_name}</span>
+                      <span className="fullname">{inf.influencer_name}</span>
                     )}
                   </div>
-                  <div className="text-xs text-t3">
-                    {inf.tranches.length} tranche{inf.tranches.length !== 1 ? 's' : ''}
-                  </div>
+                  <div className="inf-tcount">{inf.tranches.length} tranche{inf.tranches.length !== 1 ? 's' : ''}</div>
                 </div>
-
-                {/* Tranches */}
-                {inf.tranches.map(t => (
-                  <div key={t.id} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-0">
-                    <div className={`text-lg ${statusColor[t.status] || 'text-t3'}`}>
-                      {statusIcon[t.status] || '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-t1">
-                        Tranche {t.tranche_number}
+                {inf.tranches.map(t => {
+                  const cls = STATUS_CLS[t.status] || 'unknown';
+                  return (
+                    <div key={t.id} className="tr">
+                      <div className={`tr-ic ${cls}`}>{STATUS_ICON[t.status] || '?'}</div>
+                      <div className="tr-mid">
+                        <div className="tr-num">Tranche {t.tranche_number}</div>
+                        <div className="tr-meta">
+                          {(t.trigger_event || '').replace(/_/g, ' ')}
+                          {t.released_at && (<span> · Released {fmtDate(t.released_at)}</span>)}
+                        </div>
                       </div>
-                      <div className="text-xs text-t3 truncate">
-                        {t.trigger_event?.replace(/_/g, ' ')}
-                        {t.released_at && (
-                          <span> &middot; Released {new Date(t.released_at).toLocaleDateString('en-IN')}</span>
-                        )}
-                      </div>
+                      <div className="tr-amt">{fmtMoney(t.amount)}</div>
+                      <span className={`status-pill ${cls}`}>{t.status}</span>
                     </div>
-                    <div className="font-display font-bold text-t1 text-sm">{fmtMoney(t.amount)}</div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize border ${statusBg[t.status] || 'bg-gray-50 text-t3 border-gray-200'}`}>
-                      {t.status}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function SummaryCard({ label, amount, color = 'text-t1' }) {
-  return (
-    <div className="bg-white rounded-xl border border-border p-3">
-      <div className="text-[10px] uppercase tracking-wide text-t3 mb-1">{label}</div>
-      <div className={`font-display font-bold text-lg ${color}`}>
-        {fmtMoney(amount)}
-      </div>
     </div>
   );
 }

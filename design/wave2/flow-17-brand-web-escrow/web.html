@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 17 · brand-web campaign escrow — wave2 mockup</title>
+<meta name="viewport" content="width=1440" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.wrap{max-width:1440px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:780px;line-height:1.5;margin-top:4px}
+.frame{background:var(--white);border:1px solid var(--border);border-radius:18px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:30px}
+.frame-bar{background:#F4F4F5;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px}
+.frame-dots{display:flex;gap:5px}
+.frame-dots span{width:9px;height:9px;border-radius:50%;background:var(--muted-4)}
+.frame-url{flex:1;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+.dash{display:grid;grid-template-columns:220px 1fr;min-height:680px}
+.side{background:var(--ink);color:var(--white);padding:18px 14px}
+.side-logo{padding:6px 10px;border:1px dashed var(--yellow);border-radius:6px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);letter-spacing:.4px;width:max-content;margin-bottom:14px}
+.side-link{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;font-size:12.5px;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:2px}
+.side-link.act{background:var(--yellow);color:var(--ink);font-weight:700}
+.side-link .ic{font-family:'JetBrains Mono';font-size:11px;width:18px;text-align:center}
+.page{padding:28px 36px;background:var(--bg);max-width:880px;margin:0 auto;width:100%}
+.crumb{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);letter-spacing:.3px;text-transform:uppercase;margin-bottom:14px}
+.crumb b{color:var(--ink);font-weight:800}
+.crumb .sep{color:var(--muted-3);margin:0 6px}
+.crumb a{color:var(--muted-2)}
+.hdr{margin-bottom:18px}
+.hdr h1{font-family:'Outfit';font-size:24px;font-weight:700;color:var(--ink);letter-spacing:-.4px}
+.hdr .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0}
+.hdr .sub{font-size:12px;color:var(--muted-2)}
+.cnt-chip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:800;margin-bottom:6px}
+
+.hero{background:var(--ink);color:var(--white);border-radius:16px;padding:22px 26px;margin-bottom:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:var(--yellow);border-radius:50%;opacity:.06}
+.hero-cell{position:relative;z-index:2;border-left:1px solid rgba(255,255,255,.08);padding-left:18px}
+.hero-cell:first-child{border-left:0;padding-left:0}
+.hero-v{font-family:'JetBrains Mono';font-size:22px;font-weight:800;line-height:1.1;letter-spacing:-.4px}
+.hero-v.yel{color:var(--yellow)}
+.hero-v.green{color:#86EFAC}
+.hero-v.info{color:#93C5FD}
+.hero-l{font-family:'Outfit';font-size:10px;font-weight:700;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-top:6px}
+
+.inf-card{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.inf-head{padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border-soft);display:flex;align-items:center;justify-content:space-between}
+.inf-name{font-family:'Outfit';font-size:13.5px;font-weight:700;color:var(--ink)}
+.inf-name .fullname{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-left:8px;font-weight:500}
+.inf-tcount{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2)}
+
+.tr{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;padding:12px 16px;border-bottom:1px solid var(--border-soft);align-items:center}
+.tr:last-child{border-bottom:0}
+.tr-ic{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.tr-ic.queued{background:var(--yellow-pale);color:var(--yellow-text)}
+.tr-ic.locked{background:var(--info-pale);color:var(--info)}
+.tr-ic.released{background:var(--success-pale);color:var(--success-text)}
+.tr-mid{min-width:0}
+.tr-num{font-family:'Outfit';font-size:13px;font-weight:700;color:var(--ink)}
+.tr-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-top:2px}
+.tr-amt{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink);text-align:right}
+.status-pill{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
+.status-pill.queued{background:var(--yellow-pale);color:var(--yellow-text)}
+.status-pill.locked{background:var(--info-pale);color:var(--info)}
+.status-pill.released{background:var(--success-pale);color:var(--success-text)}
+
+.notice-conv{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid var(--yellow);border-radius:14px;padding:18px;display:flex;gap:14px;align-items:flex-start}
+.notice-conv .em{width:40px;height:40px;border-radius:10px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.notice-conv .body{flex:1}
+.notice-conv h4{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);margin-bottom:5px}
+.notice-conv p{font-size:12px;color:var(--muted);line-height:1.55;margin-bottom:8px}
+.notice-conv a{font-family:'JetBrains Mono';font-size:11.5px;font-weight:700;color:var(--yellow-text);text-decoration:underline}
+
+.empty{background:linear-gradient(135deg,var(--yellow-50) 0%,var(--yellow-pale) 100%);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center}
+.empty .em{font-size:48px;margin-bottom:10px}
+.empty .h{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty .t{font-size:12px;color:var(--muted);max-width:480px;margin:0 auto}
+
+.vsec{display:flex;align-items:center;gap:10px;margin:40px 0 14px;padding:0 4px}
+.vsec .pip{width:10px;height:10px;background:var(--yellow);border-radius:2px}
+.vsec .step{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.4px;text-transform:uppercase}
+.vsec .title{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink)}
+.vsec .note{font-size:12px;color:var(--muted-2);margin-left:auto}
+
+.anno{margin-top:20px;padding:14px 18px;background:var(--ink);color:rgba(255,255,255,.85);border-radius:12px;font-size:12px;line-height:1.6}
+.anno b{color:var(--yellow);font-weight:700}
+.anno code{font-family:'JetBrains Mono';font-size:11px;background:rgba(255,193,7,.15);padding:1px 6px;border-radius:4px;color:var(--yellow)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 17 · brand-web campaign escrow — wave2 mockup</h1>
+  <div class="sub">Single route: <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/dashboard/campaigns/[id]/escrow</code> (155 LOC). Restyles to INK 4-KPI hero + palette tranche rows + per-influencer cards. <strong>Brand-web FINALE</strong> — last surface for the bucket. Note: <code style="font-family:JetBrains Mono;background:rgba(255,193,7,.15);padding:1px 5px;border-radius:3px;color:var(--yellow)">/dashboard/waiting</code> doesn't exist in the codebase — handoff was outdated. Real Flow 17 scope = single page.</div>
+</div>
+
+<!-- ─── State 1 — DEFAULT (4 tranches across 2 influencers) ─── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 1 / 3</span>
+  <span class="title">/escrow · normal data view</span>
+  <span class="note">INK 4-KPI hero · per-influencer cards · palette tranche status pills</span>
+</div>
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / campaigns / cmp_a8x1 / escrow</div>
+  </div>
+  <div class="dash">
+    <aside class="side">
+      <div class="side-logo">[LOGO]</div>
+      <a class="side-link"><span class="ic">⌂</span>Dashboard</a>
+      <a class="side-link act"><span class="ic">▤</span>Campaigns</a>
+      <a class="side-link"><span class="ic">₹</span>Wallet</a>
+    </aside>
+    <div class="page">
+      <div class="crumb"><a>/dashboard</a> <span class="sep">/</span> <a>campaigns</a> <span class="sep">/</span> <a>Monsoon snack series</a> <span class="sep">/</span> <b>escrow</b></div>
+      <div class="hdr">
+        <span class="cnt-chip">5 tranches across 2 influencers</span>
+        <h1>Escrow Breakdown</h1>
+        <div class="rule"></div>
+        <div class="sub">Monsoon snack series · 2-tier tranche release per the contract terms.</div>
+      </div>
+      <div class="hero">
+        <div class="hero-cell"><div class="hero-v">₹26,000</div><div class="hero-l">Total Escrowed</div></div>
+        <div class="hero-cell"><div class="hero-v yel">₹14,500</div><div class="hero-l">Locked</div></div>
+        <div class="hero-cell"><div class="hero-v green">₹9,000</div><div class="hero-l">Released</div></div>
+        <div class="hero-cell"><div class="hero-v info">₹2,500</div><div class="hero-l">Queued</div></div>
+      </div>
+
+      <div class="inf-card">
+        <div class="inf-head">
+          <div class="inf-name">@priyareels<span class="fullname">Priya Ravi</span></div>
+          <div class="inf-tcount">3 tranches</div>
+        </div>
+        <div class="tr">
+          <div class="tr-ic released">✓</div>
+          <div class="tr-mid">
+            <div class="tr-num">Tranche 1</div>
+            <div class="tr-meta">both signed · Released 18 May 2026</div>
+          </div>
+          <div class="tr-amt">₹4,500</div>
+          <span class="status-pill released">released</span>
+        </div>
+        <div class="tr">
+          <div class="tr-ic locked">🔒</div>
+          <div class="tr-mid">
+            <div class="tr-num">Tranche 2</div>
+            <div class="tr-meta">brand confirm live</div>
+          </div>
+          <div class="tr-amt">₹4,500</div>
+          <span class="status-pill locked">locked</span>
+        </div>
+        <div class="tr">
+          <div class="tr-ic locked">🔒</div>
+          <div class="tr-mid">
+            <div class="tr-num">Tranche 3</div>
+            <div class="tr-meta">auto-release +30d after live</div>
+          </div>
+          <div class="tr-amt">₹9,000</div>
+          <span class="status-pill locked">locked</span>
+        </div>
+      </div>
+
+      <div class="inf-card">
+        <div class="inf-head">
+          <div class="inf-name">@ritika.style<span class="fullname">Ritika Taneja</span></div>
+          <div class="inf-tcount">2 tranches</div>
+        </div>
+        <div class="tr">
+          <div class="tr-ic released">✓</div>
+          <div class="tr-mid">
+            <div class="tr-num">Tranche 1</div>
+            <div class="tr-meta">both signed · Released 14 May 2026</div>
+          </div>
+          <div class="tr-amt">₹4,500</div>
+          <span class="status-pill released">released</span>
+        </div>
+        <div class="tr">
+          <div class="tr-ic queued">⏳</div>
+          <div class="tr-mid">
+            <div class="tr-num">Tranche 2</div>
+            <div class="tr-meta">awaiting brand wallet recharge</div>
+          </div>
+          <div class="tr-amt">₹2,500</div>
+          <span class="status-pill queued">queued</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 2 — CONVERSION-ONLY (no tranches) ─── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 2 / 3</span>
+  <span class="title">Conversion-only campaign · yellow-pale notice</span>
+  <span class="note">campaign.has_tranches === false</span>
+</div>
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / campaigns / cmp_b7z2 / escrow</div>
+  </div>
+  <div class="dash">
+    <aside class="side"><div class="side-logo">[LOGO]</div><a class="side-link act"><span class="ic">▤</span>Campaigns</a></aside>
+    <div class="page">
+      <div class="crumb"><a>/dashboard</a> <span class="sep">/</span> <b>escrow</b></div>
+      <div class="hdr">
+        <span class="cnt-chip">No tranches</span>
+        <h1>Escrow Breakdown</h1>
+        <div class="rule"></div>
+        <div class="sub">Workwear lookbook (commission-only campaign)</div>
+      </div>
+      <div class="notice-conv">
+        <div class="em">💸</div>
+        <div class="body">
+          <h4>No escrow for conversion campaigns</h4>
+          <p>This campaign pays influencers <strong>commission per conversion</strong>, not a fixed fee — so there are no tranches to lock up front. Earnings appear in the influencer's pending balance as conversions happen, and roll over to their wallet after the 30-day return window.</p>
+          <a href="#">Open Conversions tab →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── State 3 — EMPTY (no entries yet) ─── -->
+<div class="vsec">
+  <span class="pip"></span>
+  <span class="step">State 3 / 3</span>
+  <span class="title">No entries yet · empty state</span>
+  <span class="note">data.entries.length === 0 (newly published campaign)</span>
+</div>
+<div class="frame">
+  <div class="frame-bar">
+    <div class="frame-dots"><span></span><span></span><span></span></div>
+    <div class="frame-url">brand.inflx.in / dashboard / campaigns / cmp_d3f4 / escrow</div>
+  </div>
+  <div class="dash">
+    <aside class="side"><div class="side-logo">[LOGO]</div><a class="side-link act"><span class="ic">▤</span>Campaigns</a></aside>
+    <div class="page">
+      <div class="crumb"><a>/dashboard</a> <span class="sep">/</span> <b>escrow</b></div>
+      <div class="hdr">
+        <span class="cnt-chip">0 tranches</span>
+        <h1>Escrow Breakdown</h1>
+        <div class="rule"></div>
+        <div class="sub">Festive collection unboxing</div>
+      </div>
+      <div class="empty">
+        <div class="em">🔒</div>
+        <div class="h">No escrow entries yet</div>
+        <div class="t">Escrow entries are created when the campaign is published and influencers are contracted.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="anno">
+  <b>Scope:</b> Single route · 155 LOC OLD → ~250 LOC NEW. Scoped under <code>.esc</code> wrapper. Brand-web FINALE — last surface for the bucket.<br/>
+  <br/>
+  <b>Backend-first audit:</b> <code>brandApi.getCampaignEscrow(id)</code> preserved verbatim. Response: <code>summary{total, total_locked, total_released, total_queued}</code> · <code>influencer_breakdown[]</code> per inf (instagram_handle / influencer_name / tranches[]) · <code>campaign{name, has_tranches}</code> · <code>entries[]</code>. Per-tranche: id / tranche_number / trigger_event / status (queued|locked|released) / amount / released_at.<br/>
+  <br/>
+  <b>Scope correction (honest):</b> Handoff §11 listed Flow 17 as <code>/escrow + /waiting</code> but <code>/dashboard/waiting</code> doesn't exist in the codebase (likely deleted earlier or handoff was misremembering). Real Flow 17 scope = single escrow page. /dashboard/billing + /dashboard/subscription are 6-LOC server redirects (Window A's Phase A9) — no restyle needed.<br/>
+  <br/>
+  <b>Adjacent-fixes:</b><br/>
+  · OLD undefined Tailwind tokens (text-t1/t2/t3, border-border, bg-orange-50, border-orange-200, text-orange-700/800/900) → palette CSS vars<br/>
+  · Status color maps (yellow-600/blue-700/emerald-600 + amber/blue/emerald bg) → palette mapping (queued=yellow-pale, locked=info-pale, released=success-pale)<br/>
+  <br/>
+  <b>CSS scoping discipline</b> (day 1): scoped under <code>.esc</code> wrapper. Same lineage as Flows 7-16.<br/>
+  <br/>
+  <b>Zero functional change:</b> getCampaignEscrow preserved · 3 conditional view states preserved (loading/error/no-tranches/empty/normal).
+</div>
+
+</div>
+</body>
+</html>
