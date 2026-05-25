@@ -448,6 +448,7 @@ export const adminApi = {
 
   // ─── Subscription tiers (L1) — Phase A7-admin ──────────────────────────────
   listSubscriptionTiers:    () => api.get('/admin/subscription-tiers'),
+  createSubscriptionTier:   (data) => api.post('/admin/subscription-tiers', data),
   updateSubscriptionTier:   (tierKey, data) => api.patch(`/admin/subscription-tiers/${encodeURIComponent(tierKey)}`, data),
 
   // ─── Features catalog + tier_features + prices — Phase A10 ────────────────

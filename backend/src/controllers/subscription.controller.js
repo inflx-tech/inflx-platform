@@ -249,6 +249,80 @@ const adminListTiers = asyncHandler(async (req, res) => {
   return success(res, { tiers: rows });
 });
 
+// ── POST /v1/admin/subscription-tiers ────────────────────────────────────────
+// Phase A10.5: create a new tier with safe defaults. Body: {tier_key, name, description?}.
+// Inserts tier row + 1 monthly subscription_prices row at ₹0 + tier_features rows
+// for every existing catalog feature with included=false, quota_value=catalog default,
+// config={}. Admin then edits everything in the detail page.
+const SLUG_RE = /^[a-z][a-z0-9_]{1,39}$/;
+const adminCreateTier = asyncHandler(async (req, res) => {
+  const tierKey = String(req.body.tier_key || '').trim().toLowerCase();
+  const name    = String(req.body.name || '').trim();
+  const description = req.body.description == null ? null : String(req.body.description).trim() || null;
+
+  if (!SLUG_RE.test(tierKey)) {
+    throw new AppError('VALIDATION_ERROR', 'tier_key must be lowercase letters/digits/underscores, start with a letter, 2-40 chars', 422, 'tier_key');
+  }
+  if (name.length < 2 || name.length > 80) {
+    throw new AppError('VALIDATION_ERROR', 'name must be 2-80 chars', 422, 'name');
+  }
+  if (description && description.length > 500) {
+    throw new AppError('VALIDATION_ERROR', 'description must be ≤ 500 chars', 422, 'description');
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Insert tier with safe defaults (all quotas 0 = not allowed; admin sets per-feature in detail).
+    const { rows: tierRows } = await client.query(
+      `INSERT INTO subscription_tiers
+         (tier_key, name, description, monthly_price_inr, max_campaigns,
+          max_sets_per_campaign, max_influencers_per_cycle, max_products,
+          is_enterprise, active, sort_order, features_json)
+       VALUES ($1, $2, $3, 0, 0, 0, 0, 0, false, true,
+               COALESCE((SELECT MAX(sort_order) FROM subscription_tiers), 0) + 1,
+               '[]'::jsonb)
+       RETURNING *`,
+      [tierKey, name, description]
+    );
+    const tier = tierRows[0];
+
+    // Seed tier_features for every existing active feature (included=false by default).
+    await client.query(
+      `INSERT INTO tier_features (tier_id, feature_id, included, quota_value, config, notes)
+       SELECT $1, f.id,
+              false,
+              CASE WHEN f.feature_type = 'quota' THEN f.default_quota ELSE NULL END,
+              '{}'::jsonb,
+              'Auto-seeded on tier create (' || now()::date::text || ')'
+         FROM features f
+        WHERE f.active = true
+       ON CONFLICT (tier_id, feature_id) DO NOTHING`,
+      [tier.id]
+    );
+
+    // Seed one monthly price row at ₹0 (admin sets real price in detail).
+    await client.query(
+      `INSERT INTO subscription_prices (tier_id, billing_period, price_inr, active, sort_order)
+       VALUES ($1, 'monthly', 0, true, 1)
+       ON CONFLICT (tier_id, billing_period) DO NOTHING`,
+      [tier.id]
+    );
+
+    await client.query('COMMIT');
+    return success(res, { tier }, 201);
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    if (err.code === '23505') {  // unique_violation
+      throw new AppError('CONFLICT', `Tier with key '${tierKey}' already exists`, 409, 'tier_key');
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+});
+
 // ── PATCH /v1/admin/subscription-tiers/:tierKey ──────────────────────────────
 const adminUpdateTier = asyncHandler(async (req, res) => {
   const { tierKey } = req.params;
@@ -392,5 +466,5 @@ module.exports = {
   // Public + brand
   listTiers, getSubscription, upgrade, listInvoices,
   // Admin (Phase A7-admin)
-  adminListTiers, adminUpdateTier, adminListSubscriptions, adminListInvoices,
+  adminListTiers, adminCreateTier, adminUpdateTier, adminListSubscriptions, adminListInvoices,
 };

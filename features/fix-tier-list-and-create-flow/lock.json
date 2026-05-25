@@ -1,0 +1,30 @@
+{
+  "feature": "fix-tier-list-and-create-flow",
+  "area": "admin-web+backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-25) — explicit 'go 10.5 and Create just with defaults and i will edit afterwards' after honest audit surfaced that A7-admin endpoints were never route-mounted + + New tier button missing.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Vercel redeploys brand-web admin page; Render redeploys backend with 5 newly-mounted admin routes + 1 new controller function. No migration. No mobile.",
+  "fix": "Phase A10.5 — wire the 5 missing admin subscription routes that A7-admin defined but never mounted; add '+ New tier' button + create modal + adminCreateTier controller that scaffolds tier + 13 tier_features rows + 1 monthly price; surface API failures loudly on the list page.",
+  "related": [
+    "features/billing-admin-ui",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "5 admin routes mounted in admin.routes.js (4 pre-existing handlers from A7-admin + 1 new adminCreateTier). Tier list page rewritten with error surfacing + + New tier modal. backend boot smoke green; pnpm qa 76/76 GREEN STATE=GREEN gate=0 (54.5s). Ready to push.",
+  "regression_proof": "5 admin route mounts are net-new from router's POV (the handlers existed but were unreachable). Page rewrite preserves same path + component name. No DB migration. No mobile change. Backend boot clean (node -e require('./src/app') OK).",
+  "discipline": "Verify-twice catch acknowledged honestly: A7-admin claimed 8 admin endpoints but only 3 were truly route-mounted; remaining 4 + this new 1 = 5 wired in A10.5. Recorded in 01-spec.md.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Vercel + Render redeploy; no migration)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-25) — visual baseline identical to existing /admin/pricing/tiers; modal uses existing admin styling tokens.",
+  "mockup_locked_at": "2026-05-25"
+}

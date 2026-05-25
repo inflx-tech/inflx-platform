@@ -107,4 +107,14 @@ router.post  ('/tiers/:tier_key/prices',         authenticate, requireAdminRole(
 router.patch ('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.updatePrice);
 router.delete('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.softDeletePrice);
 
+// ── Subscription admin (legacy A7-admin endpoints — finally wired in A10.5) ──
+// These have existed in subscription.controller.js since commit 3920772 but
+// were never mounted in any route file. Hence the empty tier list in prod.
+const subscriptionCtrl = require('../controllers/subscription.controller');
+router.get   ('/subscription-tiers',             authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListTiers);
+router.post  ('/subscription-tiers',             authenticate, requireAdminRole('superadmin'), subscriptionCtrl.adminCreateTier);
+router.patch ('/subscription-tiers/:tierKey',    authenticate, requireAdminRole('superadmin'), subscriptionCtrl.adminUpdateTier);
+router.get   ('/subscriptions',                  authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListSubscriptions);
+router.get   ('/subscription-invoices',          authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListInvoices);
+
 module.exports = router;
