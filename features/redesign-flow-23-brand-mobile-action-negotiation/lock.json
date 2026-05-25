@@ -1,0 +1,23 @@
+{
+  "feature": "redesign-flow-23-brand-mobile-action-negotiation",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-25 chat \"pls proceed to flow 23 implementation with clear testing\"",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-25 chat — Flow 23 mockup locked",
+  "mockup_locked_at": "2026-05-25",
+  "notes": "Sixth flow. ActionRequired (5-tab inbox + bulk-sign + retry) + Negotiation (chat thread + goal-aware action panel). Behavior preserved 1:1. StatusPill extended additively with 5 negotiation statuses.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 23"
+  }
+}

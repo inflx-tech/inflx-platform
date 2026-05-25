@@ -54,6 +54,13 @@ export const STATUS_MAP_DEFAULT = {
   withdrawn:    { bg: P.bg2, fg: P.muted2, label: 'WITHDRAWN' },
   refunded:     { bg: P.bg2, fg: P.muted2, label: 'REFUNDED' },
   slots_filled: { bg: P.bg2, fg: P.muted2, label: 'SLOTS FILLED' }, // Flow 22
+  walked_away:  { bg: P.bg2, fg: P.muted2, label: 'CLOSED' },       // Flow 23 (negotiation terminal)
+
+  // Negotiation in-flight
+  awaiting_brand:      { bg: P.yellowPale, fg: P.yellowText, label: 'YOUR TURN' },  // Flow 23
+  awaiting_influencer: { bg: P.infoPale,   fg: P.info,       label: 'WAITING' },    // Flow 23
+  agreed:              { bg: P.successPale,fg: P.successText, label: 'AGREED' },    // Flow 23
+  open:                { bg: P.yellowPale, fg: P.yellowText, label: 'OPEN' },       // Flow 23
 };
 
 const FALLBACK = { bg: P.bg2, fg: P.muted2 };
