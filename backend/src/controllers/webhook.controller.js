@@ -350,13 +350,21 @@ async function handlePayoutReversed(payload) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main webhook handler
-// NOTE: app.js must pass raw body to this route (see webhook.routes.js)
+// NOTE: webhook.routes.js mounts express.raw({type:'*/*'}) on this route, so
+// req.body is a Buffer containing the raw request bytes. The global
+// express.json() in app.js conditionally skips /v1/webhooks/* paths so the
+// body stream stays unread until express.raw() captures it. See carved
+// defect features/backend-defect-webhook-body-hang/.
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function handleWebhook(req, res) {
-  // Razorpay sends signature in header
+  // Razorpay sends signature in header.
   const signature = req.headers['x-razorpay-signature'];
-  const rawBody   = req.rawBody; // set by express.raw() in webhook route
+  // req.body is a Buffer set by express.raw(); fall back to req.rawBody for
+  // backward compatibility with any test that sets it manually.
+  const rawBody = (req.body && Buffer.isBuffer(req.body))
+    ? req.body
+    : (req.rawBody || '');
 
   if (!verifyWebhookSignature(rawBody, signature)) {
     console.warn('[WEBHOOK] Invalid signature — rejected');
@@ -365,7 +373,8 @@ async function handleWebhook(req, res) {
 
   let event;
   try {
-    event = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const bodyStr = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody || '');
+    event = bodyStr ? JSON.parse(bodyStr) : {};
   } catch {
     return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid JSON payload' } });
   }

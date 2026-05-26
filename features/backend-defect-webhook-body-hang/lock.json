@@ -1,0 +1,31 @@
+{
+  "feature": "backend-defect-webhook-body-hang",
+  "area": "backend-app+routes+controller",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — implicit go via the ongoing A6.5 smoke-test debug session; third carved defect after the enum + cycle-dates fixes. Render log analysis identified POST /v1/webhooks/razorpay - - ms - - as the smoking gun.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render redeploys backend with corrected middleware ordering — webhook routes now bypass global express.json() and use express.raw() for raw body access). NO migration. NO schema change. NO behaviour change for any non-webhook route.",
+  "fix": "Carved defect — the A6.5 webhook flow's hand-rolled captureRawBody middleware in webhook.routes.js conflicted with the global express.json() in app.js. Body stream was already drained by json() before captureRawBody attached its listeners → req.on('end') never fired → handler hung → no response → Razorpay timeouts. Fix: conditionally bypass express.json() for /v1/webhooks/* paths in app.js + use Express's built-in express.raw() in webhook.routes.js + read Buffer body in webhook.controller.js. Canonical webhook pattern.",
+  "related": [
+    "features/backend-defect-pending-mandate-enum",
+    "features/backend-defect-pending-mandate-cycle-dates",
+    "features/billing-razorpay-live"
+  ],
+  "result": "app.js wraps express.json() with conditional skip for /v1/webhooks/*; webhook.routes.js now uses express.raw({type:'*/*',limit:'5mb'}); webhook.controller.handleWebhook reads req.body as Buffer + JSON.parse on utf8 string. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (47.0s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. Non-webhook routes still get express.json({limit:'5mb'}) identically via the conditional wrapper falling through. Webhook routes (/v1/webhooks/*) get express.raw() as the canonical body capture. Signature verification reads Buffer; event payload parses via JSON.parse(Buffer.toString('utf8')). Zero behaviour change for any non-webhook endpoint; full webhook-handler activation for /v1/webhooks/razorpay.",
+  "discipline": "Verify-twice on app.js confirmed express.json() is unconditionally mounted globally at line 53 BEFORE any route is matched (line 101). Render log line POST /v1/webhooks/razorpay - - ms - - (no status, no duration, no size) confirmed the handler never sent a response — classic stream-already-consumed hang. Carved per no-fake-green: backend defect, fix the middleware ordering, don't bend the spec.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Render redeploy of backend with corrected webhook body handling). NO migration. After Render's auto-redeploy (~2-3 min), Razorpay webhooks fire end-to-end."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only middleware patch.",
+  "mockup_locked_at": "2026-05-26"
+}

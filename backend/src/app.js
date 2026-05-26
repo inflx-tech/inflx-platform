@@ -50,7 +50,17 @@ if (env.R2_MOCK) {
 }
 
 // ─── Request parsing ─────────────────────────────────────────────────────────
-app.use(express.json({ limit: '5mb' }));
+// Razorpay webhooks need the raw request body for HMAC signature verification
+// (webhook.controller.verifyWebhookSignature). express.json() consumes the
+// body stream, which would make raw-body access impossible downstream. So we
+// conditionally bypass json parsing for /v1/webhooks/* paths and let
+// express.raw() in the webhook route capture the buffer. All other routes
+// keep the existing 5mb json parsing exactly as before.
+// Carved defect: features/backend-defect-webhook-body-hang/.
+app.use((req, res, next) => {
+  if (req.originalUrl.startsWith('/v1/webhooks/')) return next();
+  return express.json({ limit: '5mb' })(req, res, next);
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
