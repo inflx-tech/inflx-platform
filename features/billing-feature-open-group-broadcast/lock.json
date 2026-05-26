@@ -1,0 +1,33 @@
+{
+  "feature": "billing-feature-open-group-broadcast",
+  "area": "backend-controller+service+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'go with your recommendation that is fix1'. Fourth per-feature enforcement; also corrects A12.4 verify-twice catch by moving bulk_outreach gate to the real publish path.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with bulk_outreach + open_group_broadcast gates on campaign.controller.publish + per-tier cap and area_scope SQL filter on materialiseOpenGroupInvites. M066 (is_enforced=true on open_group_broadcast) + M065 (is_enforced=true on bulk_outreach, deferred from A12.4) run together on Supabase prod on explicit founder go.",
+  "fix": "Phase A12.5 — wire open_group_broadcast config gate (max_recipients=0 entry block + per-tier cap inside materialise + area_scope SQL filter). Move A12.4's bulk_outreach gate to campaign.controller.publish (the real publish path — A12.4 had wired it on a dead notify-only endpoint with no frontend caller).",
+  "related": [
+    "features/billing-feature-bulk-outreach",
+    "features/billing-feature-discover-filter",
+    "features/billing-feature-search-advanced",
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "bulk_outreach + open_group_broadcast gates moved to campaign.controller.publish (the real publish path) — pre-flight, conditional on hasOpenGroupSet. Hardcoded OPEN_GROUP_BROADCAST_LIMIT=1000 in materialiseOpenGroupInvites replaced with effective tier cap (max_recipients clamped to 1000 safety bound). area_scope SQL filter (city/state/all_india) injected into match query. M066 applied locally (sanity probe: open_group_broadcast.is_enforced=true, feature_type=config). Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (1.0m). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN. STATE=GREEN. gate=0. Defensive fail-open verified: both gates honour is_enforced (requireFeature returns silently when bulk_outreach.is_enforced=false; configFor returns {} when open_group_broadcast.is_enforced=false → effective cap falls back to 1000, no scope filter, max_recipients=0 check doesn't fire). Gates run BEFORE the publish transaction → no partial-publish risk on block. The A12.4 gate on offer.controller.publishOpenGroup is left untouched (negotiations.test.js still passes).",
+  "discipline": "Verify-twice: confirmed via code read that materialiseOpenGroupInvites in campaign.controller is the real CI materialization site; offer.controller.publishOpenGroup only sends push notifications and has zero frontend callers (grep of Packages/** returned no matches). A12.4 contract spec was wrong on this point. A12.5 corrects the wiring without touching A12.4's defensive gate on offer.controller (left for negotiations.test.js + future re-wiring).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with bulk_outreach + open_group_broadcast gates on campaign-publish path). M065 + M066 prod migrations on separate explicit founder go after push, applied together via trap+restore sequence."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only contract (per meals-schema precedent for non-UI features).",
+  "mockup_locked_at": "2026-05-26"
+}

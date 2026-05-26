@@ -135,7 +135,8 @@ async function getSetOrThrow(setId, campaignId) {
 
 // Safety bound on how many influencers a single open_group set can broadcast
 // to. The brand's slot cap (set.max_cap) is enforced separately at accept
-// time; this is just a runaway guard.
+// time; this is just a runaway guard. A12.5 layers a per-tier cap from
+// open_group_broadcast.max_recipients on top of this — see below.
 const OPEN_GROUP_BROADCAST_LIMIT = 1000;
 
 /**
@@ -146,12 +147,56 @@ const OPEN_GROUP_BROADCAST_LIMIT = 1000;
  * For each open_group set:
  *   - Resolve open_group_filters → SQL WHERE clauses via the shared helper
  *   - Exclude influencers already attached to any set in this campaign
- *   - INSERT one CI row per match with status='invited' and a 48h offer expiry
+ *   - Apply A12.5 open_group_broadcast.area_scope filter (city/state) when
+ *     the feature is enforced and the brand has a location on file
+ *   - INSERT one CI row per match with status='invited' and a 48h offer
+ *     expiry, capped by A12.5 open_group_broadcast.max_recipients (clamped
+ *     to OPEN_GROUP_BROADCAST_LIMIT safety bound; pre-M066 falls back to
+ *     the safety bound only)
  *
  * Handpick sets are skipped here — those CI rows are inserted at wizard save
  * time and are already in 'invited' state by the time we get here.
  */
 async function materialiseOpenGroupInvites(tx, campaign, sets) {
+  if (!sets.some(s => s.influencer_mode === 'open_group')) return;
+
+  // Phase A12.5 — open_group_broadcast config gate.
+  // Pre-M066 (is_enforced=false): configFor returns {} → effective cap
+  // = OPEN_GROUP_BROADCAST_LIMIT, no scope filter (behaviour identical to
+  // pre-A12.5). Post-M066 the per-tier cap + area_scope filter activate.
+  const broadcastCfg  = await entitlementsService.configFor(tx, campaign.brand_id, 'open_group_broadcast');
+  const maxRecipients = broadcastCfg.max_recipients != null ? Number(broadcastCfg.max_recipients) : null;
+  const effectiveCap  =
+    (maxRecipients == null || maxRecipients === -1)
+      ? OPEN_GROUP_BROADCAST_LIMIT
+      : Math.min(maxRecipients, OPEN_GROUP_BROADCAST_LIMIT);
+
+  // Resolve brand location once if area_scope filter will apply.
+  // Defensive: if brand has no city/state on their user row, skip the filter
+  // — don't lock the brand out due to incomplete profile data.
+  const areaScope = broadcastCfg.area_scope || null;
+  let scopeColumn = null;   // 'city' | 'state' | null
+  let scopeValue  = null;
+  if (areaScope && areaScope !== 'all_india') {
+    const { rows: userRows } = await tx.query(
+      `SELECT u.city, u.state
+         FROM users u
+         JOIN brands b ON b.user_id = u.id
+        WHERE b.id = $1
+        LIMIT 1`,
+      [campaign.brand_id]
+    );
+    const brandCity  = userRows[0]?.city;
+    const brandState = userRows[0]?.state;
+    if (areaScope === 'city' && brandCity) {
+      scopeColumn = 'city';
+      scopeValue  = brandCity;
+    } else if (areaScope === 'state' && brandState) {
+      scopeColumn = 'state';
+      scopeValue  = brandState;
+    }
+  }
+
   for (const set of sets) {
     if (set.influencer_mode !== 'open_group') continue;
 
@@ -162,6 +207,14 @@ async function materialiseOpenGroupInvites(tx, campaign, sets) {
                     WHERE cs2.campaign_id = $${nextIdx} AND ci2.influencer_id = i.id)`
     );
     params.push(campaign.id);
+    let nextParamIdx = nextIdx + 1;
+
+    // A12.5 — area_scope filter (city/state) injected with proper placeholder.
+    if (scopeColumn && scopeValue != null) {
+      conditions.push(`i.${scopeColumn} = $${nextParamIdx}`);
+      params.push(scopeValue);
+      nextParamIdx++;
+    }
 
     const { rows: matches } = await tx.query(
       `SELECT i.id
@@ -169,11 +222,11 @@ async function materialiseOpenGroupInvites(tx, campaign, sets) {
          JOIN users u ON u.id = i.user_id
         WHERE ${conditions.join(' AND ')}
         ORDER BY i.followers_count DESC NULLS LAST, i.created_at ASC
-        LIMIT $${nextIdx + 1}`,
-      [...params, OPEN_GROUP_BROADCAST_LIMIT]
+        LIMIT $${nextParamIdx}`,
+      [...params, effectiveCap]
     );
 
-    console.log(`[publish] open_group set ${set.id}: broadcasting to ${matches.length} matches (slot cap ${set.max_cap || 'unset'})`);
+    console.log(`[publish] open_group set ${set.id}: broadcasting to ${matches.length} matches (effective cap ${effectiveCap}, scope ${areaScope || 'all_india'}, slot cap ${set.max_cap || 'unset'})`);
 
     const perBudget = set.per_influencer_budget != null ? parseFloat(set.per_influencer_budget) : null;
     for (const m of matches) {
@@ -988,6 +1041,37 @@ const publish = asyncHandler(async (req, res) => {
   );
   if (!sets.length) {
     throw new AppError('VALIDATION_ERROR', 'Campaign must have at least one set before publishing', 422);
+  }
+
+  // Phase A12.5 — open-group feature gates fire BEFORE wallet check / tx open,
+  // conditional on the campaign containing any open_group set. Two layers
+  // (defence-in-depth):
+  //   1. bulk_outreach boolean — re-applied here from A12.4 (verify-twice
+  //      found A12.4 wired this on offer.controller.publishOpenGroup, a
+  //      notify-only endpoint with no frontend caller — M065 alone was a
+  //      no-op against the real publish path). Free tier blocked.
+  //   2. open_group_broadcast.max_recipients == 0 — Free tier also blocked
+  //      via the config layer (same intent, separate feature key).
+  // Both gates fail-open pre-M065/M066 (requireFeature/configFor honour
+  // is_enforced).
+  const hasOpenGroupSet = sets.some(s => s.influencer_mode === 'open_group');
+  if (hasOpenGroupSet) {
+    await entitlementsService.requireFeature(db, brand.id, 'bulk_outreach', {
+      label: 'Bulk influencer outreach',
+    });
+    const ogbCfg = await entitlementsService.configFor(db, brand.id, 'open_group_broadcast');
+    if (ogbCfg.max_recipients === 0) {
+      throw new AppError(
+        'FEATURE_NOT_AVAILABLE',
+        'Open-group broadcast is not available on your current plan. Upgrade to publish open-group campaigns.',
+        422,
+        'open_group_broadcast',
+        {
+          feature_key: 'open_group_broadcast',
+          upgrade_to:  ['growth', 'pro', 'enterprise'],
+        }
+      );
+    }
   }
 
   const hasEngagementOrHybrid = sets.some(s => s.goal === 'engagement' || s.goal === 'hybrid');
