@@ -22,10 +22,18 @@
   "discipline": "Verify-twice: confirmed via code read that materialiseOpenGroupInvites in campaign.controller is the real CI materialization site; offer.controller.publishOpenGroup only sends push notifications and has zero frontend callers (grep of Packages/** returned no matches). A12.4 contract spec was wrong on this point. A12.5 corrects the wiring without touching A12.4's defensive gate on offer.controller (left for negotiations.test.js + future re-wiring).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting; Render redeploys backend with bulk_outreach + open_group_broadcast gates on campaign-publish path). M065 + M066 prod migrations on separate explicit founder go after push, applied together via trap+restore sequence."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'ok pls go' for combined M065 + M066 prod migration after A12.5 push (1b2f1f2) landed on origin/main.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "1b2f1f2",
+      "render_redeploy": "auto on push (Render watches origin/main)",
+      "prod_migrations": {
+        "M065_bulk_outreach": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: features.feature_key='bulk_outreach', is_enforced=true, feature_type=boolean. Gate now active on POST /campaigns/:id/publish for Free brands publishing any campaign with an open_group set.",
+        "M066_open_group_broadcast": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: features.feature_key='open_group_broadcast', is_enforced=true, feature_type=config. Per-tier cap (max_recipients) + area_scope SQL filter now active inside materialiseOpenGroupInvites; Free tier blocked at entry via max_recipients=0 check."
+      },
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run (.env.bak removed; DATABASE_URL verified)."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only contract (per meals-schema precedent for non-UI features).",
