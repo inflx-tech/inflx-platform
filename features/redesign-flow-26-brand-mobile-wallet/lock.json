@@ -1,0 +1,23 @@
+{
+  "feature": "redesign-flow-26-brand-mobile-wallet",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-26 chat \"ok pls start implementation\"",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 26 mockup locked",
+  "mockup_locked_at": "2026-05-26",
+  "notes": "Ninth flow. Wallet — balance hero + Razorpay top-up via WebView modal + payout bank details + tx history. SDK boundary preserved verbatim. Single HTML-string color swap (#1B2D5E → #0A0A0A) inside buildRazorpayCheckoutHTML. Behavior preserved 1:1.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 26"
+  }
+}

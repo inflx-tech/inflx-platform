@@ -5,9 +5,20 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import { openWebDashboard } from '../../utils/openWebDashboard';
+
+/**
+ * BrandWalletScreen — wallet balance + Razorpay top-up + payout bank
+ * details + transaction history.
+ *
+ * Flow 26 (2026-05-26): navy + orange → brandPalette + Outfit/PJS/JetBrains-
+ * Mono. SDK boundary preserved verbatim (react-native-webview + AsyncStorage
+ * + Razorpay checkout.js CDN + 3-message-type handler + mock-order auto-
+ * verify branching). Single HTML-string change: theme color '#1B2D5E' →
+ * '#0A0A0A' inside buildRazorpayCheckoutHTML (Razorpay modal accent).
+ */
 
 const TX_ICONS = {
   topup: '⬆️', escrow_lock: '🔒', escrow_release: '🔓',
@@ -24,8 +35,10 @@ const TX_LABELS = {
 };
 
 /**
- * Build an HTML page that loads Razorpay checkout.js and opens the payment modal.
- * On success/failure/dismiss, posts a message back to React Native via WebView.
+ * Build the Razorpay checkout HTML loaded inside the WebView.
+ * Flow 26: theme color '#1B2D5E' (navy) → '#0A0A0A' (ink) for brandPalette
+ * consistency. All other structure preserved verbatim (key/amount/order
+ * placeholders, postMessage handlers for SUCCESS/FAILED/DISMISSED).
  */
 function buildRazorpayCheckoutHTML({ orderId, amountPaise, keyId }) {
   return `
@@ -36,14 +49,14 @@ function buildRazorpayCheckoutHTML({ orderId, amountPaise, keyId }) {
   <style>
     body {
       display: flex; align-items: center; justify-content: center;
-      height: 100vh; margin: 0; background: #F4F6FB;
+      height: 100vh; margin: 0; background: #FAFAFA;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .loader { text-align: center; color: #4A5278; }
+    .loader { text-align: center; color: #52525B; }
     .loader p { margin-top: 16px; font-size: 14px; }
     .spinner {
       width: 40px; height: 40px; margin: 0 auto;
-      border: 4px solid #E0E4EF; border-top-color: #1B2D5E;
+      border: 4px solid #E4E4E7; border-top-color: #0A0A0A;
       border-radius: 50%; animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -64,7 +77,7 @@ function buildRazorpayCheckoutHTML({ orderId, amountPaise, keyId }) {
       description: 'Wallet Top-up',
       order_id: '${orderId}',
       prefill: { contact: '', email: '' },
-      theme: { color: '#1B2D5E' },
+      theme: { color: '#0A0A0A' },
       handler: function(response) {
         window.ReactNativeWebView.postMessage(JSON.stringify({
           type: 'PAYMENT_SUCCESS',
@@ -108,14 +121,11 @@ export default function BrandWalletScreen({ navigation }) {
   const [verifying, setVerifying]       = useState(false);
   const pendingOrderRef = useRef(null);
 
-  // Payout bank details — stored under brand.listing_data.bank_details
   const [brand, setBrand]                = useState(null);
   const [bank, setBank]                  = useState({
     account_holder_name: '', bank_name: '', account_number: '', ifsc_code: '', upi_id: '',
   });
   const [savingBank, setSavingBank]      = useState(false);
-
-  // ── Data loading ────────────────────────────────────────────────────────────
 
   async function load() {
     const token = await AsyncStorage.getItem('inflx_token');
@@ -165,8 +175,6 @@ export default function BrandWalletScreen({ navigation }) {
     }
   }
 
-  // ── Bank details (payout) ──────────────────────────────────────────────────
-
   async function saveBankDetails() {
     const holder = bank.account_holder_name.trim();
     const acct   = bank.account_number.trim();
@@ -191,10 +199,7 @@ export default function BrandWalletScreen({ navigation }) {
     };
     const res = await brandApi.updateMe(payload);
     setSavingBank(false);
-    if (!res.success) {
-      Alert.alert('Save failed', res.error?.message || 'Could not save payout details.');
-      return;
-    }
+    if (!res.success) { Alert.alert('Save failed', res.error?.message || 'Could not save payout details.'); return; }
     Alert.alert('Saved', 'Payout details saved. You can now receive payouts to this account.');
     setBrand(prev => ({ ...prev, listing_data: payload.listing_data }));
   }
@@ -207,37 +212,25 @@ export default function BrandWalletScreen({ navigation }) {
     setRefreshing(false);
   }, []);
 
-  // ── Top-up flow ─────────────────────────────────────────────────────────────
-
   async function topup() {
     const amountRupees = parseFloat(topupAmt);
-    if (!amountRupees || amountRupees < 1) {
-      Alert.alert('Invalid Amount', 'Minimum top-up is \u20B91');
-      return;
-    }
+    if (!amountRupees || amountRupees < 1) { Alert.alert('Invalid Amount', 'Minimum top-up is ₹1'); return; }
 
     const token = await AsyncStorage.getItem('inflx_token');
     if (!token) {
-      Alert.alert(
-        'Session Expired',
-        'Please log in again to top up your wallet.',
-        [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]
-      );
+      Alert.alert('Session Expired', 'Please log in again to top up your wallet.',
+        [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]);
       return;
     }
 
     setToppingUp(true);
-    // Backend accepts rupees and converts to paise only for the Razorpay API.
     const res = await brandApi.createTopup(amountRupees);
     setToppingUp(false);
 
     if (!res.success) {
       if (res.error?.code === 'UNAUTHORIZED') {
-        Alert.alert(
-          'Session Expired',
-          'Your session has expired. Please log in again.',
-          [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]
-        );
+        Alert.alert('Session Expired', 'Your session has expired. Please log in again.',
+          [{ text: 'OK', onPress: () => navigation.getParent()?.reset({ index: 0, routes: [{ name: 'Auth' }] }) }]);
       } else {
         Alert.alert('Failed', res.error?.message || 'Top-up failed');
       }
@@ -247,7 +240,7 @@ export default function BrandWalletScreen({ navigation }) {
     const { order_id, amount, key_id } = res.data;
     pendingOrderRef.current = { order_id, amount, key_id };
 
-    // Mock mode: order_id starts with "order_mock_" — auto-verify without Razorpay UI
+    // Mock mode: order_id startsWith "order_mock_" → auto-verify without WebView
     if (order_id && order_id.startsWith('order_mock_')) {
       await verifyPayment({
         razorpay_order_id: order_id,
@@ -257,12 +250,7 @@ export default function BrandWalletScreen({ navigation }) {
       return;
     }
 
-    // Real mode: open Razorpay checkout in a WebView modal
-    const html = buildRazorpayCheckoutHTML({
-      orderId: order_id,
-      amountPaise: amount,
-      keyId: key_id,
-    });
+    const html = buildRazorpayCheckoutHTML({ orderId: order_id, amountPaise: amount, keyId: key_id });
     setRazorpayHTML(html);
     setShowRazorpay(true);
   }
@@ -273,24 +261,15 @@ export default function BrandWalletScreen({ navigation }) {
     setVerifying(false);
 
     if (res.success) {
-      // Update wallet balance from verify response
       if (res.data?.wallet_balance != null) {
         setWallet(prev => prev ? { ...prev, wallet_balance: res.data.wallet_balance } : prev);
       }
       const displayAmt = topupAmt;
       setTopupAmt('');
-      Alert.alert(
-        'Top-up Successful',
-        `₹${displayAmt} has been added to your wallet.`,
-        [{ text: 'OK' }]
-      );
-      // Refresh to get updated wallet stats and transactions
+      Alert.alert('Top-up Successful', `₹${displayAmt} has been added to your wallet.`, [{ text: 'OK' }]);
       load();
     } else {
-      Alert.alert(
-        'Verification Failed',
-        res.error?.message || 'Could not verify payment. If amount was debited, it will be refunded.',
-      );
+      Alert.alert('Verification Failed', res.error?.message || 'Could not verify payment. If amount was debited, it will be refunded.');
     }
   }
 
@@ -315,10 +294,8 @@ export default function BrandWalletScreen({ navigation }) {
     }
   }
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
 
   const balance        = wallet?.wallet_balance || 0;
@@ -326,186 +303,176 @@ export default function BrandWalletScreen({ navigation }) {
   const totalDeposited = wallet?.total_deposited || 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: P.bg }}>
       <ScrollView
-        style={styles.container}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
+        style={s.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} colors={[P.yellow]} />}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Wallet</Text>
+        <View style={s.header}>
+          <Text style={s.title}>Wallet</Text>
         </View>
 
-        {/* ── Balance Card ───────────────────────────────────────────────
-            wallet_balance / escrow_locked / total_deposited are stored in
-            PAISE in the DB — fmtMoney handles the /100 conversion. Using
-            fmtRupees here was showing every value 100× too big. */}
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Available Balance</Text>
-          <Text style={styles.balanceAmt}>{fmtMoney(balance)}</Text>
-          <View style={styles.balanceRow}>
-            <View style={styles.balanceStat}>
-              <Text style={styles.balanceStatLabel}>Locked in Escrow</Text>
-              <Text style={styles.balanceStatVal}>{fmtMoney(escrowLocked)}</Text>
+        <View style={s.balanceCard}>
+          <Text style={s.balanceLabel}>Available Balance</Text>
+          <Text style={s.balanceAmt}>{fmtMoney(balance)}</Text>
+          <View style={s.balanceRow}>
+            <View style={s.balanceStat}>
+              <Text style={s.balanceStatLabel}>Locked in Escrow</Text>
+              <Text style={s.balanceStatVal}>{fmtMoney(escrowLocked)}</Text>
             </View>
-            <View style={styles.balanceStat}>
-              <Text style={styles.balanceStatLabel}>Total Deposited</Text>
-              <Text style={styles.balanceStatVal}>{fmtMoney(totalDeposited)}</Text>
+            <View style={s.balanceStat}>
+              <Text style={s.balanceStatLabel}>Total Deposited</Text>
+              <Text style={s.balanceStatVal}>{fmtMoney(totalDeposited)}</Text>
             </View>
           </View>
         </View>
 
-        {/* ── Add Funds ───────────────────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Add Funds</Text>
-          <View style={styles.quickRow}>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Add Funds</Text>
+          <View style={s.quickRow}>
             {[5000, 10000, 25000, 50000].map(amt => (
               <TouchableOpacity
                 key={amt}
-                style={[styles.quickChip, topupAmt === String(amt) && styles.quickChipActive]}
+                style={[s.quickChip, topupAmt === String(amt) && s.quickChipActive]}
                 onPress={() => setTopupAmt(String(amt))}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.quickText, topupAmt === String(amt) && styles.quickTextActive]}>
-                  {fmtRupees(amt)}
-                </Text>
+                <Text style={[s.quickText, topupAmt === String(amt) && s.quickTextActive]}>{fmtRupees(amt)}</Text>
               </TouchableOpacity>
             ))}
           </View>
-          <View style={styles.topupRow}>
-            <View style={styles.topupInput}>
-              <Text style={styles.rupeeSign}>₹</Text>
+          <View style={s.topupRow}>
+            <View style={s.topupInput}>
+              <Text style={s.rupeeSign}>₹</Text>
               <TextInput
-                style={styles.topupField}
+                style={s.topupField}
                 value={topupAmt}
                 onChangeText={setTopupAmt}
                 placeholder="Custom amount"
-                placeholderTextColor={colors.t3}
+                placeholderTextColor={P.muted3}
                 keyboardType="numeric"
               />
             </View>
             <TouchableOpacity
-              style={[styles.topupBtn, (toppingUp || verifying || !topupAmt) && { opacity: 0.5 }]}
+              style={[s.topupBtn, (toppingUp || verifying || !topupAmt) && { opacity: 0.5 }]}
               onPress={topup}
               disabled={toppingUp || verifying || !topupAmt}
+              activeOpacity={0.85}
             >
               {(toppingUp || verifying)
-                ? <ActivityIndicator color={colors.white} size="small" />
-                : <Text style={styles.topupBtnText}>Top Up</Text>
-              }
+                ? <ActivityIndicator color={P.yellow} size="small" />
+                : <Text style={s.topupBtnText}>Top Up</Text>}
             </TouchableOpacity>
           </View>
           {verifying && (
-            <View style={styles.verifyingRow}>
-              <ActivityIndicator size="small" color={colors.navy} />
-              <Text style={styles.verifyingText}>Verifying payment...</Text>
+            <View style={s.verifyingRow}>
+              <ActivityIndicator size="small" color={P.yellowText} />
+              <Text style={s.verifyingText}>Verifying payment…</Text>
             </View>
           )}
         </View>
 
-        {/* ── Payout details ─────────────────────────────────────────────
-            Bank account the brand will receive payouts into. Mirrors the
-            web wallet page — stored under brand.listing_data.bank_details. */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payout Details</Text>
-          <Text style={styles.bankHint}>Where refunds and payouts will land.</Text>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Payout Details</Text>
+          <Text style={s.bankHint}>Where refunds and payouts will land.</Text>
 
-          <View style={styles.bankField}>
-            <Text style={styles.bankLabel}>Account holder name *</Text>
+          <View style={s.bankField}>
+            <Text style={s.bankLabel}>Account holder name *</Text>
             <TextInput
-              style={styles.bankInput}
+              style={s.bankInput}
               value={bank.account_holder_name}
               onChangeText={(v) => setBank(p => ({ ...p, account_holder_name: v }))}
               placeholder="As on bank account"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
             />
           </View>
 
-          <View style={styles.bankField}>
-            <Text style={styles.bankLabel}>Bank name</Text>
+          <View style={s.bankField}>
+            <Text style={s.bankLabel}>Bank name</Text>
             <TextInput
-              style={styles.bankInput}
+              style={s.bankInput}
               value={bank.bank_name}
               onChangeText={(v) => setBank(p => ({ ...p, bank_name: v }))}
               placeholder="e.g. HDFC Bank"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
             />
           </View>
 
-          <View style={styles.bankField}>
-            <Text style={styles.bankLabel}>Account number *</Text>
+          <View style={s.bankField}>
+            <Text style={s.bankLabel}>Account number *</Text>
             <TextInput
-              style={styles.bankInput}
+              style={[s.bankInput, { fontFamily: fonts.monoMedium }]}
               value={bank.account_number}
               onChangeText={(v) => setBank(p => ({ ...p, account_number: v.replace(/\D/g, '') }))}
               placeholder="Digits only"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               keyboardType="numeric"
             />
           </View>
 
-          <View style={styles.bankField}>
-            <Text style={styles.bankLabel}>IFSC code *</Text>
+          <View style={s.bankField}>
+            <Text style={s.bankLabel}>IFSC code *</Text>
             <TextInput
-              style={styles.bankInput}
+              style={[s.bankInput, { fontFamily: fonts.monoMedium }]}
               value={bank.ifsc_code}
               onChangeText={(v) => setBank(p => ({ ...p, ifsc_code: v.toUpperCase() }))}
               placeholder="e.g. HDFC0001234"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               autoCapitalize="characters"
               maxLength={11}
             />
           </View>
 
-          <View style={styles.bankField}>
-            <Text style={styles.bankLabel}>UPI ID</Text>
+          <View style={s.bankField}>
+            <Text style={s.bankLabel}>UPI ID</Text>
             <TextInput
-              style={styles.bankInput}
+              style={[s.bankInput, { fontFamily: fonts.monoMedium }]}
               value={bank.upi_id}
               onChangeText={(v) => setBank(p => ({ ...p, upi_id: v }))}
               placeholder="e.g. brand@hdfc"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               autoCapitalize="none"
             />
           </View>
 
           <TouchableOpacity
-            style={[styles.bankSaveBtn, savingBank && { opacity: 0.5 }]}
+            style={[s.bankSaveBtn, savingBank && { opacity: 0.5 }]}
             onPress={saveBankDetails}
             disabled={savingBank}
+            activeOpacity={0.85}
           >
             {savingBank
-              ? <ActivityIndicator color={colors.white} size="small" />
-              : <Text style={styles.bankSaveBtnText}>Save Payout Details</Text>
-            }
+              ? <ActivityIndicator color={P.ink} size="small" />
+              : <Text style={s.bankSaveBtnText}>Save Payout Details</Text>}
           </TouchableOpacity>
         </View>
 
-        {/* ── Recent Transactions ──────────────────────────────────────── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+        <View style={s.section}>
+          <Text style={s.sectionTitle}>Recent Transactions</Text>
           {transactions.length === 0 ? (
-            <View style={styles.emptyTx}>
-              <Text style={styles.emptyTxText}>No transactions yet. Top up your wallet to get started.</Text>
+            <View style={s.emptyTx}>
+              <Text style={s.emptyTxText}>No transactions yet. Top up your wallet to get started.</Text>
             </View>
           ) : (
             transactions.slice(0, 15).map((tx, i) => {
               const isCredit = ['topup', 'escrow_release', 'refund'].includes(tx.type);
               const txAmount = parseFloat(tx.amount || 0);
               return (
-                <View key={tx.id || i} style={styles.txRow}>
-                  <Text style={styles.txIcon}>{TX_ICONS[tx.type] || '•'}</Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.txType}>{TX_LABELS[tx.type] || tx.type?.replace(/_/g, ' ')}</Text>
+                <View key={tx.id || i} style={s.txRow}>
+                  <Text style={s.txIcon}>{TX_ICONS[tx.type] || '•'}</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={s.txType}>{TX_LABELS[tx.type] || tx.type?.replace(/_/g, ' ')}</Text>
                     {tx.razorpay_payment_id ? (
-                      <Text style={styles.txRef}>Ref: {tx.razorpay_payment_id}</Text>
+                      <Text style={s.txRef}>Ref: {tx.razorpay_payment_id}</Text>
                     ) : null}
-                    <Text style={styles.txDate}>
+                    <Text style={s.txDate}>
                       {tx.created_at ? new Date(tx.created_at).toLocaleString('en-IN', {
                         day: 'numeric', month: 'short', year: 'numeric',
                         hour: '2-digit', minute: '2-digit',
                       }) : ''}
                     </Text>
                   </View>
-                  <Text style={[styles.txAmount, { color: isCredit ? colors.teal : colors.red }]}>
+                  <Text style={[s.txAmount, { color: isCredit ? P.successText : P.dangerText }]}>
                     {isCredit ? '+' : '-'}{fmtMoney(Math.abs(txAmount))}
                   </Text>
                 </View>
@@ -514,19 +481,17 @@ export default function BrandWalletScreen({ navigation }) {
           )}
         </View>
 
-        {/* ── View full history on web ─────────────────────────────────── */}
         {transactions.length > 0 && (
-          <TouchableOpacity style={styles.webLink} onPress={() => openWebDashboard('/dashboard/wallet')}>
-            <Text style={styles.webLinkIcon}>🌐</Text>
-            <Text style={styles.webLinkText}>View full transaction history on web</Text>
-            <Text style={styles.webLinkArrow}>›</Text>
+          <TouchableOpacity style={s.webLink} onPress={() => openWebDashboard('/dashboard/wallet')} activeOpacity={0.85}>
+            <Text style={s.webLinkIcon}>🌐</Text>
+            <Text style={s.webLinkText}>View full transaction history on web</Text>
+            <Text style={s.webLinkArrow}>›</Text>
           </TouchableOpacity>
         )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* ── Razorpay WebView Modal ──────────────────────────────────────── */}
       <Modal
         visible={showRazorpay}
         animationType="slide"
@@ -535,18 +500,18 @@ export default function BrandWalletScreen({ navigation }) {
           Alert.alert('Payment Cancelled', 'You closed the payment window. No amount was charged.');
         }}
       >
-        <View style={styles.webviewContainer}>
-          <View style={styles.webviewHeader}>
+        <View style={s.webviewContainer}>
+          <View style={s.webviewHeader}>
             <TouchableOpacity
-              style={styles.webviewClose}
+              style={s.webviewClose}
               onPress={() => {
                 setShowRazorpay(false);
                 Alert.alert('Payment Cancelled', 'You closed the payment window. No amount was charged.');
               }}
             >
-              <Text style={styles.webviewCloseText}>Cancel</Text>
+              <Text style={s.webviewCloseText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.webviewTitle}>Razorpay Payment</Text>
+            <Text style={s.webviewTitle}>Razorpay Payment</Text>
             <View style={{ width: 60 }} />
           </View>
           {razorpayHTML ? (
@@ -557,9 +522,9 @@ export default function BrandWalletScreen({ navigation }) {
               domStorageEnabled={true}
               startInLoadingState={true}
               renderLoading={() => (
-                <View style={styles.webviewLoading}>
-                  <ActivityIndicator size="large" color={colors.navy} />
-                  <Text style={{ marginTop: 12, color: colors.t2 }}>Loading payment gateway...</Text>
+                <View style={s.webviewLoading}>
+                  <ActivityIndicator size="large" color={P.yellow} />
+                  <Text style={{ marginTop: 12, color: P.muted, fontFamily: fonts.sansMedium }}>Loading payment gateway…</Text>
                 </View>
               )}
               style={{ flex: 1 }}
@@ -571,75 +536,74 @@ export default function BrandWalletScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  title: { fontSize: 22, fontWeight: '800', color: colors.white },
 
-  // Balance card
-  balanceCard: { margin: 16, marginBottom: 0, backgroundColor: colors.navy, borderRadius: 20, padding: 20 },
-  balanceLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: 1 },
-  balanceAmt: { fontSize: 36, fontWeight: '900', color: colors.white, marginTop: 4, marginBottom: 12 },
-  balanceRow: { flexDirection: 'row', gap: 16 },
+  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
+  title: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white, letterSpacing: -0.3 },
+
+  // Balance card — ink hero with yellow accent on mini-stats
+  balanceCard: { margin: 14, marginBottom: 0, backgroundColor: P.ink, borderRadius: 18, padding: 18 },
+  balanceLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', fontWeight: '800', letterSpacing: 1 },
+  balanceAmt: { fontFamily: fonts.monoBold, fontSize: 34, fontWeight: '900', color: P.white, marginTop: 4, marginBottom: 14, letterSpacing: -0.5 },
+  balanceRow: { flexDirection: 'row', gap: 14 },
   balanceStat: { flex: 1 },
-  balanceStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)' },
-  balanceStatVal: { fontSize: 16, fontWeight: '700', color: colors.white, marginTop: 2 },
+  balanceStatLabel: { fontFamily: fonts.monoBold, fontSize: 9.5, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.4 },
+  balanceStatVal: { fontFamily: fonts.monoBold, fontSize: 15, fontWeight: '800', color: P.yellow, marginTop: 3 },
 
-  // Add funds
-  section: { margin: 16, marginBottom: 0 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 10 },
+  // Sections
+  section: { margin: 14, marginTop: 18, marginBottom: 0 },
+  sectionTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink, marginBottom: 11, textTransform: 'uppercase', letterSpacing: 0.4 },
+
+  // Quick chips
   quickRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  quickChip: { flex: 1, paddingVertical: 9, borderRadius: 10, backgroundColor: colors.surface2, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  quickChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  quickText: { fontSize: 12, fontWeight: '700', color: colors.t2 },
-  quickTextActive: { color: colors.white },
+  quickChip: { flex: 1, paddingVertical: 9, borderRadius: 10, backgroundColor: P.bg2, alignItems: 'center', borderWidth: 1, borderColor: P.border },
+  quickChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  quickText: { fontFamily: fonts.sansBold, fontSize: 11.5, fontWeight: '700', color: P.muted },
+  quickTextActive: { fontFamily: fonts.monoBold, color: P.yellow, fontWeight: '800' },
+
+  // Topup
   topupRow: { flexDirection: 'row', gap: 10 },
-  topupInput: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: colors.border2, borderRadius: 12 },
-  rupeeSign: { paddingHorizontal: 12, fontSize: 16, fontWeight: '700', color: colors.t2 },
-  topupField: { flex: 1, paddingVertical: 12, fontSize: 16, color: colors.t1 },
-  topupBtn: { backgroundColor: colors.navy, borderRadius: 12, paddingHorizontal: 20, justifyContent: 'center' },
-  topupBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  topupInput: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: P.border, borderRadius: 12, backgroundColor: P.white },
+  rupeeSign: { paddingHorizontal: 12, fontFamily: fonts.monoBold, fontSize: 16, fontWeight: '700', color: P.muted },
+  topupField: { flex: 1, paddingVertical: 11, fontFamily: fonts.monoMedium, fontSize: 15, color: P.ink },
+  topupBtn: { backgroundColor: P.ink, borderRadius: 12, paddingHorizontal: 20, justifyContent: 'center' },
+  topupBtnText: { fontFamily: fonts.monoBold, fontSize: 13, fontWeight: '800', color: P.yellow, letterSpacing: 0.2 },
 
-  // Verifying state
-  verifyingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.navyPale, borderRadius: 8 },
-  verifyingText: { fontSize: 12, fontWeight: '600', color: colors.navy },
+  // Verifying
+  verifyingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: P.yellowPale, borderRadius: 8 },
+  verifyingText: { fontFamily: fonts.sansBold, fontSize: 12, fontWeight: '600', color: P.yellowText },
 
-  bankHint:        { fontSize: 11, color: colors.t3, marginTop: -4, marginBottom: 12 },
-  bankField:       { marginBottom: 10 },
-  bankLabel:       { fontSize: 11, fontWeight: '700', color: colors.t2, marginBottom: 4 },
-  bankInput:       {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: colors.t1,
-    backgroundColor: colors.white,
-  },
-  bankSaveBtn:     {
-    marginTop: 8, backgroundColor: colors.navy, borderRadius: 10,
-    paddingVertical: 12, alignItems: 'center',
-  },
-  bankSaveBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  // Bank
+  bankHint: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted2, marginTop: -4, marginBottom: 12 },
+  bankField: { marginBottom: 10 },
+  bankLabel: { fontFamily: fonts.monoBold, fontSize: 9.5, fontWeight: '800', color: P.muted, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 },
+  bankInput: { fontFamily: fonts.sansMedium, borderWidth: 1, borderColor: P.border, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: P.ink, backgroundColor: P.white },
+  bankSaveBtn: { marginTop: 8, backgroundColor: P.yellow, borderRadius: 10, paddingVertical: 13, alignItems: 'center' },
+  bankSaveBtnText: { fontFamily: fonts.displayBold, fontSize: 13.5, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
 
   // Transactions
   emptyTx: { paddingVertical: 24, alignItems: 'center' },
-  emptyTxText: { fontSize: 13, color: colors.t3, textAlign: 'center' },
-  txRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  emptyTxText: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted2, textAlign: 'center' },
+  txRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
   txIcon: { fontSize: 18 },
-  txType: { fontSize: 13, color: colors.t1, fontWeight: '600' },
-  txRef: { fontSize: 10, color: colors.t3, marginTop: 1 },
-  txDate: { fontSize: 10, color: colors.t3, marginTop: 1 },
-  txAmount: { fontSize: 14, fontWeight: '700' },
+  txType: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink, fontWeight: '700' },
+  txRef: { fontFamily: fonts.monoMedium, fontSize: 9.5, color: P.muted3, marginTop: 1 },
+  txDate: { fontFamily: fonts.monoMedium, fontSize: 9.5, color: P.muted3, marginTop: 1 },
+  txAmount: { fontFamily: fonts.monoBold, fontSize: 13.5, fontWeight: '800' },
 
   // Web link
-  webLink: { margin: 16, backgroundColor: colors.white, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border },
+  webLink: { margin: 14, backgroundColor: P.white, borderRadius: 14, padding: 13, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: P.border },
   webLinkIcon: { fontSize: 18 },
-  webLinkText: { flex: 1, fontSize: 13, fontWeight: '600', color: colors.navy },
-  webLinkArrow: { fontSize: 18, color: colors.t3 },
+  webLinkText: { flex: 1, fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '600', color: P.ink },
+  webLinkArrow: { fontFamily: fonts.monoBold, fontSize: 16, color: P.muted3, fontWeight: '800' },
 
   // Razorpay WebView modal
-  webviewContainer: { flex: 1, backgroundColor: colors.bg },
-  webviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.navyDeep, paddingTop: 52, paddingBottom: 14, paddingHorizontal: 16 },
+  webviewContainer: { flex: 1, backgroundColor: P.bg },
+  webviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: P.ink, paddingTop: 52, paddingBottom: 14, paddingHorizontal: 16 },
   webviewClose: { width: 60 },
-  webviewCloseText: { fontSize: 14, fontWeight: '600', color: colors.orange },
-  webviewTitle: { fontSize: 16, fontWeight: '700', color: colors.white },
-  webviewLoading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+  webviewCloseText: { fontFamily: fonts.sansBold, fontSize: 13, fontWeight: '700', color: P.yellow },
+  webviewTitle: { fontFamily: fonts.displayBold, fontSize: 15, fontWeight: '800', color: P.white },
+  webviewLoading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 });
