@@ -24,10 +24,17 @@
   "discipline": "Verify-twice: grep of entire repo for dedicated_onboarding_call + phone_support_24x7 returned 4 files — both contract specs (catalog enumeration), the M061 seed migration, and the seed CSV draft. No backend controller / entitlements helper / frontend page references either key as a runtime gate. Confirmed informational-only.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting governance category — prod DB write on features table; functionally behaviour-inert). M068 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'pls go M068' after A12.7 push (b54b94c) landed on origin/main.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "b54b94c",
+      "render_redeploy": "auto on push (behaviour-inert — no backend code change in A12.7)",
+      "prod_migrations": {
+        "M068_support_tier_flags": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: features.feature_key IN ('dedicated_onboarding_call','phone_support_24x7'), both is_enforced=true, both feature_type=boolean. The admin Features page now uniformly shows enforced=yes across all 10 software-enforceable rules plus these 2 human-delivered support tiers. No brand-facing or runtime behaviour change anywhere on the platform."
+      },
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run (.env.bak removed; DATABASE_URL verified)."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A migration-only contract.",
