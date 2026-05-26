@@ -301,7 +301,14 @@ const upgrade = asyncHandler(async (req, res) => {
 
     // Cancel any prior active sub + INSERT a new pending_mandate sub.
     // brand_subscriptions.status='pending_mandate' is the new transitional
-    // state; subscription.authenticated webhook flips it to 'active'.
+    // state; subscription.authenticated webhook flips it to 'active' and
+    // overwrites current_cycle_start/end with Razorpay's authoritative
+    // values from the authenticated subscription payload.
+    //
+    // current_cycle_start/end are NOT NULL on the schema (M058) so we
+    // populate them with placeholder values at INSERT time. The webhook
+    // overwrites them within ~10s of UPI Autopay mandate authorization.
+    // Carved defect features/backend-defect-pending-mandate-cycle-dates/.
     let createdSubId;
     await db.withTransaction(async (client) => {
       await client.query(
@@ -313,10 +320,14 @@ const upgrade = asyncHandler(async (req, res) => {
       const { rows: subRows } = await client.query(
         `INSERT INTO brand_subscriptions
            (brand_id, tier_id, subscription_price_id, status,
+            current_cycle_start, current_cycle_end,
             mandate_status, razorpay_subscription_id)
-         VALUES ($1, $2, $3, 'pending_mandate', 'pending', $4)
+         VALUES ($1, $2, $3, 'pending_mandate',
+                 current_date,
+                 current_date + ($4 || ' days')::interval,
+                 'pending', $5)
          RETURNING id`,
-        [brandId, tier.id, subscriptionPriceId, rzpSub.id]
+        [brandId, tier.id, subscriptionPriceId, String(cycleDays), rzpSub.id]
       );
       createdSubId = subRows[0].id;
     });

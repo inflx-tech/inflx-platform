@@ -1,0 +1,30 @@
+{
+  "feature": "backend-defect-pending-mandate-cycle-dates",
+  "area": "backend-controller",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — implicit go via the ongoing A6.5 smoke-test debug session; second carved defect after M071's enum fix.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render redeploys backend with corrected INSERT). NO migration. NO schema change. Backend-only code patch.",
+  "fix": "Carved defect — A6.5 live-mode upgrade() INSERT omits NOT NULL current_cycle_start + current_cycle_end columns → PG 23502 → INTERNAL_ERROR 500. Add the two columns to the INSERT with placeholder values (current_date + cycleDays interval); webhook handler overwrites them with Razorpay's actual cycle dates on subscription.authenticated.",
+  "related": [
+    "features/backend-defect-pending-mandate-enum",
+    "features/billing-razorpay-live"
+  ],
+  "result": "subscription.controller.upgrade live-mode INSERT patched to include current_cycle_start (=current_date) + current_cycle_end (=current_date + cycleDays interval). Matches mock-mode INSERT pattern. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (40.2s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. Code-only fix matching mock-mode INSERT pattern exactly. Webhook handler at subscription.authenticated overwrites cycle dates with Razorpay's authoritative values within ~10s of mandate authorization, so placeholder values are short-lived. No regression surface on existing mock-mode or any other code path.",
+  "discipline": "Verify-twice on the brand_subscriptions schema (information_schema.columns query against prod) revealed the missing NOT NULL columns. Side-by-side comparison of A6.5 live-mode INSERT vs the pre-A6.5 mock-mode INSERT in the same file confirmed the omission. Carved per no-fake-green: backend defect, fix the controller, don't bend the spec.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Render redeploy of backend with corrected INSERT). NO migration. After Render's auto-redeploy (~2–3 min), the upgrade flow works end-to-end."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only controller patch.",
+  "mockup_locked_at": "2026-05-26"
+}
