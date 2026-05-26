@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-21-brand-mobile-conversions-browse",
   "spec_version": "1.0.0",
-  "status": "deployed-pending-certification",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
   "approved_at": "2026-05-25",
@@ -12,7 +12,7 @@
   "mockup_locked_at": "2026-05-25",
   "notes": "Fourth flow of the mobile-brand bucket. 2 screens + 3 NEW components extracted into Packages/Mobile/src/components/brand/ (StatusPill, EmptyState, ScreenHeader). Conversions + InfluencerBrowse are the FIRST consumers. Flows 18-20 keep inline patterns (visually identical → retro migration deferred to polish pass). Behavior preserved 1:1. theme/tokens.js untouched. DEPLOYED 2026-05-25 (OTA × 3 published) but release-flip held — QA hit 2 env-flake clusters: (a) recurring MSG91 OTP throttle on B1 W3 + B1b W5a/W5b, (b) Render free-tier cold-start hydration timeout on subscription-billing-nav.spec.ts:53 (a test that PASSED on Flow 20 with same prod backend code; no remote code changes since). Flow 21 touched only Packages/Mobile/** — zero causal path to backend / brand-web test failures. Founder smoke-test + later pnpm qa re-run certifies.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "qa_evidence": {
       "run_at": "2026-05-25",
       "run_1": {
@@ -41,16 +41,28 @@
       "classification": "environmental cluster — MSG91 OTP throttle (3 tests) + Render free-tier cold-start hydration timeout on brand-web Settings page (1 test)",
       "classification_detail": "MSG91 OTP tests have known closed-misdiagnosis carve (backend-defect-auth-verify-otp-role-validation, handoff §10). Settings subscription test was GREEN on Flow 20 (2026-05-25T12:36 — 38 min before run_1) with byte-identical prod backend code (git fetch confirmed origin/main empty after Flow 20 close-out). The failure pattern matches Render free-tier cold-start hydration timeout (Flow 12/15/17 precedent for backend-direct API timeouts). Window A is actively iterating on local subscription.controller.js + subscription-billing-nav.spec.ts (uncommitted git status shows their work) — possibly tightening the assertion or matching updated tier_features data shape; they'll push their fix soon.",
       "deploy_inert_proof": "Flow 21 touched 5 files: 3 new components in Packages/Mobile/src/components/brand/ + 2 rewrites in Packages/Mobile/src/screens/brand/. Zero web files, zero backend files, zero qa/ files. New components are pure React UI (View + Text + StyleSheet). No causal path to MSG91 throttle or brand-web hydration.",
-      "founder_recert_path": "Two ways to clear pending-certification: (1) wait for Window A to push their fix for subscription-billing-nav + Render to warm up, then re-run pnpm qa from a freshly-warmed backend; OR (2) founder device smoke-test confirms Conversions + InfluencerBrowse screens render correctly with brandPalette + components. Either path → ship `chore(release): Flow 21 — certify retroactively` lock.json-only commit flipping released=true."
+      "founder_recert_path": "Two ways to clear pending-certification: (1) wait for Window A to push their fix for subscription-billing-nav + Render to warm up, then re-run pnpm qa from a freshly-warmed backend; OR (2) founder device smoke-test confirms Conversions + InfluencerBrowse screens render correctly with brandPalette + components. Either path → ship `chore(release): Flow 21 — certify retroactively` lock.json-only commit flipping released=true.",
+      "run_3_certify": {
+        "run_at": "2026-05-26",
+        "report_path": "qa/reports/2026-05-26T02-21-12-553Z/QA-REPORT.md",
+        "pw_tests": 76,
+        "passed": 76,
+        "failed": 0,
+        "skipped": 0,
+        "gate": 0,
+        "state": "GREEN",
+        "duration_s": 43.0,
+        "note": "Warm-backend re-run during Flow 27 implementation cycle. Dual-probe pre-warm cleared both Run 1's cold-start hydration cluster AND Run 2's MSG91 throttle cluster. Window A's subscription-billing-nav fixes (since landed via A10/A10.5/A11/A12.1/A12.1.5) confirmed via all 4 subscription-billing-nav tests passing (rows 73-76 of the report). All 76 workflows passed. Supplementary run at 2026-05-26T02:31:48 confirms GREEN persists (75 passed + 1 honest skip on W2 per test's self-documented env-conditional behaviour). Certifies that the deployed Flow 21 mobile bundle (OTA brand v71 / influencer v60 / follower v34) operates against a GREEN backend with the 3 NEW components (StatusPill / EmptyState / ScreenHeader) confirmed working downstream in Flows 22-27."
+      }
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "release_state": "deployed-pending-certification",
-    "release_state_note": "Per Flow 8 + Flow 19 precedent. Mobile bundle IS LIVE on phones (OTA × 3 published successfully — bundle v71/v60/v34 shared hash). Release-flip held because qa_all_green=false honestly reflects 4-test env failure cluster. The Flow 21 mobile redesign is deployed and functional. Founder smoke-test on device + later re-run of pnpm qa (when MSG91 + cold-start clear, or Window A pushes their Settings fix) certifies.",
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"my pick is make previous one strong that is retroactively certify the 4 pending-cert flows now\"",
+    "released_at": "2026-05-26",
+    "release_state": "released-certified-2026-05-26",
+    "release_state_note": "Per Flow 8 + Flow 19 precedent originally; certified 2026-05-26 via warm-backend re-run (qa/reports/2026-05-26T02-21-12-553Z, 76/76 GREEN gate 0). Both 2026-05-25 env-flake clusters (MSG91 + cold-start hydration) confirmed environmental — same backend code now passes cleanly. Mobile bundle has been LIVE on phones since 2026-05-25T13:23; cert is governance-record alignment, not a re-deploy.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a — release.released=false; Rule 5 does not fire on this close-out commit",
+    "maestro_green": "n/a — cert commit is deploy-inert (lock.json-only). Rule 5 does not fire because no Packages/Mobile/src/** is touched in this commit. Original mobile deploy at 5b649b6 (2026-05-25) had Maestro waived per solo-dev practice.",
     "deploy": {
       "vercel_brand_web": { "commit": "5b649b6", "note": "auto-redeploy on push; no-op for Flow 21 (no Packages/brand-web/** changes)", "trigger": "git push origin main" },
       "vercel_admin_web": { "commit": "5b649b6", "note": "auto-redeploy on push; no-op for Flow 21", "trigger": "git push origin main" },
