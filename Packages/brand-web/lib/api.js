@@ -468,6 +468,10 @@ export const adminApi = {
   listTierFeatures:         (tierKey) => api.get(`/admin/tiers/${encodeURIComponent(tierKey)}/features`),
   upsertTierFeatures:       (tierKey, items) => request('PUT', `/admin/tiers/${encodeURIComponent(tierKey)}/features`, { items }),
 
+  // ─── Per-brand feature overrides — Phase A14 ──────────────────────────────
+  listBrandOverrides:       (brandId) => api.get(`/admin/brands/${encodeURIComponent(brandId)}/overrides`),
+  upsertBrandOverrides:     (brandId, items) => request('PUT', `/admin/brands/${encodeURIComponent(brandId)}/overrides`, { items }),
+
   listTierPrices:           (tierKey) => api.get(`/admin/tiers/${encodeURIComponent(tierKey)}/prices`),
   createTierPrice:          (tierKey, data) => api.post(`/admin/tiers/${encodeURIComponent(tierKey)}/prices`, data),
   updatePrice:              (priceId, data) => api.patch(`/admin/prices/${encodeURIComponent(priceId)}`, data),

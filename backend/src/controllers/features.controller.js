@@ -21,6 +21,9 @@
  *   POST   /v1/admin/tiers/:tier_key/prices      createPrice
  *   PATCH  /v1/admin/prices/:price_id            updatePrice
  *   DELETE /v1/admin/prices/:price_id            softDeletePrice
+ *
+ *   GET    /v1/admin/brands/:id/overrides        listBrandOverrides (A14)
+ *   PUT    /v1/admin/brands/:id/overrides        upsertBrandOverrides (A14 bulk)
  */
 
 const db = require('../config/db');
@@ -262,6 +265,141 @@ const softDeletePrice = asyncHandler(async (req, res) => {
   return success(res, { id: price_id, active: false });
 });
 
+// ── brand_feature_overrides (A14) ───────────────────────────────────────────
+
+const listBrandOverrides = asyncHandler(async (req, res) => {
+  const { id: brandId } = req.params;
+
+  // Resolve brand + its active tier (or fall back to free) so the UI can
+  // show tier defaults alongside any override rows.
+  const { rows: brandRows } = await db.query(
+    `SELECT id FROM brands WHERE id = $1`, [brandId]
+  );
+  if (!brandRows.length) throw new AppError('NOT_FOUND', `brand ${brandId} not found`, 404);
+
+  const tierId = await entitlementsService.getActiveTierId(db, brandId);
+  const { rows: tierRows } = await db.query(
+    `SELECT tier_key FROM subscription_tiers WHERE id = $1 LIMIT 1`, [tierId]
+  );
+  const tierKey = tierRows[0]?.tier_key || 'free';
+
+  // Catalog + tier defaults + per-brand override in one query.
+  const { rows } = await db.query(
+    `SELECT f.id AS feature_id, f.feature_key, f.label, f.category,
+            f.feature_type, f.unit, f.default_quota, f.is_enforced,
+            f.sort_order, f.description,
+            COALESCE(tf.included, false)        AS tier_included,
+            tf.quota_value                       AS tier_quota_value,
+            COALESCE(tf.config, '{}'::jsonb)    AS tier_config,
+            bo.included                          AS override_included,
+            bo.quota_value                       AS override_quota_value,
+            bo.config                            AS override_config,
+            bo.notes                             AS override_notes,
+            bo.updated_at                        AS override_updated_at
+       FROM features f
+       LEFT JOIN tier_features tf
+              ON tf.feature_id = f.id AND tf.tier_id = $1
+       LEFT JOIN brand_feature_overrides bo
+              ON bo.feature_id = f.id AND bo.brand_id = $2
+      WHERE f.active = true
+      ORDER BY f.sort_order, f.label`,
+    [tierId, brandId]
+  );
+
+  const features = rows.map(r => ({
+    feature_key:  r.feature_key,
+    label:        r.label,
+    category:     r.category,
+    feature_type: r.feature_type,
+    unit:         r.unit,
+    description:  r.description,
+    is_enforced:  r.is_enforced,
+    tier_default: {
+      included:    r.tier_included,
+      quota_value: r.tier_quota_value != null ? parseFloat(r.tier_quota_value) : r.default_quota,
+      config:      r.tier_config || {},
+    },
+    override: r.override_included == null ? null : {
+      included:    r.override_included,
+      quota_value: r.override_quota_value != null ? parseFloat(r.override_quota_value) : null,
+      config:      r.override_config || {},
+      notes:       r.override_notes,
+      updated_at:  r.override_updated_at,
+    },
+  }));
+
+  return success(res, { brand_id: brandId, tier_id: tierId, tier_key: tierKey, features });
+});
+
+const upsertBrandOverrides = asyncHandler(async (req, res) => {
+  const { id: brandId } = req.params;
+  const items = Array.isArray(req.body?.items) ? req.body.items : null;
+  if (!items) throw new AppError('VALIDATION_ERROR', 'items[] required', 422);
+
+  // Validate brand exists.
+  const { rows: brandRows } = await db.query(
+    `SELECT id FROM brands WHERE id = $1`, [brandId]
+  );
+  if (!brandRows.length) throw new AppError('NOT_FOUND', `brand ${brandId} not found`, 404);
+
+  let upserted = 0;
+  let deleted  = 0;
+
+  await db.query('BEGIN');
+  try {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (!item || !item.feature_key) continue;
+
+      const { rows: fRows } = await db.query(
+        `SELECT id, feature_type FROM features WHERE feature_key = $1`,
+        [item.feature_key]
+      );
+      if (!fRows.length) {
+        throw new AppError('VALIDATION_ERROR', `Unknown feature_key: ${item.feature_key}`, 422, `items[${i}].feature_key`);
+      }
+      const fId   = fRows[0].id;
+      const fType = fRows[0].feature_type;
+
+      if (item.override === null) {
+        // Revert to tier default — delete the override row if present.
+        const { rowCount } = await db.query(
+          `DELETE FROM brand_feature_overrides WHERE brand_id = $1 AND feature_id = $2`,
+          [brandId, fId]
+        );
+        if (rowCount) deleted += 1;
+        continue;
+      }
+
+      const o = item.override || {};
+      const quotaValue = fType === 'quota'  && o.quota_value != null ? parseFloat(o.quota_value) : null;
+      const config     = fType === 'config' && o.config              ? o.config                    : {};
+
+      await db.query(
+        `INSERT INTO brand_feature_overrides
+           (brand_id, feature_id, included, quota_value, config, notes, updated_by)
+         VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
+         ON CONFLICT (brand_id, feature_id) DO UPDATE
+           SET included    = EXCLUDED.included,
+               quota_value = EXCLUDED.quota_value,
+               config      = EXCLUDED.config,
+               notes       = EXCLUDED.notes,
+               updated_by  = EXCLUDED.updated_by,
+               updated_at  = now()`,
+        [brandId, fId, !!o.included, quotaValue, JSON.stringify(config), o.notes || null, req.user?.sub || null]
+      );
+      upserted += 1;
+    }
+    await db.query('COMMIT');
+  } catch (err) {
+    await db.query('ROLLBACK');
+    throw err;
+  }
+
+  entitlementsService.bustCatalogCache();
+  return success(res, { brand_id: brandId, upserted, deleted });
+});
+
 module.exports = {
   listFeatures,
   createFeature,
@@ -273,4 +411,6 @@ module.exports = {
   createPrice,
   updatePrice,
   softDeletePrice,
+  listBrandOverrides,
+  upsertBrandOverrides,
 };

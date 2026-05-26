@@ -1,0 +1,36 @@
+{
+  "feature": "billing-brand-feature-overrides",
+  "area": "backend-service+controller+migration+admin-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'go for A14' after A12.7 closeout. Deferred from A10 ('do it in A14').",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with the new brand_feature_overrides table read in entitlements.service + new admin endpoints. Vercel redeploys brand-web with the Feature Overrides card on /admin/brands/[id]. M069 (CREATE TABLE) runs separately on Supabase prod on explicit founder go. Empty table = identical behaviour to today.",
+  "fix": "Phase A14 — per-brand feature overrides. New brand_feature_overrides table (M069). entitlements.service gains a 3rd lookup layer (override > tier_features > catalog default). Admin GET/PUT endpoints under /admin/brands/:id/overrides (requireAnyAdminRole; per-brand changes are trivially reversible). Feature Overrides card on the brand detail admin page mirrors the tier editor Section C with a per-row 'Use tier default' toggle and bulk-save reconciliation (upsert non-defaults + delete previously-overridden rows that are now reset).",
+  "related": [
+    "features/billing-feature-support-tier-flags",
+    "features/billing-feature-multi-branch-support",
+    "features/billing-feature-bulk-outreach",
+    "features/billing-feature-open-group-broadcast",
+    "features/billing-feature-discover-filter",
+    "features/billing-feature-search-advanced",
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "brand_feature_overrides table created. entitlements.service.getEntitlements now does a 3rd LEFT JOIN against brand_feature_overrides (defensive — pg error 42P01 on missing table silently falls through to tier defaults; deploy-safe pre-M069). features.controller gains listBrandOverrides + upsertBrandOverrides; admin.routes mounts /admin/brands/:id/overrides (GET + bulk PUT, requireAnyAdminRole). adminApi gains listBrandOverrides + upsertBrandOverrides. /admin/brands/[id] gets a Feature Overrides card with grouped per-category sections, per-row 'Use tier default' toggle, per-type editors (boolean/quota/config), notes field, and bulk Save. M069 applied locally; sanity probe shows the table + columns + indexes + trigger. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (1.5m). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. Entitlements service override fetch is defensive against pg error 42P01 (table missing pre-M069) — returns [] silently. Empty override table = identical behaviour to pre-A14 (every brand's entitlements come from tier_features as before). The override write path atomically commits/rolls-back inside a single transaction and busts the entitlements catalog cache. Admin endpoints reuse the standard auth/role/asyncHandler stack; no new error envelope shapes.",
+  "discipline": "Verify-twice: confirmed entitlements.service shape + 60s catalog cache; admin brand detail page exists at Packages/brand-web/app/admin/brands/[id]/page.js (137 lines, replaced with 311); tier editor Section C at Packages/brand-web/app/admin/pricing/tiers/[tier_key]/page.js is the reference pattern; adminApi already has listFeatures/upsertTierFeatures (A14 adds the brand-scoped equivalents). Found via Grep that there are two admin surfaces (brand-web/app/admin AND admin-web/app/dashboard); brand-web is the active one for pricing/tiers/features so A14 lands there.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with new endpoints + service patch, Vercel redeploys brand-web with the new admin card). M069 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — admin-UI-only mockup attestation: the new card replicates the existing tier editor Section C primitives 1:1 (per-feature row with included checkbox / quota number / config inputs) with a 'Use tier default' wrapper. No new design tokens introduced. Per the existing admin-UI pattern, mockup-lock is N/A for this contract.",
+  "mockup_locked_at": "2026-05-26"
+}

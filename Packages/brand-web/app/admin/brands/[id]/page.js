@@ -3,6 +3,16 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { adminApi } from '../../../../lib/api';
 
+const CATEGORIES = [
+  { key: 'influencer',  label: 'Influencer' },
+  { key: 'campaigns',   label: 'Campaigns' },
+  { key: 'products',    label: 'Products' },
+  { key: 'brand_store', label: 'Brand store' },
+  { key: 'support',     label: 'Support' },
+];
+
+const AREA_SCOPES = ['city', 'state', 'all_india'];
+
 function Field({ label, value }) {
   return (
     <div>
@@ -15,6 +25,255 @@ function Field({ label, value }) {
 function StatusBadge({ status }) {
   const cfg = { approved: 'bg-teal-pale text-teal-deep', rejected: 'bg-red-pale text-red', pending: 'bg-gold-pale text-yellow-700', suspended: 'bg-surface2 text-t3' };
   return <span className={`px-3 py-1 rounded-full text-xs font-bold border ${cfg[status] || ''}`}>{status}</span>;
+}
+
+// Phase A14 — Feature Overrides card. Embeds on the brand detail page.
+// Replicates the tier editor Section C primitives with a per-row
+// "Use tier default" toggle. Save reconciles override state into a
+// bulk PUT (upsert non-defaults, delete previously-overridden rows
+// that are now reset to default).
+function FeatureOverridesCard({ brandId, onToast }) {
+  const [rows, setRows]       = useState([]);  // per-feature editable state
+  const [tierKey, setTierKey] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [err, setErr]         = useState('');
+
+  async function load() {
+    setLoading(true); setErr('');
+    try {
+      const res = await adminApi.listBrandOverrides(brandId);
+      if (!res.success) { setErr(res.error?.message || 'Failed to load overrides'); return; }
+      const features = res.data?.features || [];
+      setTierKey(res.data?.tier_key || '');
+      setRows(features.map(f => ({
+        feature_key:    f.feature_key,
+        label:          f.label,
+        category:       f.category,
+        feature_type:   f.feature_type,
+        unit:           f.unit,
+        description:    f.description,
+        is_enforced:    f.is_enforced,
+        tier_default:   f.tier_default || {},
+        was_overridden: !!f.override,
+        use_tier_default: !f.override,
+        included:       f.override?.included ?? f.tier_default?.included ?? false,
+        quota_value:    f.override?.quota_value ?? f.tier_default?.quota_value ?? '',
+        config:         f.override?.config       ?? f.tier_default?.config       ?? {},
+        notes:          f.override?.notes        ?? '',
+      })));
+    } catch (e) {
+      setErr(e?.message || 'Failed to load overrides');
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => { load(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [brandId]);
+
+  function updateRow(idx, patch) {
+    setRows(list => list.map((r, i) => i === idx ? { ...r, ...patch } : r));
+  }
+  function updateRowConfig(idx, key, value) {
+    setRows(list => list.map((r, i) => i === idx ? { ...r, config: { ...r.config, [key]: value } } : r));
+  }
+
+  async function save() {
+    setSaving(true); setErr('');
+    try {
+      const items = [];
+      for (const r of rows) {
+        if (r.use_tier_default) {
+          if (r.was_overridden) {
+            // Revert: delete the override row.
+            items.push({ feature_key: r.feature_key, override: null });
+          }
+          // Else: row is at tier default + wasn't overridden → no-op.
+          continue;
+        }
+        // Override active — upsert.
+        items.push({
+          feature_key: r.feature_key,
+          override: {
+            included:    !!r.included,
+            quota_value: r.feature_type === 'quota' && r.quota_value !== '' ? parseFloat(r.quota_value) : null,
+            config:      r.feature_type === 'config' ? r.config : {},
+            notes:       r.notes || null,
+          },
+        });
+      }
+      if (items.length === 0) {
+        onToast('No changes to save');
+        setSaving(false);
+        return;
+      }
+      const res = await adminApi.upsertBrandOverrides(brandId, items);
+      if (!res.success) { setErr(res.error?.message || 'Save failed'); return; }
+      const { upserted = 0, deleted = 0 } = res.data || {};
+      onToast(`Overrides saved — ${upserted} upserted, ${deleted} reverted`);
+      await load();
+    } catch (e) {
+      setErr(e?.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return (
+    <div className="bg-white rounded-xl border border-border p-5 mb-4">
+      <h3 className="font-display text-sm font-bold text-t1 mb-2">Feature Overrides</h3>
+      <div className="text-xs text-t3">Loading…</div>
+    </div>
+  );
+
+  const grouped = CATEGORIES.map(c => ({ ...c, rows: rows.filter(r => r.category === c.key) }));
+
+  return (
+    <div className="bg-white rounded-xl border border-border p-5 mb-4">
+      <div className="flex items-baseline justify-between mb-1">
+        <h3 className="font-display text-sm font-bold text-t1">Feature Overrides</h3>
+        {tierKey && <span className="text-xs text-t3">Brand is on <strong className="text-t2 font-mono">{tierKey}</strong></span>}
+      </div>
+      <p className="text-xs text-t3 mb-4">
+        Per-brand exceptions to tier defaults. Untick "Use tier default" on any feature
+        to set a brand-specific value. Empty table = identical entitlements to the tier.
+      </p>
+
+      {err && <div className="mb-3 p-2 bg-red-pale text-red rounded-lg text-xs">{err}</div>}
+
+      {grouped.map(cat => (
+        <div key={cat.key} className="mb-5">
+          <h4 className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-2">{cat.label}</h4>
+          <div className="space-y-2">
+            {cat.rows.map((r) => {
+              const idx = rows.indexOf(r);
+              const overridden = !r.use_tier_default;
+              return (
+                <div
+                  key={r.feature_key}
+                  className={`p-3 border rounded-lg ${overridden ? 'border-navy/30 bg-navy-pale/30' : 'border-border2 bg-white'}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <label className="flex items-center gap-1.5 cursor-pointer pt-0.5 select-none">
+                      <input
+                        type="checkbox"
+                        checked={r.use_tier_default}
+                        onChange={e => updateRow(idx, { use_tier_default: e.target.checked })}
+                      />
+                      <span className="text-[10px] text-t3 font-medium">Use tier default</span>
+                    </label>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="font-semibold text-sm">{r.label}</span>
+                        <span className="text-xs text-t3 font-mono">{r.feature_key}</span>
+                        <span className="text-xs text-t3">· {r.feature_type}</span>
+                        {r.is_enforced && <span className="text-[9px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded">ENFORCED</span>}
+                        {r.was_overridden && <span className="text-[9px] font-bold text-navy bg-navy-pale px-1.5 py-0.5 rounded">OVERRIDE LIVE</span>}
+                      </div>
+                      {r.description && <div className="text-xs text-t2 mt-0.5">{r.description}</div>}
+
+                      {/* Tier-default summary (always visible) */}
+                      <div className="text-[11px] text-t3 mt-1">
+                        Tier default:&nbsp;
+                        {r.feature_type === 'boolean' || r.feature_type === 'baseline' ? (
+                          <span className="font-mono">{r.tier_default.included ? 'included' : 'not included'}</span>
+                        ) : r.feature_type === 'quota' ? (
+                          <span className="font-mono">
+                            {r.tier_default.included ? `${r.tier_default.quota_value ?? '—'} ${r.unit || ''}`.trim() : 'not included'}
+                          </span>
+                        ) : (
+                          <span className="font-mono">{JSON.stringify(r.tier_default.config || {})}</span>
+                        )}
+                      </div>
+
+                      {/* Override editor (only when override is active) */}
+                      {overridden && (
+                        <div className="mt-2 space-y-2">
+                          {(r.feature_type === 'boolean' || r.feature_type === 'baseline') && (
+                            <label className="flex items-center gap-2 text-xs">
+                              <input type="checkbox" checked={!!r.included} onChange={e => updateRow(idx, { included: e.target.checked })} />
+                              <span>Included for this brand</span>
+                            </label>
+                          )}
+                          {r.feature_type === 'quota' && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={!!r.included} onChange={e => updateRow(idx, { included: e.target.checked })} />
+                                <span>Included</span>
+                              </label>
+                              {r.included && (
+                                <>
+                                  <span className="text-t2">Limit:</span>
+                                  <input
+                                    type="number"
+                                    value={r.quota_value}
+                                    onChange={e => updateRow(idx, { quota_value: e.target.value })}
+                                    placeholder="-1 = unlimited"
+                                    className="w-28 border border-border2 rounded px-2 py-1 text-xs"
+                                  />
+                                  {r.unit && <span className="text-t3">{r.unit}</span>}
+                                </>
+                              )}
+                            </div>
+                          )}
+                          {r.feature_type === 'config' && (
+                            <>
+                              <label className="flex items-center gap-2 text-xs">
+                                <input type="checkbox" checked={!!r.included} onChange={e => updateRow(idx, { included: e.target.checked })} />
+                                <span>Included</span>
+                              </label>
+                              {r.included && r.feature_key === 'discover_filter' && (
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <label className="block">Area scope
+                                    <select value={r.config.area_scope || 'city'} onChange={e => updateRowConfig(idx, 'area_scope', e.target.value)} className="w-full mt-0.5 border border-border2 rounded px-2 py-1">
+                                      {AREA_SCOPES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </label>
+                                  <label className="block">Niches limit (-1 = unlimited)
+                                    <input type="number" value={r.config.niches_limit ?? ''} onChange={e => updateRowConfig(idx, 'niches_limit', parseInt(e.target.value, 10) || 0)} className="w-full mt-0.5 border border-border2 rounded px-2 py-1" />
+                                  </label>
+                                </div>
+                              )}
+                              {r.included && r.feature_key === 'open_group_broadcast' && (
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <label className="block">Area scope
+                                    <select value={r.config.area_scope || 'city'} onChange={e => updateRowConfig(idx, 'area_scope', e.target.value)} className="w-full mt-0.5 border border-border2 rounded px-2 py-1">
+                                      {AREA_SCOPES.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                  </label>
+                                  <label className="block">Max recipients (-1 = unlimited)
+                                    <input type="number" value={r.config.max_recipients ?? ''} onChange={e => updateRowConfig(idx, 'max_recipients', parseInt(e.target.value, 10) || 0)} className="w-full mt-0.5 border border-border2 rounded px-2 py-1" />
+                                  </label>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          <label className="block text-xs">
+                            <span className="text-t3">Notes</span>
+                            <input type="text" value={r.notes} onChange={e => updateRow(idx, { notes: e.target.value })} placeholder="why this brand has the override (admin-internal)" className="w-full mt-0.5 border border-border2 rounded px-2 py-1" />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            {cat.rows.length === 0 && <div className="text-xs text-t3 italic">No features in this category</div>}
+          </div>
+        </div>
+      ))}
+
+      <div className="flex justify-end mt-4">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
+        >
+          {saving ? 'Saving…' : 'Save Overrides'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function BrandProfilePage() {
@@ -62,7 +321,7 @@ export default function BrandProfilePage() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       <div className="flex items-center gap-2 mb-4">
         <a href="/admin/brands" className="text-xs text-t3 hover:text-t2">← Brands</a>
         <span className="text-t3">/</span>
@@ -130,6 +389,9 @@ export default function BrandProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Phase A14 — Feature Overrides */}
+      <FeatureOverridesCard brandId={id} onToast={showToast} />
 
       {toast && <div className="fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-50">{toast}</div>}
     </div>

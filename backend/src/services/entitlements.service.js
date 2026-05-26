@@ -1,22 +1,25 @@
 'use strict';
 
 /**
- * entitlements.service.js — Phase A10
+ * entitlements.service.js — Phase A10 + A14
  *
  * Resolves a brand's effective entitlements (what features they have,
- * what quotas, what config). Reads tier_features for the brand's
- * active tier; per-feature is_enforced gating handled by callers via
- * requireFeature middleware (Phase A12).
+ * what quotas, what config). Three-layer resolution:
  *
- * Per-brand override (brand_feature_overrides table) is intentionally
- * NOT yet implemented — Phase A14 will add a 3rd layer to this lookup.
- * The shape of getEntitlements() will stay the same; A14 just adds
- * one query layer above the tier_features read.
- *
- * Layered lookup today (A10):
  *   1. brand → active subscription → tier_id
  *   2. tier_features (tier_id, feature_id) for every catalog feature
- *   3. fall back to features.default_quota / included=false if no row
+ *   3. brand_feature_overrides (brand_id, feature_id) — A14 override
+ *      layer. Presence of a row supersedes the tier_features row
+ *      entirely (full replacement, not field-level merge). Admin
+ *      edits these from /admin/brands/[id] → Feature Overrides card.
+ *   Final fall back: features.default_quota / included=false if no row
+ *   in any of the above.
+ *
+ * The override fetch is defensive against pre-M069 deploys: if the
+ * brand_feature_overrides table doesn't exist yet (pg error 42P01),
+ * the call silently returns an empty array and brand entitlements
+ * fall through to tier defaults. Once M069 applies, overrides are
+ * picked up transparently.
  */
 
 const db = require('../config/db');
@@ -118,21 +121,52 @@ async function getEntitlements(client, brandId) {
   );
   const tfByFid = new Map(tfRows.map(r => [r.feature_id, r]));
 
+  // A14 — third layer: per-brand overrides supersede tier defaults
+  // entirely when present. Defensive against pre-M069 (table missing).
+  const overrideRows = await _getBrandOverrides(c, brandId);
+  const ovByFid = new Map(overrideRows.map(r => [r.feature_id, r]));
+
   const ents = new Map();
   for (const f of catalog.list) {
+    const ov = ovByFid.get(f.id);
     const tf = tfByFid.get(f.id);
+    // Override wins entirely if present; else tier_features; else catalog default.
+    const src = ov || tf;
     ents.set(f.feature_key, {
-      included:     tf ? tf.included : false,
-      quota_value:  tf && tf.quota_value != null ? parseFloat(tf.quota_value) : f.default_quota,
-      config:       tf ? (tf.config || {}) : {},
+      included:     src ? src.included : false,
+      quota_value:  src && src.quota_value != null ? parseFloat(src.quota_value) : f.default_quota,
+      config:       src ? (src.config || {}) : {},
       feature_type: f.feature_type,
       is_enforced:  f.is_enforced,
       category:     f.category,
       label:        f.label,
+      // A14 — surface override provenance so admin GET /overrides
+      // can render the "Overridden" badge without a second query.
+      _is_overridden: !!ov,
     });
   }
 
   return { tier_id: tierId, tier_key: tierKey, entitlements: ents };
+}
+
+/**
+ * Fetch per-brand override rows. Defensive: pre-M069 the table doesn't
+ * exist (pg error code 42P01, "undefined table") — return [] silently
+ * so the deploy is behaviour-inert until the migration applies.
+ */
+async function _getBrandOverrides(c, brandId) {
+  try {
+    const { rows } = await c.query(
+      `SELECT feature_id, included, quota_value, config
+         FROM brand_feature_overrides
+        WHERE brand_id = $1`,
+      [brandId]
+    );
+    return rows;
+  } catch (e) {
+    if (e && e.code === '42P01') return [];
+    throw e;
+  }
 }
 
 /**

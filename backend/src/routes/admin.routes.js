@@ -107,6 +107,12 @@ router.post  ('/tiers/:tier_key/prices',         authenticate, requireAdminRole(
 router.patch ('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.updatePrice);
 router.delete('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.softDeletePrice);
 
+// Phase A14 — per-brand feature overrides. requireAnyAdminRole on both —
+// override changes are per-brand and trivially reversible (admin can flip
+// back to tier default any time). Memory: feedback_admin_role_gates.
+router.get   ('/brands/:id/overrides',           authenticate, requireAnyAdminRole,            featuresCtrl.listBrandOverrides);
+router.put   ('/brands/:id/overrides',           authenticate, requireAnyAdminRole,            featuresCtrl.upsertBrandOverrides);
+
 // ── Subscription admin (legacy A7-admin endpoints — finally wired in A10.5) ──
 // These have existed in subscription.controller.js since commit 3920772 but
 // were never mounted in any route file. Hence the empty tier list in prod.
