@@ -1,26 +1,63 @@
 {
   "feature": "redesign-flow-29-influencer-mobile-offers",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-26 chat \"pls lock and start execution\"",
   "approved_at": "2026-05-26",
   "preview_reviewed": true,
   "impact_reviewed": true,
   "mockup_locked": true,
-  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 29 mockup locked (5 frames + side panel)",
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 29 mockup locked",
   "mockup_locked_at": "2026-05-26",
-  "notes": "2nd flow of mobile-influencer bucket (2/23). OfferListScreen (235 LOC) + OfferDetailScreen (1228 LOC, 3rd biggest in bucket). ZERO SDK boundaries (pure RN core + RN Image). ZERO backend change — 7 APIs preserved verbatim, every field traces to offer.controller.js. ZERO StatusPill additions — all 10 observed statuses in existing 39-entry canonical map. 25+ render branches preserved verbatim. Visual: brandPalette + fonts + MCI icons (5 empty-state icons + back chevron + countdown timer) + ink-active tab pills + successPale fee/commission highlight + 3-stage tranche progression dots (success→yellow→ink) + yellowPale TDS note + ink primary CTA / ghost Negotiate / danger-pale Decline. No native rebuild needed (Flow 28 laid the MCI foundation; this flow ships pure OTA).",
+  "notes": "2nd flow of mobile-influencer bucket (2/23). OfferListScreen + OfferDetailScreen restyle. ZERO SDK boundaries (pure RN core + Image). ZERO backend change. ZERO StatusPill canonical additions (all 10 observed statuses in existing 39-entry map). brandPalette + fonts.* + MCI icons + ink-active tab pills + successPale fee highlight + success→yellow→ink 3-stage tranche progression + yellowPale TDS note. All 25+ render branches preserved verbatim. All 7 brandApi shapes NO-TOUCH. Goal-aware logic (showFee/showCommission/showTranches), fee fallback chain, defensive JSON parses, useCountdown hook — all preserved. No native rebuild required (Flow 28 laid MCI font foundation). RELEASED 2026-05-26 with web pnpm qa 76/76 GREEN gate 0 first-run + OTA × 3 via single Node process.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-26",
+      "web_report_path": "qa/reports/2026-05-26T12-04-26-472Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 40.8,
+      "web_note": "Dual-probe pre-warm (OTA manifest influencer runtime=2 + /admin/stats 401 + /auth/refresh 401) cleared cold-start. 76 passed gate 0 STATE=GREEN on FIRST run in 40.8s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline (00-smoke / 01-follower-public-browse / 02-influencer-launch / 03-brand-launch) continues to apply — Flow 29's JS changes inherit via the next OTA fetch on app launch. Deep OfferList/OfferDetail visual verification still requires a pre-verified influencer test account (admin-verify gate blocks Home). Founder physical smoke-test on the rebuilt installed APK covers visual verification in the meantime."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"pls lock and start execution\" + \"pls proceed\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-26",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_reason": "Flow 28 already bundled MaterialCommunityIcons.ttf + bumped NATIVE_RUNTIME to 2; Flow 29 only consumes MCI icons via JS, no new native deps. Ships via pure OTA.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE same pattern as Flow 28 — 4/4 baseline Maestro flows still green; deep auth-driven verification deferred to maestro-influencer-coverage contract"
+    "native_rebuild_note": "Flow 28 already laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 29 = pure JS, ships via OTA to existing APKs.",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline continues to apply; deep OfferList/OfferDetail visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "8a9fcb6", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "8a9fcb6", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "8a9fcb6", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 79, "previous_version": 78,
+        "bundle_hash": "sha256:aaae4e6d1a4990049da06ccd0fc3fdb1aec314154f3060d075b6f1a619699fe8",
+        "published_at": "2026-05-26T12:16:41.623Z", "bundle_size_kb": 2471,
+        "trigger": "pnpm publish-ota:all -m 'Flow 29 — influencer-mobile Offer list + Offer detail (brandPalette + MCI icons + locked-design tranche progression)'",
+        "scope": "brand audience manifest (shared bundle; no brand-screen changes — influencer-only restyle)"
+      },
+      "ota_influencer": {
+        "version": 68, "previous_version": 67,
+        "bundle_hash": "sha256:aaae4e6d1a4990049da06ccd0fc3fdb1aec314154f3060d075b6f1a619699fe8",
+        "published_at": "2026-05-26T12:16:46.021Z", "bundle_size_kb": 2471,
+        "trigger": "pnpm publish-ota:all -m 'Flow 29 — influencer-mobile Offer list + Offer detail (brandPalette + MCI icons + locked-design tranche progression)'",
+        "scope": "influencer audience manifest (shared bundle; ALL Flow 29 redesigns live here)"
+      },
+      "ota_follower": {
+        "version": 42, "previous_version": 41,
+        "bundle_hash": "sha256:aaae4e6d1a4990049da06ccd0fc3fdb1aec314154f3060d075b6f1a619699fe8",
+        "published_at": "2026-05-26T12:16:52.218Z", "bundle_size_kb": 2471,
+        "trigger": "pnpm publish-ota:all -m 'Flow 29 — influencer-mobile Offer list + Offer detail (brandPalette + MCI icons + locked-design tranche progression)'",
+        "scope": "follower audience manifest (shared bundle; no follower-screen changes)"
+      }
+    }
   }
 }
