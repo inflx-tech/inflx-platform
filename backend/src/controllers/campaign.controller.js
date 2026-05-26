@@ -47,6 +47,52 @@ async function _applyDiscoverFilter(brandId, paramStartIdx) {
   const nichesLimit = (config && config.niches_limit != null) ? Number(config.niches_limit) : null;
   return { sqlParts, params, nichesLimit, areaScope: areaScope || 'all_india' };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase A12.3 — search_filters_advanced entitlement gate.
+// "Advanced" filters: tier (influencer-tier band) + min_er (engagement-rate
+// threshold). Brands whose plan doesn't include this feature can still use
+// the basic filters (q, niche, city, gender) but get 422 FEATURE_NOT_AVAILABLE
+// if they pass any advanced param.
+// Defensive fail-open: if feature not enforced, returns immediately.
+// ─────────────────────────────────────────────────────────────────────────────
+const ADVANCED_SEARCH_PARAMS = ['tier', 'tiers', 'min_er'];
+
+async function _requireAdvancedSearchFilters(brandId, query) {
+  // Detect which advanced params (if any) the brand passed.
+  const used = ADVANCED_SEARCH_PARAMS.filter(k => {
+    const v = query[k];
+    return v != null && v !== '' && !(Array.isArray(v) && v.length === 0);
+  });
+  if (used.length === 0) return;  // No advanced filter used — nothing to gate.
+
+  const allowed = await entitlementsService.hasFeature(db, brandId, 'search_filters_advanced');
+  if (allowed) return;  // Brand's tier grants the feature.
+
+  // Look up tiers that DO grant it, so the popup can recommend an upgrade.
+  const { rows: upgrades } = await db.query(
+    `SELECT t.tier_key
+       FROM subscription_tiers t
+       JOIN tier_features tf ON tf.tier_id = t.id
+       JOIN features f       ON f.id       = tf.feature_id
+      WHERE t.active        = true
+        AND f.feature_key   = 'search_filters_advanced'
+        AND tf.included     = true
+      ORDER BY t.sort_order`
+  );
+
+  throw new AppError(
+    'FEATURE_NOT_AVAILABLE',
+    `Advanced search filters (${used.join(', ')}) are not available on your current plan. Upgrade to use them.`,
+    422,
+    'search_filters_advanced',
+    {
+      feature_key:    'search_filters_advanced',
+      blocked_params: used,
+      upgrade_to:     upgrades.map(r => r.tier_key),
+    }
+  );
+}
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
@@ -1517,6 +1563,11 @@ const searchInfluencers = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   await getCampaignOrThrow(req.params.id, brand.id);
 
+  // Phase A12.3 — gate advanced filters (tier / min_er) behind the
+  // search_filters_advanced feature. Throws 422 FEATURE_NOT_AVAILABLE
+  // if brand's tier lacks the feature AND they passed any advanced param.
+  await _requireAdvancedSearchFilters(brand.id, req.query);
+
   const { q, tier, niche, city, min_er, gender, limit = 20, offset = 0 } = req.query;
 
   const conditions = [`u.status = 'approved'`];
@@ -1590,6 +1641,10 @@ const searchInfluencers = asyncHandler(async (req, res) => {
 const openGroupMatches = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   await getCampaignOrThrow(req.params.id, brand.id);
+
+  // Phase A12.3 — same advanced-filter gate as searchInfluencers.
+  // Blocks tiers[] / min_er for plans without search_filters_advanced.
+  await _requireAdvancedSearchFilters(brand.id, req.query);
 
   const toArr = (v) => v == null || v === '' ? null : (Array.isArray(v) ? v : String(v).split(','));
   const filters = {

@@ -1,0 +1,31 @@
+{
+  "feature": "billing-feature-search-advanced",
+  "area": "backend-controller+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'go 12.3'. Second per-feature enforcement following A12.2 discover_filter.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with the gate helper wired. M064 (is_enforced=true on search_filters_advanced) runs separately on Supabase prod on explicit founder go.",
+  "fix": "Phase A12.3 — wire search_filters_advanced boolean gate. _requireAdvancedSearchFilters helper checks if brand passes tier/tiers/min_er query params + hasFeature; throws 422 FEATURE_NOT_AVAILABLE with upgrade_to list if blocked. Applied to searchInfluencers + openGroupMatches. M064 flips is_enforced=true. Same defensive fail-open as A12.2.",
+  "related": [
+    "features/billing-feature-discover-filter",
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "_requireAdvancedSearchFilters helper + 2 endpoint hooks (searchInfluencers + openGroupMatches). M064 applied locally. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (49s). Ready to push.",
+  "regression_proof": "Backend boot smoke clean. M064 applied to local dev DB (sanity probe shows search_filters_advanced.is_enforced=true). 2 endpoint hooks added (1 line each); existing query semantics preserved when feature granted or no advanced param passed.",
+  "discipline": "Verify-twice: confirmed entitlements.service.hasFeature honours is_enforced flag. Defensive fail-open in 3 places. Same pattern as A12.2 — per-feature contract, M064 the switch.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with the gate helper wired). M064 prod migration on separate explicit founder go after push."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only contract.",
+  "mockup_locked_at": "2026-05-26"
+}
