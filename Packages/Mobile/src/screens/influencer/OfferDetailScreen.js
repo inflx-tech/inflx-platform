@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -266,7 +267,8 @@ export default function OfferDetailScreen({ navigation, route }) {
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
 
         {/* Brand logo + name (tappable → BrandProfile) */}
@@ -297,16 +299,23 @@ export default function OfferDetailScreen({ navigation, route }) {
             )}
             <Text style={styles.campaignName}>{offer.campaign_name || 'Campaign'}</Text>
           </View>
-          <StatusBadge status={offer.status} size={11} />
+          <StatusPill status={offer.status} />
           {offer.brand_id && <Text style={styles.brandArrow}>›</Text>}
         </TouchableOpacity>
 
+        <View style={styles.headerRule} />
+
         {/* Expiry countdown for pending offers */}
         {isActionable && countdown && (
-          <View style={styles.timerBar}>
-            <Text style={styles.timerIcon}>&#9200;</Text>
-            <Text style={[styles.timerText, countdown === 'Expired' && { color: colors.red }]}>
-              {countdown === 'Expired' ? 'Offer Expired' : `Expires in ${countdown}`}
+          <View style={[styles.timerBar, countdown === 'Expired' && styles.timerBarExpired]}>
+            <Icon
+              name="timer-outline"
+              size={15}
+              color={countdown === 'Expired' ? P.dangerText : P.yellow}
+              style={{ marginRight: 7 }}
+            />
+            <Text style={[styles.timerText, countdown === 'Expired' && styles.timerTextExpired]}>
+              {countdown === 'Expired' ? 'OFFER EXPIRED' : `EXPIRES IN ${countdown}`}
             </Text>
           </View>
         )}
@@ -314,7 +323,7 @@ export default function OfferDetailScreen({ navigation, route }) {
 
       {loading && (
         <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color={colors.navy} />
+          <ActivityIndicator size="small" color={P.ink} />
           <Text style={styles.loadingText}>Loading full details...</Text>
         </View>
       )}
@@ -428,7 +437,7 @@ export default function OfferDetailScreen({ navigation, route }) {
                     </Text>
                   )}
                 </View>
-                <StatusBadge status={d.status} size={9} />
+                <StatusPill status={d.status} />
               </View>
             ))}
           </View>
@@ -598,9 +607,9 @@ export default function OfferDetailScreen({ navigation, route }) {
 
           {/* Physical delivery info */}
           {offer.physical_delivery && (
-            <View style={[styles.briefBox, { marginTop: 12, backgroundColor: colors.goldPale }]}>
-              <Text style={[styles.infoLabel, { color: '#7A5500' }]}>📦 Physical Sample</Text>
-              <Text style={[styles.briefText, { color: '#7A5500' }]}>
+            <View style={[styles.briefBox, { marginTop: 12, backgroundColor: P.yellowPale, borderColor: '#F0DA88', borderWidth: 1 }]}>
+              <Text style={[styles.infoLabel, { color: P.yellowText }]}>PHYSICAL SAMPLE</Text>
+              <Text style={[styles.briefText, { color: P.yellowText }]}>
                 The brand will ship a physical product to you for content creation.
                 {offer.delivery_address ? ` Delivery to: ${offer.delivery_address}` : ''}
               </Text>
@@ -630,7 +639,7 @@ export default function OfferDetailScreen({ navigation, route }) {
         </Text>
 
         <View style={styles.trancheRow}>
-          <View style={[styles.trancheDot, { backgroundColor: colors.teal }]} />
+          <View style={[styles.trancheDot, { backgroundColor: P.success }]} />
           <View style={{ flex: 1 }}>
             <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
             <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
@@ -639,7 +648,7 @@ export default function OfferDetailScreen({ navigation, route }) {
         </View>
 
         <View style={styles.trancheRow}>
-          <View style={[styles.trancheDot, { backgroundColor: colors.orange }]} />
+          <View style={[styles.trancheDot, { backgroundColor: P.yellow }]} />
           <View style={{ flex: 1 }}>
             <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
             <Text style={styles.trancheDesc}>Released when content goes live</Text>
@@ -648,7 +657,7 @@ export default function OfferDetailScreen({ navigation, route }) {
         </View>
 
         <View style={styles.trancheRow}>
-          <View style={[styles.trancheDot, { backgroundColor: colors.navy }]} />
+          <View style={[styles.trancheDot, { backgroundColor: P.ink }]} />
           <View style={{ flex: 1 }}>
             <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
             <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
@@ -670,8 +679,8 @@ export default function OfferDetailScreen({ navigation, route }) {
         {/* For HYBRID, the fee tranches above are the fixed part. The
             commission is paid separately whenever conversions happen. */}
         {isHybrid && (
-          <View style={[styles.tdsNote, { backgroundColor: colors.tealPale, marginTop: 8 }]}>
-            <Text style={[styles.tdsText, { color: colors.tealDeep }]}>
+          <View style={[styles.tdsNote, { backgroundColor: P.successPale, marginTop: 8 }]}>
+            <Text style={[styles.tdsText, { color: P.successText }]}>
               Plus {commissionPct ? `${commissionPct}% commission` : 'commission'} on every conversion driven through your tracking link.
             </Text>
           </View>
@@ -879,7 +888,7 @@ export default function OfferDetailScreen({ navigation, route }) {
                 onChangeText={setNegotiatingFee}
                 keyboardType="numeric"
                 placeholder="Your proposed fee"
-                placeholderTextColor={colors.t3}
+                placeholderTextColor={P.muted2}
               />
             </View>
           )}
@@ -893,7 +902,7 @@ export default function OfferDetailScreen({ navigation, route }) {
                 onChangeText={setNegotiatingCommission}
                 keyboardType="numeric"
                 placeholder="Proposed commission %"
-                placeholderTextColor={colors.t3}
+                placeholderTextColor={P.muted2}
                 editable={allowCommissionNegotiation}
               />
               <Text style={styles.rupee}>%</Text>
@@ -905,7 +914,7 @@ export default function OfferDetailScreen({ navigation, route }) {
             value={note}
             onChangeText={setNote}
             placeholder="Add a note (optional)..."
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted2}
             multiline
             numberOfLines={3}
           />
@@ -924,9 +933,9 @@ export default function OfferDetailScreen({ navigation, route }) {
             }
           >
             {actionLoading ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={P.yellow} />
             ) : (
-              <Text style={styles.counterSubmitText}>Send Counter Offer</Text>
+              <Text style={styles.counterSubmitText}>SEND COUNTER OFFER</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -939,7 +948,7 @@ export default function OfferDetailScreen({ navigation, route }) {
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Status</Text>
-              <StatusBadge status={offer.negotiation.status} size={10} />
+              <StatusPill status={offer.negotiation.status} />
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Waiting For</Text>
@@ -976,253 +985,267 @@ export default function OfferDetailScreen({ navigation, route }) {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  emptyText: { fontSize: 14, color: colors.t3 },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+  emptyText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2 },
 
-  // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  brandLogo: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.1)' },
+  // Header (ink topbar with yellow rule)
+  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 18, position: 'relative' },
+  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)', fontWeight: '700' },
+  brandRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
+  brandLogo: { width: 48, height: 48, borderRadius: 12, backgroundColor: P.yellow },
   brandLogoFallback: {
-    width: 44, height: 44, borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 48, height: 48, borderRadius: 12,
+    backgroundColor: P.yellow,
     justifyContent: 'center', alignItems: 'center',
   },
-  brandLogoInitial: { fontSize: 20, fontWeight: '800', color: colors.white },
-  brandName: { fontSize: 18, fontWeight: '800', color: colors.white },
-  brandMeta: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
-  brandArrow: { fontSize: 22, color: 'rgba(255,255,255,0.4)', marginLeft: 4 },
-  campaignName: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+  brandLogoInitial: { fontFamily: fonts.displayBlack, fontSize: 22, fontWeight: '900', color: P.ink },
+  brandName: { fontFamily: fonts.displayBold, fontSize: 17, fontWeight: '800', color: P.white },
+  brandMeta: { fontFamily: fonts.monoBold, fontSize: 10, color: 'rgba(255,255,255,0.55)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.4 },
+  brandArrow: { fontFamily: fonts.monoBold, fontSize: 18, color: 'rgba(255,255,255,0.5)', marginLeft: 4, alignSelf: 'center', fontWeight: '800' },
+  campaignName: { fontFamily: fonts.sansMedium, fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
 
-  // Timer
+  // Timer (yellow chip on ink; danger-pale on Expired)
   timerBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginTop: 14,
+    backgroundColor: 'rgba(255,193,7,0.16)',
+    borderWidth: 1,
+    borderColor: P.yellow,
     borderRadius: 10,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 11,
   },
-  timerIcon: { fontSize: 14, marginRight: 8 },
-  timerText: { fontSize: 13, fontWeight: '700', color: colors.gold },
+  timerBarExpired: { backgroundColor: P.dangerPale, borderColor: P.danger },
+  timerText: { fontFamily: fonts.monoBold, fontSize: 11.5, fontWeight: '800', color: P.yellow, letterSpacing: 0.3 },
+  timerTextExpired: { color: P.dangerText },
 
   // Loading
   loadingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 8 },
-  loadingText: { fontSize: 12, color: colors.t3 },
+  loadingText: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted2 },
 
   // Card
   card: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.ink, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.4 },
 
   // Info grid
-  infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },
-  infoItem: { flex: 1 },
+  infoGrid: { flexDirection: 'row', gap: 14, marginBottom: 10 },
+  infoItem: { flex: 1, minWidth: 0 },
   infoLabel: {
-    fontSize: 10,
+    fontFamily: fonts.monoBold,
+    fontSize: 9.5,
     fontWeight: '700',
-    color: colors.t3,
+    color: P.muted2,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    letterSpacing: 0.4,
+    marginBottom: 3,
   },
-  infoValue: { fontSize: 13, fontWeight: '600', color: colors.t1, lineHeight: 18 },
+  infoValue: { fontFamily: fonts.sansMedium, fontSize: 12.5, fontWeight: '600', color: P.ink, lineHeight: 17 },
 
-  // Fee highlight
+  // Fee highlight (successPale per locked design call #3)
   feeHighlight: {
-    backgroundColor: colors.tealPale,
+    backgroundColor: P.successPale,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 10,
     alignItems: 'center',
   },
   feeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.tealDeep,
+    fontFamily: fonts.monoBold,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: P.successText,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  feeValue: { fontSize: 28, fontWeight: '800', color: colors.tealDeep },
-  commissionHint: { fontSize: 11, color: colors.tealDeep, marginTop: 6, opacity: 0.85, textAlign: 'center' },
+  feeValue: { fontFamily: fonts.monoBold, fontSize: 28, fontWeight: '900', color: P.successText, letterSpacing: -0.5 },
+  commissionHint: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.successText, marginTop: 6, opacity: 0.9, textAlign: 'center', lineHeight: 16 },
   productRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.borderSoft,
   },
-  productDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.navy },
-  productName: { fontSize: 13, fontWeight: '600', color: colors.t1 },
-  productPrice: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  productDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P.ink },
+  productName: { fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '700', color: P.ink },
+  productPrice: { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, marginTop: 2 },
 
   // Section
-  section: { marginBottom: 12 },
+  section: { marginBottom: 10 },
   sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
+    fontFamily: fonts.monoBold,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: P.muted2,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    letterSpacing: 0.4,
+    marginBottom: 7,
   },
 
   // Deliverables
   deliverableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.borderSoft,
     gap: 10,
   },
   deliverableDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.navy,
+    width: 7, height: 7, borderRadius: 3.5,
+    backgroundColor: P.ink,
   },
-  deliverableType: { fontSize: 13, fontWeight: '600', color: colors.t1 },
-  deliverableDeadline: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  deliverableHint: { fontSize: 12, color: colors.t3, marginBottom: 8 },
+  deliverableType: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.ink },
+  deliverableDeadline: { fontFamily: fonts.monoBold, fontSize: 9.5, color: P.muted2, marginTop: 1 },
+  deliverableHint: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, marginBottom: 8 },
 
   // Brief
   briefBox: {
-    backgroundColor: colors.surface2,
+    backgroundColor: P.bg2,
     borderRadius: 10,
-    padding: 12,
+    padding: 11,
     marginBottom: 8,
   },
-  briefText: { fontSize: 13, color: colors.t2, lineHeight: 20, marginTop: 4 },
+  briefText: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.ink2, lineHeight: 17, marginTop: 4 },
 
-  // Payment terms / Tranches
-  paymentNote: { fontSize: 12, color: colors.t3, marginBottom: 14, lineHeight: 18 },
+  // Payment terms / Tranches (3-stage progression per locked design call #4)
+  paymentNote: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted, marginBottom: 11, lineHeight: 17 },
   trancheRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.borderSoft,
     gap: 10,
   },
   trancheDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
-  trancheTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  trancheDesc: { fontSize: 11, color: colors.t3, marginTop: 2, lineHeight: 16 },
-  trancheAmount: { fontSize: 14, fontWeight: '800', color: colors.t1 },
+  trancheTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.ink },
+  trancheDesc: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 1, lineHeight: 15 },
+  trancheAmount: { fontFamily: fonts.monoBold, fontSize: 13.5, fontWeight: '800', color: P.ink },
   trancheTotalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
-    marginTop: 4,
+    paddingTop: 11,
+    marginTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: P.border,
   },
-  trancheTotalLabel: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  trancheTotalValue: { fontSize: 18, fontWeight: '800', color: colors.tealDeep },
+  trancheTotalLabel: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.ink },
+  trancheTotalValue: { fontFamily: fonts.monoBold, fontSize: 17, fontWeight: '900', color: P.successText, letterSpacing: -0.3 },
   tdsNote: {
-    backgroundColor: colors.goldPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 8,
     padding: 10,
-    marginTop: 12,
+    marginTop: 10,
   },
-  tdsText: { fontSize: 11, color: '#7A5500', lineHeight: 16 },
+  tdsText: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.yellowText, lineHeight: 15 },
 
   // Guidelines
-  guidelineRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  guidelineBullet: { fontSize: 12, color: colors.t3, fontWeight: '700' },
-  guidelineText: { fontSize: 12, color: colors.t2, flex: 1, lineHeight: 18 },
+  guidelineRow: { flexDirection: 'row', gap: 6, marginTop: 7 },
+  guidelineBullet: { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, fontWeight: '800' },
+  guidelineText: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, flex: 1, lineHeight: 17 },
 
-  // Actions
-  actions: { gap: 10 },
+  // Actions (ink primary + ghost-ink negotiate + danger-pale decline)
+  actions: { gap: 8 },
   acceptBtn: {
-    backgroundColor: colors.teal,
+    backgroundColor: P.ink,
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
   },
-  acceptText: { fontSize: 15, fontWeight: '700', color: colors.white },
-  actionSecondaryRow: { flexDirection: 'row', gap: 10 },
+  acceptText: { fontFamily: fonts.displayBlack, fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2 },
+  actionSecondaryRow: { flexDirection: 'row', gap: 8 },
   negotiateBtn: {
     flex: 1,
-    backgroundColor: colors.navyPale,
+    backgroundColor: P.white,
+    borderWidth: 1.5,
+    borderColor: P.ink,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 11,
     alignItems: 'center',
   },
-  negotiateText: { fontSize: 14, fontWeight: '700', color: colors.navy },
+  negotiateText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink },
   declineBtn: {
     flex: 1,
-    backgroundColor: colors.redPale,
+    backgroundColor: P.dangerPale,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  declineText: { fontSize: 14, fontWeight: '700', color: colors.red },
-  fixedTermsHint: { fontSize: 11, color: colors.t3, textAlign: 'center', marginTop: 10, fontStyle: 'italic' },
+  declineText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.dangerText },
+  fixedTermsHint: { fontFamily: fonts.monoBold, fontSize: 9.5, color: P.muted2, textAlign: 'center', marginTop: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
   disabledBtn: { opacity: 0.5 },
 
-  // Next-step CTA rows (View Contract / Submit Content)
+  // Next-step CTA rows (yellow-pale + 1.5px ink border + chevron-right)
   nextStepBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.navyPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: colors.navy,
+    borderWidth: 1.5,
+    borderColor: P.ink,
   },
-  nextStepTitle: { fontSize: 14, fontWeight: '800', color: colors.navy },
-  nextStepDesc:  { fontSize: 11, color: colors.t2, marginTop: 2, lineHeight: 15 },
-  nextStepArrow: { fontSize: 22, fontWeight: '800', color: colors.navy, marginLeft: 8 },
+  nextStepTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink },
+  nextStepDesc:  { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 2, lineHeight: 15 },
+  nextStepArrow: { fontFamily: fonts.monoBold, fontSize: 20, fontWeight: '800', color: P.ink, marginLeft: 8 },
 
   // Decline reasons
-  declineHint: { fontSize: 12, color: colors.t3, marginBottom: 10 },
+  declineHint: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted, marginBottom: 9 },
   declineReasonBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingVertical: 11,
+    paddingHorizontal: 13,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
     borderRadius: 10,
-    marginBottom: 8,
+    marginBottom: 7,
+    backgroundColor: P.white,
   },
-  declineReasonText: { fontSize: 13, fontWeight: '600', color: colors.t1 },
+  declineReasonText: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '700', color: P.ink },
 
   // Negotiate form
-  negotiateHint: { fontSize: 12, color: colors.t3, marginBottom: 12, lineHeight: 18 },
+  negotiateHint: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, marginBottom: 10, lineHeight: 17 },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    marginBottom: 10,
+    borderColor: P.ink,
+    borderRadius: 11,
+    backgroundColor: P.white,
+    marginBottom: 8,
   },
-  rupee: { paddingHorizontal: 12, fontSize: 18, fontWeight: '700', color: colors.t2 },
-  feeInput: { flex: 1, paddingVertical: 12, fontSize: 18, fontWeight: '700', color: colors.t1 },
+  rupee: { paddingHorizontal: 11, fontFamily: fonts.monoBold, fontSize: 17, fontWeight: '800', color: P.muted },
+  feeInput: { flex: 1, paddingVertical: 11, fontFamily: fonts.monoBold, fontSize: 16, fontWeight: '800', color: P.ink },
   noteInput: {
-    borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 13,
-    color: colors.t1,
-    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: P.border,
+    borderRadius: 10,
+    padding: 11,
+    fontFamily: fonts.sansMedium,
+    fontSize: 12,
+    color: P.ink,
+    backgroundColor: P.bg,
+    marginBottom: 9,
+    minHeight: 60,
     textAlignVertical: 'top',
   },
   counterSubmitBtn: {
-    backgroundColor: colors.navy,
+    backgroundColor: P.ink,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  counterSubmitText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  counterSubmitText: { fontFamily: fonts.displayBlack, fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2 },
 });

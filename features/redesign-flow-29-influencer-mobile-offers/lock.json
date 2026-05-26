@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-29-influencer-mobile-offers",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-26 chat \"pls lock and start execution\"",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 29 mockup locked (5 frames + side panel)",
+  "mockup_locked_at": "2026-05-26",
+  "notes": "2nd flow of mobile-influencer bucket (2/23). OfferListScreen (235 LOC) + OfferDetailScreen (1228 LOC, 3rd biggest in bucket). ZERO SDK boundaries (pure RN core + RN Image). ZERO backend change — 7 APIs preserved verbatim, every field traces to offer.controller.js. ZERO StatusPill additions — all 10 observed statuses in existing 39-entry canonical map. 25+ render branches preserved verbatim. Visual: brandPalette + fonts + MCI icons (5 empty-state icons + back chevron + countdown timer) + ink-active tab pills + successPale fee/commission highlight + 3-stage tranche progression dots (success→yellow→ink) + yellowPale TDS note + ink primary CTA / ghost Negotiate / danger-pale Decline. No native rebuild needed (Flow 28 laid the MCI foundation; this flow ships pure OTA).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_reason": "Flow 28 already bundled MaterialCommunityIcons.ttf + bumped NATIVE_RUNTIME to 2; Flow 29 only consumes MCI icons via JS, no new native deps. Ships via pure OTA.",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE same pattern as Flow 28 — 4/4 baseline Maestro flows still green; deep auth-driven verification deferred to maestro-influencer-coverage contract"
+  }
+}
