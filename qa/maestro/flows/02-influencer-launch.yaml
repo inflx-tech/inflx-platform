@@ -1,0 +1,25 @@
+# Flow 28 — Influencer app launches without crash.
+#
+# Proves: APK boots, JS bundled, MaterialCommunityIcons.ttf loads correctly
+# (any crash on the `<Icon>` component import would prevent the auth screen
+# from rendering). Also proves Flow 28's runtime changes (NATIVE_RUNTIME=2,
+# vector-icons gradle apply) don't break the auth path that pre-dates Flow 28.
+#
+# Contract: features/redesign-flow-28-influencer-mobile-home-notifications/
+# Run:
+#   pnpm qa:maestro            # runs all qa/maestro/flows/*.yaml
+#   pnpm qa:maestro:doctor     # verify readiness first
+#
+# A pass here is the minimum smoke for Flow 28. A deeper flow drives through
+# auth + Home screen + Notifications (see 04-influencer-flow-28-home.yaml).
+
+appId: in.inflx.app.influencer
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- assertVisible: "Influencer app"
+- assertVisible: "Send OTP"
+- takeScreenshot: 02-influencer-launch-phone

@@ -1,0 +1,19 @@
+# Flow 28 — Brand app launches without crash.
+#
+# Same purpose as 02-influencer-launch: proves APK boots, JS bundled, MCI
+# font loads (Flow 28's native rebuild applies to brand APK too even though
+# Flow 28 itself doesn't redesign brand screens — the gradle apply-from line
+# affects ALL flavors).
+#
+# Contract: features/redesign-flow-28-influencer-mobile-home-notifications/
+
+appId: in.inflx.app.brand
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- assertVisible: "Brand workspace"
+- assertVisible: "Send OTP"
+- takeScreenshot: 03-brand-launch-phone

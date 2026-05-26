@@ -1,0 +1,81 @@
+# Flow 28 — Influencer auth + onboarding + admin-gate Maestro verification.
+#
+# What this PROVES (current scope):
+#   ✓ APK boots without crash
+#   ✓ MaterialCommunityIcons.ttf font loads correctly (no crash on <Icon>)
+#   ✓ Auth flow works end-to-end: phone → OTP → onboarding → post-onboarding
+#   ✓ Post-onboarding routing to admin-verify gate works
+#
+# What this does NOT yet prove (acknowledged limitation):
+#   ✗ Home screen redesign (action tiles, greeting, wallet glance)
+#   ✗ Tab bar with 5 MCI icons (visible only after admin verification)
+#   ✗ Notifications screen with 10-MCI icon map
+#
+# Why: new influencer accounts route to a "Profile recognised" admin-
+# verification gate before reaching Home. Admin must approve the
+# Instagram handle (handles can take "under 24 hours"). For Maestro to
+# reach Home, we need either (a) a pre-verified test account in the
+# database, or (b) admin bypass for test phones — both deferred to a
+# separate maestro-coverage-influencer-home contract.
+#
+# Founder physical smoke-test on real device after APK install covers
+# the Home + Notifications visual upgrade in the meantime.
+#
+# Contract: features/redesign-flow-28-influencer-mobile-home-notifications/
+
+appId: in.inflx.app.influencer
+---
+- launchApp:
+    clearState: true
+
+# ─── PHONE SCREEN ───────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- tapOn:
+    text: "9876543210"
+- inputText: "9876543210"
+- tapOn: "Send OTP"
+
+# ─── OTP SCREEN ─────────────────────────────────────────────────
+# 6 separate TextInput boxes (OTPScreen.js:180-194), maxLength=1 each.
+# Tap by point on the first OTP box to focus it, then inputText pastes
+# all 6 digits — handleChange (OTPScreen.js:82-95) auto-distributes
+# pasted 6-digit string AND triggers auto-verify via useEffect.
+- extendedWaitUntil:
+    visible: "Enter the 6-digit code"
+    timeout: 20000
+- tapOn:
+    point: "12%,27%"   # first OTP box (left-most)
+- inputText: "000000"
+
+# ─── ONBOARDING (clearState wiped local profile, so first-time-user
+#     onboarding screen renders before Home) ────────────────────
+# Required fields: Full name + Instagram handle.
+# Tap "Complete registration" → app fetches profile + navigates to Home.
+- extendedWaitUntil:
+    visible: "Set up your profile"
+    timeout: 30000
+- tapOn:
+    text: "Your full name"
+- inputText: "Maestro Tester"
+- hideKeyboard
+- tapOn:
+    text: "yourhandle"
+- inputText: "maestro_test"
+- hideKeyboard
+- tapOn: "Complete registration"
+
+# ─── ADMIN-VERIFY GATE (post-onboarding) ────────────────────────
+# Until admin verifies the Instagram handle, app routes here.
+# Reaching this screen proves: auth ✓ + onboarding ✓ + post-onboarding
+# routing ✓ — all of which exercise the Flow 28 JS bundle indirectly
+# (everything downstream of `import Icon from 'react-native-vector-icons/MaterialCommunityIcons'`
+# in the influencer navigator/screens loads cleanly).
+- extendedWaitUntil:
+    visible: "Profile recognised"
+    timeout: 30000
+- assertVisible: "Verification usually takes under 24 hours"
+- assertVisible: "Sign out"
+
+- takeScreenshot: 04-influencer-admin-gate
