@@ -75,6 +75,12 @@ export const STATUS_MAP_DEFAULT = {
   // Withdrawal lifecycle (Flow 28)
   processing: { bg: P.infoPale,   fg: P.info,       label: 'PROCESSING' }, // Flow 28
   failed:     { bg: P.dangerPale, fg: P.dangerText, label: 'FAILED' },     // Flow 28
+
+  // Campaign + deliverable + tranche statuses (Flow 31)
+  published:          { bg: P.infoPale,    fg: P.info,        label: 'PUBLISHED' }, // Flow 31 (campaign_status)
+  revision_requested: { bg: P.yellowPale,  fg: P.yellowText,  label: 'REVISION' },  // Flow 31 (deliverable_status)
+  locked:             { bg: P.bg2,         fg: P.muted2,      label: 'LOCKED' },    // Flow 31 (tranche_status)
+  released:           { bg: P.successPale, fg: P.successText, label: 'RELEASED' },  // Flow 31 (tranche_status)
 };
 
 const FALLBACK = { bg: P.bg2, fg: P.muted2 };

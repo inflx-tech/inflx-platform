@@ -10,9 +10,10 @@ import {
   Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 function formatDate(dateStr) {
   if (!dateStr) return '--';
@@ -21,9 +22,9 @@ function formatDate(dateStr) {
 }
 
 const TABS = [
-  { key: 'active', label: 'Active' },
+  { key: 'active',    label: 'Active' },
   { key: 'completed', label: 'Completed' },
-  { key: 'all', label: 'All' },
+  { key: 'all',       label: 'All' },
 ];
 
 export default function MyCampaignsScreen({ navigation }) {
@@ -68,19 +69,21 @@ export default function MyCampaignsScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<-'} Back</Text>
+          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Campaigns</Text>
-        <Text style={styles.headerSub}>Track your active and past campaigns</Text>
+        <Text style={styles.headerSub}>Track active and past campaigns</Text>
+        <View style={styles.headerRule} />
       </View>
 
-      {/* Tab bar */}
-      <View style={styles.tabBar}>
+      {/* Tab pills */}
+      <View style={styles.tabsWrap}>
         {TABS.map(t => (
           <TouchableOpacity
             key={t.key}
             onPress={() => { setLoading(true); setTab(t.key); }}
-            style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
+            style={[styles.tabPill, tab === t.key && styles.tabPillActive]}
           >
             <Text style={[styles.tabText, tab === t.key && styles.tabTextActive]}>
               {t.label}
@@ -91,33 +94,38 @@ export default function MyCampaignsScreen({ navigation }) {
 
       <ScrollView
         style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
+        contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
       >
         {loading ? (
           <View style={styles.centerLoader}>
-            <ActivityIndicator size="small" color={colors.navy} />
+            <ActivityIndicator size="small" color={P.ink} />
             <Text style={styles.loadingText}>Loading campaigns...</Text>
           </View>
         ) : error ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>!</Text>
+            <View style={styles.emptyTile}>
+              <Icon name="alert-circle-outline" size={32} color={P.dangerText} />
+            </View>
             <Text style={styles.emptyTitle}>Something went wrong</Text>
             <Text style={styles.emptySubtext}>{error}</Text>
             <TouchableOpacity
               style={styles.retryBtn}
               onPress={() => { setLoading(true); setError(null); load(tab); }}
             >
-              <Text style={styles.retryBtnText}>Retry</Text>
+              <Text style={styles.retryBtnText}>RETRY</Text>
             </TouchableOpacity>
           </View>
         ) : campaigns.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>{'[  ]'}</Text>
+            <View style={styles.emptyTile}>
+              <Icon name="briefcase-outline" size={32} color={P.yellowText} />
+            </View>
             <Text style={styles.emptyTitle}>
               No {tab === 'all' ? '' : tab} campaigns
             </Text>
             <Text style={styles.emptySubtext}>
-              Accept offers to start working on campaigns
+              Accept offers to start working on campaigns.
             </Text>
           </View>
         ) : (
@@ -137,28 +145,28 @@ export default function MyCampaignsScreen({ navigation }) {
                 }
               }}
             >
-              <View style={styles.cardHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.brandName}>{c.brand_name || 'Brand'}</Text>
-                  <Text style={styles.campaignName}>{c.campaign_name}</Text>
+              <View style={styles.cardHead}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.brandName} numberOfLines={1}>{c.brand_name || 'Brand'}</Text>
+                  <Text style={styles.campaignName} numberOfLines={1}>{c.campaign_name}</Text>
                 </View>
-                <StatusBadge status={c.influencer_status} />
+                <StatusPill status={c.influencer_status} />
               </View>
 
               <View style={styles.cardStats}>
-                <View style={styles.cardStat}>
-                  <Text style={styles.cardStatLabel}>Fee</Text>
-                  <Text style={styles.cardStatVal}>{fmtRupees(c.agreed_fee)}</Text>
+                <View>
+                  <Text style={styles.statL}>Fee</Text>
+                  <Text style={styles.statV}>{fmtRupees(c.agreed_fee)}</Text>
                 </View>
-                <View style={styles.cardStat}>
-                  <Text style={styles.cardStatLabel}>Goal</Text>
-                  <Text style={styles.cardStatVal}>
+                <View>
+                  <Text style={styles.statL}>Goal</Text>
+                  <Text style={styles.statV}>
                     {(c.goal || '--').replace(/_/g, ' ').replace(/^\w/, ch => ch.toUpperCase())}
                   </Text>
                 </View>
-                <View style={styles.cardStat}>
-                  <Text style={styles.cardStatLabel}>Deliverables</Text>
-                  <Text style={styles.cardStatVal}>
+                <View>
+                  <Text style={styles.statL}>Deliverables</Text>
+                  <Text style={styles.statV}>
                     {c.approved_count}/{c.deliverable_count}
                   </Text>
                 </View>
@@ -166,103 +174,92 @@ export default function MyCampaignsScreen({ navigation }) {
 
               <View style={styles.cardDates}>
                 <Text style={styles.dateText}>
-                  {formatDate(c.start_date)} - {formatDate(c.end_date)}
+                  {formatDate(c.start_date)} – {formatDate(c.end_date)}
                 </Text>
-                {/* Set name intentionally hidden — brand-side grouping concept */}
               </View>
             </TouchableOpacity>
           ))
         )}
-        <View style={{ height: 24 }} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: P.bg },
 
-  // Header
-  header: { backgroundColor: colors.navyDeep, paddingTop: 52, paddingHorizontal: 20, paddingBottom: 16 },
-  back: { marginBottom: 8 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.white },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
+  // Header (ink topbar with yellow rule)
+  header:    { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 16, position: 'relative' },
+  headerRule:{ position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  back:      { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
+  backText:  { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)', fontWeight: '700' },
+  headerTitle:{ fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white },
+  headerSub: { fontFamily: fonts.sansMedium, fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 3 },
 
-  // Tab bar
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  tabBtn: {
-    paddingHorizontal: 16,
+  // Tab pills (ink-active + bg2-inactive)
+  tabsWrap:  { flexDirection: 'row', backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border, paddingHorizontal: 14, paddingVertical: 10, gap: 7 },
+  tabPill: {
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: colors.surface2,
+    backgroundColor: P.bg2,
+    borderWidth: 1,
+    borderColor: P.border,
   },
-  tabBtnActive: { backgroundColor: colors.navy },
-  tabText: { fontSize: 12, fontWeight: '600', color: colors.t3 },
-  tabTextActive: { color: colors.white },
+  tabPillActive: { backgroundColor: P.ink, borderColor: P.ink },
+  tabText:       { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.muted2, letterSpacing: 0.3 },
+  tabTextActive: { color: P.yellow },
 
-  // Loading / Empty
+  // Loading
   centerLoader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 40, gap: 8 },
-  loadingText: { fontSize: 13, color: colors.t3 },
-  empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 },
-  emptyIcon: { fontSize: 36, marginBottom: 12, color: colors.t3 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptySubtext: { fontSize: 13, color: colors.t3, textAlign: 'center' },
+  loadingText:  { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted2 },
+
+  // Empty (canonical pattern with MCI icon)
+  empty: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 28 },
+  emptyTile: {
+    width: 66, height: 66, borderRadius: 14,
+    backgroundColor: P.yellowPale,
+    borderWidth: 1.5, borderColor: P.yellow, borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, textAlign: 'center', marginBottom: 6 },
+  emptySubtext:{ fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, maxWidth: 260 },
   retryBtn: {
     marginTop: 16,
-    backgroundColor: colors.navy,
-    borderRadius: 10,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
+    backgroundColor: P.ink,
+    borderRadius: 12,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
   },
-  retryBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  retryBtnText: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.yellow, letterSpacing: 0.3 },
 
   // Campaign card
   campaignCard: {
-    backgroundColor: colors.white,
-    margin: 16,
-    marginBottom: 0,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: P.white,
+    marginHorizontal: 14, marginBottom: 8,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1, borderColor: P.border,
   },
-  cardHeader: {
+  cardHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 11,
   },
-  brandName: { fontSize: 15, fontWeight: '700', color: colors.t1 },
-  campaignName: { fontSize: 12, color: colors.t3, marginTop: 2 },
+  brandName: { fontFamily: fonts.displayBold, fontSize: 14.5, fontWeight: '800', color: P.ink, lineHeight: 18 },
+  campaignName: { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.muted2, marginTop: 3 },
 
-  cardStats: { flexDirection: 'row', gap: 16, marginBottom: 12 },
-  cardStat: {},
-  cardStatLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.t3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  cardStatVal: { fontSize: 14, fontWeight: '700', color: colors.t1, marginTop: 2 },
+  cardStats: { flexDirection: 'row', gap: 14, marginBottom: 11 },
+  statL: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, fontWeight: '700' },
+  statV: { fontFamily: fonts.monoBold, fontSize: 13.5, fontWeight: '800', color: P.ink, marginTop: 2 },
 
   cardDates: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
     paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: P.borderSoft,
   },
-  dateText: { fontSize: 11, color: colors.t3 },
-  setName: { fontSize: 11, color: colors.t3, fontStyle: 'italic' },
+  dateText: { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.muted2 },
 });

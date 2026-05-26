@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-31-influencer-mobile-campaigns",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-26 chat \"pls locked and continue\"",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 31 mockup locked",
+  "mockup_locked_at": "2026-05-26",
+  "notes": "4th flow of mobile-influencer bucket (4/23). MyCampaignsScreen (268 LOC, 3 tabs) + CampaignDetailScreen (1,176 LOC, 2nd biggest in bucket). ZERO SDK boundaries. ZERO backend change. StatusPill canonical map +4: published (campaign_status) · revision_requested (deliverable_status) · locked (tranche_status) · released (tranche_status). Map total 39→43. 22+ render branches preserved verbatim including 5-step progress indicator + goal-aware showFee/showCommission/showTranches + 8-state renderContractSection function + render-error try/catch wrap. All 3 APIs preserved (getMyCampaigns, getMyCampaignDetail, getNegotiationByCampaignInfluencer). Visual: brandPalette + fonts + yellow-active progress dots + bg2 quick-action tiles with ink/yellow MCI icon tiles + semantic-tone contract banners (yellowPale/successPale/infoPale per state) + yellowPale+yellow-border publish CTA + success→yellow→ink tranche dots + convPale negotiation info box. No native rebuild required.",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation. Flow 31 = pure JS OTA.",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE for influencer-coverage gap"
+  }
+}

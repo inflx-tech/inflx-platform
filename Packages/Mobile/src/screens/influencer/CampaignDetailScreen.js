@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.navy} />
+        <ActivityIndicator size="large" color={P.ink} />
         <Text style={styles.loadingText}>Loading campaign...</Text>
       </View>
     );
@@ -190,7 +191,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
                   You are currently negotiating terms for this campaign. The contract will be generated once both parties agree.
                 </Text>
                 {negotiationLoading && (
-                  <ActivityIndicator size="small" color={colors.orange} style={{ marginTop: 8 }} />
+                  <ActivityIndicator size="small" color={P.yellow} style={{ marginTop: 8 }} />
                 )}
                 {negotiationData && (
                   <View style={styles.negotiationSummary}>
@@ -231,7 +232,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
         if (!contract) {
           return (
             <View style={styles.preparingBox}>
-              <ActivityIndicator size="small" color={colors.navy} />
+              <ActivityIndicator size="small" color={P.ink} />
               <Text style={styles.preparingText}>
                 Contract is being created. Pull to refresh in a few seconds.
               </Text>
@@ -247,22 +248,22 @@ export default function CampaignDetailScreen({ navigation, route }) {
           <View>
             {/* State-specific banner */}
             {isDraft && (
-              <View style={[styles.preparingBox, { backgroundColor: '#FFF8E0', borderColor: '#E8D590' }]}>
-                <Text style={[styles.preparingText, { color: '#7A5500', fontWeight: '700' }]}>
+              <View style={[styles.preparingBox, { backgroundColor: P.yellowPale, borderColor: '#F0DA88' }]}>
+                <Text style={[styles.preparingText, { color: P.yellowText, fontWeight: '700' }]}>
                   Brand is reviewing the contract draft. You'll be notified when it's ready to sign.
                 </Text>
               </View>
             )}
             {isPendingInf && (
-              <View style={[styles.preparingBox, { backgroundColor: colors.tealPale, borderColor: colors.teal }]}>
-                <Text style={[styles.preparingText, { color: colors.tealDeep, fontWeight: '700' }]}>
+              <View style={[styles.preparingBox, { backgroundColor: P.successPale, borderColor: P.success }]}>
+                <Text style={[styles.preparingText, { color: P.successText, fontWeight: '700' }]}>
                   Brand approved the contract — your turn to sign.
                 </Text>
               </View>
             )}
             {isPendingBrand && (
-              <View style={[styles.preparingBox, { backgroundColor: colors.navyPale, borderColor: colors.navy }]}>
-                <Text style={[styles.preparingText, { color: colors.navy, fontWeight: '700' }]}>
+              <View style={[styles.preparingBox, { backgroundColor: P.infoPale, borderColor: P.info }]}>
+                <Text style={[styles.preparingText, { color: P.info, fontWeight: '700' }]}>
                   {isConversion
                     ? 'You signed. Waiting for brand counter-signature to activate your tracking link.'
                     : 'You signed. Waiting for brand counter-signature to release Tranche 1.'}
@@ -270,8 +271,8 @@ export default function CampaignDetailScreen({ navigation, route }) {
               </View>
             )}
             {isFullyActive && (
-              <View style={[styles.preparingBox, { backgroundColor: colors.tealPale, borderColor: colors.teal }]}>
-                <Text style={[styles.preparingText, { color: colors.tealDeep, fontWeight: '700' }]}>
+              <View style={[styles.preparingBox, { backgroundColor: P.successPale, borderColor: P.success }]}>
+                <Text style={[styles.preparingText, { color: P.successText, fontWeight: '700' }]}>
                   {isConversion
                     ? 'Contract active — both parties signed. Your tracking link is live.'
                     : 'Contract active — both parties signed. Tranche 1 released.'}
@@ -320,10 +321,10 @@ export default function CampaignDetailScreen({ navigation, route }) {
             {/* PDF view — only after BOTH parties signed (contract is fully active) */}
             {isFullyActive && (
               <TouchableOpacity
-                style={[styles.secondaryBtn, { marginTop: 8, backgroundColor: colors.navy }]}
+                style={[styles.secondaryBtn, { marginTop: 8, backgroundColor: P.ink }]}
                 onPress={() => navigation.navigate('ContractPdf', { contractId: contract.id })}
               >
-                <Text style={[styles.secondaryBtnText, { color: colors.white }]}>View Contract PDF</Text>
+                <Text style={[styles.secondaryBtnText, { color: P.white }]}>View Contract PDF</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -411,7 +412,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
                   {d.revision_count || 0}/{d.revision_limit || 2}
                 </Text>
                 <View style={{ flex: 1.5, alignItems: 'flex-end' }}>
-                  <StatusBadge status={d.status} size={8} />
+                  <StatusPill status={d.status} />
                 </View>
               </View>
             ))}
@@ -459,7 +460,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
             submit form is hidden 2-3 navigations deep. */}
         {deliverables.some(d => d.status === 'approved' && !d.live_url) && (
           <TouchableOpacity
-            style={[styles.actionBtn, { marginTop: 10, backgroundColor: colors.tealDeep }]}
+            style={[styles.actionBtn, { marginTop: 10, backgroundColor: P.successText }]}
             onPress={() => navigation.navigate('DeliverableList', {
               campaign_influencer_id: campaign.campaign_influencer_id,
               campaign_name: campaign.campaign_name,
@@ -474,7 +475,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
 
         {/* Pre-contract hint: deliverables visible but not yet uploadable. */}
         {influencerStatus !== 'active' && deliverables.length > 0 && (
-          <Text style={[styles.briefText, { marginTop: 10, fontStyle: 'italic', color: colors.t3 }]}>
+          <Text style={[styles.briefText, { marginTop: 10, fontStyle: 'italic', color: P.muted2 }]}>
             You'll be able to upload content once the contract is fully signed by both parties.
           </Text>
         )}
@@ -490,14 +491,15 @@ export default function CampaignDetailScreen({ navigation, route }) {
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-            <Text style={styles.backText}>{'<-'} Back</Text>
+            <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+            <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
           <View style={styles.headerRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.brandNameHeader}>{campaign.brand_name || 'Brand'}</Text>
               <Text style={styles.campaignNameHeader}>{campaign.campaign_name || 'Campaign'}</Text>
             </View>
-            <StatusBadge status={influencerStatus} size={11} />
+            <StatusPill status={influencerStatus} />
           </View>
         </View>
 
@@ -673,7 +675,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
             </View>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Campaign Status</Text>
-              <StatusBadge status={campaign.campaign_status} size={10} />
+              <StatusPill status={campaign.campaign_status} />
             </View>
           </View>
 
@@ -730,14 +732,14 @@ export default function CampaignDetailScreen({ navigation, route }) {
               {bonusAmount > 0 && (
                 <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.08)', width: '100%' }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 11, color: colors.tealDeep }}>Base agreed fee</Text>
-                    <Text style={{ fontSize: 11, color: colors.tealDeep, fontWeight: '700' }}>{fmtRupees(baseFee)}</Text>
+                    <Text style={{ fontSize: 11, color: P.successText }}>Base agreed fee</Text>
+                    <Text style={{ fontSize: 11, color: P.successText, fontWeight: '700' }}>{fmtRupees(baseFee)}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                    <Text style={{ fontSize: 11, color: colors.tealDeep }}>+ Brand bonus</Text>
-                    <Text style={{ fontSize: 11, color: colors.tealDeep, fontWeight: '700' }}>{fmtRupees(bonusAmount)}</Text>
+                    <Text style={{ fontSize: 11, color: P.successText }}>+ Brand bonus</Text>
+                    <Text style={{ fontSize: 11, color: P.successText, fontWeight: '700' }}>{fmtRupees(bonusAmount)}</Text>
                   </View>
-                  <Text style={{ fontSize: 10, color: colors.tealDeep, opacity: 0.75, marginTop: 6, fontStyle: 'italic' }}>
+                  <Text style={{ fontSize: 10, color: P.successText, opacity: 0.75, marginTop: 6, fontStyle: 'italic' }}>
                     Bonus added by the brand for the special clauses you accepted in the contract.
                   </Text>
                 </View>
@@ -768,10 +770,10 @@ export default function CampaignDetailScreen({ navigation, route }) {
               <Text style={styles.sectionLabel}>Tranche Progress</Text>
               {tranches.map(t => {
                 const dotColor = t.status === 'released'
-                  ? colors.teal
+                  ? P.success
                   : t.status === 'locked'
-                  ? colors.navy
-                  : colors.orange;
+                  ? P.ink
+                  : P.yellow;
                 return (
                   <View key={t.tranche_number} style={styles.trancheRow}>
                     <View style={[styles.trancheDot, { backgroundColor: dotColor }]} />
@@ -790,7 +792,7 @@ export default function CampaignDetailScreen({ navigation, route }) {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={styles.trancheAmount}>{fmtRupees(t.net_to_influencer)}</Text>
-                      <StatusBadge status={t.status} size={9} />
+                      <StatusPill status={t.status} />
                     </View>
                   </View>
                 );
@@ -803,9 +805,9 @@ export default function CampaignDetailScreen({ navigation, route }) {
               </Text>
               <Text style={styles.sectionLabel}>Expected Payment Schedule</Text>
               {[
-                { pct: 25, label: 'Tranche 1 (25%)', desc: 'Both parties sign the contract', color: colors.teal },
-                { pct: 25, label: 'Tranche 2 (25%)', desc: 'Content goes live', color: colors.orange },
-                { pct: 50, label: 'Tranche 3 (50%)', desc: '30 days after content live', color: colors.navy },
+                { pct: 25, label: 'Tranche 1 (25%)', desc: 'Both parties sign the contract', color: P.success },
+                { pct: 25, label: 'Tranche 2 (25%)', desc: 'Content goes live', color: P.yellow },
+                { pct: 50, label: 'Tranche 3 (50%)', desc: '30 days after content live', color: P.ink },
               ].map((t, i) => (
                 <View key={i} style={styles.trancheRow}>
                   <View style={[styles.trancheDot, { backgroundColor: t.color }]} />
@@ -872,30 +874,30 @@ export default function CampaignDetailScreen({ navigation, route }) {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: 24 },
-  emptyText: { fontSize: 14, color: colors.t3, marginBottom: 16, textAlign: 'center' },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12, textAlign: 'center' },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 24 },
+  emptyText: { fontSize: 14, color: P.muted2, marginBottom: 16, textAlign: 'center' },
+  loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, textAlign: 'center' },
 
   // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
+  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
   backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  brandNameHeader: { fontSize: 20, fontWeight: '800', color: colors.white },
+  brandNameHeader: { fontSize: 20, fontWeight: '800', color: P.white },
   campaignNameHeader: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
 
   // Card
   card: {
     margin: 16,
     marginBottom: 0,
-    backgroundColor: colors.white,
+    backgroundColor: P.white,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: P.ink, marginBottom: 12 },
 
   // Progress indicator
   progressRow: {
@@ -909,27 +911,27 @@ const styles = StyleSheet.create({
   stepLine: {
     flex: 1,
     height: 2,
-    backgroundColor: colors.border,
+    backgroundColor: P.border,
   },
-  stepLineActive: { backgroundColor: colors.teal },
+  stepLineActive: { backgroundColor: P.yellow },
   stepDot: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.border,
+    backgroundColor: P.border,
   },
-  stepDotActive: { backgroundColor: colors.teal },
+  stepDotActive: { backgroundColor: P.yellow },
   stepDotCurrent: {
-    backgroundColor: colors.teal,
+    backgroundColor: P.yellow,
     borderWidth: 3,
-    borderColor: colors.tealPale,
+    borderColor: P.ink,
     width: 18,
     height: 18,
     borderRadius: 9,
   },
-  stepLabel: { fontSize: 9, color: colors.t3, marginTop: 6, fontWeight: '600', textAlign: 'center' },
-  stepLabelActive: { color: colors.tealDeep },
-  stepLabelCurrent: { fontWeight: '800', color: colors.tealDeep },
+  stepLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, marginTop: 6, fontWeight: '700', textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.3 },
+  stepLabelActive: { color: P.ink },
+  stepLabelCurrent: { fontWeight: '800', color: P.ink },
 
   // Info grid
   infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },
@@ -937,25 +939,25 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.t3,
+    color: P.muted2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  infoValue: { fontSize: 13, fontWeight: '600', color: colors.t1, lineHeight: 18 },
+  infoValue: { fontSize: 13, fontWeight: '600', color: P.ink, lineHeight: 18 },
 
   // Brief
   briefBox: {
-    backgroundColor: colors.surface2,
+    backgroundColor: P.bg2,
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
   },
-  briefText: { fontSize: 13, color: colors.t2, lineHeight: 20, marginTop: 4 },
+  briefText: { fontSize: 13, color: P.muted, lineHeight: 20, marginTop: 4 },
 
   // Fee highlight
   feeHighlight: {
-    backgroundColor: colors.tealPale,
+    backgroundColor: P.successPale,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -964,23 +966,23 @@ const styles = StyleSheet.create({
   feeLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.tealDeep,
+    color: P.successText,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  feeValue: { fontSize: 28, fontWeight: '800', color: colors.tealDeep },
+  feeValue: { fontSize: 28, fontWeight: '800', color: P.successText },
 
   // Section
   sectionLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.t3,
+    color: P.muted2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
   },
-  paymentNote: { fontSize: 12, color: colors.t3, marginBottom: 14, lineHeight: 18 },
+  paymentNote: { fontSize: 12, color: P.muted2, marginBottom: 14, lineHeight: 18 },
 
   // Tranche rows
   trancheRow: {
@@ -988,22 +990,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.border,
     gap: 10,
   },
   trancheDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
-  trancheTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  trancheDesc: { fontSize: 11, color: colors.t3, marginTop: 2, lineHeight: 16 },
-  trancheDate: { fontSize: 10, color: colors.teal, marginTop: 2 },
-  trancheAmount: { fontSize: 14, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  trancheTitle: { fontSize: 13, fontWeight: '700', color: P.ink },
+  trancheDesc: { fontSize: 11, color: P.muted2, marginTop: 2, lineHeight: 16 },
+  trancheDate: { fontSize: 10, color: P.success, marginTop: 2 },
+  trancheAmount: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 4 },
 
   tdsNote: {
-    backgroundColor: colors.goldPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 8,
     padding: 10,
     marginTop: 12,
   },
-  tdsText: { fontSize: 11, color: '#7A5500', lineHeight: 16 },
+  tdsText: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.yellowText, lineHeight: 15 },
 
   // Deliverables
   deliverableRow: {
@@ -1011,48 +1013,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.border,
     gap: 10,
   },
   deliverableDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.navy,
+    backgroundColor: P.ink,
   },
-  deliverableType: { fontSize: 13, fontWeight: '600', color: colors.t1 },
-  deliverableDeadline: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  deliverableRevisions: { fontSize: 11, color: colors.orange, marginTop: 2 },
-  liveDate: { fontSize: 9, color: colors.teal },
+  deliverableType: { fontSize: 13, fontWeight: '600', color: P.ink },
+  deliverableDeadline: { fontSize: 11, color: P.muted2, marginTop: 2 },
+  deliverableRevisions: { fontSize: 11, color: P.yellow, marginTop: 2 },
+  liveDate: { fontSize: 9, color: P.success },
 
-  noDataText: { fontSize: 13, color: colors.t3, lineHeight: 18 },
+  noDataText: { fontSize: 13, color: P.muted2, lineHeight: 18 },
 
   // Action buttons
   actionBtn: {
-    backgroundColor: colors.teal,
+    backgroundColor: P.success,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 12,
   },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  actionBtnText: { fontSize: 14, fontWeight: '700', color: P.white },
 
   secondaryBtn: {
-    backgroundColor: colors.navyPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 8,
   },
-  secondaryBtnText: { fontSize: 13, fontWeight: '700', color: colors.navy },
+  secondaryBtnText: { fontSize: 13, fontWeight: '700', color: P.ink },
 
   backBtn: {
-    backgroundColor: colors.navy,
+    backgroundColor: P.ink,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 24,
   },
-  backBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  backBtnText: { fontSize: 13, fontWeight: '700', color: P.white },
 
   // Quick actions grid
   actionsGrid: {
@@ -1063,84 +1065,84 @@ const styles = StyleSheet.create({
   gridBtn: {
     flex: 1,
     minWidth: '40%',
-    backgroundColor: colors.surface2,
+    backgroundColor: P.bg2,
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
   },
   gridBtnIcon: { fontSize: 20, marginBottom: 6 },
-  gridBtnLabel: { fontSize: 11, fontWeight: '700', color: colors.t1, textAlign: 'center' },
-  publishCount: { fontSize: 12, fontWeight: '800', color: colors.orange, marginTop: 4 },
-  couponCode: { fontSize: 12, fontWeight: '700', color: colors.tealDeep, marginTop: 4, fontFamily: 'monospace' },
-  commissionRate: { fontSize: 14, fontWeight: '800', color: colors.tealDeep, marginTop: 4 },
+  gridBtnLabel: { fontSize: 11, fontWeight: '700', color: P.ink, textAlign: 'center' },
+  publishCount: { fontSize: 12, fontWeight: '800', color: P.yellow, marginTop: 4 },
+  couponCode: { fontSize: 12, fontWeight: '700', color: P.successText, marginTop: 4, fontFamily: 'monospace' },
+  commissionRate: { fontSize: 14, fontWeight: '800', color: P.successText, marginTop: 4 },
 
   // Publish-products CTA banner (above Quick Actions when contract active +
   // unpublished products remain).
   publishCtaCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
+    marginHorizontal: 14,
     marginTop: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: '#FFF8E0',
-    borderWidth: 1,
-    borderColor: '#E8D590',
-    borderRadius: 12,
+    backgroundColor: P.yellowPale,
+    borderWidth: 1.5,
+    borderColor: P.yellow,
+    borderRadius: 14,
   },
-  publishCtaTitle: { fontSize: 13, fontWeight: '800', color: '#7A5500' },
-  publishCtaSub:   { fontSize: 11, color: '#7A5500', marginTop: 2 },
-  publishCtaArrow: { fontSize: 22, color: '#7A5500', marginLeft: 8, fontWeight: '300' },
+  publishCtaTitle: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.ink },
+  publishCtaSub:   { fontFamily: fonts.monoBold, fontSize: 10.5, color: P.yellowText, marginTop: 2, fontWeight: '700' },
+  publishCtaArrow: { fontFamily: fonts.monoBold, fontSize: 20, color: P.ink, marginLeft: 8, fontWeight: '800' },
 
   // Completion banner
   completionBanner: {
     margin: 16,
     marginBottom: 0,
-    backgroundColor: colors.tealPale,
+    backgroundColor: P.successPale,
     borderRadius: 14,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderWidth: 1,
-    borderColor: colors.teal,
+    borderColor: P.success,
   },
-  completionBannerIcon: { fontSize: 18, fontWeight: '800', color: colors.tealDeep },
-  completionBannerTitle: { fontSize: 14, fontWeight: '700', color: colors.tealDeep },
-  completionBannerSub: { fontSize: 11, color: colors.tealDeep, marginTop: 2, opacity: 0.7 },
-  completionBannerArrow: { fontSize: 16, fontWeight: '700', color: colors.tealDeep },
+  completionBannerIcon: { fontSize: 18, fontWeight: '800', color: P.successText },
+  completionBannerTitle: { fontSize: 14, fontWeight: '700', color: P.successText },
+  completionBannerSub: { fontSize: 11, color: P.successText, marginTop: 2, opacity: 0.7 },
+  completionBannerArrow: { fontSize: 16, fontWeight: '700', color: P.successText },
 
   // Negotiation info box (BUG 1 fix)
   negotiationInfoBox: {
-    backgroundColor: colors.orangePale,
+    backgroundColor: P.convPale,
     borderRadius: 12,
     padding: 14,
     flexDirection: 'row',
     gap: 10,
     borderWidth: 1,
-    borderColor: colors.orange,
+    borderColor: P.yellow,
   },
-  negotiationInfoIcon: { fontSize: 18, fontWeight: '800', color: colors.orangeDeep },
-  negotiationInfoTitle: { fontSize: 13, fontWeight: '700', color: colors.orangeDeep },
-  negotiationInfoSub: { fontSize: 12, color: colors.t2, marginTop: 4, lineHeight: 18 },
+  negotiationInfoIcon: { fontSize: 18, fontWeight: '800', color: P.conv },
+  negotiationInfoTitle: { fontSize: 13, fontWeight: '700', color: P.conv },
+  negotiationInfoSub: { fontSize: 12, color: P.muted, marginTop: 4, lineHeight: 18 },
   negotiationSummary: {
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: colors.orange,
+    borderTopColor: P.yellow,
   },
-  negotiationSummaryText: { fontSize: 12, fontWeight: '600', color: colors.t1, marginBottom: 2 },
+  negotiationSummaryText: { fontSize: 12, fontWeight: '600', color: P.ink, marginBottom: 2 },
 
   // Preparing box (accepted status)
   preparingBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.navyPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 10,
     padding: 14,
   },
-  preparingText: { flex: 1, fontSize: 13, color: colors.t2, lineHeight: 18 },
+  preparingText: { flex: 1, fontSize: 13, color: P.muted, lineHeight: 18 },
 
   // Requirements & Deliverables table (BUG 2 fix)
   requirementRow: { marginBottom: 12 },
@@ -1149,13 +1151,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingVertical: 8,
     borderBottomWidth: 2,
-    borderBottomColor: colors.border2,
+    borderBottomColor: P.muted4,
     marginBottom: 4,
   },
   tableHeaderText: {
     fontSize: 9,
     fontWeight: '700',
-    color: colors.t3,
+    color: P.muted2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1164,13 +1166,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.border,
   },
-  tableCell: { fontSize: 11, color: colors.t1, fontWeight: '500' },
-  deliverableIcon: { fontSize: 10, fontWeight: '700', color: colors.navy },
+  tableCell: { fontSize: 11, color: P.ink, fontWeight: '500' },
+  deliverableIcon: { fontSize: 10, fontWeight: '700', color: P.ink },
 
   // Feedback
   feedbackRow: { marginBottom: 8 },
-  feedbackLabel: { fontSize: 11, fontWeight: '700', color: colors.t2 },
-  feedbackText: { fontSize: 11, color: colors.red, marginTop: 2, fontStyle: 'italic' },
+  feedbackLabel: { fontSize: 11, fontWeight: '700', color: P.muted },
+  feedbackText: { fontSize: 11, color: P.danger, marginTop: 2, fontStyle: 'italic' },
 });
