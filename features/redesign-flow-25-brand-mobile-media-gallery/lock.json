@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-25-brand-mobile-media-gallery",
   "spec_version": "1.0.0",
-  "status": "deployed-pending-certification",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"pls go\"",
   "approved_at": "2026-05-25",
@@ -12,7 +12,7 @@
   "mockup_locked_at": "2026-05-25",
   "notes": "Eighth flow. MediaGallery — 3 tabs + R2 image upload SDK preserved + StatusPill +3 contract statuses. DEPLOYED 2026-05-25 (OTA × 3 successful) but release-flip held — QA hit 2 different env-flake clusters across 2 runs (Run 1: 4 cold-start API timeouts, Run 2: 1 MSG91 throttle). NON-OVERLAPPING failures confirm environmental.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "qa_evidence": {
       "run_at": "2026-05-25",
       "warmed_up_first": true,
@@ -47,16 +47,28 @@
       "classification": "environmental — Render cold-start hydration (Run 1) + MSG91 OTP rate-limit (Run 2)",
       "classification_detail": "Non-overlapping failures across 2 runs confirms environmental. Run 1's 4 cold-start failures resolved on Run 2 once backend fully warmed; Run 2's single MSG91 throttle is the recurring closed-misdiagnosis carve pattern. Flow 25 changes are mobile-only (1 screen + 1 additive component map extension); zero web/backend/qa changes — zero causal path.",
       "deploy_inert_proof": "Flow 25 touched 2 files: StatusPill.js (additive 3 entries to STATUS_MAP_DEFAULT — existing 31 byte-identical) + BrandMediaGalleryScreen.js (full visual rewrite with SDK boundary preserved verbatim). NATIVE_RUNTIME NOT bumped. react-native-image-picker NOT modified.",
-      "founder_recert_path": "When MSG91 throttle clears + Render backend fully warm, re-run pnpm qa. If clean GREEN, ship `chore(release): Flow 25 — certify retroactively` lock.json-only commit. Alternatively founder device smoke-test on MediaGallery screen (upload a photo, edit a link, browse contracts) certifies the mobile redesign separately."
+      "founder_recert_path": "When MSG91 throttle clears + Render backend fully warm, re-run pnpm qa. If clean GREEN, ship `chore(release): Flow 25 — certify retroactively` lock.json-only commit. Alternatively founder device smoke-test on MediaGallery screen (upload a photo, edit a link, browse contracts) certifies the mobile redesign separately.",
+      "run_3_certify": {
+        "run_at": "2026-05-26",
+        "report_path": "qa/reports/2026-05-26T02-21-12-553Z/QA-REPORT.md",
+        "pw_tests": 76,
+        "passed": 76,
+        "failed": 0,
+        "skipped": 0,
+        "gate": 0,
+        "state": "GREEN",
+        "duration_s": 43.0,
+        "note": "Warm-backend re-run during Flow 27 implementation cycle. Dual-probe pre-warm cleared both Run 1's 4-test cold-start cluster (W3/W4/W5c/W6 API timeouts) AND Run 2's W5b MSG91 throttle. All 76 workflows passed. Supplementary run at 2026-05-26T02:31:48 confirms GREEN persists. Certifies that the deployed Flow 25 mobile bundle (OTA brand v75 / influencer v64 / follower v38) — MediaGallery + R2 upload SDK preserved verbatim + StatusPill +3 contract statuses — operates against a GREEN backend."
+      }
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "release_state": "deployed-pending-certification",
-    "release_state_note": "Per Flow 8 + 19 + 21 + 23 + 25 precedent. Mobile bundle IS LIVE on phones (OTA × 3 successful — v75/v64/v38 shared hash). Release-flip held because qa_all_green=false honestly reflects 2-run gate=1 STATE=FAILED with non-reproducible env-shaped failures. Flow 25 mobile redesign is functional and deployed; SDK boundary preserved verbatim.",
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"my pick is make previous one strong that is retroactively certify the 4 pending-cert flows now\"",
+    "released_at": "2026-05-26",
+    "release_state": "released-certified-2026-05-26",
+    "release_state_note": "Per Flow 8 + 19 + 21 + 23 precedent originally; certified 2026-05-26 via warm-backend re-run (qa/reports/2026-05-26T02-21-12-553Z, 76/76 GREEN gate 0). Both 2026-05-25 env-flake clusters confirmed environmental + now passing cleanly. Mobile bundle has been LIVE on phones since 2026-05-25T15:59; cert is governance-record alignment, not a re-deploy.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a — release.released=false; Rule 5 does not fire on this close-out commit",
+    "maestro_green": "n/a — cert commit is deploy-inert (lock.json-only). Rule 5 does not fire because no Packages/Mobile/src/** is touched. Original mobile deploy at e1deebb (2026-05-25) had Maestro waived per solo-dev practice.",
     "deploy": {
       "vercel_brand_web": { "commit": "e1deebb", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
       "vercel_admin_web": { "commit": "e1deebb", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
