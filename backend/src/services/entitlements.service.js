@@ -152,6 +152,52 @@ async function hasFeature(client, brandId, featureKey) {
 }
 
 /**
+ * Throw-on-miss variant of hasFeature — reusable boolean gate for
+ * controllers (Phase A12.4+). If the brand has the feature (or it's
+ * not yet enforced), returns silently. Otherwise throws an AppError
+ * with 'FEATURE_NOT_AVAILABLE' + structured upgrade_to payload.
+ *
+ * @param {object} client    pg client (or null for default pool)
+ * @param {string} brandId
+ * @param {string} featureKey
+ * @param {object} [opts]    { label? }  human-readable label for the error message
+ */
+async function requireFeature(client, brandId, featureKey, opts = {}) {
+  const AppError = require('../utils/AppError');
+  const c = client || db;
+  const allowed = await hasFeature(c, brandId, featureKey);
+  if (allowed) return;
+
+  // Resolve upgrade suggestion: tiers that DO grant this feature.
+  const { rows: upgrades } = await c.query(
+    `SELECT t.tier_key
+       FROM subscription_tiers t
+       JOIN tier_features tf ON tf.tier_id = t.id
+       JOIN features f       ON f.id       = tf.feature_id
+      WHERE t.active        = true
+        AND f.feature_key   = $1
+        AND tf.included     = true
+      ORDER BY t.sort_order`,
+    [featureKey]
+  );
+
+  const catalog = await _loadCatalog(c);
+  const f = catalog.byKey.get(featureKey);
+  const label = opts.label || (f && f.label) || featureKey;
+
+  throw new AppError(
+    'FEATURE_NOT_AVAILABLE',
+    `${label} is not available on your current plan. Upgrade to use it.`,
+    422,
+    featureKey,
+    {
+      feature_key: featureKey,
+      upgrade_to:  upgrades.map(r => r.tier_key),
+    }
+  );
+}
+
+/**
  * Quota lookup for a feature (returns the effective limit; -1 = unlimited).
  * For non-quota features returns null.
  */
@@ -194,6 +240,7 @@ module.exports = {
   getEntitlements,
   getEntitlementsPlain,
   hasFeature,
+  requireFeature,
   quotaFor,
   configFor,
   getActiveTierId,

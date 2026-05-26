@@ -1,0 +1,32 @@
+{
+  "feature": "billing-feature-bulk-outreach",
+  "area": "backend-controller+service+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'ok go with A12.4'. Third per-feature enforcement after A12.2 + A12.3.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with bulk_outreach gate wired into publishOpenGroup + reusable requireFeature helper in entitlements.service. M065 (is_enforced=true on bulk_outreach) runs separately on Supabase prod on explicit founder go.",
+  "fix": "Phase A12.4 — wire bulk_outreach boolean gate on publishOpenGroup. Reusable entitlementsService.requireFeature helper added (3 lines per future boolean gate). M065 flips is_enforced=true. Same defensive fail-open as A12.2/A12.3.",
+  "related": [
+    "features/billing-feature-discover-filter",
+    "features/billing-feature-search-advanced",
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "Reusable entitlementsService.requireFeature helper added + bulk_outreach gate wired into publishOpenGroup. M065 applied locally. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (57s). Ready to push.",
+  "regression_proof": "Backend boot smoke clean. M065 applied to local dev DB (sanity probe shows bulk_outreach.is_enforced=true). publishOpenGroup gate fires before all other logic; no partial-publish risk. requireFeature helper is additive — existing entitlements.service exports unchanged.",
+  "discipline": "Verify-twice: confirmed publishOpenGroup is the bulk-outreach action (materializes many campaign_influencer rows in one call). Reusable helper for future per-feature contracts.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with bulk_outreach gate + requireFeature helper). M065 prod migration on separate explicit founder go after push."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only contract.",
+  "mockup_locked_at": "2026-05-26"
+}

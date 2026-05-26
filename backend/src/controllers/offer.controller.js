@@ -813,6 +813,16 @@ const publishOpenGroup = asyncHandler(async (req, res) => {
   // Verify brand ownership
   const brand = await getBrandOrThrow(req.user.sub);
 
+  // Phase A12.4 — bulk_outreach feature gate. Publishing an open-group set
+  // materializes campaign_influencer rows for every matching influencer in
+  // one shot — the bulk-outreach action. Throws 422 FEATURE_NOT_AVAILABLE
+  // with upgrade_to payload if brand's plan doesn't include the feature.
+  // Fail-open if feature not yet enforced (entitlementsService default).
+  const entitlementsService = require('../services/entitlements.service');
+  await entitlementsService.requireFeature(db, brand.id, 'bulk_outreach', {
+    label: 'Bulk influencer outreach',
+  });
+
   // Verify campaign belongs to brand
   const { rows: campaignRows } = await db.query(
     `SELECT * FROM campaigns WHERE id = $1`,
