@@ -15,6 +15,15 @@ const storageService = require('./services/storage.service');
 
 const app = express();
 
+// ─── Reverse-proxy trust ─────────────────────────────────────────────────────
+// Render runs us behind a single reverse proxy. Trusting exactly one hop lets
+// express-rate-limit + req.ip correctly resolve to the real client IP from
+// X-Forwarded-For. Without this, express-rate-limit logs a ValidationError on
+// every authenticated request and rate limits collapse into one global bucket
+// (the proxy IP). NOT `true` (unlimited hops) — IP-spoofing risk.
+// Carved contract: features/backend-trust-proxy-render/.
+app.set('trust proxy', 1);
+
 // ─── Security headers ────────────────────────────────────────────────────────
 app.use(helmet());
 

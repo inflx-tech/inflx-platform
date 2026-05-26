@@ -1,0 +1,30 @@
+{
+  "feature": "backend-trust-proxy-render",
+  "area": "backend-app",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'first do 3 and then we go for yearly one' after the A6.5 / A13 end-to-end smoke succeeded.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render redeploys backend with one-line proxy-trust config). NO migration. NO schema change. NO brand-facing UI change. Internal IP extraction + rate-limit bucketing only.",
+  "fix": "Add app.set('trust proxy', 1) near the top of app.js. Tells Express to trust the single Render reverse-proxy hop, so X-Forwarded-For is honored and req.ip resolves to the real client IP. Stops the express-rate-limit ValidationError noise + makes rate limits correctly per-client-IP instead of globally bucketing through the proxy IP.",
+  "related": [
+    "features/backend-defect-webhook-signature-diagnostic",
+    "features/backend-defect-webhook-body-hang"
+  ],
+  "result": "app.set('trust proxy', 1) added near the top of app.js with documentation comment + carved-contract reference. Boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (39.5s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. One-line config change with no business-logic surface. May improve W3/W5/W5a/W5b QA stability post-deploy (each runner now gets its own rate-limit bucket on prod instead of all sharing Render's proxy IP).",
+  "discipline": "Verify-twice on Render's infra: documented single-proxy hop pattern. trust proxy = 1 (not true) chosen deliberately to avoid IP-spoofing risk on platforms that allow direct external connections.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Render redeploy of backend with trust proxy config). NO migration."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only one-line config.",
+  "mockup_locked_at": "2026-05-26"
+}
