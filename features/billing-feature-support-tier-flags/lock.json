@@ -1,0 +1,35 @@
+{
+  "feature": "billing-feature-support-tier-flags",
+  "area": "migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'go with A12.7'. Final per-feature catalog flip; informational-only (no runtime gate exists for either feature).",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (governance — prod DB write on features table) but functionally BEHAVIOUR-INERT (no backend code reads is_enforced for these features; the only user-visible change is the admin Features page badge flipping from enforced=no to enforced=yes on the two support-tier rows). M068 runs separately on Supabase prod on explicit founder go.",
+  "fix": "Phase A12.7 — flip is_enforced=true on dedicated_onboarding_call + phone_support_24x7 for catalog consistency on the admin Features page. No backend code change. No frontend code change.",
+  "related": [
+    "features/billing-feature-multi-branch-support",
+    "features/billing-feature-bulk-outreach",
+    "features/billing-feature-open-group-broadcast",
+    "features/billing-feature-discover-filter",
+    "features/billing-feature-search-advanced",
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "M068 written + applied locally. Sanity probe: both dedicated_onboarding_call + phone_support_24x7 rows show is_enforced=true, feature_type=boolean. Zero backend code change. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (52.9s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN. STATE=GREEN. gate=0. Zero backend code change → zero behaviour regression surface; the migration is a pure flag flip on two catalog rows that no runtime path reads. Defensive fail-open is moot since no gate consults these flags.",
+  "discipline": "Verify-twice: grep of entire repo for dedicated_onboarding_call + phone_support_24x7 returned 4 files — both contract specs (catalog enumeration), the M061 seed migration, and the seed CSV draft. No backend controller / entitlements helper / frontend page references either key as a runtime gate. Confirmed informational-only.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting governance category — prod DB write on features table; functionally behaviour-inert). M068 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A migration-only contract.",
+  "mockup_locked_at": "2026-05-26"
+}
