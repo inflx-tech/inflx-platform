@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-19-brand-mobile-store-sets",
   "spec_version": "1.0.0",
-  "status": "deployed-pending-certification",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"Lock as-is, proceed to implement\"",
   "approved_at": "2026-05-25",
@@ -12,7 +12,7 @@
   "mockup_locked_at": "2026-05-25",
   "notes": "Second flow of the mobile-brand bucket. Read-only foundation bundle: BrandStorePreviewScreen + BrandCampaignSetsListScreen. Both consume Flow 18's brandPalette export from theme/tokens.js. Behavior preserved 1:1. theme/tokens.js untouched. DEPLOYED on 2026-05-25 (OTA × 3 published) but RELEASE-FLIP HELD per Flow 8 precedent — QA hit recurring MSG91 OTP rate-limit flakes in B1b verify-otp invariants (3 fails on re-run 2, all on `expect(sent).toBe(true)` precondition; substantive verify-otp logic never even ran). Failure pattern matches closed-misdiagnosis carve backend-defect-auth-verify-otp-role-validation and has no causal link to mobile-only file changes. Founder smoke-test + later `pnpm qa` re-run (when MSG91 throttle clears) can flip released=true via a follow-up close-out commit.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "qa_evidence": {
       "run_at": "2026-05-25",
       "run_1": {
@@ -42,16 +42,28 @@
       "classification": "environmental — MSG91 OTP rate-limit on prod backend",
       "classification_detail": "All failures are on the `expect(sent).toBe(true)` PRECONDITION asserting that /auth/send-otp succeeded 3× with retry. The substantive verify-otp 422 VALIDATION_ERROR check never ran. Tests hit prod backend directly via BASE = QA_API_BASE || https://inflx-platform.onrender.com/v1. Same root cause as closed carve `backend-defect-auth-verify-otp-role-validation` (handoff §10 closed-misdiagnosis). Flow 19 mobile-only file changes (BrandStorePreviewScreen + BrandCampaignSetsListScreen) have zero causal path to MSG91 throttle behavior. Window A's Phase A10 (1004872 — feature catalog + tier_features + subscription_prices + admin tier editor) deployed minutes earlier could in principle affect backend code paths but the failing tests target external MSG91 dep, not internal validation logic.",
       "deploy_inert_proof": "No regression in the 72-75 passing tests (covers all brand-web + admin-web + API invariants except OTP-send-dependent ones). Web side proven clean.",
-      "founder_recert_path": "When MSG91 throttle clears (typically 30-60 min), re-run `pnpm qa` from a freshly-warmed backend. If GREEN, ship a follow-up `chore(release): Flow 19 — certify retroactively` commit that flips `qa_all_green=true` + `released=true` + adds the certifying run_3 evidence."
+      "founder_recert_path": "When MSG91 throttle clears (typically 30-60 min), re-run `pnpm qa` from a freshly-warmed backend. If GREEN, ship a follow-up `chore(release): Flow 19 — certify retroactively` commit that flips `qa_all_green=true` + `released=true` + adds the certifying run_3 evidence.",
+      "run_3_certify": {
+        "run_at": "2026-05-26",
+        "report_path": "qa/reports/2026-05-26T02-21-12-553Z/QA-REPORT.md",
+        "pw_tests": 76,
+        "passed": 76,
+        "failed": 0,
+        "skipped": 0,
+        "gate": 0,
+        "state": "GREEN",
+        "duration_s": 43.0,
+        "note": "Warm-backend re-run during Flow 27 implementation cycle (10 minutes before this cert commit). Dual-probe pre-warm cleared the MSG91/cold-start cluster from run_1+run_2. All 76 workflows passed including the W3/W5a/W5b/W5c suite that flaked in 2026-05-25 runs. Supplementary run at 2026-05-26T02:31:48 confirmed GREEN persists (75 passed, 1 honest skip on W2 per test's own design when MSG91 throttle blocks 3-retry follower auth — gate 0, STATE=GREEN). Certifies that the deployed Flow 19 mobile bundle (OTA brand v69 / influencer v58 / follower v32) is operating against a GREEN backend."
+      }
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "release_state": "deployed-pending-certification",
-    "release_state_note": "Per Flow 8 precedent (handoff §13.1). Mobile bundle IS LIVE on phones (OTA × 3 published successfully). Release-flip held because qa_all_green=false honestly reflects gate=1 STATE=FAILED. The QA failure is environmental MSG91 rate-limit on tests outside Flow 19's scope; the mobile redesign itself is deployed and functional. Founder smoke-test on device + later re-run of `pnpm qa` (when MSG91 clears) certifies.",
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"my pick is make previous one strong that is retroactively certify the 4 pending-cert flows now\"",
+    "released_at": "2026-05-26",
+    "release_state": "released-certified-2026-05-26",
+    "release_state_note": "Per Flow 8 precedent originally; certified 2026-05-26 via warm-backend re-run (qa/reports/2026-05-26T02-21-12-553Z, 76/76 GREEN gate 0). Original 2026-05-25 pending-cert classification (environmental MSG91 throttle) confirmed accurate: same backend code paths now pass with no Flow 19 mobile-file changes between then and now. Mobile bundle has been LIVE on phones since 2026-05-25T12:18; cert is governance-record alignment, not a re-deploy.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a — release.released=false; Rule 5 does not fire on this close-out commit (deploy-inert lock.json-only changeset). When released=true is flipped retroactively, GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' will be required if a Mobile file is touched in that follow-up commit; alternatively the certify-only commit can stay lock.json-only and avoid Rule 5 entirely.",
+    "maestro_green": "n/a — cert commit is deploy-inert (lock.json-only). Rule 5 does not fire because no Packages/Mobile/src/** is touched in this commit. Original mobile deploy at 0a4bd6d (2026-05-25) had Maestro waived per solo-dev practice.",
     "deploy": {
       "vercel_brand_web": {
         "commit": "0a4bd6d",
