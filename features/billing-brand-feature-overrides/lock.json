@@ -25,10 +25,18 @@
   "discipline": "Verify-twice: confirmed entitlements.service shape + 60s catalog cache; admin brand detail page exists at Packages/brand-web/app/admin/brands/[id]/page.js (137 lines, replaced with 311); tier editor Section C at Packages/brand-web/app/admin/pricing/tiers/[tier_key]/page.js is the reference pattern; adminApi already has listFeatures/upsertTierFeatures (A14 adds the brand-scoped equivalents). Found via Grep that there are two admin surfaces (brand-web/app/admin AND admin-web/app/dashboard); brand-web is the active one for pricing/tiers/features so A14 lands there.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting; Render redeploys backend with new endpoints + service patch, Vercel redeploys brand-web with the new admin card). M069 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'run m069' after A14 push (0acc4e7) landed on origin/main.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "0acc4e7",
+      "render_redeploy": "auto on push (Render watches origin/main)",
+      "vercel_redeploy": "auto on push (brand-web admin UI)",
+      "prod_migrations": {
+        "M069_brand_feature_overrides": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: brand_feature_overrides table created with 9 columns (brand_id, feature_id, included, quota_value, config, notes, created_at, updated_at, updated_by) + PK(brand_id, feature_id) + idx_brand_overrides_brand index + updated_at trigger. Empty table = identical entitlements behaviour to pre-A14. Admin Feature Overrides card on /admin/brands/[id] is now fully functional."
+      },
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run (.env.bak removed; DATABASE_URL verified)."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — admin-UI-only mockup attestation: the new card replicates the existing tier editor Section C primitives 1:1 (per-feature row with included checkbox / quota number / config inputs) with a 'Use tier default' wrapper. No new design tokens introduced. Per the existing admin-UI pattern, mockup-lock is N/A for this contract.",
