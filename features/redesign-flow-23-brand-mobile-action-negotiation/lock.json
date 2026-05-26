@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-23-brand-mobile-action-negotiation",
   "spec_version": "1.0.0",
-  "status": "deployed-pending-certification",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-25 chat \"pls proceed to flow 23 implementation with clear testing\"",
   "approved_at": "2026-05-25",
@@ -12,7 +12,7 @@
   "mockup_locked_at": "2026-05-25",
   "notes": "Sixth flow of the mobile-brand bucket. ActionRequired (5-tab lazy-load inbox + bulk-sign + per-row retry) + Negotiation (chat thread + goal-aware action panel). StatusPill canonical map extended additively with 5 negotiation statuses. Drop external components/StatusBadge import → use canonical <StatusPill>. theme/tokens.js UNTOUCHED. DEPLOYED 2026-05-25 (OTA × 3 published) but release-flip held — QA hit 2 env-flake clusters across 2 runs: (a) cold-backend hydration timeout on Settings + meals tests on Run 1, (b) MSG91 OTP throttle on B1/B1b W3/W5a/W5b on Run 2. Run 1's failures DID NOT REPRODUCE on Run 2 — confirming env, not regression. Flow 23 touched zero web/backend/qa files. Founder smoke-test + later re-run certifies.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "qa_evidence": {
       "run_at": "2026-05-25",
       "warmed_up_first": true,
@@ -50,16 +50,28 @@
       "classification": "environmental — Render cold-start hydration timeouts (Run 1) + MSG91 OTP rate-limit (Run 2)",
       "classification_detail": "Pre-warmed backend before Run 1 with manifest probe — probe took 56.6s to wake (Render free-tier was cold). Run 1's hydration timeouts on Settings + meals are consistent with the cold-warm transition still affecting Next.js SSR + DB connection pool startup. Run 2 (3 min later) saw those tests pass cleanly — backend now hot. Run 2's MSG91 failures are the recurring closed-misdiagnosis carve pattern (backend-defect-auth-verify-otp-role-validation, handoff §10).",
       "deploy_inert_proof": "Flow 23 touched 5 files: 1 component file extension (StatusPill +5 entries, additive only) + 2 mobile screen rewrites + 2 new contract docs (02-workflow, 03-expected-outputs). Zero web files, zero backend files, zero qa/ files. Test failures target prod backend's brand-web pages + MSG91 — both external dependencies of mobile-only changes.",
-      "founder_recert_path": "When Render fully warm + MSG91 throttle clears, re-run pnpm qa. If GREEN, ship a follow-up `chore(release): Flow 23 — certify retroactively` lock.json-only commit. Alternatively, founder device smoke-test on ActionRequired + Negotiation screens certifies the mobile redesign separately."
+      "founder_recert_path": "When Render fully warm + MSG91 throttle clears, re-run pnpm qa. If GREEN, ship a follow-up `chore(release): Flow 23 — certify retroactively` lock.json-only commit. Alternatively, founder device smoke-test on ActionRequired + Negotiation screens certifies the mobile redesign separately.",
+      "run_3_certify": {
+        "run_at": "2026-05-26",
+        "report_path": "qa/reports/2026-05-26T02-21-12-553Z/QA-REPORT.md",
+        "pw_tests": 76,
+        "passed": 76,
+        "failed": 0,
+        "skipped": 0,
+        "gate": 0,
+        "state": "GREEN",
+        "duration_s": 43.0,
+        "note": "Warm-backend re-run during Flow 27 implementation cycle. Dual-probe pre-warm cleared both Run 1's cold-start hydration cluster (5 tests on meals + Settings pages) AND Run 2's MSG91 throttle cluster (W3/W5a/W5b). All those tests now passing in the cert anchor run. All 76 workflows passed. Supplementary run at 2026-05-26T02:31:48 confirms GREEN persists. Certifies that the deployed Flow 23 mobile bundle (OTA brand v73 / influencer v62 / follower v36) — ActionRequired + Negotiation + StatusPill +5 negotiation entries — operates against a GREEN backend."
+      }
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "release_state": "deployed-pending-certification",
-    "release_state_note": "Per Flow 8 + 19 + 21 precedent. Mobile bundle IS LIVE on phones (OTA × 3 successful — v73/v62/v36 shared hash). Release-flip held because qa_all_green=false honestly reflects 2-run gate=1 STATE=FAILED outcomes. Both failure clusters classified environmental + non-reproducible across runs. Flow 23 redesign is functional and deployed.",
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"my pick is make previous one strong that is retroactively certify the 4 pending-cert flows now\"",
+    "released_at": "2026-05-26",
+    "release_state": "released-certified-2026-05-26",
+    "release_state_note": "Per Flow 8 + 19 + 21 precedent originally; certified 2026-05-26 via warm-backend re-run (qa/reports/2026-05-26T02-21-12-553Z, 76/76 GREEN gate 0). Both 2026-05-25 env-flake clusters confirmed environmental: Run 1's hydration timeouts and Run 2's MSG91 throttle BOTH now pass cleanly against the same backend code. Mobile bundle has been LIVE on phones since 2026-05-25T14:28; cert is governance-record alignment, not a re-deploy.",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a — release.released=false; Rule 5 does not fire on this close-out commit",
+    "maestro_green": "n/a — cert commit is deploy-inert (lock.json-only). Rule 5 does not fire because no Packages/Mobile/src/** is touched. Original mobile deploy at b495d7b (2026-05-25) had Maestro waived per solo-dev practice.",
     "deploy": {
       "vercel_brand_web": { "commit": "b495d7b", "note": "auto-redeploy on push; no-op (no Packages/brand-web/** changes)", "trigger": "git push origin main" },
       "vercel_admin_web": { "commit": "b495d7b", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
