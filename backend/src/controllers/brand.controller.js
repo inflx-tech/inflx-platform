@@ -4,6 +4,7 @@ const fs   = require('fs');
 const path = require('path');
 const db   = require('../config/db');
 const notificationService = require('../services/notification.service');
+const entitlementsService = require('../services/entitlements.service');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -182,6 +183,33 @@ const locationService = require('../services/location.service');
 const updateMe = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found. Please register first.', 404);
+
+  // Phase A12.6 — multi_branch_support gate.
+  // brands.listing_data.branches is a jsonb array; branches[0] is the
+  // Main Branch (auto-named by the UI), branches[1..] are additional
+  // branches added via the profile editor's "+ Add Branch" button.
+  // Free/Growth tiers may only save 1 branch (Main); Pro/Enterprise
+  // unlimited.
+  //
+  // Grandfathering: the gate uses count-is-increasing logic — it fires
+  // only when the patch is ADDING branches beyond the existing count.
+  // Existing brands with multi-branch data saved (pre-M067) can still
+  // edit other profile fields without being locked out, because the
+  // frontend always re-sends the full listing_data on every save.
+  // Reducing branch count is never gated.
+  //
+  // Defensive fail-open via requireFeature/is_enforced (pre-M067 the
+  // gate is a no-op).
+  const incomingBranches = req.body.listing_data?.branches;
+  if (Array.isArray(incomingBranches) && incomingBranches.length > 1) {
+    const existing      = brand.listing_data?.branches;
+    const existingCount = Array.isArray(existing) ? existing.length : 0;
+    if (incomingBranches.length > existingCount) {
+      await entitlementsService.requireFeature(db, brand.id, 'multi_branch_support', {
+        label: 'Multi-branch support',
+      });
+    }
+  }
 
   // Whitelist of updatable fields
   const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'latitude', 'longitude', 'listing_data', 'cover_image_url'];

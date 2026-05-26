@@ -1,0 +1,34 @@
+{
+  "feature": "billing-feature-multi-branch-support",
+  "area": "backend-controller+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'ok pls' after verify-twice report on the brand-profile branches array implementation. Fifth per-feature enforcement.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with multi_branch_support gate on PATCH /v1/brands/me (brand.controller.updateMe). M067 (is_enforced=true on multi_branch_support) runs separately on Supabase prod on explicit founder go.",
+  "fix": "Phase A12.6 — wire multi_branch_support boolean gate on brand.controller.updateMe. Gate uses count-is-increasing logic against existing brand.listing_data.branches to grandfather pre-existing Free/Growth brands with multi-branch data. Fires requireFeature(multi_branch_support) only when the incoming branches array has > 1 entries AND length > existing length.",
+  "related": [
+    "features/billing-feature-bulk-outreach",
+    "features/billing-feature-open-group-broadcast",
+    "features/billing-feature-discover-filter",
+    "features/billing-feature-search-advanced",
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices"
+  ],
+  "result": "multi_branch_support gate wired on brand.controller.updateMe with count-is-increasing logic. entitlementsService added to brand.controller imports. M067 applied locally (sanity probe: multi_branch_support.is_enforced=true, feature_type=boolean). Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (49.7s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN. STATE=GREEN. gate=0. Defensive fail-open verified: gate honours is_enforced (requireFeature returns silently when multi_branch_support.is_enforced=false). Grandfathered behaviour preserved: gate fires only on count-is-increasing — existing Free/Growth brands with multi-branch data saved pre-M067 can still edit non-branch fields without the patch being blocked (length === existing → no gate; length < existing → no gate). Gate runs before SQL UPDATE → no partial-save risk on block.",
+  "discipline": "Verify-twice: confirmed via code read that branches are NOT a separate table or endpoint — they're a jsonb array inside brands.listing_data.branches, persisted via the existing PATCH /v1/brands/me (brand.controller.updateMe). Both brand-web Profile → Branches & Outlets card and brand-mobile BrandProfileScreen write to this shape. No dedicated /branches route exists. The handoff's expected '/brands/me/branches endpoint' does not exist.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with multi_branch_support gate on brand.controller.updateMe). M067 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only contract (per meals-schema precedent for non-UI features).",
+  "mockup_locked_at": "2026-05-26"
+}
