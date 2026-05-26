@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 27 · brand-mobile Contract — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+/* ─── Phone shell ──────────────────────────────────────────────── */
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:744px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* ─── Topbar (ink) ─────────────────────────────────────────────── */
+.topbar{background:var(--ink);color:var(--white);padding:14px 18px 16px;flex-shrink:0;position:relative}
+.topbar::after{content:'';position:absolute;left:18px;bottom:6px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.topbar .back{font-family:'JetBrains Mono';font-size:10.5px;color:rgba(255,255,255,.65);font-weight:700;margin-bottom:6px}
+.topbar .head-row{display:flex;align-items:flex-start;gap:12px}
+.topbar .head-text{flex:1}
+.topbar h1{font-family:'Outfit';font-size:20px;font-weight:800;color:var(--white);letter-spacing:-0.2px}
+.topbar .sub{font-family:'Plus Jakarta Sans';font-size:11px;color:rgba(255,255,255,.7);margin-top:3px}
+
+/* ─── StatusPill (canonical) ───────────────────────────────────── */
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.pill.draft       {background:var(--bg2);          color:var(--muted-2)}
+.pill.your-turn   {background:var(--yellow-pale);  color:var(--yellow-text)}
+.pill.awaiting    {background:var(--yellow-pale);  color:var(--yellow-text)}
+.pill.active      {background:var(--success-pale); color:var(--success-text)}
+.pill.proposed    {background:var(--yellow-pale);  color:var(--yellow-text)}
+.pill.confirmed   {background:var(--success-pale); color:var(--success-text)}
+.pill.in-progress {background:var(--info-pale);    color:var(--info)}
+.pill.completed   {background:var(--success-pale); color:var(--success-text)}
+.pill.cancelled   {background:var(--danger-pale);  color:var(--danger-text)}
+
+/* In-topbar pill is on dark background; use translucent-white wrapper */
+.topbar .pill-wrap{background:rgba(255,255,255,.92);padding:4px 5px;border-radius:999px}
+
+/* ─── Body scroll ──────────────────────────────────────────────── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding-bottom:30px}
+
+/* ─── Banner (draft / re-approve / waiting / active) ───────────── */
+.info-banner{margin:14px;padding:13px 14px;border-radius:12px;border:1px solid}
+.info-banner.draft  {background:var(--yellow-pale); border-color:#F0DA88}
+.info-banner.waiting{background:var(--yellow-pale); border-color:#F0DA88}
+.info-banner.active {background:var(--success-pale);border-color:#A8E6CC}
+.info-banner-ttl{font-family:'Outfit';font-size:13px;font-weight:800;margin-bottom:5px}
+.info-banner.draft   .info-banner-ttl,
+.info-banner.waiting .info-banner-ttl{color:var(--yellow-text)}
+.info-banner.active  .info-banner-ttl{color:var(--success-text)}
+.info-banner-body{font-family:'Plus Jakarta Sans';font-size:11.5px;line-height:1.55;color:var(--ink-2)}
+
+/* ─── Card ─────────────────────────────────────────────────────── */
+.card{margin:12px 14px 0;padding:14px 14px 12px;background:var(--white);border-radius:14px;border:1px solid var(--border)}
+.card-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.3px;margin-bottom:9px}
+.card-ttl-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.card-ttl-row .card-ttl{margin-bottom:0}
+.card-ttl-row a{font-family:'JetBrains Mono';font-size:10px;color:var(--ink);font-weight:700;border-bottom:1px dashed var(--ink)}
+.help{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+
+/* Rows */
+.kv{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.kv-k{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted)}
+.kv-v{font-family:'JetBrains Mono';font-size:12.5px;font-weight:800;color:var(--ink)}
+.kv.bonus  {background:var(--success-pale);border-radius:8px;padding:7px 9px;margin-top:4px}
+.kv.bonus .kv-k{color:var(--success-text);font-weight:700;font-family:'JetBrains Mono';font-size:11px}
+.kv.bonus .kv-v{color:var(--success-text)}
+.kv.total  {border-top:1px solid var(--border);padding-top:8px;margin-top:6px}
+.kv.total .kv-k{color:var(--ink);font-weight:800;font-family:'Outfit';font-size:12px}
+.kv.total .kv-v{color:var(--ink);font-size:14px;font-weight:900}
+
+/* Textarea / input look */
+.input{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink-2);min-height:36px;display:flex;align-items:center}
+.input.area{align-items:flex-start;min-height:130px;line-height:1.6}
+.input.area .ph{color:var(--muted-3)}
+.input.error{border-color:var(--danger);background:#FFF8F6}
+
+/* Clause toggles */
+.clause{border:1px solid var(--border);border-radius:11px;padding:10px;margin-bottom:8px}
+.clause.on{border-color:var(--success);background:var(--success-pale)}
+.clause-row{display:flex;gap:9px;align-items:flex-start}
+.check{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--muted-4);background:var(--white);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.clause.on .check{background:var(--success);border-color:var(--success);color:var(--white);font-family:'JetBrains Mono';font-size:13px;font-weight:800}
+.clause-mid{flex:1}
+.clause-lbl{font-family:'Outfit';font-size:12px;font-weight:800;color:var(--ink);margin-bottom:2px}
+.clause-desc{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--muted);line-height:1.45}
+.opt-row{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0 0 29px}
+.opt-chip{padding:4px 9px;border-radius:999px;background:var(--white);border:1px solid var(--border);font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;color:var(--muted-2)}
+.opt-chip.on{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+
+/* Bonus row */
+.bonus-row{display:flex;align-items:center;border:2px solid var(--ink);border-radius:11px;background:var(--white);margin-top:6px}
+.bonus-row.over{border-color:var(--danger)}
+.bonus-row .rupee{padding:0 11px;font-family:'JetBrains Mono';font-size:17px;font-weight:800;color:var(--muted)}
+.bonus-row .bonus-field{flex:1;padding:11px 0;font-family:'JetBrains Mono';font-size:17px;font-weight:800;color:var(--ink)}
+
+/* Wallet breakdown box */
+.wallet-box{margin-top:9px;padding:11px;background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+.wallet-box.over{background:var(--danger-pale);border-color:#F2BFB4}
+.w-row{display:flex;justify-content:space-between;padding:2px 0;font-family:'JetBrains Mono';font-size:10.5px}
+.w-row .lbl{color:var(--muted)}
+.w-row .val{color:var(--ink)}
+.w-row.strong .lbl,.w-row.strong .val{font-weight:800;color:var(--ink)}
+.w-row.divider{border-top:1px solid var(--border);margin-top:4px;padding-top:6px}
+.wallet-short{margin-top:7px;padding-top:7px;border-top:1px solid rgba(232,64,26,.25);font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--danger-text);font-weight:700;line-height:1.5}
+
+/* Production mode picker (mono-bracket icons) */
+.mode-row{display:flex;gap:7px;margin-top:6px}
+.mode-card{flex:1;padding:11px 6px;background:var(--white);border:2px solid var(--border);border-radius:11px;text-align:center}
+.mode-card.on{border-color:var(--ink);background:var(--yellow-pale)}
+.mode-card .mode-ico{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);letter-spacing:.5px;background:var(--bg2);padding:3px 6px;border-radius:5px;display:inline-block}
+.mode-card.on .mode-ico{background:var(--ink);color:var(--yellow)}
+.mode-card .mode-lbl{font-family:'Outfit';font-size:11px;font-weight:800;color:var(--muted-2);margin-top:6px}
+.mode-card.on .mode-lbl{color:var(--ink)}
+
+/* Read-only clause (post-edit) */
+.clause-ro{padding:7px 0;border-bottom:1px solid var(--border-soft)}
+.clause-ro:last-child{border-bottom:none}
+
+/* Signatures */
+.sig-row{display:flex;gap:8px}
+.sig-box{flex:1;padding:10px;border-radius:10px;background:var(--bg2);border:1px solid var(--border)}
+.sig-box.signed{background:var(--success-pale);border-color:#A8E6CC}
+.sig-lbl{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.sig-box.signed .sig-lbl{color:var(--success-text)}
+.sig-check{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--success-text);margin-bottom:2px}
+.sig-name{font-family:'Outfit';font-size:11.5px;font-weight:800;color:var(--ink)}
+.sig-date{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px}
+.sig-pending{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted-2);font-style:italic}
+
+/* Primary action button */
+.cta{margin:14px;padding:14px;background:var(--ink);color:var(--yellow);border-radius:12px;text-align:center;font-family:'Outfit';font-size:14px;font-weight:900;letter-spacing:.2px}
+.cta.disabled{opacity:.5}
+.cta.alt{background:var(--yellow);color:var(--ink)}
+.cta.ghost{background:var(--white);color:var(--ink);border:1.5px solid var(--ink);margin-top:8px}
+.cta-pdf{margin:12px 14px 0;padding:11px;border-radius:11px;background:var(--white);color:var(--ink);text-align:center;font-family:'JetBrains Mono';font-size:11.5px;font-weight:800;border:1.5px solid var(--ink);letter-spacing:.3px}
+
+/* ─── Production panel ─────────────────────────────────────────── */
+.prod-panel{margin:14px;padding:13px;border-radius:14px;background:var(--yellow-50);border:1px solid var(--border)}
+.prod-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.prod-ttl{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.3px}
+.prod-ttl .ico{font-family:'JetBrains Mono';font-size:10px;font-weight:800;background:var(--ink);color:var(--yellow);padding:2px 6px;border-radius:4px;margin-right:5px;letter-spacing:.4px}
+
+.slot-card{padding:11px 12px;background:var(--white);border:1.5px solid var(--success);border-radius:10px;margin:6px 0}
+.slot-card .slot-lbl{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.slot-card .slot-time{font-family:'Outfit';font-size:15px;font-weight:800;color:var(--ink);margin-bottom:3px}
+.slot-card .slot-meta{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted)}
+
+.addr-box{padding:10px;background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:9px}
+.addr-lbl{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.addr-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink)}
+
+.small-note{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-align:center;margin-top:5px}
+.date-hint{font-family:'JetBrains Mono';font-size:9.5px;color:var(--yellow-text);font-weight:700;text-align:center;margin:5px 0;background:var(--yellow-pale);padding:5px 8px;border-radius:6px}
+
+.link-btn{text-align:center;padding:7px 0;margin-top:6px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:700;color:var(--muted);text-decoration:underline}
+
+.flip-banner{background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:10px;padding:10px;margin-bottom:9px}
+.flip-banner-txt{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--ink-2);line-height:1.45;margin-bottom:7px}
+.flip-btn{display:inline-block;padding:5px 11px;background:var(--ink);color:var(--yellow);border-radius:7px;font-family:'JetBrains Mono';font-size:10px;font-weight:800}
+
+.field-lbl{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:8px;margin-bottom:4px}
+.input-prod{background:var(--white);border:1px solid var(--border);border-radius:9px;padding:9px 10px;font-family:'JetBrains Mono';font-size:11px;color:var(--ink);margin-bottom:5px;min-height:36px;display:flex;align-items:center}
+.input-prod .ph{color:var(--muted-3)}
+.win-row{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+.win-chip{padding:5px 10px;background:var(--white);border:1px solid var(--border);border-radius:14px;font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--muted-2)}
+.win-chip.on{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+
+.prod-prim{margin-top:10px;padding:11px;background:var(--ink);color:var(--yellow);border-radius:10px;text-align:center;font-family:'Outfit';font-size:12px;font-weight:800;letter-spacing:.2px}
+.prod-alt{margin-top:7px;padding:11px;background:var(--success);color:var(--white);border-radius:10px;text-align:center;font-family:'Outfit';font-size:12px;font-weight:800}
+.prod-sec{margin-top:7px;padding:10px;background:var(--white);color:var(--ink);border:1.5px solid var(--ink);border-radius:10px;text-align:center;font-family:'Outfit';font-size:11.5px;font-weight:700}
+
+.status-line{font-family:'JetBrains Mono';font-size:10.5px;color:var(--ink);padding:3px 0}
+
+.log-box{margin-top:10px;padding-top:9px;border-top:1px solid var(--border)}
+.log-ttl{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.log-row{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted);margin-bottom:2px;line-height:1.4}
+.log-row .ts{color:var(--muted-3)}
+.log-row .actor{color:var(--ink);font-weight:700}
+
+/* Remote-mode notice */
+.remote-card{margin:14px;padding:18px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:14px;text-align:center}
+.remote-ico{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink);background:var(--yellow);padding:4px 10px;border-radius:6px;display:inline-block;margin-bottom:8px;letter-spacing:.4px}
+.remote-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.remote-body{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5}
+
+/* Setup-production picker (no event yet) */
+.setup-card{margin:14px;padding:14px;background:var(--yellow-50);border:1px solid var(--border);border-radius:14px}
+.setup-ttl{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink);margin-bottom:3px}
+.setup-help{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-bottom:9px;line-height:1.45}
+
+/* ─── Side panel ───────────────────────────────────────────────── */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+
+.pill-table{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.pill-row{display:flex;align-items:center;gap:8px;padding:5px 7px;background:var(--bg);border-radius:7px}
+.pill-row code{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);flex:1}
+.pill-row .pill{font-size:9px;padding:2px 7px}
+
+.sig-demo{display:flex;gap:8px;margin-top:6px}
+.sig-demo .sig-box{flex:1;font-size:10px}
+
+.mode-demo{display:flex;gap:6px;margin-top:6px}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 27 · brand-mobile Contract — wave2 mockup</h1>
+  <div class="sub">
+    Largest screen in the bucket (<b>1341 LOC</b>) and the finale of mobile-brand. Drives a 4-state contract lifecycle (<b>draft → pending_influencer → pending_brand → active</b>) plus a nested <b>BrandProductionPanel</b> running a 3-mode × 6-state visit/shipment/remote state-machine. <b>Zero SDK boundaries</b> — pure React Native primitives, signatures are display-only (backend handles signing event), PDF is a separate screen, dates use a local <code>DateTimeChipPicker</code>. Restyle scope: <b>brandPalette + fonts + StatusPill (extend canonical map by 3 entries: proposed/confirmed/in_progress)</b>. Production-mode icons swap from emoji to mono-bracket <code>[VISIT] [SHIP] [REMOTE]</code> per bucket convention. <b>All API shapes, all state-machine branches, all wallet-lock math preserved byte-exact.</b>
+  </div>
+</div>
+
+<!-- ────── Row 1 — Draft editor + Active+Visit-Slot3 ────── -->
+<div class="row">
+
+  <!-- PHONE 1 · DRAFT (editor) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="topbar">
+        <div class="back">‹ Back</div>
+        <div class="head-row">
+          <div class="head-text">
+            <h1>Contract</h1>
+            <div class="sub">Riya Sharma · Diwali campaign</div>
+          </div>
+          <div class="pill-wrap"><span class="pill draft">Draft</span></div>
+        </div>
+      </div>
+
+      <div class="body">
+        <div class="info-banner draft">
+          <div class="info-banner-ttl">Draft Contract — Your Review</div>
+          <div class="info-banner-body">
+            The influencer accepted your offer. Confirm the content requirements below, optionally add clauses or a bonus, then tap <b>Approve &amp; Send</b> to forward it for signing.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Terms (auto-filled from campaign)</div>
+          <div class="kv"><span class="kv-k">Base Fee</span><span class="kv-v">₹12,000</span></div>
+          <div class="kv"><span class="kv-k">Posting Date</span><span class="kv-v">8 Nov 2026</span></div>
+          <div class="kv"><span class="kv-k">Revision Limit</span><span class="kv-v">2 rounds</span></div>
+          <div class="kv bonus"><span class="kv-k">+ Brand Bonus</span><span class="kv-v">₹2,000</span></div>
+          <div class="kv total"><span class="kv-k">Total Influencer Fee</span><span class="kv-v">₹14,000</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl-row">
+            <div class="card-ttl">Content Requirements</div>
+            <a>Restore default</a>
+          </div>
+          <div class="help">Pre-filled from the campaign brief + deliverables. Edit freely — this is what the influencer sees in the signed PDF.</div>
+          <div class="input area">
+            1× Reel (30–60s)<br/>1× Static post<br/>3× Stories<br/><br/>Must tag @diwaliglow and use #DiwaliGlow2026. Use product hero shot in first 3s.
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Optional Clauses</div>
+          <div class="help">Tick any clause that should apply to this contract. The influencer will see them highlighted before signing.</div>
+
+          <div class="clause on">
+            <div class="clause-row">
+              <div class="check">✓</div>
+              <div class="clause-mid">
+                <div class="clause-lbl">Commercial Usage Rights</div>
+                <div class="clause-desc">Brand may repurpose your content in paid ads / social / offline marketing for the chosen number of days after content goes live.</div>
+              </div>
+            </div>
+            <div class="opt-row">
+              <div class="opt-chip">30 days after live</div>
+              <div class="opt-chip on">60 days after live</div>
+              <div class="opt-chip">90 days after live</div>
+              <div class="opt-chip">180 days after live</div>
+              <div class="opt-chip">365 days after live</div>
+            </div>
+          </div>
+
+          <div class="clause">
+            <div class="clause-row">
+              <div class="check"></div>
+              <div class="clause-mid">
+                <div class="clause-lbl">Category Exclusivity</div>
+                <div class="clause-desc">Influencer agrees not to promote a competing brand in the same category for the chosen number of days from contract signing.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="clause">
+            <div class="clause-row">
+              <div class="check"></div>
+              <div class="clause-mid">
+                <div class="clause-lbl">Content Ownership Transfer</div>
+                <div class="clause-desc">Final approved content (raw + edited) becomes the brand's property. Influencer retains right to keep it on their own profile.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-ttl" style="margin-top:14px">Additional Notes (optional)</div>
+          <div class="input area" style="min-height:60px">
+            <span class="ph">e.g. must wear blue shirt, tag our outlet, etc.</span>
+          </div>
+
+          <div class="card-ttl" style="margin-top:14px">Bonus (optional)</div>
+          <div class="help">Add a bonus on top of the agreed fee. Split across 3 tranches just like the base fee.</div>
+          <div class="bonus-row">
+            <span class="rupee">₹</span><span class="bonus-field">2,000</span>
+          </div>
+
+          <div class="wallet-box">
+            <div class="w-row"><span class="lbl">Base fee</span><span class="val">₹12,000</span></div>
+            <div class="w-row"><span class="lbl">+ Bonus</span><span class="val">₹2,000</span></div>
+            <div class="w-row strong divider"><span class="lbl">Influencer total</span><span class="val">₹14,000</span></div>
+            <div class="w-row"><span class="lbl">+ 8% platform fee</span><span class="val">₹1,120</span></div>
+            <div class="w-row strong divider"><span class="lbl">Wallet escrow at signing</span><span class="val">₹15,120</span></div>
+            <div class="w-row"><span class="lbl">Wallet balance</span><span class="val">₹48,500</span></div>
+          </div>
+
+          <div class="card-ttl" style="margin-top:14px">How will the content be produced?</div>
+          <div class="mode-row">
+            <div class="mode-card"><span class="mode-ico">[VISIT]</span><div class="mode-lbl">Visit</div></div>
+            <div class="mode-card"><span class="mode-ico">[SHIP]</span><div class="mode-lbl">Shipment</div></div>
+            <div class="mode-card on"><span class="mode-ico">[REMOTE]</span><div class="mode-lbl">Remote</div></div>
+          </div>
+          <div class="help" style="margin-top:8px;margin-bottom:0">No physical exchange. Influencer creates content from your brief.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Deliverables (3)</div>
+          <div class="kv"><span class="kv-k">• reel</span><span class="kv-v">pending</span></div>
+          <div class="kv"><span class="kv-k">• static post</span><span class="kv-v">pending</span></div>
+          <div class="kv"><span class="kv-k">• stories</span><span class="kv-v">pending</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Signatures</div>
+          <div class="sig-row">
+            <div class="sig-box">
+              <div class="sig-lbl">Influencer</div>
+              <div class="sig-pending">Not yet signed</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-lbl">Brand</div>
+              <div class="sig-pending">Not yet signed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cta">APPROVE &amp; SEND TO INFLUENCER</div>
+        <div class="cta-pdf">VIEW CONTRACT PDF</div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · Draft (editor)</b><br/>contract.status = 'draft' · isEditing=true · wallet OK · bonus filled · Commercial Rights toggled at 60d · Remote mode</div>
+  </div>
+
+  <!-- PHONE 2 · ACTIVE + visit STATE 3 (influencer proposed) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="topbar">
+        <div class="back">‹ Back</div>
+        <div class="head-row">
+          <div class="head-text">
+            <h1>Contract</h1>
+            <div class="sub">Riya Sharma · Diwali campaign</div>
+          </div>
+          <div class="pill-wrap"><span class="pill active">Active</span></div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Terms (auto-filled from campaign)</div>
+          <div class="kv"><span class="kv-k">Base Fee</span><span class="kv-v">₹12,000</span></div>
+          <div class="kv"><span class="kv-k">Posting Date</span><span class="kv-v">8 Nov 2026</span></div>
+          <div class="kv"><span class="kv-k">Revision Limit</span><span class="kv-v">2 rounds</span></div>
+          <div class="kv bonus"><span class="kv-k">+ Brand Bonus</span><span class="kv-v">₹2,000</span></div>
+          <div class="kv total"><span class="kv-k">Total Influencer Fee</span><span class="kv-v">₹14,000</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Special Clauses Attached</div>
+          <div class="clause-ro">
+            <div class="clause-lbl">• Commercial Usage Rights (60 days after live)</div>
+            <div class="clause-desc">Brand may repurpose your content in paid ads / social / offline marketing for the chosen number of days after content goes live.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Signatures</div>
+          <div class="sig-row">
+            <div class="sig-box signed">
+              <div class="sig-lbl">Influencer</div>
+              <div class="sig-check">✓ Signed</div>
+              <div class="sig-name">Riya Sharma</div>
+              <div class="sig-date">3 Nov 2026, 14:22</div>
+            </div>
+            <div class="sig-box signed">
+              <div class="sig-lbl">Brand</div>
+              <div class="sig-check">✓ Signed</div>
+              <div class="sig-date">3 Nov 2026, 16:48</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-banner active">
+          <div class="info-banner-ttl">✓ Contract Active</div>
+          <div class="info-banner-body">Both parties have signed. Tranche 1 has been released. The influencer will now create and submit content for review.</div>
+        </div>
+
+        <!-- Production Panel · visit STATE 3 (influencer proposed) -->
+        <div class="prod-panel">
+          <div class="prod-head">
+            <div class="prod-ttl"><span class="ico">VISIT</span>Visit Coordination</div>
+            <span class="pill proposed">Proposed</span>
+          </div>
+
+          <div class="slot-card">
+            <div class="slot-lbl">Influencer wants to come on</div>
+            <div class="slot-time">Mon 5 Nov · 11:00 AM</div>
+            <div class="slot-meta">60 min slot · at Plot 42, Silicon Valley, Bengaluru 560100</div>
+          </div>
+
+          <div class="prod-alt">ACCEPT SLOT</div>
+          <div class="prod-sec">Suggest Another Time</div>
+          <div class="link-btn">Skip the visit — switch to remote</div>
+        </div>
+
+        <div class="cta-pdf">VIEW CONTRACT PDF</div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · Active + Visit slot proposed</b><br/>contract.status='active' · event.status='proposed' · slot_proposed_by='influencer' · brand can Accept / Counter / Skip-to-remote</div>
+  </div>
+
+</div>
+
+<!-- ────── Row 2 — Active+Shipment + Active+Remote ────── -->
+<div class="row">
+
+  <!-- PHONE 3 · ACTIVE + shipment STATE 2 (confirmed, awaiting dispatch) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="topbar">
+        <div class="back">‹ Back</div>
+        <div class="head-row">
+          <div class="head-text">
+            <h1>Contract</h1>
+            <div class="sub">Arjun Mehta · Bluetooth Speaker launch</div>
+          </div>
+          <div class="pill-wrap"><span class="pill active">Active</span></div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Terms</div>
+          <div class="kv"><span class="kv-k">Base Fee</span><span class="kv-v">₹18,000</span></div>
+          <div class="kv"><span class="kv-k">Posting Date</span><span class="kv-v">12 Nov 2026</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Signatures</div>
+          <div class="sig-row">
+            <div class="sig-box signed">
+              <div class="sig-lbl">Influencer</div>
+              <div class="sig-check">✓ Signed</div>
+              <div class="sig-name">Arjun Mehta</div>
+              <div class="sig-date">2 Nov 2026, 18:30</div>
+            </div>
+            <div class="sig-box signed">
+              <div class="sig-lbl">Brand</div>
+              <div class="sig-check">✓ Signed</div>
+              <div class="sig-date">3 Nov 2026, 09:15</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-banner active">
+          <div class="info-banner-ttl">✓ Contract Active</div>
+          <div class="info-banner-body">Both parties have signed. Tranche 1 has been released.</div>
+        </div>
+
+        <!-- Production Panel · shipment STATE 2 (confirmed, courier form) -->
+        <div class="prod-panel">
+          <div class="prod-head">
+            <div class="prod-ttl"><span class="ico">SHIP</span>Product Shipment</div>
+            <span class="pill confirmed">Confirmed</span>
+          </div>
+
+          <div class="addr-box">
+            <div class="addr-lbl">Shipping to</div>
+            <div class="addr-text">Flat 304, Sai Apartments, Indiranagar, Bengaluru, Karnataka 560038</div>
+          </div>
+
+          <div class="field-lbl">Courier</div>
+          <div class="input-prod"><span class="ph">Bluedart / Delhivery / Shiprocket / DTDC</span></div>
+
+          <div class="field-lbl">AWB / Tracking</div>
+          <div class="input-prod"><span class="ph">Enter tracking number</span></div>
+
+          <div class="prod-prim">MARK AS DISPATCHED</div>
+
+          <div class="log-box">
+            <div class="log-ttl">History</div>
+            <div class="log-row"><span class="ts">3 Nov</span> · <span class="actor">brand</span> · initialised shipment</div>
+            <div class="log-row"><span class="ts">3 Nov</span> · <span class="actor">influencer</span> · confirmed address</div>
+          </div>
+        </div>
+
+        <div class="cta-pdf">VIEW CONTRACT PDF</div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · Active + Shipment confirmed</b><br/>contract.status='active' · event.mode='shipment' · event.status='confirmed' · brand enters courier + AWB to dispatch</div>
+  </div>
+
+  <!-- PHONE 4 · ACTIVE + remote (compact) + setup-production showcase below -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="topbar">
+        <div class="back">‹ Back</div>
+        <div class="head-row">
+          <div class="head-text">
+            <h1>Contract</h1>
+            <div class="sub">Priya Nair · Conversion campaign</div>
+          </div>
+          <div class="pill-wrap"><span class="pill your-turn">Your Turn</span></div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Terms (auto-filled from campaign)</div>
+          <div class="kv"><span class="kv-k">Commission</span><span class="kv-v">12% per conversion</span></div>
+          <div class="kv"><span class="kv-k">Posting Date</span><span class="kv-v">10 Nov 2026</span></div>
+          <div class="kv"><span class="kv-k">Revision Limit</span><span class="kv-v">2 rounds</span></div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Special Clauses Attached</div>
+          <div class="clause-ro">
+            <div class="clause-lbl">• Content Ownership Transfer</div>
+            <div class="clause-desc">Final approved content (raw + edited) becomes the brand's property. Influencer retains right to keep it on their own profile.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Signatures</div>
+          <div class="sig-row">
+            <div class="sig-box signed">
+              <div class="sig-lbl">Influencer</div>
+              <div class="sig-check">✓ Signed</div>
+              <div class="sig-name">Priya Nair</div>
+              <div class="sig-date">4 Nov 2026, 11:05</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-lbl">Brand</div>
+              <div class="sig-pending">Not yet signed</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cta">COUNTER-SIGN CONTRACT</div>
+
+        <div class="setup-card">
+          <div class="setup-ttl">Set up production</div>
+          <div class="setup-help">Pick how the influencer will get what they need for the shoot.</div>
+          <div class="mode-row">
+            <div class="mode-card"><span class="mode-ico">[VISIT]</span><div class="mode-lbl">Visit</div></div>
+            <div class="mode-card"><span class="mode-ico">[SHIP]</span><div class="mode-lbl">Shipment</div></div>
+            <div class="mode-card"><span class="mode-ico">[REMOTE]</span><div class="mode-lbl">Remote</div></div>
+          </div>
+        </div>
+
+        <div class="cta-pdf">VIEW CONTRACT PDF</div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 4 · Pending Brand (counter-sign) + setup-production picker</b><br/>contract.status='pending_brand' · goal='conversion' (no Base Fee row · no wallet check) · production not yet initialised (escape hatch)</div>
+  </div>
+
+</div>
+
+<!-- ────── Side panel — pill catalog + variants ────── -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Contract status pills</h3>
+      <div class="ph">4 main-screen states · matches canonical StatusPill</div>
+      <div class="pill-table">
+        <div class="pill-row"><code>draft</code><span class="pill draft">Draft</span></div>
+        <div class="pill-row"><code>pending_influencer</code><span class="pill awaiting">Awaiting Influencer</span></div>
+        <div class="pill-row"><code>pending_brand</code><span class="pill your-turn">Your Turn</span></div>
+        <div class="pill-row"><code>active</code><span class="pill active">Active</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Production event pills</h3>
+      <div class="ph">5 event states · 3 are NEW canonical entries</div>
+      <div class="pill-table">
+        <div class="pill-row"><code>proposed</code><span class="pill proposed">Proposed</span></div>
+        <div class="pill-row"><code>confirmed</code><span class="pill confirmed">Confirmed</span></div>
+        <div class="pill-row"><code>in_progress</code><span class="pill in-progress">In Progress</span></div>
+        <div class="pill-row"><code>completed</code><span class="pill completed">Completed</span></div>
+        <div class="pill-row"><code>cancelled</code><span class="pill cancelled">Cancelled</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Production mode picker</h3>
+      <div class="ph">Mono-bracket icons · matches bucket convention</div>
+      <div class="mode-demo">
+        <div class="mode-card on"><span class="mode-ico">[VISIT]</span><div class="mode-lbl">Visit</div></div>
+        <div class="mode-card"><span class="mode-ico">[SHIP]</span><div class="mode-lbl">Shipment</div></div>
+        <div class="mode-card"><span class="mode-ico">[REMOTE]</span><div class="mode-lbl">Remote</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Signature box states</h3>
+      <div class="ph">Before / after</div>
+      <div class="sig-demo">
+        <div class="sig-box">
+          <div class="sig-lbl">Influencer</div>
+          <div class="sig-pending">Not yet signed</div>
+        </div>
+        <div class="sig-box signed">
+          <div class="sig-lbl">Influencer</div>
+          <div class="sig-check">✓ Signed</div>
+          <div class="sig-name">Riya Sharma</div>
+          <div class="sig-date">3 Nov, 14:22</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Wallet shortage state</h3>
+      <div class="ph">Brand can't pay → button disabled</div>
+      <div class="wallet-box over" style="margin:0">
+        <div class="w-row"><span class="lbl">Base fee</span><span class="val">₹50,000</span></div>
+        <div class="w-row"><span class="lbl">+ Bonus</span><span class="val">₹10,000</span></div>
+        <div class="w-row strong divider"><span class="lbl">Influencer total</span><span class="val">₹60,000</span></div>
+        <div class="w-row"><span class="lbl">+ 8% platform fee</span><span class="val">₹4,800</span></div>
+        <div class="w-row strong divider"><span class="lbl">Wallet escrow at signing</span><span class="val">₹64,800</span></div>
+        <div class="w-row"><span class="lbl">Wallet balance</span><span class="val">₹48,500</span></div>
+        <div class="wallet-short">Wallet short by ₹16,300. Top up your wallet from the Wallet tab or reduce the bonus.</div>
+      </div>
+      <div class="cta disabled" style="margin:10px 0 0">TOP UP WALLET TO SEND</div>
+    </div>
+
+    <div class="panel">
+      <h3>Remote-flip pending banner</h3>
+      <div class="ph">Cross-cutting · either side can request</div>
+      <div class="flip-banner">
+        <div class="flip-banner-txt">Influencer wants to switch this to remote (no shoot, content from brief alone). Confirm?</div>
+        <span class="flip-btn">CONFIRM FLIP</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>State-machine surface</h3>
+      <div class="ph">17 distinct render branches preserved verbatim</div>
+      <ul>
+        <li><b>Main screen:</b> <code>draft</code> · <code>pending_inf+!signed</code> (re-approve) · <code>pending_inf+signed</code> (waiting) · <code>pending_brand</code> · <code>active</code></li>
+        <li><b>Wallet shortage:</b> button disabled, label flips to "Top up wallet to send", math = <code>(base + bonus) × (1 + fee%)</code></li>
+        <li><b>Production panel:</b> <code>mode=null</code> (setup picker) · <code>mode=remote</code> (static notice) · <code>mode=visit</code> (6 sub-states) · <code>mode=shipment</code> (4 sub-states) · cross-cutting flip banner</li>
+        <li><b>Visit sub-states:</b> no-location · location-no-slot · influencer-proposed · brand-proposed · confirmed (+ reschedule) · completed</li>
+        <li><b>Shipment sub-states:</b> proposed-waiting · confirmed-dispatch-form · in_progress-tracking · completed</li>
+        <li><b>Conditional rendering:</b> <code>showFee</code> / <code>showCommission</code> driven by <code>goal</code> (engagement / hybrid / conversion); brand-sign Alert messaging branches on conversion vs others</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>API surface preserved verbatim</h3>
+      <div class="ph">11 brandApi endpoints · zero shape change</div>
+      <ul>
+        <li><code>getContract</code> · <code>getMe</code> · <code>approveContract</code> · <code>brandSign</code></li>
+        <li><code>getProduction</code> · <code>getProductionDateRange</code> · <code>setProductionVisitDetails</code></li>
+        <li><code>acceptProduction</code> · <code>counterProposeProduction</code> · <code>flipProductionToRemote</code></li>
+        <li><code>dispatchProduction</code> · <code>completeProduction</code> · <code>initialiseProduction</code></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>StatusPill canonical map extension</h3>
+      <div class="ph">+3 entries · total goes 34 → 37</div>
+      <ul>
+        <li><code>proposed</code> → yellowPale / yellowText / 'PROPOSED'</li>
+        <li><code>confirmed</code> → successPale / successText / 'CONFIRMED'</li>
+        <li><code>in_progress</code> → infoPale / info / 'IN PROGRESS'</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Out of scope (preserved as-is)</h3>
+      <div class="ph">Touch boundaries respected</div>
+      <ul>
+        <li><b>DateTimeChipPicker</b> — shared with <code>influencer/ContractScreen.js</code>; restyle deferred to influencer bucket</li>
+        <li><b>ContractPdf screen</b> — separate file, separate flow</li>
+        <li><b>Backend</b> — zero touch (no API/DB/migration change)</li>
+        <li><b>Window A</b> — entitlements / quota / migration 063 work is orthogonal</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

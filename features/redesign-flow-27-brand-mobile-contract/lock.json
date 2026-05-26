@@ -1,0 +1,33 @@
+{
+  "feature": "redesign-flow-27-brand-mobile-contract",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-26 chat \"lock and start implementation\"",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 27 mockup locked",
+  "mockup_locked_at": "2026-05-26",
+  "notes": "Tenth and FINAL flow in the mobile-brand bucket (16/16). BrandContractScreen — 1341 LOC, biggest screen in the bucket by 2× margin over MediaGallery. ZERO SDK boundaries discovered (handoff was speculative): pure RN primitives, signatures are display-only (backend handles signing event), PDF is a separate ContractPdf screen, dates use local DateTimeChipPicker (185 LOC pure-RN). Restyle scope: brandPalette + fonts.* + StatusPill (canonical map +3 entries: proposed/confirmed/in_progress, 34→37 total) + mode-picker emoji → mono-bracket [VISIT]/[SHIP]/[REMOTE]. 17 distinct render branches preserved verbatim. All 11 brandApi shapes NO-TOUCH. Wallet lock math (base+bonus)×(1+fee%) duplicated in 2 places — both kept literal. DateTimeChipPicker restyle deferred to influencer bucket (shared with influencer/ContractScreen.js).",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "run_at": "2026-05-26",
+      "report_path": "qa/reports/2026-05-26T02-21-12-553Z/QA-REPORT.md",
+      "pw_tests": 76,
+      "passed": 76,
+      "failed": 0,
+      "gate": 0,
+      "state": "GREEN",
+      "note": "Dual-probe pre-warm (kill node + curl OTA manifest + /admin/stats + /auth/refresh) before pnpm qa. 76 passed gate 0 STATE=GREEN on FIRST run in 43.0s — dual-probe discipline continues to deliver clean first-run greens. Zero classification needed."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — mobile-brand bucket FINALE ships with manual founder smoke-test; Maestro setup deferred to its own contract'"
+  }
+}

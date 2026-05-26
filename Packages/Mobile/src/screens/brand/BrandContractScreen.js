@@ -3,9 +3,10 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, TextInput,
 } from 'react-native';
-import { colors, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { brandApi } from '../../services/api';
 import DateTimeChipPicker from '../../components/DateTimeChipPicker';
+import StatusPill from '../../components/brand/StatusPill';
 
 function formatDateTime(s) {
   if (!s) return '—';
@@ -189,7 +190,7 @@ export default function BrandContractScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.navy} />
+        <ActivityIndicator size="large" color={P.ink} />
         <Text style={styles.loadingText}>Loading contract...</Text>
       </View>
     );
@@ -232,7 +233,7 @@ export default function BrandContractScreen({ route, navigation }) {
     <View style={styles.outer}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<- Back'}</Text>
+          <Text style={styles.backText}>{'‹ Back'}</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
@@ -241,16 +242,11 @@ export default function BrandContractScreen({ route, navigation }) {
               {influencerName || contract.influencer_name || 'Influencer'} · {contract.campaign_name}
             </Text>
           </View>
-          <View style={[styles.statusPill,
-            isDraft && { backgroundColor: 'rgba(255,184,0,0.25)' },
-            (isPendingInf || isPendingBrand) && { backgroundColor: 'rgba(0,184,148,0.25)' },
-            isActive && { backgroundColor: 'rgba(0,184,148,0.45)' },
-          ]}>
-            <Text style={styles.statusPillText}>
-              {isDraft ? 'Draft' : isPendingBrand ? 'Your Sign' : isPendingInf ? 'Influencer Sign' : 'Active'}
-            </Text>
+          <View style={styles.statusPillWrap}>
+            <StatusPill status={status} />
           </View>
         </View>
+        <View style={styles.headerRule} />
       </View>
 
       <ScrollView
@@ -298,15 +294,15 @@ export default function BrandContractScreen({ route, navigation }) {
             <Text style={styles.rowValue}>{contract.revision_limit ?? 2} rounds</Text>
           </View>
           {bonus > 0 && (
-            <View style={[styles.row, { backgroundColor: colors.tealPale, borderRadius: 8, padding: 8, marginTop: 4 }]}>
-              <Text style={[styles.rowLabel, { color: colors.tealDeep, fontWeight: '700' }]}>+ Brand Bonus</Text>
-              <Text style={[styles.rowValue, { color: colors.tealDeep }]}>{fmtRupees(bonus)}</Text>
+            <View style={[styles.row, { backgroundColor: P.successPale, borderRadius: 8, padding: 8, marginTop: 4 }]}>
+              <Text style={[styles.rowLabel, { color: P.successText, fontFamily: fonts.monoBold }]}>+ Brand Bonus</Text>
+              <Text style={[styles.rowValue, { color: P.successText }]}>{fmtRupees(bonus)}</Text>
             </View>
           )}
           {showFee && bonus > 0 && (
-            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 8 }]}>
-              <Text style={[styles.rowLabel, { fontWeight: '700' }]}>Total Influencer Fee</Text>
-              <Text style={[styles.rowValue, { fontWeight: '800', color: colors.navy }]}>{fmtRupees(totalFee)}</Text>
+            <View style={[styles.row, { borderTopWidth: 1, borderTopColor: P.border, paddingTop: 8, marginTop: 8 }]}>
+              <Text style={[styles.rowLabel, { fontFamily: fonts.displayBold, color: P.ink }]}>Total Influencer Fee</Text>
+              <Text style={[styles.rowValue, { fontFamily: fonts.monoBold, color: P.ink, fontSize: 14 }]}>{fmtRupees(totalFee)}</Text>
             </View>
           )}
         </View>
@@ -330,7 +326,7 @@ export default function BrandContractScreen({ route, navigation }) {
               value={contentReq}
               onChangeText={setContentReq}
               placeholder="What exactly should the influencer create?"
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               multiline
               numberOfLines={10}
               textAlignVertical="top"
@@ -365,7 +361,7 @@ export default function BrandContractScreen({ route, navigation }) {
                           onPress={() => setClauseValue(c.id, opt)}
                           style={[styles.optionChip, cur.value === opt && styles.optionChipOn]}
                         >
-                          <Text style={[styles.optionChipText, cur.value === opt && { color: colors.white }]}>
+                          <Text style={[styles.optionChipText, cur.value === opt && { color: P.yellow }]}>
                             {opt} {c.optionLabel || ''}
                           </Text>
                         </TouchableOpacity>
@@ -382,7 +378,7 @@ export default function BrandContractScreen({ route, navigation }) {
               value={extraNotes}
               onChangeText={setExtraNotes}
               placeholder="e.g. must wear blue shirt, tag our outlet, etc."
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted3}
               multiline
               numberOfLines={3}
             />
@@ -400,7 +396,7 @@ export default function BrandContractScreen({ route, navigation }) {
                 <>
                   <Text style={[styles.cardTitle, { marginTop: 16 }]}>Bonus (optional)</Text>
                   <Text style={styles.helpText}>Add a bonus on top of the agreed fee. Split across 3 tranches just like the base fee.</Text>
-                  <View style={[styles.bonusRow, isOver && { borderColor: colors.red }]}>
+                  <View style={[styles.bonusRow, isOver && { borderColor: P.danger }]}>
                     <Text style={styles.rupee}>₹</Text>
                     <TextInput
                       style={styles.bonusInput}
@@ -408,7 +404,7 @@ export default function BrandContractScreen({ route, navigation }) {
                       onChangeText={setBonusAmount}
                       keyboardType="numeric"
                       placeholder="0"
-                      placeholderTextColor={colors.t3}
+                      placeholderTextColor={P.muted3}
                     />
                   </View>
                   {(bonusNum > 0 || isOver) && (
@@ -453,15 +449,15 @@ export default function BrandContractScreen({ route, navigation }) {
             <Text style={[styles.cardTitle, { marginTop: 16 }]}>How will the content be produced?</Text>
             <View style={pmStyles.modeRow}>
               {[
-                { v: 'visit',    label: 'Visit',    icon: '🏬' },
-                { v: 'shipment', label: 'Shipment', icon: '📦' },
-                { v: 'remote',   label: 'Remote',   icon: '💻' },
+                { v: 'visit',    label: 'Visit',    icon: '[VISIT]' },
+                { v: 'shipment', label: 'Shipment', icon: '[SHIP]' },
+                { v: 'remote',   label: 'Remote',   icon: '[REMOTE]' },
               ].map(opt => (
                 <TouchableOpacity
                   key={opt.v}
                   style={[pmStyles.modeCard, productionMode === opt.v && pmStyles.modeCardActive]}
                   onPress={() => setProductionMode(opt.v)}>
-                  <Text style={pmStyles.modeIcon}>{opt.icon}</Text>
+                  <Text style={[pmStyles.modeIcon, productionMode === opt.v && pmStyles.modeIconActive]}>{opt.icon}</Text>
                   <Text style={[pmStyles.modeLabel, productionMode === opt.v && pmStyles.modeLabelActive]}>{opt.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -550,7 +546,7 @@ export default function BrandContractScreen({ route, navigation }) {
             disabled={disabled}
           >
             {submitting
-              ? <ActivityIndicator color={colors.white} />
+              ? <ActivityIndicator color={P.yellow} />
               : walletShort
               ? <Text style={styles.actionBtnText}>Top up wallet to send</Text>
               : <Text style={styles.actionBtnText}>
@@ -566,21 +562,21 @@ export default function BrandContractScreen({ route, navigation }) {
             disabled={submitting}
           >
             {submitting
-              ? <ActivityIndicator color={colors.white} />
+              ? <ActivityIndicator color={P.yellow} />
               : <Text style={styles.actionBtnText}>Counter-sign Contract</Text>}
           </TouchableOpacity>
         )}
         {/* "Waiting on influencer" banner — only after they've actually signed,
             since editable pending_influencer is handled above. */}
         {isPendingInf && contract.influencer_signed_at && (
-          <View style={[styles.card, { backgroundColor: colors.goldPale, borderColor: '#E8D590' }]}>
-            <Text style={[styles.cardTitle, { color: '#7A5500' }]}>\u23F3 Waiting on Influencer</Text>
+          <View style={[styles.card, { backgroundColor: P.yellowPale, borderColor: '#F0DA88' }]}>
+            <Text style={[styles.cardTitle, { color: P.yellowText }]}>\u23F3 Waiting on Influencer</Text>
             <Text style={styles.helpText}>You sent the contract. The influencer will get a notification to review and sign.</Text>
           </View>
         )}
         {isActive && (
-          <View style={[styles.card, { backgroundColor: colors.tealPale }]}>
-            <Text style={[styles.cardTitle, { color: colors.tealDeep }]}>✓ Contract Active</Text>
+          <View style={[styles.card, { backgroundColor: P.successPale, borderColor: '#A8E6CC' }]}>
+            <Text style={[styles.cardTitle, { color: P.successText }]}>✓ Contract Active</Text>
             <Text style={styles.helpText}>
               {(goal || '').toLowerCase() === 'conversion'
                 ? 'Both parties have signed. The influencer’s tracking link is active — they earn commission on confirmed conversions. Content will be submitted for your review.'
@@ -608,106 +604,106 @@ export default function BrandContractScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  outer: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colors.bg },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
-  emptyText: { fontSize: 14, color: colors.t2, marginBottom: 16 },
-  backBtn: { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: colors.navy, borderRadius: 10 },
-  backBtnText: { color: colors.white, fontWeight: '700', fontSize: 14 },
+  outer:  { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: P.bg },
+  loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, fontFamily: fonts.sansMedium },
+  emptyText:   { fontSize: 14, color: P.muted, marginBottom: 16, fontFamily: fonts.sansMedium },
+  backBtn:     { paddingHorizontal: 24, paddingVertical: 10, backgroundColor: P.ink, borderRadius: 10 },
+  backBtnText: { color: P.yellow, fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800' },
 
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.white },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
-  statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)' },
-  statusPillText: { color: colors.white, fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
+  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 16, position: 'relative' },
+  back:   { marginBottom: 8 },
+  backText: { fontSize: 11, color: 'rgba(255,255,255,0.65)', fontFamily: fonts.monoBold, fontWeight: '700' },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: P.white, fontFamily: fonts.displayBold, letterSpacing: -0.2 },
+  headerSub:   { fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 3, fontFamily: fonts.sansMedium },
+  statusPillWrap: { backgroundColor: 'rgba(255,255,255,0.92)', padding: 3, borderRadius: 999, marginTop: 2 },
+  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
 
   draftBanner: {
-    margin: 16, padding: 14, backgroundColor: '#FFF8E0',
-    borderRadius: 12, borderWidth: 1, borderColor: '#E8D590',
+    margin: 14, padding: 13, backgroundColor: P.yellowPale,
+    borderRadius: 12, borderWidth: 1, borderColor: '#F0DA88',
   },
-  draftTitle: { fontSize: 14, fontWeight: '800', color: '#7A5500', marginBottom: 6 },
-  draftBody:  { fontSize: 12, color: '#7A5500', lineHeight: 18 },
+  draftTitle: { fontSize: 13, fontWeight: '800', color: P.yellowText, marginBottom: 5, fontFamily: fonts.displayBold },
+  draftBody:  { fontSize: 11.5, color: P.yellowText, lineHeight: 17, fontFamily: fonts.sansMedium },
 
   card: {
-    margin: 16, marginBottom: 0, padding: 16,
-    backgroundColor: colors.white, borderRadius: 14,
-    borderWidth: 1, borderColor: colors.border,
+    margin: 14, marginBottom: 0, padding: 14,
+    backgroundColor: P.white, borderRadius: 14,
+    borderWidth: 1, borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '800', color: colors.t1, marginBottom: 10 },
-  helpText:  { fontSize: 12, color: colors.t3, marginBottom: 10, lineHeight: 18 },
+  cardTitle: { fontSize: 12.5, fontWeight: '800', color: P.ink, marginBottom: 9, fontFamily: fonts.displayBold, textTransform: 'uppercase', letterSpacing: 0.3 },
+  helpText:  { fontSize: 11.5, color: P.muted, marginBottom: 9, lineHeight: 17, fontFamily: fonts.sansMedium },
 
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6 },
-  rowLabel: { fontSize: 12, color: colors.t3 },
-  rowValue: { fontSize: 13, fontWeight: '700', color: colors.t1 },
+  row:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 },
+  rowLabel: { fontSize: 11.5, color: P.muted, fontFamily: fonts.sansMedium },
+  rowValue: { fontSize: 12.5, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold },
 
   clauseBox: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 12,
-    padding: 12, marginBottom: 10,
+    borderWidth: 1, borderColor: P.border, borderRadius: 11,
+    padding: 10, marginBottom: 8,
   },
-  clauseBoxOn: { borderColor: colors.teal, backgroundColor: colors.tealPale },
-  clauseHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  clauseBoxOn: { borderColor: P.success, backgroundColor: P.successPale },
+  clauseHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: colors.border2,
-    justifyContent: 'center', alignItems: 'center', marginTop: 2,
+    width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: P.muted4,
+    justifyContent: 'center', alignItems: 'center', marginTop: 1, backgroundColor: P.white,
   },
-  checkboxOn: { backgroundColor: colors.teal, borderColor: colors.teal },
-  checkboxTick: { color: colors.white, fontSize: 14, fontWeight: '800' },
-  clauseLabel: { fontSize: 13, fontWeight: '700', color: colors.t1, marginBottom: 2 },
-  clauseDesc:  { fontSize: 11, color: colors.t2, lineHeight: 16 },
-  optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10, marginLeft: 32 },
+  checkboxOn:   { backgroundColor: P.success, borderColor: P.success },
+  checkboxTick: { color: P.white, fontSize: 13, fontWeight: '800', fontFamily: fonts.monoBold },
+  clauseLabel:  { fontSize: 12, fontWeight: '800', color: P.ink, marginBottom: 2, fontFamily: fonts.displayBold },
+  clauseDesc:   { fontSize: 10.5, color: P.muted, lineHeight: 15, fontFamily: fonts.sansMedium },
+  optionRow:    { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 9, marginLeft: 29 },
   optionChip: {
-    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999,
-    backgroundColor: colors.white, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999,
+    backgroundColor: P.white, borderWidth: 1, borderColor: P.border,
   },
-  optionChipOn: { backgroundColor: colors.teal, borderColor: colors.teal },
-  optionChipText: { fontSize: 11, fontWeight: '700', color: colors.t2 },
+  optionChipOn:   { backgroundColor: P.ink, borderColor: P.ink },
+  optionChipText: { fontSize: 9.5, fontWeight: '800', color: P.muted2, fontFamily: fonts.monoBold },
 
   textArea: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 10,
-    padding: 12, fontSize: 13, color: colors.t1, minHeight: 60,
-    textAlignVertical: 'top',
+    borderWidth: 1, borderColor: P.border, borderRadius: 10,
+    padding: 11, fontSize: 12, color: P.ink, minHeight: 60,
+    textAlignVertical: 'top', fontFamily: fonts.sansMedium, backgroundColor: P.bg,
   },
   bonusRow: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 2, borderColor: colors.navy, borderRadius: 10,
-    backgroundColor: colors.white,
+    borderWidth: 2, borderColor: P.ink, borderRadius: 11,
+    backgroundColor: P.white,
   },
-  rupee: { paddingHorizontal: 12, fontSize: 18, fontWeight: '800', color: colors.t2 },
-  bonusInput: { flex: 1, paddingVertical: 12, fontSize: 18, fontWeight: '800', color: colors.t1 },
+  rupee:      { paddingHorizontal: 11, fontSize: 17, fontWeight: '800', color: P.muted, fontFamily: fonts.monoBold },
+  bonusInput: { flex: 1, paddingVertical: 11, fontSize: 17, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold },
 
-  clauseReadonly: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
+  clauseReadonly: { paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
 
-  sigRow: { flexDirection: 'row', gap: 10 },
-  sigBox: { flex: 1, padding: 10, borderRadius: 10, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border },
-  sigBoxSigned: { backgroundColor: colors.tealPale, borderColor: colors.teal },
-  sigLabel: { fontSize: 10, color: colors.t3, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4 },
-  sigCheck: { fontSize: 13, fontWeight: '800', color: colors.teal, marginBottom: 2 },
-  sigName: { fontSize: 12, fontWeight: '700', color: colors.t1 },
-  sigDate: { fontSize: 10, color: colors.t3, marginTop: 2 },
-  sigPending: { fontSize: 12, color: colors.t3, fontStyle: 'italic' },
+  sigRow:    { flexDirection: 'row', gap: 8 },
+  sigBox:    { flex: 1, padding: 10, borderRadius: 10, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border },
+  sigBoxSigned: { backgroundColor: P.successPale, borderColor: '#A8E6CC' },
+  sigLabel:  { fontSize: 9, color: P.muted2, fontWeight: '800', textTransform: 'uppercase', marginBottom: 4, fontFamily: fonts.monoBold, letterSpacing: 0.4 },
+  sigCheck:  { fontSize: 12, fontWeight: '800', color: P.successText, marginBottom: 2, fontFamily: fonts.monoBold },
+  sigName:   { fontSize: 11.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  sigDate:   { fontSize: 9.5, color: P.muted2, marginTop: 2, fontFamily: fonts.monoMedium },
+  sigPending:{ fontSize: 11, color: P.muted2, fontStyle: 'italic', fontFamily: fonts.sansMedium },
 
   actionBtn: {
-    margin: 16, paddingVertical: 16, backgroundColor: colors.navy,
-    borderRadius: 14, alignItems: 'center',
+    margin: 14, paddingVertical: 14, backgroundColor: P.ink,
+    borderRadius: 12, alignItems: 'center',
   },
   actionBtnDisabled: { opacity: 0.5 },
-  actionBtnText: { color: colors.white, fontSize: 15, fontWeight: '800' },
+  actionBtnText: { color: P.yellow, fontSize: 14, fontWeight: '900', fontFamily: fonts.displayBlack, letterSpacing: 0.2 },
   pdfBtn: {
-    marginHorizontal: 16, marginTop: 12, borderRadius: 12, paddingVertical: 12,
-    alignItems: 'center', backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.navy,
+    marginHorizontal: 14, marginTop: 12, borderRadius: 11, paddingVertical: 11,
+    alignItems: 'center', backgroundColor: P.white, borderWidth: 1.5, borderColor: P.ink,
   },
-  pdfBtnText: { color: colors.navy, fontSize: 13, fontWeight: '700' },
-  cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  restoreDefaultText: { fontSize: 11, fontWeight: '700', color: colors.navy, textDecorationLine: 'underline' },
+  pdfBtnText: { color: P.ink, fontSize: 11.5, fontWeight: '800', fontFamily: fonts.monoBold, letterSpacing: 0.3 },
+  cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 },
+  restoreDefaultText: { fontSize: 10, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold, borderBottomWidth: 1, borderBottomColor: P.ink, borderStyle: 'dashed' },
   requirementsInput: {
-    marginTop: 8,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg,
+    marginTop: 6,
+    borderWidth: 1, borderColor: P.border, backgroundColor: P.bg,
     borderRadius: 10, padding: 10,
-    fontSize: 12, color: colors.t1, fontFamily: 'monospace',
-    minHeight: 180, textAlignVertical: 'top',
+    fontSize: 11.5, color: P.ink, fontFamily: fonts.monoMedium,
+    minHeight: 130, textAlignVertical: 'top', lineHeight: 18,
   },
 });
 
@@ -887,11 +883,11 @@ function BrandProductionPanel({ contractId }) {
     ]);
   }
 
-  if (loading) return <View style={pmStyles.loadingBox}><ActivityIndicator color={colors.navy} /></View>;
+  if (loading) return <View style={pmStyles.loadingBox}><ActivityIndicator color={P.ink} /></View>;
   if (mode === 'remote') {
     return (
       <View style={pmStyles.remoteBox}>
-        <Text style={pmStyles.remoteTitle}>💻 Remote production</Text>
+        <Text style={pmStyles.remoteTitle}><Text style={pmStyles.remoteIco}>[REMOTE]</Text>  Remote production</Text>
         <Text style={pmStyles.remoteBody}>No physical exchange needed. The influencer will create content directly from your brief.</Text>
       </View>
     );
@@ -918,8 +914,8 @@ function BrandProductionPanel({ contractId }) {
               else Alert.alert('Failed', res.error?.message || 'Could not initialise');
             }}
           >
-            <Text style={pmStyles.modeIcon}>🏬</Text>
-            <Text style={pmStyles.modeLabel}>Visit</Text>
+            <Text style={[pmStyles.modeIcon, mode === 'visit' && pmStyles.modeIconActive]}>[VISIT]</Text>
+            <Text style={[pmStyles.modeLabel, mode === 'visit' && pmStyles.modeLabelActive]}>Visit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[pmStyles.modeCard, mode === 'shipment' && pmStyles.modeCardActive]}
@@ -932,8 +928,8 @@ function BrandProductionPanel({ contractId }) {
               else Alert.alert('Failed', res.error?.message || 'Could not initialise');
             }}
           >
-            <Text style={pmStyles.modeIcon}>📦</Text>
-            <Text style={pmStyles.modeLabel}>Shipment</Text>
+            <Text style={[pmStyles.modeIcon, mode === 'shipment' && pmStyles.modeIconActive]}>[SHIP]</Text>
+            <Text style={[pmStyles.modeLabel, mode === 'shipment' && pmStyles.modeLabelActive]}>Shipment</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[pmStyles.modeCard, mode === 'remote' && pmStyles.modeCardActive]}
@@ -951,8 +947,8 @@ function BrandProductionPanel({ contractId }) {
               ]);
             }}
           >
-            <Text style={pmStyles.modeIcon}>💻</Text>
-            <Text style={pmStyles.modeLabel}>Remote</Text>
+            <Text style={[pmStyles.modeIcon, mode === 'remote' && pmStyles.modeIconActive]}>[REMOTE]</Text>
+            <Text style={[pmStyles.modeLabel, mode === 'remote' && pmStyles.modeLabelActive]}>Remote</Text>
           </TouchableOpacity>
         </View>
         {saving && <Text style={pmStyles.smallNote}>Setting up…</Text>}
@@ -960,23 +956,14 @@ function BrandProductionPanel({ contractId }) {
     );
   }
 
-  const STATUS_PILL = {
-    proposed:    { bg: '#FFF4D6', fg: '#7A5500', label: 'Awaiting influencer' },
-    confirmed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Confirmed' },
-    in_progress: { bg: '#EEEDFE', fg: '#5C50C8', label: 'In progress' },
-    completed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Completed' },
-    cancelled:   { bg: '#FDEEE9', fg: '#E8401A', label: 'Cancelled' },
-  }[event.status] || { bg: colors.surface2, fg: colors.t2, label: event.status };
-
   return (
     <View style={pmStyles.panel}>
       <View style={pmStyles.panelHead}>
         <Text style={pmStyles.panelTitle}>
-          {event.mode === 'visit' ? '🏬 Visit Coordination' : '📦 Product Shipment'}
+          <Text style={pmStyles.panelIco}>{event.mode === 'visit' ? '[VISIT]' : '[SHIP]'}</Text>
+          {event.mode === 'visit' ? '  Visit Coordination' : '  Product Shipment'}
         </Text>
-        <View style={[pmStyles.statusPill, { backgroundColor: STATUS_PILL.bg }]}>
-          <Text style={[pmStyles.statusPillTxt, { color: STATUS_PILL.fg }]}>{STATUS_PILL.label}</Text>
-        </View>
+        <StatusPill status={event.status} />
       </View>
 
       {event.mode === 'visit' && (() => {
@@ -1010,10 +997,10 @@ function BrandProductionPanel({ contractId }) {
                   Tell the influencer WHERE to come. They'll then pick a time that works for them.
                 </Text>
                 <Text style={pmStyles.fieldLabel}>Address *</Text>
-                <TextInput style={pmStyles.input} value={vAddress} onChangeText={setVAddress} placeholder="Plot 42, Silicon Valley..." placeholderTextColor={colors.t3} />
+                <TextInput style={pmStyles.input} value={vAddress} onChangeText={setVAddress} placeholder="Plot 42, Silicon Valley..." placeholderTextColor={P.muted2} />
                 <View style={pmStyles.row2}>
-                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vCity} onChangeText={setVCity} placeholder="City" placeholderTextColor={colors.t3} />
-                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPincode} onChangeText={setVPincode} placeholder="Pincode" keyboardType="numeric" placeholderTextColor={colors.t3} />
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vCity} onChangeText={setVCity} placeholder="City" placeholderTextColor={P.muted2} />
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPincode} onChangeText={setVPincode} placeholder="Pincode" keyboardType="numeric" placeholderTextColor={P.muted2} />
                 </View>
                 <Text style={pmStyles.fieldLabel}>How long the visit will take</Text>
                 <View style={pmStyles.windowRow}>
@@ -1026,8 +1013,8 @@ function BrandProductionPanel({ contractId }) {
                   ))}
                 </View>
                 <View style={pmStyles.row2}>
-                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vName} onChangeText={setVName} placeholder="Contact name" placeholderTextColor={colors.t3} />
-                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPhone} onChangeText={setVPhone} placeholder="Contact phone" keyboardType="phone-pad" placeholderTextColor={colors.t3} />
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vName} onChangeText={setVName} placeholder="Contact name" placeholderTextColor={P.muted2} />
+                  <TextInput style={[pmStyles.input, { flex: 1 }]} value={vPhone} onChangeText={setVPhone} placeholder="Contact phone" keyboardType="phone-pad" placeholderTextColor={P.muted2} />
                 </View>
                 <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={saveLocationOnly}>
                   <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Sending…' : 'Send to influencer for scheduling'}</Text>
@@ -1195,9 +1182,9 @@ function BrandProductionPanel({ contractId }) {
           {event.status === 'confirmed' && (
             <>
               <Text style={pmStyles.fieldLabel}>Courier</Text>
-              <TextInput style={pmStyles.input} value={courier} onChangeText={setCourier} placeholder="Bluedart / Delhivery / Shiprocket / DTDC" placeholderTextColor={colors.t3} />
+              <TextInput style={pmStyles.input} value={courier} onChangeText={setCourier} placeholder="Bluedart / Delhivery / Shiprocket / DTDC" placeholderTextColor={P.muted2} />
               <Text style={pmStyles.fieldLabel}>AWB / Tracking</Text>
-              <TextInput style={pmStyles.input} value={awb} onChangeText={setAwb} placeholder="Enter tracking number" placeholderTextColor={colors.t3} />
+              <TextInput style={pmStyles.input} value={awb} onChangeText={setAwb} placeholder="Enter tracking number" placeholderTextColor={P.muted2} />
               <TouchableOpacity style={[pmStyles.primaryBtn, saving && { opacity: 0.6 }]} disabled={saving} onPress={saveDispatch}>
                 <Text style={pmStyles.primaryBtnTxt}>{saving ? 'Marking…' : 'Mark as dispatched'}</Text>
               </TouchableOpacity>
@@ -1240,102 +1227,104 @@ function BrandProductionPanel({ contractId }) {
 }
 
 const pmStyles = StyleSheet.create({
-  loadingBox:    { padding: 24, alignItems: 'center' },
-  panel:         { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.navyPale, borderWidth: 1, borderColor: colors.border },
-  panelHead:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  panelTitle:    { fontSize: 14, fontWeight: '800', color: colors.t1 },
-  statusPill:    { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  statusPillTxt: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+  loadingBox: { padding: 24, alignItems: 'center' },
+  panel:      { marginHorizontal: 14, marginTop: 12, padding: 13, borderRadius: 14, backgroundColor: P.yellow50, borderWidth: 1, borderColor: P.border },
+  panelHead:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  panelTitle: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold, textTransform: 'uppercase', letterSpacing: 0.3, flex: 1 },
+  panelIco:   { fontFamily: fonts.monoBold, fontSize: 10, color: P.yellow, backgroundColor: P.ink, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden', letterSpacing: 0.4, textTransform: 'none' },
 
-  remoteBox:     { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
-  remoteTitle:   { fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 4 },
-  remoteBody:    { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
+  remoteBox:   { marginHorizontal: 14, marginTop: 12, padding: 18, borderRadius: 14, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border, alignItems: 'center' },
+  remoteTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 4, fontFamily: fonts.displayBold, textAlign: 'center' },
+  remoteIco:   { fontFamily: fonts.monoBold, fontSize: 11, color: P.ink, backgroundColor: P.yellow, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 5, overflow: 'hidden', letterSpacing: 0.4 },
+  remoteBody:  { fontSize: 11, color: P.muted, textAlign: 'center', lineHeight: 16, fontFamily: fonts.sansMedium },
 
-  fieldLabel:    { fontSize: 11, fontWeight: '700', color: colors.t2, marginTop: 10, marginBottom: 4 },
-  input:         { backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 10, fontSize: 12, color: colors.t1, marginBottom: 6 },
-  row2:          { flexDirection: 'row', gap: 8 },
-  windowRow:     { flexDirection: 'row', gap: 6, marginVertical: 8, flexWrap: 'wrap' },
-  windowChip:    { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.white, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
-  windowChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  windowChipTxt: { fontSize: 11, fontWeight: '700', color: colors.t2 },
-  windowChipTxtActive: { color: colors.white },
+  fieldLabel: { fontSize: 9.5, fontWeight: '800', color: P.muted, marginTop: 9, marginBottom: 4, fontFamily: fonts.monoBold, textTransform: 'uppercase', letterSpacing: 0.4 },
+  input:      { backgroundColor: P.white, borderRadius: 9, borderWidth: 1, borderColor: P.border, paddingHorizontal: 10, paddingVertical: 9, fontSize: 11.5, color: P.ink, marginBottom: 5, fontFamily: fonts.monoMedium },
+  row2:       { flexDirection: 'row', gap: 8 },
+  windowRow:  { flexDirection: 'row', gap: 5, marginVertical: 6, flexWrap: 'wrap' },
+  windowChip: { paddingHorizontal: 10, paddingVertical: 5, backgroundColor: P.white, borderRadius: 14, borderWidth: 1, borderColor: P.border },
+  windowChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  windowChipTxt: { fontSize: 10, fontWeight: '800', color: P.muted2, fontFamily: fonts.monoBold },
+  windowChipTxtActive: { color: P.yellow },
 
-  primaryBtn:    { marginTop: 12, paddingVertical: 12, backgroundColor: colors.navy, borderRadius: 10, alignItems: 'center' },
-  primaryBtnTxt: { color: colors.white, fontSize: 13, fontWeight: '800' },
-  primaryBtnAlt: { marginTop: 8, paddingVertical: 12, backgroundColor: colors.teal, borderRadius: 10, alignItems: 'center' },
-  primaryBtnAltTxt: { color: colors.white, fontSize: 13, fontWeight: '800' },
-  secondaryBtn:  { marginTop: 8, paddingVertical: 11, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.navy, alignItems: 'center' },
-  secondaryBtnTxt: { color: colors.navy, fontSize: 12, fontWeight: '700' },
-  linkBtn:       { marginTop: 8, paddingVertical: 8, alignItems: 'center' },
-  linkBtnTxt:    { color: colors.t3, fontSize: 11, fontWeight: '600', textDecorationLine: 'underline' },
-  smallNote:     { fontSize: 10, color: colors.t3, marginTop: 6, textAlign: 'center' },
-  helpHeader:    { fontSize: 11, color: colors.t3, marginBottom: 4, lineHeight: 16 },
-  dateHint:      { fontSize: 10, color: colors.orange, marginTop: 4, marginBottom: 4, textAlign: 'center', fontWeight: '700' },
+  primaryBtn:    { marginTop: 10, paddingVertical: 11, backgroundColor: P.ink, borderRadius: 10, alignItems: 'center' },
+  primaryBtnTxt: { color: P.yellow, fontSize: 12, fontWeight: '800', fontFamily: fonts.displayBold, letterSpacing: 0.2 },
+  primaryBtnAlt: { marginTop: 7, paddingVertical: 11, backgroundColor: P.success, borderRadius: 10, alignItems: 'center' },
+  primaryBtnAltTxt: { color: P.white, fontSize: 12, fontWeight: '800', fontFamily: fonts.displayBold },
+  secondaryBtn:  { marginTop: 7, paddingVertical: 10, backgroundColor: P.white, borderRadius: 10, borderWidth: 1.5, borderColor: P.ink, alignItems: 'center' },
+  secondaryBtnTxt: { color: P.ink, fontSize: 11.5, fontWeight: '700', fontFamily: fonts.displayBold },
+  linkBtn:       { marginTop: 7, paddingVertical: 7, alignItems: 'center' },
+  linkBtnTxt:    { color: P.muted, fontSize: 10.5, fontWeight: '700', textDecorationLine: 'underline', fontFamily: fonts.monoBold },
+  smallNote:     { fontSize: 9.5, color: P.muted2, marginTop: 5, textAlign: 'center', fontFamily: fonts.monoMedium },
+  helpHeader:    { fontSize: 11, color: P.muted, marginBottom: 4, lineHeight: 16, fontFamily: fonts.sansMedium },
+  dateHint:      { fontSize: 9.5, color: P.yellowText, marginTop: 4, marginBottom: 4, textAlign: 'center', fontWeight: '700', fontFamily: fonts.monoBold, backgroundColor: P.yellowPale, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, overflow: 'hidden' },
 
-  slotCard:      { padding: 12, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.teal, marginVertical: 4 },
-  slotLabel:     { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  slotTime:      { fontSize: 15, fontWeight: '800', color: colors.t1, marginBottom: 4 },
-  slotMeta:      { fontSize: 11, color: colors.t3 },
+  slotCard:      { padding: 11, backgroundColor: P.white, borderRadius: 10, borderWidth: 1.5, borderColor: P.success, marginVertical: 4 },
+  slotLabel:     { fontSize: 9.5, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fonts.monoBold, letterSpacing: 0.4 },
+  slotTime:      { fontSize: 15, fontWeight: '800', color: P.ink, marginBottom: 3, fontFamily: fonts.displayBold },
+  slotMeta:      { fontSize: 10.5, color: P.muted, fontFamily: fonts.monoMedium },
 
-  flipBanner:    { backgroundColor: colors.orange + '20', borderRadius: 10, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: colors.orange },
-  flipBannerTxt: { fontSize: 11, color: colors.t1, lineHeight: 15, marginBottom: 8 },
-  flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.orange, borderRadius: 8 },
-  flipConfirmBtnTxt: { color: colors.white, fontSize: 11, fontWeight: '800' },
+  flipBanner:    { backgroundColor: P.yellowPale, borderRadius: 10, padding: 10, marginBottom: 9, borderWidth: 1, borderColor: '#F0DA88' },
+  flipBannerTxt: { fontSize: 11, color: P.ink2, lineHeight: 15, marginBottom: 7, fontFamily: fonts.sansMedium },
+  flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 11, paddingVertical: 5, backgroundColor: P.ink, borderRadius: 7 },
+  flipConfirmBtnTxt: { color: P.yellow, fontSize: 10, fontWeight: '800', fontFamily: fonts.monoBold },
 
-  addrBox:       { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 },
-  addrLabel:     { fontSize: 9, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  addrText:      { fontSize: 12, color: colors.t1 },
-  statusBox:     { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginTop: 8 },
-  statusLine:    { fontSize: 12, color: colors.t1, marginBottom: 2 },
-  completeBox:   { marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: colors.tealPale, borderWidth: 1, borderColor: colors.teal },
-  completeTxt:   { fontSize: 12, color: colors.tealDeep, fontWeight: '700' },
+  addrBox:    { padding: 10, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 9 },
+  addrLabel:  { fontSize: 9, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginBottom: 4, fontFamily: fonts.monoBold, letterSpacing: 0.4 },
+  addrText:   { fontSize: 11.5, color: P.ink, fontFamily: fonts.sansMedium },
+  statusBox:  { padding: 10, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginTop: 8 },
+  statusLine: { fontSize: 11, color: P.ink, marginBottom: 2, fontFamily: fonts.monoMedium },
+  completeBox:{ marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: P.successPale, borderWidth: 1, borderColor: '#A8E6CC' },
+  completeTxt:{ fontSize: 11.5, color: P.successText, fontWeight: '800', fontFamily: fonts.displayBold },
 
-  logBox:        { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
-  logTitle:      { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  logRow:        { fontSize: 10, color: colors.t2, marginBottom: 2 },
-  logTime:       { color: colors.t3 },
-  logActor:      { color: colors.t2, fontWeight: '700' },
+  logBox:   { marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: P.border },
+  logTitle: { fontSize: 9, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', marginBottom: 5, fontFamily: fonts.monoBold, letterSpacing: 0.4 },
+  logRow:   { fontSize: 9.5, color: P.muted, marginBottom: 2, lineHeight: 14, fontFamily: fonts.monoMedium },
+  logTime:  { color: P.muted2 },
+  logActor: { color: P.ink, fontWeight: '700', fontFamily: fonts.monoBold },
 
-  // Mode picker (used inline in editing card; not nested but referenced from outer scope)
-  modeRow:       { flexDirection: 'row', gap: 6, marginTop: 4 },
-  modeCard:      { flex: 1, paddingVertical: 12, paddingHorizontal: 6, alignItems: 'center', backgroundColor: colors.white, borderRadius: 10, borderWidth: 2, borderColor: colors.border },
-  modeCardActive:{ borderColor: colors.navy, backgroundColor: colors.navyPale },
-  modeIcon:      { fontSize: 22 },
-  modeLabel:     { fontSize: 11, fontWeight: '700', color: colors.t2, marginTop: 4 },
-  modeLabelActive:{ color: colors.navy },
+  // Mode picker (mono-bracket icons — used inline in editing card AND in setup-production picker)
+  modeRow:        { flexDirection: 'row', gap: 7, marginTop: 6 },
+  modeCard:       { flex: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center', backgroundColor: P.white, borderRadius: 11, borderWidth: 2, borderColor: P.border },
+  modeCardActive: { borderColor: P.ink, backgroundColor: P.yellowPale },
+  modeIcon:       { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, backgroundColor: P.bg2, paddingHorizontal: 6, paddingVertical: 3, borderRadius: 5, overflow: 'hidden', letterSpacing: 0.4 },
+  modeIconActive: { backgroundColor: P.ink, color: P.yellow },
+  modeLabel:      { fontSize: 11, fontWeight: '800', color: P.muted2, marginTop: 6, fontFamily: fonts.displayBold },
+  modeLabelActive:{ color: P.ink },
 });
 
 // Wallet-check breakdown shown next to the bonus input on approve.
 const walletStyles = StyleSheet.create({
   breakdownBox: {
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: colors.surface2,
+    marginTop: 9,
+    padding: 11,
+    backgroundColor: P.bg2,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
   breakdownBoxOver: {
-    backgroundColor: '#FDEEE9',
-    borderColor: colors.red,
+    backgroundColor: P.dangerPale,
+    borderColor: '#F2BFB4',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 2,
   },
-  rowLabel:  { fontSize: 12, color: colors.t2 },
-  rowValue:  { fontSize: 12, color: colors.t1 },
-  rowStrong: { fontSize: 12, color: colors.t1, fontWeight: '700' },
-  divider:   { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4, paddingTop: 6 },
+  rowLabel:  { fontSize: 10.5, color: P.muted, fontFamily: fonts.monoMedium },
+  rowValue:  { fontSize: 10.5, color: P.ink, fontFamily: fonts.monoMedium },
+  rowStrong: { fontSize: 11, color: P.ink, fontWeight: '800', fontFamily: fonts.monoBold },
+  divider:   { borderTopWidth: 1, borderTopColor: P.border, marginTop: 4, paddingTop: 6 },
   shortageText: {
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 7,
+    paddingTop: 7,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(232,64,26,0.3)',
-    fontSize: 11,
-    color: colors.red,
+    borderTopColor: 'rgba(232,64,26,0.25)',
+    fontSize: 10.5,
+    color: P.dangerText,
     fontWeight: '700',
-    lineHeight: 16,
+    lineHeight: 15,
+    fontFamily: fonts.sansMedium,
   },
 });
