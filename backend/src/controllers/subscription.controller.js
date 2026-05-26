@@ -1,7 +1,8 @@
 'use strict';
 
 /**
- * subscription.controller.js — Phase A6 of the INFLX 3-Layer Revenue Model.
+ * subscription.controller.js — Phase A6 + A6.5 + A13 of the INFLX
+ * 3-Layer Revenue Model.
  *
  * L1 SaaS subscription endpoints:
  *   GET  /v1/subscription-tiers           — public read of active tiers
@@ -10,16 +11,20 @@
  *                                         — switch to a different tier; charges
  *                                           the first cycle immediately (mock-
  *                                           mode: synthetic; live-mode: Razorpay
- *                                           subscription/mandate flow — TODO).
+ *                                           subscription/mandate flow).
  *   GET  /v1/brands/me/billing/invoices   — invoice history
  *
  * RAZORPAY_MOCK=true (dev/test): upgrade activates immediately + writes a
  *   paid subscription_invoices row + a synthetic razorpay_payment_id.
- * RAZORPAY_MOCK=false (prod): TODO — create Razorpay Subscription/Customer
- *   + UPI Autopay mandate; return short_url for customer consent; webhook
- *   handler completes activation on subscription.activated event. Real
- *   integration is a follow-up; the API shape stays identical so the
- *   front-end (Phase A7) is forward-compatible.
+ * RAZORPAY_MOCK=false (prod, A6.5+): creates a Razorpay subscription
+ *   bound to the (tier_key, billing_period) → razorpay_plan_id mapping
+ *   stored on subscription_prices. Returns
+ *   { status: 'mandate_pending', razorpay_subscription_id, razorpay_key_id }
+ *   so the frontend can open Razorpay Checkout in subscription mode for
+ *   UPI Autopay mandate authorization. Webhook handlers
+ *   (webhook.controller.js) reconcile state via the 5 subscription
+ *   lifecycle events. Yearly billing (A13) falls out free — Razorpay's
+ *   plan_id encodes the period.
  */
 
 const db = require('../config/db');
@@ -212,10 +217,11 @@ const upgrade = asyncHandler(async (req, res) => {
   const tier = tierRows[0];
 
   // Phase A11: look up the active subscription_price for the chosen period.
+  // Phase A6.5: also surface razorpay_plan_id for the live-mode flow.
   // Falls back to legacy monthly_price_inr if no price row exists yet
   // (preserves behaviour for tiers that haven't had prices seeded).
   const { rows: priceRows } = await db.query(
-    `SELECT id, price_inr
+    `SELECT id, price_inr, razorpay_plan_id
        FROM subscription_prices
       WHERE tier_id = $1 AND billing_period = $2 AND active = true
       LIMIT 1`,
@@ -225,6 +231,7 @@ const upgrade = asyncHandler(async (req, res) => {
   let amount = priceRows[0]
     ? parseFloat(priceRows[0].price_inr)
     : (billing_period === 'monthly' ? parseFloat(tier.monthly_price_inr) : null);
+  const razorpayPlanId = priceRows[0]?.razorpay_plan_id || null;
 
   if (amount == null) {
     // Yearly chosen but no yearly price configured by admin yet.
@@ -240,15 +247,95 @@ const upgrade = asyncHandler(async (req, res) => {
   const isMock = String(env.RAZORPAY_MOCK).toLowerCase() === 'true';
 
   if (!isMock) {
-    // TODO Phase A6.5: real Razorpay Subscriptions + UPI Autopay mandate flow.
-    // Until then the live-mode endpoint returns 501 explicitly — front-end
-    // (Phase A7) can detect and show a "coming soon" state. The mock-mode
-    // path is feature-complete for dev + staging exercising of the UX.
-    throw new AppError(
-      'INTERNAL_ERROR',
-      'Razorpay live subscription flow not yet wired (set RAZORPAY_MOCK=true to exercise upgrade end-to-end)',
-      501
-    );
+    // Phase A6.5 + A13 — real Razorpay Subscriptions + UPI Autopay
+    // mandate flow. Returns { status: 'mandate_pending',
+    // razorpay_subscription_id, razorpay_key_id } so the frontend can
+    // open Razorpay Checkout in subscription mode. Webhook handlers
+    // (webhook.controller.js) flip the subscription to 'active' on
+    // subscription.authenticated and write the first paid invoice on
+    // subscription.charged.
+    if (!razorpayPlanId) {
+      // Admin hasn't pasted the plan_id from Razorpay dashboard yet —
+      // graceful 422 (not 500). Brand sees a friendly message via
+      // the QuotaWallModal / error toast.
+      throw new AppError(
+        'ADMIN_CONFIG_MISSING',
+        'Subscription setup is in progress, please check back shortly.',
+        422,
+        'razorpay_plan_id',
+        {
+          tier_key:       tier.tier_key,
+          billing_period,
+          admin_hint:     'Paste the Razorpay plan_id in /admin/pricing/tiers/[tier_key] Section B.',
+        }
+      );
+    }
+
+    // total_count: how many billing cycles before Razorpay auto-cancels.
+    // Monthly subscriptions get 12 cycles (1 year); yearly get 5 cycles
+    // (5 years). Brands can re-subscribe afterwards.
+    const totalCount = billing_period === 'yearly' ? 5 : 12;
+
+    const razorpayService = require('../services/razorpay.service');
+    let rzpSub;
+    try {
+      rzpSub = await razorpayService.createSubscription({
+        plan_id:     razorpayPlanId,
+        total_count: totalCount,
+        notes: {
+          brand_id:       brandId,
+          tier_key:       tier.tier_key,
+          billing_period,
+        },
+      });
+    } catch (err) {
+      // Razorpay API failure — surface to user, no DB writes.
+      console.error('[upgrade] Razorpay createSubscription failed:', err.message);
+      throw new AppError(
+        'PAYMENT_PROVIDER_UNAVAILABLE',
+        'Payment provider is temporarily unavailable. Please try again in a moment.',
+        502,
+        'razorpay'
+      );
+    }
+
+    // Cancel any prior active sub + INSERT a new pending_mandate sub.
+    // brand_subscriptions.status='pending_mandate' is the new transitional
+    // state; subscription.authenticated webhook flips it to 'active'.
+    let createdSubId;
+    await db.withTransaction(async (client) => {
+      await client.query(
+        `UPDATE brand_subscriptions
+            SET status = 'cancelled', cancelled_at = now()
+          WHERE brand_id = $1 AND status IN ('active','pending_mandate')`,
+        [brandId]
+      );
+      const { rows: subRows } = await client.query(
+        `INSERT INTO brand_subscriptions
+           (brand_id, tier_id, subscription_price_id, status,
+            mandate_status, razorpay_subscription_id)
+         VALUES ($1, $2, $3, 'pending_mandate', 'pending', $4)
+         RETURNING id`,
+        [brandId, tier.id, subscriptionPriceId, rzpSub.id]
+      );
+      createdSubId = subRows[0].id;
+    });
+
+    return success(res, {
+      status:                  'mandate_pending',
+      mode:                    'live',
+      subscription_id:         createdSubId,
+      razorpay_subscription_id: rzpSub.id,
+      razorpay_key_id:         env.RAZORPAY_KEY_ID,
+      razorpay_short_url:      rzpSub.short_url, // brand can also pay via this link if Checkout fails
+      tier_key:                tier.tier_key,
+      tier_name:               tier.name,
+      billing_period,
+      amount_inr:              amount,
+      gst_amount_inr:          parseFloat((amount * GST_PCT / 100).toFixed(2)),
+      total_inr:               parseFloat((amount * (1 + GST_PCT / 100)).toFixed(2)),
+      message:                 `Subscription created — complete the UPI Autopay mandate to activate.`,
+    }, 201);
   }
 
   // Mock-mode: cancel any prior active sub, insert new active sub at the

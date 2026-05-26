@@ -162,24 +162,45 @@ export default function TierEditorPage() {
       {/* ── Section B — Pricing ── */}
       <section className="mb-6 bg-white border border-border2 rounded-xl p-5">
         <h2 className="text-xs font-bold text-t2 uppercase tracking-wider mb-3">Pricing</h2>
+        <p className="text-xs text-t3 mb-3">
+          The <span className="font-mono">Razorpay plan_id</span> column holds the <span className="font-mono">plan_NXyz123…</span> identifier you get
+          after creating a plan on Razorpay&apos;s dashboard. Until pasted, live-mode upgrade attempts return a
+          graceful &quot;setup in progress&quot; message — no 500s.
+        </p>
         <table className="w-full text-sm">
-          <thead><tr className="text-left text-xs text-t3 uppercase"><th className="pb-2">Period</th><th className="pb-2">Price (₹)</th><th className="pb-2">Active</th><th></th></tr></thead>
+          <thead><tr className="text-left text-xs text-t3 uppercase">
+            <th className="pb-2">Period</th>
+            <th className="pb-2">Price (₹)</th>
+            <th className="pb-2">Active</th>
+            <th className="pb-2">Razorpay plan_id</th>
+            <th></th>
+          </tr></thead>
           <tbody>
             {prices.map(p => (
               <tr key={p.id} className="border-t border-border2">
                 <td className="py-2 font-mono">{p.billing_period}</td>
-                <td className="py-2"><input type="number" defaultValue={p.price_inr} id={`price-${p.id}`} className="w-32 border border-border2 rounded px-2 py-1 text-sm" /></td>
+                <td className="py-2"><input type="number" defaultValue={p.price_inr} id={`price-${p.id}`} className="w-28 border border-border2 rounded px-2 py-1 text-sm" /></td>
                 <td className="py-2"><input type="checkbox" defaultChecked={p.active} id={`active-${p.id}`} /></td>
+                <td className="py-2">
+                  <input
+                    type="text"
+                    defaultValue={p.razorpay_plan_id || ''}
+                    placeholder="plan_NXyz123…"
+                    id={`rzpplan-${p.id}`}
+                    className="w-48 border border-border2 rounded px-2 py-1 text-xs font-mono"
+                  />
+                </td>
                 <td className="py-2 text-right">
                   <button onClick={() => savePrice(p, {
-                    price_inr: parseFloat(document.getElementById(`price-${p.id}`).value) || 0,
-                    active:    document.getElementById(`active-${p.id}`).checked,
+                    price_inr:        parseFloat(document.getElementById(`price-${p.id}`).value) || 0,
+                    active:           document.getElementById(`active-${p.id}`).checked,
+                    razorpay_plan_id: document.getElementById(`rzpplan-${p.id}`).value.trim(),
                   })} className="px-3 py-1 bg-navy text-white rounded text-xs font-bold mr-1">Save</button>
                   <button onClick={() => adminApi.deletePrice(p.id).then(load)} className="px-2 py-1 text-red text-xs">Deactivate</button>
                 </td>
               </tr>
             ))}
-            {prices.length === 0 && <tr><td colSpan={4} className="py-4 text-center text-t3 italic">No prices yet</td></tr>}
+            {prices.length === 0 && <tr><td colSpan={5} className="py-4 text-center text-t3 italic">No prices yet</td></tr>}
           </tbody>
         </table>
         <div className="flex gap-2 mt-3 text-sm">

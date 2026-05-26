@@ -1,0 +1,33 @@
+{
+  "feature": "billing-razorpay-live",
+  "area": "backend-service+controller+migration+webhook+admin-ui+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit go after confirming test-mode Razorpay account active, Subscriptions feature enabled (screenshot), keys set on Render, RAZORPAY_MOCK=false on Render. Combined A6.5 + A13 (yearly billing falls out free once subscription cadence is wired).",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with new razorpay.service + rewritten upgrade controller + 5 new webhook handlers; Vercel redeploys brand-web with Razorpay Checkout SDK + admin razorpay_plan_id field. M070 needs separate explicit founder go on Supabase prod. RAZORPAY_MOCK=false already on Render so live flow activates immediately on Render redeploy; until founder pastes plan_ids in admin UI, every upgrade attempt returns 422 ADMIN_CONFIG_MISSING gracefully (no 500s, no data corruption).",
+  "fix": "Phase A6.5 + A13 — real Razorpay Subscriptions + UPI Autopay mandate flow. razorpay.service.js wraps the official SDK. subscription.controller.upgrade rewritten: resolve razorpay_plan_id per (tier, billing_period), call createSubscription, return {subscription_id, key_id} for frontend Checkout. webhook.controller adds 5 lifecycle handlers (authenticated, charged, cycle_end, halted, payment.failed) with idempotency via UPSERT-style updates + partial unique index on invoices. Admin tier editor gets a razorpay_plan_id text input per price row. brand-web Subscription page integrates Razorpay Checkout SDK; Upgrade handler now handles both mock-mode (immediate activate) and live-mode (mandate_pending → Checkout → poll for active).",
+  "related": [
+    "features/billing-tier-features-and-prices",
+    "features/billing-brand-feature-overrides",
+    "features/billing-feature-bulk-outreach",
+    "features/billing-feature-open-group-broadcast",
+    "features/billing-enforce-quota-features"
+  ],
+  "result": "razorpay.service.js wraps the official SDK with lazy init (safe boot when keys absent). subscription.controller.upgrade live-mode rewritten: resolves razorpay_plan_id from subscription_prices, calls createSubscription, INSERTs brand_subscriptions row with status='pending_mandate', returns {razorpay_subscription_id, razorpay_key_id, short_url} for frontend Checkout. webhook.controller adds 5 new lifecycle handlers (authenticated, charged, cycle_end, halted, payment.failed for subscription_id). Admin tier editor Section B gains a razorpay_plan_id text input per price row; updatePrice + listTierPrices extended. brand-web Subscription page lazy-loads Razorpay Checkout SDK; Upgrade handler branches on response shape (mock=instant refresh, live=open Checkout + poll for mandate_status=active). M070 applied locally: column + 2 indexes verified. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (1.7m).",
+  "regression_proof": "pnpm qa 76/76 GREEN. STATE=GREEN. gate=0. Defensive design verified: mock-mode path untouched (devs flipping RAZORPAY_MOCK=true locally keep the synthetic flow); plan_id NULL → 422 ADMIN_CONFIG_MISSING graceful (no 500); webhook handlers idempotent via UPSERT-style updates on brand_subscriptions + partial unique index ux_sub_invoices_brand_payment on invoices; razorpay.service uses lazy SDK init so boot smoke doesn't require keys; Razorpay API failure inside upgrade() is caught + surfaced as 502 PAYMENT_PROVIDER_UNAVAILABLE with no brand_subscriptions row written. The QuotaWallModal post-A14 extension recognizes ADMIN_CONFIG_MISSING-shaped 422 responses too (PAYWALL_CODES set covers FEATURE_NOT_AVAILABLE / FEATURE_LIMIT / QUOTA_EXCEEDED; ADMIN_CONFIG_MISSING falls through to the page's inline error banner, which is the desired UX).",
+  "discipline": "Verify-twice: razorpay npm v2.9.6 already installed (backend/package.json). RAZORPAY_KEY_ID/SECRET/WEBHOOK_SECRET already in env.js config + set on Render (founder screenshot 2026-05-26). brand_subscriptions schema already has every column the live flow writes to (razorpay_subscription_id, razorpay_mandate_id, mandate_status, next_charge_at, current_cycle_start, current_cycle_end, last_charged_at). subscription_invoices already has razorpay_payment_id + razorpay_invoice_id + status + failure_reason. The existing webhook controller has signature verification + event switch — A6.5 adds new cases; existing handlers unchanged. Subscriptions feature confirmed enabled on Razorpay (screenshot). No new schema beyond M070's razorpay_plan_id column + invoice idempotency index.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with razorpay.service + rewritten upgrade + 5 new webhook handlers, Vercel redeploys brand-web with Checkout SDK + admin field). M070 prod migration on separate explicit founder go after push, applied via trap+restore sequence. Post-deploy founder tasks documented in 03-expected-outputs.md (create 6 Razorpay plans, paste plan_ids in admin UI, configure Razorpay webhook URL, end-to-end smoke with success@razorpay VPA)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — admin UI additions reuse the existing tier editor Section B primitives (one extra text input per row); brand-web Subscription page reuses the existing Upgrade button styling, only the click handler logic changes. No new design tokens. Per the existing pattern, mockup-lock N/A for this contract.",
+  "mockup_locked_at": "2026-05-26"
+}

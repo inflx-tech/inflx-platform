@@ -190,7 +190,7 @@ const listTierPrices = asyncHandler(async (req, res) => {
   );
   if (!tierRows.length) throw new AppError('NOT_FOUND', `tier ${tier_key} not found`, 404);
   const { rows } = await db.query(
-    `SELECT id, billing_period, price_inr, active, sort_order, updated_at
+    `SELECT id, billing_period, price_inr, active, sort_order, razorpay_plan_id, updated_at
        FROM subscription_prices
       WHERE tier_id = $1
       ORDER BY billing_period`,
@@ -233,14 +233,18 @@ const createPrice = asyncHandler(async (req, res) => {
 
 const updatePrice = asyncHandler(async (req, res) => {
   const { price_id } = req.params;
-  const allowed = ['price_inr','active','sort_order'];
+  // Phase A6.5 — razorpay_plan_id added. Admin pastes the plan_NXyz123…
+  // ID from Razorpay dashboard per (tier × billing_period) row. NULL
+  // empties the column (revert to "live mode plan not yet configured").
+  const allowed = ['price_inr','active','sort_order','razorpay_plan_id'];
   const sets = [];
   const params = [];
   let i = 1;
   for (const k of allowed) {
     if (k in req.body) {
       sets.push(`${k} = $${i++}`);
-      params.push(req.body[k]);
+      // Empty string from the admin UI field → NULL the column.
+      params.push(k === 'razorpay_plan_id' && req.body[k] === '' ? null : req.body[k]);
     }
   }
   if (!sets.length) throw new AppError('VALIDATION_ERROR', 'no editable fields', 422);

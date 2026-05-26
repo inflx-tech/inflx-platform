@@ -6,12 +6,25 @@
  * Phase A11: rewritten to render from the entitlements payload (the new
  * first-class feature catalog) + per-tier prices joined from
  * subscription_prices. Adds a Monthly/Yearly toggle that swaps the
- * displayed price on every tier card. Upgrade calls pass billing_period
- * so the backend can pick the right subscription_price row.
+ * displayed price on every tier card.
+ *
+ * Phase A6.5 + A13: upgrade() now handles two response shapes from the
+ * backend. Mock-mode (RAZORPAY_MOCK=true) returns
+ * { status: 'activated' } → page refreshes immediately. Live-mode
+ * returns { status: 'mandate_pending', razorpay_subscription_id,
+ * razorpay_key_id } → frontend opens Razorpay Checkout in subscription
+ * mode for UPI Autopay mandate authorization, then polls
+ * /v1/brands/me/subscription every 2s until mandate_status='active'
+ * (or 30s timeout → "verifying — your invoice will appear shortly").
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { brandApi, fmtMoney } from '../../../../lib/api';
+
+// Razorpay Checkout SDK URL. Loaded once on mount via a manual script
+// tag injection so this client component doesn't depend on next/script
+// being configured at the layout level.
+const RAZORPAY_CHECKOUT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 
 const CSS = `
 .s *{box-sizing:border-box}
@@ -169,6 +182,36 @@ export default function SubscriptionPage() {
   }
   useEffect(() => { load(); }, []);
 
+  // Phase A6.5 — load Razorpay Checkout SDK once. Idempotent: if the
+  // script tag already exists in <head>, we skip.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.Razorpay) return;
+    if (document.querySelector(`script[src="${RAZORPAY_CHECKOUT_SRC}"]`)) return;
+    const s = document.createElement('script');
+    s.src   = RAZORPAY_CHECKOUT_SRC;
+    s.async = true;
+    document.head.appendChild(s);
+  }, []);
+
+  /**
+   * Poll the subscription endpoint until the brand's mandate_status flips
+   * to 'active' (or timeout). Used after Razorpay Checkout closes
+   * successfully to know when the webhook has landed.
+   */
+  async function pollUntilActive(timeoutMs = 30000, intervalMs = 2000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await brandApi.getSubscription();
+        const ms = res?.data?.subscription?.mandate_status;
+        if (ms === 'active') return true;
+      } catch { /* swallow + retry */ }
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+    return false;
+  }
+
   async function upgrade(tierKey, billingPeriod) {
     if (!confirm(`Upgrade to ${tierKey.toUpperCase()} (${billingPeriod})? You will be charged at the start of the next cycle.`)) return;
     setUp(`${tierKey}:${billingPeriod}`); setErr(null); setOk(null);
@@ -179,12 +222,60 @@ export default function SubscriptionPage() {
         setUp(null);
         return;
       }
-      setOk(`Upgraded to ${tierKey.toUpperCase()} (${billingPeriod}). Invoice ${res.data?.invoice_id?.slice(0,8) || ''} created.`);
+      const d = res.data || {};
+
+      // Phase A6.5 — live-mode path. Backend created a Razorpay
+      // subscription; we now open Checkout in subscription mode for UPI
+      // Autopay mandate authorization.
+      if (d.status === 'mandate_pending' && d.razorpay_subscription_id && d.razorpay_key_id) {
+        if (!window.Razorpay) {
+          setErr('Razorpay Checkout SDK failed to load. Refresh and try again.');
+          setUp(null);
+          return;
+        }
+        const rzp = new window.Razorpay({
+          key:             d.razorpay_key_id,
+          subscription_id: d.razorpay_subscription_id,
+          name:            'INFLX',
+          description:     `${d.tier_name || tierKey} ${billingPeriod} subscription`,
+          theme:           { color: '#0A0A0A' },
+          handler: async () => {
+            setOk('Verifying mandate — this can take a few seconds…');
+            const activated = await pollUntilActive();
+            if (activated) {
+              setOk(`Subscription active: ${tierKey.toUpperCase()} (${billingPeriod}).`);
+              await load();
+            } else {
+              setOk('Mandate authorized — your subscription will activate shortly. Refresh in a moment to see it.');
+            }
+            setUp(null);
+          },
+          modal: {
+            ondismiss: () => {
+              setOk(null);
+              setErr('Upgrade cancelled — no charges made.');
+              setUp(null);
+            },
+          },
+        });
+        rzp.on('payment.failed', (resp) => {
+          setErr(`Payment failed: ${resp?.error?.description || 'Please try again.'}`);
+          setUp(null);
+        });
+        rzp.open();
+        return;  // wait for Checkout callbacks
+      }
+
+      // Mock-mode path (RAZORPAY_MOCK=true) — synthetic activation,
+      // refresh immediately.
+      setOk(`Upgraded to ${tierKey.toUpperCase()} (${billingPeriod}). Invoice ${d.invoice_id?.slice(0,8) || ''} created.`);
       await load();
     } catch (e) {
       setErr(e?.message || 'Upgrade failed');
     } finally {
-      setUp(null);
+      // In live-mode the Checkout callbacks own setUp(null); in mock-mode
+      // we fall through here.
+      if (!up || !up.includes(':')) setUp(null);
     }
   }
 
