@@ -18,10 +18,17 @@
   "discipline": "Verify-twice on the prod schema caught the bug — pg_enum query returned only 4 values for subscription_status; the controller writes a 5th. PG 22P02 (invalid_text_representation) on the INSERT path triggered errorHandler.js:34's generic 'Invalid ID format' mapping, masking the actual cause. Carved per the no-fake-green rule (genuine backend defect, not a test issue).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting governance category — prod DB enum write). M071 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'yes pls proceed' after defect fix push (d39c5f6) landed on origin/main.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "d39c5f6",
+      "render_redeploy": "auto on push (zero JS change — Render redeploy is a no-op for behaviour)",
+      "prod_migrations": {
+        "M071_subscription_status_pending_mandate": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: subscription_status enum now has 5 values (active, paused, cancelled, past_due, pending_mandate). The A6.5 upgrade flow is now unblocked — next /v1/brands/me/subscription/upgrade call will INSERT the brand_subscriptions row with status='pending_mandate' successfully and return the mandate_pending payload so frontend can open Razorpay Checkout."
+      },
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run (.env.bak removed; DATABASE_URL verified)."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A migration-only contract.",
