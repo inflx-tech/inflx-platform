@@ -1,0 +1,32 @@
+{
+  "feature": "backend-defect-webhook-signature-diagnostic",
+  "area": "backend-controller",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — implicit go via the ongoing A6.5 smoke-test debug session; fourth carved defect after enum + cycle-dates + body-hang fixes. After body-hang fix landed, webhook signature persistently rejected (401) even after re-paste. Diagnostic logging needed for ground-truth.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render redeploys backend with one additional warn-log call on signature failure). NO migration. NO schema change. Logs partial secret info (length + first 3 chars) only on mismatch — acceptable risk during this debug window.",
+  "fix": "Enhance verifyWebhookSignature to log structured diagnostic info on mismatch: secret_set, secret_len, secret_first_3, body_len, body_first_60, expected_first_16, received_first_16. Without these fields we can't distinguish a wrong-Render-env from a wrong-Razorpay-secret from a body-encoding issue.",
+  "related": [
+    "features/backend-defect-webhook-body-hang",
+    "features/backend-defect-pending-mandate-enum",
+    "features/backend-defect-pending-mandate-cycle-dates",
+    "features/billing-razorpay-live"
+  ],
+  "result": "verifyWebhookSignature enhanced with structured WARN log on mismatch (secret_set, secret_len, secret_first_3, body_len, body_first_60, expected_first_16, received_first_16). Boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (43.3s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. Logging fires only on signature mismatch; successful webhook path unchanged. No regression surface; the diagnostic doesn't execute during pnpm qa because the suite doesn't hit /v1/webhooks/*.",
+  "discipline": "Carved per no-fake-green: the signature mismatch could be on either Razorpay's side OR Render's side OR a body-encoding issue. Without diagnostic info we'd guess and iterate; with it we get ground truth in one redeploy + retry cycle.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Render redeploy of backend with enhanced diagnostic logging on signature mismatch). NO migration."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only logging patch.",
+  "mockup_locked_at": "2026-05-26"
+}

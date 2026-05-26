@@ -31,11 +31,30 @@ const notificationService = require('../services/notification.service');
 
 function verifyWebhookSignature(rawBody, signature) {
   if (!env.RAZORPAY_WEBHOOK_SECRET) return true; // skip if not configured (dev)
+  const secret = env.RAZORPAY_WEBHOOK_SECRET;
   const expected = crypto
-    .createHmac('sha256', env.RAZORPAY_WEBHOOK_SECRET)
+    .createHmac('sha256', secret)
     .update(rawBody)
     .digest('hex');
-  return expected === signature;
+  const match = expected === signature;
+  if (!match) {
+    // Diagnostic logging — fires only on mismatch. Logs lengths + first
+    // chars only; never the full secret. Carved defect contract:
+    // features/backend-defect-webhook-signature-diagnostic/.
+    const bodyStr = Buffer.isBuffer(rawBody)
+      ? rawBody.toString('utf8')
+      : String(rawBody || '');
+    console.warn('[WEBHOOK] Signature mismatch debug:', {
+      secret_set:        !!secret,
+      secret_len:        secret.length,
+      secret_first_3:    secret.slice(0, 3),
+      body_len:          Buffer.isBuffer(rawBody) ? rawBody.length : (rawBody?.length || 0),
+      body_first_60:     bodyStr.slice(0, 60),
+      expected_first_16: expected.slice(0, 16),
+      received_first_16: (signature || '').slice(0, 16),
+    });
+  }
+  return match;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
