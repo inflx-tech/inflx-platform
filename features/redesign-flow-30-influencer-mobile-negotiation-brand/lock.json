@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-30-influencer-mobile-negotiation-brand",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-26 chat \"ok pls proceed\"",
   "approved_at": "2026-05-26",
@@ -10,17 +10,54 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-26 chat — Flow 30 mockup locked",
   "mockup_locked_at": "2026-05-26",
-  "notes": "3rd flow of mobile-influencer bucket (3/23). NegotiationScreen (622 LOC chat-style turn thread) + BrandProfileScreen (200 LOC public brand info). ZERO SDK boundaries. ZERO backend change. StatusPill canonical map: zero NEW entries, but adds mode='influencer' (~3-line component change) to flip awaiting_brand/awaiting_influencer labels for influencer-side consumers — mirrors existing mode='transaction' pattern from Flow 21. Drops unused `import StatusBadge` from NegotiationScreen. ~80 colors.* token swaps across both files. 13 NegotiationScreen + 6 BrandProfile render branches preserved verbatim. All 4 APIs preserved (getNegotiation / getNegotiationByCampaignInfluencer / submitNegotiationTurn / getBrandPublicProfile). No native rebuild required.",
+  "notes": "3rd flow of mobile-influencer bucket (3/23). NegotiationScreen (622→680 LOC chat-style turn thread) + BrandProfileScreen (200→210 LOC public brand info). ZERO SDK boundaries. ZERO backend change. ZERO StatusPill canonical map additions but ADDS mode='influencer' (~5-line component change) that flips awaiting_brand → 'WAITING' + awaiting_influencer → 'YOUR TURN' for influencer-side consumers — mirrors mode='transaction' pattern from Flow 21. Drops dead `import StatusBadge` from NegotiationScreen (line 15, never used). ~80 colors.* token swaps. 13 NegotiationScreen + 6 BrandProfile render branches preserved verbatim. All 4 APIs preserved. No native rebuild required (Flow 28 laid MCI font foundation). RELEASED 2026-05-26 with web pnpm qa 76/76 GREEN gate 0 first-run + OTA × 3.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-26",
+      "web_report_path": "qa/reports/2026-05-26T14-00-39-416Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 37.8,
+      "web_note": "Dual-probe pre-warm (OTA manifest influencer runtime=2 + /admin/stats 401 + /auth/refresh 401) cleared cold-start. 76 passed gate 0 STATE=GREEN on FIRST run in 37.8s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline (00-smoke / 01-follower-public-browse / 02-influencer-launch / 03-brand-launch) continues to apply. Deep NegotiationScreen + BrandProfile visual verification still requires a pre-verified influencer test account (admin-verify gate blocks Home). Founder physical smoke-test on installed APK covers visual verification."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"ok pls proceed\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-26",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Flow 28 laid the MCI font foundation. Flow 30 = pure JS, ships via OTA.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Negotiation/BrandProfile visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade'"
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 30 = pure JS, ships via OTA to existing APKs.",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Negotiation/BrandProfile visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "90b9ab4", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "90b9ab4", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "90b9ab4", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 80, "previous_version": 79,
+        "bundle_hash": "sha256:5ec9c3d6c68a567f6937a34a56d12c9f867802317c51b50f1450e883a2931b7d",
+        "published_at": "2026-05-26T14:39:42.001Z", "bundle_size_kb": 2475,
+        "trigger": "pnpm publish-ota:all -m 'Flow 30 — influencer-mobile Negotiation + BrandProfile (brandPalette + StatusPill mode=influencer + MCI icons)'",
+        "scope": "brand audience manifest (shared bundle; no brand-screen changes — influencer-only restyle; brand-mobile consumers continue to see canonical brand-POV StatusPill labels)"
+      },
+      "ota_influencer": {
+        "version": 69, "previous_version": 68,
+        "bundle_hash": "sha256:5ec9c3d6c68a567f6937a34a56d12c9f867802317c51b50f1450e883a2931b7d",
+        "published_at": "2026-05-26T14:39:49.267Z", "bundle_size_kb": 2475,
+        "trigger": "pnpm publish-ota:all -m 'Flow 30 — influencer-mobile Negotiation + BrandProfile (brandPalette + StatusPill mode=influencer + MCI icons)'",
+        "scope": "influencer audience manifest (shared bundle; ALL Flow 30 redesigns live here)"
+      },
+      "ota_follower": {
+        "version": 43, "previous_version": 42,
+        "bundle_hash": "sha256:5ec9c3d6c68a567f6937a34a56d12c9f867802317c51b50f1450e883a2931b7d",
+        "published_at": "2026-05-26T14:39:57.114Z", "bundle_size_kb": 2475,
+        "trigger": "pnpm publish-ota:all -m 'Flow 30 — influencer-mobile Negotiation + BrandProfile (brandPalette + StatusPill mode=influencer + MCI icons)'",
+        "scope": "follower audience manifest (shared bundle; no follower-screen changes)"
+      }
+    }
   }
 }
