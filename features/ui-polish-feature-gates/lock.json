@@ -1,0 +1,35 @@
+{
+  "feature": "ui-polish-feature-gates",
+  "area": "brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'proceed with UI polish' after A14 closeout. Backend-touchless follow-up.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Vercel redeploys brand-web with the QuotaWallModal extension + new useEntitlements hook + profile-page conditional Add Branch button) but BACKEND-TOUCHLESS — no Render redeploy effect, no migration. Behaviour-improving only.",
+  "fix": "Post-A14 UI polish: extend QuotaWallModal.isQuotaError to recognise FEATURE_NOT_AVAILABLE + FEATURE_LIMIT (so the modal pops for ALL backend gates via the existing showFromResponse path with zero per-page wiring); add useEntitlements() hook in brand-web/lib consuming the existing GET /v1/brands/me/subscription endpoint; hide the + Add Branch button on /dashboard/settings/profile for Free/Growth tiers, replacing it with an upgrade-prompt chip.",
+  "related": [
+    "features/billing-brand-feature-overrides",
+    "features/billing-feature-multi-branch-support",
+    "features/billing-feature-bulk-outreach",
+    "features/billing-feature-open-group-broadcast",
+    "features/billing-feature-discover-filter",
+    "features/billing-feature-search-advanced",
+    "features/billing-enforce-quota-features"
+  ],
+  "result": "QuotaWallModal predicate + render extended for FEATURE_NOT_AVAILABLE + FEATURE_LIMIT (titles + showUsage flag). useEntitlements hook added at Packages/brand-web/lib/useEntitlements.js (~95 lines, 5-min module cache + de-dupe inflight). Profile page imports the hook, renders + Add Branch button only when has('multi_branch_support'); otherwise shows the locked-tier chip linking to /dashboard/settings/subscription. The 'no additional branches' empty-state copy adapts to tier. Backend untouched. Boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (39.0s).",
+  "regression_proof": "pnpm qa 76/76 GREEN. STATE=GREEN. gate=0. Backend untouched (zero risk to existing API contracts). Hook + modal extension are additive — existing showFromResponse callers (campaigns/page, campaigns/new/page, products/page) automatically benefit from the FEATURE_NOT_AVAILABLE / FEATURE_LIMIT modal pop with no per-page wiring needed. Profile-page conditional defaults to optimistic render during hook loading so any hook edge case fails safe (backend A12.6 gate is the safety net).",
+  "discipline": "Verify-twice: confirmed via code read that subscription.controller.getSubscription already returns entitlements + tier_key via entitlementsService.getEntitlementsPlain (line 165) so no new backend endpoint required. Confirmed via grep that 3 brand-web pages already use showFromResponse (campaigns, campaigns/new, products) and will get the modal pop on FEATURE_NOT_AVAILABLE / FEATURE_LIMIT with zero per-page wiring after the predicate change. Confirmed the Add Branch button lives at line 477 of the profile page.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Vercel redeploy of brand-web; backend-touchless — no migration, no Render redeploy effect). After push, no prod migration is needed — UI polish is behaviourally additive."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A small UI tweak: no new screens, no new design tokens. QuotaWallModal CSS already locked; profile-page chip reuses existing classes from the page's btn-yel-ghost styling lineage.",
+  "mockup_locked_at": "2026-05-26"
+}

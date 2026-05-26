@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { brandApi } from '../../../../lib/api';
+import useEntitlements from '../../../../lib/useEntitlements';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -192,6 +193,13 @@ export default function ProfilePage() {
   const [toast, setToast]         = useState(null);
   const [fileTooltip, setFileTooltip] = useState(false);
   const fileInputRef              = useRef(null);
+
+  // Post-A14 UI polish: proactively gate the + Add Branch button on
+  // the brand's multi_branch_support entitlement so Free/Growth tiers
+  // see the upgrade prompt instead of submitting and being told no.
+  // Backend A12.6 gate is still the safety net.
+  const ent = useEntitlements();
+  const canAddBranch  = ent.loading ? true : ent.has('multi_branch_support');
 
   // Form state
   const [form, setForm] = useState({
@@ -474,7 +482,27 @@ export default function ProfilePage() {
         <div className="prf-card">
           <div className="prf-card-h">
             <div className="prf-card-t"><span className="em">📍</span>Branches &amp; Outlets</div>
-            <button type="button" className="btn-yel-ghost" onClick={addBranch}>+ Add Branch</button>
+            {canAddBranch ? (
+              <button type="button" className="btn-yel-ghost" onClick={addBranch}>+ Add Branch</button>
+            ) : (
+              <a
+                href="/dashboard/settings/subscription"
+                title="Multi-branch is on Pro and Enterprise plans"
+                style={{
+                  fontSize: 12,
+                  color: '#52525B',
+                  textDecoration: 'none',
+                  border: '1px solid #E4E4E7',
+                  borderRadius: 8,
+                  padding: '6px 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                🔒 Multi-branch is on Pro / Enterprise · View plans →
+              </a>
+            )}
           </div>
 
           {/* MAIN BRANCH */}
@@ -551,7 +579,11 @@ export default function ProfilePage() {
 
           {/* ADDITIONAL BRANCHES */}
           {branches.length === 0 && (
-            <p className="br-empty">No additional branches · click &quot;+ Add Branch&quot; to add one</p>
+            <p className="br-empty">
+              {canAddBranch
+                ? 'No additional branches · click "+ Add Branch" to add one'
+                : 'Multi-branch support is on Pro and Enterprise plans'}
+            </p>
           )}
           {branches.map((branch, idx) => (
             <div key={idx} className="br-card">

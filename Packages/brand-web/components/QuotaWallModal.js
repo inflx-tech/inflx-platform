@@ -1,16 +1,23 @@
 'use client';
 
 /**
- * QuotaWallModal — Phase A7-brand
+ * QuotaWallModal — Phase A7-brand (extended post-A14 UI polish).
  *
- * Reusable modal triggered when any backend mutation returns the
- * standard 422 envelope:
+ * Reusable modal triggered when any backend mutation returns one of
+ * the three paywall codes:
+ *
+ *   QUOTA_EXCEEDED       quota gate (A12.1) — has used/limit numbers
+ *   FEATURE_LIMIT        config gate (A12.2 niches_limit) — has used/limit
+ *   FEATURE_NOT_AVAILABLE boolean gate (A12.3/A12.4/A12.5/A12.6) — binary
+ *
+ * Standard envelope (all three codes):
  *
  *   { success: false,
- *     error: { code: 'QUOTA_EXCEEDED',
+ *     error: { code: 'QUOTA_EXCEEDED' | 'FEATURE_NOT_AVAILABLE' | 'FEATURE_LIMIT',
  *              message: '...',
- *              field: '<action>',
- *              details: { action, used, limit, current_tier, upgrade_to } }}
+ *              field: '<action>' | '<feature_key>',
+ *              details: { action?, used?, limit?, current_tier?,
+ *                         feature_key?, config_key?, upgrade_to } }}
  *
  * Pages use it like this:
  *
@@ -52,10 +59,14 @@ const CSS = `
 `;
 
 /**
- * Predicate — returns true if a non-success API response is a quota wall.
+ * Predicate — returns true if a non-success API response is a paywall
+ * (any of: quota wall, feature-not-on-plan, feature config limit).
+ * Kept under the historical name `isQuotaError` so existing call sites
+ * don't need to change.
  */
+const PAYWALL_CODES = new Set(['QUOTA_EXCEEDED', 'FEATURE_NOT_AVAILABLE', 'FEATURE_LIMIT']);
 export function isQuotaError(res) {
-  return !!(res && res.success === false && res.error && res.error.code === 'QUOTA_EXCEEDED');
+  return !!(res && res.success === false && res.error && PAYWALL_CODES.has(res.error.code));
 }
 
 /**
@@ -74,11 +85,14 @@ export function useQuotaWall() {
     // Some controllers attach the payload in error.details; some inline.
     const d = res.error.details || res.error;
     setQuota({
-      action:        d.action        || res.error.field || 'action',
+      code:          res.error.code,
+      action:        d.action        || res.error.field || d.feature_key || 'action',
       used:          d.used,
       limit:         d.limit,
       current_tier:  d.current_tier  || 'free',
       upgrade_to:    Array.isArray(d.upgrade_to) ? d.upgrade_to : [],
+      feature_key:   d.feature_key,
+      config_key:    d.config_key,
       message:       res.error.message,
     });
     return true;
@@ -95,29 +109,48 @@ const ACTION_LABEL = {
   inviteInfluencer:  'influencer invites per cycle',
 };
 
+// Title per code — keeps QUOTA_EXCEEDED copy identical to pre-extension.
+const TITLE_BY_CODE = {
+  QUOTA_EXCEEDED:        'Plan limit reached',
+  FEATURE_LIMIT:         'Feature limit reached',
+  FEATURE_NOT_AVAILABLE: 'Feature not on your plan',
+};
+
 export function QuotaWallModal({ quota, onClose }) {
   if (!quota) return null;
-  const label = ACTION_LABEL[quota.action] || quota.action;
+  const code      = quota.code || 'QUOTA_EXCEEDED';  // default for legacy callers using show(details)
+  const title     = TITLE_BY_CODE[code] || 'Plan limit reached';
+  const label     = ACTION_LABEL[quota.action] || quota.action;
+  // FEATURE_NOT_AVAILABLE is a binary gate — no used/limit numbers to show.
+  const showUsage = code !== 'FEATURE_NOT_AVAILABLE';
+  // Fallback subtitle when the backend didn't supply a human-readable message.
+  const fallbackSub = code === 'FEATURE_NOT_AVAILABLE'
+    ? `${label} is not available on your current plan.`
+    : `You've hit your ${quota.current_tier?.toUpperCase() || 'current'} plan's ${label} limit.`;
   return (
     <div className="qwm-overlay" onClick={onClose}>
       <style>{CSS}</style>
       <div className="qwm-card" onClick={e => e.stopPropagation()}>
-        <h2>Plan limit reached</h2>
-        <div className="sub">{quota.message || `You've hit your ${quota.current_tier?.toUpperCase()} plan's ${label} limit.`}</div>
+        <h2>{title}</h2>
+        <div className="sub">{quota.message || fallbackSub}</div>
 
-        <div className="qwm-row">
-          <span className="k">Used</span>
-          <span className="v">{quota.used ?? '—'}</span>
-        </div>
-        <div className="qwm-row">
-          <span className="k">Limit on {quota.current_tier?.toUpperCase() || 'current'} plan</span>
-          <span className="v">{quota.limit === -1 ? 'Unlimited' : (quota.limit ?? '—')}</span>
-        </div>
+        {showUsage && (
+          <>
+            <div className="qwm-row">
+              <span className="k">Used</span>
+              <span className="v">{quota.used ?? '—'}</span>
+            </div>
+            <div className="qwm-row">
+              <span className="k">Limit on {quota.current_tier?.toUpperCase() || 'current'} plan</span>
+              <span className="v">{quota.limit === -1 ? 'Unlimited' : (quota.limit ?? '—')}</span>
+            </div>
+          </>
+        )}
 
         {quota.upgrade_to?.length > 0 && (
           <>
             <div style={{ fontSize: 13, color: '#52525B', marginTop: 12, marginBottom: 4 }}>
-              Upgrade to unlock more:
+              Upgrade to unlock {showUsage ? 'more' : 'it'}:
             </div>
             <div className="qwm-tiers">
               {quota.upgrade_to.map(t => <span key={t} className="qwm-tier">{t}</span>)}
