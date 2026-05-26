@@ -24,10 +24,16 @@
   "discipline": "Verify-twice: confirmed via code read that subscription.controller.getSubscription already returns entitlements + tier_key via entitlementsService.getEntitlementsPlain (line 165) so no new backend endpoint required. Confirmed via grep that 3 brand-web pages already use showFromResponse (campaigns, campaigns/new, products) and will get the modal pop on FEATURE_NOT_AVAILABLE / FEATURE_LIMIT with zero per-page wiring after the predicate change. Confirmed the Add Branch button lives at line 477 of the profile page.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting Vercel redeploy of brand-web; backend-touchless — no migration, no Render redeploy effect). After push, no prod migration is needed — UI polish is behaviourally additive."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'proceed with UI polish'. Backend-touchless deploy; no separate migration go required.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "6abcc93",
+      "vercel_redeploy": "auto on push (brand-web bundle updates: QuotaWallModal extension + useEntitlements hook + profile-page Add Branch conditional)",
+      "render_redeploy": "untouched — backend code unchanged",
+      "prod_migrations": "none — UI polish is behaviourally additive",
+      "note": "Window B pushed two deploy-inert commits between A14 certification (ea0a402) and this push (Flow 28 OTA evidence backfill + Maestro launch flows); rebased cleanly on top."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A small UI tweak: no new screens, no new design tokens. QuotaWallModal CSS already locked; profile-page chip reuses existing classes from the page's btn-yel-ghost styling lineage.",
