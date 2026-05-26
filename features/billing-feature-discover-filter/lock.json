@@ -1,0 +1,31 @@
+{
+  "feature": "billing-feature-discover-filter",
+  "area": "backend-controller+service+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-25) — explicit 'go for A12.2'. First per-feature enforcement following the A12.1 quota migration.",
+  "approved_at": "2026-05-25",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render redeploys backend with wired discover_filter gate. M063 (is_enforced=true on discover_filter) runs separately on Supabase prod on explicit founder go.",
+  "fix": "Phase A12.2 — wire discover_filter feature gate. entitlements.service.configFor helper. _applyDiscoverFilter helper in campaign.controller. area_scope filter on searchInfluencers + openGroupMatches. niches_limit validation on openGroupMatches with 422 FEATURE_LIMIT. M063 flips is_enforced=true. Defensive fail-open posture on missing data.",
+  "related": [
+    "features/billing-enforce-quota-features",
+    "features/billing-tier-features-and-prices",
+    "features/billing-quota-preflight"
+  ],
+  "result": "entitlements.service.configFor helper added; campaign.controller._applyDiscoverFilter wired into searchInfluencers + openGroupMatches; niches_limit validation with 422 FEATURE_LIMIT on openGroupMatches; M063 applied locally; backend boot smoke clean; pnpm qa 76/76 GREEN STATE=GREEN gate=0 (clean run after rate-limit cooldown). Ready to push.",
+  "regression_proof": "Backend boot smoke clean. M063 applied to local dev DB cleanly (sanity probe shows discover_filter.is_enforced=true). Existing campaign controller functions unaffected. Response envelopes additive (discover_filter field). Fail-open on missing brand city/state.",
+  "discipline": "Verify-twice: confirmed influencers.city + influencers.state columns exist (M003), confirmed users.city + users.state for brand location, confirmed entitlements.configFor honours is_enforced. Carved as per-feature contract per A12 catalog-sequence plan.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting; Render redeploys backend with wired discover_filter gate). M063 prod migration on separate explicit founder go after push."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-25) — N/A backend-only contract.",
+  "mockup_locked_at": "2026-05-25"
+}

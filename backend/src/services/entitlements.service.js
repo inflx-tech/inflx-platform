@@ -163,6 +163,24 @@ async function quotaFor(client, brandId, featureKey) {
 }
 
 /**
+ * Config lookup for a config-type feature. Returns the jsonb blob from
+ * tier_features.config, or {} if the feature is not enforced / unknown.
+ *
+ * Honours is_enforced so callers can defensively pass-through when the
+ * feature hasn't been wired for real gating yet.
+ */
+async function configFor(client, brandId, featureKey) {
+  const c = client || db;
+  const catalog = await _loadCatalog(c);
+  const f = catalog.byKey.get(featureKey);
+  if (!f) return {};
+  if (!f.is_enforced) return {};
+  const { entitlements } = await getEntitlements(c, brandId);
+  const e = entitlements.get(featureKey);
+  return (e && e.config) ? e.config : {};
+}
+
+/**
  * Plain object form of getEntitlements — for JSON responses.
  */
 async function getEntitlementsPlain(client, brandId) {
@@ -177,6 +195,7 @@ module.exports = {
   getEntitlementsPlain,
   hasFeature,
   quotaFor,
+  configFor,
   getActiveTierId,
   bustCatalogCache,
 };

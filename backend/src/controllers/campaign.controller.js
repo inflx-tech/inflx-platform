@@ -3,6 +3,50 @@
 const db                  = require('../config/db');
 const notificationService = require('../services/notification.service');
 const pricingService      = require('../services/pricing.service');
+const entitlementsService = require('../services/entitlements.service');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase A12.2 — discover_filter entitlement helper.
+// Reads the brand's tier config for discover_filter and returns SQL fragments
+// the influencer search/match endpoints inject into their WHERE clause.
+// Defensive: if feature not enforced OR brand has no city/state, returns
+// empty fragments (pass-through to no-filter behaviour).
+// ─────────────────────────────────────────────────────────────────────────────
+async function _applyDiscoverFilter(brandId, paramStartIdx) {
+  const config = await entitlementsService.configFor(db, brandId, 'discover_filter');
+  const sqlParts = [];
+  const params = [];
+  let idx = paramStartIdx;
+
+  const areaScope = config && config.area_scope;
+  if (areaScope && areaScope !== 'all_india') {
+    const { rows: userRows } = await db.query(
+      `SELECT u.city, u.state
+         FROM users u
+         JOIN brands b ON b.user_id = u.id
+        WHERE b.id = $1
+        LIMIT 1`,
+      [brandId]
+    );
+    const brandCity  = userRows[0]?.city;
+    const brandState = userRows[0]?.state;
+
+    if (areaScope === 'city' && brandCity) {
+      sqlParts.push(`i.city = $${idx}`);
+      params.push(brandCity);
+      idx++;
+    } else if (areaScope === 'state' && brandState) {
+      sqlParts.push(`i.state = $${idx}`);
+      params.push(brandState);
+      idx++;
+    }
+    // If brand has no city/state, skip the filter (defensive — don't lock
+    // the brand out due to incomplete profile data).
+  }
+
+  const nichesLimit = (config && config.niches_limit != null) ? Number(config.niches_limit) : null;
+  return { sqlParts, params, nichesLimit, areaScope: areaScope || 'all_india' };
+}
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
@@ -1510,6 +1554,14 @@ const searchInfluencers = asyncHandler(async (req, res) => {
     idx++;
   }
 
+  // Phase A12.2 — discover_filter entitlement: limits which influencers a
+  // brand can see by area_scope (city / state / all_india) per their tier.
+  // Defensive pass-through if feature not enforced or brand missing city/state.
+  const df = await _applyDiscoverFilter(brand.id, idx);
+  conditions.push(...df.sqlParts);
+  params.push(...df.params);
+  idx += df.params.length;
+
   const where = conditions.join(' AND ');
   const { rows } = await db.query(
     `SELECT i.id, i.instagram_handle, i.followers_count, i.engagement_rate,
@@ -1523,7 +1575,11 @@ const searchInfluencers = asyncHandler(async (req, res) => {
     [...params, parseInt(limit), parseInt(offset)]
   );
 
-  return success(res, { influencers: rows, total: rows.length });
+  return success(res, {
+    influencers: rows,
+    total: rows.length,
+    discover_filter: { area_scope: df.areaScope },  // surface what was applied for UI hints
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1543,7 +1599,38 @@ const openGroupMatches = asyncHandler(async (req, res) => {
     min_er: req.query.min_er,
     gender: req.query.gender,
   };
-  const { conditions, params } = buildOpenGroupMatchClauses(filters, 1);
+
+  // Phase A12.2 — discover_filter niches_limit: cap how many distinct
+  // niches a brand can request in a single open-group match. -1 = unlimited.
+  const df = await _applyDiscoverFilter(brand.id, 1);  // start idx — buildOpenGroupMatchClauses uses 1
+  if (df.nichesLimit != null && df.nichesLimit !== -1 && filters.niches && filters.niches.length > df.nichesLimit) {
+    throw new AppError(
+      'FEATURE_LIMIT',
+      `Your plan allows up to ${df.nichesLimit} niches per open-group broadcast (you requested ${filters.niches.length}). Upgrade for more.`,
+      422,
+      'niches',
+      {
+        feature_key:   'discover_filter',
+        config_key:    'niches_limit',
+        used:          filters.niches.length,
+        limit:         df.nichesLimit,
+      }
+    );
+  }
+
+  const built = buildOpenGroupMatchClauses(filters, 1);
+  const conditions = [...built.conditions];
+  const params = [...built.params];
+  let idx = params.length + 1;
+
+  // Inject area_scope filter alongside the existing where clauses
+  if (df.sqlParts.length) {
+    // Re-number placeholders since buildOpenGroupMatchClauses used 1..N
+    for (const part of df.sqlParts) {
+      conditions.push(part.replace(/\$\d+/g, () => `$${idx++}`));
+    }
+    params.push(...df.params);
+  }
 
   const { rows } = await db.query(
     `SELECT i.id, i.instagram_handle, i.followers_count, i.tier,
@@ -1556,7 +1643,11 @@ const openGroupMatches = asyncHandler(async (req, res) => {
     params
   );
 
-  return success(res, { count: rows.length, influencers: rows.slice(0, 10) });
+  return success(res, {
+    count: rows.length,
+    influencers: rows.slice(0, 10),
+    discover_filter: { area_scope: df.areaScope, niches_limit: df.nichesLimit },
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
