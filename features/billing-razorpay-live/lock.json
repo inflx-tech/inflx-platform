@@ -22,10 +22,18 @@
   "discipline": "Verify-twice: razorpay npm v2.9.6 already installed (backend/package.json). RAZORPAY_KEY_ID/SECRET/WEBHOOK_SECRET already in env.js config + set on Render (founder screenshot 2026-05-26). brand_subscriptions schema already has every column the live flow writes to (razorpay_subscription_id, razorpay_mandate_id, mandate_status, next_charge_at, current_cycle_start, current_cycle_end, last_charged_at). subscription_invoices already has razorpay_payment_id + razorpay_invoice_id + status + failure_reason. The existing webhook controller has signature verification + event switch — A6.5 adds new cases; existing handlers unchanged. Subscriptions feature confirmed enabled on Razorpay (screenshot). No new schema beyond M070's razorpay_plan_id column + invoice idempotency index.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting; Render redeploys backend with razorpay.service + rewritten upgrade + 5 new webhook handlers, Vercel redeploys brand-web with Checkout SDK + admin field). M070 prod migration on separate explicit founder go after push, applied via trap+restore sequence. Post-deploy founder tasks documented in 03-expected-outputs.md (create 6 Razorpay plans, paste plan_ids in admin UI, configure Razorpay webhook URL, end-to-end smoke with success@razorpay VPA)."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'pls do M070' after A6.5/A13 push (03f0401) landed on origin/main.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "03f0401",
+      "render_redeploy": "auto on push (backend: razorpay.service + rewritten upgrade + 5 new webhook handlers)",
+      "vercel_redeploy": "auto on push (brand-web: Checkout SDK + admin razorpay_plan_id field)",
+      "prod_migrations": {
+        "M070_razorpay_plan_id": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: subscription_prices.razorpay_plan_id column present (varchar, nullable) + idx_sub_prices_razorpay_plan partial index + ux_sub_invoices_brand_payment partial UNIQUE index on subscription_invoices for webhook idempotency. RAZORPAY_MOCK=false already on Render so the live flow is now LIVE on prod — but until founder pastes plan_ids in /admin/pricing/tiers/[tier_key] Section B, every upgrade attempt returns 422 ADMIN_CONFIG_MISSING gracefully (no 500s, no data corruption)."
+      },
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run (.env.bak removed; DATABASE_URL verified)."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — admin UI additions reuse the existing tier editor Section B primitives (one extra text input per row); brand-web Subscription page reuses the existing Upgrade button styling, only the click handler logic changes. No new design tokens. Per the existing pattern, mockup-lock N/A for this contract.",
