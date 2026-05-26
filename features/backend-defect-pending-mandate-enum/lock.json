@@ -1,0 +1,29 @@
+{
+  "feature": "backend-defect-pending-mandate-enum",
+  "area": "migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'Yes pls go' after the verify-twice catch root-caused the 'Invalid ID format' upgrade toast to the missing pending_mandate enum value on prod.",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (DB enum extension on prod) but behaviour-inert until upgrade() is invoked in live mode. RAZORPAY_MOCK=false already on Render so M071 immediately unblocks the upgrade flow for any brand. M071 runs separately on Supabase prod on explicit founder go.",
+  "fix": "Carved defect — add 'pending_mandate' to subscription_status enum via M071. Zero backend code change. The A6.5 / A13 contract spec is correct; the enum needed extending and that was missed in M070. Per no-fake-green: fix the backend, don't bend the spec.",
+  "related": [
+    "features/billing-razorpay-live"
+  ],
+  "result": "M071 written + applied to local dev DB. Sanity probe: subscription_status enum now has 5 values including 'pending_mandate'. Backend boot smoke clean. Zero backend code change. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (40.4s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. Zero backend code change → zero behaviour regression surface. ALTER TYPE ADD VALUE is non-blocking on PG15 (Supabase) and additive — the new enum value is unused by any existing brand_subscriptions row.",
+  "discipline": "Verify-twice on the prod schema caught the bug — pg_enum query returned only 4 values for subscription_status; the controller writes a 5th. PG 22P02 (invalid_text_representation) on the INSERT path triggered errorHandler.js:34's generic 'Invalid ID format' mapping, masking the actual cause. Carved per the no-fake-green rule (genuine backend defect, not a test issue).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting governance category — prod DB enum write). M071 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A migration-only contract.",
+  "mockup_locked_at": "2026-05-26"
+}
