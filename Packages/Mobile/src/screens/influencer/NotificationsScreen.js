@@ -8,35 +8,41 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { colors, radius, spacing } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
-const NOTIFICATION_ICONS = {
-  offer_received: '📩',
-  offer_expired: '⏰',
-  offer_accepted: '✅',
-  offer_declined: '❌',
-  negotiation_update: '🤝',
-  contract_ready: '📝',
-  contract_signed: '✍️',
-  content_submitted: '📤',
-  content_approved: '🎉',
-  content_revision: '🔄',
-  content_live: '📺',
-  tranche_released: '💸',
-  commission_earned: '💰',
-  commission_confirmed: '✅',
-  withdrawal_processed: '🏦',
-  withdrawal_failed: '⚠️',
-  campaign_update: '📢',
-  account_approved: '🎊',
-  account_rejected: '🚫',
-  general: '🔔',
-};
-
-function getIcon(type) {
-  return NOTIFICATION_ICONS[type] || NOTIFICATION_ICONS.general;
+// ─── Notification icon map (10 MCI categories with semantic color tones) ──
+// Collapsed from the wave-1 20-emoji map. Same mapping is duplicated in
+// HomeScreen.js for the Recent Activity preview — keep in sync.
+function getNotificationIcon(type) {
+  const map = {
+    offer_received:        { name: 'tag-outline',            tone: 'neutral' },
+    offer_accepted:        { name: 'tag-outline',            tone: 'neutral' },
+    offer_declined:        { name: 'tag-outline',            tone: 'neutral' },
+    offer_expired:         { name: 'tag-outline',            tone: 'danger' },
+    negotiation_update:    { name: 'handshake-outline',      tone: 'conv' },
+    contract_ready:        { name: 'file-document-outline',  tone: 'neutral' },
+    contract_signed:       { name: 'file-document-outline',  tone: 'neutral' },
+    content_submitted:     { name: 'image-outline',          tone: 'info' },
+    content_approved:      { name: 'image-outline',          tone: 'info' },
+    content_revision:      { name: 'image-outline',          tone: 'info' },
+    content_live:          { name: 'image-outline',          tone: 'info' },
+    tranche_released:      { name: 'currency-inr',           tone: 'success' },
+    commission_earned:     { name: 'currency-inr',           tone: 'success' },
+    commission_confirmed:  { name: 'currency-inr',           tone: 'success' },
+    withdrawal_processed:  { name: 'bank-outline',           tone: 'success' },
+    withdrawal_failed:     { name: 'bank-outline',           tone: 'danger' },
+    campaign_update:       { name: 'bullhorn-outline',       tone: 'neutral' },
+    account_approved:      { name: 'account-check-outline',  tone: 'neutral' },
+    account_rejected:      { name: 'account-check-outline',  tone: 'danger' },
+    general:               { name: 'bell-outline',           tone: 'neutral' },
+  };
+  return map[type] || map.general;
 }
+
+const TONE_BG = { neutral: P.bg2,   info: P.infoPale, conv: P.convPale, success: P.successPale, danger: P.dangerPale };
+const TONE_FG = { neutral: P.muted, info: P.info,     conv: P.conv,     success: P.successText, danger: P.dangerText };
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -57,6 +63,7 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
+// Cross-tab nested deep-link routing — all 18 type branches preserved verbatim.
 function getNavTarget(type, dataJson) {
   switch (type) {
     case 'offer_received':
@@ -85,6 +92,9 @@ function getNavTarget(type, dataJson) {
 
 function NotificationCard({ item, onPress }) {
   const isUnread = !item.is_read;
+  const ic = getNotificationIcon(item.type);
+  const tileBg = isUnread ? P.yellowPale : TONE_BG[ic.tone];
+  const tileFg = isUnread ? P.yellowText : TONE_FG[ic.tone];
   return (
     <TouchableOpacity
       style={[styles.card, isUnread && styles.cardUnread]}
@@ -92,8 +102,8 @@ function NotificationCard({ item, onPress }) {
       activeOpacity={0.7}
     >
       {isUnread && <View style={styles.unreadDot} />}
-      <View style={styles.iconWrap}>
-        <Text style={styles.icon}>{getIcon(item.type)}</Text>
+      <View style={[styles.iconWrap, { backgroundColor: tileBg }]}>
+        <Icon name={ic.name} size={20} color={tileFg} />
       </View>
       <View style={styles.cardBody}>
         <Text style={[styles.cardTitle, isUnread && styles.cardTitleUnread]} numberOfLines={1}>
@@ -142,7 +152,7 @@ export default function NotificationsScreen({ navigation }) {
   }, []);
 
   const handlePress = useCallback((item) => {
-    // Mark as read locally
+    // Mark as read locally (mirrors original behaviour)
     if (!item.is_read) {
       setNotifications(prev =>
         prev.map(n => n.id === item.id ? { ...n, is_read: true } : n)
@@ -166,7 +176,7 @@ export default function NotificationsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.centerWrap}>
-        <ActivityIndicator size="large" color={colors.navy} />
+        <ActivityIndicator size="large" color={P.ink} />
         <Text style={styles.loadingText}>Loading notifications...</Text>
       </View>
     );
@@ -174,15 +184,13 @@ export default function NotificationsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* ─── Header ─── */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Text style={styles.backIcon}>{'<'}</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          <View style={{ width: 36 }} />
-        </View>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Notifications</Text>
         {unreadCount > 0 && (
           <TouchableOpacity
             style={styles.markAllBtn}
@@ -190,15 +198,19 @@ export default function NotificationsScreen({ navigation }) {
             disabled={markingRead}
           >
             {markingRead ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={P.ink} />
             ) : (
-              <Text style={styles.markAllText}>Mark all as read ({unreadCount})</Text>
+              <>
+                <Icon name="check-all" size={14} color={P.ink} />
+                <Text style={styles.markAllText}>MARK ALL AS READ ({unreadCount})</Text>
+              </>
             )}
           </TouchableOpacity>
         )}
+        <View style={styles.headerRule} />
       </View>
 
-      {/* Error state */}
+      {/* ─── Error ─── */}
       {error && (
         <View style={styles.errorBanner}>
           <Text style={styles.errorText}>{error}</Text>
@@ -208,13 +220,15 @@ export default function NotificationsScreen({ navigation }) {
         </View>
       )}
 
-      {/* List or empty */}
+      {/* ─── Empty OR list ─── */}
       {notifications.length === 0 && !error ? (
         <View style={styles.emptyWrap}>
-          <Text style={styles.emptyIcon}>🔔</Text>
+          <View style={styles.emptyTile}>
+            <Icon name="bell-outline" size={32} color={P.yellowText} />
+          </View>
           <Text style={styles.emptyTitle}>No notifications yet</Text>
           <Text style={styles.emptyMsg}>
-            When you receive offers, contract updates, or payment notifications they will appear here.
+            When you receive offers, contract updates, or payment notifications they'll appear here.
           </Text>
         </View>
       ) : (
@@ -224,7 +238,7 @@ export default function NotificationsScreen({ navigation }) {
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />
           }
           showsVerticalScrollIndicator={false}
         />
@@ -234,74 +248,83 @@ export default function NotificationsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
-  loadingText: { marginTop: 12, fontSize: 13, color: colors.t3, fontWeight: '500' },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: P.bg },
+  loadingText: { marginTop: 12, fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2 },
 
-  // Header
-  header: { backgroundColor: colors.navyDeep, paddingTop: 52, paddingHorizontal: 16, paddingBottom: 14 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)' },
-  backIcon: { fontSize: 18, color: colors.white, fontWeight: '700' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.white },
+  // Header (ink topbar with yellow rule)
+  header: { backgroundColor: P.ink, paddingTop: 50, paddingHorizontal: 18, paddingBottom: 16, position: 'relative' },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 6 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '700', color: 'rgba(255,255,255,0.65)' },
+  headerTitle: { fontFamily: fonts.displayBold, fontSize: 20, fontWeight: '800', color: P.white, marginBottom: 10 },
   markAllBtn: {
-    marginTop: 10,
-    backgroundColor: colors.orange,
-    borderRadius: radius.sm,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: P.yellow,
+    borderRadius: 8,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     alignSelf: 'flex-start',
   },
-  markAllText: { fontSize: 12, fontWeight: '700', color: colors.white },
+  markAllText: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.ink, letterSpacing: 0.3 },
+  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
 
   // Error
-  errorBanner: { backgroundColor: colors.redPale, borderRadius: radius.md, padding: 12, flexDirection: 'row', alignItems: 'center', margin: 16 },
-  errorText: { flex: 1, fontSize: 13, color: colors.red },
-  retryText: { fontSize: 12, fontWeight: '700', color: colors.red, marginLeft: 8 },
+  errorBanner: {
+    backgroundColor: P.dangerPale,
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row', alignItems: 'center',
+    margin: 14,
+  },
+  errorText: { flex: 1, fontFamily: fonts.sansMedium, fontSize: 12, color: P.dangerText },
+  retryText: { fontFamily: fonts.monoBold, fontSize: 11, fontWeight: '800', color: P.dangerText, marginLeft: 8 },
 
   // List
-  listContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
+  listContent: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 24 },
 
   // Card
   card: {
     flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderRadius: radius.md,
-    padding: 14,
-    marginBottom: 8,
+    backgroundColor: P.white,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 7,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
     position: 'relative',
   },
-  cardUnread: { backgroundColor: colors.navyPale, borderColor: colors.navyMid + '30' },
+  cardUnread: { backgroundColor: P.yellow50, borderColor: '#F0DA88' },
   unreadDot: {
     position: 'absolute',
-    top: 14,
-    left: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.orange,
+    top: 14, left: 6,
+    width: 6, height: 6,
+    borderRadius: 3,
+    backgroundColor: P.yellow,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    width: 38, height: 38, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: 11,
+    flexShrink: 0,
   },
-  icon: { fontSize: 20 },
-  cardBody: { flex: 1 },
-  cardTitle: { fontSize: 14, fontWeight: '600', color: colors.t1, marginBottom: 2 },
+  cardBody: { flex: 1, minWidth: 0 },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '700', color: P.ink, marginBottom: 2 },
   cardTitleUnread: { fontWeight: '800' },
-  cardMsg: { fontSize: 12, color: colors.t3, lineHeight: 17, marginBottom: 4 },
-  cardTime: { fontSize: 10, color: colors.t3, fontWeight: '500' },
+  cardMsg: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, lineHeight: 16, marginBottom: 4 },
+  cardTime: { fontFamily: fonts.monoBold, fontSize: 9.5, color: P.muted2, fontWeight: '700' },
 
   // Empty
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.t1, marginBottom: 8 },
-  emptyMsg: { fontSize: 13, color: colors.t3, textAlign: 'center', lineHeight: 19 },
+  emptyTile: {
+    width: 66, height: 66,
+    borderRadius: 14,
+    backgroundColor: P.yellowPale,
+    borderWidth: 1.5,
+    borderColor: P.yellow,
+    borderStyle: 'dashed',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6 },
+  emptyMsg: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17 },
 });

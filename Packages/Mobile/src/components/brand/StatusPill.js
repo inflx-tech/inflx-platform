@@ -71,6 +71,10 @@ export const STATUS_MAP_DEFAULT = {
   proposed:    { bg: P.yellowPale,  fg: P.yellowText,  label: 'PROPOSED' },    // Flow 27
   confirmed:   { bg: P.successPale, fg: P.successText, label: 'CONFIRMED' },   // Flow 27
   in_progress: { bg: P.infoPale,    fg: P.info,        label: 'IN PROGRESS' }, // Flow 27
+
+  // Withdrawal lifecycle (Flow 28)
+  processing: { bg: P.infoPale,   fg: P.info,       label: 'PROCESSING' }, // Flow 28
+  failed:     { bg: P.dangerPale, fg: P.dangerText, label: 'FAILED' },     // Flow 28
 };
 
 const FALLBACK = { bg: P.bg2, fg: P.muted2 };

@@ -138,3 +138,12 @@ dependencies {
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)
+
+// ─── Flow 28 (2026-05-26): react-native-vector-icons MaterialCommunityIcons ───
+// One-time NATIVE_RUNTIME bump 1→2; required by mobile-influencer bucket Flow 28
+// onwards for real outline icon glyphs in tabs + notifications + inline tiles.
+// Only MaterialCommunityIcons.ttf bundled (~600KB) — saves ~6MB vs all 14 fonts.
+project.ext.vectoricons = [
+    iconFontNames: [ 'MaterialCommunityIcons.ttf' ]
+]
+apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")

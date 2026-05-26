@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 28 · influencer-mobile Home + Notifications + Navigator — wave2 mockup (v2)</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.v2-tag{display:inline-block;background:var(--yellow);color:var(--ink);font-family:'JetBrains Mono';font-size:10px;font-weight:800;padding:2px 7px;border-radius:5px;margin-left:8px;letter-spacing:.4px}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+/* ─── Phone shell ──────────────────────────────────────────────── */
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* ─── SVG icon helper (mimics MaterialCommunityIcons outline style) ─── */
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:18px;height:18px}
+.ico-lg{width:26px;height:26px}
+.ico-xl{width:32px;height:32px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ─── Home header (compact, ink with yellow rule) ──────────────── */
+.h-top{background:var(--ink);color:var(--white);padding:12px 18px 14px;flex-shrink:0;position:relative}
+.h-top::after{content:'';position:absolute;left:18px;bottom:6px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.h-top-row{display:flex;align-items:center;justify-content:space-between}
+.logo-tile{display:flex;align-items:center;gap:8px}
+.logo-box{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);background:rgba(255,193,7,.12);border:1.5px dashed var(--yellow);padding:5px 11px;border-radius:6px;letter-spacing:1px}
+.bell-btn{width:40px;height:40px;border-radius:20px;background:rgba(255,255,255,.08);position:relative;display:flex;align-items:center;justify-content:center}
+.bell-btn .ico{color:rgba(255,255,255,.9)}
+.bell-badge{position:absolute;top:-2px;right:-2px;background:var(--yellow);color:var(--ink);min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;font-family:'JetBrains Mono';font-size:9px;font-weight:800}
+
+/* ─── Body scroll ──────────────────────────────────────────────── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding-bottom:14px}
+
+/* ─── Greeting strip ───────────────────────────────────────────── */
+.greet{margin:14px 14px 0;padding:0 4px}
+.greet-h{font-family:'Outfit';font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-0.2px}
+.greet-sub{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
+.greet-sub b{font-family:'JetBrains Mono';font-weight:800;color:var(--ink);background:var(--yellow-pale);padding:1px 6px;border-radius:4px}
+
+/* ─── Action tiles (3-up) ──────────────────────────────────────── */
+.action-row{display:flex;gap:8px;margin:12px 14px}
+.action-tile{flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px;position:relative;overflow:hidden}
+.action-tile.attention{border-color:var(--yellow);background:linear-gradient(180deg, var(--yellow-50) 0%, var(--white) 60%)}
+.action-tile .ico-wrap{width:34px;height:34px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;margin-bottom:8px;color:var(--muted)}
+.action-tile.attention .ico-wrap{background:var(--yellow);color:var(--ink)}
+.action-tile .action-n{font-family:'JetBrains Mono';font-size:22px;font-weight:900;color:var(--ink);line-height:1;margin-bottom:3px}
+.action-tile .action-l{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--muted);font-weight:600;line-height:1.3}
+.action-tile .chev{position:absolute;top:11px;right:11px;color:var(--muted-3);font-family:'JetBrains Mono';font-size:15px;font-weight:800}
+.action-tile.attention .chev{color:var(--ink)}
+
+/* ─── Section ──────────────────────────────────────────────────── */
+.section{margin:20px 14px 0}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px}
+.view-all{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--ink);border-bottom:1px dashed var(--ink);text-decoration:none}
+
+/* ─── Campaign row ─────────────────────────────────────────────── */
+.list-row{display:flex;align-items:center;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 13px;margin-bottom:7px;gap:10px}
+.lr-thumb{width:34px;height:34px;border-radius:10px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-size:11px;font-weight:800;flex-shrink:0}
+.lr-mid{flex:1;min-width:0}
+.lr-name{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:2px}
+.lr-sub{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2)}
+
+/* ─── StatusPill (canonical) ───────────────────────────────────── */
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.pill.active     {background:var(--success-pale); color:var(--success-text)}
+.pill.completed  {background:var(--success-pale); color:var(--success-text)}
+.pill.processing {background:var(--info-pale);    color:var(--info)}
+.pill.failed     {background:var(--danger-pale);  color:var(--danger-text)}
+.pill.pending    {background:var(--bg2);          color:var(--muted-2)}
+.pill.contracted {background:var(--success-pale); color:var(--success-text)}
+.pill.accepted   {background:var(--success-pale); color:var(--success-text)}
+.pill.declined   {background:var(--danger-pale);  color:var(--danger-text)}
+
+/* ─── Recent activity (inline notifications) ───────────────────── */
+.act-card{display:flex;align-items:flex-start;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:7px;gap:11px}
+.act-card.unread{background:var(--yellow-50);border-color:#F0DA88}
+.act-ico{width:36px;height:36px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
+.act-ico.success{background:var(--success-pale);color:var(--success-text)}
+.act-ico.info{background:var(--info-pale);color:var(--info)}
+.act-ico.conv{background:var(--conv-pale);color:var(--conv)}
+.act-ico.danger{background:var(--danger-pale);color:var(--danger-text)}
+.act-mid{flex:1;min-width:0}
+.act-ttl{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.act-card.unread .act-ttl{font-weight:800}
+.act-msg{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:4px}
+.act-time{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);font-weight:700}
+
+/* ─── Wallet glance (compact bottom strip) ─────────────────────── */
+.wallet-glance{margin:18px 14px 0;background:var(--ink);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.wallet-glance .ico-wrap{width:36px;height:36px;border-radius:10px;background:rgba(255,193,7,.16);color:var(--yellow);display:flex;align-items:center;justify-content:center}
+.wallet-glance .wg-mid{flex:1}
+.wallet-glance .wg-l{font-family:'JetBrains Mono';font-size:9.5px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.wallet-glance .wg-v{font-family:'JetBrains Mono';font-size:18px;font-weight:900;color:var(--yellow);margin-top:1px}
+.wallet-glance .wg-cta{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:rgba(255,255,255,.85);letter-spacing:.5px;background:rgba(255,255,255,.1);padding:6px 11px;border-radius:8px;display:flex;align-items:center;gap:5px}
+
+/* ─── Tab bar (5 tabs, real icons, yellow active) ──────────────── */
+.tabbar{position:absolute;left:0;right:0;bottom:0;background:var(--ink);height:72px;display:flex;border-top:1px solid rgba(255,255,255,.08);padding-bottom:8px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding-top:10px}
+.tab .ico{color:rgba(255,255,255,.5)}
+.tab-lbl{font-family:'JetBrains Mono';font-size:9px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px}
+.tab.act .ico{color:var(--yellow)}
+.tab.act .tab-lbl{color:var(--yellow)}
+
+/* ─── Notifications screen ─────────────────────────────────────── */
+.n-top{background:var(--ink);color:var(--white);padding:12px 18px 14px;flex-shrink:0;position:relative}
+.n-top::after{content:'';position:absolute;left:18px;bottom:6px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.n-back{font-family:'JetBrains Mono';font-size:10.5px;color:rgba(255,255,255,.65);font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.n-back .ico{color:rgba(255,255,255,.65);width:16px;height:16px}
+.n-title{font-family:'Outfit';font-size:20px;font-weight:800;color:var(--white);margin-bottom:10px}
+.mark-all{background:var(--yellow);color:var(--ink);border-radius:8px;padding:7px 13px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;letter-spacing:.3px}
+.mark-all .ico{color:var(--ink);width:14px;height:14px}
+
+.n-list{padding:12px 14px 24px}
+.n-card{display:flex;align-items:flex-start;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:7px;gap:11px;position:relative}
+.n-card.unread{background:var(--yellow-50);border-color:#F0DA88}
+.n-card .udot{position:absolute;top:14px;left:6px;width:6px;height:6px;border-radius:3px;background:var(--yellow)}
+.n-ico{width:38px;height:38px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
+.n-ico.success{background:var(--success-pale);color:var(--success-text)}
+.n-ico.info{background:var(--info-pale);color:var(--info)}
+.n-ico.conv{background:var(--conv-pale);color:var(--conv)}
+.n-ico.danger{background:var(--danger-pale);color:var(--danger-text)}
+.n-card.unread .n-ico{background:var(--yellow-pale);color:var(--yellow-text)}
+.n-mid{flex:1;min-width:0}
+.n-ttl{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.n-card.unread .n-ttl{font-weight:800}
+.n-msg{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:4px}
+.n-time{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);font-weight:700}
+
+/* ─── Empty state ─────────────────────────────────────────────── */
+.empty{padding:60px 28px;display:flex;flex-direction:column;align-items:center;text-align:center;flex:1}
+.empty-tile{width:66px;height:66px;border-radius:14px;background:var(--yellow-pale);border:1.5px dashed var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--yellow-text)}
+.empty-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);margin-bottom:6px}
+.empty-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;max-width:240px}
+
+/* ─── Side panel ───────────────────────────────────────────────── */
+.side{display:flex;flex-direction:column;gap:14px;width:360px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+
+.tabs-demo{background:var(--ink);border-radius:10px;padding:8px 0 6px;display:flex;margin-top:6px}
+.tabs-demo .tab{padding-top:0}
+
+.icon-table{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.icon-row{display:flex;align-items:center;gap:10px;padding:6px 8px;background:var(--bg);border-radius:7px}
+.icon-row .n-ico{width:32px;height:32px}
+.icon-row code{font-family:'JetBrains Mono';font-size:10px;color:var(--ink-2);flex:1;font-weight:700}
+.icon-row .uses{font-family:'Plus Jakarta Sans';font-size:10px;color:var(--muted-2)}
+
+.native-warn{background:var(--yellow-pale);border:1.5px solid var(--yellow);border-radius:12px;padding:12px;margin-top:14px}
+.native-warn h4{font-family:'Outfit';font-size:12px;font-weight:800;color:var(--yellow-text);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.native-warn p{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--ink-2);line-height:1.5}
+.native-warn code{font-family:'JetBrains Mono';font-size:10px;background:var(--white);padding:1px 4px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ────── SVG icon library (inline, mimics MaterialCommunityIcons outline style) ────── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12 L12 3 L21 12"/><path d="M5 10 V20 H10 V14 H14 V20 H19 V10"/>
+    </symbol>
+    <symbol id="ic-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 6 H21 V18 H3 Z"/><path d="M3 6 L12 13 L21 6"/>
+    </symbol>
+    <symbol id="ic-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 7 V5 H15 V7"/><path d="M3 7 H21 V19 H3 Z"/><path d="M3 12 H21"/>
+    </symbol>
+    <symbol id="ic-rupee" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 5 H17"/><path d="M7 9 H17"/><path d="M8 5 C13 5 14 9 11 9 H7 L15 19"/>
+    </symbol>
+    <symbol id="ic-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="9" r="3.5"/><path d="M5 20 C5 16 8 14 12 14 C16 14 19 16 19 20"/>
+    </symbol>
+    <symbol id="ic-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 16 V11 C6 8 8 6 12 6 C16 6 18 8 18 11 V16 L20 18 H4 Z"/><path d="M10 21 C10 22 11 22.5 12 22.5 C13 22.5 14 22 14 21"/>
+    </symbol>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15 6 L9 12 L15 18"/>
+    </symbol>
+    <symbol id="ic-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 6 L15 12 L9 18"/>
+    </symbol>
+    <symbol id="ic-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12 L12 3 H20 V11 L11 20 Z"/><circle cx="16" cy="8" r="1.2" fill="currentColor"/>
+    </symbol>
+    <symbol id="ic-signature" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 18 C5 13 7 13 9 17 C10 19 12 19 13 17 C14 14 16 14 18 17"/><path d="M4 21 H20"/>
+    </symbol>
+    <symbol id="ic-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.6" fill="currentColor"/><path d="M3 17 L8 12 L13 17 L17 13 L21 17"/>
+    </symbol>
+    <symbol id="ic-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 11 L7 7 L11 9 L14 7 L18 11"/><path d="M11 14 L13 16 L15 14 L17 12"/><path d="M21 12 L18 15"/>
+    </symbol>
+    <symbol id="ic-document" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 3 H14 L19 8 V21 H6 Z"/><path d="M14 3 V8 H19"/><path d="M9 13 H16"/><path d="M9 16 H16"/>
+    </symbol>
+    <symbol id="ic-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 10 L12 4 L21 10 H3 Z"/><path d="M5 10 V18"/><path d="M9 10 V18"/><path d="M15 10 V18"/><path d="M19 10 V18"/><path d="M3 19 H21"/>
+    </symbol>
+    <symbol id="ic-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9 L4 5 H20 L21 9"/><path d="M3 9 V11 C3 12.5 4.5 13 5.5 13 C6.5 13 8 12.5 8 11 V9"/><path d="M8 11 C8 12.5 9.5 13 10.5 13 C11.5 13 13 12.5 13 11"/><path d="M13 11 C13 12.5 14.5 13 15.5 13 C16.5 13 18 12.5 18 11"/><path d="M18 11 C18 12.5 19.5 13 20.5 13 C21 13 21 12.5 21 11 V9"/><path d="M4 13 V20 H20 V13"/>
+    </symbol>
+    <symbol id="ic-check-all" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 13 L7 17 L13 11"/><path d="M11 13 L13 15 L21 7"/>
+    </symbol>
+    <symbol id="ic-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 11 V13 L17 19 V5 Z"/><path d="M17 9 V15"/><path d="M7 13 V18 H10 V14"/>
+    </symbol>
+    <symbol id="ic-account-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10" cy="8" r="3.5"/><path d="M4 20 C4 16 7 14 10 14 C12 14 13 14.4 14 15"/><path d="M16 19 L18 21 L22 17"/>
+    </symbol>
+    <symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 7 V19 H21 V10 H6 C4.5 10 3 9 3 7 Z"/><path d="M3 7 C3 5.5 4.5 5 6 5 H17 V10"/><circle cx="17" cy="14.5" r="1.4" fill="currentColor"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 28 · influencer-mobile Home + Notifications + Navigator <span class="v2-tag">v2 REDESIGNED</span></h1>
+  <div class="sub">
+    <b>Founder feedback addressed.</b> Wallet hero moved OFF Home (lives on Earnings tab) — Home now opens as an <b>action launchpad</b>: greeting + 3 attention tiles + active campaigns + recent activity + compact bottom wallet glance. Mono-bracket icons replaced with <b>real MaterialCommunityIcons</b> outline glyphs throughout (tabs + notification cards + inline). <b>Native rebuild required</b> (one-time: add gradle line + bundle MCI font + bump NATIVE_RUNTIME 1→2 + rebuild 3 APKs + reinstall on test devices). After Flow 28 ships, all subsequent flows revert to OTA-only and inherit beautiful icons for free. Backend unchanged — every tile traces to <code>influencer.controller.js</code> + existing endpoints + notifications-array client-side derivation. <b>Zero phantom fields.</b>
+  </div>
+</div>
+
+<!-- ────── Row 1 — Home redesigned + Notifications + Empty ────── -->
+<div class="row">
+
+  <!-- PHONE 1 · HOME REDESIGNED -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-top">
+        <div class="h-top-row">
+          <span class="logo-box">[LOGO]</span>
+          <div class="bell-btn">
+            <span class="ico"><svg><use href="#ic-bell"/></svg></span>
+            <span class="bell-badge">7</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="greet">
+          <div class="greet-h">Good morning, Riya</div>
+          <div class="greet-sub">You have <b>4</b> things that need your attention today.</div>
+        </div>
+
+        <div class="action-row">
+          <div class="action-tile attention">
+            <div class="ico-wrap"><span class="ico"><svg><use href="#ic-tag"/></svg></span></div>
+            <span class="chev">›</span>
+            <div class="action-n">2</div>
+            <div class="action-l">Pending offers</div>
+          </div>
+          <div class="action-tile attention">
+            <div class="ico-wrap"><span class="ico"><svg><use href="#ic-signature"/></svg></span></div>
+            <span class="chev">›</span>
+            <div class="action-n">1</div>
+            <div class="action-l">Contracts to sign</div>
+          </div>
+          <div class="action-tile attention">
+            <div class="ico-wrap"><span class="ico"><svg><use href="#ic-image"/></svg></span></div>
+            <span class="chev">›</span>
+            <div class="action-n">1</div>
+            <div class="action-l">Content revisions</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-ttl">Active Campaigns</div>
+            <span class="view-all">View All</span>
+          </div>
+          <div class="list-row">
+            <div class="lr-thumb">SP</div>
+            <div class="lr-mid">
+              <div class="lr-name">Diwali glow-up</div>
+              <div class="lr-sub">Sparkle Cosmetics · 4–14 Nov</div>
+            </div>
+            <span class="pill active">Active</span>
+          </div>
+          <div class="list-row">
+            <div class="lr-thumb">SC</div>
+            <div class="lr-mid">
+              <div class="lr-name">Bluetooth speaker</div>
+              <div class="lr-sub">SoundCo · 12–25 Nov</div>
+            </div>
+            <span class="pill contracted">Contracted</span>
+          </div>
+          <div class="list-row">
+            <div class="lr-thumb">DB</div>
+            <div class="lr-mid">
+              <div class="lr-name">Winter skincare</div>
+              <div class="lr-sub">DewBalm · 18 Nov–2 Dec</div>
+            </div>
+            <span class="pill accepted">Accepted</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <div class="section-ttl">Recent Activity</div>
+            <span class="view-all">View All</span>
+          </div>
+          <div class="act-card unread">
+            <div class="n-ico"><span class="ico"><svg><use href="#ic-tag"/></svg></span></div>
+            <div class="act-mid">
+              <div class="act-ttl">New offer from Sparkle Cosmetics</div>
+              <div class="act-msg">₹15,000 for 1 reel + 3 stories. Expires in 48h.</div>
+              <div class="act-time">5m ago</div>
+            </div>
+          </div>
+          <div class="act-card unread">
+            <div class="n-ico success"><span class="ico"><svg><use href="#ic-rupee"/></svg></span></div>
+            <div class="act-mid">
+              <div class="act-ttl">Tranche 2 released</div>
+              <div class="act-msg">₹6,250 credited to your pending balance.</div>
+              <div class="act-time">2h ago</div>
+            </div>
+          </div>
+          <div class="act-card">
+            <div class="n-ico info"><span class="ico"><svg><use href="#ic-image"/></svg></span></div>
+            <div class="act-mid">
+              <div class="act-ttl">Content approved!</div>
+              <div class="act-msg">Bluetooth speaker reel is going live.</div>
+              <div class="act-time">5h ago</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wallet-glance">
+          <div class="ico-wrap"><span class="ico"><svg><use href="#ic-wallet"/></svg></span></div>
+          <div class="wg-mid">
+            <div class="wg-l">Available to withdraw</div>
+            <div class="wg-v">₹24,680</div>
+          </div>
+          <span class="wg-cta">WITHDRAW <span class="ico ico-sm"><svg><use href="#ic-chevron-right"/></svg></span></span>
+        </div>
+
+      </div>
+
+      <div class="tabbar">
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · Home (REDESIGNED)</b><br/>Greeting + 3 attention tiles (derived from notifications array) + Active Campaigns (preserved) + Recent Activity (top 3 unread) + compact wallet glance at bottom · tab=Home active</div>
+  </div>
+
+  <!-- PHONE 2 · Notifications (with real icons) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="n-top">
+        <div class="n-back"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span>Back</div>
+        <div class="n-title">Notifications</div>
+        <span class="mark-all"><span class="ico"><svg><use href="#ic-check-all"/></svg></span>MARK ALL AS READ (4)</span>
+      </div>
+
+      <div class="body" style="padding-bottom:24px">
+      <div class="n-list">
+        <div class="n-card unread">
+          <span class="udot"></span>
+          <div class="n-ico"><span class="ico"><svg><use href="#ic-tag"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">New offer from Sparkle Cosmetics</div>
+            <div class="n-msg">₹15,000 for 1 reel + 3 stories. Expires in 48h.</div>
+            <div class="n-time">5m ago</div>
+          </div>
+        </div>
+
+        <div class="n-card unread">
+          <span class="udot"></span>
+          <div class="n-ico success"><span class="ico"><svg><use href="#ic-rupee"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">Tranche 2 released</div>
+            <div class="n-msg">₹6,250 credited to your pending balance — Diwali glow-up.</div>
+            <div class="n-time">2h ago</div>
+          </div>
+        </div>
+
+        <div class="n-card unread">
+          <span class="udot"></span>
+          <div class="n-ico info"><span class="ico"><svg><use href="#ic-image"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">Content approved!</div>
+            <div class="n-msg">Your reel for Bluetooth speaker launch is approved and going live.</div>
+            <div class="n-time">5h ago</div>
+          </div>
+        </div>
+
+        <div class="n-card unread">
+          <span class="udot"></span>
+          <div class="n-ico conv"><span class="ico"><svg><use href="#ic-handshake"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">SoundCo countered your terms</div>
+            <div class="n-msg">They've proposed ₹18,000 — your turn to respond.</div>
+            <div class="n-time">Yesterday</div>
+          </div>
+        </div>
+
+        <div class="n-card">
+          <div class="n-ico"><span class="ico"><svg><use href="#ic-document"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">Contract signed</div>
+            <div class="n-msg">DewBalm Winter skincare contract is now active. Tranche 1 released.</div>
+            <div class="n-time">2d ago</div>
+          </div>
+        </div>
+
+        <div class="n-card">
+          <div class="n-ico success"><span class="ico"><svg><use href="#ic-bank"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">Withdrawal processed</div>
+            <div class="n-msg">₹12,500 transferred to UPI · ****@axisbk. Net of ₹1,250 TDS.</div>
+            <div class="n-time">3d ago</div>
+          </div>
+        </div>
+
+        <div class="n-card">
+          <div class="n-ico danger"><span class="ico"><svg><use href="#ic-tag"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">Offer expired</div>
+            <div class="n-msg">CafeLuxe's offer for 2 stories expired before you responded.</div>
+            <div class="n-time">5d ago</div>
+          </div>
+        </div>
+
+        <div class="n-card">
+          <div class="n-ico"><span class="ico"><svg><use href="#ic-account-check"/></svg></span></div>
+          <div class="n-mid">
+            <div class="n-ttl">Account approved</div>
+            <div class="n-msg">Welcome to INFLX! You can now receive offers and earn commissions.</div>
+            <div class="n-time">2w ago</div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · Notifications (real icons)</b><br/>4 unread + 4 read · 8 distinct MCI outline icons w/ semantic tones · "Mark all as read" CTA with check-all icon</div>
+  </div>
+
+  <!-- PHONE 3 · Empty state -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="n-top">
+        <div class="n-back"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span>Back</div>
+        <div class="n-title">Notifications</div>
+      </div>
+
+      <div class="empty">
+        <div class="empty-tile"><span class="ico ico-xl"><svg><use href="#ic-bell"/></svg></span></div>
+        <div class="empty-ttl">No notifications yet</div>
+        <div class="empty-msg">When you receive offers, contract updates, or payment notifications they'll appear here.</div>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · Empty state</b><br/>[BELL] icon in dashed-yellow tile · matches EmptyState canonical pattern</div>
+  </div>
+
+</div>
+
+<!-- ────── Side panel ────── -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Tab bar — 5 variants</h3>
+      <div class="ph">Real Material Community Icons · yellow active · icon + label</div>
+      <div class="tabs-demo">
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+      <div class="tabs-demo" style="margin-top:6px">
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+      <div class="tabs-demo" style="margin-top:6px">
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+      <div class="tabs-demo" style="margin-top:6px">
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+      <div class="tabs-demo" style="margin-top:6px">
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-home"/></svg></span><span class="tab-lbl">Home</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-inbox"/></svg></span><span class="tab-lbl">Offers</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-briefcase"/></svg></span><span class="tab-lbl">Campaigns</span></div>
+        <div class="tab"><span class="ico ico-lg"><svg><use href="#ic-rupee"/></svg></span><span class="tab-lbl">Earnings</span></div>
+        <div class="tab act"><span class="ico ico-lg"><svg><use href="#ic-user"/></svg></span><span class="tab-lbl">Profile</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Tab icon names (MaterialCommunityIcons)</h3>
+      <div class="ph">5 MCI icons · ~600KB font shipped once via APK</div>
+      <div class="icon-table">
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-home"/></svg></span></div><code>home-outline</code><div class="uses">Home tab</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-inbox"/></svg></span></div><code>email-outline</code><div class="uses">Offers tab</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-briefcase"/></svg></span></div><code>briefcase-outline</code><div class="uses">Campaigns tab</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-rupee"/></svg></span></div><code>currency-inr</code><div class="uses">Earnings tab</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-user"/></svg></span></div><code>account-outline</code><div class="uses">Profile tab</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Inline icon map (10 categories)</h3>
+      <div class="ph">Notifications + action tiles + wallet glance + headers</div>
+      <div class="icon-table">
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-tag"/></svg></span></div><code>tag-outline</code><div class="uses">Offers</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-signature"/></svg></span></div><code>signature-text</code><div class="uses">Contracts</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-image"/></svg></span></div><code>image-outline</code><div class="uses">Content</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-handshake"/></svg></span></div><code>handshake-outline</code><div class="uses">Negotiation</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-document"/></svg></span></div><code>file-document-outline</code><div class="uses">Contract signed</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-rupee"/></svg></span></div><code>currency-inr</code><div class="uses">Tranche / commission</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-bank"/></svg></span></div><code>bank-outline</code><div class="uses">Withdrawal</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-megaphone"/></svg></span></div><code>bullhorn-outline</code><div class="uses">Campaign update</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-account-check"/></svg></span></div><code>account-check-outline</code><div class="uses">Account approved</div></div>
+        <div class="icon-row"><div class="n-ico"><span class="ico"><svg><use href="#ic-bell"/></svg></span></div><code>bell-outline</code><div class="uses">General / empty state</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>What moved + why</h3>
+      <div class="ph">Home redesigned around daily action, not wallet</div>
+      <ul>
+        <li><b>Wallet hero OUT</b> of Home — duplicate of Earnings tab UX. Replaced with one-line glance strip at bottom (still shows balance + 1-tap to Earnings).</li>
+        <li><b>Greeting + count line NEW</b> — "You have N things that need your attention" anchors the user in today's work.</li>
+        <li><b>3 attention tiles NEW</b> — Pending Offers / Contracts to sign / Content revisions. Counts derived <b>client-side from already-loaded notifications array</b>, no new endpoint.</li>
+        <li><b>Active Campaigns preserved</b> — same data binding, just visually upgraded (thumb circle + sub line).</li>
+        <li><b>Recent Activity NEW</b> — top 3 unread notifications inline. Reuses notifications already loaded for the badge. View All → Notifications screen.</li>
+        <li><b>MyStore / MyTransactions quick-links removed</b> — they were stat-cards-disguised-as-buttons, low-value. MyStore is reachable from Profile tab; TransactionFeed is reachable from Earnings.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">Same 5 APIs · zero new endpoint</div>
+      <ul>
+        <li><code>getEarnings()</code> → wallet glance line only (<code>wallet_balance</code> / <code>available_to_withdraw</code>)</li>
+        <li><code>getMyCampaigns('active')</code> → Active Campaigns list</li>
+        <li><code>getNotifications()</code> → badge count + Recent Activity (top 3) + action-tile counts (client-side derived by type)</li>
+        <li><code>markAllNotificationsRead()</code> → mark all CTA on Notifications screen</li>
+        <li><code>data_json.{offer_id, contract_id, deliverable_id, negotiation_id}</code> → deep-link routing preserved across 18 type switch branches</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>StatusPill canonical map +2</h3>
+      <div class="ph">Withdrawal lifecycle additions · 37 → 39 total</div>
+      <ul>
+        <li><code>processing</code> → infoPale / info / 'PROCESSING'</li>
+        <li><code>failed</code> → dangerPale / dangerText / 'FAILED'</li>
+      </ul>
+    </div>
+
+    <div class="native-warn">
+      <h4>⚠ Native APK rebuild required</h4>
+      <p><b>One-time cost</b>, before Flow 28 OTA can ship:<br/>
+      1. Add <code>apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"</code> to <code>android/app/build.gradle</code><br/>
+      2. Bump <code>NATIVE_RUNTIME = '1' → '2'</code> in <code>services/otaUpdater.js</code><br/>
+      3. Rebuild brand/influencer/follower release APKs (<code>pnpm android:brand</code> / <code>:influencer</code> / <code>:follower</code> release)<br/>
+      4. Founder reinstalls on test devices (old APK refuses new bundle until reinstall)<br/>
+      5. THEN <code>pnpm publish-ota:all</code> ships the JS bundle with real icons.</p>
+      <p style="margin-top:8px"><b>After Flow 28 = back to pure OTA rhythm for all remaining flows.</b> 23 + 44 = 67 future mobile screens inherit beautiful icons for free.</p>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

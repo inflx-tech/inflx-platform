@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-28-influencer-mobile-home-notifications",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-26 chat \"pls lock and start implement\"",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 28 v2 mockup locked (Home redesigned + real MCI icons)",
+  "mockup_locked_at": "2026-05-26",
+  "notes": "FIRST flow of mobile-influencer bucket (1/23). Foundation flow: brandPalette tab styling + real MaterialCommunityIcons icons (one-time native rebuild required) + action-oriented Home redesign (wallet hero OUT — moved to Earnings tab; Home now opens as daily action launchpad with greeting + 3 attention tiles + active campaigns + recent activity + compact wallet glance) + Notifications real-icon refresh. 3 files touched (HomeScreen 216→~260 / NotificationsScreen 307→~290 / InfluencerNavigator 135→~150). ZERO SDK boundaries beyond MCI. ZERO backend change — all data binds to existing endpoints + client-side derivation from already-loaded notifications array. Native rebuild step: gradle apply-from for vector-icons fonts.gradle + bundle MaterialCommunityIcons.ttf + bump NATIVE_RUNTIME 1→2 + 3 APK rebuilds + founder reinstall on test devices. After Flow 28 = all 22 remaining influencer screens + 44 follower screens inherit real icons via OTA. StatusPill canonical map +2 (processing, failed for withdrawal lifecycle, 37→39 total).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower", "apk:brand:rebuild-reinstall", "apk:influencer:rebuild-reinstall", "apk:follower:rebuild-reinstall"],
+    "native_rebuild_required": true,
+    "native_rebuild_reason": "MaterialCommunityIcons.ttf font asset needs to be bundled in Android APK via vector-icons fonts.gradle apply-from line; NATIVE_RUNTIME bump 1→2 ensures OTA bundle refuses to load on old APKs (preventing crash on missing native font reference)",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — Flow 28 ships with manual founder smoke-test after APK reinstall' for the release commit"
+  }
+}
