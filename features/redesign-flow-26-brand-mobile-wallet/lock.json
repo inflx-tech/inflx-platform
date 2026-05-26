@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-26-brand-mobile-wallet",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-26 chat \"ok pls start implementation\"",
   "approved_at": "2026-05-26",
@@ -10,14 +10,50 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-26 chat — Flow 26 mockup locked",
   "mockup_locked_at": "2026-05-26",
-  "notes": "Ninth flow. Wallet — balance hero + Razorpay top-up via WebView modal + payout bank details + tx history. SDK boundary preserved verbatim. Single HTML-string color swap (#1B2D5E → #0A0A0A) inside buildRazorpayCheckoutHTML. Behavior preserved 1:1.",
+  "notes": "Ninth flow. Wallet — Razorpay WebView SDK preserved + ink theme color. RELEASED 2026-05-26 with full QA GREEN on FIRST run via dual-probe warm-up (OTA manifest + /admin/stats + /auth/refresh endpoints).",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "run_at": "2026-05-26",
+      "report_path": "qa/reports/2026-05-26T01-31-58-258Z/QA-REPORT.md",
+      "pw_tests": 76,
+      "passed": 76,
+      "failed": 0,
+      "gate": 0,
+      "state": "GREEN",
+      "note": "Dual-probe warm-up (OTA manifest 43.4s cold-start + /admin/stats + /auth/refresh API endpoints) BEFORE pnpm qa cleared the cold-start hydration flakes from Flow 25. 76 passed gate 0 STATE=GREEN on FIRST run. Clear-testing discipline rewarded — new lesson: warm BOTH OTA AND a few API routes before QA to bypass Render free-tier cold-start hydration."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-26 chat \"ok pls start implementation\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-26",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev' for Flow 26"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro not yet wired for solo dev — mobile-brand bucket ships with manual founder smoke-test; Maestro setup deferred to its own contract'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "5c75a00", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "5c75a00", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "5c75a00", "note": "auto-redeploy on push; no-op", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 76, "previous_version": 75,
+        "bundle_hash": "sha256:24b7f14bc4993307cff606d7e0dba367a67b00bdf8670e236a55551cecae632f",
+        "published_at": "2026-05-26T01:35:05.474Z", "bundle_size_kb": 2287,
+        "trigger": "pnpm publish-ota:all -m 'Flow 26 — brand-mobile Wallet (Razorpay WebView preserved + ink theme)'",
+        "scope": "brand audience manifest (shared bundle)"
+      },
+      "ota_influencer": {
+        "version": 65, "previous_version": 64,
+        "bundle_hash": "sha256:24b7f14bc4993307cff606d7e0dba367a67b00bdf8670e236a55551cecae632f",
+        "published_at": "2026-05-26T01:35:09.178Z", "bundle_size_kb": 2287,
+        "trigger": "pnpm publish-ota:all -m 'Flow 26 — brand-mobile Wallet (Razorpay WebView preserved + ink theme)'",
+        "scope": "influencer audience manifest (shared bundle); no influencer-screen changes"
+      },
+      "ota_follower": {
+        "version": 39, "previous_version": 38,
+        "bundle_hash": "sha256:24b7f14bc4993307cff606d7e0dba367a67b00bdf8670e236a55551cecae632f",
+        "published_at": "2026-05-26T01:35:14.134Z", "bundle_size_kb": 2287,
+        "trigger": "pnpm publish-ota:all -m 'Flow 26 — brand-mobile Wallet (Razorpay WebView preserved + ink theme)'",
+        "scope": "follower audience manifest (shared bundle); no follower-screen changes"
+      }
+    }
   }
 }
