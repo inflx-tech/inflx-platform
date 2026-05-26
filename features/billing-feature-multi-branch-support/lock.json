@@ -23,10 +23,17 @@
   "discipline": "Verify-twice: confirmed via code read that branches are NOT a separate table or endpoint — they're a jsonb array inside brands.listing_data.branches, persisted via the existing PATCH /v1/brands/me (brand.controller.updateMe). Both brand-web Profile → Branches & Outlets card and brand-mobile BrandProfileScreen write to this shape. No dedicated /branches route exists. The handoff's expected '/brands/me/branches endpoint' does not exist.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting; Render redeploys backend with multi_branch_support gate on brand.controller.updateMe). M067 prod migration on separate explicit founder go after push, applied via trap+restore sequence."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-26) — explicit 'pls run m067' after A12.6 push (69f70a4) landed on origin/main.",
+    "released_at": "2026-05-26",
+    "deploy": {
+      "commit": "69f70a4",
+      "render_redeploy": "auto on push (Render watches origin/main)",
+      "prod_migrations": {
+        "M067_multi_branch_support": "applied to Supabase prod 2026-05-26 via trap+restore sequence. Sanity probe: features.feature_key='multi_branch_support', is_enforced=true, feature_type=boolean. Gate now active on PATCH /v1/brands/me — Free/Growth brands can no longer ADD branches beyond their existing count. Pro/Enterprise unaffected; grandfathered Free/Growth brands with pre-existing multi-branch data remain editable on non-branch fields and reductions."
+      },
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run (.env.bak removed; DATABASE_URL verified)."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only contract (per meals-schema precedent for non-UI features).",
