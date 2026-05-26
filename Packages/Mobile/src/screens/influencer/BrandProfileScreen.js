@@ -8,7 +8,8 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { colors } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
 export default function BrandProfileScreen({ navigation, route }) {
@@ -41,7 +42,7 @@ export default function BrandProfileScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color={colors.navy} size="large" />
+        <ActivityIndicator color={P.ink} size="large" />
       </View>
     );
   }
@@ -51,7 +52,7 @@ export default function BrandProfileScreen({ navigation, route }) {
       <View style={styles.center}>
         <Text style={styles.errorText}>{error || 'Brand not found'}</Text>
         <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.retryText}>Go Back</Text>
+          <Text style={styles.retryText}>GO BACK</Text>
         </TouchableOpacity>
       </View>
     );
@@ -64,7 +65,8 @@ export default function BrandProfileScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
 
         <View style={styles.profileRow}>
@@ -84,9 +86,10 @@ export default function BrandProfileScreen({ navigation, route }) {
             )}
           </View>
         </View>
+        <View style={styles.headerRule} />
       </View>
 
-      {/* Info Cards */}
+      {/* Brand Details */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Brand Details</Text>
 
@@ -110,7 +113,7 @@ export default function BrandProfileScreen({ navigation, route }) {
         )}
 
         {brand.created_at && (
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, styles.infoRowLast]}>
             <Text style={styles.infoLabel}>On INFLX Since</Text>
             <Text style={styles.infoValue}>
               {new Date(brand.created_at).toLocaleDateString('en-IN', {
@@ -122,79 +125,85 @@ export default function BrandProfileScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* Active Campaigns */}
+      {/* Campaigns stat box */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Campaigns</Text>
-        <View style={styles.statRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statNumber}>{brand.active_campaigns_count || 0}</Text>
-            <Text style={styles.statLabel}>Active Campaigns</Text>
-          </View>
+        <View style={styles.statBox}>
+          <Text style={styles.statNumber}>{brand.active_campaigns_count || 0}</Text>
+          <Text style={styles.statLabel}>Active Campaigns</Text>
         </View>
       </View>
 
-      <View style={{ height: 40 }} />
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: 20 },
-  errorText: { fontSize: 14, color: colors.t3, marginBottom: 16, textAlign: 'center' },
-  retryBtn: { backgroundColor: colors.navy, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 20 },
-  retryText: { fontSize: 14, fontWeight: '600', color: colors.white },
+  container: { flex: 1, backgroundColor: P.bg },
+  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 20 },
+  errorText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, marginBottom: 16, textAlign: 'center' },
+  retryBtn:  { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 22 },
+  retryText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.yellow, letterSpacing: 0.3 },
 
-  // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52, paddingBottom: 24 },
-  back: { marginBottom: 16 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  logo: { width: 64, height: 64, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.1)' },
+  // Header (ink topbar with yellow rule)
+  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerRule: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  back:      { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
+  backText:  { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)', fontWeight: '700' },
+  profileRow:{ flexDirection: 'row', alignItems: 'center', gap: 14 },
+  logo:      { width: 68, height: 68, borderRadius: 16, backgroundColor: P.yellow },
   logoFallback: {
-    width: 64, height: 64, borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 68, height: 68, borderRadius: 16,
+    backgroundColor: P.yellow,
     justifyContent: 'center', alignItems: 'center',
   },
-  logoInitial: { fontSize: 28, fontWeight: '900', color: colors.white },
-  businessName: { fontSize: 22, fontWeight: '800', color: colors.white },
+  logoInitial:  { fontFamily: fonts.displayBlack, fontSize: 30, fontWeight: '900', color: P.ink },
+  businessName: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white },
   categoryBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 9,
     paddingVertical: 3,
     marginTop: 6,
   },
-  categoryText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.8)', textTransform: 'capitalize' },
+  categoryText: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: 'rgba(255,255,255,0.92)', textTransform: 'capitalize', letterSpacing: 0.3 },
 
   // Card
   card: {
-    margin: 16, marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: colors.border,
+    marginHorizontal: 14, marginTop: 12,
+    backgroundColor: P.white,
+    borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 14 },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.ink, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.4 },
 
   // Info rows
   infoRow: {
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.borderSoft,
   },
+  infoRowLast: { borderBottomWidth: 0 },
   infoLabel: {
-    fontSize: 10, fontWeight: '700', color: colors.t3,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4,
+    fontFamily: fonts.monoBold,
+    fontSize: 9.5, fontWeight: '800',
+    color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4,
+    marginBottom: 4,
   },
-  infoValue: { fontSize: 14, fontWeight: '600', color: colors.t1 },
+  infoValue: { fontFamily: fonts.sansMedium, fontSize: 13.5, fontWeight: '600', color: P.ink },
 
   // Stats
-  statRow: { flexDirection: 'row', gap: 12 },
   statBox: {
-    flex: 1, backgroundColor: colors.navyPale,
-    borderRadius: 12, padding: 16, alignItems: 'center',
+    backgroundColor: P.yellowPale,
+    borderWidth: 1.5,
+    borderColor: P.yellow,
+    borderRadius: 12,
+    padding: 18,
+    alignItems: 'center',
   },
-  statNumber: { fontSize: 28, fontWeight: '900', color: colors.navy },
-  statLabel: { fontSize: 11, fontWeight: '600', color: colors.t2, marginTop: 4 },
+  statNumber: { fontFamily: fonts.displayBlack, fontSize: 32, fontWeight: '900', color: P.ink, lineHeight: 36 },
+  statLabel:  { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.yellowText, textTransform: 'uppercase', letterSpacing: 0.4, marginTop: 6 },
 });

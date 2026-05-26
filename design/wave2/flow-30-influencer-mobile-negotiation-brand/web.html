@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 30 · influencer-mobile Negotiation + BrandProfile — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+/* Phone shell */
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+/* SVG icons */
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:16px;height:16px}
+.ico-md{width:20px;height:20px}
+.ico-xl{width:36px;height:36px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* Header */
+.h-top{background:var(--ink);color:var(--white);padding:14px 18px 18px;flex-shrink:0;position:relative}
+.h-top::after{content:'';position:absolute;left:18px;bottom:6px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.back-row{display:flex;align-items:center;gap:5px;margin-bottom:8px;color:rgba(255,255,255,.65)}
+.back-row .ico{color:rgba(255,255,255,.65);width:16px;height:16px}
+.back-text{font-family:'JetBrains Mono';font-size:10.5px;font-weight:700}
+.h-title{font-family:'Outfit';font-size:22px;font-weight:800;color:var(--white)}
+.h-meta{display:flex;align-items:center;gap:10px;margin-top:8px}
+.h-brand{font-family:'JetBrains Mono';font-size:10.5px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.h-campaign{font-family:'Plus Jakarta Sans';font-size:11.5px;color:rgba(255,255,255,.75);margin-top:3px}
+
+/* StatusPill */
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.pill.your-turn   {background:var(--yellow-pale);  color:var(--yellow-text)}
+.pill.waiting     {background:var(--info-pale);    color:var(--info)}
+.pill.agreed      {background:var(--success-pale); color:var(--success-text)}
+.pill.closed      {background:var(--bg2);          color:var(--muted-2)}
+.pill.open        {background:var(--yellow-pale);  color:var(--yellow-text)}
+
+/* Body */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:14px 0 32px}
+
+/* Card */
+.card{margin:0 14px 12px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:14px}
+.card-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px}
+
+/* Offer progress (Original --> Latest) */
+.progress-row{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.progress-box{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:11px;text-align:center}
+.progress-box.current{background:var(--success-pale);border-color:#A8E6CC}
+.progress-l{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-bottom:3px}
+.progress-box.current .progress-l{color:var(--success-text)}
+.progress-v{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--ink)}
+.progress-box.current .progress-v{color:var(--success-text)}
+.progress-arrow{color:var(--ink);width:18px;display:flex;align-items:center;justify-content:center}
+
+.turn-info{background:var(--yellow-pale);border-radius:10px;padding:9px 13px;text-align:center}
+.turn-info-l{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.3px}
+.turn-info.waiting{background:var(--info-pale)}
+.turn-info.waiting .turn-info-l{color:var(--info)}
+.turn-info.closed{background:var(--bg2)}
+.turn-info.closed .turn-info-l{color:var(--muted-2)}
+
+/* Turn bubbles */
+.bubble{margin-bottom:10px;padding:11px;border-radius:14px;border:1px solid}
+.bubble.left{background:var(--bg2);border-color:var(--border);margin-right:36px}
+.bubble.right{background:var(--yellow-pale);border-color:#F0DA88;margin-left:36px}
+.bubble-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bubble-actor{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+.bubble.left .bubble-actor{color:var(--muted)}
+.bubble.right .bubble-actor{color:var(--ink)}
+.bubble-date{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2)}
+.bubble-action-badge{display:inline-block;padding:2px 7px;border-radius:5px;background:var(--white);border:1px solid var(--border);font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.bubble.right .bubble-action-badge{background:var(--white);border-color:#F0DA88;color:var(--yellow-text)}
+.bubble-fee{font-family:'JetBrains Mono';font-size:16px;font-weight:900;color:var(--ink);margin-bottom:4px}
+.bubble-note{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.5;font-style:italic}
+
+/* Waiting banner */
+.waiting-card{background:var(--info-pale);border:1px solid #B7CCFA;border-radius:14px;padding:18px;text-align:center;margin:0 14px 12px}
+.waiting-ico-wrap{width:48px;height:48px;border-radius:12px;background:var(--white);border:1.5px solid var(--info);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;color:var(--info)}
+.waiting-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--info);margin-bottom:5px}
+.waiting-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink-2);line-height:1.55;max-width:260px;margin:0 auto}
+
+/* Form */
+.form-hint{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);margin-bottom:11px;line-height:1.5}
+.btn-primary{background:var(--ink);color:var(--yellow);border-radius:12px;padding:14px;text-align:center;font-family:'Outfit';font-size:14px;font-weight:900;letter-spacing:.2px;margin-bottom:14px}
+.counter-section{margin-bottom:14px}
+.counter-l{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-bottom:9px}
+.input-wrap{display:flex;align-items:center;border:2px solid var(--ink);border-radius:11px;background:var(--white);margin-bottom:8px}
+.input-wrap .prefix{padding:0 11px;font-family:'JetBrains Mono';font-size:17px;font-weight:800;color:var(--muted)}
+.input-wrap .field{flex:1;padding:11px 0;font-family:'JetBrains Mono';font-size:16px;font-weight:800;color:var(--ink)}
+.input-wrap .field.ph{color:var(--muted-3)}
+.input-wrap .suffix{padding:0 11px;font-family:'JetBrains Mono';font-size:16px;font-weight:800;color:var(--muted)}
+.note-input{border:1.5px solid var(--border);border-radius:10px;padding:11px;font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted-3);background:var(--bg);min-height:50px;margin-bottom:9px}
+.btn-secondary{background:var(--danger-pale);color:var(--danger-text);border-radius:12px;padding:12px;text-align:center;font-family:'Outfit';font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.2px}
+
+/* Closed card */
+.closed-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:14px;margin:0 14px 12px}
+.closed-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);margin-bottom:5px}
+.closed-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55}
+.closed-card.agreed{background:var(--success-pale);border-color:#A8E6CC}
+.closed-card.agreed .closed-ttl{color:var(--success-text)}
+.closed-card.agreed .closed-text{color:var(--success-text)}
+
+/* Brand Profile header */
+.bp-top{background:var(--ink);color:var(--white);padding:14px 18px 22px;flex-shrink:0;position:relative}
+.bp-top::after{content:'';position:absolute;left:18px;bottom:8px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.bp-profile-row{display:flex;align-items:center;gap:14px;margin-top:6px}
+.bp-logo{width:68px;height:68px;border-radius:16px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:30px;font-weight:900}
+.bp-name{font-family:'Outfit';font-size:22px;font-weight:800;color:var(--white)}
+.bp-cat{display:inline-block;background:rgba(255,255,255,.15);padding:3px 9px;border-radius:6px;margin-top:5px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:rgba(255,255,255,.92);text-transform:capitalize;letter-spacing:.3px}
+
+/* Brand details info rows */
+.info-row{padding:11px 0;border-bottom:1px solid var(--border-soft)}
+.info-row:last-child{border-bottom:none}
+.info-l{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-bottom:3px}
+.info-v{font-family:'Plus Jakarta Sans';font-size:13.5px;font-weight:600;color:var(--ink)}
+
+/* Stats */
+.stat-box{background:var(--yellow-pale);border:1.5px solid var(--yellow);border-radius:12px;padding:18px;text-align:center}
+.stat-num{font-family:'JetBrains Mono';font-size:32px;font-weight:900;color:var(--ink);line-height:1}
+.stat-lbl{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-top:6px}
+
+/* Side panel */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+
+.pill-table{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.pill-row{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--bg);border-radius:7px}
+.pill-row code{font-family:'JetBrains Mono';font-size:9.5px;color:var(--ink-2);flex:1;font-weight:700}
+.pill-row .desc{font-family:'Plus Jakarta Sans';font-size:10px;color:var(--muted-2)}
+</style>
+</head>
+<body>
+
+<!-- SVG icon library -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+    <symbol id="ic-chev-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L15 12 L9 18"/></symbol>
+    <symbol id="ic-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3 H17 V7 L13 11 V13 L17 17 V21 H7 V17 L11 13 V11 L7 7 Z"/></symbol>
+    <symbol id="ic-handshake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 L7 7 L11 9 L14 7 L18 11"/><path d="M11 14 L13 16 L15 14 L17 12"/><path d="M21 12 L18 15"/></symbol>
+    <symbol id="ic-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 L4 5 H20 L21 9"/><path d="M4 9 V20 H20 V9"/><path d="M9 20 V13 H15 V20"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 30 · influencer-mobile Negotiation + BrandProfile — wave2 mockup</h1>
+  <div class="sub">
+    <b>3rd flow of mobile-influencer bucket (3/23).</b> NegotiationScreen (622 LOC chat-style turn thread) + BrandProfileScreen (200 LOC public brand info). <b>ZERO SDK boundaries</b>. <b>ZERO backend change</b> — 4 APIs preserved verbatim. <b>StatusPill canonical map</b>: zero NEW entries, but adds <code>mode='influencer'</code> support (~3-line component change) to flip awaiting_brand/awaiting_influencer labels for influencer-side consumers. <b>Visual:</b> brandPalette + fonts.* + bg2 (brand bubble, left) + yellowPale (influencer bubble, right) + ink/yellow Accept + ink/yellow Counter + dangerPale Walk Away + successPale Latest progress box + chevron-right MCI arrow.
+  </div>
+</div>
+
+<!-- Row 1 — Negotiation: your turn + waiting -->
+<div class="row">
+
+  <!-- PHONE 1: Negotiation — YOUR TURN with counter form -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-top">
+        <div class="back-row"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span><span class="back-text">Back</span></div>
+        <div class="h-title">Negotiation</div>
+        <div class="h-meta">
+          <span class="pill your-turn">Your Turn</span>
+          <span class="h-brand">SoundCo</span>
+        </div>
+        <div class="h-campaign">Bluetooth Speaker Launch · Hybrid</div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Offer Progress</div>
+          <div class="progress-row">
+            <div class="progress-box">
+              <div class="progress-l">Original</div>
+              <div class="progress-v">₹12,000 + 10%</div>
+            </div>
+            <div class="progress-arrow"><span class="ico ico-sm"><svg><use href="#ic-chev-right"/></svg></span></div>
+            <div class="progress-box current">
+              <div class="progress-l">Latest</div>
+              <div class="progress-v">₹18,000 + 10%</div>
+            </div>
+          </div>
+          <div class="turn-info">
+            <div class="turn-info-l">Your turn to respond</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Conversation (3 messages)</div>
+
+          <div class="bubble left">
+            <div class="bubble-head">
+              <div class="bubble-actor">Brand</div>
+              <div class="bubble-date">2 Nov · 10:30 AM</div>
+            </div>
+            <div class="bubble-action-badge">Counter Offer</div>
+            <div class="bubble-fee">₹12,000 + 10% comm.</div>
+            <div class="bubble-note">"Our initial budget for this category."</div>
+          </div>
+
+          <div class="bubble right">
+            <div class="bubble-head">
+              <div class="bubble-actor">You</div>
+              <div class="bubble-date">2 Nov · 02:15 PM</div>
+            </div>
+            <div class="bubble-action-badge">Counter Offer</div>
+            <div class="bubble-fee">₹20,000 + 12% comm.</div>
+            <div class="bubble-note">"My audience size + niche overlap justify this rate."</div>
+          </div>
+
+          <div class="bubble left">
+            <div class="bubble-head">
+              <div class="bubble-actor">Brand</div>
+              <div class="bubble-date">3 Nov · 09:05 AM</div>
+            </div>
+            <div class="bubble-action-badge">Counter Offer</div>
+            <div class="bubble-fee">₹18,000 + 10% comm.</div>
+            <div class="bubble-note">"Best we can do at this stage — happy to commit if this works."</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Your Response</div>
+          <div class="form-hint">You can accept the current offer, send a counter, or walk away.</div>
+
+          <div class="btn-primary">ACCEPT ₹18,000 + 10% COMM.</div>
+
+          <div class="counter-section">
+            <div class="counter-l">Or send a counter offer:</div>
+            <div class="input-wrap">
+              <span class="prefix">₹</span>
+              <span class="field">19,000</span>
+            </div>
+            <div class="input-wrap">
+              <span class="field" style="padding-left:14px">11</span>
+              <span class="suffix">%</span>
+            </div>
+            <div class="note-input">Add a note (optional)…</div>
+            <div class="btn-primary" style="margin-bottom:0;font-size:13px;letter-spacing:.3px">SEND COUNTER OFFER</div>
+          </div>
+
+          <div class="btn-secondary">WALK AWAY</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · Negotiation — Your Turn</b><br/>StatusPill mode='influencer' flips awaiting_influencer→"YOUR TURN" · 3 turn bubbles (L=brand bg2 · R=influencer yellowPale) · Accept + Counter form + Walk Away · ink/yellow primary CTAs · dangerPale Walk</div>
+  </div>
+
+  <!-- PHONE 2: Negotiation — Waiting for Brand -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-top">
+        <div class="back-row"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span><span class="back-text">Back</span></div>
+        <div class="h-title">Negotiation</div>
+        <div class="h-meta">
+          <span class="pill waiting">Waiting</span>
+          <span class="h-brand">Sparkle Cosmetics</span>
+        </div>
+        <div class="h-campaign">Diwali Glow-Up · Engagement</div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Offer Progress</div>
+          <div class="progress-row">
+            <div class="progress-box">
+              <div class="progress-l">Original</div>
+              <div class="progress-v">₹10,000</div>
+            </div>
+            <div class="progress-arrow"><span class="ico ico-sm"><svg><use href="#ic-chev-right"/></svg></span></div>
+            <div class="progress-box current">
+              <div class="progress-l">Latest</div>
+              <div class="progress-v">₹15,000</div>
+            </div>
+          </div>
+          <div class="turn-info waiting">
+            <div class="turn-info-l">Waiting for brand to respond</div>
+          </div>
+        </div>
+
+        <div class="waiting-card">
+          <div class="waiting-ico-wrap"><span class="ico ico-xl"><svg><use href="#ic-hourglass"/></svg></span></div>
+          <div class="waiting-ttl">Waiting for Brand</div>
+          <div class="waiting-text">The brand is reviewing your offer. You'll be notified when they respond.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Conversation (2 messages)</div>
+
+          <div class="bubble left">
+            <div class="bubble-head">
+              <div class="bubble-actor">Brand</div>
+              <div class="bubble-date">1 Nov · 11:20 AM</div>
+            </div>
+            <div class="bubble-action-badge">Counter Offer</div>
+            <div class="bubble-fee">₹10,000</div>
+            <div class="bubble-note">"Standard rate for our category."</div>
+          </div>
+
+          <div class="bubble right">
+            <div class="bubble-head">
+              <div class="bubble-actor">You</div>
+              <div class="bubble-date">1 Nov · 04:42 PM</div>
+            </div>
+            <div class="bubble-action-badge">Counter Offer</div>
+            <div class="bubble-fee">₹15,000</div>
+            <div class="bubble-note">"My engagement rate is 6.2% — above your category average."</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · Negotiation — Waiting for Brand</b><br/>StatusPill mode='influencer' flips awaiting_brand→"WAITING" (infoPale) · waiting banner with hourglass MCI · no form (read-only)</div>
+  </div>
+
+  <!-- PHONE 3: BrandProfile -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="bp-top">
+        <div class="back-row"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span><span class="back-text">Back</span></div>
+        <div class="bp-profile-row">
+          <div class="bp-logo">S</div>
+          <div>
+            <div class="bp-name">Sparkle Cosmetics</div>
+            <span class="bp-cat">Beauty</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Brand Details</div>
+          <div class="info-row">
+            <div class="info-l">Business Name</div>
+            <div class="info-v">Sparkle Cosmetics Pvt. Ltd.</div>
+          </div>
+          <div class="info-row">
+            <div class="info-l">Category</div>
+            <div class="info-v">Beauty &amp; Skincare</div>
+          </div>
+          <div class="info-row">
+            <div class="info-l">Location</div>
+            <div class="info-v">HSR Layout, Bengaluru, Karnataka</div>
+          </div>
+          <div class="info-row">
+            <div class="info-l">On INFLX Since</div>
+            <div class="info-v">March 2026</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-ttl">Campaigns</div>
+          <div class="stat-box">
+            <div class="stat-num">5</div>
+            <div class="stat-lbl">Active Campaigns</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · BrandProfile</b><br/>Ink topbar with yellow rule · 68×68 yellow logo tile (initial fallback) · category badge in rgba-white-15 · Brand Details 4-row info card · yellowPale stat box with ink mono number</div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>StatusPill mode='influencer' (NEW)</h3>
+      <div class="ph">~3-line addition · mirrors mode='transaction' pattern from Flow 21</div>
+      <div class="pill-table">
+        <div class="pill-row"><code>awaiting_brand</code><span class="pill waiting">Waiting</span><div class="desc">(was YOUR TURN brand-POV)</div></div>
+        <div class="pill-row"><code>awaiting_influencer</code><span class="pill your-turn">Your Turn</span><div class="desc">(was WAITING brand-POV)</div></div>
+        <div class="pill-row"><code>agreed</code><span class="pill agreed">Agreed</span><div class="desc">(unchanged)</div></div>
+        <div class="pill-row"><code>walked_away</code><span class="pill closed">Closed</span><div class="desc">(unchanged)</div></div>
+        <div class="pill-row"><code>open</code><span class="pill open">Open</span><div class="desc">(unchanged)</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Agreed state (closed)</h3>
+      <div class="ph">final-state card when both parties accept</div>
+      <div class="closed-card agreed" style="margin:6px 0 0">
+        <div class="closed-ttl">Negotiation Agreed</div>
+        <div class="closed-text">Final terms: ₹18,000 + 10% comm. A contract will be generated for signing.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Walked-away state (closed)</h3>
+      <div class="ph">when either party walks</div>
+      <div class="closed-card" style="margin:6px 0 0">
+        <div class="closed-ttl">Negotiation Closed</div>
+        <div class="closed-text">This negotiation has been closed without an agreement.</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">4 APIs · zero new endpoint · zero phantom field</div>
+      <ul>
+        <li><code>getNegotiation(id)</code> → <code>/negotiations/:id</code></li>
+        <li><code>getNegotiationByCampaignInfluencer(ciId)</code> → <code>/negotiations/by-ci/:ciId</code></li>
+        <li><code>submitNegotiationTurn(id, {action, proposed_fee, proposed_commission_pct, note})</code> → <code>/negotiations/:id/respond</code></li>
+        <li><code>getBrandPublicProfile(brandId)</code> → <code>/brands/:id/public</code></li>
+        <li>Actions: <b>counter</b> · <b>accept</b> · <b>walkaway</b></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim</h3>
+      <div class="ph">13 NegotiationScreen branches + 6 BrandProfile branches</div>
+      <ul>
+        <li><b>Goal-aware logic:</b> <code>showFee = engagement||hybrid</code>; <code>showCommission = conversion||hybrid</code></li>
+        <li><b>L/R chat bubble convention:</b> brand=left (bg2) · influencer=right (yellowPale)</li>
+        <li><b>3 action paths:</b> counter / accept / walkaway with Alert.alert confirms</li>
+        <li><b>Counter validation:</b> fee > 0; commission 0-100; disabled-button states</li>
+        <li><b>statusLabel() helper</b> kept for friendly inline text (turn-info banner); header pill uses canonical StatusPill component</li>
+        <li><b>Two entry points</b> by route.params: <code>negotiation_id</code> OR <code>campaign_influencer_id</code></li>
+        <li><b>BrandProfile</b> initial fallback + 4 conditional info rows + active_campaigns_count stat</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Adjacent fixes</h3>
+      <ul>
+        <li><b>Drop unused <code>import StatusBadge</code></b> from NegotiationScreen (line 15 — never used in JSX)</li>
+        <li>Drop <code>colors.orange</code> + <code>colors.orangePale</code> from turn-actor badge → bg2 + muted</li>
+        <li>~80 <code>colors.*</code> token swaps across both files</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Risk callouts</h3>
+      <ul>
+        <li><b>StatusPill mode='influencer' extension</b> — single-component change, but affects future influencer screens. Surfaced + approved.</li>
+        <li><b>13 NegotiationScreen render branches</b> preserved verbatim — visual-only diff</li>
+        <li><b>L/R turn alignment</b> by <code>turn.sent_by === 'influencer'</code> — preserve exact conditional</li>
+        <li>No native rebuild · OTA-only delivery · production-impacting</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

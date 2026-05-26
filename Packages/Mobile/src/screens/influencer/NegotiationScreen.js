@@ -10,9 +10,10 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { colors, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 function formatDate(dateStr) {
   if (!dateStr) return '--';
@@ -196,7 +197,7 @@ export default function NegotiationScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.navy} />
+        <ActivityIndicator size="large" color={P.ink} />
         <Text style={styles.loadingText}>Loading negotiation...</Text>
       </View>
     );
@@ -237,13 +238,12 @@ export default function NegotiationScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<- Back'}</Text>
+          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Negotiation</Text>
         <View style={styles.headerMeta}>
-          <View style={styles.headerStatusPill}>
-            <Text style={styles.headerStatusText}>{statusLabel(negotiation.status)}</Text>
-          </View>
+          <StatusPill mode="influencer" status={negotiation.status} />
           {negotiation.brand_name && (
             <Text style={styles.headerBrand}>{negotiation.brand_name}</Text>
           )}
@@ -251,6 +251,7 @@ export default function NegotiationScreen({ navigation, route }) {
         {negotiation.campaign_name && (
           <Text style={styles.headerCampaign}>{negotiation.campaign_name}</Text>
         )}
+        <View style={styles.headerRule} />
       </View>
 
       {/* Original vs Current */}
@@ -264,7 +265,7 @@ export default function NegotiationScreen({ navigation, route }) {
             </Text>
           </View>
           <View style={styles.feeArrow}>
-            <Text style={styles.feeArrowText}>{'-->'}</Text>
+            <Icon name="chevron-right" size={18} color={P.ink} />
           </View>
           <View style={[styles.feeBox, styles.feeBoxCurrent]}>
             <Text style={styles.feeBoxLabelCurrent}>Latest</Text>
@@ -335,7 +336,9 @@ export default function NegotiationScreen({ navigation, route }) {
       {/* Waiting Banner */}
       {isOpen && !isInfluencerTurn && (
         <View style={styles.waitingCard}>
-          <Text style={styles.waitingIcon}>...</Text>
+          <View style={styles.waitingIcoWrap}>
+            <Icon name="timer-sand" size={28} color={P.info} />
+          </View>
           <Text style={styles.waitingTitle}>Waiting for Brand</Text>
           <Text style={styles.waitingText}>
             The brand is reviewing your offer. You will be notified when they respond.
@@ -373,7 +376,7 @@ export default function NegotiationScreen({ navigation, route }) {
                   onChangeText={setProposedFee}
                   keyboardType="numeric"
                   placeholder="Your proposed fee"
-                  placeholderTextColor={colors.t3}
+                  placeholderTextColor={P.muted2}
                 />
               </View>
             )}
@@ -386,7 +389,7 @@ export default function NegotiationScreen({ navigation, route }) {
                   onChangeText={setProposedCommission}
                   keyboardType="numeric"
                   placeholder="Proposed commission %"
-                  placeholderTextColor={colors.t3}
+                  placeholderTextColor={P.muted2}
                 />
                 <Text style={styles.rupee}>%</Text>
               </View>
@@ -397,7 +400,7 @@ export default function NegotiationScreen({ navigation, route }) {
               value={note}
               onChangeText={setNote}
               placeholder="Add a note (optional)..."
-              placeholderTextColor={colors.t3}
+              placeholderTextColor={P.muted2}
               multiline
               numberOfLines={3}
             />
@@ -416,7 +419,7 @@ export default function NegotiationScreen({ navigation, route }) {
               }
             >
               {actionLoading ? (
-                <ActivityIndicator size="small" color={colors.white} />
+                <ActivityIndicator size="small" color={P.white} />
               ) : (
                 <Text style={styles.counterBtnText}>Send Counter Offer</Text>
               )}
@@ -435,11 +438,11 @@ export default function NegotiationScreen({ navigation, route }) {
 
       {/* Closed Status */}
       {isClosed && (
-        <View style={[styles.card, styles.closedCard]}>
-          <Text style={styles.closedTitle}>
+        <View style={[styles.card, styles.closedCard, negotiation.status === 'agreed' && styles.closedCardAgreed]}>
+          <Text style={[styles.closedTitle, negotiation.status === 'agreed' && styles.closedTitleAgreed]}>
             {negotiation.status === 'agreed' ? 'Negotiation Agreed' : 'Negotiation Closed'}
           </Text>
-          <Text style={styles.closedText}>
+          <Text style={[styles.closedText, negotiation.status === 'agreed' && styles.closedTextAgreed]}>
             {negotiation.status === 'agreed'
               ? 'Final terms: ' + renderProposalLine(negotiation.current_fee, negotiation.current_commission_pct) + '. A contract will be generated for signing.'
               : 'This negotiation has been closed without an agreement.'}
@@ -455,168 +458,186 @@ export default function NegotiationScreen({ navigation, route }) {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg, padding: 24 },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
-  emptyIcon: { fontSize: 32, color: colors.t3, marginBottom: 12 },
-  emptyText: { fontSize: 16, fontWeight: '700', color: colors.t1, marginBottom: 6 },
-  emptySubtext: { fontSize: 13, color: colors.t3, textAlign: 'center', lineHeight: 20, marginBottom: 20 },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg, padding: 24 },
+  loadingText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2, marginTop: 12 },
+  emptyIcon: { fontFamily: fonts.displayBlack, fontSize: 32, color: P.muted2, marginBottom: 12 },
+  emptyText: { fontFamily: fonts.displayBold, fontSize: 16, fontWeight: '800', color: P.ink, marginBottom: 6 },
+  emptySubtext: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted, textAlign: 'center', lineHeight: 18, marginBottom: 20 },
 
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerTitle: { fontSize: 22, fontWeight: '800', color: colors.white },
+  // Header (ink topbar with yellow rule)
+  header: { backgroundColor: P.ink, paddingHorizontal: 18, paddingTop: 50, paddingBottom: 18, position: 'relative' },
+  headerRule: { position: 'absolute', left: 18, bottom: 6, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  back: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.65)', fontWeight: '700' },
+  headerTitle: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.white },
   headerMeta: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  headerStatusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  headerStatusText: { fontSize: 11, fontWeight: '800', color: colors.white, letterSpacing: 0.4 },
-  headerBrand: { fontSize: 13, color: 'rgba(255,255,255,0.55)' },
-  headerCampaign: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 4, fontWeight: '600' },
+  headerBrand: { fontFamily: fonts.monoBold, fontSize: 10.5, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.4, fontWeight: '700' },
+  headerCampaign: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: 'rgba(255,255,255,0.75)', marginTop: 3 },
 
+  // Card
   card: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 12.5, fontWeight: '800', color: P.ink, marginBottom: 11, textTransform: 'uppercase', letterSpacing: 0.4 },
 
-  feeSummary: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  // Offer Progress
+  feeSummary: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 11 },
   feeBox: {
     flex: 1,
-    backgroundColor: colors.surface2,
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: P.bg2,
+    borderWidth: 1,
+    borderColor: P.border,
+    borderRadius: 11,
+    padding: 11,
     alignItems: 'center',
   },
-  feeBoxCurrent: { backgroundColor: colors.tealPale },
-  feeBoxLabel: { fontSize: 9, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  feeBoxLabelCurrent: { fontSize: 9, fontWeight: '700', color: colors.tealDeep, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  feeBoxValue: { fontSize: 14, fontWeight: '800', color: colors.t1, textAlign: 'center' },
-  feeBoxValueCurrent: { fontSize: 14, fontWeight: '800', color: colors.tealDeep, textAlign: 'center' },
-  feeArrow: { paddingHorizontal: 4 },
-  feeArrowText: { fontSize: 14, color: colors.t3, fontWeight: '700' },
+  feeBoxCurrent: { backgroundColor: P.successPale, borderColor: '#A8E6CC' },
+  feeBoxLabel: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 3 },
+  feeBoxLabelCurrent: { fontFamily: fonts.monoBold, fontSize: 9, fontWeight: '800', color: P.successText, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 3 },
+  feeBoxValue: { fontFamily: fonts.monoBold, fontSize: 14, fontWeight: '800', color: P.ink, textAlign: 'center' },
+  feeBoxValueCurrent: { fontFamily: fonts.monoBold, fontSize: 14, fontWeight: '800', color: P.successText, textAlign: 'center' },
+  feeArrow: { paddingHorizontal: 2, alignItems: 'center', justifyContent: 'center' },
 
+  // Turn-info banner
   turnInfo: {
-    backgroundColor: colors.navyPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 13,
     alignItems: 'center',
   },
-  turnInfoLabel: { fontSize: 13, fontWeight: '700', color: colors.navy },
+  turnInfoLabel: { fontFamily: fonts.monoBold, fontSize: 10.5, fontWeight: '800', color: P.yellowText, textTransform: 'uppercase', letterSpacing: 0.3 },
 
-  noTurnsText: { fontSize: 13, color: colors.t3 },
+  // Turn bubbles (L=bg2 brand · R=yellowPale influencer)
+  noTurnsText: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted2 },
   turnBubble: {
-    marginBottom: 12,
-    padding: 12,
+    marginBottom: 10,
+    padding: 11,
     borderRadius: 14,
     borderWidth: 1,
   },
   turnBubbleLeft: {
-    backgroundColor: colors.surface2,
-    borderColor: colors.border,
-    marginRight: 40,
+    backgroundColor: P.bg2,
+    borderColor: P.border,
+    marginRight: 36,
   },
   turnBubbleRight: {
-    backgroundColor: colors.navyPale,
-    borderColor: '#D0D5EC',
-    marginLeft: 40,
+    backgroundColor: P.yellowPale,
+    borderColor: '#F0DA88',
+    marginLeft: 36,
   },
   turnHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  turnActor: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  turnActorBrand: { color: colors.orange },
-  turnActorInfluencer: { color: colors.navy },
-  turnDate: { fontSize: 10, color: colors.t3 },
+  turnActor: { fontFamily: fonts.monoBold, fontSize: 9.5, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.4 },
+  turnActorBrand: { color: P.muted },
+  turnActorInfluencer: { color: P.ink },
+  turnDate: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2 },
   turnActionBadge: {
     alignSelf: 'flex-start',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    borderRadius: 5,
     marginBottom: 6,
-    backgroundColor: colors.orangePale,
+    backgroundColor: P.white,
+    borderWidth: 1,
+    borderColor: P.border,
   },
-  turnActionText: { fontSize: 10, fontWeight: '700', color: colors.t1 },
-  turnFee: { fontSize: 16, fontWeight: '800', color: colors.t1, marginBottom: 4 },
-  turnNote: { fontSize: 13, color: colors.t2, lineHeight: 19, fontStyle: 'italic' },
+  turnActionText: { fontFamily: fonts.monoBold, fontSize: 8.5, fontWeight: '800', color: P.muted, textTransform: 'uppercase', letterSpacing: 0.3 },
+  turnFee: { fontFamily: fonts.monoBold, fontSize: 15, fontWeight: '900', color: P.ink, marginBottom: 4 },
+  turnNote: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, lineHeight: 17, fontStyle: 'italic' },
 
+  // Waiting card (infoPale)
   waitingCard: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.goldPale,
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: P.infoPale,
+    borderRadius: 14,
+    padding: 18,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E8D590',
+    borderColor: '#B7CCFA',
   },
-  waitingIcon: { fontSize: 22, color: '#7A5500', marginBottom: 8, letterSpacing: 4 },
-  waitingTitle: { fontSize: 15, fontWeight: '700', color: '#7A5500', marginBottom: 6 },
-  waitingText: { fontSize: 13, color: '#7A5500', textAlign: 'center', lineHeight: 20 },
+  waitingIcoWrap: {
+    width: 48, height: 48, borderRadius: 12,
+    backgroundColor: P.white,
+    borderWidth: 1.5, borderColor: P.info,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 10,
+  },
+  waitingTitle: { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.info, marginBottom: 5 },
+  waitingText: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.ink2, textAlign: 'center', lineHeight: 17, maxWidth: 260 },
 
-  formHint: { fontSize: 12, color: colors.t3, marginBottom: 14, lineHeight: 18 },
+  // Form
+  formHint: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, marginBottom: 11, lineHeight: 17 },
   acceptBtn: {
-    backgroundColor: colors.teal,
+    backgroundColor: P.ink,
     borderRadius: 12,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  acceptBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
-  counterSection: { marginBottom: 16 },
-  counterLabel: { fontSize: 12, fontWeight: '600', color: colors.t2, marginBottom: 10 },
+  acceptBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2 },
+  counterSection: { marginBottom: 14 },
+  counterLabel: { fontFamily: fonts.monoBold, fontSize: 10, fontWeight: '800', color: P.muted2, marginBottom: 9, textTransform: 'uppercase', letterSpacing: 0.4 },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    marginBottom: 10,
+    borderColor: P.ink,
+    borderRadius: 11,
+    backgroundColor: P.white,
+    marginBottom: 8,
   },
-  rupee: { paddingHorizontal: 12, fontSize: 18, fontWeight: '700', color: colors.t2 },
-  feeInput: { flex: 1, paddingVertical: 12, fontSize: 18, fontWeight: '700', color: colors.t1 },
+  rupee: { paddingHorizontal: 11, fontFamily: fonts.monoBold, fontSize: 17, fontWeight: '800', color: P.muted },
+  feeInput: { flex: 1, paddingVertical: 11, fontFamily: fonts.monoBold, fontSize: 16, fontWeight: '800', color: P.ink },
   noteInput: {
-    borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 13,
-    color: colors.t1,
-    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: P.border,
+    borderRadius: 10,
+    padding: 11,
+    fontFamily: fonts.sansMedium,
+    fontSize: 12,
+    color: P.ink,
+    backgroundColor: P.bg,
+    marginBottom: 9,
+    minHeight: 60,
     textAlignVertical: 'top',
   },
   counterBtn: {
-    backgroundColor: colors.navy,
+    backgroundColor: P.ink,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 13,
     alignItems: 'center',
   },
-  counterBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  counterBtnText: { fontFamily: fonts.displayBlack, fontSize: 13, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2 },
   declineBtn: {
-    backgroundColor: colors.redPale,
+    backgroundColor: P.dangerPale,
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
   },
-  declineBtnText: { fontSize: 14, fontWeight: '700', color: colors.red },
+  declineBtnText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.dangerText, textTransform: 'uppercase', letterSpacing: 0.2 },
   disabledBtn: { opacity: 0.5 },
 
-  closedCard: { backgroundColor: colors.surface2 },
-  closedTitle: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 6 },
-  closedText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
+  closedCard:        { backgroundColor: P.bg2, borderColor: P.border },
+  closedCardAgreed:  { backgroundColor: P.successPale, borderColor: '#A8E6CC' },
+  closedTitle:       { fontFamily: fonts.displayBold, fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 5 },
+  closedTitleAgreed: { color: P.successText },
+  closedText:        { fontFamily: fonts.sansMedium, fontSize: 11.5, color: P.muted, lineHeight: 17 },
+  closedTextAgreed:  { color: P.successText },
 
+  // Empty-state Go Back button
   backBtn: {
-    backgroundColor: colors.navy,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    backgroundColor: P.ink,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
   },
-  backBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  backBtnText: { fontFamily: fonts.displayBold, fontSize: 13, fontWeight: '800', color: P.yellow, letterSpacing: 0.3 },
 });

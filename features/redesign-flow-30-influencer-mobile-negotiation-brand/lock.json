@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-30-influencer-mobile-negotiation-brand",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-26 chat \"ok pls proceed\"",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-26 chat — Flow 30 mockup locked",
+  "mockup_locked_at": "2026-05-26",
+  "notes": "3rd flow of mobile-influencer bucket (3/23). NegotiationScreen (622 LOC chat-style turn thread) + BrandProfileScreen (200 LOC public brand info). ZERO SDK boundaries. ZERO backend change. StatusPill canonical map: zero NEW entries, but adds mode='influencer' (~3-line component change) to flip awaiting_brand/awaiting_influencer labels for influencer-side consumers — mirrors existing mode='transaction' pattern from Flow 21. Drops unused `import StatusBadge` from NegotiationScreen. ~80 colors.* token swaps across both files. 13 NegotiationScreen + 6 BrandProfile render branches preserved verbatim. All 4 APIs preserved (getNegotiation / getNegotiationByCampaignInfluencer / submitNegotiationTurn / getBrandPublicProfile). No native rebuild required.",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation. Flow 30 = pure JS, ships via OTA.",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Negotiation/BrandProfile visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade'"
+  }
+}

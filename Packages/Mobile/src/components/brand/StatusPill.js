@@ -88,6 +88,14 @@ export default function StatusPill({ status, mode = 'default' }) {
     cfg = { bg: P.yellowPale, fg: P.yellowText, label: 'PENDING' };
   }
 
+  // Influencer-POV (Flow 30): flip role-perspective on the 2 negotiation-
+  // ambiguous keys. Canonical map labels are brand-POV (Flow 23 origin);
+  // influencer-side consumers need them inverted to make sense.
+  if (mode === 'influencer') {
+    if (key === 'awaiting_brand')      cfg = { bg: P.infoPale,   fg: P.info,       label: 'WAITING' };
+    if (key === 'awaiting_influencer') cfg = { bg: P.yellowPale, fg: P.yellowText, label: 'YOUR TURN' };
+  }
+
   return (
     <View style={[styles.pill, { backgroundColor: cfg.bg }]}>
       <Text style={[styles.text, { color: cfg.fg }]}>{cfg.label}</Text>
