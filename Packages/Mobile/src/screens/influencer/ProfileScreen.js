@@ -3,7 +3,8 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, Switch, RefreshControl,
 } from 'react-native';
-import { colors, fmtNum } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtNum } from '../../theme/tokens';
 import { influencerApi, clearSession } from '../../services/api';
 import { AuthContext } from '../../../App';
 
@@ -18,14 +19,25 @@ function SectionHeader({ title }) {
   );
 }
 
-function ReadOnlyRow({ label, value }) {
+function ReadOnlyRow({ label, value, valueStyle }) {
   return (
     <View style={styles.readOnlyRow}>
       <Text style={styles.readOnlyLabel}>{label}</Text>
-      <Text style={styles.readOnlyValue}>{value || '--'}</Text>
+      <Text style={[styles.readOnlyValue, valueStyle]}>{value || '--'}</Text>
     </View>
   );
 }
+
+/**
+ * ProfileScreen — settings hub with 3 inline edit modes.
+ *
+ * Flow 35 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
+ * Yellow avatar tile with ink Outfit-Black initials (matches Flow 32 MyStore).
+ * 📨📝 doc-row emojis replaced with MCI email-outline + file-document-outline
+ * in yellowPale tiles per locked design call #2.
+ * Push toggle "ON" track = success-green per locked design call #4.
+ * All 3 edit modes + UPI XOR Bank XOR PAN validation preserved verbatim.
+ */
 
 export default function ProfileScreen({ navigation }) {
   const { setRole: setAppRole } = useContext(AuthContext);
@@ -199,22 +211,29 @@ export default function ProfileScreen({ navigation }) {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} size="large" /></View>;
+    return <View style={styles.center}><ActivityIndicator color={P.yellow} size="large" /></View>;
   }
 
   const statusColor = {
-    approved: colors.teal,
-    pending: colors.gold,
-    rejected: colors.red,
-    suspended: colors.red,
-  }[profile?.user_status] || colors.t3;
+    approved: P.success,
+    pending: P.yellow,
+    rejected: P.danger,
+    suspended: P.danger,
+  }[profile?.user_status] || P.muted3;
+
+  const statusTextColor = {
+    approved: P.successText,
+    pending: P.yellowText,
+    rejected: P.dangerText,
+    suspended: P.dangerText,
+  }[profile?.user_status] || P.muted;
 
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
     >
-      {/* ── Header with avatar ── */}
+      {/* ── Ink header with avatar ── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Profile</Text>
         <View style={styles.avatarRow}>
@@ -225,24 +244,25 @@ export default function ProfileScreen({ navigation }) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.handle}>@{profile?.instagram_handle}</Text>
-            <Text style={styles.nameText}>{profile?.name || profile?.full_name || 'No name set'}</Text>
+            <Text style={styles.nameText}>{(profile?.name || profile?.full_name || 'No name set').toUpperCase()}</Text>
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
               <Text style={styles.statusText}>
-                {(profile?.user_status || 'unknown').charAt(0).toUpperCase() + (profile?.user_status || 'unknown').slice(1)}
+                {(profile?.user_status || 'UNKNOWN').toUpperCase()}
               </Text>
             </View>
           </View>
         </View>
+        <View style={styles.headerAccent} />
       </View>
 
       {/* ── Instagram Stats (read-only, from Apify) ── */}
       <View style={styles.statsRow}>
         {[
-          { label: 'Followers', value: fmtNum(profile?.followers_count) },
-          { label: 'Eng. Rate', value: `${profile?.engagement_rate || 0}%` },
-          { label: 'Tier', value: profile?.tier || 'Nano' },
-          { label: 'Platform', value: profile?.platform || 'Instagram' },
+          { label: 'FOLLOWERS', value: fmtNum(profile?.followers_count) },
+          { label: 'ENG. RATE', value: `${profile?.engagement_rate || 0}%` },
+          { label: 'TIER', value: (profile?.tier || 'Nano').toUpperCase() },
+          { label: 'PLATFORM', value: (profile?.platform || 'IG').toUpperCase() },
         ].map(s => (
           <View key={s.label} style={styles.statItem}>
             <Text style={styles.statValue}>{s.value}</Text>
@@ -250,7 +270,7 @@ export default function ProfileScreen({ navigation }) {
           </View>
         ))}
       </View>
-      <Text style={styles.statsNote}>Stats refreshed automatically via Instagram</Text>
+      <Text style={styles.statsNote}>STATS REFRESHED AUTOMATICALLY VIA INSTAGRAM</Text>
 
       {/* ── Profile Info Section ── */}
       <SectionHeader title="Profile Info" />
@@ -259,52 +279,33 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.cardTitle}>Personal Details</Text>
           {editSection !== 'profile' ? (
             <TouchableOpacity onPress={() => startEdit('profile')} style={styles.editBtnSmall}>
-              <Text style={styles.editBtnSmallText}>Edit</Text>
+              <Text style={styles.editBtnSmallText}>EDIT</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={cancelEdit} style={styles.cancelBtnSmall}>
-              <Text style={styles.cancelBtnSmallText}>Cancel</Text>
+              <Text style={styles.cancelBtnSmallText}>CANCEL</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {editSection === 'profile' ? (
           <>
-            <Text style={styles.fieldLabel}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="Your name"
-              placeholderTextColor={colors.t3}
-            />
-            <Text style={styles.fieldLabel}>Bio</Text>
+            <Text style={styles.fieldLabel}>NAME</Text>
+            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={P.muted3} />
+            <Text style={styles.fieldLabel}>BIO</Text>
             <TextInput
               style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Tell brands about yourself..."
-              placeholderTextColor={colors.t3}
-              multiline
-              maxLength={300}
+              value={bio} onChangeText={setBio}
+              placeholder="Tell brands about yourself…"
+              placeholderTextColor={P.muted3} multiline maxLength={300}
             />
-            <Text style={styles.fieldLabel}>City</Text>
-            <TextInput
-              style={styles.input}
-              value={city}
-              onChangeText={setCity}
-              placeholder="e.g. Mumbai, Bangalore"
-              placeholderTextColor={colors.t3}
-            />
+            <Text style={styles.fieldLabel}>CITY</Text>
+            <TextInput style={styles.input} value={city} onChangeText={setCity} placeholder="e.g. Mumbai, Bangalore" placeholderTextColor={P.muted3} />
             <TouchableOpacity
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-              onPress={saveProfile}
-              disabled={saving}
+              onPress={saveProfile} disabled={saving}
             >
-              {saving
-                ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.saveBtnText}>Save Profile Info</Text>
-              }
+              {saving ? <ActivityIndicator color={P.yellow} /> : <Text style={styles.saveBtnText}>SAVE PROFILE INFO</Text>}
             </TouchableOpacity>
           </>
         ) : (
@@ -325,21 +326,21 @@ export default function ProfileScreen({ navigation }) {
       <SectionHeader title="Content Preferences" />
       <View style={styles.card}>
         <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Languages & Niches</Text>
+          <Text style={styles.cardTitle}>Languages &amp; Niches</Text>
           {editSection !== 'content' ? (
             <TouchableOpacity onPress={() => startEdit('content')} style={styles.editBtnSmall}>
-              <Text style={styles.editBtnSmallText}>Edit</Text>
+              <Text style={styles.editBtnSmallText}>EDIT</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={cancelEdit} style={styles.cancelBtnSmall}>
-              <Text style={styles.cancelBtnSmallText}>Cancel</Text>
+              <Text style={styles.cancelBtnSmallText}>CANCEL</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {editSection === 'content' ? (
           <>
-            <Text style={styles.fieldLabel}>Languages</Text>
+            <Text style={styles.fieldLabel}>LANGUAGES</Text>
             <View style={styles.chipWrap}>
               {LANGUAGE_OPTIONS.map(lang => (
                 <TouchableOpacity
@@ -352,7 +353,7 @@ export default function ProfileScreen({ navigation }) {
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Content Niches</Text>
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>CONTENT NICHES</Text>
             <View style={styles.chipWrap}>
               {NICHE_OPTIONS.map(n => (
                 <TouchableOpacity
@@ -367,46 +368,23 @@ export default function ProfileScreen({ navigation }) {
               ))}
             </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>YouTube Handle</Text>
-            <TextInput
-              style={styles.input}
-              value={youtubeHandle}
-              onChangeText={setYoutubeHandle}
-              placeholder="@yourhandle"
-              placeholderTextColor={colors.t3}
-              autoCapitalize="none"
-            />
+            <Text style={[styles.fieldLabel, { marginTop: 16 }]}>YOUTUBE HANDLE</Text>
+            <TextInput style={styles.input} value={youtubeHandle} onChangeText={setYoutubeHandle} placeholder="@yourhandle" placeholderTextColor={P.muted3} autoCapitalize="none" />
 
-            <Text style={styles.fieldLabel}>Content Style</Text>
-            <TextInput
-              style={styles.input}
-              value={contentStyle}
-              onChangeText={setContentStyle}
-              placeholder="e.g. lifestyle, tutorials, reviews"
-              placeholderTextColor={colors.t3}
-            />
+            <Text style={styles.fieldLabel}>CONTENT STYLE</Text>
+            <TextInput style={styles.input} value={contentStyle} onChangeText={setContentStyle} placeholder="e.g. lifestyle, tutorials, reviews" placeholderTextColor={P.muted3} />
 
             <TouchableOpacity
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-              onPress={saveContent}
-              disabled={saving}
+              onPress={saveContent} disabled={saving}
             >
-              {saving
-                ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.saveBtnText}>Save Content Preferences</Text>
-              }
+              {saving ? <ActivityIndicator color={P.yellow} /> : <Text style={styles.saveBtnText}>SAVE CONTENT PREFERENCES</Text>}
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <ReadOnlyRow
-              label="Languages"
-              value={languages.length > 0 ? languages.join(', ') : 'Not set'}
-            />
-            <ReadOnlyRow
-              label="Niches"
-              value={(profile?.niche || []).length > 0 ? profile.niche.map(n => n.replace(/_/g, ' ')).join(', ') : 'Not set'}
-            />
+            <ReadOnlyRow label="Languages" value={languages.length > 0 ? languages.join(', ') : 'Not set'} />
+            <ReadOnlyRow label="Niches" value={(profile?.niche || []).length > 0 ? profile.niche.map(n => n.replace(/_/g, ' ')).join(', ') : 'Not set'} />
             {profile?.content_style && (
               <ReadOnlyRow label="Content Style" value={profile.content_style} />
             )}
@@ -421,97 +399,67 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.cardTitle}>Payout Settings</Text>
           {editSection !== 'bank' ? (
             <TouchableOpacity onPress={() => startEdit('bank')} style={styles.editBtnSmall}>
-              <Text style={styles.editBtnSmallText}>{profile?.has_payout_method ? 'Update' : 'Add'}</Text>
+              <Text style={styles.editBtnSmallText}>{profile?.has_payout_method ? 'UPDATE' : 'ADD'}</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={cancelEdit} style={styles.cancelBtnSmall}>
-              <Text style={styles.cancelBtnSmallText}>Cancel</Text>
+              <Text style={styles.cancelBtnSmallText}>CANCEL</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {editSection === 'bank' ? (
           <>
-            <Text style={styles.fieldLabel}>UPI ID (preferred)</Text>
+            <Text style={styles.fieldLabel}>UPI ID (PREFERRED)</Text>
             <TextInput
-              style={styles.input}
-              value={upiId}
-              onChangeText={setUpiId}
-              placeholder="yourname@upi"
-              placeholderTextColor={colors.t3}
-              autoCapitalize="none"
-              keyboardType="email-address"
+              style={styles.input} value={upiId} onChangeText={setUpiId}
+              placeholder="yourname@upi" placeholderTextColor={P.muted3}
+              autoCapitalize="none" keyboardType="email-address"
             />
-            <Text style={styles.orDivider}>-- or bank account --</Text>
-            <Text style={styles.fieldLabel}>Account Number</Text>
+            <Text style={styles.orDivider}>— OR BANK ACCOUNT —</Text>
+            <Text style={styles.fieldLabel}>ACCOUNT NUMBER</Text>
             <TextInput
-              style={styles.input}
-              value={bankAccount}
-              onChangeText={setBankAccount}
-              placeholder="Bank account number"
-              placeholderTextColor={colors.t3}
-              keyboardType="number-pad"
-              secureTextEntry
+              style={styles.input} value={bankAccount} onChangeText={setBankAccount}
+              placeholder="Bank account number" placeholderTextColor={P.muted3}
+              keyboardType="number-pad" secureTextEntry
             />
-            <Text style={styles.fieldLabel}>IFSC Code</Text>
+            <Text style={styles.fieldLabel}>IFSC CODE</Text>
             <TextInput
-              style={styles.input}
-              value={bankIfsc}
-              onChangeText={setBankIfsc}
-              placeholder="SBIN0001234"
-              placeholderTextColor={colors.t3}
+              style={styles.input} value={bankIfsc} onChangeText={setBankIfsc}
+              placeholder="SBIN0001234" placeholderTextColor={P.muted3}
               autoCapitalize="characters"
             />
-            <Text style={styles.orDivider}>-- tax info --</Text>
-            <Text style={styles.fieldLabel}>PAN Number</Text>
+            <Text style={styles.orDivider}>— TAX INFO —</Text>
+            <Text style={styles.fieldLabel}>PAN NUMBER</Text>
             <TextInput
-              style={styles.input}
-              value={panNumber}
-              onChangeText={setPanNumber}
-              placeholder="ABCDE1234F"
-              placeholderTextColor={colors.t3}
-              autoCapitalize="characters"
-              maxLength={10}
+              style={styles.input} value={panNumber} onChangeText={setPanNumber}
+              placeholder="ABCDE1234F" placeholderTextColor={P.muted3}
+              autoCapitalize="characters" maxLength={10}
             />
 
             <View style={styles.warningBox}>
               <Text style={styles.warningText}>
-                Bank details and PAN are encrypted with AES-256 before storage. We never store or display your details in plain text. These are used only for processing withdrawals and TDS compliance.
+                <Text style={{ fontWeight: '800' }}>SECURE: </Text>
+                Bank details and PAN are encrypted with AES-256 before storage. We never store or display your details in plain text. Used only for processing withdrawals and TDS compliance.
               </Text>
             </View>
 
             <TouchableOpacity
               style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-              onPress={saveBank}
-              disabled={saving}
+              onPress={saveBank} disabled={saving}
             >
-              {saving
-                ? <ActivityIndicator color={colors.white} />
-                : <Text style={styles.saveBtnText}>Save Payment Details</Text>
-              }
+              {saving ? <ActivityIndicator color={P.yellow} /> : <Text style={styles.saveBtnText}>SAVE PAYMENT DETAILS</Text>}
             </TouchableOpacity>
           </>
         ) : (
           <>
-            <ReadOnlyRow
-              label="UPI"
-              value={profile?.has_upi ? 'On file (encrypted)' : 'Not configured'}
-            />
-            <ReadOnlyRow
-              label="Bank Account"
-              value={profile?.has_bank_account ? 'On file (encrypted)' : 'Not configured'}
-            />
-            <ReadOnlyRow
-              label="IFSC"
-              value={profile?.bank_ifsc || (profile?.has_bank_account ? 'On file' : 'Not configured')}
-            />
-            <ReadOnlyRow
-              label="PAN"
-              value={profile?.has_pan ? 'On file (encrypted)' : 'Not configured'}
-            />
+            <ReadOnlyRow label="UPI" value={profile?.has_upi ? 'On file (encrypted)' : 'Not configured'} />
+            <ReadOnlyRow label="Bank Account" value={profile?.has_bank_account ? 'On file (encrypted)' : 'Not configured'} />
+            <ReadOnlyRow label="IFSC" value={profile?.bank_ifsc || (profile?.has_bank_account ? 'On file' : 'Not configured')} />
+            <ReadOnlyRow label="PAN" value={profile?.has_pan ? 'On file (encrypted)' : 'Not configured'} />
             <View style={styles.tdsInfoBox}>
               <Text style={styles.tdsInfoText}>
-                TDS at 10% is deducted on withdrawals as per Indian tax regulations. Minimum withdrawal: Rs.100.
+                TDS at 10% is deducted on withdrawals as per Indian tax regulations. Minimum withdrawal: ₹100.
               </Text>
             </View>
           </>
@@ -529,8 +477,8 @@ export default function ProfileScreen({ navigation }) {
           <Switch
             value={pushEnabled}
             onValueChange={setPushEnabled}
-            trackColor={{ false: colors.border, true: colors.teal }}
-            thumbColor={colors.white}
+            trackColor={{ false: P.border, true: P.success }}
+            thumbColor={P.white}
           />
         </View>
       </View>
@@ -540,11 +488,12 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.card}>
         <ReadOnlyRow
           label="Account Status"
-          value={(profile?.user_status || 'unknown').charAt(0).toUpperCase() + (profile?.user_status || 'unknown').slice(1)}
+          value={(profile?.user_status || 'unknown').toUpperCase()}
+          valueStyle={{ color: statusTextColor }}
         />
-        <ReadOnlyRow label="Instagram Handle" value={profile?.instagram_handle ? `@${profile.instagram_handle}` : '--'} />
+        <ReadOnlyRow label="Instagram" value={profile?.instagram_handle ? `@${profile.instagram_handle}` : '--'} />
         <ReadOnlyRow label="Followers" value={fmtNum(profile?.followers_count)} />
-        <ReadOnlyRow label="Engagement Rate" value={`${profile?.engagement_rate || 0}%`} />
+        <ReadOnlyRow label="Eng. Rate" value={`${profile?.engagement_rate || 0}%`} />
         {profile?.scrape_last_run && (
           <ReadOnlyRow
             label="Last Stats Update"
@@ -556,34 +505,38 @@ export default function ProfileScreen({ navigation }) {
         </Text>
       </View>
 
-      {/* ── Documents + Proposals ── */}
+      {/* ── Brand Outreach (Documents + Proposals) ── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Brand Outreach</Text>
         <TouchableOpacity
           style={styles.docRow}
           onPress={() => navigation.navigate('ProposalsHub')}>
-          <Text style={styles.docIcon}>📨</Text>
+          <View style={styles.docIco}>
+            <Icon name="email-outline" size={18} color={P.yellowText} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.docLabel}>Brand Proposals</Text>
-            <Text style={styles.docHint}>Discover brands accepting pitches and track your sent proposals</Text>
+            <Text style={styles.docHint}>DISCOVER + TRACK PITCHES</Text>
           </View>
-          <Text style={styles.docArrow}>›</Text>
+          <Icon name="chevron-right" size={16} color={P.muted3} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.docRow}
+          style={[styles.docRow, { borderTopWidth: 1, borderTopColor: P.borderSoft, marginTop: 4 }]}
           onPress={() => navigation.navigate('MyContracts')}>
-          <Text style={styles.docIcon}>📝</Text>
+          <View style={styles.docIco}>
+            <Icon name="file-document-outline" size={18} color={P.yellowText} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.docLabel}>My Contracts</Text>
-            <Text style={styles.docHint}>All your signed contract PDFs in one place</Text>
+            <Text style={styles.docHint}>SIGNED CONTRACT PDFS</Text>
           </View>
-          <Text style={styles.docArrow}>›</Text>
+          <Icon name="chevron-right" size={16} color={P.muted3} />
         </TouchableOpacity>
       </View>
 
       {/* ── Logout ── */}
       <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-        <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.logoutText}>LOG OUT</Text>
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />
@@ -592,84 +545,144 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
 
-  // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.white, marginBottom: 16 },
+  // Ink header
+  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  headerTitle: {
+    fontSize: 20, fontWeight: '900', color: P.white, marginBottom: 16,
+    letterSpacing: -0.3, fontFamily: fonts.displayBlack,
+  },
   avatarRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.orange, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 22, fontWeight: '800', color: colors.white },
-  handle: { fontSize: 16, fontWeight: '700', color: colors.white },
-  nameText: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  avatar: {
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  avatarText: { fontSize: 22, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  handle: { fontSize: 16, fontWeight: '800', color: P.white, fontFamily: fonts.displayBold },
+  nameText: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
   statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
+  statusText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
   // Stats bar
-  statsRow: { flexDirection: 'row', backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border },
+  statsRow: {
+    flexDirection: 'row', backgroundColor: P.white,
+    borderBottomWidth: 1, borderBottomColor: P.border,
+  },
   statItem: { flex: 1, alignItems: 'center', paddingVertical: 12 },
-  statValue: { fontSize: 15, fontWeight: '800', color: colors.t1 },
-  statLabel: { fontSize: 9, color: colors.t3, fontWeight: '600', marginTop: 2, textTransform: 'uppercase' },
-  statsNote: { fontSize: 10, color: colors.t3, textAlign: 'center', paddingVertical: 6, backgroundColor: colors.surface2 },
+  statValue: { fontSize: 15, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  statLabel: {
+    fontSize: 8.5, color: P.muted2, fontWeight: '800', marginTop: 2,
+    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold,
+  },
+  statsNote: {
+    fontSize: 9.5, color: P.muted2, textAlign: 'center',
+    paddingVertical: 6, backgroundColor: P.bg2,
+    fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium,
+  },
 
   // Section header
   sectionHeader: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 6 },
-  sectionHeaderText: { fontSize: 11, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', letterSpacing: 0.8 },
+  sectionHeaderText: {
+    fontSize: 11, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: fonts.displayBold,
+  },
 
   // Cards
-  card: { marginHorizontal: 16, marginBottom: 4, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1 },
+  card: {
+    marginHorizontal: 16, marginBottom: 4,
+    backgroundColor: P.white, borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: P.border,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 11 },
+  cardTitle: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
 
   // Edit / cancel buttons (inline)
-  editBtnSmall: { backgroundColor: colors.navyPale, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20 },
-  editBtnSmallText: { fontSize: 11, fontWeight: '700', color: colors.navy },
-  cancelBtnSmall: { backgroundColor: colors.redPale, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20 },
-  cancelBtnSmallText: { fontSize: 11, fontWeight: '700', color: colors.red },
+  editBtnSmall: { backgroundColor: P.bg2, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999 },
+  editBtnSmallText: { fontSize: 10, fontWeight: '800', color: P.ink, letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  cancelBtnSmall: { backgroundColor: P.dangerPale, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 999 },
+  cancelBtnSmallText: { fontSize: 10, fontWeight: '800', color: P.dangerText, letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
   // Read-only row
-  readOnlyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.bg },
-  readOnlyLabel: { fontSize: 12, fontWeight: '600', color: colors.t3, width: 110 },
-  readOnlyValue: { fontSize: 13, color: colors.t1, flex: 1, textAlign: 'right' },
+  readOnlyRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: P.bg,
+  },
+  readOnlyLabel: { fontSize: 11.5, fontWeight: '600', color: P.muted2, width: 100, fontFamily: fonts.sansRegular },
+  readOnlyValue: { fontSize: 11.5, color: P.ink, flex: 1, textAlign: 'right', fontWeight: '700', fontFamily: fonts.monoMedium },
 
   // Form elements
-  fieldLabel: { fontSize: 11, fontWeight: '700', color: colors.t3, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.3 },
-  input: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 14, color: colors.t1, marginBottom: 12, backgroundColor: colors.surface2 },
-  orDivider: { fontSize: 11, color: colors.t3, textAlign: 'center', marginVertical: 8 },
+  fieldLabel: {
+    fontSize: 9.5, fontWeight: '800', color: P.muted2, marginBottom: 6,
+    textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 8,
+    fontFamily: fonts.monoBold,
+  },
+  input: {
+    borderWidth: 1.5, borderColor: P.ink, borderRadius: 10,
+    padding: 11, fontSize: 12.5, color: P.ink, marginBottom: 8,
+    backgroundColor: P.white, fontFamily: fonts.sansRegular,
+  },
+  orDivider: {
+    fontSize: 10, color: P.muted2, textAlign: 'center', marginVertical: 8,
+    fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold,
+  },
 
   // Chips
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border },
-  chipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText: { fontSize: 12, color: colors.t2, fontWeight: '600' },
-  chipTextActive: { color: colors.white },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: {
+    paddingHorizontal: 11, paddingVertical: 5, borderRadius: 999,
+    backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border,
+  },
+  chipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  chipText: { fontSize: 10, color: P.muted, fontWeight: '700', textTransform: 'capitalize', fontFamily: fonts.monoMedium },
+  chipTextActive: { color: P.yellow, fontWeight: '900', fontFamily: fonts.monoBold },
 
-  // Save button
-  saveBtn: { backgroundColor: colors.navy, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 12 },
-  saveBtnText: { fontSize: 14, fontWeight: '800', color: colors.white },
+  // Save button — ink + yellow Outfit-Black UPPERCASE
+  saveBtn: {
+    backgroundColor: P.ink, borderRadius: 12,
+    paddingVertical: 13, alignItems: 'center', marginTop: 12,
+  },
+  saveBtnText: {
+    fontSize: 13, fontWeight: '900', color: P.yellow,
+    letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack,
+  },
 
-  // Warning / info boxes
-  warningBox: { backgroundColor: colors.goldPale, borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1, borderColor: colors.gold },
-  warningText: { fontSize: 11, color: '#7A5500', lineHeight: 16 },
-  tdsInfoBox: { backgroundColor: colors.navyPale, borderRadius: 10, padding: 12, marginTop: 8 },
-  tdsInfoText: { fontSize: 11, color: colors.navy, lineHeight: 16 },
-  accountNote: { fontSize: 11, color: colors.t3, lineHeight: 16, marginTop: 10 },
+  // Warning / info boxes — yellowPale per design call
+  warningBox: {
+    backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, marginTop: 8,
+    borderWidth: 1, borderColor: '#F0DA88',
+  },
+  warningText: { fontSize: 10.5, color: P.yellowText, lineHeight: 16, fontFamily: fonts.sansRegular },
+  tdsInfoBox: {
+    backgroundColor: P.infoPale, borderRadius: 10, padding: 11, marginTop: 8,
+    borderWidth: 1, borderColor: '#BFD9F2',
+  },
+  tdsInfoText: { fontSize: 10.5, color: P.ink, lineHeight: 16, fontFamily: fonts.sansRegular },
+  accountNote: { fontSize: 10.5, color: P.muted2, lineHeight: 16, marginTop: 10, fontFamily: fonts.sansRegular },
 
   // Settings
   settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  settingLabel: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  settingDesc: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  settingLabel: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  settingDesc: { fontSize: 10.5, color: P.muted2, marginTop: 2, fontFamily: fonts.sansRegular },
 
-  // Documents
-  docRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  docIcon: { fontSize: 22 },
-  docLabel: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  docHint: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  docArrow: { fontSize: 22, color: colors.t3, fontWeight: '300' },
+  // Doc rows — yellowPale MCI tiles
+  docRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
+  docIco: {
+    width: 36, height: 36, borderRadius: 9,
+    backgroundColor: P.yellowPale,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  docLabel: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  docHint: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
-  // Logout
-  logoutBtn: { margin: 16, borderWidth: 1.5, borderColor: colors.red, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
-  logoutText: { fontSize: 14, fontWeight: '700', color: colors.red },
+  // Logout — danger border
+  logoutBtn: {
+    margin: 16, borderWidth: 1.5, borderColor: P.danger, borderRadius: 14,
+    paddingVertical: 14, alignItems: 'center', backgroundColor: P.white,
+  },
+  logoutText: { fontSize: 13, fontWeight: '900', color: P.dangerText, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 });

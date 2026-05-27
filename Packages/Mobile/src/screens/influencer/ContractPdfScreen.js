@@ -2,25 +2,29 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, ActivityIndicator, StyleSheet, TouchableOpacity, Alert, Linking,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { WebView } from 'react-native-webview';
-import { colors } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi, brandApi } from '../../services/api';
 
 /**
  * ContractPdfScreen — shared between influencer + brand roles.
  *
- * Flow:
+ * Flow 35 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
+ * Yellow-bg + ink-text + MCI download-outline Download CTA (inverts usual
+ * ink/yellow pattern for pop against ink hero) per locked design call #3.
+ * WebView + Google Docs Viewer wrap + androidLayerType + originWhitelist
+ * preserved byte-for-byte.
+ *
  *  1. Ask backend for a fresh presigned R2 GET URL via /contracts/:id/pdf-url.
  *     The backend ensures the PDF has been generated + uploaded first, so
  *     this call is safe to make any time the contract exists.
  *  2. Render the PDF inline in a WebView. iOS WKWebView renders PDFs
  *     natively; Android WebView can't, so we wrap the signed URL in Google
- *     Docs Viewer which displays the PDF as HTML pages. Signed URLs work
- *     because Google fetches with no auth headers.
- *  3. The Download / Open in Browser button opens the raw signed URL via
- *     Linking.openURL — this hands off to the system browser / PDF app
- *     which downloads a real file (not the 0-byte stub that Android WebView
- *     was producing with the auth-protected streaming endpoint).
+ *     Docs Viewer which displays the PDF as HTML pages.
+ *  3. The Download button opens the raw signed URL via Linking.openURL —
+ *     this hands off to the system browser / PDF app which downloads a
+ *     real file (not the 0-byte stub that Android WebView was producing).
  *
  * Route params:
  *  - contractId (required)
@@ -80,23 +84,26 @@ export default function ContractPdfScreen({ route, navigation }) {
   return (
     <View style={styles.outer}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<-'} Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Contract PDF</Text>
           {signedUrl && (
             <TouchableOpacity onPress={handleOpen} style={styles.downloadBtn}>
-              <Text style={styles.downloadBtnText}>Download</Text>
+              <Icon name="download" size={14} color={P.ink} />
+              <Text style={styles.downloadBtnText}>DOWNLOAD</Text>
             </TouchableOpacity>
           )}
         </View>
+        <View style={styles.headerAccent} />
       </View>
 
       {loadingUrl && (
         <View style={styles.center}>
-          <ActivityIndicator color={colors.navy} />
-          <Text style={styles.loadingText}>Preparing contract...</Text>
+          <ActivityIndicator color={P.yellow} />
+          <Text style={styles.loadingText}>Preparing contract…</Text>
         </View>
       )}
 
@@ -105,7 +112,7 @@ export default function ContractPdfScreen({ route, navigation }) {
           <Text style={styles.errorText}>Could not load PDF.</Text>
           <Text style={styles.errorSub}>{error}</Text>
           <TouchableOpacity onPress={loadUrl} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>Try Again</Text>
+            <Text style={styles.retryBtnText}>TRY AGAIN</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -116,8 +123,8 @@ export default function ContractPdfScreen({ route, navigation }) {
           startInLoadingState
           renderLoading={() => (
             <View style={styles.center}>
-              <ActivityIndicator color={colors.navy} />
-              <Text style={styles.loadingText}>Rendering contract...</Text>
+              <ActivityIndicator color={P.yellow} />
+              <Text style={styles.loadingText}>Rendering contract…</Text>
             </View>
           )}
           onError={({ nativeEvent }) => setError(nativeEvent.description || 'Render error')}
@@ -131,18 +138,29 @@ export default function ContractPdfScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  outer:     { flex: 1, backgroundColor: colors.bg },
-  header:    { backgroundColor: colors.navyDeep, paddingTop: 52, paddingBottom: 16, paddingHorizontal: 20 },
-  back:      { marginBottom: 8 },
-  backText:  { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
+  outer: { flex: 1, backgroundColor: P.bg },
+
+  header: { backgroundColor: P.ink, paddingTop: 50, paddingBottom: 22, paddingHorizontal: 18, position: 'relative' },
+  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 },
+  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title:     { fontSize: 18, fontWeight: '800', color: colors.white },
-  downloadBtn: { backgroundColor: colors.orange, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 10 },
-  downloadBtnText: { color: colors.white, fontWeight: '800', fontSize: 12 },
-  center:    { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
-  errorText: { fontSize: 14, color: colors.red, fontWeight: '700', textAlign: 'center' },
-  errorSub:  { fontSize: 12, color: colors.t3, marginTop: 6, textAlign: 'center' },
-  retryBtn:  { marginTop: 14, backgroundColor: colors.navy, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 10 },
-  retryBtnText: { color: colors.white, fontWeight: '700', fontSize: 12 },
+  title: { fontSize: 18, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+
+  // Download CTA — yellow-bg + ink-text (inverts ink/yellow pattern per locked design call #3)
+  downloadBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: P.yellow,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 10,
+  },
+  downloadBtnText: { color: P.ink, fontWeight: '900', fontSize: 11.5, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  loadingText: { fontSize: 12, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },
+  errorText: { fontSize: 14, color: P.dangerText, fontWeight: '800', textAlign: 'center', fontFamily: fonts.displayBold },
+  errorSub: { fontSize: 11.5, color: P.muted, marginTop: 6, textAlign: 'center', fontFamily: fonts.sansRegular },
+
+  retryBtn: { marginTop: 14, backgroundColor: P.ink, paddingHorizontal: 18, paddingVertical: 11, borderRadius: 10 },
+  retryBtnText: { color: P.yellow, fontWeight: '900', fontSize: 12, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 });

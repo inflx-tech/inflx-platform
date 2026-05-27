@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 35 · influencer-mobile Profile + InfluencerContracts + ContractPdf — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:14px;height:14px}
+.ico-md{width:18px;height:18px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ─── Ink hero ───── */
+.h-ink{background:var(--ink);color:var(--white);padding:46px 18px 22px;flex-shrink:0;position:relative}
+.h-ink::after{content:'';position:absolute;left:18px;bottom:8px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.h-back{display:flex;align-items:center;gap:5px;margin-bottom:12px;color:rgba(255,255,255,.65)}
+.h-back .ico{color:rgba(255,255,255,.65);width:14px;height:14px}
+.h-back-txt{font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.3px}
+.h-ttl{font-family:'Outfit';font-size:20px;font-weight:900;color:var(--white);letter-spacing:-0.3px;margin-bottom:14px}
+
+/* ─── Profile header card ───── */
+.profile-row{display:flex;align-items:center;gap:14px}
+.avatar{width:56px;height:56px;border-radius:28px;background:var(--yellow);align-items:center;justify-content:center;display:flex;color:var(--ink);font-family:'Outfit';font-size:22px;font-weight:900;flex-shrink:0}
+.handle{font-family:'Outfit';font-size:16px;font-weight:800;color:var(--white)}
+.nameText{font-family:'JetBrains Mono';font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;font-weight:700}
+.status-row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.status-dot{width:8px;height:8px;border-radius:4px;background:var(--success)}
+.status-text{font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,.65);font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+
+/* ─── Stats bar ───── */
+.stats-bar{display:flex;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
+.stat-item{flex:1;align-items:center;display:flex;flex-direction:column;padding:12px 0}
+.stat-value{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--ink)}
+.stat-label{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);font-weight:800;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.stats-note{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-align:center;padding:6px 0;background:var(--bg2);font-weight:700;letter-spacing:.2px}
+
+/* ─── Body ───── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:0 0 32px}
+
+/* ─── Section ───── */
+.sec-head{padding:20px 16px 6px}
+.sec-head-txt{font-family:'Outfit';font-size:11px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px}
+
+/* ─── Card ───── */
+.card{margin:0 16px 4px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:14px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.card-ttl{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+
+.edit-btn{background:var(--bg2);padding:5px 12px;border-radius:999px}
+.edit-btn-txt{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--ink);letter-spacing:.3px;text-transform:uppercase}
+
+/* ─── Read-only row ───── */
+.ro-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--bg)}
+.ro-row:last-child{border-bottom:none}
+.ro-l{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:var(--muted-2);width:100px}
+.ro-v{font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink);flex:1;text-align:right;font-weight:700}
+
+/* ─── Chip wrap ───── */
+.chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{padding:5px 11px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);font-family:'JetBrains Mono';font-size:10px;font-weight:700;color:var(--muted);text-transform:capitalize}
+.chip.active{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:900}
+
+/* ─── Form ───── */
+.field-lbl{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px;margin-top:8px}
+.field-lbl:first-child{margin-top:0}
+.field-input{border:1.5px solid var(--ink);border-radius:10px;padding:11px;font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--muted-3);background:var(--white);margin-bottom:8px}
+
+/* ─── Save button ───── */
+.btn-primary-ink{background:var(--ink);color:var(--yellow);border-radius:11px;padding:13px;text-align:center;font-family:'Outfit';font-size:13px;font-weight:900;letter-spacing:.2px;text-transform:uppercase;margin-top:8px}
+
+/* ─── Warning box ───── */
+.warn-box{background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:10px;padding:11px;margin-top:8px}
+.warn-text{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--yellow-text);line-height:1.5}
+
+.tds-info-box{background:var(--info-pale);border:1px solid #BFD9F2;border-radius:10px;padding:11px;margin-top:8px}
+.tds-info-text{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--ink);line-height:1.5}
+
+/* ─── Setting row ───── */
+.setting-row{display:flex;align-items:center;justify-content:space-between}
+.setting-lbl{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.setting-desc{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--muted-2);margin-top:2px}
+.toggle{width:42px;height:24px;border-radius:13px;background:var(--success);position:relative}
+.toggle-knob{position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:9px;background:var(--white)}
+
+/* ─── Doc row ───── */
+.doc-row{display:flex;align-items:center;gap:12px;padding:10px 0}
+.doc-ico{width:36px;height:36px;border-radius:9px;background:var(--yellow-pale);display:flex;align-items:center;justify-content:center;color:var(--yellow-text);flex-shrink:0}
+.doc-lbl{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink)}
+.doc-hint{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px}
+
+/* ─── Logout ───── */
+.logout-btn{margin:16px;border:1.5px solid var(--danger);border-radius:14px;padding:14px;text-align:center;background:var(--white)}
+.logout-text{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--danger-text);text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── White header (Contracts list) ───── */
+.h-white{background:var(--white);border-bottom:1px solid var(--border);padding:50px 18px 14px;flex-shrink:0;display:flex;align-items:center;gap:11px}
+.h-back-w{width:34px;height:34px;border-radius:17px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink);flex-shrink:0}
+.h-ttl-w{font-family:'Outfit';font-size:17px;font-weight:800;color:var(--ink);flex:1;text-align:center;margin-right:34px}
+
+/* ─── Toolbar (search + filter) ───── */
+.toolbar{padding:13px 14px;background:var(--white);border-bottom:1px solid var(--border)}
+.search-input{background:var(--bg2);border-radius:10px;padding:10px 14px;font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted-3)}
+.filter-row{display:flex;gap:6px;margin-top:9px}
+.filter-chip{padding:6px 14px;border-radius:999px;background:var(--bg2);font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+.filter-chip.active{background:var(--ink);color:var(--yellow);font-weight:900}
+
+/* ─── Contract card ───── */
+.contract-card{margin:8px 14px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:11px}
+.contract-head{display:flex;align-items:flex-start;gap:8px}
+.contract-mid{flex:1;min-width:0}
+.contract-camp{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink)}
+.contract-brand{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px;text-transform:uppercase}
+.pill-sm{padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.pill-sm.active{background:var(--success-pale);color:var(--success-text)}
+.pill-sm.pending{background:var(--yellow-pale);color:var(--yellow-text)}
+.pill-sm.draft{background:var(--bg2);color:var(--muted-2)}
+.pill-sm.cancelled{background:var(--danger-pale);color:var(--danger-text)}
+.contract-foot{display:flex;justify-content:space-between;align-items:center;margin-top:11px;padding-top:11px;border-top:1px solid var(--border-soft)}
+.contract-meta{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);font-weight:700;letter-spacing:.2px;text-transform:uppercase}
+.contract-amt{font-family:'JetBrains Mono';font-size:13px;font-weight:900;color:var(--ink)}
+
+/* ─── Empty state ───── */
+.empty-cards{align-items:center;padding:60px 28px;display:flex;flex-direction:column}
+.empty-tile{width:66px;height:66px;border-radius:14px;background:var(--yellow-pale);border:1.5px dashed var(--yellow);align-items:center;justify-content:center;display:flex;margin-bottom:16px;color:var(--yellow-text);font-size:32px}
+.empty-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);margin-bottom:6px}
+.empty-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5;max-width:240px}
+
+/* ─── ContractPdf header ───── */
+.pdf-head{display:flex;justify-content:space-between;align-items:center}
+.download-btn{background:var(--yellow);padding:8px 15px;border-radius:10px;font-family:'Outfit';font-size:11.5px;font-weight:900;color:var(--ink);letter-spacing:.3px;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.pdf-area{flex:1;background:var(--bg2);align-items:center;justify-content:center;display:flex;flex-direction:column;position:relative}
+.pdf-paper{width:280px;background:var(--white);border-radius:8px;padding:24px;box-shadow:0 4px 14px rgba(0,0,0,.08);border:1px solid var(--border);font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.6}
+.pdf-paper h4{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:10px;text-align:center;text-transform:uppercase;letter-spacing:.3px}
+.pdf-paper hr{border:none;border-top:1px dashed var(--border);margin:10px 0}
+.pdf-paper .row-pdf{display:flex;justify-content:space-between;margin-bottom:5px;font-size:10.5px}
+.pdf-paper .row-pdf b{color:var(--ink);font-family:'JetBrains Mono';font-weight:700}
+
+/* ─── Side panel ───── */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+    <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L15 12 L9 18"/></symbol>
+    <symbol id="ic-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 6 L12 13 L21 6"/></symbol>
+    <symbol id="ic-file-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3 H6 V21 H18 V7"/><path d="M14 3 V7 H18"/><path d="M9 12 H15"/><path d="M9 16 H15"/></symbol>
+    <symbol id="ic-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 V16"/><path d="M7 11 L12 16 L17 11"/><path d="M4 20 H20"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 35 · influencer-mobile Profile + InfluencerContracts + ContractPdf — wave2 mockup</h1>
+  <div class="sub">
+    <b>8th flow of mobile-influencer bucket (8/23).</b> 3 screens · 991 LOC · MED risk (WebView SDK already shipping) · <b>ZERO backend change</b> · <b>ZERO StatusPill additions</b>. <b>~22 render branches</b> preserved verbatim including 3 inline edit modes (profile/content/bank) + UPI-vs-bank XOR validation + IFSC-required gate + PAN/UPI encrypted-readonly states + 3-filter chip + search + status-driven pdf navigation + WebView Google-Docs-Viewer wrap. <b>Visual:</b> ink hero with yellow rule + yellow avatar tile with ink initials + StatusPill canonical contract pills + ink-active filter chips + ink-bordered inputs + ink/yellow Outfit-Black SAVE/Download CTAs + yellowPale MCI doc-row icons (replaces 📨📝) + success toggle track + danger logout border.
+  </div>
+</div>
+
+<!-- Row 1: 3 phone frames -->
+<div class="row">
+
+  <!-- PHONE 1: ProfileScreen — top half -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-ttl">My Profile</div>
+        <div class="profile-row">
+          <div class="avatar">RS</div>
+          <div style="flex:1">
+            <div class="handle">@riyasharma_</div>
+            <div class="nameText">RIYA SHARMA</div>
+            <div class="status-row">
+              <div class="status-dot"></div>
+              <div class="status-text">APPROVED</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-item">
+          <div class="stat-value">128.4K</div>
+          <div class="stat-label">FOLLOWERS</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">4.8%</div>
+          <div class="stat-label">ENG. RATE</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">MID</div>
+          <div class="stat-label">TIER</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">IG</div>
+          <div class="stat-label">PLATFORM</div>
+        </div>
+      </div>
+      <div class="stats-note">STATS REFRESHED AUTOMATICALLY VIA INSTAGRAM</div>
+
+      <div class="body">
+
+        <div class="sec-head"><div class="sec-head-txt">Profile Info</div></div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ttl">Personal Details</div>
+            <div class="edit-btn"><div class="edit-btn-txt">EDIT</div></div>
+          </div>
+          <div class="ro-row"><div class="ro-l">Name</div><div class="ro-v">Riya Sharma</div></div>
+          <div class="ro-row"><div class="ro-l">Phone</div><div class="ro-v">+919876543210</div></div>
+          <div class="ro-row"><div class="ro-l">Instagram</div><div class="ro-v">@riyasharma_</div></div>
+          <div class="ro-row"><div class="ro-l">Bio</div><div class="ro-v">Lifestyle creator…</div></div>
+          <div class="ro-row"><div class="ro-l">City</div><div class="ro-v">Mumbai</div></div>
+        </div>
+
+        <div class="sec-head"><div class="sec-head-txt">Content Preferences</div></div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ttl">Languages &amp; Niches</div>
+            <div class="edit-btn"><div class="edit-btn-txt">EDIT</div></div>
+          </div>
+          <div class="ro-row"><div class="ro-l">Languages</div><div class="ro-v">Hindi, English</div></div>
+          <div class="ro-row"><div class="ro-l">Niches</div><div class="ro-v">fashion, beauty</div></div>
+          <div class="ro-row"><div class="ro-l">Content Style</div><div class="ro-v">Reels, GRWM</div></div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · ProfileScreen (top)</b><br/>Ink hero with yellow rule + Outfit-Black title + yellow avatar tile with ink "RS" initials (matches Flow 32 MyStore avatar) + Outfit-Bold handle + mono UPPERCASE name + success-dot APPROVED status · 4-stat bar (followers/eng/tier/platform — all mono with UPPERCASE mono labels) + bg2 stats-note · sectioned cards w/ Outfit-Bold title + bg2 EDIT pill · read-only rows with sans label + mono value</div>
+  </div>
+
+  <!-- PHONE 2: ProfileScreen — Bank edit mode -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-ttl">My Profile</div>
+        <div class="profile-row">
+          <div class="avatar">RS</div>
+          <div style="flex:1">
+            <div class="handle">@riyasharma_</div>
+            <div class="nameText">SECTION · PAYMENT &amp; TAX</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="body" style="padding-top:0">
+
+        <div class="sec-head"><div class="sec-head-txt">Payment &amp; Tax</div></div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-ttl">Payout Settings</div>
+            <div class="edit-btn" style="background:var(--danger-pale)"><div class="edit-btn-txt" style="color:var(--danger-text)">CANCEL</div></div>
+          </div>
+
+          <div class="field-lbl">UPI ID (PREFERRED)</div>
+          <div class="field-input">yourname@upi</div>
+
+          <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-align:center;padding:8px 0;font-weight:800;letter-spacing:.3px">— OR BANK ACCOUNT —</div>
+
+          <div class="field-lbl">ACCOUNT NUMBER</div>
+          <div class="field-input">••••••••5678</div>
+
+          <div class="field-lbl">IFSC CODE</div>
+          <div class="field-input">SBIN0001234</div>
+
+          <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-align:center;padding:8px 0;font-weight:800;letter-spacing:.3px">— TAX INFO —</div>
+
+          <div class="field-lbl">PAN NUMBER</div>
+          <div class="field-input">ABCDE1234F</div>
+
+          <div class="warn-box">
+            <div class="warn-text"><b>SECURE:</b> Bank details and PAN are encrypted with AES-256. Used only for processing withdrawals and TDS compliance.</div>
+          </div>
+
+          <div class="btn-primary-ink">SAVE PAYMENT DETAILS</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · ProfileScreen (bank edit)</b><br/>Inline edit mode with dangerPale CANCEL pill (replaces redPale) · field-label uppercase mono · ink-bordered inputs with PJS placeholder (matches Flow 33/34 input pattern) · OR/TAX dividers in mono UPPERCASE · yellowPale encryption warning box with yellowText (matches Flow 34 TDS preview tone) · ink/yellow Outfit-Black SAVE PAYMENT DETAILS CTA</div>
+  </div>
+
+  <!-- PHONE 3: ProfileScreen — bottom (App Settings + Doc rows + Logout) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-ttl">My Profile</div>
+        <div class="profile-row">
+          <div class="avatar">RS</div>
+          <div style="flex:1">
+            <div class="handle">@riyasharma_</div>
+            <div class="nameText">SCROLL · APP &amp; ACCOUNT</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="body" style="padding-top:0">
+
+        <div class="sec-head"><div class="sec-head-txt">App Settings</div></div>
+        <div class="card">
+          <div class="setting-row">
+            <div style="flex:1">
+              <div class="setting-lbl">Push Notifications</div>
+              <div class="setting-desc">Receive alerts for offers, payments, and campaigns</div>
+            </div>
+            <div class="toggle"><div class="toggle-knob"></div></div>
+          </div>
+        </div>
+
+        <div class="sec-head"><div class="sec-head-txt">Account</div></div>
+        <div class="card">
+          <div class="ro-row"><div class="ro-l">Status</div><div class="ro-v" style="color:var(--success-text)">APPROVED</div></div>
+          <div class="ro-row"><div class="ro-l">Handle</div><div class="ro-v">@riyasharma_</div></div>
+          <div class="ro-row"><div class="ro-l">Followers</div><div class="ro-v">128,420</div></div>
+          <div class="ro-row"><div class="ro-l">Eng. Rate</div><div class="ro-v">4.8%</div></div>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <div class="card-ttl" style="margin-bottom:5px">Brand Outreach</div>
+
+          <div class="doc-row" style="border-bottom:1px solid var(--border-soft)">
+            <div class="doc-ico"><span class="ico ico-md"><svg><use href="#ic-mail"/></svg></span></div>
+            <div style="flex:1">
+              <div class="doc-lbl">Brand Proposals</div>
+              <div class="doc-hint">DISCOVER + TRACK PITCHES</div>
+            </div>
+            <span class="ico ico-sm" style="color:var(--muted-3)"><svg><use href="#ic-chev"/></svg></span>
+          </div>
+
+          <div class="doc-row">
+            <div class="doc-ico"><span class="ico ico-md"><svg><use href="#ic-file-doc"/></svg></span></div>
+            <div style="flex:1">
+              <div class="doc-lbl">My Contracts</div>
+              <div class="doc-hint">SIGNED CONTRACT PDFS</div>
+            </div>
+            <span class="ico ico-sm" style="color:var(--muted-3)"><svg><use href="#ic-chev"/></svg></span>
+          </div>
+        </div>
+
+        <div class="logout-btn"><div class="logout-text">LOG OUT</div></div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · ProfileScreen (bottom)</b><br/>App Settings card with Outfit-Bold setting label + sans desc + success-bg toggle · Account card with all-mono read-only rows (status colored successText when approved) · Brand Outreach card with 2 doc rows: yellowPale MCI mail-outline + file-document-outline tiles (replaces 📨📝 per design call) + Outfit-Bold label + mono UPPERCASE hint + muted chevron · danger-border LOG OUT CTA with dangerText Outfit-Black UPPERCASE label</div>
+  </div>
+
+</div>
+
+<!-- Row 2: 2 more frames -->
+<div class="row">
+
+  <!-- PHONE 4: InfluencerContractsScreen -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-white">
+        <div class="h-back-w"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-ttl-w">My Contracts</div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-input">Search campaign or brand…</div>
+        <div class="filter-row">
+          <div class="filter-chip active">ALL</div>
+          <div class="filter-chip">ACTIVE</div>
+          <div class="filter-chip">PENDING</div>
+        </div>
+      </div>
+
+      <div class="body" style="padding-top:0">
+
+        <div class="contract-card">
+          <div class="contract-head">
+            <div class="contract-mid">
+              <div class="contract-camp">Diwali Glow-Up</div>
+              <div class="contract-brand">SPARKLE COSMETICS</div>
+            </div>
+            <div class="pill-sm active">Active</div>
+          </div>
+          <div class="contract-foot">
+            <div class="contract-meta">3 NOV 2026 · CONVERSION</div>
+            <div class="contract-amt">₹17,000</div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <div class="contract-head">
+            <div class="contract-mid">
+              <div class="contract-camp">Salon Cashback</div>
+              <div class="contract-brand">URBAN SALON</div>
+            </div>
+            <div class="pill-sm pending">Awaiting Influencer</div>
+          </div>
+          <div class="contract-foot">
+            <div class="contract-meta">5 NOV 2026 · HYBRID</div>
+            <div class="contract-amt">₹4,500</div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <div class="contract-head">
+            <div class="contract-mid">
+              <div class="contract-camp">Dew Winter Launch</div>
+              <div class="contract-brand">DEWBALM</div>
+            </div>
+            <div class="pill-sm pending">Awaiting Brand</div>
+          </div>
+          <div class="contract-foot">
+            <div class="contract-meta">4 NOV 2026 · ENGAGEMENT</div>
+            <div class="contract-amt">₹6,500</div>
+          </div>
+        </div>
+
+        <div class="contract-card">
+          <div class="contract-head">
+            <div class="contract-mid">
+              <div class="contract-camp">Snack Festival</div>
+              <div class="contract-brand">CRISPO</div>
+            </div>
+            <div class="pill-sm draft">Draft</div>
+          </div>
+          <div class="contract-foot">
+            <div class="contract-meta">2 NOV 2026 · ENGAGEMENT</div>
+            <div class="contract-amt">₹3,200</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 4 · InfluencerContractsScreen</b><br/>White-bg light topbar with bg2 MCI back-btn + Outfit-Bold title (centered) · toolbar with bg2 search input + ink-active filter chips (ALL/ACTIVE/PENDING — UPPERCASE mono) · contract cards w/ Outfit-Bold campaign + mono UPPERCASE brand + StatusPill canonical (Active=successPale · Awaiting Influencer=yellowPale · Awaiting Brand=yellowPale · Draft=bg2 muted · Cancelled=dangerPale) · foot row w/ mono UPPERCASE meta (date · goal) + mono ink amount · tap → ContractPdf if pdf_url</div>
+  </div>
+
+  <!-- PHONE 5: ContractPdfScreen -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="pdf-head">
+          <div class="h-ttl" style="margin-bottom:0">Contract PDF</div>
+          <div class="download-btn">
+            <span class="ico ico-sm" style="color:var(--ink)"><svg><use href="#ic-download"/></svg></span>
+            DOWNLOAD
+          </div>
+        </div>
+      </div>
+
+      <div class="pdf-area">
+
+        <div class="pdf-paper">
+          <h4>INFLX Campaign Contract</h4>
+          <hr/>
+          <div class="row-pdf"><span>Campaign:</span><b>Diwali Glow-Up</b></div>
+          <div class="row-pdf"><span>Brand:</span><b>Sparkle Cosmetics</b></div>
+          <div class="row-pdf"><span>Influencer:</span><b>@riyasharma_</b></div>
+          <div class="row-pdf"><span>Goal:</span><b>Conversion</b></div>
+          <hr/>
+          <div class="row-pdf"><span>Influencer Fee:</span><b>₹17,000</b></div>
+          <div class="row-pdf"><span>Bonus:</span><b>₹0</b></div>
+          <div class="row-pdf"><span>Tranche split:</span><b>25/25/50</b></div>
+          <hr/>
+          <div class="row-pdf"><span>Deliverables:</span><b>4 reels, 3 stories</b></div>
+          <div class="row-pdf"><span>Live by:</span><b>14 Nov 2026</b></div>
+          <hr/>
+          <div style="font-size:9.5px;color:var(--muted-2);margin-top:8px;line-height:1.5;text-align:center">Signed by both parties · Generated by INFLX</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 5 · ContractPdfScreen</b><br/>Ink hero with BACK chevron + yellow rule + Outfit-Black "Contract PDF" title + <b>yellow-bg + ink Outfit-Black DOWNLOAD CTA</b> with MCI download-outline icon (matches Flow 32 ink-bg+yellow-text inversion: here we want the button POP off ink hero, so yellow-bg+ink-text reads better) · bg2 PDF area showing rendered Google-Docs-Viewer wrap of signed R2 URL (mockup shows a stylized paper preview to convey what users see) · preserved: WebView w/ androidLayerType=hardware + originWhitelist=['*'] + onError + renderLoading</div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Key design calls (4 — needs founder lock)</h3>
+      <ul>
+        <li><b>Profile avatar bg:</b> yellow tile with ink Outfit-Black initials (matches Flow 32 MyStore avatar) — replaces current orange-coral</li>
+        <li><b>Section action emojis (📨📝):</b> DROP, replace with MCI mail-outline + file-document-outline in yellowPale tiles (action-class per design call #4 from Flow 32)</li>
+        <li><b>ContractPdf Download CTA color:</b> yellow-bg + ink-text + MCI download-outline (inverts the usual ink/yellow pattern — yellow pops better against the ink hero than ink-on-ink)</li>
+        <li><b>Push toggle "ON" track color:</b> success-green (matches "good thing on" semantic from Flow 33/34)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">5 APIs · zero phantom · zero new</div>
+      <ul>
+        <li><code>getMe()</code> → <code>/influencers/me</code></li>
+        <li><code>updateMe(payload)</code> PATCH → <code>/influencers/me</code> (used for 3 save flows: profile / content / bank)</li>
+        <li><code>listMyContracts()</code> → <code>/influencers/me/contracts</code></li>
+        <li><code>getContractPdfUrl(id)</code> → <code>/contracts/:id/pdf-url</code> (shared with brandApi via role param)</li>
+        <li><code>clearSession()</code> + <code>AuthContext.setRole('')</code> on logout</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>SDK boundary (WebView — already shipping)</h3>
+      <div class="ph">react-native-webview@13.8.7</div>
+      <ul>
+        <li><b>WebView source = Google Docs Viewer wrap</b> of signed R2 GET URL · keeps Android WebView able to render PDFs as HTML pages</li>
+        <li><b>androidLayerType='hardware'</b> for perf</li>
+        <li><b>originWhitelist=['*']</b> needed for Google Docs domain</li>
+        <li><b>onError</b> + <b>renderLoading</b> + <b>startInLoadingState</b> preserved</li>
+        <li><b>Linking.openURL(signedUrl)</b> for raw download (NOT the viewer URL)</li>
+        <li><b>No native rebuild needed</b> — react-native-webview pre-baked into APK</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim</h3>
+      <div class="ph">~22 render branches + 3 save flows + 2-form-mode XOR</div>
+      <ul>
+        <li><b>3 inline edit modes</b> (profile/content/bank) with editSection state machine + unsaved-changes Alert guard</li>
+        <li><b>UPI XOR Bank XOR PAN</b> validation in saveBank (cannot have both UPI + Bank simultaneously)</li>
+        <li><b>IFSC required</b> if bank_account set</li>
+        <li><b>10 language + 10 niche</b> chip toggles (preserved verbatim)</li>
+        <li><b>4-stat Apify-scraped bar</b> (followers / engagement_rate / tier / platform) — read-only</li>
+        <li><b>has_payout_method</b> conditional 'Update' vs 'Add' edit-btn label</li>
+        <li><b>has_upi/has_bank_account/has_pan</b> 'On file (encrypted)' read-only states</li>
+        <li><b>logout 2-confirm Alert</b> with destructive style</li>
+        <li><b>InfluencerContracts search</b> on campaign_name OR brand_name (substring)</li>
+        <li><b>InfluencerContracts filter</b> ('all' | 'active' | 'pending') driving render</li>
+        <li><b>InfluencerContracts tap</b> → ContractPdf only if pdf_url present (else Alert)</li>
+        <li><b>StatusPill canonical</b> for draft/pending_influencer/pending_brand/active/cancelled · zero map additions</li>
+        <li><b>ContractPdf 3-step state machine</b> (loadingUrl → viewerUrl render → error+retry)</li>
+        <li><b>WebView Google Docs Viewer wrap</b> via <code>encodeURIComponent(signedUrl)</code></li>
+        <li><b>role param routing</b> (brand vs influencer api client) preserved verbatim</li>
+        <li><b>RefreshControl pull-to-refresh</b> on Profile + Contracts</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

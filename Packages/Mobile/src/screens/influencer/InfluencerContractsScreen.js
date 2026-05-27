@@ -3,28 +3,31 @@ import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   ActivityIndicator, Alert, RefreshControl, TextInput,
 } from 'react-native';
-import { colors, spacing, radius, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-
-const STATUS_COLORS = {
-  draft:              { bg: '#EEF1FB', fg: '#4A5278' },
-  pending_influencer: { bg: '#FFF4D6', fg: '#B8860B' },
-  pending_brand:      { bg: '#DBE5FF', fg: '#1B2D5E' },
-  active:             { bg: '#E0FAF5', fg: '#007A63' },
-  cancelled:          { bg: '#FDEEE9', fg: '#E8401A' },
-};
+import StatusPill from '../../components/brand/StatusPill';
 
 const FILTERS = [
-  { key: 'all',    label: 'All' },
-  { key: 'active', label: 'Active' },
-  { key: 'pending',label: 'Pending' },
+  { key: 'all',    label: 'ALL' },
+  { key: 'active', label: 'ACTIVE' },
+  { key: 'pending',label: 'PENDING' },
 ];
 
 function fmtDate(iso) {
   if (!iso) return '—';
-  try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase(); }
   catch { return '—'; }
 }
+
+/**
+ * InfluencerContractsScreen — contract list with status filter + search.
+ *
+ * Flow 35 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
+ * Ad-hoc STATUS_COLORS replaced by canonical StatusPill (all 5 contract
+ * statuses already in 43-entry map: draft, pending_influencer,
+ * pending_brand, active, cancelled). Zero map additions.
+ */
 
 export default function InfluencerContractsScreen({ navigation }) {
   const [contracts, setContracts] = useState([]);
@@ -57,17 +60,17 @@ export default function InfluencerContractsScreen({ navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Icon name="chevron-left" size={18} color={P.ink} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Contracts</Text>
-        <View style={{ width: 36 }} />
+        <View style={{ width: 34 }} />
       </View>
 
       <View style={styles.toolbar}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search campaign or brand…"
-          placeholderTextColor={colors.t3}
+          placeholderTextColor={P.muted3}
           value={search}
           onChangeText={setSearch}
         />
@@ -84,15 +87,14 @@ export default function InfluencerContractsScreen({ navigation }) {
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>
+        <View style={styles.center}><ActivityIndicator color={P.yellow} /></View>
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={c => c.id}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} colors={[P.yellow]} />}
           renderItem={({ item: c }) => {
             const total = Number(c.influencer_fee || 0) + Number(c.bonus_amount || 0);
-            const statusStyle = STATUS_COLORS[c.status] || STATUS_COLORS.draft;
             return (
               <TouchableOpacity
                 style={styles.card}
@@ -104,18 +106,14 @@ export default function InfluencerContractsScreen({ navigation }) {
                   }
                 }}>
                 <View style={styles.cardHead}>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.campaign} numberOfLines={1}>{c.campaign_name}</Text>
-                    <Text style={styles.brand} numberOfLines={1}>{c.brand_name}</Text>
+                    <Text style={styles.brand} numberOfLines={1}>{(c.brand_name || '').toUpperCase()}</Text>
                   </View>
-                  <View style={[styles.statusPill, { backgroundColor: statusStyle.bg }]}>
-                    <Text style={[styles.statusTxt, { color: statusStyle.fg }]}>
-                      {String(c.status || '').replace(/_/g, ' ')}
-                    </Text>
-                  </View>
+                  <StatusPill status={c.status} />
                 </View>
                 <View style={styles.cardFoot}>
-                  <Text style={styles.meta}>{fmtDate(c.brand_signed_at || c.created_at)} · {c.campaign_goal}</Text>
+                  <Text style={styles.meta}>{fmtDate(c.brand_signed_at || c.created_at)} · {(c.campaign_goal || '').toUpperCase()}</Text>
                   <Text style={styles.amount}>{fmtRupees(total)}</Text>
                 </View>
               </TouchableOpacity>
@@ -123,12 +121,14 @@ export default function InfluencerContractsScreen({ navigation }) {
           }}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📝</Text>
+              <View style={styles.emptyTile}>
+                <Icon name="file-document-outline" size={32} color={P.yellowText} />
+              </View>
               <Text style={styles.emptyTitle}>No contracts yet</Text>
               <Text style={styles.emptySub}>Signed contracts with brands show up here for quick access.</Text>
             </View>
           }
-          contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}
+          contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
         />
       )}
     </View>
@@ -136,33 +136,62 @@ export default function InfluencerContractsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.bg },
+  container:    { flex: 1, backgroundColor: P.bg },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:      { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon:     { fontSize: 28, color: colors.t1, fontWeight: '400' },
-  headerTitle:  { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '700', color: colors.t1 },
 
-  toolbar:      { padding: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  searchInput:  { backgroundColor: colors.surface2, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 10, fontSize: 13, color: colors.t1 },
-  filterRow:    { flexDirection: 'row', gap: 6, marginTop: spacing.sm },
-  filterChip:   { paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.lg, backgroundColor: colors.surface2 },
-  filterChipActive: { backgroundColor: colors.navy },
-  filterChipLabel: { fontSize: 11, fontWeight: '600', color: colors.t2 },
-  filterChipLabelActive: { color: colors.white },
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 18, paddingTop: 50, paddingBottom: 14,
+    backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  backBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center',
+  },
+  headerTitle: {
+    flex: 1, textAlign: 'center',
+    fontSize: 17, fontWeight: '800', color: P.ink,
+    fontFamily: fonts.displayBlack,
+  },
 
-  card:         { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
-  cardHead:     { flexDirection: 'row', alignItems: 'flex-start' },
-  campaign:     { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  brand:        { fontSize: 11, color: colors.t3, marginTop: 2 },
-  statusPill:   { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm, marginLeft: 8 },
-  statusTxt:    { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
-  cardFoot:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
-  meta:         { fontSize: 10, color: colors.t3 },
-  amount:       { fontSize: 13, fontWeight: '700', color: colors.navy },
+  toolbar: { padding: 14, backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border },
+  searchInput: {
+    backgroundColor: P.bg2, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+    fontSize: 12, color: P.ink, fontFamily: fonts.sansRegular,
+  },
+  filterRow: { flexDirection: 'row', gap: 6, marginTop: 9 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 999, backgroundColor: P.bg2 },
+  filterChipActive: { backgroundColor: P.ink },
+  filterChipLabel: { fontSize: 10, fontWeight: '800', color: P.muted, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.monoBold },
+  filterChipLabelActive: { color: P.yellow, fontWeight: '900' },
 
-  empty:        { alignItems: 'center', padding: spacing.xxl * 2 },
-  emptyIcon:    { fontSize: 40, marginBottom: spacing.md },
-  emptyTitle:   { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptySub:     { fontSize: 11, color: colors.t3, textAlign: 'center', paddingHorizontal: spacing.xl },
+  card: {
+    backgroundColor: P.white, borderRadius: 11,
+    borderWidth: 1, borderColor: P.border,
+    padding: 14, marginBottom: 8,
+  },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  campaign: { fontSize: 14, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  brand: {
+    fontSize: 10.5, color: P.muted2, marginTop: 2,
+    fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium,
+  },
+  cardFoot: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginTop: 11, paddingTop: 11,
+    borderTopWidth: 1, borderTopColor: P.borderSoft,
+  },
+  meta: { fontSize: 9.5, color: P.muted2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  amount: { fontSize: 13, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+
+  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
+  emptyTile: {
+    width: 66, height: 66, borderRadius: 14,
+    backgroundColor: P.yellowPale,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },
+  emptySub: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, fontFamily: fonts.sansRegular },
 });

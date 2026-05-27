@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-35-influencer-mobile-profile-contracts-pdf",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-27 chat \"ok pls go and implement\" + 4 design calls locked via standing autonomy on design/lock decisions per CLAUDE.md §1 (yellow avatar / drop section action emoji / yellow-bg ink-text Download CTA / success-green toggle track — all matching Flow 28-34 patterns)",
+  "approved_at": "2026-05-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-27 standing autonomy on design/lock decisions; 4 calls match Flow 28-34 established patterns",
+  "mockup_locked_at": "2026-05-27",
+  "notes": "8th flow of mobile-influencer bucket (8/23). ProfileScreen (675 LOC) + InfluencerContractsScreen (168 LOC) + ContractPdfScreen (148 LOC) = 991 LOC. MED risk (react-native-webview SDK already shipping). ZERO backend change. ZERO StatusPill canonical-map additions (all 5 contract statuses already in 43-entry map: draft/pending_influencer/pending_brand/active/cancelled). 4 locked design calls applied per standing autonomy: (1) Profile avatar = yellow tile with ink Outfit-Black initials (matches Flow 32 MyStore); (2) Section action emojis 📨📝 DROPPED, replaced with MCI email-outline + file-document-outline in yellowPale tiles; (3) ContractPdf Download CTA = yellow-bg + ink Outfit-Black + MCI download-outline (inverts usual ink/yellow CTA to pop against ink hero); (4) Push toggle 'ON' track = success-green. 22 render branches preserved verbatim including 3 inline edit modes (profile/content/bank) + UPI-XOR-Bank-XOR-PAN validation + IFSC-required gate + 10 language + 10 niche chip toggles + has_payout_method conditional labels + logout 2-confirm Alert + 3-filter search on InfluencerContracts + tap-pdf_url Alert guard + WebView 3-state machine (loadingUrl/error/viewerUrl) + role param routing on ContractPdf + Linking.openURL for raw R2 download. All 5 APIs preserved (getMe/updateMe/listMyContracts/getContractPdfUrl/clearSession). StatusPill canonical replaces ad-hoc STATUS_COLORS on InfluencerContracts. WebView + Google Docs Viewer wrap + androidLayerType + originWhitelist preserved byte-for-byte. Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + yellow avatar tile + bg2 EDIT pill + dangerPale CANCEL pill + ink-bordered inputs + ink-active chips + ink/yellow Outfit-Black UPPERCASE SAVE CTAs + yellowPale encryption warning + infoPale TDS info + success-green push toggle + MCI yellowPale doc-row tiles + danger-border LOG OUT + ink-active filter chips + StatusPill canonical + yellow-bg ink-text Download CTA on ContractPdf. No native rebuild required (NATIVE_RUNTIME=2 + react-native-webview v13.8.7 pre-baked in APK since Flow 28).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2) + react-native-webview v13.8.7 was already in the APK. Flow 35 = pure JS, ships via OTA.",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Profile/InfluencerContracts/ContractPdf visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test on installed APK covers visual upgrade + WebView PDF render + UPI/Bank save flow'"
+  }
+}
