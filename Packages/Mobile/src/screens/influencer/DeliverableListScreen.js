@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { colors } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,8 @@ const DELIVERABLE_LABELS = {
   youtube_short: 'YouTube Short',
 };
 
+// Type-icon emojis preserved per locked design call #4 (KEEP type emoji
+// like CATEGORY_EMOJI; DROP action emoji like 🎉/📁/📹).
 const DELIVERABLE_ICONS = {
   reel: '🎬',
   post: '📸',
@@ -51,6 +54,16 @@ function isOverdue(deadline) {
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
+
+/**
+ * DeliverableListScreen — per-campaign deliverable list.
+ *
+ * Flow 33 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
+ * JetBrains Mono fonts + StatusPill canonical map (replaces ad-hoc
+ * StatusBadge). Yellow progress fill (matches Flow 31/32 pattern).
+ * 5 per-row CTA tints (warn/danger/info/success-pre/success-post-live).
+ * DELIVERABLE_ICONS type emojis preserved verbatim per design call #4.
+ */
 
 export default function DeliverableListScreen({ navigation, route }) {
   const { campaign_influencer_id, campaign_name, brand_name } = route.params || {};
@@ -132,24 +145,26 @@ export default function DeliverableListScreen({ navigation, route }) {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Deliverables</Text>
         <Text style={styles.headerSub}>
           {brand_name ? `${brand_name}` : ''}{brand_name && campaign_name ? ' — ' : ''}{campaign_name || ''}
         </Text>
+        <View style={styles.headerAccent} />
       </View>
 
       <ScrollView
         style={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
       >
         {/* Loading state */}
         {loading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.navy} />
-            <Text style={styles.loadingText}>Loading deliverables...</Text>
+            <ActivityIndicator size="large" color={P.yellow} />
+            <Text style={styles.loadingText}>Loading deliverables…</Text>
           </View>
         )}
 
@@ -159,7 +174,7 @@ export default function DeliverableListScreen({ navigation, route }) {
             <Text style={styles.errorTitle}>Could not load deliverables</Text>
             <Text style={styles.errorMessage}>{error}</Text>
             <TouchableOpacity style={styles.retryBtn} onPress={() => fetchData()}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>RETRY</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -177,28 +192,28 @@ export default function DeliverableListScreen({ navigation, route }) {
               />
             </View>
             <Text style={styles.progressText}>
-              {progress.completed} of {progress.total} deliverable{progress.total !== 1 ? 's' : ''} completed
+              <Text style={styles.progressTextBold}>{progress.completed}</Text> of <Text style={styles.progressTextBold}>{progress.total}</Text> deliverable{progress.total !== 1 ? 's' : ''} completed
             </Text>
 
             <View style={styles.statsRow}>
               {progress.needsAction > 0 && (
-                <View style={[styles.statChip, { backgroundColor: colors.goldPale }]}>
-                  <Text style={[styles.statChipText, { color: '#7A5500' }]}>
-                    {progress.needsAction} needs action
+                <View style={[styles.statChip, { backgroundColor: P.yellowPale }]}>
+                  <Text style={[styles.statChipText, { color: P.yellowText }]}>
+                    {progress.needsAction} NEEDS ACTION
                   </Text>
                 </View>
               )}
               {progress.inReview > 0 && (
-                <View style={[styles.statChip, { backgroundColor: colors.orangePale }]}>
-                  <Text style={[styles.statChipText, { color: colors.orangeDeep }]}>
-                    {progress.inReview} in review
+                <View style={[styles.statChip, { backgroundColor: P.infoPale }]}>
+                  <Text style={[styles.statChipText, { color: P.info }]}>
+                    {progress.inReview} IN REVIEW
                   </Text>
                 </View>
               )}
               {progress.approved > 0 && (
-                <View style={[styles.statChip, { backgroundColor: colors.tealPale }]}>
-                  <Text style={[styles.statChipText, { color: colors.tealDeep }]}>
-                    {progress.approved} approved
+                <View style={[styles.statChip, { backgroundColor: P.successPale }]}>
+                  <Text style={[styles.statChipText, { color: P.successText }]}>
+                    {progress.approved} APPROVED
                   </Text>
                 </View>
               )}
@@ -221,6 +236,22 @@ export default function DeliverableListScreen({ navigation, route }) {
         {!loading && deliverables.map((d) => {
           const overdue = ['pending', 'revision_requested'].includes(d.status) && isOverdue(d.submission_deadline);
           const needsAction = ['pending', 'revision_requested'].includes(d.status);
+
+          // Determine row CTA per status (5 branches)
+          let rowCta = null;
+          if (d.status === 'pending') {
+            rowCta = { tone: 'warn', text: `UPLOAD ${(DELIVERABLE_LABELS[d.type] || d.type || '').toUpperCase()} →` };
+          } else if (d.status === 'revision_requested') {
+            rowCta = { tone: 'danger', text: 'REVISION NEEDED — TAP TO RESUBMIT' };
+          } else if (d.status === 'submitted' || d.status === 'under_review') {
+            rowCta = { tone: 'info', text: 'UNDER BRAND REVIEW — WAITING' };
+          } else if (d.status === 'approved' && !d.live_url) {
+            rowCta = { tone: 'success', text: 'APPROVED — TAP TO SUBMIT LIVE URL' };
+          } else if (d.status === 'approved' && d.live_url) {
+            rowCta = { tone: 'info', text: 'LIVE URL SUBMITTED — AWAITING BRAND' };
+          } else if (d.status === 'live') {
+            rowCta = { tone: 'success', text: 'LIVE AND CONFIRMED' };
+          }
 
           return (
             <TouchableOpacity
@@ -253,60 +284,33 @@ export default function DeliverableListScreen({ navigation, route }) {
                   <View style={styles.deliverableMeta}>
                     {d.submission_deadline && (
                       <Text style={[styles.deliverableDeadline, overdue && styles.overdueText]}>
-                        {overdue ? 'Overdue — ' : 'Due: '}{formatDate(d.submission_deadline)}
+                        {overdue ? 'OVERDUE — ' : 'DUE: '}{formatDate(d.submission_deadline).toUpperCase()}
                       </Text>
                     )}
                     {d.submitted_at && (
                       <Text style={styles.deliverableSubmitted}>
-                        Submitted: {formatDate(d.submitted_at)}
+                        SUBMITTED: {formatDate(d.submitted_at).toUpperCase()}
                       </Text>
                     )}
                   </View>
                 </View>
-                <StatusBadge status={d.status} size={9} />
+                <View style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+                  <StatusPill status={d.status} />
+                </View>
               </View>
 
-              {/* Big obvious per-row CTA so the influencer sees 3 distinct
-                  upload entry points (one for each deliverable). Replaces
-                  the older subtle "tap to..." hint that confused users into
-                  thinking there was only one upload spot. */}
-              {d.status === 'pending' && (
-                <View style={styles.rowCta}>
-                  <Text style={styles.rowCtaLabel}>Upload {DELIVERABLE_LABELS[d.type] || d.type} →</Text>
-                </View>
-              )}
-              {d.status === 'revision_requested' && (
-                <View style={[styles.rowCta, { backgroundColor: colors.redPale }]}>
-                  <Text style={[styles.rowCtaLabel, { color: colors.red }]}>
-                    Revision needed — tap to resubmit
-                  </Text>
-                </View>
-              )}
-              {d.status === 'approved' && !d.live_url && (
-                <View style={[styles.rowCta, { backgroundColor: colors.tealPale }]}>
-                  <Text style={[styles.rowCtaLabel, { color: colors.tealDeep }]}>
-                    Approved — tap to submit Live URL
-                  </Text>
-                </View>
-              )}
-              {d.status === 'approved' && d.live_url && (
-                <View style={[styles.rowCta, { backgroundColor: colors.navyPale }]}>
-                  <Text style={[styles.rowCtaLabel, { color: colors.navy }]}>
-                    Live URL submitted — awaiting brand confirmation
-                  </Text>
-                </View>
-              )}
-              {d.status === 'live' && (
-                <View style={[styles.rowCta, { backgroundColor: colors.tealPale }]}>
-                  <Text style={[styles.rowCtaLabel, { color: colors.tealDeep }]}>
-                    ✓ Live and confirmed
+              {/* Per-row CTA */}
+              {rowCta && (
+                <View style={[styles.rowCta, ctaStyles[rowCta.tone].bg]}>
+                  <Text style={[styles.rowCtaLabel, ctaStyles[rowCta.tone].fg]}>
+                    {rowCta.text}
                   </Text>
                 </View>
               )}
 
               {/* Chevron */}
               <View style={styles.chevronWrap}>
-                <Text style={styles.chevron}>›</Text>
+                <Icon name="chevron-right" size={16} color={P.muted3} />
               </View>
             </TouchableOpacity>
           );
@@ -318,153 +322,163 @@ export default function DeliverableListScreen({ navigation, route }) {
   );
 }
 
+// CTA tone palette
+const ctaStyles = {
+  warn:    { bg: { backgroundColor: P.yellowPale  }, fg: { color: P.yellowText  } },
+  danger:  { bg: { backgroundColor: P.dangerPale  }, fg: { color: P.dangerText  } },
+  info:    { bg: { backgroundColor: P.infoPale    }, fg: { color: P.info        } },
+  success: { bg: { backgroundColor: P.successPale }, fg: { color: P.successText } },
+};
+
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  emptyText: { fontSize: 14, color: colors.t3 },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+  emptyText: { fontSize: 14, color: P.muted2, fontFamily: fonts.sansRegular },
 
   // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.white },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerAccent: {
+    position: 'absolute', left: 18, bottom: 8, width: 30, height: 3,
+    backgroundColor: P.yellow, borderRadius: 2,
+  },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 14 },
+  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: '700', fontFamily: fonts.monoMedium },
 
   scrollContent: { flex: 1 },
 
   // Loading
   loadingContainer: { alignItems: 'center', paddingTop: 60 },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
+  loadingText: { fontSize: 12, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },
 
   // Error
   errorCard: {
-    margin: 16,
-    backgroundColor: colors.redPale,
-    borderRadius: 16,
-    padding: 20,
+    margin: 14,
+    backgroundColor: P.dangerPale,
+    borderRadius: 14,
+    padding: 18,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.red + '33',
+    borderColor: P.danger,
   },
-  errorTitle: { fontSize: 14, fontWeight: '700', color: colors.red, marginBottom: 6 },
-  errorMessage: { fontSize: 12, color: colors.t2, textAlign: 'center', marginBottom: 14 },
+  errorTitle: { fontSize: 14, fontWeight: '800', color: P.dangerText, marginBottom: 6, fontFamily: fonts.displayBold },
+  errorMessage: { fontSize: 12, color: P.muted, textAlign: 'center', marginBottom: 14, fontFamily: fonts.sansRegular },
   retryBtn: {
-    backgroundColor: colors.navy,
+    backgroundColor: P.ink,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 24,
   },
-  retryText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  retryText: { fontSize: 12, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 
   // Card
   card: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+  cardTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: P.ink,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 11,
+    fontFamily: fonts.displayBlack,
+  },
 
   // Progress
   progressBar: {
-    height: 6,
-    backgroundColor: colors.surface2,
-    borderRadius: 3,
+    height: 7,
+    backgroundColor: P.bg2,
+    borderRadius: 4,
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.teal,
-    borderRadius: 3,
+    backgroundColor: P.yellow,
+    borderRadius: 4,
   },
-  progressText: { fontSize: 12, color: colors.t2, marginBottom: 10 },
-  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statChip: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  statChipText: { fontSize: 10, fontWeight: '700' },
+  progressText: { fontSize: 11, color: P.muted, marginBottom: 11, fontWeight: '700', fontFamily: fonts.monoMedium },
+  progressTextBold: { color: P.ink, fontWeight: '900', fontFamily: fonts.monoBold },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  statChip: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  statChipText: { fontSize: 9.5, fontWeight: '800', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.monoBold },
 
   // Empty
   emptyCard: {
-    margin: 16,
-    backgroundColor: colors.white,
-    borderRadius: 16,
+    margin: 14,
+    backgroundColor: P.white,
+    borderRadius: 14,
     padding: 32,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 6 },
-  emptyMessage: { fontSize: 12, color: colors.t3, textAlign: 'center', lineHeight: 18 },
+  emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },
+  emptyMessage: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, fontFamily: fonts.sansRegular },
 
   // Deliverable card
   deliverableCard: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
     position: 'relative',
   },
   deliverableCardAction: {
-    borderColor: colors.gold,
+    borderColor: P.yellow,
     borderWidth: 1.5,
   },
   deliverableCardOverdue: {
-    borderColor: colors.red,
+    borderColor: P.danger,
     borderWidth: 1.5,
   },
   deliverableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 11,
   },
   deliverableIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.surface2,
+    width: 42,
+    height: 42,
+    borderRadius: 11,
+    backgroundColor: P.bg2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  deliverableIcon: { fontSize: 18 },
+  deliverableIcon: { fontSize: 20 },
   deliverableInfo: { flex: 1 },
-  deliverableType: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  deliverableMeta: { marginTop: 4 },
-  deliverableDeadline: { fontSize: 11, color: colors.t3 },
-  deliverableSubmitted: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  overdueText: { color: colors.red, fontWeight: '700' },
+  deliverableType: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  deliverableMeta: { marginTop: 3 },
+  deliverableDeadline: { fontSize: 10, color: P.muted2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  deliverableSubmitted: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  overdueText: { color: P.dangerText, fontWeight: '900', fontFamily: fonts.monoBold },
 
-  // Action hints
-  actionHint: {
-    backgroundColor: colors.redPale,
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 10,
-  },
-  actionHintText: { fontSize: 11, color: colors.red, fontWeight: '600', textAlign: 'center' },
-  // Per-row CTA replacing the older subtle hint
+  // Per-row CTA
   rowCta: {
-    backgroundColor: colors.goldPale,
-    borderRadius: 8,
-    paddingVertical: 8,
+    borderRadius: 9,
+    paddingVertical: 9,
     paddingHorizontal: 12,
-    marginTop: 8,
+    marginTop: 9,
   },
-  rowCtaLabel: { fontSize: 12, fontWeight: '800', color: '#7A5500', textAlign: 'center' },
+  rowCtaLabel: { fontSize: 11, fontWeight: '800', textAlign: 'center', letterSpacing: 0.2, fontFamily: fonts.monoBold },
 
   // Chevron
   chevronWrap: {
     position: 'absolute',
-    right: 12,
-    top: '50%',
-    marginTop: -10,
+    right: 14,
+    top: 18,
   },
-  chevron: { fontSize: 22, color: colors.t3, fontWeight: '300' },
 });

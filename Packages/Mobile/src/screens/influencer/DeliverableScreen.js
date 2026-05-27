@@ -1,21 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert, Linking, Image,
-  Platform,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
-import { colors } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi, uploadFile } from '../../services/api';
-
-const STATUS_CONFIG = {
-  pending:           { label: 'Pending',           color: colors.t3,    bg: colors.surface2 },
-  submitted:         { label: 'Under Review',       color: colors.orange, bg: colors.orange + '22' },
-  under_review:      { label: 'Under Review',       color: colors.orange, bg: colors.orange + '22' },
-  revision_requested:{ label: 'Revision Needed',    color: colors.red,   bg: colors.redPale },
-  approved:          { label: 'Approved',           color: colors.teal,  bg: colors.teal + '22' },
-  live:              { label: 'Live',               color: colors.navy,  bg: colors.navy + '22' },
-};
+import StatusPill from '../../components/brand/StatusPill';
 
 const TYPE_LABELS = {
   reel: 'Instagram Reel',
@@ -24,6 +16,19 @@ const TYPE_LABELS = {
   youtube_video: 'YouTube Video',
   youtube_short: 'YouTube Short',
 };
+
+/**
+ * DeliverableScreen — single deliverable view with media picker + R2 upload
+ * + URL fallback + live stats.
+ *
+ * Flow 33 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
+ * JetBrains Mono fonts + StatusPill canonical for status badge.
+ * Image-picker SDK config + 3-step R2 upload state machine + onprogress
+ * callback preserved verbatim. Picker emoji (📁/📹) → dashed ink-bordered
+ * tiles with yellowPale MCI image-multi/video icons. Action emoji
+ * (⏳/🎬 preview) replaced with MCI clock/video tiles per design call #4.
+ * Type emoji (DELIVERABLE_ICONS) — N/A here, owned by DeliverableList.
+ */
 
 export default function DeliverableScreen({ navigation, route }) {
   const { deliverable: initialDeliverable, deliverableId } = route.params || {};
@@ -122,8 +127,6 @@ export default function DeliverableScreen({ navigation, route }) {
     }
   }
 
-  const statusCfg = STATUS_CONFIG[deliverable?.status] || STATUS_CONFIG.pending;
-
   // ── Media picker ──────────────────────────────────────────────────────────
 
   function pickFromGallery() {
@@ -214,7 +217,7 @@ export default function DeliverableScreen({ navigation, route }) {
       if (submitRes.success) {
         setDeliverable(submitRes.data?.deliverable || { ...deliverable, status: 'submitted', media_key: key });
         setSelectedMedia(null);
-        Alert.alert('Submitted!', 'Your content has been uploaded and sent for brand review.');
+        Alert.alert('Submitted', 'Your content has been uploaded and sent for brand review.');
       } else {
         Alert.alert('Failed', submitRes.error?.message || 'Submission failed');
       }
@@ -237,7 +240,7 @@ export default function DeliverableScreen({ navigation, route }) {
     setSubmitting(false);
     if (res.success) {
       setDeliverable(res.data?.deliverable || { ...deliverable, status: 'submitted' });
-      Alert.alert('Submitted!', 'Your content has been sent for brand review.');
+      Alert.alert('Submitted', 'Your content has been sent for brand review.');
     } else {
       Alert.alert('Failed', res.error?.message || 'Submission failed');
     }
@@ -253,7 +256,7 @@ export default function DeliverableScreen({ navigation, route }) {
     setSubmitting(false);
     if (res.success) {
       setDeliverable(res.data?.deliverable || { ...deliverable, status: 'live', live_url: liveUrl });
-      Alert.alert('Done!', 'Live URL submitted. Brand will confirm and Tranche 2 will be released.');
+      Alert.alert('Done', 'Live URL submitted. Brand will confirm and Tranche 2 will be released.');
     } else {
       Alert.alert('Failed', res.error?.message || 'Failed');
     }
@@ -262,54 +265,56 @@ export default function DeliverableScreen({ navigation, route }) {
   // ── Render ────────────────────────────────────────────────────────────────
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator size="large" color={colors.navy} /></View>;
+    return <View style={styles.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
   }
 
   if (!deliverable) {
     return <View style={styles.center}><Text style={styles.errorText}>No deliverable data</Text></View>;
   }
 
-  const isVideo = (selectedMedia?.type || deliverable?.media_type || '').startsWith('video');
-  const isImage = (selectedMedia?.type || deliverable?.media_type || '').startsWith('image');
   const canSubmit = ['pending', 'revision_requested'].includes(deliverable.status);
 
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
-          <Text style={styles.title}>
-            {TYPE_LABELS[deliverable.type] || deliverable.type?.toUpperCase() || 'DELIVERABLE'}
-          </Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
-            <Text style={[styles.statusText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>
+              {TYPE_LABELS[deliverable.type] || deliverable.type?.toUpperCase() || 'DELIVERABLE'}
+            </Text>
+            {deliverable.submission_deadline && (
+              <Text style={styles.sub}>
+                DEADLINE: {new Date(deliverable.submission_deadline).toLocaleDateString('en-IN', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                }).toUpperCase()}
+              </Text>
+            )}
+          </View>
+          <View style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+            <StatusPill status={deliverable.status} />
           </View>
         </View>
-        {deliverable.submission_deadline && (
-          <Text style={styles.sub}>
-            Deadline: {new Date(deliverable.submission_deadline).toLocaleDateString('en-IN', {
-              day: 'numeric', month: 'short', year: 'numeric',
-            })}
-          </Text>
-        )}
+        <View style={styles.headerAccent} />
       </View>
 
       {/* Info card */}
       <View style={styles.card}>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Type</Text>
-          <Text style={styles.rowValue}>{deliverable.type?.replace(/_/g, ' ')}</Text>
+          <Text style={styles.rowValue}>{(deliverable.type || '').replace(/_/g, ' ').toUpperCase()}</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.rowLabel}>Revisions</Text>
-          <Text style={styles.rowValue}>{deliverable.revision_count || 0}/{deliverable.revision_limit || 2}</Text>
+          <Text style={styles.rowValue}>{deliverable.revision_count || 0} / {deliverable.revision_limit || 2}</Text>
         </View>
         {deliverable.content_requirements && (
           <View style={styles.requirementsBox}>
-            <Text style={styles.requirementsLabel}>Content Brief</Text>
+            <Text style={styles.requirementsLabel}>CONTENT BRIEF</Text>
             <Text style={styles.requirementsText}>{deliverable.content_requirements}</Text>
           </View>
         )}
@@ -317,9 +322,16 @@ export default function DeliverableScreen({ navigation, route }) {
 
       {/* Brand feedback (revision) */}
       {deliverable.status === 'revision_requested' && deliverable.brand_feedback && (
-        <View style={[styles.card, styles.revisionCard]}>
-          <Text style={styles.revisionTitle}>⚠ Revision Requested</Text>
-          <Text style={styles.revisionText}>{deliverable.brand_feedback}</Text>
+        <View style={styles.revisionCard}>
+          <View style={styles.revisionHead}>
+            <View style={styles.revisionIcoWrap}>
+              <Text style={styles.revisionIco}>!</Text>
+            </View>
+            <Text style={styles.revisionTitle}>REVISION REQUESTED</Text>
+          </View>
+          <View style={styles.revisionBody}>
+            <Text style={styles.revisionText}>{deliverable.brand_feedback}</Text>
+          </View>
         </View>
       )}
 
@@ -328,7 +340,7 @@ export default function DeliverableScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Submitted Content</Text>
           {loadingMedia ? (
-            <ActivityIndicator size="small" color={colors.navy} />
+            <ActivityIndicator size="small" color={P.yellow} />
           ) : mediaUrl ? (
             <View>
               {(deliverable.media_type || '').startsWith('image') ? (
@@ -338,8 +350,8 @@ export default function DeliverableScreen({ navigation, route }) {
                   style={styles.videoPreviewBox}
                   onPress={() => Linking.openURL(mediaUrl)}
                 >
-                  <Text style={styles.videoPlayIcon}>▶</Text>
-                  <Text style={styles.videoPlayText}>Tap to play video</Text>
+                  <Icon name="play-circle" size={48} color={P.yellow} />
+                  <Text style={styles.videoPlayText}>TAP TO PLAY VIDEO</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -353,8 +365,9 @@ export default function DeliverableScreen({ navigation, route }) {
       {deliverable.submitted_url && !deliverable.media_key && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Submitted URL</Text>
-          <TouchableOpacity onPress={() => Linking.openURL(deliverable.submitted_url)}>
-            <Text style={styles.link}>{deliverable.submitted_url}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(deliverable.submitted_url)} style={styles.urlBox}>
+            <Text style={styles.urlLabel}>DRAFT URL</Text>
+            <Text style={styles.urlLink} numberOfLines={2}>{deliverable.submitted_url}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -373,20 +386,20 @@ export default function DeliverableScreen({ navigation, route }) {
                 <Image source={{ uri: selectedMedia.uri }} style={styles.mediaPreview} resizeMode="contain" />
               ) : (
                 <View style={styles.videoSelected}>
-                  <Text style={styles.videoSelectedIcon}>🎬</Text>
-                  <Text style={styles.videoSelectedText}>
-                    {selectedMedia.fileName}
-                  </Text>
+                  <View style={styles.previewIconTile}>
+                    <Icon name="video-outline" size={26} color={P.yellow} />
+                  </View>
+                  <Text style={styles.videoSelectedText}>{selectedMedia.fileName}</Text>
                   {selectedMedia.duration && (
                     <Text style={styles.videoSelectedDuration}>
-                      {Math.round(selectedMedia.duration)}s
+                      {Math.round(selectedMedia.duration)}S
                       {selectedMedia.fileSize ? ` · ${(selectedMedia.fileSize / 1024 / 1024).toFixed(1)} MB` : ''}
                     </Text>
                   )}
                 </View>
               )}
               <TouchableOpacity style={styles.removeBtn} onPress={() => setSelectedMedia(null)}>
-                <Text style={styles.removeBtnText}>✕ Remove</Text>
+                <Text style={styles.removeBtnText}>REMOVE</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -401,25 +414,42 @@ export default function DeliverableScreen({ navigation, route }) {
             </View>
           )}
 
-          {/* Picker buttons */}
+          {/* Picker tiles */}
           {!selectedMedia && !uploading && (
             <View style={styles.pickerButtons}>
-              <TouchableOpacity style={styles.pickerBtn} onPress={pickFromGallery}>
-                <Text style={styles.pickerBtnIcon}>📁</Text>
-                <Text style={styles.pickerBtnText}>Choose from Gallery</Text>
+              <TouchableOpacity style={styles.pickerTile} onPress={pickFromGallery}>
+                <View style={styles.pickerIcon}>
+                  <Icon name="image-multiple-outline" size={20} color={P.yellowText} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pickerLbl}>Choose from Gallery</Text>
+                  <Text style={styles.pickerSub}>PHOTOS &amp; VIDEOS · SYSTEM PICKER</Text>
+                </View>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.pickerBtn} onPress={recordVideo}>
-                <Text style={styles.pickerBtnIcon}>📹</Text>
-                <Text style={styles.pickerBtnText}>Record Video</Text>
+              <TouchableOpacity style={styles.pickerTile} onPress={recordVideo}>
+                <View style={styles.pickerIcon}>
+                  <Icon name="video-outline" size={20} color={P.yellowText} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.pickerLbl}>Record Video</Text>
+                  <Text style={styles.pickerSub}>CAMERA · UP TO 5 MIN</Text>
+                </View>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* Submit button */}
+          {/* Submit button (media selected) */}
           {selectedMedia && !uploading && (
             <TouchableOpacity style={styles.uploadBtn} onPress={handleMediaUpload}>
-              <Text style={styles.uploadBtnText}>Upload & Submit for Review</Text>
+              <Text style={styles.uploadBtnText}>UPLOAD &amp; SUBMIT FOR REVIEW</Text>
             </TouchableOpacity>
+          )}
+
+          {/* Disabled CTA while uploading */}
+          {uploading && (
+            <View style={[styles.uploadBtn, { opacity: 0.5 }]}>
+              <Text style={styles.uploadBtnText}>UPLOADING…</Text>
+            </View>
           )}
 
           {/* Divider — OR paste URL */}
@@ -427,7 +457,7 @@ export default function DeliverableScreen({ navigation, route }) {
             <>
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
+                <Text style={styles.dividerText}>OR PASTE URL</Text>
                 <View style={styles.dividerLine} />
               </View>
               <Text style={styles.hint}>Paste a URL instead (Google Drive, Dropbox, etc.)</Text>
@@ -435,8 +465,8 @@ export default function DeliverableScreen({ navigation, route }) {
                 style={styles.urlInput}
                 value={submitUrl}
                 onChangeText={setSubmitUrl}
-                placeholder="https://drive.google.com/..."
-                placeholderTextColor={colors.t3}
+                placeholder="https://drive.google.com/…"
+                placeholderTextColor={P.muted3}
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
@@ -447,8 +477,8 @@ export default function DeliverableScreen({ navigation, route }) {
                 disabled={submitting || !submitUrl.trim()}
               >
                 {submitting
-                  ? <ActivityIndicator color={colors.white} />
-                  : <Text style={styles.submitBtnText}>Submit URL for Review</Text>
+                  ? <ActivityIndicator color={P.yellow} />
+                  : <Text style={styles.submitBtnText}>SUBMIT URL FOR REVIEW</Text>
                 }
               </TouchableOpacity>
             </>
@@ -460,8 +490,9 @@ export default function DeliverableScreen({ navigation, route }) {
       {deliverable.live_url && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Live Post</Text>
-          <TouchableOpacity onPress={() => Linking.openURL(deliverable.live_url)}>
-            <Text style={styles.link}>{deliverable.live_url}</Text>
+          <TouchableOpacity onPress={() => Linking.openURL(deliverable.live_url)} style={styles.urlBox}>
+            <Text style={styles.urlLabel}>LIVE URL</Text>
+            <Text style={styles.urlLink} numberOfLines={2}>{deliverable.live_url}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -475,8 +506,8 @@ export default function DeliverableScreen({ navigation, route }) {
             style={styles.urlInput}
             value={liveUrl}
             onChangeText={setLiveUrl}
-            placeholder="https://instagram.com/p/..."
-            placeholderTextColor={colors.t3}
+            placeholder="https://instagram.com/p/…"
+            placeholderTextColor={P.muted3}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -487,8 +518,8 @@ export default function DeliverableScreen({ navigation, route }) {
             disabled={submitting || !liveUrl.trim()}
           >
             {submitting
-              ? <ActivityIndicator color={colors.white} />
-              : <Text style={styles.submitBtnText}>Mark as Live</Text>
+              ? <ActivityIndicator color={P.white} />
+              : <Text style={styles.liveBtnText}>MARK AS LIVE</Text>
             }
           </TouchableOpacity>
         </View>
@@ -496,17 +527,19 @@ export default function DeliverableScreen({ navigation, route }) {
 
       {/* Submitted — waiting for brand review */}
       {deliverable.status === 'submitted' && (
-        <View style={[styles.card, { alignItems: 'center', paddingVertical: 24 }]}>
-          <Text style={{ fontSize: 28, marginBottom: 8 }}>⏳</Text>
-          <Text style={styles.cardTitle}>Waiting for Brand Review</Text>
-          <Text style={styles.hint}>Your content has been submitted. The brand will review and approve or request changes.</Text>
+        <View style={styles.waitCard}>
+          <View style={styles.waitTile}>
+            <Icon name="clock-outline" size={26} color={P.yellowText} />
+          </View>
+          <Text style={styles.waitTitle}>Waiting for Brand Review</Text>
+          <Text style={styles.waitText}>Your content has been submitted. The brand will review and approve or request changes.</Text>
         </View>
       )}
 
       {/* Live — Stats Dashboard */}
       {deliverable.status === 'live' && (
         <View style={styles.card}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <View style={styles.cardTitleRow}>
             <Text style={styles.cardTitle}>Live Performance</Text>
             <TouchableOpacity
               style={styles.refreshBtn}
@@ -514,8 +547,13 @@ export default function DeliverableScreen({ navigation, route }) {
               disabled={refreshingStats}
             >
               {refreshingStats
-                ? <ActivityIndicator size="small" color={colors.navy} />
-                : <Text style={styles.refreshBtnText}>Refresh Stats</Text>
+                ? <ActivityIndicator size="small" color={P.ink} />
+                : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <Icon name="refresh" size={11} color={P.ink} />
+                    <Text style={styles.refreshBtnText}>REFRESH</Text>
+                  </View>
+                )
               }
             </TouchableOpacity>
           </View>
@@ -525,44 +563,44 @@ export default function DeliverableScreen({ navigation, route }) {
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{_fmtNum(stats.likes)}</Text>
-                  <Text style={styles.statLabel}>Likes</Text>
+                  <Text style={styles.statLabel}>LIKES</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{_fmtNum(stats.comments)}</Text>
-                  <Text style={styles.statLabel}>Comments</Text>
+                  <Text style={styles.statLabel}>COMMENTS</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{_fmtNum(stats.saves)}</Text>
-                  <Text style={styles.statLabel}>Saves</Text>
+                  <Text style={styles.statLabel}>SAVES</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{_fmtNum(stats.shares)}</Text>
-                  <Text style={styles.statLabel}>Shares</Text>
+                  <Text style={styles.statLabel}>SHARES</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{_fmtNum(stats.reach)}</Text>
-                  <Text style={styles.statLabel}>Reach</Text>
+                  <Text style={styles.statLabel}>REACH</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{_fmtNum(stats.impressions)}</Text>
-                  <Text style={styles.statLabel}>Impressions</Text>
+                  <Text style={styles.statLabel}>IMPRESSIONS</Text>
                 </View>
               </View>
               {stats.engagement_rate != null && (
                 <View style={styles.erBox}>
                   <Text style={styles.erValue}>{parseFloat(stats.engagement_rate).toFixed(2)}%</Text>
-                  <Text style={styles.erLabel}>Engagement Rate</Text>
+                  <Text style={styles.erLabel}>ENGAGEMENT RATE</Text>
                 </View>
               )}
               {stats.scraped_at && (
-                <Text style={[styles.hint, { marginTop: 8, marginBottom: 0 }]}>
+                <Text style={[styles.hint, { marginTop: 10, marginBottom: 0 }]}>
                   Last updated: {new Date(stats.scraped_at).toLocaleString('en-IN')}
                 </Text>
               )}
             </View>
           ) : (
             <View style={{ alignItems: 'center', paddingVertical: 16 }}>
-              <Text style={styles.hint}>No stats yet. Tap "Refresh Stats" to fetch live data from Instagram.</Text>
+              <Text style={styles.hint}>No stats yet. Tap "Refresh" to fetch live data from Instagram.</Text>
             </View>
           )}
         </View>
@@ -581,96 +619,181 @@ function _fmtNum(n) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  errorText: { fontSize: 14, color: colors.t2 },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  title: { fontSize: 18, fontWeight: '800', color: colors.white, flex: 1 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  statusText: { fontSize: 10, fontWeight: '700' },
-  sub: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+  errorText: { fontSize: 14, color: P.muted, fontFamily: fonts.sansRegular },
 
-  card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 10 },
-
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
-  rowValue: { fontSize: 12, color: colors.t1, fontWeight: '700', textTransform: 'capitalize' },
-
-  requirementsBox: { backgroundColor: colors.surface2, borderRadius: 10, padding: 12, marginTop: 10 },
-  requirementsLabel: { fontSize: 10, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  requirementsText: { fontSize: 12, color: colors.t2, lineHeight: 18 },
-
-  link: { fontSize: 12, color: colors.navy, textDecorationLine: 'underline' },
-
-  revisionCard: { borderColor: colors.red, borderWidth: 1.5 },
-  revisionTitle: { fontSize: 13, fontWeight: '700', color: colors.red, marginBottom: 6 },
-  revisionText: { fontSize: 12, color: colors.t2, lineHeight: 18 },
-
-  hint: { fontSize: 11, color: colors.t3, marginBottom: 10, lineHeight: 16, textAlign: 'center' },
-
-  // Picker buttons
-  pickerButtons: { gap: 10, marginBottom: 12 },
-  pickerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: colors.surface2, borderRadius: 12, padding: 16,
-    borderWidth: 2, borderColor: colors.border2, borderStyle: 'dashed',
+  // Header
+  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerAccent: {
+    position: 'absolute', left: 18, bottom: 8, width: 30, height: 3,
+    backgroundColor: P.yellow, borderRadius: 2,
   },
-  pickerBtnIcon: { fontSize: 24 },
-  pickerBtnText: { fontSize: 14, fontWeight: '600', color: colors.t1 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 14 },
+  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  title: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  sub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+
+  card: {
+    margin: 14, marginBottom: 0, backgroundColor: P.white, borderRadius: 14,
+    padding: 14, borderWidth: 1, borderColor: P.border,
+  },
+  cardTitle: {
+    fontSize: 12.5, fontWeight: '800', color: P.ink,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 11,
+    fontFamily: fonts.displayBlack,
+  },
+  cardTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+
+  row: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: P.borderSoft,
+  },
+  rowLabel: { fontSize: 11.5, color: P.muted, fontWeight: '600', fontFamily: fonts.sansRegular },
+  rowValue: { fontSize: 11.5, color: P.ink, fontWeight: '800', letterSpacing: 0.2, fontFamily: fonts.monoBold },
+
+  requirementsBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginTop: 11 },
+  requirementsLabel: {
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
+    fontFamily: fonts.monoBold,
+  },
+  requirementsText: { fontSize: 11.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
+
+  // Revision card (PROMINENT — dangerPale per locked design call #2)
+  revisionCard: {
+    margin: 14, marginBottom: 0,
+    backgroundColor: P.dangerPale, borderRadius: 14, padding: 14,
+    borderWidth: 1.5, borderColor: P.danger,
+  },
+  revisionHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  revisionIcoWrap: {
+    width: 26, height: 26, borderRadius: 13, backgroundColor: P.dangerText,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  revisionIco: { color: P.white, fontSize: 15, fontWeight: '900', fontFamily: fonts.displayBlack },
+  revisionTitle: {
+    fontSize: 13.5, fontWeight: '900', color: P.dangerText,
+    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack,
+  },
+  revisionBody: {
+    backgroundColor: P.white, borderRadius: 11, padding: 12,
+    borderWidth: 1, borderColor: '#F8D0C2',
+  },
+  revisionText: { fontSize: 12.5, color: P.ink, lineHeight: 18, fontFamily: fonts.sansRegular },
+
+  // URL box
+  urlBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11 },
+  urlLabel: {
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
+    fontFamily: fonts.monoBold,
+  },
+  urlLink: { fontSize: 11.5, color: P.info, textDecorationLine: 'underline', fontWeight: '700', fontFamily: fonts.monoMedium },
+
+  hint: { fontSize: 11, color: P.muted, marginBottom: 11, lineHeight: 16, fontFamily: fonts.sansRegular },
+
+  // Picker tiles
+  pickerButtons: { gap: 9, marginBottom: 12 },
+  pickerTile: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: P.white, borderRadius: 12, padding: 14,
+    borderWidth: 1.5, borderColor: P.ink, borderStyle: 'dashed',
+  },
+  pickerIcon: {
+    width: 36, height: 36, borderRadius: 9, backgroundColor: P.yellowPale,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  pickerLbl: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  pickerSub: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
   // Selected media preview
   previewContainer: { marginBottom: 12 },
-  mediaPreview: { width: '100%', height: 200, borderRadius: 12, backgroundColor: colors.surface2, marginBottom: 8 },
+  mediaPreview: { width: '100%', height: 200, borderRadius: 12, backgroundColor: P.bg2, marginBottom: 8 },
   videoSelected: {
-    backgroundColor: colors.surface2, borderRadius: 12, padding: 20,
+    backgroundColor: P.bg2, borderRadius: 11, padding: 18,
     alignItems: 'center', marginBottom: 8,
+    borderWidth: 1, borderColor: P.border,
   },
-  videoSelectedIcon: { fontSize: 40, marginBottom: 8 },
-  videoSelectedText: { fontSize: 12, color: colors.t2, textAlign: 'center' },
-  videoSelectedDuration: { fontSize: 11, color: colors.t3, marginTop: 4 },
+  previewIconTile: {
+    width: 48, height: 48, borderRadius: 11, backgroundColor: P.ink,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 9,
+  },
+  videoSelectedText: { fontSize: 11, color: P.ink, fontWeight: '800', textAlign: 'center', fontFamily: fonts.monoBold },
+  videoSelectedDuration: { fontSize: 9.5, color: P.muted2, marginTop: 3, fontWeight: '700', fontFamily: fonts.monoMedium },
   removeBtn: { alignSelf: 'center', padding: 8 },
-  removeBtnText: { fontSize: 12, color: colors.red, fontWeight: '600' },
+  removeBtnText: {
+    fontSize: 10.5, color: P.dangerText, fontWeight: '800',
+    textTransform: 'uppercase', letterSpacing: 0.3,
+    borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: P.dangerText,
+    fontFamily: fonts.monoBold,
+  },
 
   // Video preview for already-submitted content
   videoPreviewBox: {
-    backgroundColor: '#000', borderRadius: 12, padding: 30,
+    backgroundColor: P.ink, borderRadius: 12, padding: 30,
     alignItems: 'center', justifyContent: 'center',
   },
-  videoPlayIcon: { fontSize: 36, color: '#fff', marginBottom: 6 },
-  videoPlayText: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  videoPlayText: { fontSize: 10, color: P.yellow, fontWeight: '800', marginTop: 8, letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
   // Progress bar
-  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  progressBar: { flex: 1, height: 8, backgroundColor: colors.surface2, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: colors.navy, borderRadius: 4 },
-  progressText: { fontSize: 12, fontWeight: '700', color: colors.navy, width: 40, textAlign: 'right' },
+  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 11 },
+  progressBar: { flex: 1, height: 8, backgroundColor: P.bg2, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: P.ink, borderRadius: 4 },
+  progressText: { fontSize: 11.5, fontWeight: '900', color: P.ink, width: 44, textAlign: 'right', fontFamily: fonts.monoBold },
 
   // Buttons
-  uploadBtn: { backgroundColor: colors.navy, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
-  uploadBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
-  submitBtn: { backgroundColor: colors.t2, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  liveBtn: { backgroundColor: colors.teal, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  uploadBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  uploadBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  submitBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
+  submitBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  liveBtn: { backgroundColor: P.success, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
+  liveBtnText: { fontSize: 13, fontWeight: '900', color: P.white, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 
   // Divider
-  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 16 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: { paddingHorizontal: 12, fontSize: 11, fontWeight: '700', color: colors.t3 },
+  divider: { flexDirection: 'row', alignItems: 'center', marginVertical: 14 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: P.border },
+  dividerText: {
+    paddingHorizontal: 12, fontSize: 10, fontWeight: '800', color: P.muted2,
+    letterSpacing: 0.3, fontFamily: fonts.monoBold,
+  },
 
-  urlInput: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 13, color: colors.t1, marginBottom: 12 },
+  urlInput: {
+    borderWidth: 1.5, borderColor: P.ink, borderRadius: 10,
+    padding: 11, fontSize: 11.5, color: P.ink, marginBottom: 11,
+    fontFamily: fonts.monoMedium,
+  },
+
+  // Wait card (submitted state) — yellowPale tile per design call #4 (replaces ⏳ emoji)
+  waitCard: {
+    margin: 14, marginBottom: 0, backgroundColor: P.white,
+    borderRadius: 14, padding: 22, alignItems: 'center',
+    borderWidth: 1, borderColor: P.border,
+  },
+  waitTile: {
+    width: 54, height: 54, borderRadius: 13, backgroundColor: P.yellowPale,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 11,
+  },
+  waitTitle: { fontSize: 14.5, fontWeight: '900', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBlack },
+  waitText: { fontSize: 11.5, color: P.muted, lineHeight: 17, textAlign: 'center', fontFamily: fonts.sansRegular },
 
   // Stats
-  refreshBtn: { backgroundColor: colors.surface2, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 },
-  refreshBtnText: { fontSize: 11, fontWeight: '700', color: colors.navy },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statBox: { width: '31%', backgroundColor: colors.surface2, borderRadius: 10, padding: 12, alignItems: 'center' },
-  statValue: { fontSize: 18, fontWeight: '800', color: colors.t1 },
-  statLabel: { fontSize: 10, fontWeight: '600', color: colors.t3, marginTop: 2, textTransform: 'uppercase' },
-  erBox: { backgroundColor: colors.navy + '11', borderRadius: 10, padding: 12, marginTop: 10, alignItems: 'center' },
-  erValue: { fontSize: 22, fontWeight: '800', color: colors.navy },
-  erLabel: { fontSize: 10, fontWeight: '600', color: colors.t3, marginTop: 2, textTransform: 'uppercase' },
+  refreshBtn: { backgroundColor: P.bg2, borderRadius: 8, paddingHorizontal: 11, paddingVertical: 6 },
+  refreshBtnText: { fontSize: 10, fontWeight: '800', color: P.ink, letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  statBox: { width: '31.5%', backgroundColor: P.bg2, borderRadius: 10, padding: 11, alignItems: 'center' },
+  statValue: { fontSize: 16, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  statLabel: {
+    fontSize: 8.5, fontWeight: '800', color: P.muted2,
+    marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3,
+    fontFamily: fonts.monoBold,
+  },
+  erBox: {
+    backgroundColor: P.yellowPale, borderRadius: 11, padding: 11,
+    marginTop: 10, alignItems: 'center',
+    borderWidth: 1, borderColor: '#F0DA88',
+  },
+  erValue: { fontSize: 22, fontWeight: '900', color: P.yellowText, fontFamily: fonts.monoBold },
+  erLabel: { fontSize: 9, fontWeight: '800', color: P.yellowText, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold },
 });

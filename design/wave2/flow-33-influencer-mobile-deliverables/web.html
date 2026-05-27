@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 33 · influencer-mobile DeliverableList + Deliverable + DeliverableDetail — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:14px;height:14px}
+.ico-md{width:18px;height:18px}
+.ico-lg{width:24px;height:24px}
+.ico-xl{width:30px;height:30px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ─── Ink header ───── */
+.h-ink{background:var(--ink);color:var(--white);padding:50px 18px 22px;flex-shrink:0;position:relative}
+.h-ink::after{content:'';position:absolute;left:18px;bottom:8px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.h-back{display:flex;align-items:center;gap:5px;margin-bottom:14px;color:rgba(255,255,255,.65)}
+.h-back .ico{color:rgba(255,255,255,.65);width:14px;height:14px}
+.h-back-txt{font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.3px}
+.h-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.h-ttl{font-family:'Outfit';font-size:20px;font-weight:900;color:var(--white);letter-spacing:-0.3px}
+.h-sub{font-family:'JetBrains Mono';font-size:11px;color:rgba(255,255,255,.6);margin-top:3px;font-weight:700}
+.pill-sm{padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;background:var(--yellow);color:var(--ink);align-self:flex-start;margin-top:2px}
+.pill-sm.success{background:var(--success-pale);color:var(--success-text)}
+.pill-sm.warn{background:var(--yellow-pale);color:var(--yellow-text)}
+.pill-sm.danger{background:var(--danger-pale);color:var(--danger-text)}
+.pill-sm.muted{background:rgba(255,255,255,.15);color:var(--white)}
+.pill-sm.info{background:var(--info-pale);color:var(--info)}
+
+/* ─── Body ───── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:14px 0 32px}
+
+/* ─── Card ───── */
+.card{margin:0 14px 12px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:14px}
+.card-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px}
+.card-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+
+/* ─── Progress (DeliverableList) ───── */
+.progress-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin:0 14px 12px}
+.progress-bar{height:7px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;background:var(--yellow);border-radius:4px}
+.progress-text{font-family:'JetBrains Mono';font-size:11px;color:var(--muted);margin-bottom:11px;font-weight:700}
+.progress-text b{color:var(--ink);font-weight:900}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:4px 10px;border-radius:999px;font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.chip.warn{background:var(--yellow-pale);color:var(--yellow-text)}
+.chip.info{background:var(--info-pale);color:var(--info)}
+.chip.success{background:var(--success-pale);color:var(--success-text)}
+
+/* ─── Deliverable row card (List) ───── */
+.del-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px;margin:0 14px 10px;position:relative}
+.del-card.action{border-color:var(--yellow);border-width:1.5px}
+.del-card.overdue{border-color:var(--danger);border-width:1.5px}
+.del-head{display:flex;align-items:center;gap:11px}
+.del-icon-wrap{width:42px;height:42px;border-radius:11px;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.del-info{flex:1;min-width:0}
+.del-type{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.del-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:3px;font-weight:700}
+.del-meta.overdue{color:var(--danger-text);font-weight:900}
+.del-pill-wrap{align-self:flex-start;margin-top:2px}
+.del-pill{display:inline-block;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.del-pill.pending{background:var(--bg2);color:var(--muted-2)}
+.del-pill.submitted{background:var(--info-pale);color:var(--info)}
+.del-pill.review{background:var(--yellow-pale);color:var(--yellow-text)}
+.del-pill.revision{background:var(--danger-pale);color:var(--danger-text)}
+.del-pill.approved{background:var(--success-pale);color:var(--success-text)}
+.del-pill.live{background:var(--success-pale);color:var(--success-text)}
+
+.row-cta{margin-top:9px;border-radius:9px;padding:9px 12px;font-family:'JetBrains Mono';font-size:11px;font-weight:800;text-align:center;letter-spacing:.2px}
+.row-cta.warn{background:var(--yellow-pale);color:var(--yellow-text)}
+.row-cta.danger{background:var(--danger-pale);color:var(--danger-text)}
+.row-cta.success{background:var(--success-pale);color:var(--success-text)}
+.row-cta.info{background:var(--info-pale);color:var(--info)}
+
+.chev{position:absolute;right:14px;top:18px;color:var(--muted-3);width:14px;height:14px}
+
+/* ─── Picker tiles (Deliverable upload) ───── */
+.picker-tile{background:var(--white);border:1.5px dashed var(--ink);border-radius:12px;padding:18px;display:flex;align-items:center;gap:12px;margin-bottom:9px}
+.picker-icon{width:36px;height:36px;border-radius:9px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.picker-mid{flex:1}
+.picker-lbl{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.1px}
+.picker-sub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px;font-weight:700}
+
+.divider-or{display:flex;align-items:center;margin:14px 0 12px}
+.divider-line{flex:1;height:1px;background:var(--border)}
+.divider-or-text{padding:0 12px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);letter-spacing:.3px}
+
+.url-input{border:1.5px solid var(--ink);border-radius:10px;padding:11px;font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted-3);background:var(--white);margin-bottom:10px}
+.notes-input{border:1.5px solid var(--muted-4);border-radius:10px;padding:11px;font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted-3);background:var(--white);min-height:54px;margin-bottom:10px}
+
+.btn-primary-ink{background:var(--ink);color:var(--yellow);border-radius:11px;padding:13px;text-align:center;font-family:'Outfit';font-size:13px;font-weight:900;letter-spacing:.2px;text-transform:uppercase}
+.btn-primary-success{background:var(--success);color:var(--white);border-radius:11px;padding:13px;text-align:center;font-family:'Outfit';font-size:13px;font-weight:900;letter-spacing:.2px;text-transform:uppercase}
+.btn-ghost{background:var(--white);color:var(--ink);border:1.5px solid var(--ink);border-radius:11px;padding:11px;text-align:center;font-family:'Outfit';font-size:12.5px;font-weight:800;text-transform:uppercase}
+
+.hint{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-bottom:11px;line-height:1.5}
+
+/* ─── Selected media preview ───── */
+.preview-box{background:var(--bg2);border-radius:11px;padding:18px;display:flex;flex-direction:column;align-items:center;margin-bottom:10px;border:1px solid var(--border)}
+.preview-icon{width:48px;height:48px;border-radius:11px;background:var(--ink);color:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:9px}
+.preview-name{font-family:'JetBrains Mono';font-size:11px;color:var(--ink);font-weight:800;text-align:center}
+.preview-meta{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:3px;font-weight:700}
+.preview-remove{margin-top:9px;font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--danger-text);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px dashed var(--danger-text)}
+
+/* ─── Progress (upload) ───── */
+.up-progress{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.up-bar{flex:1;height:8px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.up-fill{height:100%;background:var(--ink);border-radius:4px}
+.up-pct{font-family:'JetBrains Mono';font-size:11.5px;font-weight:900;color:var(--ink);width:44px;text-align:right}
+
+/* ─── Revision card (Detail) ───── */
+.revision-card{background:var(--danger-pale);border:1.5px solid var(--danger);border-radius:14px;padding:14px;margin:0 14px 12px}
+.revision-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.revision-ico{width:26px;height:26px;border-radius:13px;background:var(--danger-text);color:var(--white);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:15px;font-weight:900}
+.revision-ttl{font-family:'Outfit';font-size:13.5px;font-weight:900;color:var(--danger-text);text-transform:uppercase;letter-spacing:.3px}
+.revision-body{background:var(--white);border-radius:11px;padding:12px;font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--ink);line-height:1.5;border:1px solid #F8D0C2}
+.revision-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--danger-text);margin-top:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── Status Timeline (Detail) ───── */
+.tl{padding-left:4px}
+.tl-step{display:flex;min-height:46px}
+.tl-col{width:26px;align-items:center;display:flex;flex-direction:column}
+.tl-dot{width:20px;height:20px;border-radius:10px;background:var(--bg2);border:2px solid var(--border);align-items:center;justify-content:center;display:flex;color:transparent;font-family:'Outfit';font-size:10px;font-weight:900}
+.tl-dot.act{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.tl-dot.cur{width:22px;height:22px;border-radius:11px;background:var(--yellow);border:3px solid var(--ink);color:var(--ink)}
+.tl-dot.rev{background:var(--danger);border-color:var(--danger);color:var(--white)}
+.tl-line{flex:1;width:2px;background:var(--border);margin:2px 0}
+.tl-line.act{background:var(--yellow)}
+.tl-content{flex:1;padding-left:11px;padding-bottom:12px}
+.tl-lbl{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--muted-2)}
+.tl-lbl.act{color:var(--ink);font-weight:800}
+.tl-lbl.cur{color:var(--ink);font-weight:900}
+.tl-lbl.rev{color:var(--danger-text);font-weight:900}
+.tl-hint{font-family:'JetBrains Mono';font-size:9.5px;color:var(--danger-text);margin-top:2px;font-weight:800}
+
+/* ─── Details rows ───── */
+.det-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border-soft)}
+.det-row:last-child{border-bottom:none}
+.det-lbl{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);font-weight:600}
+.det-val{font-family:'JetBrains Mono';font-size:11.5px;color:var(--ink);font-weight:800}
+.det-val.danger{color:var(--danger-text);font-weight:900}
+
+.brief-box{background:var(--bg2);border-radius:10px;padding:11px;margin-top:11px}
+.brief-lbl{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-bottom:4px}
+.brief-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink);line-height:1.5}
+
+/* ─── URL box ───── */
+.url-box{background:var(--bg2);border-radius:10px;padding:11px}
+.url-lbl{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-bottom:4px}
+.url-link{font-family:'JetBrains Mono';font-size:11.5px;color:var(--info);text-decoration:underline;word-break:break-all;font-weight:700}
+
+/* ─── Stats grid (Live) ───── */
+.stats-grid{display:flex;flex-wrap:wrap;gap:6px}
+.stat-box-sm{width:calc(33.3% - 4px);background:var(--bg2);border-radius:10px;padding:11px 8px;text-align:center}
+.stat-num-sm{font-family:'JetBrains Mono';font-size:16px;font-weight:900;color:var(--ink)}
+.stat-lbl-sm{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;font-weight:800;margin-top:3px}
+.er-box{background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:11px;padding:11px;margin-top:10px;text-align:center}
+.er-val{font-family:'JetBrains Mono';font-size:22px;font-weight:900;color:var(--yellow-text)}
+.er-lbl{font-family:'JetBrains Mono';font-size:9px;color:var(--yellow-text);margin-top:2px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+
+.refresh-btn{background:var(--bg2);border-radius:8px;padding:6px 11px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── Live celebration ───── */
+.live-cel{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:22px;margin:0 14px 12px;text-align:center}
+.cel-tile{width:60px;height:60px;border-radius:14px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.cel-ttl{font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink);margin-bottom:7px;letter-spacing:-0.2px}
+.cel-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.5;max-width:260px;margin:0 auto}
+.cel-date{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── Wait card (submitted state) ───── */
+.wait-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:22px;margin:0 14px 12px;text-align:center}
+.wait-tile{width:54px;height:54px;border-radius:13px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;margin:0 auto 11px}
+.wait-ttl{font-family:'Outfit';font-size:14.5px;font-weight:900;color:var(--ink);margin-bottom:6px}
+.wait-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.5}
+
+/* ─── Side panel ───── */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+    <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L15 12 L9 18"/></symbol>
+    <symbol id="ic-check-bold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 L10 17 L19 8"/></symbol>
+    <symbol id="ic-image-multi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3 H21 V17"/><circle cx="8" cy="11" r="1.5"/><path d="M14 16 L10 12 L6 16"/></symbol>
+    <symbol id="ic-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10 L22 7 V17 L16 14 Z"/></symbol>
+    <symbol id="ic-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16 V4"/><path d="M7 9 L12 4 L17 9"/><path d="M20 16 V20 H4 V16"/></symbol>
+    <symbol id="ic-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/></symbol>
+    <symbol id="ic-star" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0.5" stroke-linejoin="round"><polygon points="12,3 14.8,9.4 21.7,10.3 16.5,15 18,21.7 12,18.2 6,21.7 7.5,15 2.3,10.3 9.2,9.4"/></symbol>
+    <symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 a9 9 0 0 1 15.5-6.3"/><path d="M18.5 3 V6 H15.5"/><path d="M21 12 a9 9 0 0 1-15.5 6.3"/><path d="M5.5 21 V18 H8.5"/></symbol>
+    <symbol id="ic-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9 V13"/><path d="M12 17 V17.01"/><path d="M3.5 19 L12 4 L20.5 19 Z"/></symbol>
+    <symbol id="ic-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6 L18 18"/><path d="M18 6 L6 18"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 33 · influencer-mobile DeliverableList + Deliverable + DeliverableDetail — wave2 mockup</h1>
+  <div class="sub">
+    <b>6th flow of mobile-influencer bucket (6/23).</b> 3 screens · 1,803 LOC · MEDIUM risk (image-picker SDK already shipping, no new boundary) · <b>ZERO backend change</b> · <b>ZERO StatusPill additions</b>. <b>~35 render branches</b> preserved verbatim including 5-step Status Timeline + 8-API submission flow + R2 upload progress + revision feedback + live engagement stats grid. <b>Visual:</b> ink hero + StatusPill canonical for status badges + yellow progress fills + yellow-active timeline w/ ink-bordered current step + danger revision card with white feedback body + dashed ink-bordered picker tiles with yellowPale MCI icons + ink/yellow Outfit-Black UPPERCASE primary CTAs + yellow-tile Live celebration (no 🎉) + yellowPale ER box + bg2 stat grid.
+  </div>
+</div>
+
+<!-- Row 1: 3 phone frames -->
+<div class="row">
+
+  <!-- PHONE 1: DeliverableList -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-row">
+          <div>
+            <div class="h-ttl">Deliverables</div>
+            <div class="h-sub">Sparkle Cosmetics — Diwali Glow-Up</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Progress card -->
+        <div class="progress-card">
+          <div class="card-ttl">Progress Overview</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:25%"></div></div>
+          <div class="progress-text"><b>1</b> of <b>4</b> deliverables completed</div>
+          <div class="chip-row">
+            <span class="chip warn">2 needs action</span>
+            <span class="chip info">1 in review</span>
+            <span class="chip success">1 live</span>
+          </div>
+        </div>
+
+        <!-- Pending (needs action) -->
+        <div class="del-card action">
+          <div class="del-head">
+            <div class="del-icon-wrap">🎬</div>
+            <div class="del-info">
+              <div class="del-type">Instagram Reel</div>
+              <div class="del-meta">Due: 10 Nov 2026</div>
+            </div>
+            <div class="del-pill-wrap"><span class="del-pill pending">PENDING</span></div>
+          </div>
+          <div class="row-cta warn">UPLOAD INSTAGRAM REEL →</div>
+          <span class="chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <!-- Revision needed (overdue + danger) -->
+        <div class="del-card overdue">
+          <div class="del-head">
+            <div class="del-icon-wrap">📱</div>
+            <div class="del-info">
+              <div class="del-type">Instagram Story</div>
+              <div class="del-meta overdue">OVERDUE — 5 Nov 2026</div>
+            </div>
+            <div class="del-pill-wrap"><span class="del-pill revision">REVISION</span></div>
+          </div>
+          <div class="row-cta danger">REVISION NEEDED — TAP TO RESUBMIT</div>
+          <span class="chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <!-- Submitted (in review) -->
+        <div class="del-card">
+          <div class="del-head">
+            <div class="del-icon-wrap">📸</div>
+            <div class="del-info">
+              <div class="del-type">Instagram Post</div>
+              <div class="del-meta">Submitted: 8 Nov 2026</div>
+            </div>
+            <div class="del-pill-wrap"><span class="del-pill submitted">SUBMITTED</span></div>
+          </div>
+          <div class="row-cta info">UNDER BRAND REVIEW — WAITING</div>
+          <span class="chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <!-- Live -->
+        <div class="del-card">
+          <div class="del-head">
+            <div class="del-icon-wrap">▶️</div>
+            <div class="del-info">
+              <div class="del-type">YouTube Short</div>
+              <div class="del-meta">Live: 12 Nov 2026</div>
+            </div>
+            <div class="del-pill-wrap"><span class="del-pill live">LIVE</span></div>
+          </div>
+          <div class="row-cta success">LIVE AND CONFIRMED</div>
+          <span class="chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · DeliverableList</b><br/>Ink hero w/ yellow rule + ink-mono brand·campaign sub · progress card with yellow-fill bar + 3 chip variants (warn/info/success) · per-deliverable card with category emoji tile + Outfit-Bold type + mono meta + canonical-map status pill · 4 row-CTA tints (warn/danger/info/success) · yellow border on action-needed cards · danger border on overdue</div>
+  </div>
+
+  <!-- PHONE 2: DeliverableScreen — pending/upload state -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-row">
+          <div style="flex:1">
+            <div class="h-ttl">Instagram Reel</div>
+            <div class="h-sub">Deadline: 10 Nov 2026</div>
+          </div>
+          <div class="pill-sm warn">PENDING</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Info card -->
+        <div class="card">
+          <div class="det-row">
+            <span class="det-lbl">Type</span>
+            <span class="det-val">REEL</span>
+          </div>
+          <div class="det-row">
+            <span class="det-lbl">Revisions</span>
+            <span class="det-val">0 / 2</span>
+          </div>
+          <div class="brief-box">
+            <div class="brief-lbl">Content Brief</div>
+            <div class="brief-text">Show the Diwali Glow-Up palette in natural daylight. Tag @sparkle_cosmetics. Use #DiwaliGlow.</div>
+          </div>
+        </div>
+
+        <!-- Upload section -->
+        <div class="card">
+          <div class="card-ttl">Upload Content</div>
+
+          <!-- Picker tiles -->
+          <div class="picker-tile">
+            <div class="picker-icon"><span class="ico ico-md"><svg><use href="#ic-image-multi"/></svg></span></div>
+            <div class="picker-mid">
+              <div class="picker-lbl">Choose from Gallery</div>
+              <div class="picker-sub">Photos &amp; videos · system picker</div>
+            </div>
+          </div>
+
+          <div class="picker-tile">
+            <div class="picker-icon"><span class="ico ico-md"><svg><use href="#ic-video"/></svg></span></div>
+            <div class="picker-mid">
+              <div class="picker-lbl">Record Video</div>
+              <div class="picker-sub">Camera · up to 5 min</div>
+            </div>
+          </div>
+
+          <div class="divider-or">
+            <div class="divider-line"></div>
+            <div class="divider-or-text">OR PASTE URL</div>
+            <div class="divider-line"></div>
+          </div>
+
+          <div class="url-input">https://drive.google.com/…</div>
+          <div class="btn-primary-ink">SUBMIT URL FOR REVIEW</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · DeliverableScreen (pending)</b><br/>Ink hero w/ inline yellow PENDING pill on the right · info card with mono detail rows + bg2 Content Brief box · 2 dashed ink-bordered picker tiles with yellowPale MCI camera/library icons + Outfit-Bold + mono sub · "OR PASTE URL" mono divider · ink-bordered URL input · ink/yellow Outfit-Black SUBMIT URL CTA. Picker emojis replaced with proper MCI vector icons.</div>
+  </div>
+
+  <!-- PHONE 3: DeliverableDetailScreen — revision_requested state with timeline -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-row">
+          <div style="flex:1">
+            <div class="h-ttl">Instagram Story</div>
+            <div class="h-sub">Sparkle Cosmetics — Diwali Glow-Up</div>
+          </div>
+          <div class="pill-sm danger">REVISION</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Status Timeline -->
+        <div class="card">
+          <div class="card-ttl">Status Timeline</div>
+          <div class="tl">
+            <div class="tl-step">
+              <div class="tl-col">
+                <div class="tl-dot act"><svg><use href="#ic-check-bold"/></svg></div>
+                <div class="tl-line act"></div>
+              </div>
+              <div class="tl-content">
+                <div class="tl-lbl act">Pending</div>
+              </div>
+            </div>
+            <div class="tl-step">
+              <div class="tl-col">
+                <div class="tl-line act"></div>
+                <div class="tl-dot rev">!</div>
+                <div class="tl-line"></div>
+              </div>
+              <div class="tl-content">
+                <div class="tl-lbl rev">Revision Requested</div>
+                <div class="tl-hint">RESUBMISSION NEEDED</div>
+              </div>
+            </div>
+            <div class="tl-step">
+              <div class="tl-col">
+                <div class="tl-line"></div>
+                <div class="tl-dot">3</div>
+                <div class="tl-line"></div>
+              </div>
+              <div class="tl-content">
+                <div class="tl-lbl">Approved</div>
+              </div>
+            </div>
+            <div class="tl-step">
+              <div class="tl-col">
+                <div class="tl-line"></div>
+                <div class="tl-dot">4</div>
+              </div>
+              <div class="tl-content">
+                <div class="tl-lbl">Live</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revision feedback (PROMINENT) -->
+        <div class="revision-card">
+          <div class="revision-head">
+            <div class="revision-ico">!</div>
+            <div class="revision-ttl">Revision Requested</div>
+          </div>
+          <div class="revision-body">Hi! Could you reshoot in daylight? The current footage is too dark and the product label isn't readable. Also please tag @sparkle_cosmetics.</div>
+          <div class="revision-meta">REVISION 1 OF 2</div>
+        </div>
+
+        <!-- Action: resubmit -->
+        <div class="card">
+          <div class="card-ttl">Submit Revised Content</div>
+          <div class="hint">Address the brand feedback above, then paste the URL of your revised content.</div>
+          <div class="url-input">https://drive.google.com/…</div>
+          <div class="notes-input">Add a note for the brand (optional)…</div>
+          <div class="btn-primary-ink">RESUBMIT FOR REVIEW</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · DeliverableDetail (revision)</b><br/>Ink hero w/ inline danger REVISION pill · status timeline w/ yellow-active dots + ink-bordered current step (mockup shows revision-variant with danger fill + "!" sigil) + numbered placeholders ahead · prominent dangerPale revision card with white feedback body box + REVISION COUNT meta line · resubmit form below with ink-bordered URL input + muted-bordered notes input + ink/yellow RESUBMIT FOR REVIEW CTA</div>
+  </div>
+
+</div>
+
+<!-- Row 2: 2 more frames -->
+<div class="row">
+
+  <!-- PHONE 4: DeliverableScreen — selected media + uploading -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-row">
+          <div style="flex:1">
+            <div class="h-ttl">Instagram Reel</div>
+            <div class="h-sub">Uploading…</div>
+          </div>
+          <div class="pill-sm warn">PENDING</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="card">
+          <div class="card-ttl">Upload Content</div>
+
+          <!-- Selected media preview -->
+          <div class="preview-box">
+            <div class="preview-icon"><span class="ico ico-lg"><svg><use href="#ic-video"/></svg></span></div>
+            <div class="preview-name">diwali_reel_v2.mp4</div>
+            <div class="preview-meta">38s · 24.6 MB · 1080×1920</div>
+            <div class="preview-remove">REMOVE</div>
+          </div>
+
+          <!-- Upload progress -->
+          <div class="up-progress">
+            <div class="up-bar"><div class="up-fill" style="width:62%"></div></div>
+            <div class="up-pct">62%</div>
+          </div>
+
+          <div class="btn-primary-ink" style="opacity:.5">UPLOADING…</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 4 · DeliverableScreen (uploading)</b><br/>bg2 preview box w/ ink-tile MCI video icon + mono filename + mono meta size/duration + dangerText REMOVE link · ink-fill upload progress bar + mono percentage badge · disabled UPLOADING CTA (0.5 opacity ink). Selected → uploading → submit-for-review flow preserved verbatim.</div>
+  </div>
+
+  <!-- PHONE 5: DeliverableDetailScreen — LIVE state with stats -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-row">
+          <div style="flex:1">
+            <div class="h-ttl">YouTube Short</div>
+            <div class="h-sub">Sparkle Cosmetics — Diwali Glow-Up</div>
+          </div>
+          <div class="pill-sm success">LIVE</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Live celebration -->
+        <div class="live-cel">
+          <div class="cel-tile"><span class="ico ico-xl"><svg><use href="#ic-star"/></svg></span></div>
+          <div class="cel-ttl">Content is Live!</div>
+          <div class="cel-text">Tranche 2 has been released to your wallet. Tranche 3 auto-releases 30 days after the live confirmation date.</div>
+          <div class="cel-date">CONFIRMED LIVE ON 12 NOV 2026</div>
+        </div>
+
+        <!-- Live URL -->
+        <div class="card">
+          <div class="card-ttl">Live Post</div>
+          <div class="url-box">
+            <div class="url-lbl">LIVE URL</div>
+            <div class="url-link">https://www.instagram.com/p/CxYz123/</div>
+          </div>
+        </div>
+
+        <!-- Live stats -->
+        <div class="card">
+          <div class="card-row">
+            <div class="card-ttl" style="margin-bottom:0">Live Performance</div>
+            <div class="refresh-btn"><span class="ico ico-sm" style="color:var(--ink)"><svg><use href="#ic-refresh"/></svg></span> REFRESH</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-box-sm"><div class="stat-num-sm">12.4K</div><div class="stat-lbl-sm">Likes</div></div>
+            <div class="stat-box-sm"><div class="stat-num-sm">486</div><div class="stat-lbl-sm">Comments</div></div>
+            <div class="stat-box-sm"><div class="stat-num-sm">2.1K</div><div class="stat-lbl-sm">Saves</div></div>
+            <div class="stat-box-sm"><div class="stat-num-sm">854</div><div class="stat-lbl-sm">Shares</div></div>
+            <div class="stat-box-sm"><div class="stat-num-sm">189K</div><div class="stat-lbl-sm">Reach</div></div>
+            <div class="stat-box-sm"><div class="stat-num-sm">241K</div><div class="stat-lbl-sm">Impressions</div></div>
+          </div>
+          <div class="er-box">
+            <div class="er-val">8.45%</div>
+            <div class="er-lbl">ENGAGEMENT RATE</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 5 · DeliverableDetail (LIVE)</b><br/>Ink hero w/ success LIVE pill · live celebration card with yellow-tile ink MCI star + "Content is Live!" Outfit-Black + body copy + mono confirmed-date line · Live URL box w/ info-blue link · stats grid 3×2 with mono numbers + uppercase mono labels · yellowPale engagement-rate box with big mono yellowText % + mono UPPERCASE label · ink-mono REFRESH button on stats card header. <i>"Submit Live URL"</i> approved-state card (FRAME variant) uses success-green primary CTA.</div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Key design calls (5 — needs founder lock)</h3>
+      <ul>
+        <li><b>Progress bar fill:</b> yellow (matches Flow 31 progress dot pattern + Flow 32 ink-bordered yellow highlight)</li>
+        <li><b>Status timeline dot logic:</b> yellow-active for completed + ink-bordered yellow for current step + danger fill + "!" sigil for revision_requested override</li>
+        <li><b>Revision card tone:</b> dangerPale bg + danger border + white feedback body inside (preserves urgency without overwhelming)</li>
+        <li><b>Picker tiles:</b> ink-bordered dashed tiles with yellowPale MCI camera/library icons (replaces 📁📹 emoji per design call #4 pattern from Flow 32)</li>
+        <li><b>Live celebration tile:</b> yellow tile with MCI star (replaces 🎉 per design call #4 pattern); successText title color OR ink? — recommending ink to match Flow 32 celebration</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">8 APIs · zero phantom · zero new</div>
+      <ul>
+        <li><code>getContractWithDeliverables(ciId)</code> (List + Detail)</li>
+        <li><code>getDeliverable(id)</code> (Screen fallback fetch)</li>
+        <li><code>getUploadUrl(id, {filename, content_type})</code> POST (R2 signed)</li>
+        <li><code>getMediaUrl(id)</code> (post-upload preview)</li>
+        <li><code>submitDeliverable(id, {media_key/submitted_url, notes_to_brand?})</code> POST</li>
+        <li><code>submitLive(id, {live_url})</code> POST</li>
+        <li><code>refreshStats(id)</code> POST (Apify scrape trigger)</li>
+        <li><code>uploadFile()</code> direct R2 PUT helper (XHR progress)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>SDK boundary (image-picker — already shipping)</h3>
+      <div class="ph">react-native-image-picker@7.1.2</div>
+      <ul>
+        <li><b>launchImageLibrary</b> · mediaType:'mixed', videoQuality:'high', selectionLimit:1, includeBase64:false</li>
+        <li><b>launchCamera</b> · mediaType:'video', videoQuality:'high', durationLimit:300 (5 min)</li>
+        <li><b>handlePickerResponse</b> · sets selectedMedia {uri, type, fileName, fileSize, width, height, duration}</li>
+        <li><b>3-step upload:</b> getUploadUrl → R2 PUT w/ progress callback → submitDeliverable w/ media_key</li>
+        <li><b>No native rebuild needed</b> — same APK from Flow 28 (NATIVE_RUNTIME=2)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim</h3>
+      <div class="ph">~35 render branches + sub-components + 8-API submission flow</div>
+      <ul>
+        <li>5-step <b>STATUS_TIMELINE</b> in DeliverableDetail (pending → submitted → under_review → approved → live)</li>
+        <li><b>revision_requested override</b> on timeline (maps to submitted step, then danger sigil)</li>
+        <li><b>getTimelineIndex(status)</b> helper</li>
+        <li><b>STATUS_PRIORITY sort</b> in List (action-first ordering)</li>
+        <li><b>isOverdue(deadline)</b> check + red-border treatment</li>
+        <li><b>5 per-row CTA branches</b> in List (pending/revision/approved-pre-live/approved-post-live/live)</li>
+        <li><b>handleMediaUpload</b> 3-step state machine (URL → R2 PUT → submit)</li>
+        <li><b>onprogress XHR callback</b> driving uploadProgress (0..1)</li>
+        <li><b>Two-confirm Alert flow</b> on submitContent + submitLive (Detail screen)</li>
+        <li><b>Fallback URL submission</b> (Google Drive etc.) when no media picked</li>
+        <li><b>media_key vs submitted_url</b> bifurcation (existing-media preview vs URL link)</li>
+        <li><b>Live engagement stats grid</b> (likes/comments/saves/shares/reach/impressions + ER)</li>
+        <li><b>refreshStats</b> Apify trigger w/ in-flight loader</li>
+        <li><b>useFocusEffect refresh</b> in List on tab return</li>
+        <li><b>Stats null-guard</b> with "No stats yet" empty state</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Style refactor scope</h3>
+      <div class="ph">~120 token swaps + 4 hex literals + emoji → MCI conversions</div>
+      <ul>
+        <li><b>Header bg:</b> navyDeep → ink with yellow rule accent</li>
+        <li><b>Status badges:</b> ad-hoc STATUS_CONFIG (6 keys × bg/color) → <code>StatusPill</code> canonical map · already covers all 6 statuses (pending/submitted/under_review/revision_requested/approved/live)</li>
+        <li><b>Progress fill:</b> teal → yellow (matches Flow 31/32 pattern)</li>
+        <li><b>Timeline:</b> status-specific colors → unified yellow-active + ink-bordered current + danger-fill+"!" for revision override</li>
+        <li><b>Revision card:</b> redPale + red border → dangerPale + danger border + white feedback body</li>
+        <li><b>Upload progress bar:</b> navy fill → ink fill</li>
+        <li><b>Upload CTA:</b> navy bg + white → ink bg + yellow text (Outfit-Black UPPERCASE)</li>
+        <li><b>Live CTA:</b> teal bg + white → success bg + white (Outfit-Black UPPERCASE)</li>
+        <li><b>Picker buttons:</b> surface2 dashed border2 + 📁📹 emoji → white dashed ink-border + yellowPale-tiled MCI image-multi/video icons</li>
+        <li><b>Stats grid stat boxes:</b> surface2 → bg2 with mono numbers</li>
+        <li><b>ER box:</b> navy+11 → yellowPale + #F0DA88 border with mono yellowText value</li>
+        <li><b>Live celebration:</b> 🎉 → yellow-tile MCI star + ink Outfit-Black "Content is Live!" + body + mono confirmed-date</li>
+        <li><b>Submit URL input borders:</b> border2 → ink (matches Flow 32 publish-form ink-bordered input)</li>
+        <li><b>Type-icon emoji:</b> KEEP (🎬📸📱▶️⚡ per deliverable.type) — same call as Flow 32 CATEGORY_EMOJI</li>
+        <li><b>Action emoji drops:</b> 🎉 (celebration) · 📁📹✕🎬 (picker/preview) · ⏳ (wait card) · ⚠ ! ◉ ○ ✓ ★ (status icons) — replaced with MCI vectors or Outfit text</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

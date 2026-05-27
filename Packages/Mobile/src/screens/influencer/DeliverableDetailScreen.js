@@ -11,9 +11,10 @@ import {
   Linking,
   RefreshControl,
 } from 'react-native';
-import { colors } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -25,17 +26,16 @@ const DELIVERABLE_LABELS = {
   youtube_short: 'YouTube Short',
 };
 
-const STATUS_CONFIG = {
-  pending:            { label: 'Pending',          color: colors.t3,       bg: colors.surface2, icon: '○' },
-  submitted:          { label: 'Submitted',        color: colors.navy,     bg: colors.navyPale, icon: '◉' },
-  under_review:       { label: 'Under Review',     color: colors.orange,   bg: colors.orangePale, icon: '◉' },
-  revision_requested: { label: 'Revision Needed',  color: colors.red,      bg: colors.redPale, icon: '!' },
-  approved:           { label: 'Approved',         color: colors.teal,     bg: colors.tealPale, icon: '✓' },
-  live:               { label: 'Live',             color: colors.tealDeep, bg: colors.tealPale, icon: '★' },
-};
-
 // Ordered status progression for timeline
 const STATUS_TIMELINE = ['pending', 'submitted', 'under_review', 'approved', 'live'];
+
+const TIMELINE_LABELS = {
+  pending: 'Pending',
+  submitted: 'Submitted',
+  under_review: 'Under Review',
+  approved: 'Approved',
+  live: 'Live',
+};
 
 function formatDate(dateStr) {
   if (!dateStr) return '--';
@@ -61,6 +61,21 @@ function getTimelineIndex(status) {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * DeliverableDetailScreen — alternate detail surface with 5-step status timeline,
+ * revision UI, and live-URL submission flow.
+ *
+ * Flow 33 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
+ * JetBrains Mono fonts + StatusPill canonical for status badges.
+ * Status timeline: yellow-active dots + ink-bordered yellow current step +
+ * danger fill + "!" sigil for revision_requested override.
+ * Revision card: dangerPale + danger border + white feedback body (locked
+ * design call #2).
+ * Live celebration: yellow tile MCI star + ink Outfit-Black title (locked
+ * design call #3 — replaces 🎉 per design call #4).
+ * 2-confirm Alert flow on submitContent + submitLive preserved verbatim.
+ */
+
 export default function DeliverableDetailScreen({ navigation, route }) {
   const { deliverable: initialDeliverable, campaign_name, brand_name } = route.params || {};
   const [deliverable, setDeliverable] = useState(initialDeliverable || null);
@@ -70,7 +85,6 @@ export default function DeliverableDetailScreen({ navigation, route }) {
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const statusCfg = STATUS_CONFIG[deliverable?.status] || STATUS_CONFIG.pending;
   const currentTimelineIdx = getTimelineIndex(deliverable?.status);
   const isRevision = deliverable?.status === 'revision_requested';
   const canSubmitContent = deliverable?.status === 'pending' || isRevision;
@@ -122,7 +136,7 @@ export default function DeliverableDetailScreen({ navigation, route }) {
               setDeliverable(updated);
               setSubmitUrl('');
               setNotesToBrand('');
-              Alert.alert('Submitted!', 'Your content has been sent for brand review.');
+              Alert.alert('Submitted', 'Your content has been sent for brand review.');
             } else {
               Alert.alert('Failed', res.error?.message || 'Could not submit content');
             }
@@ -158,7 +172,7 @@ export default function DeliverableDetailScreen({ navigation, route }) {
               };
               setDeliverable(updated);
               setLiveUrl('');
-              Alert.alert('Done!', 'Live URL submitted. The brand will confirm and Tranche 2 will be released.');
+              Alert.alert('Done', 'Live URL submitted. The brand will confirm and Tranche 2 will be released.');
             } else {
               Alert.alert('Failed', res.error?.message || 'Could not submit live URL');
             }
@@ -185,12 +199,13 @@ export default function DeliverableDetailScreen({ navigation, route }) {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshData} tintColor={colors.navy} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshData} colors={[P.yellow]} />}
     >
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
@@ -201,10 +216,11 @@ export default function DeliverableDetailScreen({ navigation, route }) {
               {brand_name ? `${brand_name}` : ''}{brand_name && campaign_name ? ' — ' : ''}{campaign_name || ''}
             </Text>
           </View>
-          <View style={[styles.statusBadgeLarge, { backgroundColor: statusCfg.bg }]}>
-            <Text style={[styles.statusBadgeText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
+          <View style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+            <StatusPill status={deliverable.status} />
           </View>
         </View>
+        <View style={styles.headerAccent} />
       </View>
 
       {/* ── Status Timeline ──────────────────────────────────────────────── */}
@@ -214,36 +230,57 @@ export default function DeliverableDetailScreen({ navigation, route }) {
           {STATUS_TIMELINE.map((step, idx) => {
             const isActive = idx <= currentTimelineIdx;
             const isCurrent = idx === currentTimelineIdx;
-            const stepCfg = STATUS_CONFIG[step];
             const isLast = idx === STATUS_TIMELINE.length - 1;
+            const isRevDot = isRevision && isCurrent;
 
             return (
               <View key={step} style={styles.timelineStep}>
                 <View style={styles.timelineDotCol}>
+                  {idx > 0 && (
+                    <View style={[
+                      styles.timelineLine,
+                      isActive && styles.timelineLineActive,
+                    ]} />
+                  )}
                   <View
                     style={[
                       styles.timelineDot,
-                      isActive && { backgroundColor: stepCfg.color },
+                      isActive && styles.timelineDotActive,
                       isCurrent && styles.timelineDotCurrent,
-                      isRevision && isCurrent && { backgroundColor: colors.red, borderColor: colors.red },
+                      isRevDot && styles.timelineDotRevision,
                     ]}
                   >
-                    {isActive && (
-                      <Text style={styles.timelineDotIcon}>
-                        {isCurrent && isRevision ? '!' : isActive ? (isCurrent ? stepCfg.icon : '✓') : ''}
-                      </Text>
+                    {isActive && !isCurrent && (
+                      <Icon name="check-bold" size={10} color={P.ink} />
+                    )}
+                    {isCurrent && !isRevDot && (
+                      <Text style={styles.timelineDotNum}>{idx + 1}</Text>
+                    )}
+                    {isRevDot && (
+                      <Text style={styles.timelineDotRevText}>!</Text>
+                    )}
+                    {!isActive && (
+                      <Text style={styles.timelineDotNumInactive}>{idx + 1}</Text>
                     )}
                   </View>
                   {!isLast && (
-                    <View style={[styles.timelineLine, isActive && idx < currentTimelineIdx && { backgroundColor: stepCfg.color }]} />
+                    <View style={[
+                      styles.timelineLine,
+                      isActive && idx < currentTimelineIdx && styles.timelineLineActive,
+                    ]} />
                   )}
                 </View>
                 <View style={styles.timelineContent}>
-                  <Text style={[styles.timelineLabel, isActive && { color: colors.t1, fontWeight: '700' }]}>
-                    {isCurrent && isRevision ? 'Revision Requested' : stepCfg.label}
+                  <Text style={[
+                    styles.timelineLabel,
+                    isActive && styles.timelineLabelActive,
+                    isCurrent && styles.timelineLabelCurrent,
+                    isRevDot && styles.timelineLabelRevision,
+                  ]}>
+                    {isRevDot ? 'Revision Requested' : TIMELINE_LABELS[step]}
                   </Text>
-                  {isCurrent && isRevision && (
-                    <Text style={styles.timelineHint}>Resubmission needed</Text>
+                  {isRevDot && (
+                    <Text style={styles.timelineHint}>RESUBMISSION NEEDED</Text>
                   )}
                 </View>
               </View>
@@ -258,34 +295,34 @@ export default function DeliverableDetailScreen({ navigation, route }) {
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Type</Text>
           <Text style={styles.detailValue}>
-            {DELIVERABLE_LABELS[deliverable.type] || deliverable.type?.replace(/_/g, ' ')}
+            {(DELIVERABLE_LABELS[deliverable.type] || deliverable.type?.replace(/_/g, ' ') || '').toUpperCase()}
           </Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Status</Text>
-          <StatusBadge status={deliverable.status} size={10} />
+          <StatusPill status={deliverable.status} />
         </View>
         {deliverable.submission_deadline && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Deadline</Text>
             <Text style={[
               styles.detailValue,
-              canSubmitContent && new Date(deliverable.submission_deadline) < new Date() && { color: colors.red, fontWeight: '700' },
+              canSubmitContent && new Date(deliverable.submission_deadline) < new Date() && styles.detailValueDanger,
             ]}>
-              {formatDate(deliverable.submission_deadline)}
+              {formatDate(deliverable.submission_deadline).toUpperCase()}
             </Text>
           </View>
         )}
         {deliverable.submitted_at && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Submitted</Text>
-            <Text style={styles.detailValue}>{formatDateTime(deliverable.submitted_at)}</Text>
+            <Text style={styles.detailValue}>{formatDateTime(deliverable.submitted_at).toUpperCase()}</Text>
           </View>
         )}
         {deliverable.live_confirmed_at && (
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Confirmed Live</Text>
-            <Text style={styles.detailValue}>{formatDateTime(deliverable.live_confirmed_at)}</Text>
+            <Text style={styles.detailValue}>{formatDateTime(deliverable.live_confirmed_at).toUpperCase()}</Text>
           </View>
         )}
         {deliverable.revision_count > 0 && (
@@ -298,7 +335,7 @@ export default function DeliverableDetailScreen({ navigation, route }) {
         )}
         {deliverable.content_requirements && (
           <View style={styles.briefBox}>
-            <Text style={styles.briefLabel}>Content Brief</Text>
+            <Text style={styles.briefLabel}>CONTENT BRIEF</Text>
             <Text style={styles.briefText}>{deliverable.content_requirements}</Text>
           </View>
         )}
@@ -309,12 +346,12 @@ export default function DeliverableDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Submitted Content</Text>
           <TouchableOpacity onPress={() => openUrl(deliverable.submitted_url)} style={styles.urlBox}>
-            <Text style={styles.urlLabel}>Draft URL</Text>
+            <Text style={styles.urlLabel}>DRAFT URL</Text>
             <Text style={styles.urlLink} numberOfLines={2}>{deliverable.submitted_url}</Text>
           </TouchableOpacity>
           {deliverable.notes_to_brand && (
             <View style={styles.notesBox}>
-              <Text style={styles.notesLabel}>Your Notes to Brand</Text>
+              <Text style={styles.notesLabel}>YOUR NOTES TO BRAND</Text>
               <Text style={styles.notesText}>{deliverable.notes_to_brand}</Text>
             </View>
           )}
@@ -323,14 +360,18 @@ export default function DeliverableDetailScreen({ navigation, route }) {
 
       {/* ── Revision Feedback (prominent) ─────────────────────────────────── */}
       {isRevision && deliverable.brand_feedback && (
-        <View style={[styles.card, styles.revisionCard]}>
+        <View style={styles.revisionCard}>
           <View style={styles.revisionHeader}>
-            <Text style={styles.revisionIcon}>!</Text>
-            <Text style={styles.revisionTitle}>Revision Requested by Brand</Text>
+            <View style={styles.revisionIcoWrap}>
+              <Text style={styles.revisionIco}>!</Text>
+            </View>
+            <Text style={styles.revisionTitle}>REVISION REQUESTED</Text>
           </View>
-          <Text style={styles.revisionFeedback}>{deliverable.brand_feedback}</Text>
+          <View style={styles.revisionBody}>
+            <Text style={styles.revisionFeedback}>{deliverable.brand_feedback}</Text>
+          </View>
           <Text style={styles.revisionMeta}>
-            Revision {deliverable.revision_count || 1} of {deliverable.revision_limit || 2}
+            REVISION {deliverable.revision_count || 1} OF {deliverable.revision_limit || 2}
           </Text>
         </View>
       )}
@@ -340,7 +381,7 @@ export default function DeliverableDetailScreen({ navigation, route }) {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Live Post</Text>
           <TouchableOpacity onPress={() => openUrl(deliverable.live_url)} style={styles.urlBox}>
-            <Text style={styles.urlLabel}>Live URL</Text>
+            <Text style={styles.urlLabel}>LIVE URL</Text>
             <Text style={styles.urlLink} numberOfLines={2}>{deliverable.live_url}</Text>
           </TouchableOpacity>
         </View>
@@ -362,8 +403,8 @@ export default function DeliverableDetailScreen({ navigation, route }) {
             style={styles.urlInput}
             value={submitUrl}
             onChangeText={setSubmitUrl}
-            placeholder="https://drive.google.com/..."
-            placeholderTextColor={colors.t3}
+            placeholder="https://drive.google.com/…"
+            placeholderTextColor={P.muted3}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -373,8 +414,8 @@ export default function DeliverableDetailScreen({ navigation, route }) {
             style={styles.notesInput}
             value={notesToBrand}
             onChangeText={setNotesToBrand}
-            placeholder="Add a note for the brand (optional)..."
-            placeholderTextColor={colors.t3}
+            placeholder="Add a note for the brand (optional)…"
+            placeholderTextColor={P.muted3}
             multiline
             numberOfLines={3}
             textAlignVertical="top"
@@ -386,10 +427,10 @@ export default function DeliverableDetailScreen({ navigation, route }) {
             disabled={submitting || !submitUrl.trim()}
           >
             {submitting ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={P.yellow} />
             ) : (
               <Text style={styles.submitBtnText}>
-                {isRevision ? 'Resubmit for Review' : 'Submit for Review'}
+                {isRevision ? 'RESUBMIT FOR REVIEW' : 'SUBMIT FOR REVIEW'}
               </Text>
             )}
           </TouchableOpacity>
@@ -408,8 +449,8 @@ export default function DeliverableDetailScreen({ navigation, route }) {
             style={styles.urlInput}
             value={liveUrl}
             onChangeText={setLiveUrl}
-            placeholder="https://instagram.com/p/..."
-            placeholderTextColor={colors.t3}
+            placeholder="https://instagram.com/p/…"
+            placeholderTextColor={P.muted3}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
@@ -421,9 +462,9 @@ export default function DeliverableDetailScreen({ navigation, route }) {
             disabled={submitting || !liveUrl.trim()}
           >
             {submitting ? (
-              <ActivityIndicator size="small" color={colors.white} />
+              <ActivityIndicator size="small" color={P.white} />
             ) : (
-              <Text style={styles.submitBtnText}>Submit Live URL</Text>
+              <Text style={styles.liveBtnText}>SUBMIT LIVE URL</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -431,15 +472,17 @@ export default function DeliverableDetailScreen({ navigation, route }) {
 
       {/* ── Live Celebration ──────────────────────────────────────────────── */}
       {isLive && (
-        <View style={[styles.card, { alignItems: 'center', paddingVertical: 24 }]}>
-          <Text style={{ fontSize: 36, marginBottom: 10 }}>🎉</Text>
+        <View style={styles.liveCelCard}>
+          <View style={styles.celTile}>
+            <Icon name="star" size={30} color={P.ink} />
+          </View>
           <Text style={styles.celebrationTitle}>Content is Live!</Text>
           <Text style={styles.celebrationText}>
             Tranche 2 has been released to your wallet. Tranche 3 will auto-release 30 days after the live confirmation date.
           </Text>
           {deliverable.live_confirmed_at && (
             <Text style={styles.celebrationDate}>
-              Confirmed live on {formatDate(deliverable.live_confirmed_at)}
+              CONFIRMED LIVE ON {formatDate(deliverable.live_confirmed_at).toUpperCase()}
             </Text>
           )}
         </View>
@@ -453,205 +496,190 @@ export default function DeliverableDetailScreen({ navigation, route }) {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  emptyText: { fontSize: 14, color: colors.t3 },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+  emptyText: { fontSize: 14, color: P.muted2, fontFamily: fonts.sansRegular },
 
   // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  headerTitle: { fontSize: 20, fontWeight: '800', color: colors.white },
-  headerSub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  statusBadgeLarge: { borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, marginTop: 2 },
-  statusBadgeText: { fontSize: 11, fontWeight: '700' },
+  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerAccent: {
+    position: 'absolute', left: 18, bottom: 8, width: 30, height: 3,
+    backgroundColor: P.yellow, borderRadius: 2,
+  },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 14 },
+  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 3, fontWeight: '700', fontFamily: fonts.monoMedium },
 
   // Card
   card: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+  cardTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: P.ink,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 12,
+    fontFamily: fonts.displayBlack,
+  },
 
-  // Timeline
+  // Timeline — yellow-active + ink-bordered current + danger revision override
   timeline: { paddingLeft: 4 },
-  timelineStep: { flexDirection: 'row', minHeight: 48 },
-  timelineDotCol: { width: 28, alignItems: 'center' },
+  timelineStep: { flexDirection: 'row', minHeight: 46 },
+  timelineDotCol: { width: 26, alignItems: 'center' },
   timelineDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.surface2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: P.bg2,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: P.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  timelineDotActive: {
+    backgroundColor: P.yellow,
+    borderColor: P.yellow,
+  },
   timelineDotCurrent: {
     borderWidth: 3,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    borderColor: P.ink,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
-  timelineDotIcon: { fontSize: 10, color: colors.white, fontWeight: '800' },
+  timelineDotRevision: {
+    backgroundColor: P.danger,
+    borderColor: P.danger,
+  },
+  timelineDotNum: { fontSize: 10, color: P.ink, fontWeight: '900', fontFamily: fonts.displayBlack },
+  timelineDotNumInactive: { fontSize: 10, color: P.muted3, fontWeight: '900', fontFamily: fonts.displayBlack },
+  timelineDotRevText: { fontSize: 13, color: P.white, fontWeight: '900', fontFamily: fonts.displayBlack },
   timelineLine: {
     flex: 1,
     width: 2,
-    backgroundColor: colors.border,
+    backgroundColor: P.border,
     marginVertical: 2,
   },
-  timelineContent: { flex: 1, paddingLeft: 10, paddingBottom: 12 },
-  timelineLabel: { fontSize: 13, color: colors.t3, fontWeight: '500' },
-  timelineHint: { fontSize: 10, color: colors.red, marginTop: 2, fontWeight: '600' },
+  timelineLineActive: { backgroundColor: P.yellow },
+  timelineContent: { flex: 1, paddingLeft: 11, paddingBottom: 12 },
+  timelineLabel: { fontSize: 12.5, color: P.muted2, fontWeight: '700', fontFamily: fonts.displayBold },
+  timelineLabelActive: { color: P.ink, fontWeight: '800' },
+  timelineLabelCurrent: { color: P.ink, fontWeight: '900', fontFamily: fonts.displayBlack },
+  timelineLabelRevision: { color: P.dangerText, fontWeight: '900', fontFamily: fonts.displayBlack },
+  timelineHint: { fontSize: 9.5, color: P.dangerText, marginTop: 2, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
   // Details
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 9,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.borderSoft,
   },
-  detailLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
-  detailValue: { fontSize: 12, color: colors.t1, fontWeight: '700', textTransform: 'capitalize' },
+  detailLabel: { fontSize: 11.5, color: P.muted, fontWeight: '600', fontFamily: fonts.sansRegular },
+  detailValue: { fontSize: 11.5, color: P.ink, fontWeight: '800', letterSpacing: 0.2, fontFamily: fonts.monoBold },
+  detailValueDanger: { color: P.dangerText, fontWeight: '900', fontFamily: fonts.monoBold },
 
   // Brief
-  briefBox: {
-    backgroundColor: colors.surface2,
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 12,
-  },
+  briefBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginTop: 11 },
   briefLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
+    fontFamily: fonts.monoBold,
   },
-  briefText: { fontSize: 12, color: colors.t2, lineHeight: 18 },
+  briefText: { fontSize: 11.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
 
   // URL display
-  urlBox: {
-    backgroundColor: colors.surface2,
-    borderRadius: 10,
-    padding: 12,
-  },
+  urlBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11 },
   urlLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
+    fontFamily: fonts.monoBold,
   },
-  urlLink: { fontSize: 12, color: colors.navy, textDecorationLine: 'underline' },
+  urlLink: { fontSize: 11.5, color: P.info, textDecorationLine: 'underline', fontWeight: '700', fontFamily: fonts.monoMedium },
 
   // Notes
-  notesBox: {
-    backgroundColor: colors.surface2,
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 10,
-  },
+  notesBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 11, marginTop: 10 },
   notesLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4,
+    fontFamily: fonts.monoBold,
   },
-  notesText: { fontSize: 12, color: colors.t2, lineHeight: 18 },
+  notesText: { fontSize: 11.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
 
-  // Revision card (prominent)
+  // Revision card (PROMINENT — locked design call #2)
   revisionCard: {
-    borderColor: colors.red,
-    borderWidth: 2,
-    backgroundColor: colors.redPale,
+    margin: 14, marginBottom: 0,
+    backgroundColor: P.dangerPale,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: P.danger,
   },
-  revisionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+  revisionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  revisionIcoWrap: {
+    width: 26, height: 26, borderRadius: 13, backgroundColor: P.dangerText,
+    alignItems: 'center', justifyContent: 'center',
   },
-  revisionIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.red,
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '800',
-    textAlign: 'center',
-    lineHeight: 24,
-    overflow: 'hidden',
+  revisionIco: { color: P.white, fontSize: 15, fontWeight: '900', fontFamily: fonts.displayBlack },
+  revisionTitle: {
+    fontSize: 13.5, fontWeight: '900', color: P.dangerText,
+    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack,
   },
-  revisionTitle: { fontSize: 14, fontWeight: '700', color: colors.red },
-  revisionFeedback: {
-    fontSize: 13,
-    color: colors.t1,
-    lineHeight: 20,
-    backgroundColor: colors.white,
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.red + '33',
+  revisionBody: {
+    backgroundColor: P.white, borderRadius: 11, padding: 12,
+    borderWidth: 1, borderColor: '#F8D0C2',
   },
+  revisionFeedback: { fontSize: 12.5, color: P.ink, lineHeight: 18, fontFamily: fonts.sansRegular },
   revisionMeta: {
-    fontSize: 11,
-    color: colors.t3,
-    marginTop: 8,
-    fontWeight: '600',
+    fontSize: 10, color: P.dangerText, marginTop: 9, fontWeight: '800',
+    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold,
   },
 
   // Form
-  hint: { fontSize: 11, color: colors.t3, marginBottom: 12, lineHeight: 16 },
+  hint: { fontSize: 11, color: P.muted, marginBottom: 12, lineHeight: 16, fontFamily: fonts.sansRegular },
   urlInput: {
-    borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 13,
-    color: colors.t1,
-    marginBottom: 10,
+    borderWidth: 1.5, borderColor: P.ink, borderRadius: 10,
+    padding: 11, fontSize: 11.5, color: P.ink, marginBottom: 10,
+    fontFamily: fonts.monoMedium,
   },
   notesInput: {
-    borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 13,
-    color: colors.t1,
-    marginBottom: 12,
-    minHeight: 70,
+    borderWidth: 1.5, borderColor: P.muted4, borderRadius: 10,
+    padding: 11, fontSize: 11.5, color: P.ink, marginBottom: 12, minHeight: 60,
+    fontFamily: fonts.sansRegular,
   },
-  submitBtn: {
-    backgroundColor: colors.navy,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  liveBtnStyle: {
-    backgroundColor: colors.teal,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  submitBtnText: { fontSize: 14, fontWeight: '700', color: colors.white },
+  submitBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
+  liveBtnStyle: { backgroundColor: P.success, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
+  submitBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  liveBtnText: { fontSize: 13, fontWeight: '900', color: P.white, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
   disabledBtn: { opacity: 0.5 },
 
-  // Celebration
-  celebrationTitle: { fontSize: 18, fontWeight: '800', color: colors.tealDeep, marginBottom: 8 },
-  celebrationText: { fontSize: 12, color: colors.t2, textAlign: 'center', lineHeight: 18, paddingHorizontal: 8 },
-  celebrationDate: { fontSize: 11, color: colors.t3, marginTop: 10, fontWeight: '600' },
+  // Live Celebration (yellow tile + MCI star per design call #3+#4)
+  liveCelCard: {
+    margin: 14, marginBottom: 0,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 22,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  celTile: {
+    width: 60, height: 60, borderRadius: 14, backgroundColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  celebrationTitle: { fontSize: 17, fontWeight: '900', color: P.ink, marginBottom: 7, letterSpacing: -0.2, fontFamily: fonts.displayBlack },
+  celebrationText: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, paddingHorizontal: 8, fontFamily: fonts.sansRegular },
+  celebrationDate: { fontSize: 10, color: P.muted2, marginTop: 10, fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
 });
