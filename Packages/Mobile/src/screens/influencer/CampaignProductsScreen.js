@@ -3,11 +3,13 @@ import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Image,
   StyleSheet, ActivityIndicator, Alert, RefreshControl,
 } from 'react-native';
-import { colors, spacing, radius, fmtMoney } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
 // Category fallback emoji when a product has no image_url. Keeps cards
-// scannable instead of an empty grey box.
+// scannable instead of an empty grey box. Preserved verbatim from prior
+// version per Flow 32 locked design call #3 (KEEP category emojis as fallback).
 const CATEGORY_EMOJI = {
   restaurant:     '🍽️',
   salon:          '💇',
@@ -27,6 +29,12 @@ const CATEGORY_EMOJI = {
  * 1. Shows all products assigned via the campaign
  * 2. Influencer adds personal note per product ("I love this deal!")
  * 3. Clicks "Publish to My Store" — product goes live on their influencer store
+ *
+ * Flow 32 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/JetBrains
+ * Mono fonts. successPale Live badge + bg2 note cards + ink-bordered note input
+ * + ink/yellow Outfit-Black UPPERCASE CTAs. Action emoji DROPPED from alerts +
+ * CTAs + quick-publish copy per design call #4 (no 🎉/🚀/🔥). 4-API publish/
+ * unpublish flow preserved verbatim.
  */
 
 export default function CampaignProductsScreen({ navigation, route }) {
@@ -65,7 +73,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
         note_text: note,
       });
       if (res.success || res.data) {
-        Alert.alert('Published! 🎉', `${product.name} is now live on your store`);
+        Alert.alert('Published', `${product.name} is now live on your store`);
         setEditingNote(null);
         setNoteText('');
         loadProducts();
@@ -96,7 +104,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
   }
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={colors.orange} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
   }
 
   const products = data?.products || [];
@@ -104,11 +112,11 @@ export default function CampaignProductsScreen({ navigation, route }) {
   const publishedCount = products.filter(p => p.is_published).length;
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.orange]} />}>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Text style={{ fontSize: 16 }}>←</Text>
+          <Icon name="chevron-left" size={20} color={P.ink} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.title}>Campaign Products</Text>
@@ -123,18 +131,18 @@ export default function CampaignProductsScreen({ navigation, route }) {
           <Text style={s.statLabel}>Products</Text>
         </View>
         <View style={s.stat}>
-          <Text style={[s.statVal, { color: colors.teal }]}>{publishedCount}</Text>
+          <Text style={[s.statVal, { color: P.successText }]}>{publishedCount}</Text>
           <Text style={s.statLabel}>Published</Text>
         </View>
         <View style={s.stat}>
-          <Text style={[s.statVal, { color: colors.orange }]}>{products.length - publishedCount}</Text>
+          <Text style={[s.statVal, { color: P.yellowText }]}>{products.length - publishedCount}</Text>
           <Text style={s.statLabel}>Pending</Text>
         </View>
       </View>
 
       {/* Info banner */}
       <View style={s.infoBanner}>
-        <Text style={s.infoIcon}>💡</Text>
+        <Icon name="information-outline" size={20} color={P.yellowText} style={{ marginTop: 1 }} />
         <Text style={s.infoText}>
           Add your personal recommendation to each product and publish it to your store. Your followers will see these deals!
         </Text>
@@ -167,12 +175,13 @@ export default function CampaignProductsScreen({ navigation, route }) {
                 <Text style={s.productDesc}>{product.description || product.section}</Text>
                 <View style={s.priceRow}>
                   <Text style={s.price}>{fmtMoney(product.price)}</Text>
-                  {discount && <Text style={s.discountBadge}>{discount}% OFF</Text>}
+                  {discount ? <Text style={s.discountBadge}>{discount}% OFF</Text> : null}
                 </View>
               </View>
               {product.is_published && (
                 <View style={s.liveBadge}>
-                  <Text style={s.liveBadgeText}>✓ Live</Text>
+                  <Icon name="check-bold" size={11} color={P.successText} />
+                  <Text style={s.liveBadgeText}>LIVE</Text>
                 </View>
               )}
             </View>
@@ -180,47 +189,44 @@ export default function CampaignProductsScreen({ navigation, route }) {
             {/* Published note */}
             {product.is_published && product.influencer_note && !isEditing && (
               <View style={s.noteCard}>
-                <Text style={s.noteLabel}>Your recommendation:</Text>
+                <Text style={s.noteLabel}>YOUR RECOMMENDATION</Text>
                 <Text style={s.noteText}>"{product.influencer_note}"</Text>
                 <View style={s.noteActions}>
                   <TouchableOpacity onPress={() => { setEditingNote(product.id); setNoteText(product.influencer_note); }}>
-                    <Text style={s.noteEdit}>Edit</Text>
+                    <Text style={s.noteEdit}>EDIT</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleUnpublish(product)}>
-                    <Text style={s.noteRemove}>Remove from store</Text>
+                    <Text style={s.noteRemove}>REMOVE FROM STORE</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
             {/* Edit note / Publish form */}
-            {(isEditing || !product.is_published) && (
+            {(isEditing || !product.is_published) && editingNote === product.id && (
               <View style={s.publishForm}>
                 <Text style={s.publishLabel}>
-                  {product.is_published ? 'Update your recommendation:' : 'Add your recommendation:'}
+                  {product.is_published ? 'UPDATE YOUR RECOMMENDATION' : 'ADD YOUR RECOMMENDATION'}
                 </Text>
                 <TextInput
                   style={s.noteInput}
-                  value={isEditing ? noteText : ''}
+                  value={noteText}
                   onChangeText={setNoteText}
-                  placeholder="e.g. I love this deal! Best for family trips 🚗"
-                  placeholderTextColor={colors.t3}
+                  placeholder="e.g. I love this deal! Best for festive looks…"
+                  placeholderTextColor={P.muted3}
                   multiline
-                  onFocus={() => { if (!isEditing) { setEditingNote(product.id); setNoteText(''); } }}
                 />
                 <View style={s.publishActions}>
-                  {isEditing && (
-                    <TouchableOpacity onPress={() => { setEditingNote(null); setNoteText(''); }} style={s.cancelBtn}>
-                      <Text style={s.cancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity onPress={() => { setEditingNote(null); setNoteText(''); }} style={s.cancelBtn}>
+                    <Text style={s.cancelText}>CANCEL</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.publishBtn, saving && { opacity: 0.5 }]}
-                    onPress={() => { if (!isEditing) setEditingNote(product.id); handlePublish(product); }}
+                    onPress={() => handlePublish(product)}
                     disabled={saving}
                   >
                     <Text style={s.publishText}>
-                      {saving ? 'Publishing...' : product.is_published ? 'Update' : '🚀 Publish to My Store'}
+                      {saving ? 'PUBLISHING…' : product.is_published ? 'UPDATE' : 'PUBLISH TO MY STORE'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -233,10 +239,10 @@ export default function CampaignProductsScreen({ navigation, route }) {
                 style={s.quickPublish}
                 onPress={() => {
                   setEditingNote(product.id);
-                  setNoteText(`Check out this amazing ${product.name}! Great deal 🔥`);
+                  setNoteText(`Check out this amazing ${product.name}! Great deal.`);
                 }}
               >
-                <Text style={s.quickPublishText}>+ Add Note & Publish to Store</Text>
+                <Text style={s.quickPublishText}>+ ADD NOTE &amp; PUBLISH</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -245,7 +251,9 @@ export default function CampaignProductsScreen({ navigation, route }) {
 
       {products.length === 0 && (
         <View style={s.empty}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>📦</Text>
+          <View style={s.emptyTile}>
+            <Text style={{ fontSize: 32 }}>📦</Text>
+          </View>
           <Text style={s.emptyTitle}>No products assigned</Text>
           <Text style={s.emptyText}>The brand hasn't linked products to this campaign yet.</Text>
         </View>
@@ -257,88 +265,130 @@ export default function CampaignProductsScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: spacing.lg, paddingTop: 50, paddingBottom: spacing.md,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 11,
+    paddingHorizontal: 18, paddingTop: 50, paddingBottom: 14,
+    backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
   },
-  backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 17, fontWeight: '700', color: colors.t1 },
-  subtitle: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  backBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center',
+  },
+  title: { fontSize: 17, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBlack },
+  subtitle: { fontSize: 10.5, color: P.muted2, marginTop: 3, fontFamily: fonts.monoMedium },
+
   statsBar: {
-    flexDirection: 'row', backgroundColor: colors.white, padding: spacing.lg,
-    borderBottomWidth: 1, borderBottomColor: colors.border,
+    flexDirection: 'row', backgroundColor: P.white, padding: 14,
+    borderBottomWidth: 1, borderBottomColor: P.border,
   },
   stat: { flex: 1, alignItems: 'center' },
-  statVal: { fontSize: 20, fontWeight: '800', color: colors.t1 },
-  statLabel: { fontSize: 10, color: colors.t3, marginTop: 2 },
+  statVal: { fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  statLabel: { fontSize: 9, color: P.muted2, marginTop: 3, textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700', fontFamily: fonts.monoMedium },
+
   infoBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    margin: spacing.lg, padding: 12, backgroundColor: colors.orangePale,
-    borderRadius: radius.md, borderWidth: 1, borderColor: '#fde68a',
+    flexDirection: 'row', alignItems: 'flex-start', gap: 9,
+    marginHorizontal: 14, marginTop: 12, marginBottom: 12, padding: 11,
+    backgroundColor: P.yellowPale,
+    borderRadius: 11, borderWidth: 1, borderColor: '#F0DA88',
   },
-  infoIcon: { fontSize: 16 },
-  infoText: { flex: 1, fontSize: 12, color: '#92400e', lineHeight: 18 },
+  infoText: { flex: 1, fontSize: 11.5, color: P.yellowText, lineHeight: 17, fontFamily: fonts.sansRegular },
+
   productCard: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.md,
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+    marginHorizontal: 14, marginBottom: 10,
+    backgroundColor: P.white, borderRadius: 14,
+    borderWidth: 1, borderColor: P.border, overflow: 'hidden',
   },
   productHeader: {
-    flexDirection: 'row', padding: spacing.lg, gap: 12, alignItems: 'center',
+    flexDirection: 'row', padding: 14, gap: 12, alignItems: 'center',
   },
   productEmoji: {
-    width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.surface2,
+    width: 54, height: 54, borderRadius: 11, backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
-  productImage: { width: 56, height: 56 },
-  productName: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  productDesc: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  price: { fontSize: 15, fontWeight: '800', color: colors.t1 },
+  productImage: { width: 54, height: 54 },
+  productName: { fontSize: 14, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  productDesc: { fontSize: 11, color: P.muted, marginTop: 2, fontFamily: fonts.sansRegular },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  price: { fontSize: 15, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
   discountBadge: {
-    fontSize: 10, fontWeight: '700', color: colors.teal,
-    backgroundColor: colors.tealPale, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
+    fontSize: 9.5, fontWeight: '800', color: P.successText,
+    backgroundColor: P.successPale, paddingHorizontal: 6, paddingVertical: 2,
+    borderRadius: 5, letterSpacing: 0.2, fontFamily: fonts.monoBold,
   },
+
   liveBadge: {
-    backgroundColor: colors.tealPale, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: P.successPale, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8,
   },
-  liveBadgeText: { fontSize: 10, fontWeight: '700', color: colors.tealDeep },
+  liveBadgeText: { fontSize: 9, fontWeight: '800', color: P.successText, fontFamily: fonts.monoBold, letterSpacing: 0.3 },
+
   noteCard: {
-    marginHorizontal: spacing.lg, marginBottom: spacing.lg,
-    padding: 12, backgroundColor: colors.surface2, borderRadius: radius.md,
+    paddingHorizontal: 14, paddingTop: 11, paddingBottom: 12,
+    backgroundColor: P.bg2, borderTopWidth: 1, borderTopColor: P.border,
   },
-  noteLabel: { fontSize: 10, fontWeight: '600', color: colors.t3, marginBottom: 4 },
-  noteText: { fontSize: 13, color: colors.t1, fontStyle: 'italic', lineHeight: 20 },
-  noteActions: { flexDirection: 'row', gap: 16, marginTop: 8 },
-  noteEdit: { fontSize: 11, fontWeight: '600', color: colors.orange },
-  noteRemove: { fontSize: 11, fontWeight: '600', color: colors.red },
+  noteLabel: {
+    fontSize: 9, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4,
+    fontFamily: fonts.monoBold,
+  },
+  noteText: { fontSize: 12.5, color: P.ink, fontStyle: 'italic', lineHeight: 18, fontFamily: fonts.sansRegular },
+  noteActions: { flexDirection: 'row', gap: 14, marginTop: 8 },
+  noteEdit: {
+    fontSize: 10.5, fontWeight: '800', color: P.ink,
+    textTransform: 'uppercase', letterSpacing: 0.3,
+    borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: P.ink,
+    fontFamily: fonts.monoBold,
+  },
+  noteRemove: {
+    fontSize: 10.5, fontWeight: '800', color: P.dangerText,
+    textTransform: 'uppercase', letterSpacing: 0.3,
+    borderBottomWidth: 1, borderStyle: 'dashed', borderBottomColor: P.dangerText,
+    fontFamily: fonts.monoBold,
+  },
+
   publishForm: {
-    padding: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border,
-    backgroundColor: colors.surface2,
+    padding: 14, borderTopWidth: 1, borderTopColor: P.border,
+    backgroundColor: P.bg2,
   },
-  publishLabel: { fontSize: 11, fontWeight: '600', color: colors.t2, marginBottom: 6 },
+  publishLabel: {
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 7,
+    fontFamily: fonts.monoBold,
+  },
   noteInput: {
-    borderWidth: 1.5, borderColor: colors.border2, borderRadius: radius.md,
-    padding: 12, fontSize: 13, color: colors.t1, minHeight: 60,
-    backgroundColor: colors.white, textAlignVertical: 'top',
+    borderWidth: 1.5, borderColor: P.ink, borderRadius: 10,
+    padding: 11, fontSize: 12, color: P.ink, minHeight: 60,
+    backgroundColor: P.white, textAlignVertical: 'top',
+    fontFamily: fonts.sansRegular,
   },
   publishActions: { flexDirection: 'row', gap: 8, marginTop: 10, justifyContent: 'flex-end' },
-  cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.md },
-  cancelText: { fontSize: 12, fontWeight: '600', color: colors.t3 },
+  cancelBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10 },
+  cancelText: { fontSize: 12, fontWeight: '800', color: P.muted, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBold },
   publishBtn: {
-    paddingHorizontal: 20, paddingVertical: 10, borderRadius: radius.md,
-    backgroundColor: colors.orange,
+    paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10,
+    backgroundColor: P.ink,
   },
-  publishText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  publishText: { fontSize: 12, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+
   quickPublish: {
-    paddingVertical: 12, paddingHorizontal: spacing.lg,
-    borderTopWidth: 1, borderTopColor: colors.border,
+    paddingVertical: 13, paddingHorizontal: 14,
+    borderTopWidth: 1, borderTopColor: P.border,
+    borderStyle: 'dashed',
   },
-  quickPublishText: { fontSize: 12, fontWeight: '600', color: colors.orange, textAlign: 'center' },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptyText: { fontSize: 12, color: colors.t3, textAlign: 'center', paddingHorizontal: 40 },
+  quickPublishText: {
+    fontSize: 12, fontWeight: '800', color: P.ink, textAlign: 'center',
+    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBold,
+  },
+
+  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
+  emptyTile: {
+    width: 66, height: 66, borderRadius: 14, backgroundColor: P.yellowPale,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBold },
+  emptyText: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 17, fontFamily: fonts.sansRegular },
 });

@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { colors, fmtMoney, fmtRupees, fmtNum } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees, fmtNum } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -29,12 +30,27 @@ const DELIVERABLE_LABELS = {
 };
 
 const TRANCHE_LABELS = {
-  1: 'T1 -- Contract Signed',
-  2: 'T2 -- Content Live',
-  3: 'T3 -- 30 Days Post-Live',
+  1: 'T1 — Contract Signed',
+  2: 'T2 — Content Live',
+  3: 'T3 — 30 Days Post-Live',
 };
 
 // ── Component ────────────────────────────────────────────────────────────────
+
+/**
+ * CampaignCompletionScreen — terminal celebration when campaign_influencers.status='completed'.
+ *
+ * Flow 32 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/JetBrains
+ * Mono fonts. Ink celebration hero with yellow check + yellow "Completed!" title
+ * (design call #1). successPale Total Earned with successText (design call #2).
+ * success/yellow tranche dots matching Flow 31 pattern. Yellow-active vertical
+ * timeline + ink-bordered yellow highlight final step. Ink/yellow Outfit-Black
+ * UPPERCASE CTAs.
+ *
+ * All API calls + Promise.all loading + goal-aware commission section + engagement
+ * conditional + TimelineItem sub-component + popToTop on Back-to-Campaigns
+ * preserved verbatim.
+ */
 
 export default function CampaignCompletionScreen({ navigation, route }) {
   const { campaignInfluencerId } = route.params || {};
@@ -66,8 +82,8 @@ export default function CampaignCompletionScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.teal} />
-        <Text style={styles.loadingText}>Loading summary...</Text>
+        <ActivityIndicator size="large" color={P.yellow} />
+        <Text style={styles.loadingText}>Loading summary…</Text>
       </View>
     );
   }
@@ -77,7 +93,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
       <View style={styles.centerContainer}>
         <Text style={styles.emptyText}>Campaign not found</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>Go Back</Text>
+          <Text style={styles.backBtnText}>GO BACK</Text>
         </TouchableOpacity>
       </View>
     );
@@ -116,13 +132,14 @@ export default function CampaignCompletionScreen({ navigation, route }) {
     <ScrollView style={styles.container}>
       {/* ── Celebration Header ──────────────────────────────────────── */}
       <View style={styles.celebrationHeader}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{'<-'} Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={16} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
 
         <View style={styles.celebrationContent}>
           <View style={styles.checkCircle}>
-            <Text style={styles.checkIcon}>{'[OK]'}</Text>
+            <Icon name="check-bold" size={28} color={P.ink} />
           </View>
           <Text style={styles.celebrationTitle}>Campaign Completed!</Text>
           <Text style={styles.celebrationSub}>
@@ -130,22 +147,21 @@ export default function CampaignCompletionScreen({ navigation, route }) {
           </Text>
           <Text style={styles.campaignLabel}>{campaign.campaign_name}</Text>
         </View>
+
+        <View style={styles.celebrationAccent} />
       </View>
 
       {/* ── Earnings Summary ──────────────────────────────────────── */}
       <View style={styles.card}>
-        <View style={styles.cardTitleRow}>
-          <Text style={styles.cardTitleGold}>Earnings Summary</Text>
-          <Text style={styles.earnIcon}>{'[$]'}</Text>
-        </View>
+        <Text style={styles.cardTtl}>Earnings Summary</Text>
 
         <View style={styles.totalEarnedBox}>
-          <Text style={styles.totalEarnedLabel}>Total Earned</Text>
+          <Text style={styles.totalEarnedLabel}>TOTAL EARNED</Text>
           <Text style={styles.totalEarnedValue}>{fmtRupees(totalEarned)}</Text>
         </View>
 
         {/* Tranche breakdown */}
-        <Text style={styles.sectionLabel}>Tranche Payments</Text>
+        <Text style={styles.sectionLabel}>TRANCHE PAYMENTS</Text>
         {(tranches || []).length > 0 ? (
           tranches.map(t => {
             const isReleased = t.status === 'released';
@@ -153,7 +169,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
               <View key={t.tranche_number} style={styles.trancheRow}>
                 <View style={[
                   styles.trancheDot,
-                  { backgroundColor: isReleased ? colors.teal : colors.orange },
+                  { backgroundColor: isReleased ? P.success : P.yellow },
                 ]} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.trancheTitle}>
@@ -163,9 +179,9 @@ export default function CampaignCompletionScreen({ navigation, route }) {
                     <Text style={styles.trancheDate}>Released: {formatDate(t.released_at)}</Text>
                   )}
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
                   <Text style={styles.trancheAmount}>{fmtRupees(t.net_to_influencer)}</Text>
-                  <StatusBadge status={t.status} size={9} />
+                  <StatusPill status={t.status} />
                 </View>
               </View>
             );
@@ -177,16 +193,16 @@ export default function CampaignCompletionScreen({ navigation, route }) {
         {/* Follower commissions (for conversion/hybrid campaigns) */}
         {(campaign.goal === 'conversion' || campaign.goal === 'hybrid') && (
           <View style={styles.commissionSection}>
-            <Text style={styles.sectionLabel}>Follower Commissions</Text>
+            <Text style={styles.sectionLabel}>FOLLOWER COMMISSIONS</Text>
             <View style={styles.commRow}>
               <Text style={styles.commLabel}>Confirmed</Text>
-              <Text style={[styles.commValue, { color: colors.teal }]}>
+              <Text style={[styles.commValue, { color: P.successText }]}>
                 {fmtRupees(confirmedCommissions)}
               </Text>
             </View>
             <View style={styles.commRow}>
               <Text style={styles.commLabel}>Pending (30-day window)</Text>
-              <Text style={[styles.commValue, { color: colors.orange }]}>
+              <Text style={[styles.commValue, { color: P.yellowText }]}>
                 {fmtRupees(pendingCommissions)}
               </Text>
             </View>
@@ -196,17 +212,17 @@ export default function CampaignCompletionScreen({ navigation, route }) {
         {/* Pending vs Confirmed summary */}
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
-            <View style={[styles.summaryDot, { backgroundColor: colors.teal }]} />
-            <Text style={styles.summaryLabel}>Released / Confirmed</Text>
-            <Text style={[styles.summaryValue, { color: colors.tealDeep }]}>
+            <View style={[styles.summaryDot, { backgroundColor: P.success }]} />
+            <Text style={styles.summaryLabel}>RELEASED / CONFIRMED</Text>
+            <Text style={[styles.summaryValue, { color: P.successText }]}>
               {fmtRupees(totalTrancheReleased + confirmedCommissions)}
             </Text>
           </View>
           {(totalTranchePending + pendingCommissions > 0) && (
             <View style={styles.summaryItem}>
-              <View style={[styles.summaryDot, { backgroundColor: colors.orange }]} />
-              <Text style={styles.summaryLabel}>Pending</Text>
-              <Text style={[styles.summaryValue, { color: colors.orangeDeep }]}>
+              <View style={[styles.summaryDot, { backgroundColor: P.yellow }]} />
+              <Text style={styles.summaryLabel}>PENDING</Text>
+              <Text style={[styles.summaryValue, { color: P.yellowText }]}>
                 {fmtRupees(totalTranchePending + pendingCommissions)}
               </Text>
             </View>
@@ -215,28 +231,26 @@ export default function CampaignCompletionScreen({ navigation, route }) {
 
         <View style={styles.tdsNote}>
           <Text style={styles.tdsText}>
-            Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+            <Text style={{ fontWeight: '800' }}>Note: </Text>
+            10% TDS is deducted at the time of withdrawal, not at earning.
           </Text>
         </View>
       </View>
 
       {/* ── Performance Stats ─────────────────────────────────────── */}
       <View style={styles.card}>
-        <View style={styles.cardTitleRow}>
-          <Text style={styles.cardTitle}>Performance Stats</Text>
-          <Text style={styles.earnIcon}>{'[*]'}</Text>
-        </View>
+        <Text style={styles.cardTtl}>Performance Stats</Text>
 
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>
               {completedDeliverables}/{totalDeliverables}
             </Text>
-            <Text style={styles.statLabel}>Deliverables Done</Text>
+            <Text style={styles.statLabel}>DELIVERABLES DONE</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={styles.statNumber}>{contentTypes.length}</Text>
-            <Text style={styles.statLabel}>Content Types</Text>
+            <Text style={styles.statLabel}>CONTENT TYPES</Text>
           </View>
         </View>
 
@@ -254,24 +268,24 @@ export default function CampaignCompletionScreen({ navigation, route }) {
 
         {hasEngagement && (
           <View style={styles.engagementSection}>
-            <Text style={styles.sectionLabel}>Engagement</Text>
+            <Text style={styles.sectionLabel}>ENGAGEMENT</Text>
             <View style={styles.statsGrid}>
               {totalViews > 0 && (
                 <View style={styles.statBox}>
                   <Text style={styles.statNumber}>{fmtNum(totalViews)}</Text>
-                  <Text style={styles.statLabel}>Views</Text>
+                  <Text style={styles.statLabel}>VIEWS</Text>
                 </View>
               )}
               {totalLikes > 0 && (
                 <View style={styles.statBox}>
                   <Text style={styles.statNumber}>{fmtNum(totalLikes)}</Text>
-                  <Text style={styles.statLabel}>Likes</Text>
+                  <Text style={styles.statLabel}>LIKES</Text>
                 </View>
               )}
               {totalComments > 0 && (
                 <View style={styles.statBox}>
                   <Text style={styles.statNumber}>{fmtNum(totalComments)}</Text>
-                  <Text style={styles.statLabel}>Comments</Text>
+                  <Text style={styles.statLabel}>COMMENTS</Text>
                 </View>
               )}
             </View>
@@ -281,10 +295,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
 
       {/* ── Campaign Timeline ─────────────────────────────────────── */}
       <View style={styles.card}>
-        <View style={styles.cardTitleRow}>
-          <Text style={styles.cardTitle}>Campaign Timeline</Text>
-          <Text style={styles.earnIcon}>{'[T]'}</Text>
-        </View>
+        <Text style={styles.cardTtl}>Campaign Timeline</Text>
 
         <View style={styles.timeline}>
           <TimelineItem
@@ -327,7 +338,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
             campaignName: campaign.campaign_name,
           })}
         >
-          <Text style={styles.primaryBtnText}>View Earnings</Text>
+          <Text style={styles.primaryBtnText}>VIEW EARNINGS</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -341,7 +352,7 @@ export default function CampaignCompletionScreen({ navigation, route }) {
             }
           }}
         >
-          <Text style={styles.secondaryBtnText}>Back to Campaigns</Text>
+          <Text style={styles.secondaryBtnText}>BACK TO CAMPAIGNS</Text>
         </TouchableOpacity>
       </View>
 
@@ -394,104 +405,140 @@ function TimelineItem({ label, date, isFirst, isLast, highlight }) {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  emptyText: { fontSize: 14, color: colors.t3, marginBottom: 16 },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
+  container: { flex: 1, backgroundColor: P.bg },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+  emptyText: { fontSize: 14, color: P.muted2, marginBottom: 16, fontFamily: fonts.sansRegular },
+  loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },
 
-  // Celebration header
+  // Celebration header — ink + yellow per locked design call #1
   celebrationHeader: {
-    backgroundColor: colors.tealDeep,
-    paddingTop: 52,
-    paddingHorizontal: 20,
-    paddingBottom: 32,
+    backgroundColor: P.ink,
+    paddingTop: 50,
+    paddingHorizontal: 18,
+    paddingBottom: 28,
+    position: 'relative',
   },
-  back: { marginBottom: 16 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
+  celebrationAccent: {
+    position: 'absolute',
+    left: 18,
+    bottom: 6,
+    width: 30,
+    height: 3,
+    backgroundColor: P.yellow,
+    borderRadius: 2,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 18,
+  },
+  backText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 0.3,
+    fontFamily: fonts.monoBold,
+  },
   celebrationContent: { alignItems: 'center' },
   checkCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: P.yellow,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
-  checkIcon: { fontSize: 22, color: colors.white, fontWeight: '800' },
   celebrationTitle: {
     fontSize: 24,
-    fontWeight: '800',
-    color: colors.white,
+    fontWeight: '900',
+    color: P.yellow,
     marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+    fontFamily: fonts.displayBlack,
   },
   celebrationSub: {
-    fontSize: 13,
+    fontSize: 12,
     color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
     lineHeight: 18,
+    maxWidth: 280,
+    fontFamily: fonts.sansRegular,
   },
   campaignLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.white,
-    marginTop: 12,
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: P.white,
+    marginTop: 14,
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingHorizontal: 13,
+    paddingVertical: 5,
     borderRadius: 999,
     overflow: 'hidden',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    fontFamily: fonts.monoBold,
   },
 
   // Card
   card: {
-    margin: 16,
+    margin: 14,
     marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: P.white,
+    borderRadius: 14,
+    padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: P.border,
   },
-  cardTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  cardTtl: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: P.ink,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 11,
+    fontFamily: fonts.displayBlack,
   },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1 },
-  cardTitleGold: { fontSize: 14, fontWeight: '700', color: '#7A5500' },
-  earnIcon: { fontSize: 18 },
 
-  // Total earned highlight
+  // Total earned highlight — successPale per locked design call #2
   totalEarnedBox: {
-    backgroundColor: colors.goldPale,
-    borderRadius: 12,
+    backgroundColor: P.successPale,
+    borderRadius: 14,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F0D060',
+    borderColor: '#A8E6CC',
   },
   totalEarnedLabel: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#7A5500',
+    fontWeight: '800',
+    color: P.successText,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 5,
+    fontFamily: fonts.monoBold,
   },
-  totalEarnedValue: { fontSize: 32, fontWeight: '800', color: '#5A4000' },
+  totalEarnedValue: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: P.successText,
+    letterSpacing: -0.5,
+    fontFamily: fonts.monoBold,
+  },
 
   // Section label
   sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: P.muted2,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
     marginBottom: 8,
-    marginTop: 4,
+    marginTop: 6,
+    fontFamily: fonts.monoBold,
   },
 
   // Tranche rows
@@ -500,173 +547,207 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: P.borderSoft,
     gap: 10,
   },
   trancheDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
-  trancheTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  trancheDate: { fontSize: 10, color: colors.teal, marginTop: 2 },
-  trancheAmount: { fontSize: 14, fontWeight: '800', color: colors.t1, marginBottom: 4 },
+  trancheTitle: { fontSize: 12.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  trancheDate: { fontSize: 9.5, color: P.successText, marginTop: 2, fontFamily: fonts.monoMedium },
+  trancheAmount: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold },
 
   // Commission section
   commissionSection: {
-    marginTop: 16,
-    paddingTop: 12,
+    marginTop: 14,
+    paddingTop: 11,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: P.border,
   },
   commRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 5,
   },
-  commLabel: { fontSize: 13, color: colors.t2 },
-  commValue: { fontSize: 14, fontWeight: '700' },
+  commLabel: { fontSize: 12, color: P.muted, fontFamily: fonts.sansRegular },
+  commValue: { fontSize: 13, fontWeight: '800', fontFamily: fonts.monoBold },
 
   // Summary
   summaryRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-    paddingTop: 12,
+    gap: 10,
+    marginTop: 14,
+    paddingTop: 11,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: P.border,
   },
   summaryItem: {
     flex: 1,
-    backgroundColor: colors.surface2,
+    backgroundColor: P.bg2,
     borderRadius: 10,
-    padding: 12,
+    padding: 11,
     alignItems: 'center',
   },
-  summaryDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 6 },
-  summaryLabel: { fontSize: 10, color: colors.t3, fontWeight: '600', marginBottom: 4, textAlign: 'center' },
-  summaryValue: { fontSize: 15, fontWeight: '800' },
+  summaryDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 5 },
+  summaryLabel: {
+    fontSize: 9.5,
+    color: P.muted2,
+    fontWeight: '700',
+    marginBottom: 3,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    fontFamily: fonts.monoMedium,
+  },
+  summaryValue: { fontSize: 15, fontWeight: '900', fontFamily: fonts.monoBold },
 
   tdsNote: {
-    backgroundColor: colors.goldPale,
+    backgroundColor: P.yellowPale,
     borderRadius: 8,
-    padding: 10,
+    padding: 9,
+    paddingHorizontal: 11,
     marginTop: 12,
   },
-  tdsText: { fontSize: 11, color: '#7A5500', lineHeight: 16 },
+  tdsText: { fontSize: 10.5, color: P.yellowText, lineHeight: 16, fontFamily: fonts.sansRegular },
 
-  noDataText: { fontSize: 13, color: colors.t3, lineHeight: 18, paddingVertical: 8 },
+  noDataText: { fontSize: 12.5, color: P.muted2, lineHeight: 18, paddingVertical: 8, fontFamily: fonts.sansRegular },
 
   // Stats grid
   statsGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
+    gap: 10,
+    marginBottom: 11,
   },
   statBox: {
     flex: 1,
-    backgroundColor: colors.surface2,
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: P.bg2,
+    borderRadius: 11,
+    padding: 13,
     alignItems: 'center',
   },
-  statNumber: { fontSize: 22, fontWeight: '800', color: colors.t1 },
+  statNumber: { fontSize: 22, fontWeight: '900', color: P.ink, lineHeight: 24, fontFamily: fonts.monoBold },
   statLabel: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '700',
-    color: colors.t3,
+    color: P.muted2,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-    marginTop: 4,
+    marginTop: 5,
+    fontFamily: fonts.monoMedium,
   },
 
   // Content type badges
   typesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
     marginBottom: 8,
   },
   typeBadge: {
-    backgroundColor: colors.navyPale,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: P.yellowPale,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
     borderRadius: 999,
   },
-  typeBadgeText: { fontSize: 11, fontWeight: '600', color: colors.navy },
+  typeBadgeText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: P.yellowText,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    fontFamily: fonts.monoBold,
+  },
 
   engagementSection: {
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: P.border,
   },
 
   // Timeline
   timeline: { paddingLeft: 4 },
   timelineItem: {
     flexDirection: 'row',
-    minHeight: 52,
+    minHeight: 50,
   },
   timelineDotCol: {
-    width: 24,
+    width: 22,
     alignItems: 'center',
   },
   timelineLine: {
     flex: 1,
     width: 2,
-    backgroundColor: colors.border,
+    backgroundColor: P.border,
   },
-  timelineLineActive: { backgroundColor: colors.teal },
+  timelineLineActive: { backgroundColor: P.yellow },
   timelineDot: {
-    width: 12,
-    height: 12,
+    width: 11,
+    height: 11,
     borderRadius: 6,
-    backgroundColor: colors.border,
+    backgroundColor: P.border,
     zIndex: 1,
   },
-  timelineDotActive: { backgroundColor: colors.teal },
+  timelineDotActive: { backgroundColor: P.yellow },
   timelineDotHighlight: {
-    backgroundColor: colors.gold,
+    backgroundColor: P.yellow,
     width: 16,
     height: 16,
     borderRadius: 8,
     borderWidth: 3,
-    borderColor: colors.goldPale,
+    borderColor: P.ink,
   },
   timelineContent: {
     flex: 1,
-    paddingLeft: 12,
-    paddingBottom: 16,
+    paddingLeft: 11,
+    paddingBottom: 14,
     justifyContent: 'center',
   },
-  timelineLabel: { fontSize: 13, fontWeight: '600', color: colors.t3 },
-  timelineLabelActive: { color: colors.t1 },
-  timelineLabelHighlight: { color: '#7A5500', fontWeight: '800' },
-  timelineDate: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  timelineLabel: { fontSize: 12.5, fontWeight: '700', color: P.muted2, fontFamily: fonts.displayBold },
+  timelineLabelActive: { color: P.ink, fontWeight: '800' },
+  timelineLabelHighlight: { color: P.ink, fontWeight: '900', fontFamily: fonts.displayBlack },
+  timelineDate: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', fontFamily: fonts.monoMedium },
 
   // Action buttons
   actionsCard: {
-    margin: 16,
-    gap: 10,
+    margin: 14,
+    gap: 8,
   },
   primaryBtn: {
-    backgroundColor: colors.teal,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
-  secondaryBtn: {
-    backgroundColor: colors.navyPale,
-    borderRadius: 14,
+    backgroundColor: P.ink,
+    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  secondaryBtnText: { fontSize: 14, fontWeight: '700', color: colors.navy },
+  primaryBtnText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: P.yellow,
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
+    fontFamily: fonts.displayBlack,
+  },
+  secondaryBtn: {
+    backgroundColor: P.white,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: P.ink,
+  },
+  secondaryBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: P.ink,
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+    fontFamily: fonts.displayBold,
+  },
 
   backBtn: {
-    backgroundColor: colors.navy,
+    backgroundColor: P.ink,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 24,
   },
-  backBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  backBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, fontFamily: fonts.displayBlack },
 });

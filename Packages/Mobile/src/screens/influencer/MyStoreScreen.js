@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, FlatList, Image,
+  View, Text, ScrollView, TouchableOpacity, Image,
   StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
-import { colors, spacing, radius, fmtMoney } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtMoney } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
 // Category-appropriate emoji fallback when a product has no image_url. The
@@ -25,6 +26,12 @@ const CATEGORY_EMOJI = {
 /**
  * MyStoreScreen — influencer previews their store as followers see it.
  * Shows all published products with influencer notes across all campaigns.
+ *
+ * Flow 32 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
+ * JetBrains Mono fonts + yellow avatar tile + successPale offer-discount
+ * badges + yellowPale note boxes. CATEGORY_EMOJI fallback preserved
+ * verbatim per design call #3. Action emoji dropped per design call #4.
+ * useFocusEffect reload preserved verbatim.
  */
 
 export default function MyStoreScreen({ navigation }) {
@@ -53,7 +60,7 @@ export default function MyStoreScreen({ navigation }) {
   const onRefresh = () => { setRefreshing(true); loadStore(); };
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={colors.orange} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
   }
 
   const inf = store?.influencer;
@@ -61,11 +68,11 @@ export default function MyStoreScreen({ navigation }) {
   const totalProducts = offers.reduce((sum, o) => sum + (o.products?.length || 0), 0);
 
   return (
-    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.orange]} />}>
+    <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}>
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Text style={{ fontSize: 16 }}>←</Text>
+          <Icon name="chevron-left" size={20} color={P.ink} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={s.title}>My Store</Text>
@@ -97,7 +104,9 @@ export default function MyStoreScreen({ navigation }) {
       {/* Published products by campaign/offer */}
       {offers.length === 0 && (
         <View style={s.empty}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>🏪</Text>
+          <View style={s.emptyTile}>
+            <Text style={{ fontSize: 36 }}>🏪</Text>
+          </View>
           <Text style={s.emptyTitle}>Your store is empty</Text>
           <Text style={s.emptyText}>Go to your campaigns → Products → Publish items to your store. Followers will see them here.</Text>
         </View>
@@ -108,7 +117,7 @@ export default function MyStoreScreen({ navigation }) {
           <View style={s.offerHeader}>
             <Text style={s.offerBrand}>{offer.brand_name}</Text>
             <Text style={s.offerDiscount}>
-              {offer.discount_value ? `${offer.discount_value}% OFF` : offer.offer_type}
+              {offer.discount_value ? `${offer.discount_value}% OFF` : (offer.offer_type || '').toUpperCase()}
             </Text>
           </View>
 
@@ -137,7 +146,7 @@ export default function MyStoreScreen({ navigation }) {
               {product.influencer_note && (
                 <View style={s.noteBox}>
                   <Text style={s.noteQuote}>"{product.influencer_note}"</Text>
-                  <Text style={s.noteBy}>— Your recommendation</Text>
+                  <Text style={s.noteBy}>— YOUR RECOMMENDATION</Text>
                 </View>
               )}
             </View>
@@ -151,59 +160,77 @@ export default function MyStoreScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+
   header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: spacing.lg, paddingTop: 50, paddingBottom: spacing.md,
-    backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.border,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 11,
+    paddingHorizontal: 18, paddingTop: 50, paddingBottom: 14,
+    backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
   },
-  backBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 17, fontWeight: '700', color: colors.t1 },
-  subtitle: { fontSize: 11, color: colors.t3 },
+  backBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center',
+  },
+  title: { fontSize: 17, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBlack },
+  subtitle: { fontSize: 10.5, color: P.muted2, marginTop: 3, fontFamily: fonts.monoMedium },
+
   profileCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    margin: spacing.lg, padding: spacing.lg,
-    backgroundColor: colors.white, borderRadius: radius.lg,
-    borderWidth: 1, borderColor: colors.border,
+    margin: 14, marginBottom: 12, padding: 14,
+    backgroundColor: P.white, borderRadius: 14,
+    borderWidth: 1, borderColor: P.border,
   },
   avatar: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: colors.orangePale, alignItems: 'center', justifyContent: 'center',
+    width: 54, height: 54, borderRadius: 27,
+    backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: 16, fontWeight: '800', color: colors.orangeDeep },
-  infName: { fontSize: 16, fontWeight: '700', color: colors.t1 },
-  infHandle: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  statsRow: { flexDirection: 'row', gap: 12 },
+  avatarText: { fontSize: 22, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  infName: { fontSize: 15, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  infHandle: { fontSize: 10.5, color: P.muted2, marginTop: 2, fontFamily: fonts.monoMedium },
+  statsRow: { flexDirection: 'row', gap: 11 },
   statBox: { alignItems: 'center' },
-  statVal: { fontSize: 16, fontWeight: '800', color: colors.orange },
-  statLabel: { fontSize: 9, color: colors.t3, marginTop: 2 },
-  offerSection: { marginHorizontal: spacing.lg, marginBottom: spacing.lg },
+  statVal: { fontSize: 16, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  statLabel: { fontSize: 8.5, color: P.muted2, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700', fontFamily: fonts.monoMedium },
+
+  offerSection: { marginHorizontal: 14, marginBottom: 16 },
   offerHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 7,
   },
-  offerBrand: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  offerDiscount: { fontSize: 11, fontWeight: '700', color: colors.teal, backgroundColor: colors.tealPale, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  offerBrand: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  offerDiscount: {
+    fontSize: 10, fontWeight: '800', color: P.successText,
+    backgroundColor: P.successPale, paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6, letterSpacing: 0.3, fontFamily: fonts.monoBold,
+  },
+
   productCard: {
-    backgroundColor: colors.white, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border, marginBottom: 8, overflow: 'hidden',
+    backgroundColor: P.white, borderRadius: 11,
+    borderWidth: 1, borderColor: P.border, marginBottom: 7, overflow: 'hidden',
   },
-  productRow: { flexDirection: 'row', padding: 12, gap: 10, alignItems: 'center' },
+  productRow: { flexDirection: 'row', padding: 11, gap: 10, alignItems: 'center' },
   productEmoji: {
-    width: 48, height: 48, borderRadius: 10, backgroundColor: colors.surface2,
+    width: 48, height: 48, borderRadius: 10, backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   productImage: { width: 48, height: 48 },
-  productName: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  productDesc: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  productPrice: { fontSize: 14, fontWeight: '800', color: colors.t1, marginTop: 4 },
+  productName: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  productDesc: { fontSize: 11, color: P.muted, marginTop: 2, fontFamily: fonts.sansRegular },
+  productPrice: { fontSize: 14, fontWeight: '900', color: P.ink, marginTop: 4, fontFamily: fonts.monoBold },
+
   noteBox: {
-    padding: 10, backgroundColor: colors.orangePale, borderTopWidth: 1, borderTopColor: '#fde68a',
+    padding: 11, backgroundColor: P.yellowPale, borderTopWidth: 1, borderTopColor: '#F0DA88',
   },
-  noteQuote: { fontSize: 12, color: '#92400e', fontStyle: 'italic', lineHeight: 18 },
-  noteBy: { fontSize: 10, color: '#b45309', marginTop: 4 },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: colors.t1, marginBottom: 4 },
-  emptyText: { fontSize: 12, color: colors.t3, textAlign: 'center', paddingHorizontal: 40, lineHeight: 18 },
+  noteQuote: { fontSize: 11.5, color: P.yellowText, fontStyle: 'italic', lineHeight: 16, fontFamily: fonts.sansRegular },
+  noteBy: { fontSize: 9, color: P.yellowText, marginTop: 4, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold, opacity: 0.85 },
+
+  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
+  emptyTile: {
+    width: 66, height: 66, borderRadius: 14, backgroundColor: P.yellowPale,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 6, textAlign: 'center', fontFamily: fonts.displayBold },
+  emptyText: { fontSize: 11.5, color: P.muted, textAlign: 'center', lineHeight: 18, fontFamily: fonts.sansRegular },
 });

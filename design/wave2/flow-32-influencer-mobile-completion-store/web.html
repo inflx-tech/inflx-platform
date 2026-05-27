@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 32 · influencer-mobile CampaignCompletion + CampaignProducts + MyStore — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:16px;height:16px}
+.ico-md{width:20px;height:20px}
+.ico-lg{width:28px;height:28px}
+.ico-xl{width:36px;height:36px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ─── Celebration header (CampaignCompletion) ───── */
+.celebrate{background:var(--ink);color:var(--white);padding:50px 18px 28px;flex-shrink:0;position:relative}
+.celebrate::after{content:'';position:absolute;left:18px;bottom:6px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.celebrate .back-row{display:flex;align-items:center;gap:5px;margin-bottom:18px;color:rgba(255,255,255,.65)}
+.celebrate .back-row .ico{color:rgba(255,255,255,.65);width:16px;height:16px}
+.celebrate .back-text{font-family:'JetBrains Mono';font-size:10.5px;font-weight:700}
+.celebrate-content{align-items:center;display:flex;flex-direction:column}
+.check-circle{width:64px;height:64px;border-radius:32px;background:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:16px;color:var(--ink)}
+.celebrate-title{font-family:'Outfit';font-size:24px;font-weight:900;color:var(--yellow);margin-bottom:8px;text-align:center;letter-spacing:-0.3px}
+.celebrate-sub{font-family:'Plus Jakarta Sans';font-size:12px;color:rgba(255,255,255,.7);text-align:center;line-height:1.5;max-width:280px}
+.campaign-label{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--white);margin-top:14px;background:rgba(255,255,255,.15);padding:5px 13px;border-radius:999px;text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── Regular header (Products + Store) ───── */
+.h-top{background:var(--white);border-bottom:1px solid var(--border);padding:50px 18px 14px;flex-shrink:0;display:flex;align-items:flex-start;gap:11px}
+.h-back{width:34px;height:34px;border-radius:17px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink);flex-shrink:0}
+.h-mid{flex:1}
+.h-title{font-family:'Outfit';font-size:17px;font-weight:800;color:var(--ink)}
+.h-sub{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:3px}
+
+/* ─── Body ───── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:12px 0 32px}
+
+/* ─── Card ───── */
+.card{margin:0 14px 12px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:14px}
+.card-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px}
+.card-ttl-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+
+/* ─── Total Earned (successPale) ───── */
+.earned-box{background:var(--success-pale);border:1px solid #A8E6CC;border-radius:14px;padding:16px;text-align:center;margin-bottom:14px}
+.earned-l{font-family:'JetBrains Mono';font-size:10px;color:var(--success-text);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin-bottom:5px}
+.earned-v{font-family:'JetBrains Mono';font-size:32px;font-weight:900;color:var(--success-text);letter-spacing:-0.5px}
+
+/* ─── Section ───── */
+.section-l{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:800;margin-bottom:8px;margin-top:6px}
+
+/* ─── Tranche row ───── */
+.tranche-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-soft)}
+.tranche-row:last-child{border-bottom:none}
+.tranche-dot{width:10px;height:10px;border-radius:5px;margin-top:3px;flex-shrink:0}
+.tranche-dot.released{background:var(--success)}
+.tranche-dot.pending{background:var(--yellow)}
+.tranche-mid{flex:1}
+.tranche-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink)}
+.tranche-date{font-family:'JetBrains Mono';font-size:9.5px;color:var(--success-text);margin-top:2px}
+.tranche-right{align-items:flex-end;display:flex;flex-direction:column;gap:4px}
+.tranche-amt{font-family:'JetBrains Mono';font-size:13.5px;font-weight:800;color:var(--ink)}
+
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.pill.released{background:var(--success-pale);color:var(--success-text)}
+.pill.pending{background:var(--bg2);color:var(--muted-2)}
+
+/* ─── Commission section ───── */
+.comm-section{margin-top:14px;padding-top:11px;border-top:1px solid var(--border)}
+.comm-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.comm-lbl{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted)}
+.comm-val{font-family:'JetBrains Mono';font-size:13px;font-weight:800}
+.comm-val.success{color:var(--success-text)}
+.comm-val.pending{color:var(--yellow-text)}
+
+/* ─── Summary row ───── */
+.summary-row{display:flex;gap:10px;margin-top:14px;padding-top:11px;border-top:1px solid var(--border)}
+.summary-item{flex:1;background:var(--bg2);border-radius:10px;padding:11px;text-align:center}
+.summary-dot{width:8px;height:8px;border-radius:4px;margin:0 auto 5px}
+.summary-dot.success{background:var(--success)}
+.summary-dot.pending{background:var(--yellow)}
+.summary-lbl{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-bottom:3px}
+.summary-val{font-family:'JetBrains Mono';font-size:15px;font-weight:900}
+.summary-val.success{color:var(--success-text)}
+.summary-val.pending{color:var(--yellow-text)}
+
+.tds-note{background:var(--yellow-pale);border-radius:8px;padding:9px 11px;margin-top:12px}
+.tds-text{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--yellow-text);line-height:1.5}
+
+/* ─── Stats grid ───── */
+.stats-grid{display:flex;gap:10px;margin-bottom:11px}
+.stat-box{flex:1;background:var(--bg2);border-radius:11px;padding:13px;text-align:center}
+.stat-num{font-family:'JetBrains Mono';font-size:22px;font-weight:900;color:var(--ink);line-height:1}
+.stat-num.success{color:var(--success-text)}
+.stat-num.yellow{color:var(--yellow-text)}
+.stat-lbl{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-top:5px}
+
+.types-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.type-badge{background:var(--yellow-pale);padding:5px 11px;border-radius:999px;font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── Timeline ───── */
+.timeline{padding-left:4px}
+.tl-item{display:flex;min-height:50px}
+.tl-col{width:22px;align-items:center;display:flex;flex-direction:column}
+.tl-line{flex:1;width:2px;background:var(--border)}
+.tl-line.act{background:var(--yellow)}
+.tl-dot{width:11px;height:11px;border-radius:6px;background:var(--border);z-index:1}
+.tl-dot.act{background:var(--yellow)}
+.tl-dot.highlight{width:16px;height:16px;border-radius:8px;background:var(--yellow);border:3px solid var(--ink)}
+.tl-content{flex:1;padding-left:11px;padding-bottom:14px;justify-content:center;display:flex;flex-direction:column}
+.tl-lbl{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--muted-2)}
+.tl-lbl.act{color:var(--ink);font-weight:800}
+.tl-lbl.highlight{color:var(--ink);font-weight:900}
+.tl-date{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px;font-weight:700}
+
+/* ─── Action buttons ───── */
+.actions-card{margin:14px;display:flex;flex-direction:column;gap:8px}
+.btn-primary{background:var(--ink);color:var(--yellow);border-radius:12px;padding:14px;text-align:center;font-family:'Outfit';font-size:14px;font-weight:900;letter-spacing:.2px;text-transform:uppercase}
+.btn-secondary{background:var(--white);color:var(--ink);border:1.5px solid var(--ink);border-radius:12px;padding:12px;text-align:center;font-family:'Outfit';font-size:13px;font-weight:800;text-transform:uppercase}
+
+/* ─── Profile card (MyStore) ───── */
+.profile-card{display:flex;align-items:center;gap:12px;margin:0 14px 12px;padding:14px;background:var(--white);border-radius:14px;border:1px solid var(--border)}
+.avatar{width:54px;height:54px;border-radius:27px;background:var(--yellow);display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:'Outfit';font-size:22px;font-weight:900;flex-shrink:0}
+.profile-mid{flex:1}
+.profile-name{font-family:'Outfit';font-size:15px;font-weight:800;color:var(--ink)}
+.profile-handle{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px}
+.profile-stats{display:flex;gap:11px}
+.profile-stat-box{align-items:center;display:flex;flex-direction:column}
+.profile-stat-val{font-family:'JetBrains Mono';font-size:16px;font-weight:900;color:var(--ink)}
+.profile-stat-lbl{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);margin-top:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+
+/* ─── Offer section + product cards (Store) ───── */
+.offer-section{margin:0 14px 16px}
+.offer-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.offer-brand{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.offer-discount{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--success-text);background:var(--success-pale);padding:3px 8px;border-radius:6px;letter-spacing:.3px}
+
+.product-card{background:var(--white);border:1px solid var(--border);border-radius:11px;margin-bottom:7px;overflow:hidden}
+.product-row{display:flex;padding:11px;gap:10px;align-items:center}
+.product-emoji{width:48px;height:48px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.product-mid{flex:1;min-width:0}
+.product-name{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink)}
+.product-desc{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:2px}
+.product-price{font-family:'JetBrains Mono';font-size:14px;font-weight:900;color:var(--ink);margin-top:4px}
+
+.note-box{padding:11px;background:var(--yellow-pale);border-top:1px solid #F0DA88}
+.note-quote{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--yellow-text);font-style:italic;line-height:1.4}
+.note-by{font-family:'JetBrains Mono';font-size:9px;color:var(--yellow-text);margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;opacity:.85}
+
+/* ─── CampaignProducts specific ───── */
+.stats-bar{display:flex;background:var(--white);padding:14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.stats-bar .stat{flex:1;align-items:center;display:flex;flex-direction:column}
+.stats-bar .stat-num{font-family:'JetBrains Mono';font-size:20px;font-weight:900;color:var(--ink)}
+.stats-bar .stat-lbl{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);margin-top:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+
+.info-banner{margin:0 14px 12px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:11px;padding:11px;display:flex;gap:9px;align-items:flex-start}
+.info-ico{width:24px;height:24px;color:var(--yellow-text)}
+.info-text{flex:1;font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--yellow-text);line-height:1.5}
+
+.product-card-large{background:var(--white);border:1px solid var(--border);border-radius:14px;margin:0 14px 10px;overflow:hidden}
+.product-header{display:flex;padding:14px;gap:12px;align-items:center}
+.product-emoji-lg{width:54px;height:54px;border-radius:11px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.product-mid-lg{flex:1;min-width:0}
+.product-name-lg{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink)}
+.product-desc-lg{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:2px}
+.price-row{display:flex;align-items:center;gap:8px;margin-top:5px}
+.price{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--ink)}
+.discount-badge{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--success-text);background:var(--success-pale);padding:2px 6px;border-radius:5px;letter-spacing:.2px}
+.live-badge{background:var(--success-pale);padding:4px 9px;border-radius:8px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--success-text);display:inline-flex;align-items:center;gap:4px}
+
+.note-card{padding:11px 14px 12px;background:var(--bg2);border-top:1px solid var(--border)}
+.note-lbl{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.note-text{font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--ink);font-style:italic;line-height:1.5}
+.note-actions{flex-direction:row;display:flex;gap:14px;margin-top:8px}
+.note-edit{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px dashed var(--ink)}
+.note-remove{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--danger-text);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px dashed var(--danger-text)}
+
+.publish-form{padding:14px;border-top:1px solid var(--border);background:var(--bg2)}
+.publish-label{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;margin-bottom:7px}
+.note-input{border:1.5px solid var(--ink);border-radius:10px;padding:11px;font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted-3);background:var(--white);min-height:60px}
+.publish-actions{display:flex;gap:8px;margin-top:10px;justify-content:flex-end}
+.cancel-btn{padding:10px 16px;border-radius:10px;font-family:'Outfit';font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+.publish-btn{padding:10px 16px;border-radius:10px;background:var(--ink);color:var(--yellow);font-family:'Outfit';font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.3px}
+
+.quick-publish{padding:13px;border-top:1px solid var(--border);text-align:center;font-family:'Outfit';font-size:12px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.3px;border-style:dashed}
+
+/* ─── Empty state ───── */
+.empty-card{align-items:center;display:flex;flex-direction:column;padding:60px 28px}
+.empty-tile{width:66px;height:66px;border-radius:14px;background:var(--yellow-pale);border:1.5px dashed var(--yellow);align-items:center;justify-content:center;margin-bottom:16px;display:flex;color:var(--yellow-text)}
+.empty-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);margin-bottom:6px;text-align:center}
+.empty-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5;max-width:240px}
+
+/* ─── Side panel ───── */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+    <symbol id="ic-check-bold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 L10 17 L19 8"/></symbol>
+    <symbol id="ic-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8 V8.01"/><path d="M12 12 V16"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 32 · influencer-mobile CampaignCompletion + CampaignProducts + MyStore — wave2 mockup</h1>
+  <div class="sub">
+    <b>5th flow of mobile-influencer bucket (5/23).</b> 3 screens · 1,225 LOC · <b>ZERO SDK boundaries</b> · <b>ZERO backend change</b> · <b>ZERO StatusPill additions</b> (43-entry map unchanged). <b>~18 render branches</b> preserved verbatim including the Timeline sub-component + 4-API publish flow on CampaignProducts. <b>Visual:</b> ink celebration header with yellow check + yellow "Campaign Completed!" + successPale Total Earned + success/yellow tranche dots + yellowPale type badges + yellow-active vertical timeline with ink-bordered highlight final step · ink/yellow primary CTAs throughout · category emoji fallbacks preserved on product cards.
+  </div>
+</div>
+
+<!-- Row 1: 3 phone frames -->
+<div class="row">
+
+  <!-- PHONE 1: CampaignCompletion -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="celebrate">
+        <div class="back-row"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span><span class="back-text">Back</span></div>
+        <div class="celebrate-content">
+          <div class="check-circle"><span class="ico ico-lg"><svg><use href="#ic-check-bold"/></svg></span></div>
+          <div class="celebrate-title">Campaign Completed!</div>
+          <div class="celebrate-sub">Great work on this campaign with Sparkle Cosmetics</div>
+          <div class="campaign-label">Diwali Glow-Up</div>
+        </div>
+      </div>
+
+      <div class="body">
+        <!-- Earnings Summary -->
+        <div class="card">
+          <div class="card-ttl">Earnings Summary</div>
+          <div class="earned-box">
+            <div class="earned-l">Total Earned</div>
+            <div class="earned-v">₹17,000</div>
+          </div>
+
+          <div class="section-l">Tranche Payments</div>
+          <div class="tranche-row">
+            <div class="tranche-dot released"></div>
+            <div class="tranche-mid">
+              <div class="tranche-ttl">T1 — Contract Signed</div>
+              <div class="tranche-date">Released: 3 Nov 2026</div>
+            </div>
+            <div class="tranche-right">
+              <div class="tranche-amt">₹4,250</div>
+              <span class="pill released">Released</span>
+            </div>
+          </div>
+          <div class="tranche-row">
+            <div class="tranche-dot released"></div>
+            <div class="tranche-mid">
+              <div class="tranche-ttl">T2 — Content Live</div>
+              <div class="tranche-date">Released: 10 Nov 2026</div>
+            </div>
+            <div class="tranche-right">
+              <div class="tranche-amt">₹4,250</div>
+              <span class="pill released">Released</span>
+            </div>
+          </div>
+          <div class="tranche-row">
+            <div class="tranche-dot pending"></div>
+            <div class="tranche-mid">
+              <div class="tranche-ttl">T3 — 30 Days Post-Live</div>
+            </div>
+            <div class="tranche-right">
+              <div class="tranche-amt">₹8,500</div>
+              <span class="pill pending">Pending</span>
+            </div>
+          </div>
+
+          <div class="summary-row">
+            <div class="summary-item">
+              <div class="summary-dot success"></div>
+              <div class="summary-lbl">Released</div>
+              <div class="summary-val success">₹8,500</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-dot pending"></div>
+              <div class="summary-lbl">Pending</div>
+              <div class="summary-val pending">₹8,500</div>
+            </div>
+          </div>
+
+          <div class="tds-note"><span class="tds-text"><b>Note:</b> 10% TDS deducted at withdrawal.</span></div>
+        </div>
+
+        <!-- Performance Stats -->
+        <div class="card">
+          <div class="card-ttl">Performance Stats</div>
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-num">4/4</div>
+              <div class="stat-lbl">Deliverables Done</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-num">2</div>
+              <div class="stat-lbl">Content Types</div>
+            </div>
+          </div>
+          <div class="types-row">
+            <span class="type-badge">Instagram Reel</span>
+            <span class="type-badge">Instagram Story</span>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card">
+          <div class="card-ttl">Campaign Timeline</div>
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-col"><div class="tl-dot act"></div><div class="tl-line act"></div></div>
+              <div class="tl-content">
+                <div class="tl-lbl act">Offer Accepted</div>
+                <div class="tl-date">28 Oct 2026</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-col"><div class="tl-line act"></div><div class="tl-dot act"></div><div class="tl-line act"></div></div>
+              <div class="tl-content">
+                <div class="tl-lbl act">Contract Signed</div>
+                <div class="tl-date">3 Nov 2026</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-col"><div class="tl-line act"></div><div class="tl-dot act"></div><div class="tl-line act"></div></div>
+              <div class="tl-content">
+                <div class="tl-lbl act">Content Submitted</div>
+                <div class="tl-date">8 Nov 2026</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-col"><div class="tl-line act"></div><div class="tl-dot act"></div><div class="tl-line act"></div></div>
+              <div class="tl-content">
+                <div class="tl-lbl act">Content Went Live</div>
+                <div class="tl-date">10 Nov 2026</div>
+              </div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-col"><div class="tl-line act"></div><div class="tl-dot highlight"></div></div>
+              <div class="tl-content">
+                <div class="tl-lbl highlight">Campaign Completed</div>
+                <div class="tl-date">14 Nov 2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions-card">
+          <div class="btn-primary">VIEW EARNINGS</div>
+          <div class="btn-secondary">Back to Campaigns</div>
+        </div>
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · CampaignCompletion</b><br/>Ink hero with yellow rule + yellow check-bold tile + yellow "Campaign Completed!" + muted-white sub + campaign-label pill · successPale Total Earned ₹17,000 · tranche/commission/summary breakdowns · yellowPale TDS · stats grid + content type badges · yellow timeline with ink-bordered highlight final step · ink/yellow View Earnings + ghost-ink Back</div>
+  </div>
+
+  <!-- PHONE 2: CampaignProducts -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-top">
+        <div class="h-back"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-mid">
+          <div class="h-title">Campaign Products</div>
+          <div class="h-sub">Diwali Glow-Up · Sparkle Cosmetics</div>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-num">5</div>
+          <div class="stat-lbl">Products</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num success">2</div>
+          <div class="stat-lbl">Published</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num yellow">3</div>
+          <div class="stat-lbl">Pending</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="info-banner">
+          <div class="info-ico"><span class="ico ico-sm"><svg><use href="#ic-info"/></svg></span></div>
+          <div class="info-text">Add your personal recommendation to each product and publish it to your store. Your followers will see these deals!</div>
+        </div>
+
+        <!-- Published product card -->
+        <div class="product-card-large">
+          <div class="product-header">
+            <div class="product-emoji-lg">💄</div>
+            <div class="product-mid-lg">
+              <div class="product-name-lg">Glitter Eyeshadow Palette</div>
+              <div class="product-desc-lg">12-shade festive collection</div>
+              <div class="price-row">
+                <span class="price">₹1,299</span>
+                <span class="discount-badge">30% OFF</span>
+              </div>
+            </div>
+            <span class="live-badge"><span class="ico ico-sm" style="color:var(--success-text)"><svg><use href="#ic-check-bold"/></svg></span>Live</span>
+          </div>
+          <div class="note-card">
+            <div class="note-lbl">Your recommendation</div>
+            <div class="note-text">"This palette is INSANE for Diwali looks — the gold + bronze shades pop on every skin tone."</div>
+            <div class="note-actions">
+              <span class="note-edit">Edit</span>
+              <span class="note-remove">Remove from store</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending product card with edit form -->
+        <div class="product-card-large">
+          <div class="product-header">
+            <div class="product-emoji-lg">💋</div>
+            <div class="product-mid-lg">
+              <div class="product-name-lg">Matte Liquid Lipstick</div>
+              <div class="product-desc-lg">Long-wear 12-hour formula</div>
+              <div class="price-row">
+                <span class="price">₹599</span>
+                <span class="discount-badge">30% OFF</span>
+              </div>
+            </div>
+          </div>
+          <div class="publish-form">
+            <div class="publish-label">Add your recommendation</div>
+            <div class="note-input">e.g. I love this deal! Best for festive looks…</div>
+            <div class="publish-actions">
+              <span class="cancel-btn">Cancel</span>
+              <span class="publish-btn">Publish to My Store</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick publish prompt -->
+        <div class="product-card-large">
+          <div class="product-header">
+            <div class="product-emoji-lg">🧴</div>
+            <div class="product-mid-lg">
+              <div class="product-name-lg">Festive Hair Serum</div>
+              <div class="product-desc-lg">Shine + frizz control</div>
+              <div class="price-row">
+                <span class="price">₹449</span>
+                <span class="discount-badge">30% OFF</span>
+              </div>
+            </div>
+          </div>
+          <div class="quick-publish">+ Add Note &amp; Publish</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · CampaignProducts</b><br/>White-bg light topbar (no ink — content-focused) + stats bar with success/yellow numbers · yellowPale info banner with i-icon · 3 product states: <i>live</i> (successPale Live badge + bg2 note card + edit/remove dashed links) · <i>pending+editing</i> (ink-bordered note input + ink/yellow Publish CTA) · <i>quick-publish</i> (dashed-border row prompt)</div>
+  </div>
+
+  <!-- PHONE 3: MyStore -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-top">
+        <div class="h-back"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-mid">
+          <div class="h-title">My Store</div>
+          <div class="h-sub">This is what followers see</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <div class="profile-card">
+          <div class="avatar">R</div>
+          <div class="profile-mid">
+            <div class="profile-name">Riya Sharma</div>
+            <div class="profile-handle">@riyasharma_</div>
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat-box">
+              <div class="profile-stat-val">3</div>
+              <div class="profile-stat-lbl">Deals</div>
+            </div>
+            <div class="profile-stat-box">
+              <div class="profile-stat-val">8</div>
+              <div class="profile-stat-lbl">Products</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="offer-section">
+          <div class="offer-head">
+            <div class="offer-brand">Sparkle Cosmetics</div>
+            <div class="offer-discount">30% OFF</div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-row">
+              <div class="product-emoji">💄</div>
+              <div class="product-mid">
+                <div class="product-name">Glitter Eyeshadow Palette</div>
+                <div class="product-desc">12-shade festive collection</div>
+                <div class="product-price">₹1,299</div>
+              </div>
+            </div>
+            <div class="note-box">
+              <div class="note-quote">"This palette is INSANE for Diwali looks — the gold + bronze shades pop on every skin tone."</div>
+              <div class="note-by">— Your recommendation</div>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-row">
+              <div class="product-emoji">💋</div>
+              <div class="product-mid">
+                <div class="product-name">Matte Liquid Lipstick</div>
+                <div class="product-desc">Long-wear 12-hour formula</div>
+                <div class="product-price">₹599</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="offer-section">
+          <div class="offer-head">
+            <div class="offer-brand">DewBalm</div>
+            <div class="offer-discount">15% COMM</div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-row">
+              <div class="product-emoji">🧴</div>
+              <div class="product-mid">
+                <div class="product-name">Hydra Glow Cream</div>
+                <div class="product-desc">Winter daily moisturiser</div>
+                <div class="product-price">₹899</div>
+              </div>
+            </div>
+            <div class="note-box">
+              <div class="note-quote">"My winter holy grail — use code RIYA15 for 15% off."</div>
+              <div class="note-by">— Your recommendation</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · MyStore (preview)</b><br/>White-bg light topbar · profile card with yellow avatar tile + ink-mono stats · 2 offer sections (brand + successPale discount badge) · per-product cards with category emoji fallback + name + desc + mono price · yellowPale note-quote with italic copy + mono "— Your recommendation" attribution</div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Locked design calls (4)</h3>
+      <ul>
+        <li><b>Celebration hero:</b> ink + yellow check + yellow "Completed!" title (design call #1)</li>
+        <li><b>Total Earned highlight:</b> successPale + successText (design call #2)</li>
+        <li><b>Category emoji fallback:</b> KEEP (🍽️ 💇 🚗 🏍️ 👗 👕 🧁 💐) per brand_category — friendlier than generic MCI (design call #3)</li>
+        <li><b>Action emoji in CTAs/alerts:</b> DROP (clean UPPERCASE Outfit-Black CTAs; alerts without 🎉🚀🔥) (design call #4)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">6 APIs · zero phantom · zero new</div>
+      <ul>
+        <li><code>getMyCampaignDetail(ciId)</code> (CampaignCompletion)</li>
+        <li><code>getCampaignCommissionDetail(ciId)</code> → <code>/influencers/me/commissions/campaign/:ciId</code></li>
+        <li><code>getCampaignProducts(ciId)</code></li>
+        <li><code>upsertProductNote({product_id, campaign_id, note_text})</code> POST</li>
+        <li><code>getProductNotes(campaignId)</code></li>
+        <li><code>deleteProductNote(noteId)</code> DELETE</li>
+        <li><code>getMyStorePreview()</code> → <code>/influencers/me/store-preview</code></li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim</h3>
+      <div class="ph">18 render branches + sub-components + 4-API publish flow</div>
+      <ul>
+        <li><b>TimelineItem</b> sub-component with active/highlight states (CampaignCompletion)</li>
+        <li><b>CATEGORY_EMOJI</b> constant (8 categories — Products + Store both)</li>
+        <li><b>Commission math:</b> totalEarned = totalTrancheReleased + totalCommissions</li>
+        <li><b>Goal-aware commission section</b> visibility (goal ∈ {conversion, hybrid})</li>
+        <li><b>4-API publish flow:</b> upsertProductNote → optimistic + alert + reload; unpublish = getProductNotes → find by product_id → deleteProductNote</li>
+        <li><b>is_published flag</b> drives publish vs edit-note vs quick-publish branches</li>
+        <li><b>useFocusEffect reload</b> on MyStore</li>
+        <li><b>popToTop()</b> behaviour on "Back to Campaigns" from CampaignCompletion</li>
+        <li><b>Default note placeholder:</b> "Check out this {product.name}!" for empty publish</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Style refactor scope</h3>
+      <div class="ph">~80 token swaps + 8 hex literals + emoji decisions</div>
+      <ul>
+        <li><b>Custom hex literals to swap:</b> #7A5500 → yellowText · #5A4000 → ink · #F0D060 → yellow accent · #92400e → yellowText · #b45309 → muted · #fde68a → yellow</li>
+        <li><b>Tranche dot logic:</b> teal/orange → success/yellow (matches Flow 31 pattern)</li>
+        <li><b>Timeline dot active:</b> teal → yellow; highlight: gold → ink-bordered yellow</li>
+        <li><b>Live badge:</b> tealPale → successPale (Products + Store)</li>
+        <li><b>Avatar tile:</b> orangePale → yellow (My Store profile)</li>
+        <li><b>Info banner:</b> orangePale + #92400e → yellowPale + yellowText (Products)</li>
+        <li><b>Publish button:</b> orange + white → ink + yellow (consistent w/ Flow 29/30/31)</li>
+        <li><b>Action emoji drops:</b> remove 🎉 from alert + 🚀 from CTA + 🔥 from quick-publish text</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>
