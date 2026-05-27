@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-33-influencer-mobile-deliverables",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-27 chat \"ok go and proceed to flow 33\" + 4 design calls confirmed via AskUserQuestion (yellow progress / danger revision / ink live-cel / drop action emoji KEEP type emoji)",
   "approved_at": "2026-05-27",
@@ -10,17 +10,54 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-27 AskUserQuestion confirming 4 design calls match mockup defaults",
   "mockup_locked_at": "2026-05-27",
-  "notes": "6th flow of mobile-influencer bucket (6/23). DeliverableListScreen (470 LOC) + DeliverableScreen (676 LOC) + DeliverableDetailScreen (657 LOC) = 1,803 LOC — largest single flow in this bucket. MEDIUM risk (image-picker SDK already shipping). ZERO backend change. ZERO StatusPill canonical-map additions (all 6 deliverable statuses already in 43-entry map: pending/submitted/under_review/revision_requested/approved/live). 4 locked design calls applied: (1) Progress bar fill = yellow; (2) Revision card = danger tone (dangerPale+danger border+white feedback body); (3) Live celebration title = ink (matches Flow 32 pattern); (4) Drop action emoji (📁📹🎉⏳⚠), KEEP type emoji (🎬📸📱▶️⚡ via DELIVERABLE_ICONS). ~35 render branches preserved verbatim including 5-step STATUS_TIMELINE + revision_requested override + 3-step R2 upload state machine + 2-confirm Alert flows + 5 per-row CTA branches in List + 6-grid live stats + ER box + STATUS_PRIORITY sort + isOverdue check + useFocusEffect. All 8 APIs preserved (getContractWithDeliverables/getDeliverable/getUploadUrl/uploadFile/getMediaUrl/submitDeliverable/submitLive/refreshStats). Image-picker config byte-for-byte unchanged. StatusBadge → StatusPill canonical migration on all 3 screens. Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + StatusPill canonical badges + yellow-active timeline w/ ink-bordered current + dangerPale revision card with white feedback body + dashed ink-bordered picker tiles with yellowPale MCI image-multi + video icons + ink-fill upload progress + ink/yellow Outfit-Black UPPERCASE CTAs + success/white Live URL CTA + yellow-tile MCI star Live celebration + yellowPale ER box. No native rebuild required (NATIVE_RUNTIME=2 from Flow 28).",
+  "notes": "6th flow of mobile-influencer bucket (6/23). DeliverableListScreen (470 LOC) + DeliverableScreen (676 LOC) + DeliverableDetailScreen (657 LOC) = 1,803 LOC — largest single flow in this bucket. MEDIUM risk (image-picker SDK already shipping). ZERO backend change. ZERO StatusPill canonical-map additions (all 6 deliverable statuses already in 43-entry map: pending/submitted/under_review/revision_requested/approved/live). 4 locked design calls applied: (1) Progress bar fill = yellow; (2) Revision card = danger tone (dangerPale+danger border+white feedback body); (3) Live celebration title = ink (matches Flow 32 pattern); (4) Drop action emoji (📁📹🎉⏳⚠), KEEP type emoji (🎬📸📱▶️⚡ via DELIVERABLE_ICONS). ~35 render branches preserved verbatim including 5-step STATUS_TIMELINE + revision_requested override + 3-step R2 upload state machine + 2-confirm Alert flows + 5 per-row CTA branches in List + 6-grid live stats + ER box + STATUS_PRIORITY sort + isOverdue check + useFocusEffect. All 8 APIs preserved (getContractWithDeliverables/getDeliverable/getUploadUrl/uploadFile/getMediaUrl/submitDeliverable/submitLive/refreshStats). Image-picker config byte-for-byte unchanged. StatusBadge → StatusPill canonical migration on all 3 screens. Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + StatusPill canonical badges + yellow-active timeline w/ ink-bordered current + dangerPale revision card with white feedback body + dashed ink-bordered picker tiles with yellowPale MCI image-multi + video icons + ink-fill upload progress + ink/yellow Outfit-Black UPPERCASE CTAs + success/white Live URL CTA + yellow-tile MCI star Live celebration + yellowPale ER box. No native rebuild required (NATIVE_RUNTIME=2 from Flow 28). RELEASED 2026-05-27 with web pnpm qa 76/76 GREEN gate 0 first-run in 50.4s + OTA × 3.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-27",
+      "web_report_path": "qa/reports/2026-05-27T07-24-46-623Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 50.4,
+      "web_note": "Dual-probe pre-warm (OTA manifest influencer runtime=2 + /admin/stats 401 + /auth/refresh 401) cleared cold-start. 76 passed gate 0 STATE=GREEN on FIRST run in 50.4s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline (00-smoke / 01-follower-public-browse / 02-influencer-launch / 03-brand-launch) continues to apply. Deep DeliverableList/Deliverable/DeliverableDetail visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home). Founder physical smoke-test on installed APK (NATIVE_RUNTIME=2 + image-picker pre-baked) covers visual upgrade + the image-picker integration which is the only SDK boundary on this flow."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-27 chat \"ok go and proceed to flow 33\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-27",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
     "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2) + react-native-image-picker v7.1.2 was already in the APK (used in pre-redesign DeliverableScreen). Flow 33 = pure JS, ships via OTA to existing APKs.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep DeliverableList/Deliverable/DeliverableDetail visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade'"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep DeliverableList/Deliverable/DeliverableDetail visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade + image-picker integration'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "b581807", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "b581807", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "b581807", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 83, "previous_version": 82,
+        "bundle_hash": "sha256:b7fce98c7b6acaeb8ee2e2249bce81f78265c3c159c0447d2030999fb983083b",
+        "published_at": "2026-05-27T07:26:24.199Z", "bundle_size_kb": 2493,
+        "trigger": "pnpm publish-ota:all -m 'Flow 33 — influencer-mobile DeliverableList + Deliverable + DeliverableDetail (brandPalette + Outfit/PJS/Mono + StatusPill canonical + image-picker preserved + 4 locked design calls)'",
+        "scope": "brand audience manifest (shared bundle; no brand-screen changes — influencer-only restyle)"
+      },
+      "ota_influencer": {
+        "version": 72, "previous_version": 71,
+        "bundle_hash": "sha256:b7fce98c7b6acaeb8ee2e2249bce81f78265c3c159c0447d2030999fb983083b",
+        "published_at": "2026-05-27T07:26:34.847Z", "bundle_size_kb": 2493,
+        "trigger": "pnpm publish-ota:all -m 'Flow 33 — influencer-mobile DeliverableList + Deliverable + DeliverableDetail (brandPalette + Outfit/PJS/Mono + StatusPill canonical + image-picker preserved + 4 locked design calls)'",
+        "scope": "influencer audience manifest (shared bundle; ALL Flow 33 redesigns live here)"
+      },
+      "ota_follower": {
+        "version": 46, "previous_version": 45,
+        "bundle_hash": "sha256:b7fce98c7b6acaeb8ee2e2249bce81f78265c3c159c0447d2030999fb983083b",
+        "published_at": "2026-05-27T07:26:43.739Z", "bundle_size_kb": 2493,
+        "trigger": "pnpm publish-ota:all -m 'Flow 33 — influencer-mobile DeliverableList + Deliverable + DeliverableDetail (brandPalette + Outfit/PJS/Mono + StatusPill canonical + image-picker preserved + 4 locked design calls)'",
+        "scope": "follower audience manifest (shared bundle; no follower-screen changes)"
+      }
+    }
   }
 }
