@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-34-influencer-mobile-earnings-commission-transactions",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-27 chat \"pls continue flow34\" + 4 design calls confirmed via AskUserQuestion (yellow hero amt / MCI method icons / unified success-yellow tranche timeline / KEEP tx type emoji)",
   "approved_at": "2026-05-27",
@@ -10,17 +10,54 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-27 AskUserQuestion confirming 4 design calls match mockup defaults",
   "mockup_locked_at": "2026-05-27",
-  "notes": "7th flow of mobile-influencer bucket (7/23). EarningsScreen (287 LOC) + CommissionDetailScreen (310 LOC) + TransactionFeedScreen (166 LOC) = 763 LOC. LOW risk (read-mostly money screens + 1 POST withdraw). ZERO backend change. ZERO StatusPill canonical-map additions. 4 locked design calls applied: (1) Hero amount = yellow-mono on ink (matches money-emphasis pattern); (2) Method selector = MCI cellphone/bank vectors (replaces 📱/🏦); (3) Tranche timeline = unified success/yellow w/ ink-bordered current step (matches Flow 32/33); (4) TransactionFeed type emojis 🏪📅📦🔗 KEPT (type-icon class per design call #4 split). 16 render branches preserved verbatim including TDS-10% client-side preview math + min ₹100 validation + method state machine + goal-aware commission section + show-more on commissions > 5 + 30-day-window conditional banner + FlatList perf + useFocusEffect + Linking.openURL for TDS cert. All 7 APIs preserved (getEarnings/getCampaignEarnings/getWithdrawals/withdraw/getTdsCertificateUrl/getCampaignCommissionDetail/getMyTransactions). StatusBadge → StatusPill canonical migration on 2 screens (Earnings withdrawal history + CommissionDetail tranche status). Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + yellow-mono ₹ amount + ink/yellow Outfit-Black UPPERCASE WITHDRAW NOW CTA + yellowPale TDS preview with danger TDS + success You-Receive + yellowPale MCI file-document TDS-cert tile + success+yellow progress bars + unified success/yellow tranche timeline with check-bold MCI + ink-bordered yellow current step + StatusPill canonical Released/Locked + success/yellow commission summary card left borders + infoPale 30-day info banner + white TransactionFeed topbar with 4 type-pill tints (success/info/conv/yellow). No native rebuild required (NATIVE_RUNTIME=2 from Flow 28).",
+  "notes": "7th flow of mobile-influencer bucket (7/23). EarningsScreen (287 LOC) + CommissionDetailScreen (310 LOC) + TransactionFeedScreen (166 LOC) = 763 LOC. LOW risk (read-mostly money screens + 1 POST withdraw). ZERO backend change. ZERO StatusPill canonical-map additions. 4 locked design calls applied. 16 render branches preserved verbatim including TDS-10% client-side preview + min ₹100 validation + method state machine + goal-aware commission section + show-more on commissions > 5 + 30-day-window conditional banner + FlatList + useFocusEffect + Linking.openURL for TDS cert. All 7 APIs preserved. StatusBadge → StatusPill canonical migration on 2 screens. Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + yellow-mono ₹ amount + ink/yellow Outfit-Black WITHDRAW NOW CTA + yellowPale TDS preview + yellowPale MCI file-document TDS-cert tile + success+yellow progress bars + unified success/yellow tranche timeline + StatusPill canonical Released/Locked + success/yellow commission summary + infoPale 30-day banner + 4 type-pill tints on TransactionFeed (emoji 🏪📅📦🔗 KEPT per design call #4). No native rebuild required. RELEASED 2026-05-27 with web pnpm qa 76/76 GREEN gate 0 first-run in 78s + OTA × 3.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-27",
+      "web_report_path": "qa/reports/2026-05-27T12-29-17-224Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 78,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN on FIRST run in 78s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Deep Earnings/CommissionDetail/TransactionFeed visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home). Founder physical smoke-test on installed APK covers visual upgrade + withdrawal flow."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-27 chat \"pls continue flow34\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-27",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
     "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 34 = pure JS, ships via OTA to existing APKs.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Earnings/CommissionDetail/TransactionFeed visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade + withdrawal flow'"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Earnings/CommissionDetail/TransactionFeed visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test covers'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "364c980", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "364c980", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "364c980", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 84, "previous_version": 83,
+        "bundle_hash": "sha256:5a47f9bcbad03943b171f05de4654ab346001fb0b1fd39bfc013c67a9ae239ef",
+        "published_at": "2026-05-27T12:31:25.454Z", "bundle_size_kb": 2499,
+        "trigger": "pnpm publish-ota:all -m 'Flow 34 — influencer-mobile Earnings + CommissionDetail + TransactionFeed (brandPalette + Outfit/PJS/Mono + StatusPill canonical + 4 locked design calls)'",
+        "scope": "brand audience manifest (shared bundle; no brand-screen changes — influencer-only restyle)"
+      },
+      "ota_influencer": {
+        "version": 73, "previous_version": 72,
+        "bundle_hash": "sha256:5a47f9bcbad03943b171f05de4654ab346001fb0b1fd39bfc013c67a9ae239ef",
+        "published_at": "2026-05-27T12:31:43.013Z", "bundle_size_kb": 2499,
+        "trigger": "pnpm publish-ota:all -m 'Flow 34 — influencer-mobile Earnings + CommissionDetail + TransactionFeed (brandPalette + Outfit/PJS/Mono + StatusPill canonical + 4 locked design calls)'",
+        "scope": "influencer audience manifest (shared bundle; ALL Flow 34 redesigns live here)"
+      },
+      "ota_follower": {
+        "version": 47, "previous_version": 46,
+        "bundle_hash": "sha256:5a47f9bcbad03943b171f05de4654ab346001fb0b1fd39bfc013c67a9ae239ef",
+        "published_at": "2026-05-27T12:32:09.552Z", "bundle_size_kb": 2499,
+        "trigger": "pnpm publish-ota:all -m 'Flow 34 — influencer-mobile Earnings + CommissionDetail + TransactionFeed (brandPalette + Outfit/PJS/Mono + StatusPill canonical + 4 locked design calls)'",
+        "scope": "follower audience manifest (shared bundle; no follower-screen changes)"
+      }
+    }
   }
 }
