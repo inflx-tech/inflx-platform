@@ -1,9 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, TextInput, Alert, Linking, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
+
+/**
+ * EarningsScreen — withdraw hub with TDS-10% client-side preview.
+ *
+ * Flow 34 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/
+ * JetBrains Mono fonts + StatusPill canonical (replaces StatusBadge).
+ * Ink hero with yellow-mono "Available to Withdraw" amount per design call #1.
+ * MCI cellphone/bank method icons per design call #2 (replaces 📱/🏦).
+ * TDS 10% client-side math preserved verbatim.
+ */
 
 export default function EarningsScreen() {
   const navigation = useNavigation();
@@ -11,7 +22,6 @@ export default function EarningsScreen() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [campaignEarnings, setCampaignEarnings] = useState([]);
   const [campaignLoading, setCampaignLoading] = useState(true);
-  const [tab, setTab] = useState('earnings');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -38,13 +48,13 @@ export default function EarningsScreen() {
 
   async function handleWithdraw() {
     const amtRupees = parseFloat(amount);
-    if (!amtRupees || amtRupees < 100) { Alert.alert('Minimum \u20B9100 withdrawal'); return; }
+    if (!amtRupees || amtRupees < 100) { Alert.alert('Minimum ₹100 withdrawal'); return; }
     setWithdrawing(true);
     // Backend accepts rupees.
     const res = await influencerApi.withdraw({ amount_requested: amtRupees, method });
     setWithdrawing(false);
     if (res.success) {
-      Alert.alert('Withdrawal initiated!', `Net amount: ${fmtMoney(res.data?.withdrawal?.net_paid)}`);
+      Alert.alert('Withdrawal initiated', `Net amount: ${fmtMoney(res.data?.withdrawal?.net_paid)}`);
       setAmount('');
       load();
     } else {
@@ -58,106 +68,124 @@ export default function EarningsScreen() {
   const net = amtRupees ? parseFloat((amtRupees - tds).toFixed(2)) : 0;
 
   function getGoalLabel(goal) {
-    if (goal === 'engagement') return 'Engagement';
-    if (goal === 'conversion') return 'Conversion';
-    if (goal === 'hybrid') return 'Hybrid';
-    return goal || '-';
+    if (goal === 'engagement') return 'ENGAGEMENT';
+    if (goal === 'conversion') return 'CONVERSION';
+    if (goal === 'hybrid') return 'HYBRID';
+    return (goal || '-').toUpperCase();
+  }
+
+  function getGoalStyle(goal) {
+    if (goal === 'conversion') return { bg: P.convPale, fg: P.conv };
+    return { bg: P.yellowPale, fg: P.yellowText };
   }
 
   return (
-    <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-      {/* Header */}
+    <ScrollView
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}
+    >
+      {/* Hero */}
       <View style={styles.headerCard}>
-        <Text style={styles.headerLabel}>Available to Withdraw</Text>
-        <Text style={styles.headerAmount}>{fmtRupees(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
-        <View style={{ flexDirection: 'row', gap: 20, marginTop: 12 }}>
-          <View>
-            <Text style={styles.miniLabel}>Pending</Text>
-            <Text style={styles.miniVal}>{fmtRupees(earnings?.pending_balance)}</Text>
+        <Text style={styles.heroLabel}>AVAILABLE TO WITHDRAW</Text>
+        <Text style={styles.heroAmount}>{fmtRupees(earnings?.available_to_withdraw || earnings?.wallet_balance)}</Text>
+        <View style={styles.heroMiniRow}>
+          <View style={styles.heroMini}>
+            <Text style={styles.heroMiniLabel}>PENDING</Text>
+            <Text style={styles.heroMiniVal}>{fmtRupees(earnings?.pending_balance)}</Text>
           </View>
-          <View>
-            <Text style={styles.miniLabel}>TDS This FY</Text>
-            <Text style={styles.miniVal}>{fmtMoney(earnings?.tds_this_financial_year)}</Text>
+          <View style={styles.heroMini}>
+            <Text style={styles.heroMiniLabel}>TDS THIS FY</Text>
+            <Text style={styles.heroMiniVal}>{fmtMoney(earnings?.tds_this_financial_year)}</Text>
           </View>
-          <View>
-            <Text style={styles.miniLabel}>Total Earned</Text>
-            <Text style={styles.miniVal}>{fmtRupees(earnings?.total_earned)}</Text>
+          <View style={styles.heroMini}>
+            <Text style={styles.heroMiniLabel}>TOTAL EARNED</Text>
+            <Text style={styles.heroMiniVal}>{fmtRupees(earnings?.total_earned)}</Text>
           </View>
         </View>
+        <View style={styles.headerAccent} />
       </View>
 
-      {/* Campaign Earnings Section */}
-      <View style={styles.section}>
+      {/* Campaign Earnings */}
+      <View style={styles.sectionMargin}>
         <Text style={styles.sectionTitle}>Campaign Earnings</Text>
         {campaignLoading ? (
-          <ActivityIndicator size="small" color={colors.navy} style={{ marginVertical: 20 }} />
+          <ActivityIndicator size="small" color={P.yellow} style={{ marginVertical: 16 }} />
         ) : campaignEarnings.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No campaign earnings yet</Text>
             <Text style={styles.emptySub}>Earnings from your campaigns will appear here</Text>
           </View>
         ) : (
-          campaignEarnings.map(c => (
-            <TouchableOpacity
-              key={c.campaign_influencer_id}
-              style={styles.campaignCard}
-              onPress={() => navigation.navigate('CommissionDetail', { campaignInfluencerId: c.campaign_influencer_id, campaignName: c.campaign_name })}
-              activeOpacity={0.7}
-            >
-              <View style={styles.campaignCardHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.campaignName} numberOfLines={1}>{c.campaign_name}</Text>
-                  <Text style={styles.campaignBrand}>{c.brand_name}</Text>
+          campaignEarnings.map(c => {
+            const goalStyle = getGoalStyle(c.goal);
+            return (
+              <TouchableOpacity
+                key={c.campaign_influencer_id}
+                style={styles.campaignCard}
+                onPress={() => navigation.navigate('CommissionDetail', { campaignInfluencerId: c.campaign_influencer_id, campaignName: c.campaign_name })}
+                activeOpacity={0.7}
+              >
+                <View style={styles.campaignCardHeader}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.campaignName} numberOfLines={1}>{c.campaign_name}</Text>
+                    <Text style={styles.campaignBrand}>{(c.brand_name || '').toUpperCase()}</Text>
+                  </View>
+                  <View style={[styles.goalBadge, { backgroundColor: goalStyle.bg }]}>
+                    <Text style={[styles.goalBadgeText, { color: goalStyle.fg }]}>{getGoalLabel(c.goal)}</Text>
+                  </View>
                 </View>
-                <View style={styles.goalBadge}>
-                  <Text style={styles.goalBadgeText}>{getGoalLabel(c.goal)}</Text>
-                </View>
-              </View>
 
-              <View style={styles.campaignStatsRow}>
-                <View style={styles.campaignStat}>
-                  <Text style={styles.campaignStatLabel}>Earned</Text>
-                  <Text style={[styles.campaignStatVal, { color: colors.teal }]}>{fmtRupees(Math.round(c.total_earned))}</Text>
+                <View style={styles.campaignStatsRow}>
+                  <View style={styles.campaignStat}>
+                    <Text style={styles.campaignStatLabel}>EARNED</Text>
+                    <Text style={[styles.campaignStatVal, { color: P.successText }]}>{fmtRupees(Math.round(c.total_earned))}</Text>
+                  </View>
+                  <View style={styles.campaignStat}>
+                    <Text style={styles.campaignStatLabel}>PENDING</Text>
+                    <Text style={[styles.campaignStatVal, { color: P.yellowText }]}>{fmtRupees(Math.round(c.total_pending))}</Text>
+                  </View>
+                  <View style={styles.campaignStat}>
+                    <Text style={styles.campaignStatLabel}>TOTAL</Text>
+                    <Text style={[styles.campaignStatVal, { color: P.ink }]}>{fmtRupees(Math.round(c.total_earned + c.total_pending))}</Text>
+                  </View>
                 </View>
-                <View style={styles.campaignStat}>
-                  <Text style={styles.campaignStatLabel}>Pending</Text>
-                  <Text style={[styles.campaignStatVal, { color: colors.orange }]}>{fmtRupees(Math.round(c.total_pending))}</Text>
-                </View>
-                <View style={styles.campaignStat}>
-                  <Text style={styles.campaignStatLabel}>Total</Text>
-                  <Text style={[styles.campaignStatVal, { color: colors.t1 }]}>{fmtRupees(Math.round(c.total_earned + c.total_pending))}</Text>
-                </View>
-              </View>
 
-              {/* Progress bar */}
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { flex: c.total_earned || 0.001 }]} />
-                <View style={[styles.progressBarPending, { flex: c.total_pending || 0.001 }]} />
-              </View>
+                {/* Progress bar — success + yellow */}
+                <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarFill, { flex: c.total_earned || 0.001 }]} />
+                  <View style={[styles.progressBarPending, { flex: c.total_pending || 0.001 }]} />
+                </View>
 
-              <View style={styles.campaignFooter}>
-                <Text style={styles.campaignFooterText}>
-                  {c.tranche_count > 0 ? `${c.tranche_count} tranches` : ''}
-                  {c.tranche_count > 0 && c.commission_count > 0 ? ' + ' : ''}
-                  {c.commission_count > 0 ? `${c.commission_count} commissions` : ''}
-                </Text>
-                <Text style={styles.campaignChevron}>View details ›</Text>
-              </View>
-            </TouchableOpacity>
-          ))
+                <View style={styles.campaignFooter}>
+                  <Text style={styles.campaignFooterText}>
+                    {c.tranche_count > 0 ? `${c.tranche_count} TRANCHES` : ''}
+                    {c.tranche_count > 0 && c.commission_count > 0 ? ' + ' : ''}
+                    {c.commission_count > 0 ? `${c.commission_count} COMMISSIONS` : ''}
+                  </Text>
+                  <Text style={styles.campaignChevron}>VIEW DETAILS ›</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })
         )}
       </View>
 
       {/* Withdrawal form */}
-      <View style={styles.section}>
+      <View style={styles.sectionMargin}>
         <Text style={styles.sectionTitle}>Withdraw Funds</Text>
         <View style={styles.methodRow}>
-          {['upi', 'bank'].map(m => (
-            <TouchableOpacity key={m} onPress={() => setMethod(m)} style={[styles.methodCard, method === m && styles.methodCardActive]}>
-              <Text style={{ fontSize: 18, marginBottom: 4 }}>{m === 'upi' ? '📱' : '🏦'}</Text>
-              <Text style={[styles.methodLabel, method === m && { color: colors.white }]}>{m.toUpperCase()}</Text>
-            </TouchableOpacity>
-          ))}
+          {[
+            { key: 'upi', icon: 'cellphone' },
+            { key: 'bank', icon: 'bank-outline' },
+          ].map(m => {
+            const active = method === m.key;
+            return (
+              <TouchableOpacity key={m.key} onPress={() => setMethod(m.key)} style={[styles.methodCard, active && styles.methodCardActive]}>
+                <Icon name={m.icon} size={20} color={active ? P.yellow : P.ink} />
+                <Text style={[styles.methodLabel, active && { color: P.white }]}>{m.key.toUpperCase()}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <View style={styles.inputWrap}>
@@ -168,17 +196,23 @@ export default function EarningsScreen() {
             onChangeText={setAmount}
             keyboardType="numeric"
             placeholder="1000"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
           />
         </View>
 
         {amount ? (
           <View style={styles.tdsCard}>
-            <View style={styles.tdsRow}><Text style={styles.tdsLabel}>Requested</Text><Text style={styles.tdsVal}>{fmtMoney(Math.round(parseFloat(amount)*100))}</Text></View>
-            <View style={styles.tdsRow}><Text style={styles.tdsLabel}>TDS (10%)</Text><Text style={[styles.tdsVal, {color: colors.red}]}>- {fmtMoney(tds)}</Text></View>
-            <View style={[styles.tdsRow, {borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8, marginTop: 4}]}>
-              <Text style={[styles.tdsLabel, {fontWeight: '700', color: colors.t1}]}>You Receive</Text>
-              <Text style={[styles.tdsVal, {color: colors.teal, fontWeight: '800'}]}>{fmtMoney(net)}</Text>
+            <View style={styles.tdsRow}>
+              <Text style={styles.tdsLabel}>Requested</Text>
+              <Text style={styles.tdsVal}>{fmtMoney(parseFloat(amount))}</Text>
+            </View>
+            <View style={styles.tdsRow}>
+              <Text style={styles.tdsLabel}>TDS (10%)</Text>
+              <Text style={[styles.tdsVal, { color: P.dangerText }]}>- {fmtMoney(tds)}</Text>
+            </View>
+            <View style={[styles.tdsRow, styles.tdsRowTotal]}>
+              <Text style={[styles.tdsLabel, styles.tdsLabelBold]}>You Receive</Text>
+              <Text style={[styles.tdsVal, { color: P.successText, fontWeight: '900' }]}>{fmtMoney(net)}</Text>
             </View>
           </View>
         ) : null}
@@ -188,12 +222,12 @@ export default function EarningsScreen() {
           onPress={handleWithdraw}
           disabled={withdrawing || !amount}
         >
-          <Text style={styles.withdrawBtnText}>{withdrawing ? 'Processing...' : 'Withdraw Now'}</Text>
+          <Text style={styles.withdrawBtnText}>{withdrawing ? 'PROCESSING…' : 'WITHDRAW NOW'}</Text>
         </TouchableOpacity>
       </View>
 
       {/* TDS Certificate download */}
-      <View style={styles.section}>
+      <View style={styles.sectionMargin}>
         <Text style={styles.sectionTitle}>Tax Certificate</Text>
         <TouchableOpacity
           style={styles.tdsCertBtn}
@@ -202,27 +236,29 @@ export default function EarningsScreen() {
             Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open TDS certificate link'));
           }}
         >
-          <Text style={styles.tdsCertIcon}>📄</Text>
+          <View style={styles.tdsCertIco}>
+            <Icon name="file-document-outline" size={18} color={P.yellowText} />
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.tdsCertTitle}>Download TDS Certificate</Text>
-            <Text style={styles.tdsCertSub}>Form 16A · Current Financial Year</Text>
+            <Text style={styles.tdsCertSub}>FORM 16A · CURRENT FINANCIAL YEAR</Text>
           </View>
-          <Text style={{ fontSize: 16, color: colors.t3 }}>›</Text>
+          <Icon name="chevron-right" size={16} color={P.muted3} />
         </TouchableOpacity>
       </View>
 
       {/* Withdrawal history */}
       {withdrawals.length > 0 && (
-        <View style={styles.section}>
+        <View style={styles.sectionMargin}>
           <Text style={styles.sectionTitle}>Withdrawal History</Text>
           {withdrawals.map(w => (
             <View key={w.withdrawal_id || w.id} style={styles.historyRow}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.historyAmt}>{fmtMoney(w.net_paid)}</Text>
-                <Text style={styles.historySub}>Requested: {fmtMoney(w.amount_requested)} · TDS: {fmtMoney(w.tds_deducted)}</Text>
-                <Text style={styles.historySub}>{w.method?.toUpperCase()} · {new Date(w.created_at).toLocaleDateString('en-IN')}</Text>
+                <Text style={styles.historySub}>REQUESTED: {fmtMoney(w.amount_requested)} · TDS: {fmtMoney(w.tds_deducted)}</Text>
+                <Text style={styles.historySub}>{(w.method || '').toUpperCase()} · {new Date(w.created_at).toLocaleDateString('en-IN').toUpperCase()}</Text>
               </View>
-              <StatusBadge status={w.status} />
+              <StatusPill status={w.status} />
             </View>
           ))}
         </View>
@@ -234,54 +270,133 @@ export default function EarningsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  headerCard: { backgroundColor: colors.navy, padding: 24, paddingTop: 52 },
-  headerLabel: { fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  headerAmount: { fontSize: 36, fontWeight: '800', color: colors.white, marginTop: 6 },
-  miniLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginBottom: 2 },
-  miniVal: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.8)' },
-  section: { margin: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: colors.t2, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
-  methodRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  methodCard: { flex: 1, backgroundColor: colors.white, borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 2, borderColor: colors.border },
-  methodCardActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  methodLabel: { fontSize: 12, fontWeight: '700', color: colors.t2 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, borderWidth: 2, borderColor: colors.border2, marginBottom: 12 },
-  rupeeSign: { paddingHorizontal: 14, fontSize: 18, fontWeight: '700', color: colors.t2 },
-  amountInput: { flex: 1, paddingVertical: 14, paddingRight: 16, fontSize: 20, fontWeight: '700', color: colors.t1 },
-  tdsCard: { backgroundColor: colors.navyPale, borderRadius: 12, padding: 14, marginBottom: 16 },
-  tdsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  tdsLabel: { fontSize: 13, color: colors.t2 },
-  tdsVal: { fontSize: 13, fontWeight: '600', color: colors.t1 },
-  tdsCertBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 14, padding: 14, gap: 12, borderWidth: 1, borderColor: colors.border },
-  tdsCertIcon: { fontSize: 24 },
-  tdsCertTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  tdsCertSub: { fontSize: 11, color: colors.t3, marginTop: 2 },
-  withdrawBtn: { backgroundColor: colors.orange, borderRadius: 12, paddingVertical: 16, alignItems: 'center' },
-  withdrawBtnDisabled: { opacity: 0.5 },
-  withdrawBtnText: { fontSize: 15, fontWeight: '700', color: colors.white },
-  historyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: 12, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  historyAmt: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 2 },
-  historySub: { fontSize: 11, color: colors.t3, marginBottom: 1 },
+  container: { flex: 1, backgroundColor: P.bg },
 
-  // Campaign earnings styles
-  emptyCard: { backgroundColor: colors.white, borderRadius: 14, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
-  emptyText: { fontSize: 14, fontWeight: '600', color: colors.t2, marginBottom: 4 },
-  emptySub: { fontSize: 12, color: colors.t3 },
-  campaignCard: { backgroundColor: colors.white, borderRadius: 14, padding: 16, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
-  campaignCardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  campaignName: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 2 },
-  campaignBrand: { fontSize: 12, color: colors.t3 },
-  goalBadge: { backgroundColor: colors.navyPale, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 },
-  goalBadgeText: { fontSize: 10, fontWeight: '700', color: colors.navy, textTransform: 'uppercase' },
+  // Hero
+  headerCard: { backgroundColor: P.ink, padding: 20, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  heroLabel: {
+    fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '800',
+    textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: fonts.monoBold,
+  },
+  heroAmount: {
+    fontSize: 36, fontWeight: '900', color: P.yellow, marginTop: 6,
+    letterSpacing: -0.6, fontFamily: fonts.monoBold,
+  },
+  heroMiniRow: { flexDirection: 'row', gap: 18, marginTop: 14 },
+  heroMini: { flexDirection: 'column' },
+  heroMiniLabel: {
+    fontSize: 9, color: 'rgba(255,255,255,0.45)', marginBottom: 3,
+    textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700',
+    fontFamily: fonts.monoMedium,
+  },
+  heroMiniVal: { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.85)', fontFamily: fonts.monoBold },
+
+  // Section
+  sectionMargin: { margin: 14, marginBottom: 0, marginTop: 14 },
+  sectionTitle: {
+    fontSize: 12, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10,
+    fontFamily: fonts.displayBold,
+  },
+
+  // Empty
+  emptyCard: {
+    backgroundColor: P.white, borderRadius: 14, padding: 24,
+    alignItems: 'center', borderWidth: 1, borderColor: P.border,
+  },
+  emptyText: { fontSize: 13.5, fontWeight: '800', color: P.muted, marginBottom: 4, fontFamily: fonts.displayBold },
+  emptySub: { fontSize: 11.5, color: P.muted2, fontFamily: fonts.sansRegular },
+
+  // Campaign card
+  campaignCard: {
+    backgroundColor: P.white, borderRadius: 14, padding: 14, marginBottom: 8,
+    borderWidth: 1, borderColor: P.border,
+  },
+  campaignCardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 11, gap: 8 },
+  campaignName: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  campaignBrand: { fontSize: 10.5, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  goalBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  goalBadgeText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold },
   campaignStatsRow: { flexDirection: 'row', marginBottom: 10 },
   campaignStat: { flex: 1 },
-  campaignStatLabel: { fontSize: 10, color: colors.t3, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.3 },
-  campaignStatVal: { fontSize: 14, fontWeight: '700' },
-  progressBarBg: { flexDirection: 'row', height: 4, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden', marginBottom: 10 },
-  progressBarFill: { backgroundColor: colors.teal, borderRadius: 2 },
-  progressBarPending: { backgroundColor: colors.orange, borderRadius: 2 },
+  campaignStatLabel: {
+    fontSize: 9.5, color: P.muted2, marginBottom: 2,
+    textTransform: 'uppercase', letterSpacing: 0.3, fontWeight: '700',
+    fontFamily: fonts.monoMedium,
+  },
+  campaignStatVal: { fontSize: 13.5, fontWeight: '900', fontFamily: fonts.monoBold },
+  progressBarBg: { flexDirection: 'row', height: 4, borderRadius: 2, backgroundColor: P.border, overflow: 'hidden', marginBottom: 9 },
+  progressBarFill: { backgroundColor: P.success, borderRadius: 2 },
+  progressBarPending: { backgroundColor: P.yellow, borderRadius: 2 },
   campaignFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  campaignFooterText: { fontSize: 11, color: colors.t3 },
-  campaignChevron: { fontSize: 12, fontWeight: '600', color: colors.navy },
+  campaignFooterText: { fontSize: 10, color: P.muted2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  campaignChevron: { fontSize: 10.5, fontWeight: '800', color: P.ink, letterSpacing: 0.2, fontFamily: fonts.monoBold },
+
+  // Method
+  methodRow: { flexDirection: 'row', gap: 9, marginBottom: 11 },
+  methodCard: {
+    flex: 1, backgroundColor: P.white, borderRadius: 11, padding: 14,
+    alignItems: 'center', borderWidth: 1.5, borderColor: P.border,
+    gap: 6,
+  },
+  methodCardActive: { backgroundColor: P.ink, borderColor: P.ink },
+  methodLabel: {
+    fontSize: 11, fontWeight: '800', color: P.muted,
+    textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.monoBold,
+  },
+
+  // Amount
+  inputWrap: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: P.white, borderRadius: 11,
+    borderWidth: 1.5, borderColor: P.ink, marginBottom: 11, overflow: 'hidden',
+  },
+  rupeeSign: { paddingHorizontal: 12, fontSize: 18, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  amountInput: {
+    flex: 1, paddingVertical: 14, paddingRight: 12,
+    fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold,
+  },
+
+  // TDS preview card — yellowPale
+  tdsCard: {
+    backgroundColor: P.yellowPale, borderRadius: 11, padding: 12, marginBottom: 11,
+    borderWidth: 1, borderColor: '#F0DA88',
+  },
+  tdsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
+  tdsRowTotal: { borderTopWidth: 1, borderTopColor: '#F0DA88', marginTop: 5, paddingTop: 8 },
+  tdsLabel: { fontSize: 11.5, color: P.yellowText, fontWeight: '600', fontFamily: fonts.sansRegular },
+  tdsLabelBold: { fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  tdsVal: { fontSize: 12, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold },
+
+  // Withdraw CTA
+  withdrawBtn: { backgroundColor: P.ink, borderRadius: 11, paddingVertical: 14, alignItems: 'center' },
+  withdrawBtnDisabled: { opacity: 0.5 },
+  withdrawBtnText: {
+    fontSize: 13.5, fontWeight: '900', color: P.yellow,
+    letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack,
+  },
+
+  // TDS cert tile
+  tdsCertBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: P.white, borderRadius: 14, padding: 13, gap: 11,
+    borderWidth: 1, borderColor: P.border,
+  },
+  tdsCertIco: {
+    width: 38, height: 38, borderRadius: 9,
+    backgroundColor: P.yellowPale,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  tdsCertTitle: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  tdsCertSub: { fontSize: 9.5, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+
+  // History row
+  historyRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: P.white, borderRadius: 11, padding: 12, marginBottom: 7,
+    borderWidth: 1, borderColor: P.border,
+  },
+  historyAmt: { fontSize: 14, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  historySub: { fontSize: 9.5, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 });

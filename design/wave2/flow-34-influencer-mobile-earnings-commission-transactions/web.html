@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 34 · influencer-mobile Earnings + CommissionDetail + TransactionFeed — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:14px;height:14px}
+.ico-md{width:18px;height:18px}
+.ico-lg{width:24px;height:24px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ─── Ink hero (Earnings + CommissionDetail) ───── */
+.h-ink{background:var(--ink);color:var(--white);padding:46px 18px 22px;flex-shrink:0;position:relative}
+.h-ink::after{content:'';position:absolute;left:18px;bottom:8px;width:30px;height:3px;background:var(--yellow);border-radius:2px}
+.h-back{display:flex;align-items:center;gap:5px;margin-bottom:12px;color:rgba(255,255,255,.65)}
+.h-back .ico{color:rgba(255,255,255,.65);width:14px;height:14px}
+.h-back-txt{font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.3px}
+.h-ttl{font-family:'Outfit';font-size:20px;font-weight:900;color:var(--white);letter-spacing:-0.3px}
+.h-sub{font-family:'JetBrains Mono';font-size:11px;color:rgba(255,255,255,.6);margin-top:3px;font-weight:700}
+
+.hero-lbl{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px}
+.hero-amt{font-family:'JetBrains Mono';font-size:36px;font-weight:900;color:var(--yellow);margin-top:6px;letter-spacing:-0.6px}
+.hero-mini-row{display:flex;gap:18px;margin-top:14px}
+.hero-mini{display:flex;flex-direction:column}
+.hero-mini-l{font-family:'JetBrains Mono';font-size:9px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-bottom:3px}
+.hero-mini-v{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:rgba(255,255,255,.85)}
+
+/* ─── White hero (TransactionFeed) ───── */
+.h-white{background:var(--white);border-bottom:1px solid var(--border);padding:50px 18px 14px;flex-shrink:0;display:flex;align-items:flex-start;gap:11px}
+.h-back-w{width:34px;height:34px;border-radius:17px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink);flex-shrink:0}
+.h-mid{flex:1}
+.h-title-w{font-family:'Outfit';font-size:17px;font-weight:800;color:var(--ink)}
+.h-sub-w{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:3px}
+
+/* ─── Body ───── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:14px 0 32px}
+
+/* ─── Card ───── */
+.card{margin:0 14px 12px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:14px}
+.card-ttl{font-family:'Outfit';font-size:12px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.card-ttl-ink{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px}
+
+/* ─── Campaign earning card (Earnings) ───── */
+.camp-card{margin:0 14px 8px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:14px}
+.camp-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:11px;gap:8px}
+.camp-name{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.camp-brand{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px;font-weight:700}
+.goal-badge{background:var(--yellow-pale);color:var(--yellow-text);font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.3px}
+.goal-badge.conv{background:var(--conv-pale);color:var(--conv)}
+.camp-stats{display:flex;margin-bottom:10px}
+.camp-stat{flex:1}
+.camp-stat-l{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+.camp-stat-v{font-family:'JetBrains Mono';font-size:13.5px;font-weight:900}
+.camp-stat-v.success{color:var(--success-text)}
+.camp-stat-v.warn{color:var(--yellow-text)}
+.camp-stat-v.ink{color:var(--ink)}
+.camp-progress{display:flex;height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:9px}
+.camp-progress-fill{background:var(--success)}
+.camp-progress-pend{background:var(--yellow)}
+.camp-foot{display:flex;justify-content:space-between;align-items:center}
+.camp-foot-l{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);font-weight:700}
+.camp-foot-r{font-family:'JetBrains Mono';font-size:10.5px;color:var(--ink);font-weight:800;letter-spacing:.2px}
+
+/* ─── Method selector ───── */
+.method-row{display:flex;gap:9px;margin-bottom:11px}
+.method-card{flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:11px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.method-card.active{background:var(--ink);border-color:var(--ink)}
+.method-ico{width:22px;height:22px;color:var(--ink)}
+.method-card.active .method-ico{color:var(--yellow)}
+.method-lbl{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+.method-card.active .method-lbl{color:var(--white)}
+
+/* ─── Amount input ───── */
+.amt-wrap{display:flex;align-items:center;background:var(--white);border:1.5px solid var(--ink);border-radius:11px;margin-bottom:11px;overflow:hidden}
+.amt-rupee{padding:0 12px;font-family:'Outfit';font-size:18px;font-weight:900;color:var(--ink)}
+.amt-input{flex:1;padding:14px 12px 14px 0;font-family:'JetBrains Mono';font-size:20px;font-weight:900;color:var(--ink)}
+
+/* ─── TDS preview ───── */
+.tds-card{background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:11px;padding:12px;margin-bottom:11px}
+.tds-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+.tds-row.total{border-top:1px solid #F0DA88;margin-top:5px;padding-top:8px}
+.tds-l{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--yellow-text);font-weight:600}
+.tds-l.bold{font-weight:800;color:var(--ink)}
+.tds-v{font-family:'JetBrains Mono';font-size:12px;color:var(--ink);font-weight:800}
+.tds-v.danger{color:var(--danger-text)}
+.tds-v.success{color:var(--success-text);font-weight:900}
+
+/* ─── Withdraw CTA ───── */
+.btn-primary-ink{background:var(--ink);color:var(--yellow);border-radius:11px;padding:14px;text-align:center;font-family:'Outfit';font-size:13.5px;font-weight:900;letter-spacing:.2px;text-transform:uppercase}
+
+/* ─── TDS certificate tile ───── */
+.tds-cert-tile{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:13px;display:flex;align-items:center;gap:11px;margin:0 14px 12px}
+.tds-cert-ico{width:38px;height:38px;border-radius:9px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tds-cert-mid{flex:1}
+.tds-cert-ttl{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink)}
+.tds-cert-sub{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px;text-transform:uppercase}
+
+/* ─── History row ───── */
+.hist-row{margin:0 14px 7px;padding:12px;background:var(--white);border:1px solid var(--border);border-radius:11px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.hist-l{flex:1}
+.hist-amt{font-family:'JetBrains Mono';font-size:14px;font-weight:900;color:var(--ink)}
+.hist-sub{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px}
+.pill-sm{padding:3px 8px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.pill-sm.processing{background:var(--info-pale);color:var(--info)}
+.pill-sm.completed{background:var(--success-pale);color:var(--success-text)}
+.pill-sm.failed{background:var(--danger-pale);color:var(--danger-text)}
+
+/* ─── Hero stats grid (CommissionDetail) ───── */
+.hero-stats{background:rgba(255,255,255,.07);border-radius:11px;padding:12px;margin-top:14px;display:flex;align-items:center}
+.hero-stats-item{flex:1;display:flex;flex-direction:column;align-items:center}
+.hero-stats-l{font-family:'JetBrains Mono';font-size:9px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.3px;font-weight:800;margin-bottom:3px}
+.hero-stats-v{font-family:'JetBrains Mono';font-size:14.5px;font-weight:900;color:var(--white)}
+.hero-stats-v.success{color:#7DEFA0}
+.hero-stats-v.warn{color:#FFD080}
+.hero-stats-d{width:1px;height:26px;background:rgba(255,255,255,.12)}
+
+/* ─── Info row (CommissionDetail) ───── */
+.info-row{display:flex;gap:8px;margin:0 14px 12px}
+.info-item{flex:1;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:11px}
+.info-l{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:800}
+.info-v{font-family:'JetBrains Mono';font-size:12px;color:var(--ink);font-weight:900}
+
+/* ─── Tranche timeline (CommissionDetail) ───── */
+.tr-item{display:flex;margin:0 14px}
+.tr-left{width:28px;align-items:center;display:flex;flex-direction:column;padding-top:4px}
+.tr-dot{width:14px;height:14px;border-radius:7px;background:var(--bg2);border:2px solid var(--border);margin-top:12px;align-items:center;justify-content:center;display:flex;font-family:'Outfit';font-size:8px;font-weight:900;color:var(--muted-3)}
+.tr-dot.act{background:var(--success);border-color:var(--success);color:var(--white)}
+.tr-dot.cur{background:var(--yellow);border:3px solid var(--ink);width:18px;height:18px;border-radius:9px;color:var(--ink);font-size:10px;margin-top:9px}
+.tr-line{width:2px;flex:1;background:var(--border);margin:2px 0 2px}
+.tr-line.act{background:var(--success)}
+.tr-card{flex:1;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:13px;margin-bottom:6px;margin-left:6px}
+.tr-card.released{background:#F0FBF6;border-color:#A8E6CC}
+.tr-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.tr-card-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink)}
+.tr-amt{font-family:'JetBrains Mono';font-size:17px;font-weight:900;color:var(--ink);margin-bottom:4px}
+.tr-date{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);font-weight:700;letter-spacing:.2px}
+
+/* ─── Commission summary cards ───── */
+.comm-row{display:flex;gap:8px;margin:0 14px 11px}
+.comm-card{flex:1;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:11px;border-left-width:3px}
+.comm-card.success{border-left-color:var(--success)}
+.comm-card.warn{border-left-color:var(--yellow)}
+.comm-l{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:800}
+.comm-v{font-family:'JetBrains Mono';font-size:14.5px;font-weight:900}
+.comm-v.success{color:var(--success-text)}
+.comm-v.warn{color:var(--yellow-text)}
+
+/* ─── Tx row (CommissionDetail commission list) ───── */
+.txd-row{display:flex;margin:0 14px}
+.txd-left{width:18px;align-items:center;padding-top:14px;display:flex}
+.txd-dot{width:6px;height:6px;border-radius:3px}
+.txd-dot.success{background:var(--success)}
+.txd-dot.warn{background:var(--yellow)}
+.txd-card{flex:1;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:11px;margin-bottom:5px}
+.txd-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.txd-type{font-family:'Outfit';font-size:12px;font-weight:700;color:var(--ink)}
+.txd-amt{font-family:'JetBrains Mono';font-size:13px;font-weight:900;color:var(--ink)}
+.txd-amt.success{color:var(--success-text)}
+.txd-foot{display:flex;justify-content:space-between;align-items:center}
+.txd-date{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);font-weight:700}
+.txd-pending{font-family:'JetBrains Mono';font-size:9.5px;color:var(--yellow-text);font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.txd-confirmed{font-family:'JetBrains Mono';font-size:9.5px;color:var(--success-text);font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+
+/* ─── Info banner (30-day window) ───── */
+.info-banner{margin:0 14px 12px;background:var(--info-pale);border:1px solid #BFD9F2;border-radius:11px;padding:12px}
+.info-banner-ttl{font-family:'Outfit';font-size:12.5px;font-weight:900;color:var(--info);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.info-banner-text{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink);line-height:1.5}
+
+/* ─── TransactionFeed: summary row ───── */
+.tf-summary{display:flex;gap:8px;padding:14px;background:var(--white);border-bottom:1px solid var(--border);flex-shrink:0}
+.tf-sum-card{flex:1;background:var(--bg2);border-radius:11px;padding:12px 8px;display:flex;flex-direction:column;align-items:center}
+.tf-sum-v{font-family:'JetBrains Mono';font-size:15px;font-weight:900}
+.tf-sum-v.success{color:var(--success-text)}
+.tf-sum-v.warn{color:var(--yellow-text)}
+.tf-sum-v.info{color:var(--info)}
+.tf-sum-l{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);margin-top:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:800}
+
+/* ─── TransactionFeed: tx card ───── */
+.tf-card{margin:0 14px 8px;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:11px}
+.tf-row{display:flex;align-items:center;gap:10px}
+.tf-type{padding:5px 9px;border-radius:7px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.2px;flex-shrink:0;display:flex;align-items:center;gap:4px}
+.tf-type.walkin{background:var(--success-pale);color:var(--success-text)}
+.tf-type.book{background:var(--info-pale);color:var(--info)}
+.tf-type.order{background:var(--conv-pale);color:var(--conv)}
+.tf-type.click{background:var(--yellow-pale);color:var(--yellow-text)}
+.tf-mid{flex:1;min-width:0}
+.tf-name{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink)}
+.tf-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:2px;font-weight:700}
+.tf-date{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px}
+.tf-right{align-items:flex-end;display:flex;flex-direction:column}
+.tf-amt{font-family:'JetBrains Mono';font-size:13.5px;font-weight:900;color:var(--success-text)}
+.tf-net{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px}
+.tf-extra{margin-top:7px;padding-top:7px;border-top:1px solid var(--border-soft);font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted);font-weight:700}
+
+/* ─── Side panel ───── */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+    <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L15 12 L9 18"/></symbol>
+    <symbol id="ic-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9 L12 4 L21 9"/><path d="M3 9 V11 H21 V9"/><path d="M5 11 V18"/><path d="M10 11 V18"/><path d="M14 11 V18"/><path d="M19 11 V18"/><path d="M3 19 H21"/></symbol>
+    <symbol id="ic-cellphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18 H13"/></symbol>
+    <symbol id="ic-file-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3 H6 V21 H18 V7"/><path d="M14 3 V7 H18"/><path d="M9 12 H15"/><path d="M9 16 H15"/></symbol>
+    <symbol id="ic-check-bold" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 L10 17 L19 8"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 34 · influencer-mobile Earnings + CommissionDetail + TransactionFeed — wave2 mockup</h1>
+  <div class="sub">
+    <b>7th flow of mobile-influencer bucket (7/23).</b> 3 screens · 763 LOC · <b>LOW risk</b> (read-mostly money + 1 POST withdraw) · <b>ZERO backend change</b> · <b>ZERO StatusPill additions</b>. <b>~16 render branches</b> preserved verbatim including TDS-10% client-side preview + commission goal-aware visibility + 30-day-window info card + tranche timeline + show-more toggle + empty-state placeholders. <b>Visual:</b> ink hero with yellow rule + yellow-mono "Available to Withdraw" amount + ink/yellow Outfit-Black UPPERCASE Withdraw CTA + yellowPale TDS preview card + bg2 method tiles with ink-active variant (MCI cellphone/bank, no 📱🏦 emoji) + success/yellow stat colors throughout + tranche timeline w/ success-fill + ink-bordered yellow current + StatusPill canonical withdrawal pills + TransactionFeed type-emoji KEPT (🏪📅📦🔗 per design call #4).
+  </div>
+</div>
+
+<!-- Row 1: 3 phone frames -->
+<div class="row">
+
+  <!-- PHONE 1: EarningsScreen -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="hero-lbl">AVAILABLE TO WITHDRAW</div>
+        <div class="hero-amt">₹18,250</div>
+        <div class="hero-mini-row">
+          <div class="hero-mini">
+            <div class="hero-mini-l">PENDING</div>
+            <div class="hero-mini-v">₹4,800</div>
+          </div>
+          <div class="hero-mini">
+            <div class="hero-mini-l">TDS THIS FY</div>
+            <div class="hero-mini-v">₹2,450</div>
+          </div>
+          <div class="hero-mini">
+            <div class="hero-mini-l">TOTAL EARNED</div>
+            <div class="hero-mini-v">₹27,500</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Campaign Earnings -->
+        <div style="margin:0 14px"><div class="card-ttl">Campaign Earnings</div></div>
+
+        <div class="camp-card">
+          <div class="camp-row">
+            <div style="flex:1">
+              <div class="camp-name">Diwali Glow-Up</div>
+              <div class="camp-brand">SPARKLE COSMETICS</div>
+            </div>
+            <div class="goal-badge conv">CONVERSION</div>
+          </div>
+          <div class="camp-stats">
+            <div class="camp-stat">
+              <div class="camp-stat-l">EARNED</div>
+              <div class="camp-stat-v success">₹8,500</div>
+            </div>
+            <div class="camp-stat">
+              <div class="camp-stat-l">PENDING</div>
+              <div class="camp-stat-v warn">₹4,800</div>
+            </div>
+            <div class="camp-stat">
+              <div class="camp-stat-l">TOTAL</div>
+              <div class="camp-stat-v ink">₹13,300</div>
+            </div>
+          </div>
+          <div class="camp-progress">
+            <div class="camp-progress-fill" style="flex:8500"></div>
+            <div class="camp-progress-pend" style="flex:4800"></div>
+          </div>
+          <div class="camp-foot">
+            <div class="camp-foot-l">2 TRANCHES + 6 COMMISSIONS</div>
+            <div class="camp-foot-r">VIEW DETAILS ›</div>
+          </div>
+        </div>
+
+        <!-- Withdraw form -->
+        <div style="margin:14px 14px 0"><div class="card-ttl">Withdraw Funds</div></div>
+        <div style="margin:0 14px 0">
+
+          <div class="method-row">
+            <div class="method-card active">
+              <span class="ico ico-md method-ico"><svg><use href="#ic-cellphone"/></svg></span>
+              <div class="method-lbl">UPI</div>
+            </div>
+            <div class="method-card">
+              <span class="ico ico-md method-ico"><svg><use href="#ic-bank"/></svg></span>
+              <div class="method-lbl">BANK</div>
+            </div>
+          </div>
+
+          <div class="amt-wrap">
+            <div class="amt-rupee">₹</div>
+            <div class="amt-input">5,000</div>
+          </div>
+
+          <div class="tds-card">
+            <div class="tds-row">
+              <div class="tds-l">Requested</div>
+              <div class="tds-v">₹5,000.00</div>
+            </div>
+            <div class="tds-row">
+              <div class="tds-l">TDS (10%)</div>
+              <div class="tds-v danger">- ₹500.00</div>
+            </div>
+            <div class="tds-row total">
+              <div class="tds-l bold">You Receive</div>
+              <div class="tds-v success">₹4,500.00</div>
+            </div>
+          </div>
+
+          <div class="btn-primary-ink">WITHDRAW NOW</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · EarningsScreen</b><br/>Ink hero with yellow rule + uppercase mono "AVAILABLE TO WITHDRAW" label + yellow-mono ₹18,250 amount + 3-mini-stat row (pending/TDS-FY/total-earned in white-mono) · Campaign Earnings section heading muted-uppercase · per-campaign card with Outfit-Bold name + mono brand + conv-purple goal badge + 3-stat earnings row (success/warn/ink) + success+yellow progress bar + mono UPPERCASE foot · Withdraw Funds section with ink-active method picker (MCI cellphone/bank — no 📱🏦) + ink-bordered amount input with Outfit-Black ₹ + mono number + yellowPale TDS preview card with danger TDS line and successText "You Receive" · ink/yellow Outfit-Black WITHDRAW NOW CTA</div>
+  </div>
+
+  <!-- PHONE 2: CommissionDetailScreen -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-ttl">Diwali Glow-Up</div>
+        <div class="h-sub">SPARKLE COSMETICS</div>
+
+        <div class="hero-stats">
+          <div class="hero-stats-item">
+            <div class="hero-stats-l">EARNED</div>
+            <div class="hero-stats-v success">₹8,500</div>
+          </div>
+          <div class="hero-stats-d"></div>
+          <div class="hero-stats-item">
+            <div class="hero-stats-l">PENDING</div>
+            <div class="hero-stats-v warn">₹4,800</div>
+          </div>
+          <div class="hero-stats-d"></div>
+          <div class="hero-stats-item">
+            <div class="hero-stats-l">TOTAL</div>
+            <div class="hero-stats-v">₹13,300</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Info row -->
+        <div class="info-row">
+          <div class="info-item">
+            <div class="info-l">GOAL</div>
+            <div class="info-v">CONVERSION</div>
+          </div>
+          <div class="info-item">
+            <div class="info-l">STATUS</div>
+            <div class="info-v">LIVE</div>
+          </div>
+          <div class="info-item">
+            <div class="info-l">FEE</div>
+            <div class="info-v">₹17,000</div>
+          </div>
+        </div>
+
+        <!-- Tranche Timeline -->
+        <div style="margin:0 14px 8px"><div class="card-ttl">Tranche Timeline</div></div>
+
+        <div class="tr-item">
+          <div class="tr-left">
+            <div class="tr-dot act"><svg><use href="#ic-check-bold"/></svg></div>
+            <div class="tr-line act"></div>
+          </div>
+          <div class="tr-card released">
+            <div class="tr-card-head">
+              <div class="tr-card-ttl">T1 — Contract Signed</div>
+              <div class="pill-sm completed">Released</div>
+            </div>
+            <div class="tr-amt">₹4,250</div>
+            <div class="tr-date">RELEASED 3 NOV 2026</div>
+          </div>
+        </div>
+
+        <div class="tr-item">
+          <div class="tr-left">
+            <div class="tr-line act"></div>
+            <div class="tr-dot act"><svg><use href="#ic-check-bold"/></svg></div>
+            <div class="tr-line"></div>
+          </div>
+          <div class="tr-card released">
+            <div class="tr-card-head">
+              <div class="tr-card-ttl">T2 — Content Live</div>
+              <div class="pill-sm completed">Released</div>
+            </div>
+            <div class="tr-amt">₹4,250</div>
+            <div class="tr-date">RELEASED 10 NOV 2026</div>
+          </div>
+        </div>
+
+        <div class="tr-item">
+          <div class="tr-left">
+            <div class="tr-line"></div>
+            <div class="tr-dot cur">3</div>
+          </div>
+          <div class="tr-card">
+            <div class="tr-card-head">
+              <div class="tr-card-ttl">T3 — 30 Days Post-Live</div>
+              <div class="pill-sm" style="background:var(--bg2);color:var(--muted-2)">Locked</div>
+            </div>
+            <div class="tr-amt">₹8,500</div>
+            <div class="tr-date">LOCKED SINCE 10 NOV 2026</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · CommissionDetailScreen</b><br/>Ink hero w/ BACK + Outfit-Black campaign name + mono brand + 3-stat hero card on rgba-white-7 bg (earned successGreen / pending warn-orange / total white) · 3-tile info row (Goal/Status/Fee in mono UPPERCASE) · Tranche Timeline w/ success-fill dots + check-bold for completed + ink-bordered yellow current step "3" + success-light card bg for released tranches + StatusPill canonical Released/Locked pills + Outfit-Bold tranche title + mono date</div>
+  </div>
+
+  <!-- PHONE 3: TransactionFeedScreen -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-white">
+        <div class="h-back-w"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-mid">
+          <div class="h-title-w">My Transactions</div>
+          <div class="h-sub-w">Commission from follower payments</div>
+        </div>
+      </div>
+
+      <div class="tf-summary">
+        <div class="tf-sum-card">
+          <div class="tf-sum-v success">₹12,450</div>
+          <div class="tf-sum-l">TOTAL COMMISSION</div>
+        </div>
+        <div class="tf-sum-card">
+          <div class="tf-sum-v warn">48</div>
+          <div class="tf-sum-l">TOTAL ORDERS</div>
+        </div>
+        <div class="tf-sum-card">
+          <div class="tf-sum-v info">₹890</div>
+          <div class="tf-sum-l">TODAY</div>
+        </div>
+      </div>
+
+      <div class="body" style="padding-top:8px">
+
+        <div class="tf-card">
+          <div class="tf-row">
+            <div class="tf-type walkin">🏪 WALK-IN</div>
+            <div class="tf-mid">
+              <div class="tf-name">Priya M.</div>
+              <div class="tf-meta">SPARKLE · GLITTER EYESHADOW</div>
+              <div class="tf-date">DIWALI GLOW-UP · 13 NOV, 2:14 PM</div>
+            </div>
+            <div class="tf-right">
+              <div class="tf-amt">+₹140</div>
+              <div class="tf-net">SALE: ₹1,299</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tf-card">
+          <div class="tf-row">
+            <div class="tf-type book">📅 BOOKING</div>
+            <div class="tf-mid">
+              <div class="tf-name">Aman J.</div>
+              <div class="tf-meta">URBAN SALON · COMBO HAIRCUT</div>
+              <div class="tf-date">SALON CASHBACK · 13 NOV, 11:38 AM</div>
+            </div>
+            <div class="tf-right">
+              <div class="tf-amt">+₹220</div>
+              <div class="tf-net">SALE: ₹1,499</div>
+            </div>
+          </div>
+          <div class="tf-extra">REF: BK-8392 · 14 NOV · 5:00 PM</div>
+        </div>
+
+        <div class="tf-card">
+          <div class="tf-row">
+            <div class="tf-type order">📦 ORDER</div>
+            <div class="tf-mid">
+              <div class="tf-name">Riya S.</div>
+              <div class="tf-meta">DEWBALM · HYDRA GLOW CREAM</div>
+              <div class="tf-date">DEW WINTER LAUNCH · 12 NOV, 9:02 PM</div>
+            </div>
+            <div class="tf-right">
+              <div class="tf-amt">+₹95</div>
+              <div class="tf-net">SALE: ₹899</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tf-card">
+          <div class="tf-row">
+            <div class="tf-type click">🔗 CLICK</div>
+            <div class="tf-mid">
+              <div class="tf-name">Anonymous</div>
+              <div class="tf-meta">BRAND PARTNER · CLICK ATTRIBUTION</div>
+              <div class="tf-date">REDIRECT-ONLY · 12 NOV, 6:31 PM</div>
+            </div>
+            <div class="tf-right">
+              <div class="tf-amt">+₹12</div>
+              <div class="tf-net">PAY-PER-CLICK</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · TransactionFeedScreen</b><br/>White-bg light topbar (different to ink-hero pattern — kept for distinct feed surface) + bg2 ink-mono back chevron · 3-summary card row (successText commission / warn count / info today) with bg2 cards + mono numbers + UPPERCASE mono labels · per-tx card w/ 4 type-pill variants (walkin=successPale · book=infoPale · order=convPale · click=yellowPale) — emoji KEPT per design call #4 · Outfit-Bold name + mono brand·product · mono UPPERCASE campaign·date · successText "+₹140" commission + mono SALE/PAY-PER-CLICK sub · booking-ref mono extra row</div>
+  </div>
+
+</div>
+
+<!-- Row 2: 2 more frames (EarningsScreen continuation + Commission detail with commissions) -->
+<div class="row">
+
+  <!-- PHONE 4: EarningsScreen — TDS cert + history continuation -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-ttl">Earnings</div>
+        <div class="h-sub">SCROLL · 2 OF 2</div>
+      </div>
+
+      <div class="body">
+
+        <!-- TDS Certificate -->
+        <div style="margin:0 14px 8px"><div class="card-ttl">Tax Certificate</div></div>
+        <div class="tds-cert-tile">
+          <div class="tds-cert-ico"><span class="ico ico-md"><svg><use href="#ic-file-doc"/></svg></span></div>
+          <div class="tds-cert-mid">
+            <div class="tds-cert-ttl">Download TDS Certificate</div>
+            <div class="tds-cert-sub">FORM 16A · CURRENT FINANCIAL YEAR</div>
+          </div>
+          <span class="ico ico-sm" style="color:var(--muted-3)"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <!-- Withdrawal History -->
+        <div style="margin:14px 14px 8px"><div class="card-ttl">Withdrawal History</div></div>
+
+        <div class="hist-row">
+          <div class="hist-l">
+            <div class="hist-amt">₹4,500.00</div>
+            <div class="hist-sub">REQUESTED: ₹5,000 · TDS: ₹500</div>
+            <div class="hist-sub">UPI · 10 NOV 2026</div>
+          </div>
+          <div class="pill-sm completed">Completed</div>
+        </div>
+
+        <div class="hist-row">
+          <div class="hist-l">
+            <div class="hist-amt">₹2,700.00</div>
+            <div class="hist-sub">REQUESTED: ₹3,000 · TDS: ₹300</div>
+            <div class="hist-sub">UPI · 5 NOV 2026</div>
+          </div>
+          <div class="pill-sm processing">Processing</div>
+        </div>
+
+        <div class="hist-row">
+          <div class="hist-l">
+            <div class="hist-amt">₹900.00</div>
+            <div class="hist-sub">REQUESTED: ₹1,000 · TDS: ₹100</div>
+            <div class="hist-sub">BANK · 28 OCT 2026</div>
+          </div>
+          <div class="pill-sm failed">Failed</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 4 · EarningsScreen (scroll cont.)</b><br/>TDS certificate tile w/ yellowPale MCI file-document tile + Outfit-Bold title + mono Form-16A sub + muted chevron · Withdrawal History list w/ ink-mono net amount + UPPERCASE mono requested+TDS sub + method·date sub + canonical StatusPill (Completed=successPale · Processing=infoPale · Failed=dangerPale).</div>
+  </div>
+
+  <!-- PHONE 5: CommissionDetailScreen — follower commissions list -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-ink">
+        <div class="h-back"><span class="ico"><svg><use href="#ic-back"/></svg></span><span class="h-back-txt">BACK</span></div>
+        <div class="h-ttl">Diwali Glow-Up</div>
+        <div class="h-sub">SCROLL · 2 OF 2</div>
+      </div>
+
+      <div class="body">
+
+        <!-- Follower Commissions section -->
+        <div style="margin:0 14px 8px"><div class="card-ttl">Follower Commissions <span style="color:var(--ink);font-weight:900">(15%)</span></div></div>
+
+        <div class="comm-row">
+          <div class="comm-card success">
+            <div class="comm-l">CONFIRMED</div>
+            <div class="comm-v success">₹3,420</div>
+          </div>
+          <div class="comm-card warn">
+            <div class="comm-l">PENDING (30D)</div>
+            <div class="comm-v warn">₹4,800</div>
+          </div>
+        </div>
+
+        <!-- Commission tx rows -->
+        <div class="txd-row">
+          <div class="txd-left"><div class="txd-dot success"></div></div>
+          <div class="txd-card">
+            <div class="txd-head">
+              <div class="txd-type">Online Order</div>
+              <div class="txd-amt success">₹140</div>
+            </div>
+            <div class="txd-foot">
+              <div class="txd-date">10 NOV 2026</div>
+              <div class="txd-confirmed">CONFIRMED</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="txd-row">
+          <div class="txd-left"><div class="txd-dot warn"></div></div>
+          <div class="txd-card">
+            <div class="txd-head">
+              <div class="txd-type">Pay At Store</div>
+              <div class="txd-amt">₹220</div>
+            </div>
+            <div class="txd-foot">
+              <div class="txd-date">13 NOV 2026</div>
+              <div class="txd-pending">22D TO CONFIRM</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="txd-row">
+          <div class="txd-left"><div class="txd-dot warn"></div></div>
+          <div class="txd-card">
+            <div class="txd-head">
+              <div class="txd-type">Prebook</div>
+              <div class="txd-amt">₹95</div>
+            </div>
+            <div class="txd-foot">
+              <div class="txd-date">12 NOV 2026</div>
+              <div class="txd-pending">21D TO CONFIRM</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 30-day window info -->
+        <div class="info-banner">
+          <div class="info-banner-ttl">30-DAY CONFIRMATION WINDOW</div>
+          <div class="info-banner-text">Commissions from follower transactions are held for 30 days before being confirmed to your wallet. This protects against returns and cancellations.</div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 5 · CommissionDetailScreen (scroll cont.)</b><br/>Follower Commissions section title with mono % chip · 2 summary cards (Confirmed successText / Pending yellowText) with success/yellow left borders · per-commission tx rows with success/yellow dot + white card + Outfit-Bold type + mono amount (success when confirmed) + mono date + UPPERCASE mono "22D TO CONFIRM" warn / "CONFIRMED" success · infoPale 30-day-window banner with info-text Outfit-Black title</div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Key design calls (5 — needs founder lock)</h3>
+      <ul>
+        <li><b>Earnings hero "Available to Withdraw" amount color:</b> yellow-mono (matches Flow 28-33 money-emphasis-on-yellow pattern). Sub-stats stay white-mono.</li>
+        <li><b>Method selector:</b> ink-active card + bg2-inactive · 📱/🏦 emoji → MCI cellphone + bank icons (matches Flow 33 picker-tile pattern of MCI over emoji)</li>
+        <li><b>Withdraw CTA:</b> orange bg + white → ink bg + yellow text + Outfit-Black UPPERCASE (matches Flow 31/32/33 primary CTAs)</li>
+        <li><b>Tranche timeline (CommissionDetail):</b> teal/orange → success/yellow + check-bold MCI for completed + ink-bordered yellow current step number (matches Flow 32/33 timeline pattern)</li>
+        <li><b>TransactionFeed type emoji:</b> KEEP (🏪📅📦🔗 per design call #4 — type-icon class) + map to 4 pale-bg tints (success/info/conv/yellow)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">6 APIs · zero phantom · zero new</div>
+      <ul>
+        <li><code>getEarnings()</code> → <code>/influencers/me/earnings</code> (api.js:236)</li>
+        <li><code>getCampaignEarnings()</code> → <code>/influencers/me/commissions/by-campaign</code> (api.js:259)</li>
+        <li><code>getCampaignCommissionDetail(ciId)</code> → <code>/influencers/me/commissions/campaign/:ciId</code> (api.js:260)</li>
+        <li><code>withdraw({amount_requested, method})</code> POST → <code>/influencers/me/withdraw</code> (api.js:261)</li>
+        <li><code>getWithdrawals()</code> → <code>/influencers/me/withdrawals</code> (api.js:262)</li>
+        <li><code>getTdsCertificateUrl(fy?)</code> → URL builder (api.js:264, no API call — opens in browser via Linking)</li>
+        <li><code>getMyTransactions(page)</code> → <code>/influencers/me/transactions</code> (api.js:293)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim</h3>
+      <div class="ph">16 render branches + 7 entry conditions + TDS math</div>
+      <ul>
+        <li><b>TDS 10%</b> client-side preview: <code>tds = amount * 0.1</code>, <code>net = amount - tds</code> · same math, new tile</li>
+        <li><b>Minimum ₹100</b> withdrawal validation + Alert</li>
+        <li><b>Method selector</b> 'upi' | 'bank' state machine</li>
+        <li><b>Withdrawal history</b> with StatusBadge → StatusPill canonical</li>
+        <li><b>TDS certificate Linking.openURL</b> on tile tap (no React Navigation)</li>
+        <li><b>Campaign earnings list</b> sort + per-card navigation to CommissionDetail</li>
+        <li><b>Goal-aware</b> commission section visibility (conversion + hybrid)</li>
+        <li><b>Tranche timeline</b> released vs locked dot/bg variation</li>
+        <li><b>Show-more toggle</b> on commissions &gt; 5</li>
+        <li><b>30-day-window info card</b> conditional on pending commissions</li>
+        <li><b>days_until_confirmed</b> mono UPPERCASE badge on pending commissions</li>
+        <li><b>FlatList</b> in TransactionFeed (preserved — for perf on large lists)</li>
+        <li><b>useFocusEffect</b> reload on TransactionFeed</li>
+        <li><b>fmtMoney / fmtRupees</b> from tokens preserved verbatim (no /100 ops; backend = rupees)</li>
+        <li><b>Math.round()</b> on display amounts preserved (matches existing rounding behavior)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Style refactor scope</h3>
+      <div class="ph">~85 token swaps + 4 hex literals + StatusBadge → StatusPill</div>
+      <ul>
+        <li><b>Header bg (Earnings + CommissionDetail):</b> navy → ink with yellow rule accent</li>
+        <li><b>Hero amounts:</b> white → yellow-mono (Available to Withdraw)</li>
+        <li><b>Hero mini stats:</b> "rgba(255,255,255,.8)" → keep white-mono with .85 alpha</li>
+        <li><b>Goal badge:</b> navyPale + navy → conv-pale + conv (for conversion) or yellowPale + yellowText (for engagement/hybrid)</li>
+        <li><b>Campaign progress bar:</b> teal/orange fills → success/yellow fills</li>
+        <li><b>Method card active:</b> navy bg + white text → ink bg + yellow text · emoji → MCI</li>
+        <li><b>Amount input border:</b> border2 → ink (matches Flow 33 ink-bordered URL input)</li>
+        <li><b>TDS card:</b> navyPale → yellowPale with #F0DA88 border + yellowText labels + danger TDS line + successText "You Receive"</li>
+        <li><b>Withdraw CTA:</b> orange bg + white text → ink bg + yellow text Outfit-Black UPPERCASE</li>
+        <li><b>TDS certificate icon:</b> 📄 emoji → MCI file-document-outline in yellowPale tile</li>
+        <li><b>Withdrawal history StatusBadge → StatusPill canonical</b> (handles processing/completed/failed)</li>
+        <li><b>Hero stat bg (CommissionDetail):</b> "rgba(255,255,255,0.08)" preserved + colors swap to lighter green/yellow tints</li>
+        <li><b>Tranche dot:</b> teal/orange → success/yellow + ink-bordered current step number (matches Flow 32 timeline)</li>
+        <li><b>Tranche card bg (released):</b> tealPale+30 → #F0FBF6 with success border</li>
+        <li><b>Tranche StatusBadge → StatusPill canonical</b></li>
+        <li><b>Commission summary card border-left:</b> teal/orange → success/yellow</li>
+        <li><b>Commission row dot:</b> teal/orange → success/yellow</li>
+        <li><b>Commission amount color:</b> teal → successText (confirmed)</li>
+        <li><b>Commission status text:</b> "Confirmed" / "Xd to confirm" → UPPERCASE mono</li>
+        <li><b>30-day info card:</b> navyPale + navy text → infoPale + ink text with info-text Outfit-Black title</li>
+        <li><b>TransactionFeed white header:</b> preserved style (different from CommissionDetail ink hero) — distinguishes feed surface · back-btn → bg2 with MCI chevron-left</li>
+        <li><b>Summary cards:</b> surface2 → bg2 with mono numbers · color swap teal/orange/info preserved as success/warn/info per type</li>
+        <li><b>TX type badges:</b> teal+15/purple+15 etc → 4 pale-bg tints (successPale/infoPale/convPale/yellowPale) — emoji KEPT per design call #4</li>
+        <li><b>TX amount:</b> tealDeep → successText</li>
+        <li><b>Booking-ref extra row:</b> 📋 emoji → DROP (action class) or keep as ASCII bullet? Decision: drop emoji, use UPPERCASE mono "REF:" prefix</li>
+        <li><b>📊 empty emoji:</b> KEEP (visual-decorative)</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-34-influencer-mobile-earnings-commission-transactions",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-27 chat \"pls continue flow34\" + 4 design calls confirmed via AskUserQuestion (yellow hero amt / MCI method icons / unified success-yellow tranche timeline / KEEP tx type emoji)",
+  "approved_at": "2026-05-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-27 AskUserQuestion confirming 4 design calls match mockup defaults",
+  "mockup_locked_at": "2026-05-27",
+  "notes": "7th flow of mobile-influencer bucket (7/23). EarningsScreen (287 LOC) + CommissionDetailScreen (310 LOC) + TransactionFeedScreen (166 LOC) = 763 LOC. LOW risk (read-mostly money screens + 1 POST withdraw). ZERO backend change. ZERO StatusPill canonical-map additions. 4 locked design calls applied: (1) Hero amount = yellow-mono on ink (matches money-emphasis pattern); (2) Method selector = MCI cellphone/bank vectors (replaces 📱/🏦); (3) Tranche timeline = unified success/yellow w/ ink-bordered current step (matches Flow 32/33); (4) TransactionFeed type emojis 🏪📅📦🔗 KEPT (type-icon class per design call #4 split). 16 render branches preserved verbatim including TDS-10% client-side preview math + min ₹100 validation + method state machine + goal-aware commission section + show-more on commissions > 5 + 30-day-window conditional banner + FlatList perf + useFocusEffect + Linking.openURL for TDS cert. All 7 APIs preserved (getEarnings/getCampaignEarnings/getWithdrawals/withdraw/getTdsCertificateUrl/getCampaignCommissionDetail/getMyTransactions). StatusBadge → StatusPill canonical migration on 2 screens (Earnings withdrawal history + CommissionDetail tranche status). Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + yellow-mono ₹ amount + ink/yellow Outfit-Black UPPERCASE WITHDRAW NOW CTA + yellowPale TDS preview with danger TDS + success You-Receive + yellowPale MCI file-document TDS-cert tile + success+yellow progress bars + unified success/yellow tranche timeline with check-bold MCI + ink-bordered yellow current step + StatusPill canonical Released/Locked + success/yellow commission summary card left borders + infoPale 30-day info banner + white TransactionFeed topbar with 4 type-pill tints (success/info/conv/yellow). No native rebuild required (NATIVE_RUNTIME=2 from Flow 28).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 34 = pure JS, ships via OTA to existing APKs.",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep Earnings/CommissionDetail/TransactionFeed visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade + withdrawal flow'"
+  }
+}
