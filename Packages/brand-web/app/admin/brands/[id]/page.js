@@ -283,6 +283,9 @@ export default function BrandProfilePage() {
   const [error, setError] = useState('');
   const [feeInput, setFeeInput] = useState('');
   const [savingFee, setSavingFee] = useState(false);
+  // Wave 1 — per-brand L3 commerce-commission override.
+  const [commerceInput, setCommerceInput] = useState('');
+  const [savingCommerce, setSavingCommerce] = useState(false);
   const [toast, setToast] = useState('');
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 3000); }
@@ -297,6 +300,28 @@ export default function BrandProfilePage() {
       setBrand(prev => ({ ...prev, platform_fee_pct: res.data.platform_fee_pct }));
       setFeeInput('');
       showToast(`Platform fee updated to ${res.data.platform_fee_pct}%`);
+    } else {
+      showToast(res.error?.message || 'Failed');
+    }
+  }
+
+  // Wave 1 — save or clear the per-brand L3 commerce-commission override.
+  // Pass `clear=true` to set the value to null (revert to category × path lookup).
+  async function saveCommerceOverride(clear = false) {
+    const value = clear ? null : parseFloat(commerceInput);
+    if (!clear && (isNaN(value) || value < 0 || value > 50)) {
+      showToast('Enter a valid commission 0–50% (or click Clear to revert to category default)');
+      return;
+    }
+    setSavingCommerce(true);
+    const res = await adminApi.setBrandCommerceCommissionOverride(id, value);
+    setSavingCommerce(false);
+    if (res.success) {
+      setBrand(prev => ({ ...prev, commerce_commission_override_pct: res.data.commerce_commission_override_pct }));
+      setCommerceInput('');
+      showToast(clear
+        ? 'Commerce commission override cleared — using category × path defaults'
+        : `Commerce commission override set to ${res.data.commerce_commission_override_pct}%`);
     } else {
       showToast(res.error?.message || 'Failed');
     }
@@ -386,6 +411,53 @@ export default function BrandProfilePage() {
             className="px-5 py-2.5 bg-navy text-white font-bold text-xs rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap"
           >
             {savingFee ? 'Saving…' : 'Save Override'}
+          </button>
+        </div>
+      </div>
+
+      {/* Wave 1 — Per-brand L3 commerce-commission override.
+          When set, overrides the category × path lookup in pricing.service.computeL3OnFollowerTxn
+          (Wave 1 commit 1). Null = brand uses category × path defaults. */}
+      <div className="bg-white rounded-xl border border-border p-5 mb-4">
+        <h3 className="font-display text-sm font-bold text-t1 mb-1">L3 Commerce Commission Override</h3>
+        <p className="text-xs text-t3 mb-4">
+          Current:{' '}
+          <strong>
+            {brand.commerce_commission_override_pct != null
+              ? `${brand.commerce_commission_override_pct}% (override)`
+              : 'using category × path defaults'}
+          </strong>
+          . Set a per-brand rate to bypass category lookup, or clear to revert.
+        </p>
+        <div className="flex gap-2">
+          <div className="flex items-center border-2 border-border2 rounded-xl overflow-hidden flex-1">
+            <input
+              type="number"
+              value={commerceInput}
+              onChange={e => setCommerceInput(e.target.value)}
+              placeholder={brand.commerce_commission_override_pct != null
+                ? String(brand.commerce_commission_override_pct)
+                : 'category default'}
+              min="0"
+              max="50"
+              step="0.1"
+              className="flex-1 px-3 py-2.5 text-sm outline-none"
+            />
+            <span className="px-3 py-2.5 bg-surface2 text-t3 text-sm font-bold border-l border-border2">%</span>
+          </div>
+          <button
+            onClick={() => saveCommerceOverride(false)}
+            disabled={savingCommerce || !commerceInput}
+            className="px-4 py-2.5 bg-navy text-white font-bold text-xs rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity whitespace-nowrap"
+          >
+            {savingCommerce ? 'Saving…' : 'Save Override'}
+          </button>
+          <button
+            onClick={() => saveCommerceOverride(true)}
+            disabled={savingCommerce || brand.commerce_commission_override_pct == null}
+            className="px-4 py-2.5 bg-white border-2 border-border2 text-t2 font-bold text-xs rounded-xl hover:bg-surface2 disabled:opacity-50 transition-opacity whitespace-nowrap"
+          >
+            Clear
           </button>
         </div>
       </div>

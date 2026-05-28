@@ -9,6 +9,12 @@ const FIELDS = [
     note: 'Charged to brand on top of influencer fee. Per-brand overrides apply.',
     type: 'number', min: 0, max: 30, step: 0.5, suffix: '%',
   },
+  // Wave 1 — GST rate (centralized from previously hardcoded 18% in 2 sites)
+  {
+    key: 'gst_pct', label: 'GST (%)',
+    note: 'Applied on subscription invoices + (Wave 2) protection fee + commerce commission. Default 18%.',
+    type: 'number', min: 0, max: 30, step: 0.5, suffix: '%',
+  },
   {
     key: 'tranche_1_pct', label: 'Tranche 1 (%)',
     note: 'Released on contract signature (both parties). T1 + T2 + T3 must equal 100.',
@@ -21,13 +27,25 @@ const FIELDS = [
   },
   {
     key: 'tranche_3_pct', label: 'Tranche 3 (%)',
-    note: 'Auto-released 30 days after Tranche 2 trigger.',
+    note: 'Auto-released N days after content live (configurable below).',
     type: 'number', min: 1, max: 98, step: 1, suffix: '%',
+  },
+  // Wave 1 — T3 timing (was hardcoded 30 days)
+  {
+    key: 'tranche_3_release_after_days', label: 'T3 Release After (days)',
+    note: 'Number of days after content_live before T3 releases. Default 30.',
+    type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
   },
   {
     key: 'tds_pct', label: 'TDS on Withdrawal (%)',
-    note: 'Statutory — deducted at influencer withdrawal time (Section 194M).',
-    type: 'number', min: 0, max: 30, step: 0.5, suffix: '%', locked: true,
+    note: 'Statutory — deducted at influencer withdrawal time (Section 194M). Per-influencer overrides apply.',
+    type: 'number', min: 0, max: 30, step: 0.5, suffix: '%',
+  },
+  // Wave 1 — TCS rate (Sec 52 CGST). Toggle is below in the Tax & Identity section.
+  {
+    key: 'tcs_pct', label: 'TCS (%)',
+    note: 'Sec 52 CGST: deducted from brand portion on commerce purchases when active. Default 1%.',
+    type: 'number', min: 0, max: 5, step: 0.1, suffix: '%',
   },
   {
     key: 'offer_expiry_hours', label: 'Offer Expiry (hours)',
@@ -35,9 +53,9 @@ const FIELDS = [
     type: 'number', min: 12, max: 168, step: 1, suffix: 'h',
   },
   {
-    key: 'return_window_days', label: 'Commission Return Window (days)',
-    note: 'Commissions held in pending_balance for this many days before confirming.',
-    type: 'number', min: 7, max: 90, step: 1, suffix: 'd',
+    key: 'return_window_days', label: 'Default Commission Return Window (days)',
+    note: 'Global fallback when no per-category window is set. Edit per-category at /admin/pricing/categories.',
+    type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
   },
   {
     key: 'min_withdrawal_inr', label: 'Minimum Withdrawal (₹)',
@@ -58,6 +76,19 @@ function cfgToForm(cfg) {
     return_window_days: cfg.returnWindowDays,
     min_withdrawal_inr: cfg.minWithdrawalInr,
     allow_commission_negotiation: cfg.allowCommissionNegotiation !== false,
+    // Wave 1 — tax + identity + T3 timing
+    gst_pct:                     cfg.gstPct,
+    tcs_pct:                     cfg.tcsPct,
+    tcs_active:                  cfg.tcsActive === true,
+    tcs_active_from_date:        cfg.tcsActiveFromDate || '',
+    platform_gstin:              cfg.platformGstin || '',
+    platform_business_name:      cfg.platformBusinessName || '',
+    platform_business_address:   cfg.platformBusinessAddress || '',
+    platform_state_code:         cfg.platformStateCode || '',
+    invoice_prefix_subscription: cfg.invoicePrefixSubscription || 'INF-SUB',
+    invoice_prefix_commerce:     cfg.invoicePrefixCommerce || 'INF-COM',
+    tranche_3_release_after_days: cfg.tranche3ReleaseAfterDays,
+    tranche_3_release_time_ist:   cfg.tranche3ReleaseTimeIst || '03:00:00',
   };
 }
 
@@ -256,10 +287,140 @@ export default function PaymentConfigPage() {
         </div>
       )}
 
-      {/* TDS locked note */}
+      {/* TDS note */}
       {editing && (
         <div className="mt-2 text-[11px] text-t3 px-1">
-          ⚠️ TDS % is a statutory rate under Indian Income Tax Act (Section 194M) and cannot be changed via this form. Contact your CA / legal team.
+          ⚠️ TDS % is a statutory rate (Indian Income Tax Act, Section 194M). Confirm with your CA before changing the global rate. Per-influencer overrides + exemption available on each influencer&apos;s admin page.
+        </div>
+      )}
+
+      {/* ── Wave 1: Tax & Identity (TCS toggle, platform GSTIN, invoice prefixes, T3 release time) ── */}
+      {!loading && (
+        <div className="mt-5 bg-white rounded-xl border border-border overflow-hidden">
+          <div className="px-5 py-3 bg-surface2 border-b border-border">
+            <h2 className="text-sm font-bold text-t1">Tax & Identity</h2>
+            <p className="text-[11px] text-t3 mt-0.5">
+              Platform-level tax + invoice identity. Wave 2/3 will use these on Protection Fee invoices, Commerce
+              settlement, and TCS deduction.
+            </p>
+          </div>
+
+          {/* TCS toggle + active-from date */}
+          <div className="px-5 py-4 border-b border-border">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-t1">TCS Active</span>
+                <div className="text-[11px] text-t3 mt-0.5">
+                  Enable once you cross the ₹50L ecommerce-operator turnover threshold (Sec 52 CGST). When active, TCS
+                  is deducted from the brand&apos;s portion of every follower purchase. Default off until you&apos;re ready.
+                </div>
+              </div>
+              {editing ? (
+                <button
+                  type="button"
+                  onClick={() => setField('tcs_active', !form.tcs_active)}
+                  className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors ${form.tcs_active ? 'bg-teal-600' : 'bg-gray-300'}`}
+                >
+                  <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${form.tcs_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              ) : (
+                <div className={`font-display text-xs font-bold px-3 py-1 rounded-lg flex-shrink-0 ${form.tcs_active ? 'bg-teal-50 text-teal-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {form.tcs_active ? 'ENABLED' : 'DISABLED'}
+                </div>
+              )}
+            </div>
+
+            {form.tcs_active && (
+              <div className="mt-3 flex items-center gap-3">
+                <span className="text-xs text-t3">Active from:</span>
+                {editing ? (
+                  <input type="date"
+                    value={form.tcs_active_from_date || ''}
+                    onChange={e => setField('tcs_active_from_date', e.target.value)}
+                    className="px-2 py-1 text-xs border-2 border-navy/30 rounded-lg outline-none focus:border-navy" />
+                ) : (
+                  <span className="text-xs font-semibold text-t1">{form.tcs_active_from_date || 'now'}</span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* T3 release time-of-day */}
+          <div className="px-5 py-4 border-b border-border">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-semibold text-t1">T3 Release Time (IST)</span>
+                <div className="text-[11px] text-t3 mt-0.5">
+                  The clock time at which T3 tranches fire on the day-N boundary (cron runs hourly). Default 03:00 IST — off-hours.
+                </div>
+              </div>
+              {editing ? (
+                <input type="time" step="60"
+                  value={(form.tranche_3_release_time_ist || '03:00:00').slice(0, 5)}
+                  onChange={e => setField('tranche_3_release_time_ist', e.target.value + ':00')}
+                  className="px-3 py-1.5 text-sm font-bold text-t1 border-2 border-navy/30 rounded-lg outline-none focus:border-navy" />
+              ) : (
+                <div className="font-display text-base font-bold text-navy bg-navy-pale px-3 py-1 rounded-lg">
+                  {(form.tranche_3_release_time_ist || '03:00:00').slice(0, 5)}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Platform identity fields */}
+          {['platform_gstin', 'platform_business_name', 'platform_business_address', 'platform_state_code',
+            'invoice_prefix_subscription', 'invoice_prefix_commerce'].map((key, idx, arr) => {
+            const labels = {
+              platform_gstin:              'Platform GSTIN',
+              platform_business_name:      'Platform Business Name',
+              platform_business_address:   'Platform Business Address',
+              platform_state_code:         'Platform State Code',
+              invoice_prefix_subscription: 'Subscription Invoice Prefix',
+              invoice_prefix_commerce:     'Commerce Invoice Prefix',
+            };
+            const notes = {
+              platform_gstin:              '15-character GSTIN (e.g. 29ABCDE1234F1Z5). Appears on every subscription invoice.',
+              platform_business_name:      'Legal entity name as registered with GST.',
+              platform_business_address:   'Registered business address — appears on invoices.',
+              platform_state_code:         '2-character state code (e.g. KA, MH). Used for IGST vs CGST/SGST split.',
+              invoice_prefix_subscription: 'Prefix for subscription invoice numbers. Default INF-SUB.',
+              invoice_prefix_commerce:     'Prefix for commerce invoice numbers. Default INF-COM.',
+            };
+            const isLast = idx === arr.length - 1;
+            const isMultiline = key === 'platform_business_address';
+            const maxLen      = key === 'platform_gstin' ? 15
+                              : key === 'platform_state_code' ? 2
+                              : 255;
+            return (
+              <div key={key} className={`px-5 py-4 ${isLast ? '' : 'border-b border-border'}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-t1">{labels[key]}</span>
+                    <div className="text-[11px] text-t3 mt-0.5">{notes[key]}</div>
+                  </div>
+                  {editing ? (
+                    isMultiline ? (
+                      <textarea
+                        value={form[key] || ''}
+                        onChange={e => setField(key, e.target.value)}
+                        rows={2}
+                        className="w-72 px-3 py-1.5 text-xs border-2 border-navy/30 rounded-lg outline-none focus:border-navy" />
+                    ) : (
+                      <input type="text"
+                        value={form[key] || ''}
+                        maxLength={maxLen}
+                        onChange={e => setField(key, e.target.value)}
+                        className="w-56 px-3 py-1.5 text-sm font-mono text-t1 border-2 border-navy/30 rounded-lg outline-none focus:border-navy" />
+                    )
+                  ) : (
+                    <div className="font-mono text-xs text-t2 bg-surface2 px-3 py-1 rounded-lg max-w-[280px] truncate">
+                      {form[key] || '—'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 

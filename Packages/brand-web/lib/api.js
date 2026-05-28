@@ -423,6 +423,11 @@ export const adminApi = {
   getPaymentConfig: () => api.get('/admin/config/payments'),
   updatePaymentConfig: (data) => api.patch('/admin/config/payments', data),
   setBrandPlatformFee: (brandId, pct) => api.patch(`/admin/brands/${brandId}/platform-fee`, { platform_fee_pct: pct }),
+  // Wave 1 — per-brand L3 commerce-commission override + per-influencer TDS controls
+  setBrandCommerceCommissionOverride: (brandId, pct) =>
+    api.patch(`/admin/brands/${brandId}/commerce-commission-override`, { commerce_commission_override_pct: pct }),
+  setInfluencerTaxControls: (influencerId, tdsOverridePct, tdsExempt) =>
+    api.patch(`/admin/influencers/${influencerId}/tax-controls`, { tds_override_pct: tdsOverridePct, tds_exempt: tdsExempt }),
   rescrapeInfluencer: (id) => api.post(`/influencers/${id}/rescrape`),
   getAnalytics: (days = 30) => api.get(`/admin/analytics?days=${days}`),
   getProductionQueue: () => api.get('/admin/production/queue'),

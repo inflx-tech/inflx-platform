@@ -666,6 +666,71 @@ const setBrandEscrowFeeOverride = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/brands/:id/commerce-commission-override  (finance+ : per-brand L3 override)
+// Wave 1 commit 2 — admin UI surface for brands.commerce_commission_override_pct.
+// Mirrors setBrandEscrowFeeOverride exactly but writes to the L3 column.
+// Body: { commerce_commission_override_pct: number | null }  — null clears the override.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const setBrandCommerceCommissionOverride = asyncHandler(async (req, res) => {
+  const raw = req.body.commerce_commission_override_pct;
+  let value = null;
+  if (raw !== null && raw !== '' && raw !== undefined) {
+    const n = parseFloat(raw);
+    if (isNaN(n) || n < 0 || n > 50) {
+      throw new AppError('VALIDATION_ERROR', 'commerce_commission_override_pct must be 0–50 or null', 422, 'commerce_commission_override_pct');
+    }
+    value = n.toFixed(2);
+  }
+
+  const { rows } = await db.query(
+    `UPDATE brands SET commerce_commission_override_pct = $1 WHERE id = $2
+     RETURNING id, commerce_commission_override_pct`,
+    [value, req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Brand not found', 404);
+
+  return success(res, {
+    brand_id: rows[0].id,
+    commerce_commission_override_pct: rows[0].commerce_commission_override_pct,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/influencers/:id/tax-controls  (finance+ : per-influencer TDS)
+// Wave 1 commit 2 — admin UI surface for influencers.tds_override_pct + tds_exempt.
+// Body: { tds_override_pct: number | null, tds_exempt: boolean }
+//   - tds_override_pct = null → uses global payment_config.tds_pct (default)
+//   - tds_exempt = true → 0 TDS deducted on withdrawals (e.g. exemption cert on file)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const setInfluencerTaxControls = asyncHandler(async (req, res) => {
+  const raw = req.body.tds_override_pct;
+  let overrideValue = null;
+  if (raw !== null && raw !== '' && raw !== undefined) {
+    const n = parseFloat(raw);
+    if (isNaN(n) || n < 0 || n > 30) {
+      throw new AppError('VALIDATION_ERROR', 'tds_override_pct must be 0–30 or null', 422, 'tds_override_pct');
+    }
+    overrideValue = n.toFixed(2);
+  }
+  const exempt = req.body.tds_exempt === true || req.body.tds_exempt === 'true';
+
+  const { rows } = await db.query(
+    `UPDATE influencers SET tds_override_pct = $1, tds_exempt = $2 WHERE id = $3
+     RETURNING id, tds_override_pct, tds_exempt`,
+    [overrideValue, exempt, req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Influencer not found', 404);
+
+  return success(res, {
+    influencer_id:    rows[0].id,
+    tds_override_pct: rows[0].tds_override_pct,
+    tds_exempt:       rows[0].tds_exempt,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/withdrawals?status=all|initiated|processing|completed|failed
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1172,6 +1237,9 @@ module.exports = {
   updatePaymentConfig,
   setBrandPlatformFee,
   setBrandEscrowFeeOverride,
+  // Wave 1 — new per-actor admin controls
+  setBrandCommerceCommissionOverride,
+  setInfluencerTaxControls,
   getWithdrawals,
   processWithdrawal,
   getBrands,

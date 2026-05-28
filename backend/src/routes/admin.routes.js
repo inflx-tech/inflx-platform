@@ -62,6 +62,12 @@ router.delete('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('sup
 // Per-brand L2 escrow fee override — finance+
 router.patch('/brands/:id/escrow-fee-override', authenticate, requireAdminRole('finance'), ctrl.setBrandEscrowFeeOverride);
 
+// Per-brand L3 commerce commission override — finance+ (Wave 1)
+router.patch('/brands/:id/commerce-commission-override', authenticate, requireAdminRole('finance'), ctrl.setBrandCommerceCommissionOverride);
+
+// Per-influencer TDS controls (override + exempt) — finance+ (Wave 1)
+router.patch('/influencers/:id/tax-controls', authenticate, requireAdminRole('finance'), ctrl.setInfluencerTaxControls);
+
 // Withdrawal / payout management — finance+
 router.get('/withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getWithdrawals);
 router.post('/withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processWithdrawal);

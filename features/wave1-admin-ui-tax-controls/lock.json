@@ -1,0 +1,30 @@
+{
+  "feature": "wave1-admin-ui-tax-controls",
+  "area": "brand-web-ui+backend-controller",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — explicit 'go with option A' after Wave 1 commit 1 + 2a shipped. Closes Wave 1 by exposing every backend field via admin UI.",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render redeploys backend with 2 new admin endpoints; Vercel redeploys brand-web with 3 admin page extensions + 1 lib helper). NO migration (Wave 1 commit 1's M072+M073+M074 already live).",
+  "fix": "Wave 1 closing commit (2b/2c/2d combined). Adds 2 new admin endpoints (setBrandCommerceCommissionOverride + setInfluencerTaxControls) and extends 3 admin pages with the corresponding UI surfaces. All Wave 1 fields are now admin-controllable end-to-end.",
+  "related": [
+    "features/wave1-tax-config-foundation",
+    "features/wave1-admin-categories-return-window"
+  ],
+  "result": "2 new backend admin endpoints + 2 routes added. 2 new lib/api helpers. 3 admin pages extended: /admin/settings/payments (FIELDS + Tax & Identity section), /admin/brands/[id] (L3 commerce override card), /admin/influencers/[id] (TDS Status field + TDS Controls card). Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (46.0s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN. No QA spec hits the new endpoints or page sections. Backend endpoints are additive (mirror of existing override pattern). Frontend changes are additive — existing controls + flows unchanged.",
+  "discipline": "Verify-twice: 2 new endpoints structurally mirror setBrandEscrowFeeOverride (validated rate range, null-clears convention, finance+ auth). Influencer page renders TDS Status Field even when no override is set (shows 'Global default'). All defensive defaults match prior hardcoded behaviour so deploying this without admin filling in values leaves prod unchanged.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Vercel + Render redeploy; no migration)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — N/A: extensions to existing admin pages with the same style as existing cards (Platform Fee Override, Feature Overrides). No new design tokens introduced.",
+  "mockup_locked_at": "2026-05-28"
+}
