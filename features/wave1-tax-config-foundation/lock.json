@@ -19,10 +19,20 @@
   "discipline": "Verify-twice on each hardcoded GST site before replacement (5 in subscription.controller, 2 in webhook.controller — confirmed via grep). Per-influencer TDS lookup ordering: exempt → override → global (admin can choose any of 3 states per influencer).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Pending git push (production-impacting Render redeploy + 3 prod migrations bundled for combined founder go)."
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — explicit 'yes pls run' for combined M072 + M073 + M074 prod migration after Wave 1 commit 1 push (c2a060d) landed on origin/main.",
+    "released_at": "2026-05-28",
+    "deploy": {
+      "commit": "c2a060d",
+      "render_redeploy": "auto on push (backend: paymentConfig.service extension + tax.service + GST-hardcode replacement + per-influencer TDS + per-brand L3 override + per-category return window + T3 cron switched daily→hourly)",
+      "prod_migrations": {
+        "M072_payment_config_tax_identity": "applied 2026-05-28 via trap+restore. payment_config gained 10 new columns: gst_pct=18.00, tcs_pct=1.00, tcs_active=false, tcs_active_from_date=null, platform_gstin/business_name/business_address/state_code=null (admin fills via UI), invoice_prefix_subscription='INF-SUB', invoice_prefix_commerce='INF-COM'.",
+        "M073_per_actor_overrides": "applied 2026-05-28 via trap+restore. categories.return_window_days=30 on all 16 rows (matches prior global default — no behaviour change). influencers.tds_override_pct/tds_exempt added — 21 rows untouched (no exemptions or overrides yet). brands.commerce_commission_override_pct added — 10 rows untouched.",
+        "M074_payment_config_t3_release_time": "applied 2026-05-28 via trap+restore. tranche_3_release_after_days=30 + tranche_3_release_time_ist='03:00:00' on the singleton row. T3 cron switched from daily-06:00-UTC to hourly; honors configured IST time-of-day."
+      },
+      "behaviour_change": "Pre-migration code path identical to post-migration with defaults (defensive ?? fallbacks). Only behavioural shift: T3 cron schedule changed daily→hourly so admin-configured time-of-day is honored within ~1h. Default 03:00 IST is off-hours.",
+      "trap_restore": "local backend/.env restored to localhost:5433/inflx_dev after migration run."
+    }
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only commit. Admin UI lands in the Wave 1 commit 2 contract.",
