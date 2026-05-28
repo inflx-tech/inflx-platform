@@ -39,9 +39,9 @@
     "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change in this flow).",
     "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 44 emulator after-screenshots skipped per founder this round (login/data-gated lead+returns screens); enquiry/returns/tracking integrity verified by code markers + babel transform; founder physical APK smoke-test = real-device confirm'",
     "deploy": {
-      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "commit": "f26230c", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "f26230c", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "f26230c", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
       "ota_brand":      { "version": 94, "bundle_hash": "sha256:3093435b943f9f3bdeed8ab2c80169ec39ebc8e763b3a94311038784031726a6", "published_at": "2026-05-28T11:56:01.273Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 44 (F3) — follower enquiry + returns'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
       "ota_influencer": { "version": 83, "bundle_hash": "sha256:3093435b943f9f3bdeed8ab2c80169ec39ebc8e763b3a94311038784031726a6", "published_at": "2026-05-28T11:56:05.785Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 44 (F3) — follower enquiry + returns'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
       "ota_follower":   { "version": 57, "bundle_hash": "sha256:3093435b943f9f3bdeed8ab2c80169ec39ebc8e763b3a94311038784031726a6", "published_at": "2026-05-28T11:56:11.254Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 44 (F3) — follower enquiry + returns'", "scope": "follower audience manifest (Enquiry + MyReturns light restyle live here)" }
