@@ -12,15 +12,41 @@
   "mockup_locked_at": "2026-05-28",
   "notes": "Phase F2 (account + wallet), 1st flow — FIRST flow under the corrected governance loop (per-flow mockup → founder sign-off BEFORE implementation → after-screenshots). MeScreen (147, dark→light flip + MCI menu icons + yellow avatar + danger logout) + FollowerWalletScreen (293, lightColors→brandPalette + successPale MCI gift tx icon). 2 design calls founder-signed-off: (1) Me menu emoji 💰📦📍👥🔖 → MCI wallet/package-variant/map-marker-outline/account-group-outline/bookmark-outline in yellowPale tiles; (2) after-screenshots via Maestro follower OTP login (000000) capture. ZERO API/backend/navigation/tracking change. getMe/getWallet/getWalletTransactions graceful zero-fallback + logout (AsyncStorage.multiRemove + setRole) + CreatorChip + negative/pending/lifetime math preserved verbatim. No native rebuild (NATIVE_RUNTIME=2; MCI pre-baked). Design authority = this flow's own mockup.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T05-24-16-725Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 54.0,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN.",
+      "after_screenshots": {
+        "captured": true,
+        "method": "adb launch (OTA pull+apply on emulator-5554) → tap Me tab → screenshot → tap Wallet & Rewards → screenshot. Real captures against the live released follower v54 bundle.",
+        "files": [
+          "06-diff/before-app-home-dark.png (real before — stale dark Home)",
+          "06-diff/after-home-light.png (OTA applied — F0+F1+F2 light Home)",
+          "06-diff/after-me.png (MeScreen — pixel-match to mockup)",
+          "06-diff/after-wallet.png (FollowerWalletScreen — empty-state)"
+        ],
+        "note": "Emulator needed a ~40s 2-launch cycle for the OTA bundle to download+apply (was 4 bundles stale). MeScreen + Wallet rendered exactly per mockup. Founder physical APK smoke-test remains the ongoing real-device confirmation."
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. This flow adds REAL emulator after-screenshots (Me + Wallet) per the corrected governance loop."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — per-flow mockup signed off, then go (corrected governance loop)",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
-    "maestro_green": "n/a until release-flip; after-screenshots (Me + Wallet) captured via Maestro follower OTP login into 06-diff/. Will use GOVERNANCE_OVERRIDE if deep visual gate unmet; founder physical smoke-test fallback documented."
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; REAL emulator after-screenshots of Me + Wallet captured into 06-diff/ against the live follower v54 bundle; founder physical smoke-test is the ongoing real-device confirmation'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "dc60529", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "dc60529", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "dc60529", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 91, "bundle_hash": "sha256:1e09425ac8043e3f546026534a05e5c4340a38af098fcd13cc3da6e974405e61", "published_at": "2026-05-28T05:32:20.959Z", "bundle_size_kb": 2514, "trigger": "pnpm publish-ota:all -m 'Flow 41 (F2) — follower Me + Wallet'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 80, "bundle_hash": "sha256:1e09425ac8043e3f546026534a05e5c4340a38af098fcd13cc3da6e974405e61", "published_at": "2026-05-28T05:32:28.599Z", "bundle_size_kb": 2514, "trigger": "pnpm publish-ota:all -m 'Flow 41 (F2) — follower Me + Wallet'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 54, "bundle_hash": "sha256:1e09425ac8043e3f546026534a05e5c4340a38af098fcd13cc3da6e974405e61", "published_at": "2026-05-28T05:32:34.918Z", "bundle_size_kb": 2514, "trigger": "pnpm publish-ota:all -m 'Flow 41 (F2) — follower Me + Wallet'", "scope": "follower audience manifest (MeScreen + FollowerWalletScreen light restyle live here)" }
+    }
   }
 }

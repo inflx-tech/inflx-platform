@@ -25,12 +25,29 @@
   lifetime math preserved.
 - All 5 menu nav routes unchanged.
 
-## After-implementation screenshots (governance)
-- BEFORE: this flow's mockup (`04-preview/mockups/web.html`).
-- AFTER: see `me-after.png` / `wallet-after.png` in this dir (Maestro follower
-  OTP-login capture on emulator-5554 against the released OTA bundle), OR — if
-  emulator OTA-pull timing prevented a clean shot — documented founder physical
-  APK smoke-test as the after-evidence (noted in lock.json qa_evidence).
+## After-implementation screenshots (governance — REAL captures)
+Captured on emulator-5554 against the LIVE released OTA bundle (follower v54,
+sha256:1e09425a) via adb launch + navigation:
+- **`before-app-home-dark.png`** — the real app BEFORE this redesign reached the
+  device (stale pre-F0 dark Home — amber rings, dark tiles). Genuine before-state.
+- **`after-home-light.png`** — Home AFTER OTA applied (F0+F1+F2 live): yellow
+  story rings + ink avatars, per-business pale category tiles, light tab bar +
+  MCI icons + ink-active HOME. Confirms the bundle applied.
+- **`after-me.png`** — MeScreen (THIS flow): pixel-match to the mockup — Outfit-
+  Black "Me", yellow avatar tile + ink "?", yellowPale MCI icon tiles
+  (wallet/package/map-marker/account-group/bookmark), Outfit-Bold labels + mono
+  uppercase subs, muted chevrons, danger-border LOG OUT.
+- **`after-wallet.png`** — FollowerWalletScreen (THIS flow): ink balance card
+  (yellow "AVAILABLE BALANCE" + white mono ₹0 + PENDING/LIFETIME), Outfit-Black
+  "Recent activity", empty-state (dashed tile + 💰 + yellow "Browse partners"),
+  bg2 "How rewards work" with yellow numbered steps. (Anonymous session → empty
+  state; the successPale gift tx-row variant is in the mockup + code.)
+
+Capture method = adb launch (OTA pull+apply) → tap Me tab → screenshot → tap
+Wallet & Rewards → screenshot. The emulator needed a generous 2-launch cycle
+(~40s) for the OTA bundle to download + apply (it was 4 bundles stale); after
+that the new light UI rendered correctly. Founder physical APK smoke-test
+remains the ongoing real-device confirmation.
 
 ## Sign-off
 - Per-flow mockup authored + founder-signed-off via AskUserQuestion BEFORE
