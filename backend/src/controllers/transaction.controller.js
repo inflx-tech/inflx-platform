@@ -28,6 +28,7 @@ const bookingService = require('../services/booking.service');
 const notificationService = require('../services/notification.service');
 const offerService = require('../services/offer.service');
 const pricingService = require('../services/pricing.service');
+const settlementService = require('../services/settlement.service');
 
 // ── Conversion-flow helpers (Tier-1) ─────────────────────────────────────────
 
@@ -355,7 +356,9 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   // Consume mock order — returns the rupees amount plus meta we stashed.
   const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
-  const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
+  // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
+  // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
+  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
 
   // Get coupon code
   const { rows: ciRows } = await db.query(
@@ -412,6 +415,12 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
       );
     }
   });
+
+  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
+  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
+  // purchase the customer already paid for.
+  await settlementService.settleCommerceTransaction(db, transactionId)
+    .catch(e => console.error('[settlement] failed:', e.message));
 
   // Fire notification to influencer
   if (influencer) {
@@ -560,7 +569,9 @@ const verifyPrebook = asyncHandler(async (req, res) => {
 
   const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
-  const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
+  // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
+  // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
+  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
   const commissionAmount = parseFloat((advanceAmount * meta.commission_pct / 100).toFixed(2));
   // Prebook has no platform fee line today (always 0) — match pay_at_store /
   // online_order math: brand_net = net_amount − commission − platform_fee.
@@ -646,6 +657,12 @@ const verifyPrebook = asyncHandler(async (req, res) => {
       );
     }
   });
+
+  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
+  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
+  // purchase the customer already paid for.
+  await settlementService.settleCommerceTransaction(db, transactionId)
+    .catch(e => console.error('[settlement] failed:', e.message));
 
   const { rows: brandRows } = await db.query(
     `SELECT b.business_name, u.phone AS brand_phone
@@ -777,7 +794,9 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
 
   const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
-  const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
+  // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
+  // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
+  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
   const commissionAmount = parseFloat((advanceAmount * meta.commission_pct / 100).toFixed(2));
   const platformFeeAmount = 0;
   const brandNetAmount = parseFloat((advanceAmount - commissionAmount - platformFeeAmount).toFixed(2));
@@ -848,6 +867,12 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
       );
     }
   });
+
+  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
+  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
+  // purchase the customer already paid for.
+  await settlementService.settleCommerceTransaction(db, transactionId)
+    .catch(e => console.error('[settlement] failed:', e.message));
 
   const { rows: brandRows } = await db.query(
     `SELECT b.business_name, u.phone AS brand_phone
@@ -1007,7 +1032,9 @@ const verifyOrder = asyncHandler(async (req, res) => {
 
   const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
 
-  const returnWindowEndsAt = new Date(Date.now() + RETURN_WINDOW_MS);
+  // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
+  // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
+  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
   const commissionAmount = parseFloat(meta.influencer_commission);
 
   const { rows: ciRows } = await db.query(
@@ -1085,6 +1112,12 @@ const verifyOrder = asyncHandler(async (req, res) => {
       );
     }
   });
+
+  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
+  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
+  // purchase the customer already paid for.
+  await settlementService.settleCommerceTransaction(db, transactionId)
+    .catch(e => console.error('[settlement] failed:', e.message));
 
   // Notifications
   notificationService.send({

@@ -1,0 +1,31 @@
+{
+  "feature": "wave3-commerce-settlement-engine",
+  "area": "backend-service+controller",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — 'pls go for next commit'. Wave 3 commit 2 (the settlement engine), built in mock mode in parallel with Razorpay Route enablement.",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING, NO migration (M077 already on prod). Render redeploy. Per-category window + commission-GST recording go live; the Route transfer stays DORMANT (no brand linked accounts + Route off). Best-effort so purchases are never blocked.",
+  "fix": "settlement.service: settleCommerceTransaction (per-brand TCS gated by tcs_applicable+tcs_active, commission GST, Route transfer of brand_net-TCS to the brand linked account, records tcs/gst/transfer_id; best-effort + idempotent) + resolveReturnWindowEndsAt (per-category). Wired post-commit into all 4 commerce verify paths; return_window_ends_at now per-category (was flat 30).",
+  "related": [
+    "features/wave3-commerce-settlement-foundation",
+    "features/wave1-tax-config-foundation"
+  ],
+  "result": "Commerce settlement computes + records per-brand TCS + commission GST; transfers brand_net-TCS to the brand's Route linked account when present (mock verified); per-category commission-release window replaces flat 30. Purchase flow never blocked (post-commit, .catch). Backend boot smoke clean.",
+  "regression_proof": "Additive + best-effort. 4 verify paths edited uniformly; only runtime addition is a guarded post-commit settle call. No transfer fires without a linked account (prod-safe). pnpm qa GREEN. settlement.test.js 5/5 (tcs gate, commission GST, mock transfer, idempotency, per-category window).",
+  "discipline": "Verify-twice: confirmed all 4 verify paths share the identical returnWindowEndsAt line + transactionId + meta.brand_id before the uniform edit; settlement runs POST-commit (not inside the purchase txn) so external transfers don't hold it open; transfer gated on linked-account presence (no live money until brands onboard + Route on). Reused existing return_window_ends_at + commission-confirm cron (no redundant column/job). Discovered + fixed test-setup truth: truncateAll's users-CASCADE clears categories (tests re-seed) + followers auto-created on login (UNIQUE user_id).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'go for next commit'; additive + best-effort + transfer dormant, safe to ship.",
+    "released_at": "2026-05-28",
+    "maestro_green": false,
+    "deploy": "Deployed via git push (Render redeploy). NO migration (M077 already on prod). Live transfers begin only once brands onboard a payout account (W3.1) AND Razorpay Route is enabled. No mobile change (no OTA)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — backend-only (no UI files); not UI-governed. Field set for robustness.",
+  "mockup_locked_at": "2026-05-28"
+}
