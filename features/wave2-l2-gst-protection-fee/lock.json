@@ -19,11 +19,11 @@
   "discipline": "Verify-twice: reused the existing Wave 1 tax.service.gstOn (reads payment_config.gst_pct, fallback 18) rather than re-implementing; confirmed escrow_fee_amount is the renamed L2 fee (M037), computed in createEscrowEntries and netted from the influencer tranche; confirmed getCampaignEscrow previously hid the fee from the brand. Flagged the scope boundary (record+display, not charge) explicitly in the spec — the charge/invoice is Wave 4.",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'take best decision without breaking functionality'. Migrate-first: M076 applied to prod before this code push.",
+    "released_at": "2026-05-28",
     "maestro_green": false,
-    "deploy": "Pending explicit founder go. Production-impacting + M076 migration; batched with M075 for one combined prod go. Code push (Render+Vercel) coincides with M075+M076 on prod."
+    "deploy": "M076 applied to Supabase prod 2026-05-28 (run-076.js, trap+restore) AHEAD of the code push, so escrow GST code can't break contract-activation when it lands. Pushed via chore(release); Render + Vercel redeploy. No mobile change (no OTA)."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-28) — reuses the locked escrow `.esc` palette; one new `.tr-fee` sub-line class composed of existing tokens, no new design language. Per the wave2-brand-wallet-withdrawal precedent.",

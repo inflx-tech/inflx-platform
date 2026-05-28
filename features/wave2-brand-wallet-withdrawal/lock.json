@@ -19,11 +19,11 @@
   "discipline": "Verify-twice: confirmed brands has no stored payment method (destination = listing_data.bank_details JSONB); confirmed wallet_tx_type values + that getWallet FILTERs never match 'withdrawal' (so 'payout' would have corrupted settled_balance — corrected to a new type); wallet debited under FOR UPDATE + refunded on reject AND payout-failure; admin route role gate mirrors influencer withdrawals (requireAdminRole('finance')).",
   "release": {
     "qa_all_green": true,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'take best decision without breaking functionality' after the shared-main push (Window B's e0dde1b) carried commit-2 code to origin/main ahead of the migration.",
+    "released_at": "2026-05-28",
     "maestro_green": false,
-    "deploy": "Pending explicit founder go. Production-impacting + M075 migration; M075 batched with M076 for one combined prod go. Code push (Render+Vercel) must coincide with M075 on prod (new table, no column-default fallback)."
+    "deploy": "M075 applied to Supabase prod 2026-05-28 (run-075.js, trap+restore). Commit-2 code already on origin/main (7a241cf, under e0dde1b) → Render + Vercel deploying. brand_withdrawals table + 'withdrawal' enum live; brand withdrawal functional. No mobile change (no OTA)."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-28) — reuses the locked wallet `.w` palette (same color vars + typography) and the existing /admin/payouts table+modal layout. New `.wd-*` classes are compositions of existing tokens; no new design language. Per the wallet-three-state-breakdown precedent.",
