@@ -12,15 +12,35 @@
   "mockup_locked_at": "2026-05-28",
   "notes": "Phase F3 (shared checkout/CTA), 1st flow. PayAtStoreScreen (393, darkColors→brandPalette + ink hero + amber buttons→ink/yellow + ✅→MCI check in yellow tile + green token-banner→successPale) + OnlineOrderScreen (210, legacy navy→brandPalette + ink/yellow PLACE ORDER) + OrderCartScreen (237, hardcoded dark hexes→brandPalette rewrite + ink/yellow PROCEED TO PAY). Highest-stakes screens (real Razorpay money + 4-ID commission attribution). ZERO payment/backend/tracking change: processPayment + paise-at-boundary (Math.round(amount*100)) + 4-ID tracking (cid/sid/oid/iid) on payAtStore/createOrder + verifyPayAtStore/verifyOrder + PayAtStore→RestaurantBillScreen inline dispatch (restaurant category) + Q3 discount math + prebook token subtraction + sign-in gate + useCart context + min-order gate ALL preserved verbatim (verified: 9 integrity markers PayAtStore, 7 OrderCart post-restyle). No native rebuild (MCI pre-baked Flow 28). Governance: per-flow F3 mockup → founder green signal via AskUserQuestion BEFORE implementation → real after-screenshots.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T06-45-51-011Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 53.6,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN.",
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Founder instructed skip emulator after-screenshot capture for F3 this round ('dont go after implementation screenshots'). After-evidence = founder physical APK smoke-test on live follower v55. Before = F3 mockup. Emulator capture available on request.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. F3 payment-screen integrity (Razorpay + paise boundary + 4-ID tracking + verify flows + RestaurantBill dispatch + Q3 discount math) verified preserved via code markers post-restyle."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — F3 mockup green-signaled, then go to implementation",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
-    "maestro_green": "n/a until release-flip; real emulator after-screenshots (PayAtStore + Cart) into 06-diff/. GOVERNANCE_OVERRIDE on flip; founder physical smoke-test = real-device confirm."
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; F3 emulator after-screenshots skipped per founder instruction this round; payment/tracking integrity verified by code markers; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "cfdb32e", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "cfdb32e", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "cfdb32e", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 92, "bundle_hash": "sha256:8fc4ea7e7d94277a4698a142a94e6fde7d16e2276929cd68f24779b9596d68d4", "published_at": "2026-05-28T06:47:45.014Z", "bundle_size_kb": 2515, "trigger": "pnpm publish-ota:all -m 'Flow 42 (F3) — follower checkout/CTA'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 81, "bundle_hash": "sha256:8fc4ea7e7d94277a4698a142a94e6fde7d16e2276929cd68f24779b9596d68d4", "published_at": "2026-05-28T06:47:49.652Z", "bundle_size_kb": 2515, "trigger": "pnpm publish-ota:all -m 'Flow 42 (F3) — follower checkout/CTA'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 55, "bundle_hash": "sha256:8fc4ea7e7d94277a4698a142a94e6fde7d16e2276929cd68f24779b9596d68d4", "published_at": "2026-05-28T06:47:54.406Z", "bundle_size_kb": 2515, "trigger": "pnpm publish-ota:all -m 'Flow 42 (F3) — follower checkout/CTA'", "scope": "follower audience manifest (PayAtStore + OnlineOrder + OrderCart light restyle live here)" }
+    }
   }
 }

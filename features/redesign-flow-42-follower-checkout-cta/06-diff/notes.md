@@ -25,11 +25,13 @@
 - Q3 discount math + prebook token subtraction verbatim.
 - sign-in gate, useCart, min-order gate, address/qty controls verbatim.
 
-## After-implementation screenshots (governance)
+## After-implementation evidence (governance)
 - before = F3 mockup (`04-preview/mockups/web.html`).
-- after = real emulator captures (`after-payatstore.png`, `after-cart.png`) on
-  the live follower OTA bundle. (Login/cart-state-gated screens reached via the
-  emulator session; founder physical APK smoke = ongoing real-device confirm.)
+- after = **founder physical APK smoke-test** (per founder instruction this
+  round: skip the emulator after-screenshot capture for F3 — "dont go after
+  implementation screenshots"). PayAtStore + Cart are pay-gated/cart-state-
+  gated; founder confirms on real device. Emulator capture available on request
+  for any later F3 flow.
 
 ## F3 cascade status
 Flow 42 done (PayAtStore / OnlineOrder / OrderCart). Next: Flow 43 (PreBook +
