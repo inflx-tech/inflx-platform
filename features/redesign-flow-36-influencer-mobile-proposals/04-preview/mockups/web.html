@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 36 · influencer-mobile ProposalsHub + SendProposal — wave2 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  --conv:#7E22CE; --conv-pale:#F3E8FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1500px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:800}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.7);max-width:1400px;line-height:1.55;margin-top:4px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:375px}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:375px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:10}
+.status-bar{height:44px;background:var(--ink);color:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.home-bar{position:absolute;bottom:0;left:0;right:0;height:24px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:8px;pointer-events:none;z-index:11}
+.home-bar .hb{width:124px;height:4px;border-radius:2px;background:var(--ink);opacity:.85}
+
+.ico{display:inline-block;width:22px;height:22px;vertical-align:middle}
+.ico-sm{width:14px;height:14px}
+.ico-md{width:18px;height:18px}
+.ico svg{width:100%;height:100%;display:block}
+
+/* ─── White header ───── */
+.h-white{background:var(--white);border-bottom:1px solid var(--border);padding:50px 18px 14px;flex-shrink:0;display:flex;align-items:center;gap:11px}
+.h-back-w{width:34px;height:34px;border-radius:17px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink);flex-shrink:0}
+.h-ttl-w{font-family:'Outfit';font-size:17px;font-weight:800;color:var(--ink);flex:1;text-align:center;margin-right:34px}
+.h-sub-w{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:3px;font-weight:700;letter-spacing:.2px}
+
+/* ─── Tabs ───── */
+.tabs{flex-direction:row;background:var(--white);border-bottom:1px solid var(--border);padding:0 18px;display:flex}
+.tab{padding:12px 16px;border-bottom:2px solid transparent}
+.tab.active{border-bottom-color:var(--yellow)}
+.tab-lbl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--muted-2);letter-spacing:.2px}
+.tab.active .tab-lbl{color:var(--ink);font-weight:900}
+
+/* ─── Body ───── */
+.body{flex:1;overflow-y:auto;background:var(--bg);padding:0 0 32px}
+
+/* ─── Toolbar ───── */
+.toolbar{padding:13px 14px 0}
+.search-input{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted-3)}
+
+/* ─── Discover intro ───── */
+.intro{padding:13px 14px 8px}
+.intro-ttl{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.intro-body{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5}
+
+/* ─── Brand card ───── */
+.brand-card{margin:0 14px 7px;padding:13px;background:var(--white);border:1px solid var(--border);border-radius:11px;display:flex;align-items:center;gap:12px}
+.brand-logo{width:44px;height:44px;border-radius:11px;background:var(--yellow);align-items:center;justify-content:center;display:flex;color:var(--ink);font-family:'Outfit';font-size:13px;font-weight:900;flex-shrink:0}
+.brand-mid{flex:1;min-width:0}
+.brand-name{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.brand-meta{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px}
+.chev{color:var(--muted-3);width:14px;height:14px}
+
+/* ─── Proposal card ───── */
+.prop-card{margin:8px 14px;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px}
+.prop-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px}
+.prop-mid{flex:1;min-width:0}
+.prop-ttl{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.prop-brand{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:2px;font-weight:700;letter-spacing:.2px}
+.pill-sm{padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.pill-sm.sent{background:var(--yellow-pale);color:var(--yellow-text)}
+.pill-sm.viewed{background:var(--info-pale);color:var(--info)}
+.pill-sm.countered{background:var(--conv-pale);color:var(--conv)}
+.pill-sm.accepted{background:var(--success-pale);color:var(--success-text)}
+.pill-sm.rejected{background:var(--danger-pale);color:var(--danger-text)}
+.pill-sm.expired{background:var(--bg2);color:var(--muted-2)}
+.pill-sm.withdrawn{background:var(--bg2);color:var(--muted-2)}
+
+.prop-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:9px}
+.prop-foot{display:flex;justify-content:space-between;align-items:center;padding-top:9px;border-top:1px solid var(--border-soft);flex-wrap:wrap;gap:6px}
+.prop-ask{font-family:'JetBrains Mono';font-size:11.5px;font-weight:900;color:var(--ink)}
+.prop-date{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);font-weight:700;letter-spacing:.2px;margin-left:auto}
+
+.reject-box{margin-top:10px;padding:11px;background:var(--danger-pale);border:1px solid #F8D0C2;border-radius:10px}
+.reject-l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--danger-text);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.reject-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink);line-height:1.5}
+
+.counter-box{margin-top:10px;padding:11px;background:var(--conv-pale);border:1px solid #DECDF0;border-radius:10px}
+.counter-l{font-family:'JetBrains Mono';font-size:10px;font-weight:900;color:var(--conv);text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px}
+.counter-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink);line-height:1.5;margin-bottom:6px}
+.counter-term{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--ink);margin-bottom:2px}
+.counter-acts{display:flex;gap:8px;margin-top:9px}
+.counter-btn-alt{flex:1;background:var(--white);border:1.5px solid var(--ink);padding:9px;border-radius:9px;text-align:center;font-family:'Outfit';font-size:11.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.3px}
+.counter-btn-pri{flex:1;background:var(--ink);padding:9px;border-radius:9px;text-align:center;font-family:'Outfit';font-size:11.5px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:.3px}
+
+.withdraw-link{padding:7px 0;align-self:flex-start;display:inline-block;margin-top:4px}
+.withdraw-text{font-family:'JetBrains Mono';font-size:10px;color:var(--danger-text);font-weight:800;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px dashed var(--danger-text)}
+
+/* ─── Empty ───── */
+.empty{align-items:center;display:flex;flex-direction:column;padding:60px 28px}
+.empty-tile{width:66px;height:66px;border-radius:14px;background:var(--yellow-pale);border:1.5px dashed var(--yellow);align-items:center;justify-content:center;display:flex;margin-bottom:16px;color:var(--yellow-text);font-size:32px}
+.empty-ttl{font-family:'Outfit';font-size:14px;font-weight:800;color:var(--ink);margin-bottom:6px}
+.empty-msg{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);text-align:center;line-height:1.5;max-width:260px}
+
+/* ─── SendProposal — criteria card ───── */
+.criteria-card{margin:0 14px 14px;padding:12px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:11px}
+.criteria-ttl{font-family:'Outfit';font-size:11px;font-weight:900;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.3px;margin-bottom:6px}
+.criteria-item{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink);line-height:1.6}
+
+/* ─── Form ───── */
+.label{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px;margin-top:14px;margin-bottom:6px;padding:0 14px}
+.input{margin:0 14px;border:1.5px solid var(--ink);border-radius:10px;padding:11px;font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--muted-3);background:var(--white)}
+.input-area{min-height:80px}
+
+/* ─── Goal chips ───── */
+.goal-row{display:flex;flex-wrap:wrap;gap:6px;margin:0 14px}
+.goal-chip{padding:7px 12px;border-radius:999px;background:var(--bg2);border:1px solid var(--border);font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+.goal-chip.active{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:900}
+
+/* ─── Deliverable counter row ───── */
+.del-row{display:flex;justify-content:space-between;align-items:center;margin:0 14px 6px;padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:10px}
+.del-lbl{font-family:'Outfit';font-size:12.5px;font-weight:700;color:var(--ink)}
+.counter-num-row{display:flex;align-items:center;gap:10px}
+.counter-btn-icon{width:28px;height:28px;border-radius:14px;background:var(--bg2);align-items:center;justify-content:center;display:flex;font-family:'Outfit';font-size:16px;font-weight:900;color:var(--ink)}
+.counter-num{font-family:'JetBrains Mono';font-size:14px;font-weight:900;color:var(--ink);min-width:24px;text-align:center}
+
+.input-row{display:flex;gap:8px;margin:0 14px}
+.input-row .input{flex:1;margin:0}
+
+/* ─── Submit CTA ───── */
+.submit-btn{margin:18px 14px 0;background:var(--ink);color:var(--yellow);border-radius:12px;padding:14px;text-align:center;font-family:'Outfit';font-size:14px;font-weight:900;letter-spacing:.2px;text-transform:uppercase}
+
+/* ─── Side panel ───── */
+.side{display:flex;flex-direction:column;gap:14px;width:340px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:14px 16px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);line-height:1.5;padding-left:12px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 4px;border-radius:3px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+    <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L15 12 L9 18"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 36 · influencer-mobile ProposalsHub + SendProposal — wave2 mockup</h1>
+  <div class="sub">
+    <b>9th flow of mobile-influencer bucket (9/23).</b> 2 screens · 543 LOC · LOW risk (read + 2 POST + 2 small actions) · <b>ZERO backend change</b> · <b>ZERO StatusPill canonical-map additions</b>. <b>~18 render branches</b> preserved verbatim including 2-tab + debounced search + counter-offer accept/decline + reject reason + withdraw 2-confirm + 5-format counter rows + goal-conditional fee/commission inputs + KeyboardAvoidingView. <b>Visual:</b> white-bg light topbar + yellow-underline active tab + yellow brand-logo tiles with ink Outfit-Black initials + StatusPill canonical for 6 statuses + inline yellowPale 'SENT' pill (sender-POV label, canonical 'NEW' is recipient-POV) + dangerPale reject reason + convPale counter offer w/ ink/yellow Accept + ghost-ink Decline · yellowPale criteria card · ink-bordered inputs · ink-active goal chips · bg2 deliverable counter btns · ink/yellow Outfit-Black SEND PROPOSAL CTA.
+  </div>
+</div>
+
+<!-- Row 1: 3 phone frames -->
+<div class="row">
+
+  <!-- PHONE 1: ProposalsHub — Discover tab -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-white">
+        <div class="h-back-w"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-ttl-w">Brand Proposals</div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active"><div class="tab-lbl">DISCOVER</div></div>
+        <div class="tab"><div class="tab-lbl">MY PROPOSALS</div></div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-input">Search brands…</div>
+      </div>
+
+      <div class="body">
+
+        <div class="intro">
+          <div class="intro-ttl">Pitch a brand</div>
+          <div class="intro-body">These brands accept influencer proposals. Tap one to see their criteria and send a pitch. You can have up to 5 active proposals at once.</div>
+        </div>
+
+        <div class="brand-card">
+          <div class="brand-logo">SC</div>
+          <div class="brand-mid">
+            <div class="brand-name">Sparkle Cosmetics</div>
+            <div class="brand-meta">BEAUTY · MUMBAI</div>
+          </div>
+          <span class="ico chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <div class="brand-card">
+          <div class="brand-logo">DB</div>
+          <div class="brand-mid">
+            <div class="brand-name">DewBalm</div>
+            <div class="brand-meta">SKINCARE · BANGALORE</div>
+          </div>
+          <span class="ico chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <div class="brand-card">
+          <div class="brand-logo">US</div>
+          <div class="brand-mid">
+            <div class="brand-name">Urban Salon</div>
+            <div class="brand-meta">SALON · MUMBAI</div>
+          </div>
+          <span class="ico chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <div class="brand-card">
+          <div class="brand-logo">CR</div>
+          <div class="brand-mid">
+            <div class="brand-name">Crispo</div>
+            <div class="brand-meta">FOOD · DELHI</div>
+          </div>
+          <span class="ico chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+        <div class="brand-card">
+          <div class="brand-logo">VF</div>
+          <div class="brand-mid">
+            <div class="brand-name">VogueFit</div>
+            <div class="brand-meta">FITNESS · GURGAON</div>
+          </div>
+          <span class="ico chev"><svg><use href="#ic-chev"/></svg></span>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · ProposalsHub Discover</b><br/>White-bg light topbar with bg2 MCI back-btn + Outfit-Bold centered title · 2-tab w/ yellow-underline active state (DISCOVER · MY PROPOSALS) + Outfit-Black UPPERCASE labels · white search input w/ PJS placeholder · intro card w/ Outfit-Bold "Pitch a brand" + sans body · brand cards w/ yellow logo tile + ink Outfit-Black initials + Outfit-Bold brand name + mono UPPERCASE meta (category · city) + muted chevron · tap → SendProposal</div>
+  </div>
+
+  <!-- PHONE 2: ProposalsHub — My Proposals -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-white">
+        <div class="h-back-w"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-ttl-w">Brand Proposals</div>
+      </div>
+
+      <div class="tabs">
+        <div class="tab"><div class="tab-lbl">DISCOVER</div></div>
+        <div class="tab active"><div class="tab-lbl">MY PROPOSALS</div></div>
+      </div>
+
+      <div class="body" style="padding-top:8px">
+
+        <!-- Sent -->
+        <div class="prop-card">
+          <div class="prop-head">
+            <div class="prop-mid">
+              <div class="prop-ttl">Festival 3-Reel Series</div>
+              <div class="prop-brand">TO: SPARKLE COSMETICS</div>
+            </div>
+            <span class="pill-sm sent">Sent</span>
+          </div>
+          <div class="prop-msg">Hi! I'd love to create a 3-reel Diwali series featuring your eye palette. My audience is 70% Mumbai women 22-30, 4.8% engagement…</div>
+          <div class="prop-foot">
+            <div class="prop-ask">₹8,000</div>
+            <div class="prop-ask">5% COMMISSION</div>
+            <div class="prop-date">13 NOV 2026</div>
+          </div>
+          <div class="withdraw-link"><span class="withdraw-text">WITHDRAW</span></div>
+        </div>
+
+        <!-- Countered -->
+        <div class="prop-card">
+          <div class="prop-head">
+            <div class="prop-mid">
+              <div class="prop-ttl">Winter Glow Story Set</div>
+              <div class="prop-brand">TO: DEWBALM</div>
+            </div>
+            <span class="pill-sm countered">Countered</span>
+          </div>
+          <div class="prop-msg">3 stories with code, swipe-up to product…</div>
+          <div class="counter-box">
+            <div class="counter-l">BRAND SENT A COUNTER</div>
+            <div class="counter-msg">Loved the pitch! Can we drop to ₹4,500 fee + add 1 reel? Same window works.</div>
+            <div class="counter-term">FEE: ₹4,500</div>
+            <div class="counter-term">COMMISSION: 8%</div>
+            <div class="counter-acts">
+              <div class="counter-btn-alt">DECLINE</div>
+              <div class="counter-btn-pri">ACCEPT COUNTER</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rejected -->
+        <div class="prop-card">
+          <div class="prop-head">
+            <div class="prop-mid">
+              <div class="prop-ttl">Salon Combo Reel</div>
+              <div class="prop-brand">TO: URBAN SALON</div>
+            </div>
+            <span class="pill-sm rejected">Rejected</span>
+          </div>
+          <div class="prop-msg">Pitched 2 styling reels for the combo…</div>
+          <div class="reject-box">
+            <div class="reject-l">REASON FROM BRAND</div>
+            <div class="reject-msg">Looking for creators in Bangalore for this campaign. Will reach out for future Mumbai launches!</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · ProposalsHub My Proposals</b><br/>3 proposal cards showing key states: <b>Sent</b> (yellowPale pill — sender-POV label, NOT canonical 'NEW' which is recipient-POV) w/ mono ₹ ask + commission + date + dangerText dashed WITHDRAW link · <b>Countered</b> (convPale pill) w/ convPale box + Outfit-Black "BRAND SENT A COUNTER" + sans counter message + mono fee/commission terms + ghost-ink DECLINE + ink/yellow ACCEPT COUNTER · <b>Rejected</b> (dangerPale pill) w/ dangerPale reason box + dangerText label + sans reason</div>
+  </div>
+
+  <!-- PHONE 3: SendProposal -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-white">
+        <div class="h-back-w"><span class="ico ico-sm"><svg><use href="#ic-back"/></svg></span></div>
+        <div class="h-mid" style="text-align:center;margin-right:34px">
+          <div class="h-ttl-w" style="margin-right:0;text-align:center">Send Proposal</div>
+          <div class="h-sub-w" style="text-align:center">SPARKLE COSMETICS</div>
+        </div>
+      </div>
+
+      <div class="body">
+
+        <!-- Criteria card -->
+        <div class="criteria-card">
+          <div class="criteria-ttl">WHAT THIS BRAND WANTS</div>
+          <div class="criteria-item">· Minimum tier: <b>Mid</b></div>
+          <div class="criteria-item">· Niches: beauty, fashion</div>
+          <div class="criteria-item">· Min engagement rate: 3%</div>
+        </div>
+
+        <!-- Title -->
+        <div class="label">TITLE</div>
+        <div class="input">e.g. Festival 3-Reel Series</div>
+
+        <!-- Pitch -->
+        <div class="label">PITCH</div>
+        <div class="input input-area">Why you're the right fit, what you'll create, your audience…</div>
+
+        <!-- Goal -->
+        <div class="label">GOAL</div>
+        <div class="goal-row">
+          <div class="goal-chip active">ENGAGEMENT (FEE)</div>
+          <div class="goal-chip">CONVERSION (COMM)</div>
+          <div class="goal-chip">HYBRID</div>
+        </div>
+
+        <!-- Fee -->
+        <div class="label">FEE (₹)</div>
+        <div class="input">5000</div>
+
+        <!-- Deliverables -->
+        <div class="label">DELIVERABLES</div>
+        <div class="del-row">
+          <div class="del-lbl">Instagram Reel</div>
+          <div class="counter-num-row">
+            <div class="counter-btn-icon">−</div>
+            <div class="counter-num">3</div>
+            <div class="counter-btn-icon">+</div>
+          </div>
+        </div>
+        <div class="del-row">
+          <div class="del-lbl">Instagram Story</div>
+          <div class="counter-num-row">
+            <div class="counter-btn-icon">−</div>
+            <div class="counter-num">2</div>
+            <div class="counter-btn-icon">+</div>
+          </div>
+        </div>
+        <div class="del-row">
+          <div class="del-lbl">Instagram Post</div>
+          <div class="counter-num-row">
+            <div class="counter-btn-icon">−</div>
+            <div class="counter-num">0</div>
+            <div class="counter-btn-icon">+</div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="submit-btn">SEND PROPOSAL</div>
+
+      </div>
+
+      <div class="home-bar"><div class="hb"></div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · SendProposal</b><br/>White-bg topbar with Outfit-Bold "Send Proposal" + mono UPPERCASE brand sub · yellowPale criteria card w/ Outfit-Black "WHAT THIS BRAND WANTS" + sans body · mono UPPERCASE form labels · ink-bordered inputs · 3-goal chip row w/ ink-active state showing fee field conditional on goal !== 'conversion' · deliverable counter rows w/ Outfit-Bold format label + bg2 -/+ btns + mono number · ink/yellow Outfit-Black SEND PROPOSAL CTA · KeyboardAvoidingView preserved</div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="row" style="justify-content:center">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Key design calls (4 — locked per standing autonomy)</h3>
+      <ul>
+        <li><b>Tab pattern:</b> yellow-underline active + Outfit-Black UPPERCASE labels (matches Flow 30 negotiation tabs)</li>
+        <li><b>Brand logo tile:</b> yellow bg + ink Outfit-Black initials (matches Flow 32 MyStore + Flow 35 Profile avatar)</li>
+        <li><b>'Sent' status pill:</b> inline yellowPale + 'SENT' label (sender-POV; canonical map 'sent' → 'NEW' is recipient-POV — diverges intentionally for outbound view)</li>
+        <li><b>Counter-offer Accept CTA:</b> ink/yellow Outfit-Black (matches all primary CTAs) + ghost-ink Decline (matches Flow 31 secondary)</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Backend compatibility (verify-twice ✓)</h3>
+      <div class="ph">6 APIs · zero phantom · zero new</div>
+      <ul>
+        <li><code>discoverBrands(q)</code></li>
+        <li><code>listMyProposals()</code></li>
+        <li><code>withdrawProposal(id)</code> POST</li>
+        <li><code>respondCounter(id, action)</code> POST (action='accept'|'decline')</li>
+        <li><code>getBrandProposalCriteria(brandId)</code></li>
+        <li><code>createProposal({brand_id, pitch_title, pitch_message, goal, proposed_fee?, proposed_commission_pct?, proposed_deliverables[], proposed_posting_window_start?, proposed_posting_window_end?, portfolio_links[]})</code> POST</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>StatusPill canonical (6 of 7 align ✓)</h3>
+      <div class="ph">zero map additions</div>
+      <ul>
+        <li><b>viewed</b> → infoPale 'VIEWED' ✓</li>
+        <li><b>countered</b> → convPale 'COUNTERED' ✓</li>
+        <li><b>accepted</b> → successPale 'ACCEPTED' ✓</li>
+        <li><b>rejected</b> → dangerPale 'REJECTED' ✓</li>
+        <li><b>expired</b> → bg2/muted 'EXPIRED' ✓</li>
+        <li><b>withdrawn</b> → bg2/muted 'WITHDRAWN' ✓</li>
+        <li><b>sent</b> → canonical 'NEW' (recipient-POV) — for outbound use inline yellowPale 'SENT' (sender-POV) — mode override or inline render</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim (~18 branches)</h3>
+      <ul>
+        <li><b>2-tab</b> state machine (Discover/MyProposals)</li>
+        <li><b>Debounced search</b> on Discover (300ms timeout)</li>
+        <li><b>Brand logo: image_url OR initial placeholder</b></li>
+        <li><b>7 status pills</b> on My Proposals</li>
+        <li><b>canWithdraw</b> conditional (sent/viewed/countered)</li>
+        <li><b>Withdraw 2-confirm Alert</b> with destructive style</li>
+        <li><b>respondCounter('accept'|'decline')</b> Accept/Decline buttons</li>
+        <li><b>Reject reason</b> when status='rejected' + brand_response_message</li>
+        <li><b>Counter box</b> when status='countered' + counter_terms (fee, commission)</li>
+        <li><b>SendProposal criteria card</b> conditional on filters set</li>
+        <li><b>3 goal chips</b> (engagement/conversion/hybrid) state machine</li>
+        <li><b>Goal-conditional fields:</b> fee shown when goal !== 'conversion'; commission shown when goal !== 'engagement'</li>
+        <li><b>5-format deliverable counter rows</b> with +/- adjust</li>
+        <li><b>Validation:</b> title + pitch required, at least 1 deliverable, fee required if not conversion</li>
+        <li><b>portfolio_links</b> filter empty before submit</li>
+        <li><b>KeyboardAvoidingView</b> for iOS keyboard handling</li>
+        <li><b>Posting window</b> optional date inputs</li>
+        <li><b>navigation.goBack()</b> on success</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

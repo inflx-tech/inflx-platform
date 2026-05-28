@@ -3,13 +3,14 @@ import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { colors, spacing, radius, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 
 const GOAL_OPTIONS = [
-  { v: 'engagement', label: 'Engagement (fee for content)' },
-  { v: 'conversion', label: 'Conversion (commission per sale)' },
-  { v: 'hybrid',     label: 'Hybrid (fee + commission)' },
+  { v: 'engagement', label: 'ENGAGEMENT (FEE)' },
+  { v: 'conversion', label: 'CONVERSION (COMM)' },
+  { v: 'hybrid',     label: 'HYBRID' },
 ];
 
 const FORMAT_OPTIONS = [
@@ -19,6 +20,16 @@ const FORMAT_OPTIONS = [
   { v: 'youtube_video', label: 'YouTube Video' },
   { v: 'youtube_short', label: 'YouTube Short' },
 ];
+
+/**
+ * SendProposalScreen — form to send an outbound pitch.
+ *
+ * Flow 36 restyle (2026-05-27): brandPalette + Outfit/PJS/Mono fonts.
+ * yellowPale criteria card with Outfit-Black title.
+ * Ink-bordered inputs + ink-active goal chips + bg2 deliverable counter btns.
+ * Ink/yellow Outfit-Black UPPERCASE SEND PROPOSAL CTA.
+ * KeyboardAvoidingView + form validation preserved verbatim.
+ */
 
 export default function SendProposalScreen({ route, navigation }) {
   const { brandId, brandName } = route.params || {};
@@ -88,7 +99,7 @@ export default function SendProposalScreen({ route, navigation }) {
     });
     setSubmitting(false);
     if (res.success) {
-      Alert.alert('Sent', 'Your proposal is in the brand\'s inbox. They\'ll be notified.', [
+      Alert.alert('Sent', "Your proposal is in the brand's inbox. They'll be notified.", [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } else {
@@ -97,50 +108,53 @@ export default function SendProposalScreen({ route, navigation }) {
   }
 
   const filters = criteria?.proposal_filters || {};
+  const hasNoCriteria = !filters.min_tier && !filters.allowed_niches?.length && !filters.city_match_required && filters.min_engagement_rate == null && !filters.only_past_collabs;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backIcon}>‹</Text>
+          <Icon name="chevron-left" size={18} color={P.ink} />
         </TouchableOpacity>
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text style={styles.headerTitle}>Send Proposal</Text>
-          <Text style={styles.headerSub}>{brandName}</Text>
+          <Text style={styles.headerSub}>{(brandName || '').toUpperCase()}</Text>
         </View>
-        <View style={{ width: 36 }} />
+        <View style={{ width: 34 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {loadingCriteria ? (
-          <ActivityIndicator color={colors.navy} />
+          <View style={{ padding: 24, alignItems: 'center' }}>
+            <ActivityIndicator color={P.yellow} />
+          </View>
         ) : criteria && (
           <View style={styles.criteriaCard}>
-            <Text style={styles.criteriaTitle}>What this brand wants</Text>
-            {filters.min_tier && <Text style={styles.criteriaItem}>· Minimum tier: {filters.min_tier}</Text>}
+            <Text style={styles.criteriaTitle}>WHAT THIS BRAND WANTS</Text>
+            {filters.min_tier && <Text style={styles.criteriaItem}>· Minimum tier: <Text style={styles.criteriaItemBold}>{filters.min_tier}</Text></Text>}
             {Array.isArray(filters.allowed_niches) && filters.allowed_niches.length > 0 && (
               <Text style={styles.criteriaItem}>· Niches: {filters.allowed_niches.join(', ')}</Text>
             )}
             {filters.city_match_required && <Text style={styles.criteriaItem}>· Same city required ({criteria.city})</Text>}
             {filters.min_engagement_rate != null && <Text style={styles.criteriaItem}>· Min engagement rate: {filters.min_engagement_rate}%</Text>}
             {filters.only_past_collabs && <Text style={styles.criteriaItem}>· Past collaboration required</Text>}
-            {!filters.min_tier && !filters.allowed_niches?.length && !filters.city_match_required && filters.min_engagement_rate == null && !filters.only_past_collabs && (
+            {hasNoCriteria && (
               <Text style={styles.criteriaItem}>· No specific criteria — open to anyone</Text>
             )}
           </View>
         )}
 
-        <Text style={styles.label}>Title</Text>
+        <Text style={styles.label}>TITLE</Text>
         <TextInput style={styles.input} value={pitchTitle} onChangeText={setPitchTitle}
-          placeholder="e.g. Festival 3-Reel Series" placeholderTextColor={colors.t3} />
+          placeholder="e.g. Festival 3-Reel Series" placeholderTextColor={P.muted3} />
 
-        <Text style={styles.label}>Pitch</Text>
-        <TextInput style={[styles.input, { height: 110, textAlignVertical: 'top' }]} multiline
+        <Text style={styles.label}>PITCH</Text>
+        <TextInput style={[styles.input, styles.inputArea]} multiline
           value={pitchMessage} onChangeText={setPitchMessage}
           placeholder="Why you're the right fit, what you'll create, your audience…"
-          placeholderTextColor={colors.t3} />
+          placeholderTextColor={P.muted3} />
 
-        <Text style={styles.label}>Goal</Text>
+        <Text style={styles.label}>GOAL</Text>
         <View style={styles.goalRow}>
           {GOAL_OPTIONS.map(g => (
             <TouchableOpacity key={g.v} style={[styles.goalChip, goal === g.v && styles.goalChipActive]} onPress={() => setGoal(g.v)}>
@@ -151,20 +165,20 @@ export default function SendProposalScreen({ route, navigation }) {
 
         {goal !== 'conversion' && (
           <>
-            <Text style={styles.label}>Fee (₹)</Text>
+            <Text style={styles.label}>FEE (₹)</Text>
             <TextInput style={styles.input} value={fee} onChangeText={setFee} keyboardType="numeric"
-              placeholder="5000" placeholderTextColor={colors.t3} />
+              placeholder="5000" placeholderTextColor={P.muted3} />
           </>
         )}
         {goal !== 'engagement' && (
           <>
-            <Text style={styles.label}>Commission %</Text>
+            <Text style={styles.label}>COMMISSION %</Text>
             <TextInput style={styles.input} value={commission} onChangeText={setCommission} keyboardType="numeric"
-              placeholder="8" placeholderTextColor={colors.t3} />
+              placeholder="8" placeholderTextColor={P.muted3} />
           </>
         )}
 
-        <Text style={styles.label}>Deliverables</Text>
+        <Text style={styles.label}>DELIVERABLES</Text>
         {FORMAT_OPTIONS.map(f => (
           <View key={f.v} style={styles.deliverableRow}>
             <Text style={styles.deliverableLabel}>{f.label}</Text>
@@ -180,32 +194,32 @@ export default function SendProposalScreen({ route, navigation }) {
           </View>
         ))}
 
-        <Text style={styles.label}>Posting window (optional)</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TextInput style={[styles.input, { flex: 1 }]} value={windowStart} onChangeText={setWindowStart}
-            placeholder="From YYYY-MM-DD" placeholderTextColor={colors.t3} />
-          <TextInput style={[styles.input, { flex: 1 }]} value={windowEnd} onChangeText={setWindowEnd}
-            placeholder="To YYYY-MM-DD" placeholderTextColor={colors.t3} />
+        <Text style={styles.label}>POSTING WINDOW (OPTIONAL)</Text>
+        <View style={styles.inputRow}>
+          <TextInput style={[styles.input, { flex: 1, marginHorizontal: 0 }]} value={windowStart} onChangeText={setWindowStart}
+            placeholder="From YYYY-MM-DD" placeholderTextColor={P.muted3} />
+          <TextInput style={[styles.input, { flex: 1, marginHorizontal: 0 }]} value={windowEnd} onChangeText={setWindowEnd}
+            placeholder="To YYYY-MM-DD" placeholderTextColor={P.muted3} />
         </View>
 
-        <Text style={styles.label}>Portfolio samples (up to 3 URLs)</Text>
+        <Text style={styles.label}>PORTFOLIO SAMPLES (UP TO 3 URLS)</Text>
         <TextInput style={styles.input} value={link1} onChangeText={setLink1}
           autoCapitalize="none" autoCorrect={false}
-          placeholder="https://instagram.com/p/…" placeholderTextColor={colors.t3} />
+          placeholder="https://instagram.com/p/…" placeholderTextColor={P.muted3} />
         <TextInput style={styles.input} value={link2} onChangeText={setLink2}
           autoCapitalize="none" autoCorrect={false}
-          placeholder="https://" placeholderTextColor={colors.t3} />
+          placeholder="https://" placeholderTextColor={P.muted3} />
         <TextInput style={styles.input} value={link3} onChangeText={setLink3}
           autoCapitalize="none" autoCorrect={false}
-          placeholder="https://" placeholderTextColor={colors.t3} />
+          placeholder="https://" placeholderTextColor={P.muted3} />
 
         <TouchableOpacity
           style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
           onPress={submit}
           disabled={submitting}>
           {submitting
-            ? <ActivityIndicator color={colors.white} />
-            : <Text style={styles.submitTxt}>Send proposal</Text>}
+            ? <ActivityIndicator color={P.yellow} />
+            : <Text style={styles.submitTxt}>SEND PROPOSAL</Text>}
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -213,33 +227,91 @@ export default function SendProposalScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.bg },
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.md, backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:      { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  backIcon:     { fontSize: 28, color: colors.t1, fontWeight: '400' },
-  headerTitle:  { fontSize: 16, fontWeight: '700', color: colors.t1 },
-  headerSub:    { fontSize: 11, color: colors.t3, marginTop: 2 },
+  container: { flex: 1, backgroundColor: P.bg },
 
-  criteriaCard: { padding: 12, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md },
-  criteriaTitle:{ fontSize: 11, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 6 },
-  criteriaItem: { fontSize: 11, color: colors.t1, lineHeight: 17 },
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 18, paddingTop: 50, paddingBottom: 14,
+    backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  backBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center',
+  },
+  headerTitle: { fontSize: 17, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBlack },
+  headerSub: { fontSize: 10, color: P.muted2, marginTop: 3, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
-  label:        { fontSize: 11, fontWeight: '800', color: colors.t2, textTransform: 'uppercase', marginTop: spacing.md, marginBottom: 6 },
-  input:        { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, color: colors.t1, marginBottom: 6 },
+  // Criteria card — yellowPale
+  criteriaCard: {
+    margin: 14, marginBottom: 14, padding: 12,
+    backgroundColor: P.yellowPale, borderRadius: 11,
+    borderWidth: 1, borderColor: '#F0DA88',
+  },
+  criteriaTitle: {
+    fontSize: 11, fontWeight: '900', color: P.yellowText,
+    textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 6,
+    fontFamily: fonts.displayBlack,
+  },
+  criteriaItem: { fontSize: 11.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
+  criteriaItemBold: { fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
 
-  goalRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 },
-  goalChip:     { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border },
-  goalChipActive:{ backgroundColor: colors.navy, borderColor: colors.navy },
-  goalChipTxt:  { fontSize: 11, fontWeight: '700', color: colors.t2 },
-  goalChipTxtActive:{ color: colors.white },
+  // Form
+  label: {
+    fontSize: 9.5, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.3,
+    marginTop: 14, marginBottom: 6,
+    paddingHorizontal: 14,
+    fontFamily: fonts.monoBold,
+  },
+  input: {
+    backgroundColor: P.white, borderRadius: 10,
+    borderWidth: 1.5, borderColor: P.ink,
+    paddingHorizontal: 11, paddingVertical: 11,
+    fontSize: 12.5, color: P.ink, marginHorizontal: 14, marginBottom: 6,
+    fontFamily: fonts.sansRegular,
+  },
+  inputArea: { minHeight: 100, textAlignVertical: 'top' },
 
-  deliverableRow:{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 6 },
-  deliverableLabel:{ fontSize: 12, color: colors.t1 },
-  counterRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  counterBtn:   { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderRadius: 14 },
-  counterBtnTxt:{ fontSize: 16, fontWeight: '800', color: colors.t1 },
-  counterValue: { fontSize: 14, fontWeight: '800', color: colors.t1, minWidth: 24, textAlign: 'center' },
+  // Goal chips — ink-active per pattern
+  goalRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginHorizontal: 14, marginBottom: 4 },
+  goalChip: {
+    paddingHorizontal: 12, paddingVertical: 7,
+    backgroundColor: P.bg2,
+    borderRadius: 999, borderWidth: 1, borderColor: P.border,
+  },
+  goalChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  goalChipTxt: { fontSize: 10, fontWeight: '800', color: P.muted, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.monoBold },
+  goalChipTxtActive: { color: P.yellow, fontWeight: '900' },
 
-  submitBtn:    { marginTop: spacing.lg, paddingVertical: 14, backgroundColor: colors.navy, borderRadius: 12, alignItems: 'center' },
-  submitTxt:    { color: colors.white, fontSize: 14, fontWeight: '800' },
+  // Deliverable counter rows
+  deliverableRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginHorizontal: 14, marginBottom: 6,
+    backgroundColor: P.white, borderRadius: 10,
+    borderWidth: 1, borderColor: P.border,
+    paddingHorizontal: 12, paddingVertical: 10,
+  },
+  deliverableLabel: { fontSize: 12.5, color: P.ink, fontWeight: '700', fontFamily: fonts.displayBold },
+  counterRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  counterBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: P.bg2,
+  },
+  counterBtnTxt: { fontSize: 16, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  counterValue: { fontSize: 14, fontWeight: '900', color: P.ink, minWidth: 24, textAlign: 'center', fontFamily: fonts.monoBold },
+
+  // Input row (posting window)
+  inputRow: { flexDirection: 'row', gap: 8, marginHorizontal: 14, marginBottom: 6 },
+
+  // Submit CTA
+  submitBtn: {
+    marginHorizontal: 14, marginTop: 18,
+    paddingVertical: 14,
+    backgroundColor: P.ink, borderRadius: 12, alignItems: 'center',
+  },
+  submitTxt: {
+    color: P.yellow, fontSize: 14, fontWeight: '900',
+    letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack,
+  },
 });
