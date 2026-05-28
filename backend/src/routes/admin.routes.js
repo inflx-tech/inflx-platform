@@ -72,6 +72,10 @@ router.patch('/influencers/:id/tax-controls', authenticate, requireAdminRole('fi
 router.get('/withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getWithdrawals);
 router.post('/withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processWithdrawal);
 
+// Brand wallet withdrawals (Wave 2 commit 2) — finance+
+router.get('/brand-withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getBrandWithdrawals);
+router.post('/brand-withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processBrandWithdrawal);
+
 // Analytics — any admin role
 router.get('/analytics', authenticate, requireAnyAdminRole, ctrl.getAnalytics);
 

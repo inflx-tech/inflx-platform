@@ -8,6 +8,7 @@ const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { toPaise, fromPaise } = require('../utils/money');
+const paymentConfigSvc = require('../services/paymentConfig.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Razorpay client (lazy — only initialised when RAZORPAY_MOCK=false)
@@ -270,7 +271,128 @@ const getTransactions = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// POST /brands/me/wallet/withdraw  { amount, method }   (Wave 2 commit 2)
+//
+// Admin-gated brand payout. This endpoint validates + reserves funds only:
+// it debits the wallet immediately (so the brand can't double-spend the same
+// balance) and writes a 'pending' brand_withdrawals row. The RazorpayX payout
+// fires later, when an admin approves it in /admin/payouts.
+//
+// SECURITY: the payout destination is read SERVER-SIDE from
+// brands.listing_data.bank_details. The client supplies only { amount, method }
+// — it can never redirect funds to an arbitrary account.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const requestWithdrawal = asyncHandler(async (req, res) => {
+  const { amount, method } = req.body;
+  const amountRupees = parseFloat(amount);
+
+  if (!amountRupees || isNaN(amountRupees) || amountRupees <= 0) {
+    throw new AppError('VALIDATION_ERROR', 'amount is required and must be a positive number', 422, 'amount');
+  }
+  if (!['upi', 'bank_transfer'].includes(method)) {
+    throw new AppError('VALIDATION_ERROR', 'method must be upi or bank_transfer', 422, 'method');
+  }
+
+  const { rows: brandRows } = await db.query(
+    `SELECT b.id, b.business_name, b.wallet_balance, b.listing_data
+       FROM brands b
+      WHERE b.user_id = $1`,
+    [req.user.sub]
+  );
+  if (!brandRows[0]) throw new AppError('NOT_FOUND', 'Brand profile not found. Please register first.', 404);
+  const brand = brandRows[0];
+
+  // Resolve payout destination from listing_data.bank_details (server-side).
+  const bank = (brand.listing_data && brand.listing_data.bank_details) || {};
+  let upiId = null, bankAccountNo = null, bankIfsc = null, accountHolder = null;
+  if (method === 'upi') {
+    if (!bank.upi_id) {
+      throw new AppError('PAYMENT_METHOD_MISSING', 'No UPI ID on file. Add one in your wallet bank details first.', 422);
+    }
+    upiId = bank.upi_id;
+  } else {
+    if (!bank.account_number || !bank.ifsc_code) {
+      throw new AppError('PAYMENT_METHOD_MISSING', 'No bank account on file. Add account number + IFSC in your wallet bank details first.', 422);
+    }
+    bankAccountNo = bank.account_number;
+    bankIfsc      = bank.ifsc_code;
+    accountHolder = bank.account_holder_name || brand.business_name;
+  }
+
+  const cfg = await paymentConfigSvc.getConfig();
+  const minWithdrawal = parseFloat(cfg.minWithdrawalInr);
+  if (amountRupees < minWithdrawal) {
+    throw new AppError('WITHDRAWAL_TOO_SMALL', `Minimum withdrawal amount is ₹${minWithdrawal}`, 422);
+  }
+  if (amountRupees > parseFloat(brand.wallet_balance)) {
+    throw new AppError('INSUFFICIENT_BALANCE', 'Insufficient wallet balance', 422);
+  }
+
+  let withdrawal;
+  await db.withTransaction(async (client) => {
+    const { rows: lockRows } = await client.query(
+      `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
+      [brand.id]
+    );
+    const liveBalance = parseFloat(lockRows[0].wallet_balance);
+    if (amountRupees > liveBalance) {
+      throw new AppError('INSUFFICIENT_BALANCE', 'Insufficient wallet balance', 422);
+    }
+    const newBalance = parseFloat((liveBalance - amountRupees).toFixed(2));
+
+    await client.query(
+      `UPDATE brands SET wallet_balance = $1 WHERE id = $2`,
+      [newBalance, brand.id]
+    );
+
+    const { rows: wRows } = await client.query(
+      `INSERT INTO brand_withdrawals
+         (brand_id, amount_requested, method, upi_id, bank_account_no, bank_ifsc, account_holder_name, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+       RETURNING *`,
+      [brand.id, amountRupees, method, upiId, bankAccountNo, bankIfsc, accountHolder]
+    );
+    withdrawal = wRows[0];
+
+    // Audit ledger row. type='withdrawal' is intentionally distinct from
+    // 'payout' (which getWallet attributes to influencer settlements), so the
+    // Available/Reserved/Settled breakdown is unaffected.
+    await client.query(
+      `INSERT INTO wallet_transactions
+         (brand_id, type, amount, direction, balance_after, notes)
+       VALUES ($1, 'withdrawal', $2, 'debit', $3, $4)`,
+      [brand.id, amountRupees, newBalance, 'Withdrawal requested — pending admin approval']
+    );
+  });
+
+  return success(res, {
+    withdrawal_id:    withdrawal.id,
+    amount_requested: parseFloat(withdrawal.amount_requested),
+    method:           withdrawal.method,
+    status:           withdrawal.status,
+  }, 201);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /brands/me/wallet/withdrawals
+// ─────────────────────────────────────────────────────────────────────────────
+
+const listWithdrawals = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  const { rows } = await db.query(
+    `SELECT id AS withdrawal_id, amount_requested, method, status,
+            failure_reason, created_at, completed_at
+       FROM brand_withdrawals
+      WHERE brand_id = $1
+      ORDER BY created_at DESC`,
+    [brand.id]
+  );
+  return success(res, { withdrawals: rows });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Exports
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = { getWallet, createTopup, verifyTopup, getTransactions };
+module.exports = { getWallet, createTopup, verifyTopup, getTransactions, requestWithdrawal, listWithdrawals };

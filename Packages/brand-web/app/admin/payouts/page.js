@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { adminApi, getStoredUser } from '../../../lib/api';
 
-const TABS = [
+const INFLUENCER_TABS = [
   { key: 'initiated',  label: 'Pending' },
   { key: 'processing', label: 'Processing' },
   { key: 'completed',  label: 'Completed' },
@@ -10,12 +10,27 @@ const TABS = [
   { key: 'all',        label: 'All' },
 ];
 
+const BRAND_TABS = [
+  { key: 'pending',    label: 'Pending' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'completed',  label: 'Completed' },
+  { key: 'failed',     label: 'Failed' },
+  { key: 'cancelled',  label: 'Cancelled' },
+  { key: 'all',        label: 'All' },
+];
+
+// The status that is actionable (approve/reject) for each scope.
+const ACTIONABLE = { influencer: 'initiated', brand: 'pending' };
+
 function StatusBadge({ status }) {
   const cfg = {
     initiated:  'bg-gold-pale text-yellow-700',
+    pending:    'bg-gold-pale text-yellow-700',
+    queued:     'bg-navy-pale text-navy',
     processing: 'bg-navy-pale text-navy',
     completed:  'bg-teal-pale text-teal-deep',
     failed:     'bg-red-pale text-red',
+    cancelled:  'bg-red-pale text-red',
   };
   return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${cfg[status] || 'bg-surface2 text-t3'}`}>{status}</span>;
 }
@@ -47,6 +62,9 @@ function maskAccount(val) {
 }
 
 export default function PayoutsPage() {
+  const [scope, setScope] = useState('influencer'); // 'influencer' | 'brand'
+  const TABS = useMemo(() => (scope === 'brand' ? BRAND_TABS : INFLUENCER_TABS), [scope]);
+
   const [tab, setTab] = useState('initiated');
   const [withdrawals, setWithdrawals] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -65,9 +83,20 @@ export default function PayoutsPage() {
   const user = typeof window !== 'undefined' ? getStoredUser() : null;
   const canProcess = user?.admin_role === 'finance' || user?.admin_role === 'superadmin';
 
+  function switchScope(next) {
+    if (next === scope) return;
+    setScope(next);
+    setTab(next === 'brand' ? 'pending' : 'initiated');
+    setPage(1);
+    setSearch('');
+    setSearchInput('');
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await adminApi.getWithdrawals(tab, search, page);
+    const res = scope === 'brand'
+      ? await adminApi.getBrandWithdrawals(tab, search, page)
+      : await adminApi.getWithdrawals(tab, search, page);
     setLoading(false);
     if (res.success) {
       setWithdrawals(res.data?.withdrawals || []);
@@ -76,7 +105,7 @@ export default function PayoutsPage() {
       const limit = res.meta?.limit || 50;
       setTotalPages(Math.max(1, Math.ceil(total / limit)));
     }
-  }, [tab, search, page]);
+  }, [scope, tab, search, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -89,11 +118,10 @@ export default function PayoutsPage() {
     if (!modal) return;
     if (modal.action === 'reject' && !rejectReason.trim()) return;
     setProcessing(true);
-    const res = await adminApi.processWithdrawal(
-      modal.withdrawal.id,
-      modal.action,
-      modal.action === 'reject' ? rejectReason : undefined
-    );
+    const reason = modal.action === 'reject' ? rejectReason : undefined;
+    const res = scope === 'brand'
+      ? await adminApi.processBrandWithdrawal(modal.withdrawal.id, modal.action, reason)
+      : await adminApi.processWithdrawal(modal.withdrawal.id, modal.action, reason);
     setProcessing(false);
     if (res.success) {
       showToast(modal.action === 'approve' ? 'Withdrawal approved successfully' : 'Withdrawal rejected — funds returned to wallet');
@@ -120,19 +148,28 @@ export default function PayoutsPage() {
     setSearch(searchInput);
   }
 
+  const isBrand = scope === 'brand';
+  const actionable = ACTIONABLE[scope];
+  // Grid templates differ: brand has no TDS / Net Payout columns.
+  const gridCols = isBrand
+    ? 'grid-cols-[1.4fr_1fr_110px_90px_90px_150px_110px]'
+    : 'grid-cols-[1.2fr_0.8fr_90px_90px_90px_80px_80px_130px_100px]';
+
   return (
     <div className="max-w-6xl">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-xl font-bold text-t1">Payout Management</h1>
-          <p className="text-xs text-t3 mt-0.5">Review and process influencer withdrawal requests</p>
+          <p className="text-xs text-t3 mt-0.5">
+            {isBrand ? 'Review and process brand wallet withdrawal requests' : 'Review and process influencer withdrawal requests'}
+          </p>
         </div>
         <form onSubmit={handleSearch} className="flex items-center gap-2">
           <input
             type="text"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            placeholder="Search name, phone, handle..."
+            placeholder={isBrand ? 'Search business, phone...' : 'Search name, phone, handle...'}
             className="w-56 border border-border2 rounded-lg px-3 py-1.5 text-xs text-t1 outline-none focus:border-navy"
           />
           <button type="submit" className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-lg">Search</button>
@@ -142,33 +179,29 @@ export default function PayoutsPage() {
         </form>
       </div>
 
+      {/* Scope toggle — Influencer / Brand payout queues */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => switchScope('influencer')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${!isBrand ? 'bg-t1 text-white' : 'bg-white border border-border text-t2 hover:border-t1'}`}
+        >
+          Influencer
+        </button>
+        <button
+          onClick={() => switchScope('brand')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-colors ${isBrand ? 'bg-t1 text-white' : 'bg-white border border-border text-t2 hover:border-t1'}`}
+        >
+          Brand
+        </button>
+      </div>
+
       {/* Summary stats */}
       {summary && (
         <div className="grid grid-cols-4 gap-3 mb-4">
-          <StatCard
-            label="Pending Requests"
-            value={summary.pending_count || 0}
-            sub={`${fmtMoney(summary.pending_amount)} total`}
-            color="orange"
-          />
-          <StatCard
-            label="Processing"
-            value={summary.processing_count || 0}
-            sub="awaiting Razorpay"
-            color="navy"
-          />
-          <StatCard
-            label="Paid Today"
-            value={summary.today_count || 0}
-            sub={fmtMoney(summary.today_paid)}
-            color="teal"
-          />
-          <StatCard
-            label="Pending Amount"
-            value={fmtMoney(summary.pending_amount)}
-            sub={`${summary.pending_count || 0} request${(summary.pending_count || 0) !== 1 ? 's' : ''}`}
-            color="gold"
-          />
+          <StatCard label="Pending Requests" value={summary.pending_count || 0} sub={`${fmtMoney(summary.pending_amount)} total`} color="orange" />
+          <StatCard label="Processing" value={summary.processing_count || 0} sub="awaiting Razorpay" color="navy" />
+          <StatCard label="Paid Today" value={summary.today_count || 0} sub={fmtMoney(summary.today_paid)} color="teal" />
+          <StatCard label="Pending Amount" value={fmtMoney(summary.pending_amount)} sub={`${summary.pending_count || 0} request${(summary.pending_count || 0) !== 1 ? 's' : ''}`} color="gold" />
         </div>
       )}
 
@@ -188,12 +221,12 @@ export default function PayoutsPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-border overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-[1.2fr_0.8fr_90px_90px_90px_80px_80px_130px_100px] gap-2 px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3">
-          <div>Influencer</div>
+        <div className={`grid ${gridCols} gap-2 px-4 py-2.5 bg-surface2 border-b border-border text-[10px] font-bold uppercase tracking-wider text-t3`}>
+          <div>{isBrand ? 'Brand' : 'Influencer'}</div>
           <div>Payment</div>
-          <div>Requested</div>
-          <div>TDS</div>
-          <div>Net Payout</div>
+          <div>{isBrand ? 'Amount' : 'Requested'}</div>
+          {!isBrand && <div>TDS</div>}
+          {!isBrand && <div>Net Payout</div>}
           <div>Method</div>
           <div>Status</div>
           <div>Date</div>
@@ -204,25 +237,26 @@ export default function PayoutsPage() {
           <div className="p-8 text-center text-t3 text-sm">Loading...</div>
         ) : withdrawals.length === 0 ? (
           <div className="p-12 text-center">
-            <div className="text-2xl mb-2">
-              {tab === 'initiated' ? '0' : tab === 'completed' ? '0' : '0'}
-            </div>
-            <div className="text-sm text-t3">
-              {tab === 'initiated' && 'No pending withdrawal requests'}
-              {tab === 'processing' && 'No withdrawals currently processing'}
-              {tab === 'completed' && 'No completed payouts yet'}
-              {tab === 'failed' && 'No failed withdrawals'}
-              {tab === 'all' && 'No withdrawal records found'}
-            </div>
+            <div className="text-2xl mb-2">0</div>
+            <div className="text-sm text-t3">No {isBrand ? 'brand' : ''} withdrawal records for this filter</div>
             {search && <div className="text-xs text-t3 mt-1">Try adjusting your search query</div>}
           </div>
         ) : (
           withdrawals.map(w => (
-            <div key={w.id} className="grid grid-cols-[1.2fr_0.8fr_90px_90px_90px_80px_80px_130px_100px] gap-2 px-4 py-3 border-b border-border last:border-0 items-center">
-              {/* Influencer */}
+            <div key={w.id} className={`grid ${gridCols} gap-2 px-4 py-3 border-b border-border last:border-0 items-center`}>
+              {/* Identity */}
               <div>
-                <div className="text-xs font-medium text-t1 truncate">{w.influencer_name || 'Unknown'}</div>
-                <div className="text-[10px] text-t3 truncate">@{w.instagram_handle} · {w.influencer_phone}</div>
+                {isBrand ? (
+                  <>
+                    <div className="text-xs font-medium text-t1 truncate">{w.brand_name || 'Unknown'}</div>
+                    <div className="text-[10px] text-t3 truncate">{w.brand_phone}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xs font-medium text-t1 truncate">{w.influencer_name || 'Unknown'}</div>
+                    <div className="text-[10px] text-t3 truncate">@{w.instagram_handle} · {w.influencer_phone}</div>
+                  </>
+                )}
               </div>
               {/* Payment info */}
               <div className="text-[10px] text-t2 truncate">
@@ -234,10 +268,10 @@ export default function PayoutsPage() {
                   <span className="text-t3">--</span>
                 )}
               </div>
-              {/* Amounts */}
+              {/* Amount */}
               <div className="font-bold text-t1 font-display text-xs">{fmtMoney(w.amount_requested)}</div>
-              <div className="text-xs text-t3">{fmtMoney(w.tds_deducted)}</div>
-              <div className="font-bold text-teal-deep font-display text-xs">{fmtMoney(w.net_paid)}</div>
+              {!isBrand && <div className="text-xs text-t3">{fmtMoney(w.tds_deducted)}</div>}
+              {!isBrand && <div className="font-bold text-teal-deep font-display text-xs">{fmtMoney(w.net_paid)}</div>}
               {/* Method */}
               <div><MethodBadge method={w.method} /></div>
               {/* Status */}
@@ -253,7 +287,7 @@ export default function PayoutsPage() {
               </div>
               {/* Actions */}
               <div className="flex gap-1">
-                {canProcess && w.status === 'initiated' ? (
+                {canProcess && w.status === actionable ? (
                   <>
                     <button
                       onClick={() => setModal({ withdrawal: w, action: 'approve' })}
@@ -282,21 +316,9 @@ export default function PayoutsPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
-          <button
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page <= 1}
-            className="px-3 py-1.5 text-xs font-semibold bg-white border border-border rounded-lg disabled:opacity-30"
-          >
-            Prev
-          </button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1.5 text-xs font-semibold bg-white border border-border rounded-lg disabled:opacity-30">Prev</button>
           <span className="text-xs text-t3">Page {page} of {totalPages}</span>
-          <button
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
-            className="px-3 py-1.5 text-xs font-semibold bg-white border border-border rounded-lg disabled:opacity-30"
-          >
-            Next
-          </button>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1.5 text-xs font-semibold bg-white border border-border rounded-lg disabled:opacity-30">Next</button>
         </div>
       )}
 
@@ -308,22 +330,28 @@ export default function PayoutsPage() {
               {modal.action === 'approve' ? 'Confirm Approval' : 'Reject Withdrawal'}
             </h3>
             <p className="text-xs text-t3 mb-3">
-              {modal.withdrawal.influencer_name} (@{modal.withdrawal.instagram_handle})
+              {isBrand
+                ? modal.withdrawal.brand_name
+                : `${modal.withdrawal.influencer_name} (@${modal.withdrawal.instagram_handle})`}
             </p>
 
             <div className="bg-surface2 rounded-xl p-3 mb-4 space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-t3">Requested</span>
+                <span className="text-t3">{isBrand ? 'Amount' : 'Requested'}</span>
                 <span className="font-bold text-t1 font-display">{fmtMoney(modal.withdrawal.amount_requested)}</span>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-t3">TDS (10%)</span>
-                <span className="text-t2">{fmtMoney(modal.withdrawal.tds_deducted)}</span>
-              </div>
-              <div className="flex justify-between text-xs border-t border-border pt-1.5">
-                <span className="text-t3 font-bold">Net Payout</span>
-                <span className="font-bold text-teal-deep font-display">{fmtMoney(modal.withdrawal.net_paid)}</span>
-              </div>
+              {!isBrand && (
+                <>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-t3">TDS (10%)</span>
+                    <span className="text-t2">{fmtMoney(modal.withdrawal.tds_deducted)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs border-t border-border pt-1.5">
+                    <span className="text-t3 font-bold">Net Payout</span>
+                    <span className="font-bold text-teal-deep font-display">{fmtMoney(modal.withdrawal.net_paid)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between text-xs">
                 <span className="text-t3">Method</span>
                 <span className="text-t2">{modal.withdrawal.method === 'upi' ? 'UPI' : 'Bank Transfer'}</span>
@@ -333,7 +361,7 @@ export default function PayoutsPage() {
             {modal.action === 'approve' && (
               <div className="mb-4 p-3 bg-teal-pale border border-teal/20 rounded-xl">
                 <div className="text-xs text-teal-deep font-medium">
-                  This will trigger a Razorpay payout of {fmtMoney(modal.withdrawal.net_paid)} to the influencer.
+                  This will trigger a Razorpay payout of {fmtMoney(isBrand ? modal.withdrawal.amount_requested : modal.withdrawal.net_paid)} to the {isBrand ? 'brand' : 'influencer'}.
                 </div>
               </div>
             )}
@@ -348,7 +376,7 @@ export default function PayoutsPage() {
                   className="w-full border-2 border-border2 rounded-xl p-3 text-sm text-t1 outline-none focus:border-gold resize-none"
                   rows={3}
                 />
-                <p className="text-[10px] text-t3 mt-1">Funds will be returned to the influencer's wallet.</p>
+                <p className="text-[10px] text-t3 mt-1">Funds will be returned to the {isBrand ? 'brand' : 'influencer'}&apos;s wallet.</p>
               </div>
             )}
 

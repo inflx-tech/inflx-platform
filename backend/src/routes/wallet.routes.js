@@ -14,5 +14,7 @@ router.get('/',                   ctrl.getWallet);
 router.post('/topup',             ctrl.createTopup);
 router.post('/topup/verify',      ctrl.verifyTopup);
 router.get('/transactions',       ctrl.getTransactions);
+router.post('/withdraw',          ctrl.requestWithdrawal);
+router.get('/withdrawals',        ctrl.listWithdrawals);
 
 module.exports = router;

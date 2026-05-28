@@ -12,6 +12,7 @@ const TX_TYPE = {
   payout:          { label: 'Payout',           icon: '→',   tone: 'debit' },
   refund:          { label: 'Refund',           icon: '↩',   tone: 'credit' },
   platform_fee:    { label: 'Platform fee',     icon: '%',         tone: 'debit' },
+  withdrawal:      { label: 'Withdrawal',        icon: '↑',   tone: 'debit' },
 };
 
 // Credit-direction tx types — show '+' prefix in success-green.
@@ -185,6 +186,26 @@ const CSS = `
 /* load-more */
 .w .load-more{display:block;margin:14px auto 0;padding:7px 16px;font-size:11.5px;font-weight:700;color:var(--ink);background:var(--white);border:1px solid var(--border);border-radius:99px;cursor:pointer}
 .w .load-more:hover{border-color:var(--ink)}
+
+/* withdraw */
+.w .wd-methods{display:flex;gap:6px;margin-bottom:12px}
+.w .wd-method{flex:1;padding:8px;background:var(--white);border:1px solid var(--border);border-radius:9px;font-size:11.5px;font-weight:700;color:var(--ink);text-align:center;cursor:pointer;transition:all .15s}
+.w .wd-method:hover{border-color:var(--ink)}
+.w .wd-method.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.w .wd-method:disabled{opacity:.35;cursor:not-allowed}
+.w .wd-dest{font-size:10.5px;color:var(--muted-2);margin-top:10px;font-family:'JetBrains Mono'}
+.w .wd-dest b{color:var(--ink);font-weight:700}
+.w .wd-list{margin-top:4px}
+.w .wd-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border-soft)}
+.w .wd-row:first-of-type{border-top:0}
+.w .wd-meta{flex:1;min-width:0}
+.w .wd-amt{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink)}
+.w .wd-dt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+.w .wd-pill{padding:3px 9px;border-radius:99px;font-size:10px;font-weight:800;text-transform:capitalize;white-space:nowrap}
+.w .wd-pill.pending{background:var(--yellow-pale);color:var(--yellow-text)}
+.w .wd-pill.queued,.w .wd-pill.processing{background:var(--bg2);color:var(--muted)}
+.w .wd-pill.completed{background:var(--success-pale);color:var(--success-text)}
+.w .wd-pill.failed,.w .wd-pill.cancelled{background:var(--danger-pale);color:var(--danger-text)}
 `;
 
 export default function WalletPage() {
@@ -203,6 +224,12 @@ export default function WalletPage() {
   const [savingBank, setSavingBank] = useState(false);
   const [bankLoaded, setBankLoaded] = useState(false);
   const [showBankForm, setShowBankForm] = useState(false);
+
+  // Withdraw state (Wave 2 commit 2)
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawMethod, setWithdrawMethod] = useState('');
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawals, setWithdrawals] = useState([]);
 
   async function load() {
     const res = await walletApi.getBalance();
@@ -236,6 +263,7 @@ export default function WalletPage() {
     load();
     loadTransactions();
     loadBrandData();
+    loadWithdrawals();
   }, []);
 
   async function loadTransactions() {
@@ -243,6 +271,11 @@ export default function WalletPage() {
     const res = await walletApi.getTransactions({ limit: 20 });
     setTxLoading(false);
     if (res.success) setTransactions(res.data?.transactions || []);
+  }
+
+  async function loadWithdrawals() {
+    const res = await walletApi.getWithdrawals();
+    if (res.success) setWithdrawals(res.data?.withdrawals || []);
   }
 
   async function handleTopup(e) {
@@ -350,6 +383,34 @@ export default function WalletPage() {
     }
   }
 
+  async function handleWithdraw(e) {
+    if (e) e.preventDefault();
+    const amt = parseFloat(withdrawAmount);
+    const avail = Number(wallet?.available_balance ?? wallet?.wallet_balance ?? 0);
+    const hasUpi = !!bankDetails.upi_id;
+    const hasBank = !!(bankDetails.account_number && bankDetails.ifsc_code);
+    const method = withdrawMethod || (hasUpi ? 'upi' : 'bank_transfer');
+
+    if (!hasUpi && !hasBank) { showToast('Add bank details before withdrawing', 'error'); return; }
+    if (!amt || amt <= 0) { showToast('Enter a valid amount', 'error'); return; }
+    if (amt > avail) { showToast('Amount exceeds available balance', 'error'); return; }
+    if (method === 'upi' && !hasUpi) { showToast('No UPI ID on file', 'error'); return; }
+    if (method === 'bank_transfer' && !hasBank) { showToast('No bank account on file', 'error'); return; }
+
+    setWithdrawing(true);
+    const res = await walletApi.requestWithdrawal({ amount: amt, method });
+    setWithdrawing(false);
+    if (res.success) {
+      showToast('Withdrawal requested — pending admin approval');
+      setWithdrawAmount('');
+      load();
+      loadTransactions();
+      loadWithdrawals();
+    } else {
+      showToast(res.error?.message || 'Withdrawal failed', 'error');
+    }
+  }
+
   // Derived — Wave 2 three-state breakdown (with legacy fallbacks so the
   // page renders correctly before/after the backend redeploys).
   const balance        = wallet?.available_balance ?? wallet?.wallet_balance ?? 0;
@@ -364,6 +425,12 @@ export default function WalletPage() {
   // practical floor to publish a small handpick campaign (3-4 micro-
   // influencers + 8% platform fee headroom).
   const isLowBalance = balance < LOW_BAL_THRESHOLD;
+
+  // Withdraw — destination availability from saved bank details.
+  const hasUpi      = !!bankDetails.upi_id;
+  const hasBank     = !!(bankDetails.account_number && bankDetails.ifsc_code);
+  const canWithdraw = hasUpi || hasBank;
+  const effMethod   = withdrawMethod || (hasUpi ? 'upi' : 'bank_transfer');
 
   // Derived: last top-up date for the hero sub-line.
   const lastTopup = useMemo(() => {
@@ -504,6 +571,71 @@ export default function WalletPage() {
             <div className="tu-hint">
               Funds appear <b>instantly</b> after payment. Razorpay handles UPI · cards · netbanking. Minimum <b>₹1</b>.
             </div>
+          </div>
+
+          {/* Withdraw section */}
+          <div className="card" id="withdraw-section">
+            <div className="card-head">
+              <h3>Withdraw funds</h3>
+              <span className="count">to your saved bank / UPI</span>
+            </div>
+
+            {!canWithdraw ? (
+              <div className="bank-empty">
+                <div className="bank-empty-ic">🏦</div>
+                <div className="bank-empty-t">Add a bank account or UPI ID below before you can withdraw.</div>
+                <button className="bank-cta" style={{ float: 'none', marginTop: 0 }} onClick={() => setShowBankForm(true)}>+ Add bank details</button>
+              </div>
+            ) : (
+              <>
+                {hasUpi && hasBank && (
+                  <div className="wd-methods">
+                    <button type="button" className={`wd-method ${effMethod === 'upi' ? 'act' : ''}`} onClick={() => setWithdrawMethod('upi')}>UPI</button>
+                    <button type="button" className={`wd-method ${effMethod === 'bank_transfer' ? 'act' : ''}`} onClick={() => setWithdrawMethod('bank_transfer')}>Bank transfer</button>
+                  </div>
+                )}
+                <form className="tu" onSubmit={handleWithdraw}>
+                  <div className="tu-row">
+                    <label className="tu-input">
+                      <span className="cur">₹</span>
+                      <input
+                        type="number"
+                        placeholder="Amount to withdraw"
+                        value={withdrawAmount}
+                        onChange={e => setWithdrawAmount(e.target.value)}
+                        min="1"
+                        max={balance}
+                      />
+                    </label>
+                    <button type="submit" className="tu-cta" disabled={withdrawing || !withdrawAmount}>
+                      {withdrawing ? 'Requesting…' : 'Withdraw'}
+                    </button>
+                  </div>
+                </form>
+                <div className="wd-dest">
+                  To {effMethod === 'upi'
+                    ? <>UPI <b>{bankDetails.upi_id}</b></>
+                    : <>A/C <b>{maskAccountNumber(bankDetails.account_number)}</b> · {bankDetails.ifsc_code}</>}
+                </div>
+                <div className="tu-hint">
+                  Withdrawals are <b>reviewed by our team</b> before payout. Funds are held from your available balance once requested. Available: <b>₹{fmtN(balance)}</b>.
+                </div>
+
+                {withdrawals.length > 0 && (
+                  <div className="wd-list" style={{ marginTop: 16 }}>
+                    {withdrawals.slice(0, 5).map(w => (
+                      <div key={w.withdrawal_id} className="wd-row">
+                        <div className="wd-meta">
+                          <div className="wd-amt">₹{fmtN(w.amount_requested)}</div>
+                          <div className="wd-dt">{fmtTxDate(w.created_at)} · {w.method === 'upi' ? 'UPI' : 'Bank'}</div>
+                        </div>
+                        <span className={`wd-pill ${w.status}`}>{w.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Transaction history */}

@@ -46,6 +46,7 @@ const TRUNCATE_SQL = `
       follower_orders,
       follower_addresses,
       influencer_withdrawals,
+      brand_withdrawals,
       attribution_clicks,
       subscription_invoices,
       brand_subscriptions,

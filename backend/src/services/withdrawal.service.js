@@ -262,4 +262,89 @@ async function retryWithdrawal(withdrawal, influencer) {
   return initiateWithdrawal(updatedInfluencer, parseFloat(withdrawal.amount_requested), withdrawal.method);
 }
 
-module.exports = { initiateWithdrawal, retryWithdrawal };
+// ─────────────────────────────────────────────────────────────────────────────
+// Brand withdrawals (Wave 2 commit 2)
+//
+// Unlike influencers, brands have NO encrypted payment method on their profile.
+// Their payout destination lives in brands.listing_data.bank_details (plaintext,
+// saved from the wallet page) and is snapshotted onto the brand_withdrawals row
+// at request time. So there is no decrypt step here. The wallet deduction +
+// pending row are written by wallet.controller.requestWithdrawal; the actual
+// RazorpayX payout only fires when an admin approves (admin-gated).
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function ensureBrandFundAccount(brand, withdrawal) {
+  const keyId     = env.RAZORPAY_PAYOUT_KEY_ID    || env.RAZORPAY_KEY_ID;
+  const keySecret = env.RAZORPAY_PAYOUT_KEY_SECRET || env.RAZORPAY_KEY_SECRET;
+
+  // ── Step 1: Create/reuse Razorpay Contact (stored on brands.razorpay_contact_id) ──
+  let contactId = brand.razorpay_contact_id;
+  if (!contactId) {
+    const contactRes = await axios.post(
+      'https://api.razorpay.com/v1/contacts',
+      {
+        name:         brand.business_name,
+        type:         'customer',
+        reference_id: brand.id,
+        contact:      brand.phone,
+      },
+      { auth: { username: keyId, password: keySecret }, timeout: 10000 }
+    );
+    contactId = contactRes.data.id;
+    await db.query(
+      `UPDATE brands SET razorpay_contact_id = $1 WHERE id = $2`,
+      [contactId, brand.id]
+    );
+  }
+
+  // ── Step 2: Create Fund Account from the withdrawal-row snapshot (plaintext) ──
+  let faPayload;
+  if (withdrawal.method === 'upi') {
+    faPayload = {
+      contact_id:   contactId,
+      account_type: 'vpa',
+      vpa:          { address: withdrawal.upi_id },
+    };
+  } else {
+    faPayload = {
+      contact_id:   contactId,
+      account_type: 'bank_account',
+      bank_account: {
+        name:           withdrawal.account_holder_name || brand.business_name,
+        ifsc:           withdrawal.bank_ifsc,
+        account_number: withdrawal.bank_account_no,
+      },
+    };
+  }
+
+  const faRes = await axios.post(
+    'https://api.razorpay.com/v1/fund_accounts',
+    faPayload,
+    { auth: { username: keyId, password: keySecret }, timeout: 10000 }
+  );
+
+  return faRes.data.id; // fund_account_id
+}
+
+// Fires the RazorpayX payout for an approved brand withdrawal. The wallet was
+// already debited at request time, so this neither deducts nor refunds — the
+// admin.controller handles refund-on-failure. amount_requested is RUPEES; paise
+// only crosses at the Razorpay boundary.
+async function executeBrandPayout(brand, withdrawal) {
+  const referenceId   = `bw_${withdrawal.id.slice(0, 8)}_${Date.now()}`;
+  const fundAccountId = await ensureBrandFundAccount(brand, withdrawal);
+  const payoutRes = await createRazorpayPayout({
+    fundAccountId,
+    amountPaise:  toPaise(parseFloat(withdrawal.amount_requested)),
+    purpose:      'payout',
+    referenceId,
+    narration:    'INFLX Brand Withdrawal',
+  });
+  return {
+    razorpayPayoutId: payoutRes.id,
+    // Razorpay payout status: queued → processing → processed / reversed
+    status: payoutRes.status === 'processed' ? 'completed' : 'processing',
+  };
+}
+
+module.exports = { initiateWithdrawal, retryWithdrawal, ensureBrandFundAccount, executeBrandPayout };

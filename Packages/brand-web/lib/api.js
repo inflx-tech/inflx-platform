@@ -191,6 +191,8 @@ export const walletApi = {
   createTopup: (amount) => api.post('/brands/me/wallet/topup', { amount }),
   verifyTopup: (data) => api.post('/brands/me/wallet/topup/verify', data),
   getTransactions: (params) => api.get(`/brands/me/wallet/transactions${params ? '?' + new URLSearchParams(params) : ''}`),
+  requestWithdrawal: (data) => api.post('/brands/me/wallet/withdraw', data),
+  getWithdrawals: () => api.get('/brands/me/wallet/withdrawals'),
 };
 
 export const campaignApi = {
@@ -433,6 +435,8 @@ export const adminApi = {
   getProductionQueue: () => api.get('/admin/production/queue'),
   getWithdrawals: (status, search, page) => api.get(`/admin/withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
+  getBrandWithdrawals: (status, search, page) => api.get(`/admin/brand-withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
+  processBrandWithdrawal: (id, action, reason) => api.post(`/admin/brand-withdrawals/${id}/process`, { action, reason }),
   // Master dishes — admin CRUD for the restaurant dish catalogue
   listMasterDishes: (cuisine, section, search, page) =>
     api.get(`/admin/master-dishes?cuisine=${encodeURIComponent(cuisine || '')}&section=${encodeURIComponent(section || '')}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),

@@ -1,0 +1,31 @@
+{
+  "feature": "wave2-brand-wallet-withdrawal",
+  "area": "backend-migration+controller+service+brand-web-ui+admin-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — explicit 'start commit 2 (brand withdrawal)' + admin-gated payout model chosen in chat. Wave 2 commit 2 (gap #4 from the revenue audit).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING + MIGRATION (M075). Render + Vercel redeploy. M075 batched with M076 for ONE combined prod migration go at the end of Wave 2 — explicit founder go required (hard carve-out).",
+  "fix": "Admin-gated brand wallet withdrawal: POST /brands/me/wallet/withdraw reserves funds (debit + pending row + withdrawal/debit ledger row); /admin/brand-withdrawals approve fires RazorpayX payout, reject refunds. M075 adds 'withdrawal' wallet_tx_type, brand_withdrawal_status enum, brand_withdrawals table. Brand-web withdraw card + admin payouts Brand-tab.",
+  "related": [
+    "features/wallet-three-state-breakdown",
+    "features/billing-razorpay-live"
+  ],
+  "result": "Brand withdrawal end-to-end in mock mode: request->pending (wallet debited), admin approve->completed (no double-debit), reject->cancelled (refunded). Server reads payout destination from listing_data.bank_details (client cannot redirect funds). getWallet untouched; breakdown stays correct. Backend boot smoke clean.",
+  "regression_proof": "Fully additive — new table/enum value/routes/service fns/UI; existing getWallet, topup, escrow, influencer-withdrawal paths unmodified. pnpm qa GREEN (no workflow touches wallet/withdrawal). brand-withdrawal.test.js green. brand-web build compiles.",
+  "discipline": "Verify-twice: confirmed brands has no stored payment method (destination = listing_data.bank_details JSONB); confirmed wallet_tx_type values + that getWallet FILTERs never match 'withdrawal' (so 'payout' would have corrupted settled_balance — corrected to a new type); wallet debited under FOR UPDATE + refunded on reject AND payout-failure; admin route role gate mirrors influencer withdrawals (requireAdminRole('finance')).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "Pending explicit founder go. Production-impacting + M075 migration; M075 batched with M076 for one combined prod go. Code push (Render+Vercel) must coincide with M075 on prod (new table, no column-default fallback)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — reuses the locked wallet `.w` palette (same color vars + typography) and the existing /admin/payouts table+modal layout. New `.wd-*` classes are compositions of existing tokens; no new design language. Per the wallet-three-state-breakdown precedent.",
+  "mockup_locked_at": "2026-05-28"
+}

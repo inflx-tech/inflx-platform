@@ -895,6 +895,204 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/brand-withdrawals?status=&search=&page=    (Wave 2 commit 2)
+// Mirror of getWithdrawals for the brand-side payout queue.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getBrandWithdrawals = asyncHandler(async (req, res) => {
+  const { status = 'all', search = '', page: rawPage, limit: rawLimit } = req.query;
+  const validStatuses = ['all', 'pending', 'queued', 'processing', 'completed', 'failed', 'cancelled'];
+  if (!validStatuses.includes(status)) {
+    throw new AppError('VALIDATION_ERROR', 'status must be all, pending, queued, processing, completed, failed, or cancelled', 422, 'status');
+  }
+
+  const page = Math.max(1, parseInt(rawPage || '1', 10));
+  const limit = Math.min(100, parseInt(rawLimit || '50', 10));
+  const offset = (page - 1) * limit;
+
+  const conditions = [];
+  const params = [];
+
+  if (status !== 'all') {
+    params.push(status);
+    conditions.push(`bw.status = $${params.length}`);
+  }
+  if (search.trim()) {
+    params.push(`%${search.trim().toLowerCase()}%`);
+    const idx = params.length;
+    conditions.push(`(LOWER(b.business_name) LIKE $${idx} OR LOWER(u.phone) LIKE $${idx})`);
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const { rows } = await db.query(
+    `SELECT
+       bw.id, bw.brand_id, bw.amount_requested, bw.method,
+       bw.upi_id, bw.bank_account_no, bw.bank_ifsc, bw.account_holder_name,
+       bw.razorpay_payout_id, bw.status, bw.failure_reason,
+       bw.created_at, bw.completed_at,
+       b.business_name AS brand_name, u.phone AS brand_phone
+     FROM brand_withdrawals bw
+     JOIN brands b ON b.id = bw.brand_id
+     JOIN users u ON u.id = b.user_id
+     ${where}
+     ORDER BY bw.created_at DESC
+     LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+    [...params, limit, offset]
+  );
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*) AS total
+     FROM brand_withdrawals bw
+     JOIN brands b ON b.id = bw.brand_id
+     JOIN users u ON u.id = b.user_id
+     ${where}`,
+    params
+  );
+
+  const { rows: summaryRows } = await db.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE status = 'pending')    AS pending_count,
+       COALESCE(SUM(amount_requested) FILTER (WHERE status = 'pending'), 0) AS pending_amount,
+       COUNT(*) FILTER (WHERE status IN ('queued', 'processing')) AS processing_count,
+       COALESCE(SUM(amount_requested) FILTER (WHERE status = 'completed' AND completed_at >= CURRENT_DATE), 0) AS today_paid,
+       COUNT(*) FILTER (WHERE status = 'completed' AND completed_at >= CURRENT_DATE) AS today_count
+     FROM brand_withdrawals`
+  );
+
+  return success(res, {
+    withdrawals: rows,
+    summary: summaryRows[0],
+  }, 200, { page, limit, total: parseInt(countRows[0].total, 10) });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /admin/brand-withdrawals/:id/process  { action: 'approve'|'reject', reason? }
+//
+// approve → fire RazorpayX payout (wallet was already debited at request time;
+//           no further deduction). On payout failure, refund + status 'failed'.
+// reject  → refund wallet + reversing ledger credit + status 'cancelled'.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const processBrandWithdrawal = asyncHandler(async (req, res) => {
+  const { action, reason } = req.body;
+
+  if (!['approve', 'reject'].includes(action)) {
+    throw new AppError('VALIDATION_ERROR', 'action must be approve or reject', 422, 'action');
+  }
+  if (action === 'reject' && (!reason || !reason.trim())) {
+    throw new AppError('VALIDATION_ERROR', 'reason is required when rejecting', 422, 'reason');
+  }
+
+  const { rows: wRows } = await db.query(
+    `SELECT bw.*, b.business_name, b.razorpay_contact_id,
+            u.id AS user_id, u.phone, u.fcm_token
+     FROM brand_withdrawals bw
+     JOIN brands b ON b.id = bw.brand_id
+     JOIN users u ON u.id = b.user_id
+     WHERE bw.id = $1`,
+    [req.params.id]
+  );
+  if (!wRows[0]) throw new AppError('NOT_FOUND', 'Brand withdrawal not found', 404);
+  const withdrawal = wRows[0];
+
+  if (withdrawal.status !== 'pending') {
+    throw new AppError('CONFLICT', `Cannot ${action} a withdrawal with status "${withdrawal.status}"`, 409);
+  }
+
+  const amount = parseFloat(withdrawal.amount_requested);
+
+  // Refund helper — returns funds to the wallet + writes a reversing ledger
+  // credit (type='withdrawal' direction='credit'; ignored by getWallet sums).
+  async function refundWallet(client, note) {
+    const { rows: lockRows } = await client.query(
+      `SELECT wallet_balance FROM brands WHERE id = $1 FOR UPDATE`,
+      [withdrawal.brand_id]
+    );
+    const newBalance = parseFloat((parseFloat(lockRows[0].wallet_balance) + amount).toFixed(2));
+    await client.query(`UPDATE brands SET wallet_balance = $1 WHERE id = $2`, [newBalance, withdrawal.brand_id]);
+    await client.query(
+      `INSERT INTO wallet_transactions (brand_id, type, amount, direction, balance_after, notes)
+       VALUES ($1, 'withdrawal', $2, 'credit', $3, $4)`,
+      [withdrawal.brand_id, amount, newBalance, note]
+    );
+  }
+
+  if (action === 'reject') {
+    await db.withTransaction(async (client) => {
+      await refundWallet(client, `Withdrawal rejected — refunded. Reason: ${reason}`);
+      await client.query(
+        `UPDATE brand_withdrawals SET status = 'cancelled', failure_reason = $1, completed_at = now() WHERE id = $2`,
+        [reason, withdrawal.id]
+      );
+    });
+
+    await notificationService.send({
+      userId:   withdrawal.user_id,
+      type:     'withdrawal.rejected',
+      title:    'Withdrawal Rejected',
+      body:     `Your withdrawal of ₹${amount.toFixed(2)} was rejected. Reason: ${reason}. Amount returned to your wallet.`,
+      data:     { screen: 'wallet', withdrawal_id: withdrawal.id },
+      fcmToken: withdrawal.fcm_token,
+      sendSms:  true,
+      phone:    withdrawal.phone,
+    });
+
+    const { rows: updated } = await db.query(`SELECT * FROM brand_withdrawals WHERE id = $1`, [withdrawal.id]);
+    return success(res, { withdrawal: updated[0], action: 'rejected' });
+  }
+
+  // action === 'approve' — fire the payout (wallet already debited at request).
+  await db.query(`UPDATE brand_withdrawals SET status = 'processing' WHERE id = $1`, [withdrawal.id]);
+
+  const env = require('../config/env');
+  if (env.RAZORPAY_MOCK) {
+    const mockPayoutId = `mock_payout_${Date.now()}`;
+    await db.query(
+      `UPDATE brand_withdrawals SET status = 'completed', razorpay_payout_id = $1, completed_at = now() WHERE id = $2`,
+      [mockPayoutId, withdrawal.id]
+    );
+    console.log(`[ADMIN][RAZORPAY MOCK] Brand payout ${mockPayoutId} approved for withdrawal ${withdrawal.id}`);
+  } else {
+    const withdrawalService = require('../services/withdrawal.service');
+    try {
+      const { razorpayPayoutId, status } = await withdrawalService.executeBrandPayout(
+        { id: withdrawal.brand_id, business_name: withdrawal.business_name, phone: withdrawal.phone, razorpay_contact_id: withdrawal.razorpay_contact_id },
+        withdrawal
+      );
+      await db.query(
+        `UPDATE brand_withdrawals SET status = $1, razorpay_payout_id = $2, completed_at = $3 WHERE id = $4`,
+        [status, razorpayPayoutId, status === 'completed' ? new Date() : null, withdrawal.id]
+      );
+    } catch (err) {
+      // Payout failed — the money never left, so refund + mark failed.
+      const msg = err?.response?.data?.error?.description || err.message;
+      await db.withTransaction(async (client) => {
+        await refundWallet(client, `Brand payout failed — refunded. ${msg}`);
+        await client.query(
+          `UPDATE brand_withdrawals SET status = 'failed', failure_reason = $1, completed_at = now() WHERE id = $2`,
+          [msg, withdrawal.id]
+        );
+      });
+      throw new AppError('PAYOUT_FAILED', `Razorpay payout failed: ${msg}`, 502);
+    }
+  }
+
+  await notificationService.send({
+    userId:   withdrawal.user_id,
+    type:     'withdrawal.approved',
+    title:    'Withdrawal Approved',
+    body:     `Your withdrawal of ₹${amount.toFixed(2)} has been approved and is being processed to your ${withdrawal.method === 'upi' ? 'UPI' : 'bank account'}.`,
+    data:     { screen: 'wallet', withdrawal_id: withdrawal.id },
+    fcmToken: withdrawal.fcm_token,
+    sendSms:  true,
+    phone:    withdrawal.phone,
+  });
+
+  const { rows: updated } = await db.query(`SELECT * FROM brand_withdrawals WHERE id = $1`, [withdrawal.id]);
+  return success(res, { withdrawal: updated[0], action: 'approved' });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /admin/brands — full brand directory with filters
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1242,6 +1440,8 @@ module.exports = {
   setInfluencerTaxControls,
   getWithdrawals,
   processWithdrawal,
+  getBrandWithdrawals,
+  processBrandWithdrawal,
   getBrands,
   getAnalytics,
   getProductionQueue,
