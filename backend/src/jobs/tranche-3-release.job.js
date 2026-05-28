@@ -3,9 +3,19 @@
 const db = require('../config/db');
 const escrowService = require('../services/escrow.service');
 const notificationService = require('../services/notification.service');
+const taxService = require('../services/tax.service');
 
 async function run() {
   console.log('[CRON tranche-3] Running...');
+
+  // Wave 1 — read T3 timing from payment_config (admin-controllable).
+  // Defaults: 30 days after triggered_at, IST clock time 03:00:00.
+  // Cron schedule changed from daily-06:00-UTC to hourly so the configured
+  // time-of-day is honored within ~1h. Defensive: tax.service falls back
+  // to 30 days / 03:00 IST on read failure (pre-M074 columns missing).
+  const releaseAfterDays = await taxService.getTrancheReleaseAfterDays();
+  const releaseTimeIst   = await taxService.getTrancheReleaseTimeIst();
+  console.log(`[CRON tranche-3] Config: ${releaseAfterDays}d after content_live, release at ${releaseTimeIst} IST`);
 
   const { rows: due } = await db.query(
     `SELECT ee.id, ee.net_to_influencer, ee.campaign_influencer_id,
@@ -28,7 +38,14 @@ async function run() {
      JOIN users u_brand ON u_brand.id = b.user_id
      WHERE ee.trigger_event = 'day_30_post_live'
        AND ee.status = 'queued'
-       AND ee.triggered_at <= NOW() - INTERVAL '30 days'`
+       -- (a) N days have elapsed since triggered_at (admin-configurable)
+       AND ee.triggered_at <= NOW() - ($1 || ' days')::interval
+       -- (b) AND the IST clock has crossed the configured release time
+       --     today. So if admin sets release_time='02:30:00 IST', the
+       --     row only fires at the first hourly cron tick at or after
+       --     02:30 IST on the boundary day.
+       AND (NOW() AT TIME ZONE 'Asia/Kolkata')::time >= $2::time`,
+    [String(releaseAfterDays), releaseTimeIst]
   );
 
   if (due.length === 0) {

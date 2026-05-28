@@ -32,8 +32,10 @@ const env = require('../config/env');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
-
-const GST_PCT = 18.00;
+// Wave 1 — centralized tax math. GST rate now comes from payment_config.gst_pct
+// (defensive fallback to 18% via tax.service). Per the founder's design:
+// brand sees price + GST as a separate line on subscription invoices.
+const taxService = require('../services/tax.service');
 
 async function _getBrandIdFromUser(userId) {
   const { rows } = await db.query(
@@ -343,8 +345,8 @@ const upgrade = asyncHandler(async (req, res) => {
       tier_name:               tier.name,
       billing_period,
       amount_inr:              amount,
-      gst_amount_inr:          parseFloat((amount * GST_PCT / 100).toFixed(2)),
-      total_inr:               parseFloat((amount * (1 + GST_PCT / 100)).toFixed(2)),
+      gst_amount_inr:          (await taxService.withTax(amount)).gst,
+      total_inr:               (await taxService.withTax(amount)).total,
       message:                 `Subscription created — complete the UPI Autopay mandate to activate.`,
     }, 201);
   }
@@ -377,7 +379,7 @@ const upgrade = asyncHandler(async (req, res) => {
     createdSubId = subRows[0].id;
 
     // For Free tier (amount=0) write a zero-amount invoice (book-keeping only).
-    const gstAmount = parseFloat((amount * GST_PCT / 100).toFixed(2));
+    const gstAmount = await taxService.gstOn(amount);
     const { rows: invRows } = await client.query(
       `INSERT INTO subscription_invoices
          (brand_subscription_id, brand_id, tier_key, amount_inr, gst_amount_inr,
@@ -394,6 +396,7 @@ const upgrade = asyncHandler(async (req, res) => {
     invoiceId = invRows[0].id;
   });
 
+  const mockTax = await taxService.withTax(amount);
   return success(res, {
     status:        'activated',
     mode:          'mock',
@@ -402,8 +405,8 @@ const upgrade = asyncHandler(async (req, res) => {
     tier_key:      tier.tier_key,
     billing_period,
     amount_inr:    amount,
-    gst_amount_inr: parseFloat((amount * GST_PCT / 100).toFixed(2)),
-    total_inr:     parseFloat((amount * (1 + GST_PCT / 100)).toFixed(2)),
+    gst_amount_inr: mockTax.gst,
+    total_inr:     mockTax.total,
     message:       `Subscribed to ${tier.name} ${billing_period} (mock mode — no real Razorpay charge).`,
   }, 201);
 });

@@ -1,0 +1,30 @@
+{
+  "feature": "wave1-tax-config-foundation",
+  "area": "backend-services+migrations",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-26) — explicit 'ok pls start wave 1' after settling 4 design ambiguities (Option A pro-rata; exclusive GST display; TCS from brand portion; T3 only gets time-of-day admin control).",
+  "approved_at": "2026-05-26",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render redeploys backend with centralized tax-config reads). 3 prod migrations needed (M072 payment_config tax+identity, M073 per-actor overrides, M074 T3 release time). Migrations bundled for one combined founder go after push. Backward-compatible: defensive `??` fallbacks mean code works pre- and post-migration without behaviour change.",
+  "fix": "Wave 1 (commit 1 of 2). Centralize every tax/limit/identity value that was hardcoded or globally-only-configurable into admin-controllable config slots. Build the config slots + service-layer reads. Admin UI lands in Wave 1 commit 2 (separate contract).",
+  "related": [
+    "features/backend-defect-pending-mandate-cycle-dates",
+    "features/billing-razorpay-live"
+  ],
+  "result": "M072 + M073 + M074 written + applied locally (sanity probes show all new columns present with default values). New tax.service.js exports gstOn/withTax/tcsOn/getTcsConfig/getInvoiceIdentity/getTrancheReleaseTimeIst/getTrancheReleaseAfterDays. paymentConfig.service extended to surface 12 new fields with defensive ?? fallbacks. 7 GST hardcodes replaced (5 in subscription.controller, 2 in webhook.controller). withdrawal.service uses per-influencer TDS lookup (exempt → override → global). pricing.service.computeL3OnFollowerTxn applies per-brand commerce_commission_override_pct above category lookup. New pricing.service.getReturnWindowForCategory helper reads per-category window. tranche-3-release.job reads days+time from config; cron switched from daily-06:00-UTC to hourly. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (56.7s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN STATE=GREEN gate=0. All new column reads use defensive `??` fallbacks so pre-migration code behaviour is identical to post-migration with defaults (verified by reading the config service's env-fallback path — every new field has a sensible default that matches pre-Wave-1 hardcoded values). Hardcoded GST 18% → still 18% after migration (column default). Hardcoded TDS still global rate when influencer doesn't have override. T3 cron schedule change (daily → hourly) is the only behaviour shift; cleanly admin-configurable via tranche_3_release_time_ist.",
+  "discipline": "Verify-twice on each hardcoded GST site before replacement (5 in subscription.controller, 2 in webhook.controller — confirmed via grep). Per-influencer TDS lookup ordering: exempt → override → global (admin can choose any of 3 states per influencer).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Render redeploy + 3 prod migrations bundled for combined founder go)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-26) — N/A backend-only commit. Admin UI lands in the Wave 1 commit 2 contract.",
+  "mockup_locked_at": "2026-05-26"
+}

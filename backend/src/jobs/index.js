@@ -39,8 +39,12 @@ function startAllJobs() {
   // commission-confirm — 00:01 IST daily
   cron.schedule('1 0 * * *', commissionConfirmJob.run, { timezone: tz });
 
-  // tranche-3-release — 06:00 UTC daily
-  cron.schedule('0 6 * * *', tranche3Job.run);
+  // tranche-3-release — hourly (Wave 1 of Tax/Settlement Roadmap).
+  // The exact release time-of-day is honored via the SQL predicate in
+  // the job (reads payment_config.tranche_3_release_time_ist). Cron
+  // fires hourly; eligible rows release at the first hourly tick at or
+  // after the configured IST time on the day-N boundary.
+  cron.schedule('0 * * * *', tranche3Job.run, { timezone: tz });
 
   // offer-expiry — every 15 minutes
   cron.schedule('0,15,30,45 * * * *', offerExpiryRun, { timezone: tz });

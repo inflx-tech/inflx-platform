@@ -139,7 +139,18 @@ async function initiateWithdrawal(influencer, amountRequested, method) {
     throw err;
   }
 
-  const tdsDeducted = parseFloat((amountRequested * (cfg.tdsPct / 100)).toFixed(2));
+  // Wave 1 — per-influencer TDS lookup:
+  //   1. influencer.tds_exempt = true  → 0 TDS (e.g. exemption certificate on file)
+  //   2. influencer.tds_override_pct   → use the per-influencer override
+  //   3. fall back to global payment_config.tds_pct
+  // Defensive: pre-M073 the new columns are undefined → safely falls through
+  // to the global tds_pct (matches pre-Wave-1 behaviour).
+  const effectiveTdsPct = influencer.tds_exempt
+    ? 0
+    : (influencer.tds_override_pct != null
+        ? parseFloat(influencer.tds_override_pct)
+        : parseFloat(cfg.tdsPct));
+  const tdsDeducted = parseFloat((amountRequested * (effectiveTdsPct / 100)).toFixed(2));
   const netPaid     = parseFloat((amountRequested - tdsDeducted).toFixed(2));
 
   // ── Deduct wallet immediately (prevents double-withdrawal) ────────────────

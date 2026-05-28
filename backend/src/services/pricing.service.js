@@ -19,6 +19,7 @@
  */
 
 const db = require('../config/db');
+const paymentConfigSvc = require('./paymentConfig.service');
 
 let _tierCache     = null;
 let _tierCacheTime = 0;
@@ -388,8 +389,26 @@ async function computeL3OnFollowerTxn(args) {
   const categories  = await _loadCategories();
   const cat         = categoryKey ? categories.get(categoryKey) : null;
 
+  // Wave 1 — per-brand commerce-commission override.
+  // If brand has a value in commerce_commission_override_pct, that wins
+  // over the category × path lookup. Lets ops grant special rates to
+  // strategic brands without editing the category table. Defensive: if
+  // the column doesn't exist (pre-M073) the read returns undefined →
+  // falls through to category lookup.
+  const { rows: brandRows } = await client.query(
+    `SELECT COALESCE(platform_fee_pct, 8.00) AS legacy_pct,
+            commerce_commission_override_pct AS override_pct
+       FROM brands WHERE id = $1`,
+    [brandId]
+  );
+  const brandOverridePct = brandRows[0]?.override_pct;
+
   let fee_pct, source, used_category_key;
-  if (cat && cat.active) {
+  if (brandOverridePct != null) {
+    fee_pct            = parseFloat(brandOverridePct);
+    source             = 'brand_override';
+    used_category_key  = categoryKey;
+  } else if (cat && cat.active) {
     fee_pct =
       path === 'direct'            ? cat.path_a_pct :
       path === 'influencer_direct' ? cat.path_b_pct :
@@ -398,11 +417,7 @@ async function computeL3OnFollowerTxn(args) {
     used_category_key  = categoryKey;
   } else {
     // Fallback: legacy brands.platform_fee_pct (defaults to 8%)
-    const { rows } = await client.query(
-      `SELECT COALESCE(platform_fee_pct, 8.00) AS pct FROM brands WHERE id = $1`,
-      [brandId]
-    );
-    fee_pct            = parseFloat(rows[0]?.pct || 8.00);
+    fee_pct            = parseFloat(brandRows[0]?.legacy_pct || 8.00);
     source             = 'brand_legacy_fallback';
     used_category_key  = null;
   }
@@ -418,6 +433,38 @@ async function computeL3OnFollowerTxn(args) {
   };
 }
 
+/**
+ * Wave 1 — per-category commerce-commission return window.
+ *
+ * Returns the number of days the platform should hold an influencer's
+ * commerce commission before releasing it to their wallet (Wave 3
+ * cron will read this). Defaults to the global
+ * payment_config.return_window_days (which itself defaults to 30) if
+ * the category isn't found or the per-category column is null.
+ *
+ * @param {string} categoryKey  e.g. 'restaurant', 'fashion'
+ * @param {pg.Client} [client]  optional db client
+ * @returns {Promise<number>}   days to hold (positive integer)
+ */
+async function getReturnWindowForCategory(categoryKey, client = db) {
+  if (categoryKey) {
+    try {
+      const { rows } = await client.query(
+        `SELECT return_window_days FROM categories
+          WHERE category_key = $1 AND active = true
+          LIMIT 1`,
+        [_normalizeCategoryKey(categoryKey)]
+      );
+      const days = rows[0]?.return_window_days;
+      if (days != null) return parseInt(days, 10);
+    } catch (err) {
+      // pre-M073: column doesn't exist → fall through to global
+    }
+  }
+  const cfg = await paymentConfigSvc.getConfig();
+  return parseInt(cfg.returnWindowDays ?? 30, 10);
+}
+
 module.exports = {
   // L1 — SaaS subscription
   computeL1Renewal,
@@ -427,6 +474,8 @@ module.exports = {
   computeEscrowFeeBase,
   lockEscrowFeeAtPublish,
   getLockedEscrowFeePct,
+  // L3 helpers
+  getReturnWindowForCategory,
   bustEscrowTierCache,
   // L3 — marketplace fee per category × path
   classifyPath,

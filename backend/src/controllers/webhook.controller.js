@@ -24,6 +24,9 @@ const crypto = require('crypto');
 const db     = require('../config/db');
 const env    = require('../config/env');
 const notificationService = require('../services/notification.service');
+// Wave 1 — centralized tax math. GST rate now read from payment_config
+// (defensive fallback to 18% via tax.service).
+const taxService = require('../services/tax.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Signature verification
@@ -112,7 +115,7 @@ async function handlePaymentFailed(payload) {
     [
       sub.id, sub.brand_id, sub.tier_key,
       sub.price_inr || 0,
-      sub.price_inr ? parseFloat((parseFloat(sub.price_inr) * 18 / 100).toFixed(2)) : 0,
+      sub.price_inr ? await taxService.gstOn(parseFloat(sub.price_inr)) : 0,
       String(sub.billing_period === 'yearly' ? 365 : 30),
       payment?.id || null,
       payment?.error_description || 'Payment failed at Razorpay',
@@ -210,7 +213,7 @@ async function handleSubscriptionCharged(payload) {
 
   const cycleDays = row.billing_period === 'yearly' ? 365 : 30;
   const amountInr = row.price_inr ? parseFloat(row.price_inr) : 0;
-  const gstInr    = amountInr ? parseFloat((amountInr * 18 / 100).toFixed(2)) : 0;
+  const gstInr    = amountInr ? await taxService.gstOn(amountInr) : 0;
 
   await db.withTransaction(async (client) => {
     // Idempotent invoice insert — partial unique index on
