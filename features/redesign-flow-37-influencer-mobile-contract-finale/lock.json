@@ -1,26 +1,63 @@
 {
   "feature": "redesign-flow-37-influencer-mobile-contract-finale",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
-  "approved_by": "founder · 2026-05-28 chat \"Audit + ship now (extends current run)\" — bucket-closing FINALE. 4 design calls locked via standing autonomy on design/lock decisions per CLAUDE.md §1 (ink+yellow header / success-yellow-ink tranche dots / KEEP production-mode emojis 💻🏬📦 / StatusPill canonical migration)",
+  "approved_by": "founder · 2026-05-28 chat \"Audit + ship now (extends current run)\" — bucket-closing FINALE. 4 design calls locked via standing autonomy on design/lock decisions per CLAUDE.md §1",
   "approved_at": "2026-05-28",
   "preview_reviewed": true,
   "impact_reviewed": true,
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-28 standing autonomy; 4 calls inherit Flow 28-36 established patterns",
   "mockup_locked_at": "2026-05-28",
-  "notes": "10th and FINAL flow of mobile-influencer bucket (10/23 → bucket COMPLETE). ContractScreen (1,534 LOC) + DateTimeChipPicker (185 LOC) = 1,719 LOC — biggest single screen in mobile codebase. MED-HIGH risk (most complex state machine in bucket; ~40 render branches). ZERO backend change. ZERO StatusPill canonical-map additions (all 11 statuses across contract/deliverable/production_event already in 43-entry map). 4 locked design calls applied per standing autonomy: (1) Header = ink + yellow rule (matches Flow 32-35); (2) Tranche dots = success/yellow/ink (matches Flow 31/34); (3) Production-mode emojis 💻🏬📦 KEPT as type icons (consistent with design call #4 split); (4) StatusPill canonical replaces ad-hoc StatusBadge on contract status + deliverable status + production event status. ~40 render branches preserved verbatim including 6 contract statuses + 3 production modes + 5 production event statuses + 7 visit sub-states + 4 shipment sub-states + Sign Modal MIUI keyboard fix (Modal renders OUTSIDE ScrollView + KeyboardAvoidingView) + 2-party flip-to-remote state machine + goal-aware tranche vs commission card + custom clauses highlight + bonus highlight + deliverables live vs formats_json fallback + DateTimeChipPicker date/hour/minute selection + reschedule_count_influencer 2/2 cap warning + log history strip + 6 Alert 2-confirm flows (sign/complete/received/flip/etc). All 10 APIs preserved verbatim (getContract/signContract/getProduction/getProductionDateRange/acceptProduction/proposeProductionSlot/counterProposeProduction/flipProductionToRemote/confirmProductionReceived/completeProduction). Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + ink hero with yellow rule + StatusPill canonical badges + success/yellow/ink tranche dots + ink/yellow Outfit-Black UPPERCASE CTAs throughout + successPale fee highlight + yellowPale clause highlight box + bg2 production panel + success-bordered slot card + yellowPale flip banner + yellowPale draft banner + ink-active DateTimeChipPicker chips + successPale picker summary + 💻🏬📦 production-mode emojis preserved. No native rebuild required (NATIVE_RUNTIME=2 from Flow 28). BUCKET CLOSE: after Flow 37 ships, mobile-influencer bucket = 23/23 COMPLETE. Next bucket = mobile-follower (44 screens).",
+  "notes": "10th and FINAL flow of mobile-influencer bucket (10/23 → bucket COMPLETE 23/23). ContractScreen (1,534 LOC) + DateTimeChipPicker (185 LOC) = 1,719 LOC — biggest single screen in mobile codebase. MED-HIGH risk. ZERO backend change. ZERO StatusPill canonical-map additions (all 11 statuses across contract/deliverable/production_event already in 43-entry map). 4 locked design calls applied per standing autonomy: (1) Header = ink + yellow rule; (2) Tranche dots = success/yellow/ink; (3) Production-mode emojis 💻🏬📦 KEPT; (4) StatusPill canonical replaces ad-hoc StatusBadge. ~40 render branches preserved verbatim. All 10 APIs preserved. Sign Modal MIUI keyboard fix preserved (Modal OUTSIDE ScrollView + KeyboardAvoidingView). 2-party flip-to-remote state machine preserved. Goal-aware tranche/commission card preserved. DateTimeChipPicker restyled to ink-active chips + successPale summary. No native rebuild required. RELEASED 2026-05-28 with web pnpm qa 76/76 GREEN gate 0 first-run in 44.6s + OTA × 3. 🎉 MOBILE-INFLUENCER BUCKET COMPLETE 23/23. Next bucket: mobile-follower (44 screens).",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T02-11-54-373Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 44.6,
+      "web_note": "Dual-probe pre-warm. 76 passed gate 0 STATE=GREEN on FIRST run in 44.6s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Deep ContractScreen visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home). Founder physical smoke-test on installed APK covers visual upgrade + Sign Modal MIUI keyboard flow on Redmi 13C + production state machine."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat \"Audit + ship now (extends current run)\" (bucket-close deploy go per locked rhythm)",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 37 = pure JS, ships via OTA.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep ContractScreen visual verification deferred per maestro-influencer-coverage open question (admin-verify gate blocks Home); founder physical smoke-test on installed APK covers visual upgrade + Sign Modal MIUI keyboard flow on Redmi 13C + production state machine'"
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 37 = pure JS, ships via OTA. Bucket-closing release.",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep ContractScreen visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test on installed APK covers visual upgrade + Sign Modal MIUI keyboard flow on Redmi 13C + production state machine'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "d1c0100", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "d1c0100", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "d1c0100", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 87, "previous_version": 86,
+        "bundle_hash": "sha256:555ddfad21cbf983bcf6813b158f5ec7049bec3f56fd5f74949ac851aaa8dc7f",
+        "published_at": "2026-05-28T02:13:55.943Z", "bundle_size_kb": 2508,
+        "trigger": "pnpm publish-ota:all -m 'Flow 37 FINALE — influencer-mobile ContractScreen + DateTimeChipPicker (brandPalette + Outfit/PJS/Mono + StatusPill canonical) — MOBILE-INFLUENCER BUCKET COMPLETE 23/23'",
+        "scope": "brand audience manifest (shared bundle)"
+      },
+      "ota_influencer": {
+        "version": 76, "previous_version": 75,
+        "bundle_hash": "sha256:555ddfad21cbf983bcf6813b158f5ec7049bec3f56fd5f74949ac851aaa8dc7f",
+        "published_at": "2026-05-28T02:15:06.680Z", "bundle_size_kb": 2508,
+        "trigger": "pnpm publish-ota:all -m 'Flow 37 FINALE — influencer-mobile ContractScreen + DateTimeChipPicker (brandPalette + Outfit/PJS/Mono + StatusPill canonical) — MOBILE-INFLUENCER BUCKET COMPLETE 23/23'",
+        "scope": "influencer audience manifest (ALL Flow 37 redesigns live here — bucket FINALE)"
+      },
+      "ota_follower": {
+        "version": 50, "previous_version": 49,
+        "bundle_hash": "sha256:555ddfad21cbf983bcf6813b158f5ec7049bec3f56fd5f74949ac851aaa8dc7f",
+        "published_at": "2026-05-28T02:15:49.203Z", "bundle_size_kb": 2508,
+        "trigger": "pnpm publish-ota:all -m 'Flow 37 FINALE — influencer-mobile ContractScreen + DateTimeChipPicker (brandPalette + Outfit/PJS/Mono + StatusPill canonical) — MOBILE-INFLUENCER BUCKET COMPLETE 23/23'",
+        "scope": "follower audience manifest (shared bundle)"
+      }
+    }
   }
 }
