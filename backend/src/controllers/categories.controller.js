@@ -46,7 +46,7 @@ function _validate(body, { partial = false } = {}) {
 const list = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT id, category_key, name, label, path_a_pct, path_b_pct, path_c_pct,
-            active, sort_order, description, updated_at, updated_by
+            active, sort_order, description, return_window_days, updated_at, updated_by
        FROM categories
       ORDER BY sort_order ASC, label ASC`
   );
@@ -90,7 +90,9 @@ const update = asyncHandler(async (req, res) => {
   if (errs.length) throw new AppError('VALIDATION_ERROR', errs.join('; '), 422);
 
   const allowed = ['name', 'label', 'path_a_pct', 'path_b_pct', 'path_c_pct',
-                   'active', 'sort_order', 'description'];
+                   'active', 'sort_order', 'description',
+                   // Wave 1 — per-category commerce-commission return window
+                   'return_window_days'];
   const sets = [], params = [];
   for (const k of allowed) {
     if (req.body[k] !== undefined) {

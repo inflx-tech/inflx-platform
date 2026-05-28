@@ -1,0 +1,29 @@
+{
+  "feature": "wave1-admin-categories-return-window",
+  "area": "backend-controller+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — follow-up to Wave 1 commit 1; covers gap #6 from the revenue audit (admin UI for L3 commerce commission rates per category + per-category return window).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Vercel redeploys brand-web with new admin field; Render redeploys backend with the SELECT extension + PATCH allowed-list extension). NO migration (M073 already live).",
+  "fix": "Surface the per-category return window field on /admin/pricing/categories. Closes gap #6 from the revenue audit — L3 commerce-commission rates are already editable; this adds the return window per-category and unblocks admin from making changes without direct SQL.",
+  "related": [
+    "features/wave1-tax-config-foundation"
+  ],
+  "result": "categories.controller list SELECT + update allowed extended for return_window_days. /admin/pricing/categories gains 7th column + Add Category form field. Boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (47.3s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN. No spec hits /admin/pricing/categories. Backend response shape extended with one additive field; no break for existing callers. Frontend grid resize is purely cosmetic.",
+  "discipline": "Verify-twice on the categories.controller (line 92 allowed whitelist + line 47 SELECT extended); both updated. Defensive null-handling on the page (uses 30 as default if column is missing). Validation 0–365 (sanity bound).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Vercel + Render redeploy; backend code adds one column to SELECT, frontend adds one column to grid). NO migration."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — N/A small UI tweak: one extra column on existing admin page; no new screens or design tokens.",
+  "mockup_locked_at": "2026-05-28"
+}

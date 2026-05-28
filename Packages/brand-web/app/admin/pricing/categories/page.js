@@ -17,6 +17,7 @@ export default function PricingCategoriesPage() {
   const [newRow, setNewRow] = useState({
     category_key: '', name: '', label: '',
     path_a_pct: '', path_b_pct: '', path_c_pct: '',
+    return_window_days: '30',
   });
 
   const showToast = useCallback((msg, type = 'ok') => {
@@ -34,12 +35,14 @@ export default function PricingCategoriesPage() {
       const f = {};
       list.forEach(c => {
         f[c.category_key] = {
-          label:       c.label,
-          path_a_pct:  c.path_a_pct,
-          path_b_pct:  c.path_b_pct,
-          path_c_pct:  c.path_c_pct,
-          active:      c.active,
-          description: c.description || '',
+          label:              c.label,
+          path_a_pct:         c.path_a_pct,
+          path_b_pct:         c.path_b_pct,
+          path_c_pct:         c.path_c_pct,
+          active:             c.active,
+          description:        c.description || '',
+          // Wave 1 — per-category commerce-commission return window (default 30d)
+          return_window_days: c.return_window_days != null ? c.return_window_days : 30,
         };
       });
       setForm(f);
@@ -65,17 +68,21 @@ export default function PricingCategoriesPage() {
     if (!validatePct(f.path_a_pct)) errs[`${key}.path_a_pct`] = '0–50';
     if (!validatePct(f.path_b_pct)) errs[`${key}.path_b_pct`] = '0–50';
     if (!validatePct(f.path_c_pct)) errs[`${key}.path_c_pct`] = '0–50';
+    // Wave 1 — validate per-category return window (positive int, 0-365)
+    const rwd = parseInt(f.return_window_days, 10);
+    if (isNaN(rwd) || rwd < 0 || rwd > 365) errs[`${key}.return_window_days`] = '0–365';
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
     setSaving(true);
     const res = await adminApi.updateCategory(key, {
-      label:       f.label,
-      path_a_pct:  parseFloat(f.path_a_pct),
-      path_b_pct:  parseFloat(f.path_b_pct),
-      path_c_pct:  parseFloat(f.path_c_pct),
-      active:      !!f.active,
-      description: f.description || null,
+      label:              f.label,
+      path_a_pct:         parseFloat(f.path_a_pct),
+      path_b_pct:         parseFloat(f.path_b_pct),
+      path_c_pct:         parseFloat(f.path_c_pct),
+      active:             !!f.active,
+      description:        f.description || null,
+      return_window_days: rwd,
     });
     setSaving(false);
     if (res.success) {
@@ -102,17 +109,22 @@ export default function PricingCategoriesPage() {
       if (!validatePct(newRow[f])) { showToast(`${f} must be 0–50`, 'err'); return; }
     }
     const res = await adminApi.createCategory({
-      category_key: newRow.category_key,
-      name:         newRow.name,
-      label:        newRow.label,
-      path_a_pct:   parseFloat(newRow.path_a_pct),
-      path_b_pct:   parseFloat(newRow.path_b_pct),
-      path_c_pct:   parseFloat(newRow.path_c_pct),
+      category_key:       newRow.category_key,
+      name:               newRow.name,
+      label:              newRow.label,
+      path_a_pct:         parseFloat(newRow.path_a_pct),
+      path_b_pct:         parseFloat(newRow.path_b_pct),
+      path_c_pct:         parseFloat(newRow.path_c_pct),
+      return_window_days: parseInt(newRow.return_window_days, 10) || 30,
     });
     if (res.success) {
       showToast(`Added ${newRow.category_key}`);
       setAddOpen(false);
-      setNewRow({ category_key: '', name: '', label: '', path_a_pct: '', path_b_pct: '', path_c_pct: '' });
+      setNewRow({
+        category_key: '', name: '', label: '',
+        path_a_pct: '', path_b_pct: '', path_c_pct: '',
+        return_window_days: '30',
+      });
       load();
     } else {
       showToast(res.error?.message || 'Create failed', 'err');
@@ -156,8 +168,14 @@ export default function PricingCategoriesPage() {
                    value={newRow.path_b_pct} onChange={e => setNewRow({ ...newRow, path_b_pct: e.target.value })} />
             <input className="col-span-1 px-2 py-1.5 text-sm border rounded" placeholder="C%" type="number"
                    value={newRow.path_c_pct} onChange={e => setNewRow({ ...newRow, path_c_pct: e.target.value })} />
-            <button onClick={() => setAddOpen(false)} className="col-span-1 text-xs text-t3 hover:text-t1">Cancel</button>
+            <input className="col-span-1 px-2 py-1.5 text-sm border rounded" placeholder="Ret(d)" type="number"
+                   title="Return window in days (commerce commission hold)"
+                   value={newRow.return_window_days}
+                   onChange={e => setNewRow({ ...newRow, return_window_days: e.target.value })} />
             <button onClick={addCategory} className="col-span-2 px-3 py-1.5 bg-teal-600 text-white text-sm font-semibold rounded">Add</button>
+          </div>
+          <div className="mt-2 text-right">
+            <button onClick={() => setAddOpen(false)} className="text-xs text-t3 hover:text-t1">Cancel</button>
           </div>
         </div>
       )}
@@ -169,10 +187,13 @@ export default function PricingCategoriesPage() {
       ) : (
         <div className="bg-white rounded-xl border border-border overflow-hidden">
           <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-surface2 text-[11px] font-bold text-t3 uppercase tracking-wide">
-            <div className="col-span-3">Key / Label</div>
+            <div className="col-span-2">Key / Label</div>
             <div className="col-span-2 text-center">Path A (direct)</div>
             <div className="col-span-2 text-center">Path B (via inf)</div>
             <div className="col-span-2 text-center">Path C (attrib)</div>
+            <div className="col-span-1 text-center" title="Days platform holds influencer commerce commission before releasing to wallet">
+              Return win&nbsp;(d)
+            </div>
             <div className="col-span-1 text-center">Active</div>
             <div className="col-span-2 text-right">Actions</div>
           </div>
@@ -184,7 +205,7 @@ export default function PricingCategoriesPage() {
             return (
               <div key={c.category_key}
                    className={`grid grid-cols-12 gap-2 px-4 py-3 items-center ${i < cats.length - 1 ? 'border-b border-border' : ''}`}>
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <div className="text-sm font-bold text-t1">{c.category_key}</div>
                   {isEdit ? (
                     <input value={f.label || ''} onChange={e => setField(c.category_key, 'label', e.target.value)}
@@ -212,6 +233,27 @@ export default function PricingCategoriesPage() {
                     )}
                   </div>
                 ))}
+
+                {/* Wave 1 — Per-category commerce-commission return window.
+                    Default 30d. Platform holds influencer commerce commission
+                    in pending_balance for this many days after a follower
+                    purchase, then releases to wallet (Wave 3 cron). */}
+                <div className="col-span-1 text-center">
+                  {isEdit ? (
+                    <>
+                      <input type="number" min={0} max={365} step={1}
+                        value={f.return_window_days ?? ''}
+                        onChange={e => setField(c.category_key, 'return_window_days', e.target.value === '' ? '' : parseInt(e.target.value, 10))}
+                        className={`w-full px-2 py-1.5 text-sm text-center font-bold border-2 rounded-lg outline-none ${err('return_window_days') ? 'border-red-400' : 'border-navy/30 focus:border-navy'}`}
+                      />
+                      {err('return_window_days') && <div className="text-[10px] text-red-500 mt-0.5">{err('return_window_days')}</div>}
+                    </>
+                  ) : (
+                    <span className="font-display text-sm font-semibold text-t1">
+                      {f.return_window_days}d
+                    </span>
+                  )}
+                </div>
 
                 <div className="col-span-1 text-center">
                   {isEdit ? (
