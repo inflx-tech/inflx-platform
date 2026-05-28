@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 37 · influencer-mobile ContractScreen FINALE — wave2 mockup</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+body{background:#F4F4F5;padding:32px 24px;line-height:1.5;color:#0A0A0A}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:18px;margin-bottom:8px}
+h2{font-size:14px;margin-top:24px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;color:#52525B}
+.banner{background:#0A0A0A;color:#fff;padding:14px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{color:#FFC107;font-size:15px}
+.banner .sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:4px}
+.card{background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:16px;margin-bottom:12px}
+.card h3{font-size:13px;font-weight:800;margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px}
+.card p{font-size:12px;color:#52525B;line-height:1.6}
+.card ul{font-size:12px;color:#52525B;line-height:1.7;padding-left:20px;margin-top:6px}
+.card li b{color:#0A0A0A}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:9.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;margin-right:6px}
+.pill.success{background:#D1FAE5;color:#047857}
+.pill.warn{background:#FFF7CC;color:#6B5A00}
+.pill.danger{background:#FDEEE9;color:#B91C1C}
+.pill.info{background:#DBEAFE;color:#1D4ED8}
+.pill.conv{background:#F3E8FF;color:#7E22CE}
+.pill.muted{background:#F4F4F5;color:#71717A}
+.token{background:#F4F4F5;padding:1px 6px;border-radius:3px;font-family:monospace;font-size:11px}
+.swap{color:#71717A;font-family:monospace;font-size:11px}
+.swap b{color:#0A0A0A}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 37 · influencer-mobile ContractScreen FINALE — wave2 mockup (text-spec)</h1>
+  <div class="sub">10th + bucket-closing flow of mobile-influencer (10/23 → COMPLETE). ContractScreen (1,534 LOC) + DateTimeChipPicker (185 LOC) = 1,719 LOC. MED-HIGH risk (biggest single screen, ~40 render branches, complex state machine). ZERO backend change. ZERO StatusPill canonical-map additions. ZERO SDK boundaries. Patterns inherited from Flows 28-36 — see token swap table below.</div>
+</div>
+
+<h2>The Patterns (inherited verbatim from Flows 28-36)</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Header pattern</h3>
+    <p><span class="swap">navyDeep header → <b>ink + yellow rule accent</b></span><br/>BACK chevron-left mono UPPERCASE + Outfit-Black title + mono UPPERCASE sub + StatusPill canonical inline. Matches Flow 32-35 ink-hero pattern.</p>
+  </div>
+  <div class="card">
+    <h3>Status pills</h3>
+    <p>Contract status (StatusPill canonical):<br/>
+      <span class="pill muted">DRAFT</span><span class="pill warn">PENDING_INFLUENCER</span><span class="pill warn">PENDING_BRAND</span><span class="pill success">ACTIVE</span><span class="pill success">COMPLETED</span><span class="pill danger">CANCELLED</span><br/>
+      Production event status (StatusPill canonical):<br/>
+      <span class="pill warn">PROPOSED</span><span class="pill success">CONFIRMED</span><span class="pill info">IN PROGRESS</span><span class="pill success">COMPLETED</span><span class="pill danger">CANCELLED</span>
+    </p>
+  </div>
+  <div class="card">
+    <h3>Tranche schedule</h3>
+    <p>Three rows w/ dots → tranche numbers:<br/>
+    T1: <span class="swap">teal → <b>success</b></span> (released-on-sign)<br/>
+    T2: <span class="swap">orange → <b>yellow</b></span> (live)<br/>
+    T3: <span class="swap">navy → <b>ink</b></span> (T+30 auto)<br/>
+    Total fee: tealDeep → successText. TDS note: goldPale → yellowPale.</p>
+  </div>
+  <div class="card">
+    <h3>Fee highlight + Commission card</h3>
+    <p><span class="swap">tealPale + tealDeep → <b>successPale + successText</b></span> for Agreed Fee box.<br/>Commission rate: <span class="swap">tealDeep → <b>successText</b></span> bold mono.</p>
+  </div>
+  <div class="card">
+    <h3>Banners</h3>
+    <p>Active banner: <span class="swap">teal bg + white → <b>success bg + white</b></span>.<br/>Success banner: <span class="swap">tealPale → <b>successPale</b></span>.<br/>Draft banner: <span class="swap">#FFF8E0 + gold → <b>yellowPale + yellow border</b></span>.<br/>Clause highlight box: <span class="swap">gold-cream → <b>yellowPale + yellow border</b></span>.</p>
+  </div>
+  <div class="card">
+    <h3>CTAs</h3>
+    <p>View PDF + Sign Contract + Sign Now + Accept + Confirm received + Mark complete + Send slot: <span class="swap">navy bg + white → <b>ink bg + yellow Outfit-Black UPPERCASE</b></span>.<br/>Cancel/Decline/Alt: <span class="swap">surface2 + t2 → <b>white + ink border + ink text</b></span> (ghost).<br/>Flip-to-remote: <span class="swap">orange → <b>yellow tile</b></span>.</p>
+  </div>
+  <div class="card">
+    <h3>Sign Modal</h3>
+    <p>Bottom-sheet card w/ Outfit-Bold title + sans body + ink-bordered name input + ghost-ink Cancel + ink/yellow Sign Now CTA. Overlay rgba(0,0,0,.55). KeyboardAvoidingView preserved.</p>
+  </div>
+  <div class="card">
+    <h3>DateTimeChipPicker (185 LOC)</h3>
+    <p>Section labels: t3 → muted2 + mono UPPERCASE.<br/>Date chips: <span class="swap">navy-active → <b>ink + yellow text</b></span>.<br/>Hour/minute chips: <span class="swap">navy-active → <b>ink + yellow text</b></span>.<br/>Summary: <span class="swap">tealPale + tealDeep → <b>successPale + successText</b></span>.</p>
+  </div>
+  <div class="card">
+    <h3>Production panel</h3>
+    <p>Panel bg: <span class="swap">navyPale → <b>bg2 (light gray)</b></span>.<br/>Remote box: <span class="swap">surface2 → <b>bg2</b></span>.<br/>Detail box: white + border kept.<br/>Slot card: <span class="swap">white + teal border → <b>white + success border</b></span>.<br/>Flip banner: <span class="swap">orange tint → <b>yellowPale + yellow border</b></span>.</p>
+  </div>
+  <div class="card">
+    <h3>Type emojis (KEPT per design call #4)</h3>
+    <p>💻 Remote / 🏬 Visit / 📦 Shipment → KEPT as production-mode TYPE icons (consistent with CATEGORY_EMOJI/DELIVERABLE_ICONS pattern).<br/>DROPPED action emojis: ⏳ (draft banner), 💰 (bonus highlight), ⚠️ (clause warning), ✓ (signed states), 🎉 — replaced with bold text or MCI vectors.</p>
+  </div>
+</div>
+
+<h2>Token swap table</h2>
+<div class="card">
+  <p style="font-family:monospace;font-size:11px;line-height:2">
+  <span class="swap">colors.navyDeep → <b>P.ink</b></span><br/>
+  <span class="swap">colors.navy → <b>P.ink (CTAs) or P.muted (text)</b></span><br/>
+  <span class="swap">colors.navyPale → <b>P.bg2 (panel bg) or P.yellowPale (light contexts)</b></span><br/>
+  <span class="swap">colors.teal → <b>P.success</b></span><br/>
+  <span class="swap">colors.tealDeep → <b>P.successText</b></span><br/>
+  <span class="swap">colors.tealPale → <b>P.successPale</b></span><br/>
+  <span class="swap">colors.orange → <b>P.yellow</b></span><br/>
+  <span class="swap">colors.orangePale → <b>P.yellowPale</b></span><br/>
+  <span class="swap">colors.gold → <b>P.yellow</b></span><br/>
+  <span class="swap">colors.goldPale → <b>P.yellowPale</b></span><br/>
+  <span class="swap">colors.red → <b>P.danger</b></span><br/>
+  <span class="swap">colors.redPale → <b>P.dangerPale</b></span><br/>
+  <span class="swap">colors.t1 → <b>P.ink</b></span><br/>
+  <span class="swap">colors.t2 → <b>P.muted</b></span><br/>
+  <span class="swap">colors.t3 → <b>P.muted2</b></span><br/>
+  <span class="swap">colors.border → <b>P.border</b></span><br/>
+  <span class="swap">colors.border2 → <b>P.muted4</b></span><br/>
+  <span class="swap">colors.surface → <b>P.white</b></span><br/>
+  <span class="swap">colors.surface2 → <b>P.bg2</b></span><br/>
+  <span class="swap">colors.bg → <b>P.bg</b></span><br/>
+  <span class="swap">colors.white → <b>P.white</b></span>
+  </p>
+</div>
+
+<h2>Locked design calls (4 — standing autonomy)</h2>
+<div class="card">
+  <ol style="font-size:12px;line-height:1.8;padding-left:20px">
+    <li><b>Header = ink + yellow rule</b> (matches Flow 32-35 ink-hero pattern)</li>
+    <li><b>Tranche dots = success/yellow/ink</b> (matches Flow 31/34 pattern: released/pending/T+30)</li>
+    <li><b>Production-mode emojis 💻🏬📦 KEPT</b> as TYPE icons (consistent with design call #4 split from Flow 32-34)</li>
+    <li><b>StatusPill canonical replaces ad-hoc STATUS_BADGE</b> on both contract status AND production event status (all 5+6=11 statuses already in 43-entry map)</li>
+  </ol>
+</div>
+
+<h2>Render branches preserved verbatim (~40)</h2>
+<div class="card">
+  <ul style="font-size:11.5px;line-height:1.7;padding-left:20px">
+    <li>6 contract statuses (draft/pending_influencer/pending_brand/active/completed/cancelled)</li>
+    <li>3 production modes (remote/visit/shipment)</li>
+    <li>5 production event statuses (proposed/confirmed/in_progress/completed/cancelled)</li>
+    <li>7 visit sub-states (no-location/location-no-slot/brand-proposed/self-proposed/confirmed/completed/flip-pending)</li>
+    <li>4 shipment sub-states (address-proposed/confirmed/in_progress/completed)</li>
+    <li>Custom clauses highlight box (commercial_rights/category_exclusivity/content_ownership)</li>
+    <li>Bonus highlight when bonus_amount &gt; 0</li>
+    <li>Goal-aware showTranches (fee &gt; 0 AND !isConversion)</li>
+    <li>Goal-aware showCommissionCard (commission_pct &gt; 0 OR isConversion)</li>
+    <li>Deliverables live OR formats_json fallback</li>
+    <li>Sign Modal w/ KeyboardAvoidingView (MIUI/Redmi keyboard-flicker fix preserved)</li>
+    <li>2-confirm Alert flow on sign + complete + received + flip</li>
+    <li>Self vs other-side flip-to-remote 2-party confirmation</li>
+    <li>reschedule_count_influencer warning at 2/2 cap</li>
+    <li>DateTimeChipPicker minDate/maxDate clamping + hour/minute chip selection</li>
+    <li>Log history strip (last 5 entries reverse-chrono)</li>
+  </ul>
+</div>
+
+</div>
+</body>
+</html>

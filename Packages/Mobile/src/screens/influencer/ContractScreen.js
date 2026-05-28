@@ -4,10 +4,11 @@ import {
   ActivityIndicator, Alert, TextInput,
   Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { influencerApi } from '../../services/api';
 import DateTimeChipPicker from '../../components/DateTimeChipPicker';
-import StatusBadge from '../../components/StatusBadge';
+import StatusPill from '../../components/brand/StatusPill';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -36,13 +37,13 @@ const DELIVERABLE_LABELS = {
 
 function contractStatusLabel(status) {
   switch (status) {
-    case 'draft':              return 'Brand Reviewing';
-    case 'pending_influencer': return 'Awaiting Your Signature';
-    case 'pending_brand':      return 'Awaiting Brand Signature';
-    case 'active':             return 'Contract Active';
-    case 'completed':          return 'Completed';
-    case 'cancelled':          return 'Cancelled';
-    default:                   return (status || '').replace(/_/g, ' ');
+    case 'draft':              return 'BRAND REVIEWING';
+    case 'pending_influencer': return 'AWAITING YOUR SIGNATURE';
+    case 'pending_brand':      return 'AWAITING BRAND SIGNATURE';
+    case 'active':             return 'CONTRACT ACTIVE';
+    case 'completed':          return 'COMPLETED';
+    case 'cancelled':          return 'CANCELLED';
+    default:                   return (status || '').replace(/_/g, ' ').toUpperCase();
   }
 }
 
@@ -59,6 +60,19 @@ const CLAUSE_DESCS = {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * ContractScreen — influencer-side contract signing + production coordination.
+ *
+ * Flow 37 restyle (2026-05-28) — bucket FINALE: brandPalette + Outfit/PJS/Mono
+ * fonts + StatusPill canonical migration on contract / deliverable / production
+ * event statuses (11 total, all in 43-entry map).
+ *
+ * Preserved verbatim: 6 contract states + 3 production modes + 5 event statuses
+ * + 7 visit sub-states + 4 shipment sub-states + Sign Modal MIUI keyboard fix
+ * + 2-party flip-to-remote state machine + goal-aware tranches/commission
+ * + custom clauses highlight + bonus + DateTimeChipPicker + log history +
+ * 6 Alert 2-confirm flows. All 10 APIs unchanged.
+ */
 export default function ContractScreen({ navigation, route }) {
   const { campaignInfluencerId } = route.params || {};
   const [contract, setContract] = useState(null);
@@ -69,11 +83,9 @@ export default function ContractScreen({ navigation, route }) {
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const [typedName, setTypedName] = useState('');
-  // Signing happens in a Modal — Modals render outside the parent
-  // ScrollView so the keyboard show/hide doesn't trigger any re-layout
-  // race that yanks focus from the input. Fixes MIUI/Redmi keyboard
-  // flicker bug where 'tap input → keyboard pops up → keyboard closes
-  // immediately' was happening on Redmi 13C 5G (Android 13).
+  // Signing happens in a Modal — Modals render outside the parent ScrollView
+  // so the keyboard show/hide doesn't trigger any re-layout race that yanks
+  // focus from the input. Fixes MIUI/Redmi keyboard flicker on Redmi 13C 5G.
   const [signModalOpen, setSignModalOpen] = useState(false);
   const scrollRef = useRef(null);
 
@@ -91,9 +103,6 @@ export default function ContractScreen({ navigation, route }) {
       setContract(c);
       setDeliverables(data.deliverables || []);
       setProductionEvent(data.production_event || null);
-      // formats_json lives on the campaign_set and gets included on the
-      // contract row by getContractByIdOrThrow. Used as the source for
-      // the Deliverables card before brandSign auto-creates real rows.
       let fj = c.formats_json || c.set_formats_json || [];
       if (typeof fj === 'string') {
         try { fj = JSON.parse(fj); } catch { fj = []; }
@@ -127,7 +136,6 @@ export default function ContractScreen({ navigation, route }) {
             if (res.success) {
               setSignModalOpen(false);
               setSigned(true);
-              // Update local contract state
               setContract(prev => ({
                 ...prev,
                 status: 'pending_brand',
@@ -143,13 +151,11 @@ export default function ContractScreen({ navigation, route }) {
     );
   }
 
-  // ── Loading state ─────────────────────────────────────────────────────────
-
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.navy} />
-        <Text style={styles.loadingText}>Loading contract...</Text>
+        <ActivityIndicator size="large" color={P.yellow} />
+        <Text style={styles.loadingText}>Loading contract…</Text>
       </View>
     );
   }
@@ -159,32 +165,24 @@ export default function ContractScreen({ navigation, route }) {
       <View style={styles.center}>
         <Text style={styles.errorText}>Contract not found.</Text>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.goBackBtn}>
-          <Text style={styles.goBackBtnText}>Go Back</Text>
+          <Text style={styles.goBackBtnText}>GO BACK</Text>
         </TouchableOpacity>
       </View>
     );
   }
-
-  // ── Derived values ────────────────────────────────────────────────────────
 
   const influencerHasSigned = !!contract.influencer_signed_at;
   const brandHasSigned = !!contract.brand_signed_at;
   const fullyActive = contract.status === 'active' || (influencerHasSigned && brandHasSigned);
   const needsInfluencerSignature = contract.status === 'pending_influencer' && !influencerHasSigned;
 
-  // influencer_fee is the BASE agreed fee. Total = base + bonus. The Payment
-  // Terms tranche schedule + Total Fee display use the TOTAL.
   const baseFee = parseFloat(contract.influencer_fee || contract.agreed_fee || 0);
   const bonus   = parseFloat(contract.bonus_amount || 0);
   const fee     = baseFee + bonus;
-  // Tranche defaults: 25/25/50
   const t1Pct = 25;
   const t2Pct = 25;
   const t3Pct = 50;
 
-  // Goal-aware gating. Backend now ships `goal` + `commission_pct` on the
-  // contract row (K.1 / L.2 joins). Conversion contracts have no fee and no
-  // tranches; they get a Commission Schedule card instead.
   const goalLc       = (contract.goal || 'engagement').toLowerCase();
   const isConversion = goalLc === 'conversion';
   const commissionPct = parseFloat(contract.commission_pct || 0);
@@ -195,38 +193,33 @@ export default function ContractScreen({ navigation, route }) {
     <View style={styles.outer}>
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>{"<-"} Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backRow}>
+          <Icon name="chevron-left" size={14} color="rgba(255,255,255,0.65)" />
+          <Text style={styles.backText}>BACK</Text>
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>Contract</Text>
-            <Text style={styles.sub}>{contract.campaign_name || 'Campaign'}</Text>
+            <Text style={styles.sub}>{(contract.campaign_name || 'Campaign').toUpperCase()}</Text>
           </View>
-          <StatusBadge status={contract.status} size={11} />
+          <View style={{ alignSelf: 'flex-start', marginTop: 4 }}>
+            <StatusPill status={contract.status} />
+          </View>
         </View>
+        <View style={styles.headerAccent} />
       </View>
 
       {/* ── Contract Active Banner ──────────────────────────────────────── */}
       {fullyActive && (
         <View style={styles.activeBanner}>
-          <Text style={styles.activeBannerText}>Contract Active -- Both parties have signed</Text>
-        </View>
-      )}
-
-      {/* ── Draft state — brand is still reviewing ──────────────────────── */}
-      {contract.status === 'draft' && (
-        <View style={[styles.successBanner, { backgroundColor: '#FFF8E0', borderBottomColor: '#E8D590' }]}>
-          <Text style={[styles.successBannerText, { color: '#7A5500' }]}>
-            ⏳ Brand is reviewing the contract. You'll be notified when it's ready to sign.
-          </Text>
+          <Text style={styles.activeBannerText}>CONTRACT ACTIVE · BOTH PARTIES HAVE SIGNED</Text>
         </View>
       )}
 
       {/* ── Just-signed success banner ──────────────────────────────────── */}
       {signed && !fullyActive && (
         <View style={styles.successBanner}>
-          <Text style={styles.successBannerText}>Contract signed successfully. Waiting for brand to countersign.</Text>
+          <Text style={styles.successBannerText}>CONTRACT SIGNED · WAITING FOR BRAND TO COUNTERSIGN</Text>
         </View>
       )}
 
@@ -236,20 +229,20 @@ export default function ContractScreen({ navigation, route }) {
         if (typeof cc === 'string') { try { cc = JSON.parse(cc); } catch { cc = null; } }
         const enabledIds = cc ? Object.keys(cc.clauses || {}).filter(k => cc.clauses[k]?.enabled) : [];
         const hasNotes = cc?.notes;
-        const bonus    = parseFloat(contract.bonus_amount || 0);
-        if (enabledIds.length === 0 && !hasNotes && bonus <= 0) return null;
+        const bonusVal = parseFloat(contract.bonus_amount || 0);
+        if (enabledIds.length === 0 && !hasNotes && bonusVal <= 0) return null;
         return (
           <View style={styles.clauseHighlightBox}>
-            <Text style={styles.clauseHighlightTitle}>⚠️ Important Terms Attached</Text>
-            {bonus > 0 && (
+            <Text style={styles.clauseHighlightTitle}>IMPORTANT TERMS ATTACHED</Text>
+            {bonusVal > 0 && (
               <Text style={styles.clauseHighlightItem}>
-                💰 <Text style={{ fontWeight: '800' }}>+ ₹{bonus.toLocaleString('en-IN')} bonus</Text> on top of agreed fee
+                · <Text style={{ fontWeight: '900', fontFamily: fonts.displayBlack }}>+ ₹{bonusVal.toLocaleString('en-IN')} bonus</Text> on top of agreed fee
               </Text>
             )}
             {enabledIds.map(id => (
               <View key={id} style={{ marginTop: 6 }}>
                 <Text style={styles.clauseHighlightItem}>
-                  • <Text style={{ fontWeight: '800' }}>{CLAUSE_LABELS[id] || id}</Text>
+                  · <Text style={{ fontWeight: '900', fontFamily: fonts.displayBlack }}>{CLAUSE_LABELS[id] || id}</Text>
                   {cc.clauses[id].value ? ` (${cc.clauses[id].value} days)` : ''}
                 </Text>
                 <Text style={styles.clauseHighlightDesc}>
@@ -259,7 +252,7 @@ export default function ContractScreen({ navigation, route }) {
             ))}
             {hasNotes && (
               <View style={{ marginTop: 6 }}>
-                <Text style={styles.clauseHighlightItem}>• <Text style={{ fontWeight: '800' }}>Additional Notes</Text></Text>
+                <Text style={styles.clauseHighlightItem}>· <Text style={{ fontWeight: '900', fontFamily: fonts.displayBlack }}>Additional Notes</Text></Text>
                 <Text style={styles.clauseHighlightDesc}>{cc.notes}</Text>
               </View>
             )}
@@ -267,18 +260,13 @@ export default function ContractScreen({ navigation, route }) {
         );
       })()}
 
-      {/* ── View PDF button ─────────────────────────────────────────────────
-         Only show after the brand has actually SENT the contract. While
-         it's still in 'draft', the brand is privately preparing the
-         terms — influencer shouldn't see a PDF button because there is
-         no agreed contract to view yet. The button also requires a PDF
-         key on the contract row (pdf_url is set at generation time). */}
+      {/* ── View PDF button ─────────────────────────────────────────────── */}
       {contract.status !== 'draft' && contract.pdf_url && (
         <TouchableOpacity
           style={styles.pdfBtn}
           onPress={() => navigation.navigate('ContractPdf', { contractId: contract.id })}
         >
-          <Text style={styles.pdfBtnText}>View Contract PDF</Text>
+          <Text style={styles.pdfBtnText}>VIEW CONTRACT PDF</Text>
         </TouchableOpacity>
       )}
 
@@ -293,56 +281,45 @@ export default function ContractScreen({ navigation, route }) {
       <ScrollView
         ref={scrollRef}
         style={styles.body}
-        // 'always' — keyboard NEVER auto-dismisses when tapping inside the
-        // ScrollView, including the surrounding whitespace around the
-        // signature input. Switched from 'handled' because Android was
-        // interpreting the very first tap on the input as a 1-pixel drag,
-        // dismissing the keyboard the instant it appeared.
-        // 'on-drag' explicitly removed for the same reason — tap micro-
-        // movements were being treated as drags on some Android builds.
         keyboardShouldPersistTaps="always"
       >
-
         {/* Campaign & Brand Info */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Campaign Details</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Campaign</Text>
+              <Text style={styles.infoLabel}>CAMPAIGN</Text>
               <Text style={styles.infoValue}>{contract.campaign_name || '--'}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Brand</Text>
+              <Text style={styles.infoLabel}>BRAND</Text>
               <Text style={styles.infoValue}>{contract.brand_name || '--'}</Text>
             </View>
           </View>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Contract Status</Text>
+              <Text style={styles.infoLabel}>STATUS</Text>
               <Text style={styles.infoValue}>{contractStatusLabel(contract.status)}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Posting Date</Text>
-              <Text style={styles.infoValue}>{formatDate(contract.posting_date)}</Text>
+              <Text style={styles.infoLabel}>POSTING DATE</Text>
+              <Text style={styles.infoValue}>{formatDate(contract.posting_date).toUpperCase()}</Text>
             </View>
           </View>
         </View>
 
-        {/* Agreed Fee — shown only when there's an upfront fee (engagement / hybrid). */}
+        {/* Agreed Fee */}
         {fee > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Agreed Fee</Text>
             <View style={styles.feeHighlight}>
-              <Text style={styles.feeLabel}>Total Influencer Fee</Text>
+              <Text style={styles.feeLabel}>TOTAL INFLUENCER FEE</Text>
               <Text style={styles.feeValue}>{fmtRupees(fee)}</Text>
             </View>
           </View>
         )}
 
-        {/* Deliverables — show live deliverables once they exist (after both
-            sign), otherwise fall back to formats_json so the influencer
-            sees what they're agreeing to BEFORE signing. Critical for
-            informed consent across engagement / conversion / hybrid. */}
+        {/* Deliverables — live OR formats_json fallback */}
         {deliverables.length > 0 ? (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Deliverables</Text>
@@ -356,11 +333,11 @@ export default function ContractScreen({ navigation, route }) {
                   </Text>
                   {d.submission_deadline && (
                     <Text style={styles.deliverableDeadline}>
-                      Deadline: {formatDate(d.submission_deadline)}
+                      DEADLINE: {formatDate(d.submission_deadline).toUpperCase()}
                     </Text>
                   )}
                 </View>
-                <StatusBadge status={d.status} size={9} />
+                <StatusPill status={d.status} />
               </View>
             ))}
           </View>
@@ -387,11 +364,7 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         ) : null}
 
-        {/* Production Arrangement — what the influencer is signing up for
-            logistically. Shown from pending_influencer onwards (the mode is
-            picked at brand-approve time, well before influencer signs).
-            Visit address / shipping AWB only fill in after activation; pre-
-            activation we show a sensible placeholder. Applies to all goals. */}
+        {/* Production Arrangement */}
         {contract.status !== 'draft' && (() => {
           const mode = contract.production_mode || 'remote';
           const pe = productionEvent || {};
@@ -399,8 +372,8 @@ export default function ContractScreen({ navigation, route }) {
             return (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Production Arrangement</Text>
-                <View style={[styles.briefBox, { backgroundColor: colors.surface2 }]}>
-                  <Text style={[styles.briefText, { fontWeight: '700', marginBottom: 4 }]}>💻 Remote</Text>
+                <View style={styles.briefBox}>
+                  <Text style={[styles.briefText, { fontWeight: '800', marginBottom: 4 }]}>💻 Remote</Text>
                   <Text style={styles.briefText}>
                     No physical exchange. You'll create content directly from the brand brief and any uploaded reference assets.
                   </Text>
@@ -413,20 +386,20 @@ export default function ContractScreen({ navigation, route }) {
             return (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Production Arrangement</Text>
-                <View style={[styles.briefBox, { backgroundColor: colors.surface2 }]}>
-                  <Text style={[styles.briefText, { fontWeight: '700', marginBottom: 4 }]}>🏬 Visit Brand Location</Text>
+                <View style={styles.briefBox}>
+                  <Text style={[styles.briefText, { fontWeight: '800', marginBottom: 4 }]}>🏬 Visit Brand Location</Text>
                   <Text style={styles.briefText}>
                     You'll visit the brand's premises to shoot the content.
                   </Text>
                   <View style={{ height: 8 }} />
-                  <Text style={styles.infoLabel}>Address</Text>
+                  <Text style={styles.infoLabel}>ADDRESS</Text>
                   <Text style={styles.infoValue}>{addr || 'To be confirmed by brand after both parties sign.'}</Text>
                   {pe.visit_scheduled_at && (
                     <>
                       <View style={{ height: 6 }} />
-                      <Text style={styles.infoLabel}>Scheduled</Text>
+                      <Text style={styles.infoLabel}>SCHEDULED</Text>
                       <Text style={styles.infoValue}>
-                        {new Date(pe.visit_scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {formatDateTime(pe.visit_scheduled_at)}
                         {pe.visit_window_minutes ? ` · ${pe.visit_window_minutes} min window` : ''}
                       </Text>
                     </>
@@ -434,7 +407,7 @@ export default function ContractScreen({ navigation, route }) {
                   {(pe.visit_contact_name || pe.visit_contact_phone) && (
                     <>
                       <View style={{ height: 6 }} />
-                      <Text style={styles.infoLabel}>Contact</Text>
+                      <Text style={styles.infoLabel}>CONTACT</Text>
                       <Text style={styles.infoValue}>
                         {[pe.visit_contact_name, pe.visit_contact_phone].filter(Boolean).join(' · ')}
                       </Text>
@@ -449,18 +422,18 @@ export default function ContractScreen({ navigation, route }) {
           return (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Production Arrangement</Text>
-              <View style={[styles.briefBox, { backgroundColor: colors.surface2 }]}>
-                <Text style={[styles.briefText, { fontWeight: '700', marginBottom: 4 }]}>📦 Product Shipment</Text>
+              <View style={styles.briefBox}>
+                <Text style={[styles.briefText, { fontWeight: '800', marginBottom: 4 }]}>📦 Product Shipment</Text>
                 <Text style={styles.briefText}>
                   The brand will ship product samples to you for content creation.
                 </Text>
                 <View style={{ height: 8 }} />
-                <Text style={styles.infoLabel}>Shipping to</Text>
+                <Text style={styles.infoLabel}>SHIPPING TO</Text>
                 <Text style={styles.infoValue}>{shipAddr || 'Your registered address. Confirm or update after signing.'}</Text>
                 {(pe.shipment_courier || pe.shipment_awb) && (
                   <>
                     <View style={{ height: 6 }} />
-                    <Text style={styles.infoLabel}>Tracking</Text>
+                    <Text style={styles.infoLabel}>TRACKING</Text>
                     <Text style={styles.infoValue}>
                       {[pe.shipment_courier, pe.shipment_awb].filter(Boolean).join(' · ')}
                     </Text>
@@ -469,8 +442,8 @@ export default function ContractScreen({ navigation, route }) {
                 {pe.shipment_dispatched_at && (
                   <>
                     <View style={{ height: 6 }} />
-                    <Text style={styles.infoLabel}>Dispatched</Text>
-                    <Text style={styles.infoValue}>{formatDate(pe.shipment_dispatched_at)}</Text>
+                    <Text style={styles.infoLabel}>DISPATCHED</Text>
+                    <Text style={styles.infoValue}>{formatDate(pe.shipment_dispatched_at).toUpperCase()}</Text>
                   </>
                 )}
               </View>
@@ -478,8 +451,7 @@ export default function ContractScreen({ navigation, route }) {
           );
         })()}
 
-        {/* Payment Terms / Tranche Schedule — fee-bearing contracts only.
-            Conversion contracts (no upfront fee) get Commission Schedule below. */}
+        {/* Payment Terms / Tranche Schedule */}
         {showTranches && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Payment Terms</Text>
@@ -488,7 +460,7 @@ export default function ContractScreen({ navigation, route }) {
             </Text>
 
             <View style={styles.trancheRow}>
-              <View style={[styles.trancheDot, { backgroundColor: colors.teal }]} />
+              <View style={[styles.trancheDot, { backgroundColor: P.success }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.trancheTitle}>Tranche 1 ({t1Pct}%)</Text>
                 <Text style={styles.trancheDesc}>Released when both parties sign the contract</Text>
@@ -497,7 +469,7 @@ export default function ContractScreen({ navigation, route }) {
             </View>
 
             <View style={styles.trancheRow}>
-              <View style={[styles.trancheDot, { backgroundColor: colors.orange }]} />
+              <View style={[styles.trancheDot, { backgroundColor: P.yellow }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.trancheTitle}>Tranche 2 ({t2Pct}%)</Text>
                 <Text style={styles.trancheDesc}>Released when content goes live</Text>
@@ -506,7 +478,7 @@ export default function ContractScreen({ navigation, route }) {
             </View>
 
             <View style={styles.trancheRow}>
-              <View style={[styles.trancheDot, { backgroundColor: colors.navy }]} />
+              <View style={[styles.trancheDot, { backgroundColor: P.ink }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.trancheTitle}>Tranche 3 ({t3Pct}%)</Text>
                 <Text style={styles.trancheDesc}>Auto-released 30 days after content live</Text>
@@ -521,13 +493,14 @@ export default function ContractScreen({ navigation, route }) {
 
             <View style={styles.tdsNote}>
               <Text style={styles.tdsText}>
-                Note: 10% TDS is deducted at the time of withdrawal, not at earning.
+                <Text style={{ fontWeight: '800' }}>Note: </Text>
+                10% TDS is deducted at the time of withdrawal, not at earning.
               </Text>
             </View>
           </View>
         )}
 
-        {/* Commission Schedule — conversion / hybrid contracts. */}
+        {/* Commission Schedule */}
         {showCommissionCard && (() => {
           let offerCfg = contract.offer_config_json;
           if (typeof offerCfg === 'string') {
@@ -544,13 +517,13 @@ export default function ContractScreen({ navigation, route }) {
               </Text>
               <View style={styles.infoGrid}>
                 <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>Commission Rate</Text>
-                  <Text style={[styles.infoValue, { color: colors.tealDeep, fontWeight: '800' }]}>{commissionPct}%</Text>
+                  <Text style={styles.infoLabel}>COMMISSION RATE</Text>
+                  <Text style={[styles.infoValue, { color: P.successText, fontWeight: '900', fontFamily: fonts.monoBold }]}>{commissionPct}%</Text>
                 </View>
                 {contract.offer_type && (
                   <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Offer Type</Text>
-                    <Text style={styles.infoValue}>{String(contract.offer_type).replace(/_/g, ' ')}</Text>
+                    <Text style={styles.infoLabel}>OFFER TYPE</Text>
+                    <Text style={styles.infoValue}>{String(contract.offer_type).replace(/_/g, ' ').toUpperCase()}</Text>
                   </View>
                 )}
               </View>
@@ -558,14 +531,14 @@ export default function ContractScreen({ navigation, route }) {
                 <View style={styles.infoGrid}>
                   {offerValueLabel && (
                     <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Offer Value</Text>
+                      <Text style={styles.infoLabel}>OFFER VALUE</Text>
                       <Text style={styles.infoValue}>{offerValueLabel}</Text>
                     </View>
                   )}
                   {contract.coupon_code && (
                     <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Your Coupon</Text>
-                      <Text style={[styles.infoValue, { fontFamily: 'monospace' }]}>{contract.coupon_code}</Text>
+                      <Text style={styles.infoLabel}>YOUR COUPON</Text>
+                      <Text style={[styles.infoValue, { fontFamily: fonts.monoBold }]}>{contract.coupon_code}</Text>
                     </View>
                   )}
                 </View>
@@ -579,7 +552,7 @@ export default function ContractScreen({ navigation, route }) {
           );
         })()}
 
-        {/* Content Guidelines / Brief */}
+        {/* Content Guidelines */}
         {(contract.content_requirements || contract.brief || contract.campaign_brief) && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Content Guidelines</Text>
@@ -608,10 +581,10 @@ export default function ContractScreen({ navigation, route }) {
 
           <View style={styles.sigSection}>
             <View style={[styles.sigBox, influencerHasSigned && styles.sigBoxSigned]}>
-              <Text style={styles.sigLabel}>Influencer</Text>
+              <Text style={styles.sigLabel}>INFLUENCER</Text>
               {influencerHasSigned ? (
                 <>
-                  <Text style={styles.sigCheck}>Signed</Text>
+                  <Text style={styles.sigCheck}>SIGNED</Text>
                   <Text style={styles.sigName}>{contract.influencer_signed_name || contract.influencer_name}</Text>
                   <Text style={styles.sigDate}>{formatDateTime(contract.influencer_signed_at)}</Text>
                 </>
@@ -621,10 +594,10 @@ export default function ContractScreen({ navigation, route }) {
             </View>
 
             <View style={[styles.sigBox, brandHasSigned && styles.sigBoxSigned]}>
-              <Text style={styles.sigLabel}>Brand</Text>
+              <Text style={styles.sigLabel}>BRAND</Text>
               {brandHasSigned ? (
                 <>
-                  <Text style={styles.sigCheck}>Signed</Text>
+                  <Text style={styles.sigCheck}>SIGNED</Text>
                   <Text style={styles.sigName}>{contract.brand_signed_by || 'Brand Representative'}</Text>
                   <Text style={styles.sigDate}>{formatDateTime(contract.brand_signed_at)}</Text>
                 </>
@@ -635,10 +608,7 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         </View>
 
-        {/* ── Sign Section ──────────────────────────────────────────────── */}
-        {/* The actual TextInput lives inside a Modal (rendered below this
-            ScrollView's tree) so the keyboard show/hide doesn't trigger
-            ScrollView re-layout that races with focus on MIUI/Redmi. */}
+        {/* Sign CTA card */}
         {needsInfluencerSignature && !signed && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Sign This Contract</Text>
@@ -651,19 +621,19 @@ export default function ContractScreen({ navigation, route }) {
               disabled={signing}
             >
               {signing ? (
-                <ActivityIndicator color={colors.white} />
+                <ActivityIndicator color={P.yellow} />
               ) : (
-                <Text style={styles.signBtnText}>Sign Contract</Text>
+                <Text style={styles.signBtnText}>SIGN CONTRACT</Text>
               )}
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ── Post-sign success state ───────────────────────────────────── */}
+        {/* Post-sign success state */}
         {signed && !fullyActive && (
           <View style={styles.card}>
             <View style={styles.successState}>
-              <Text style={styles.successCheck}>Signed</Text>
+              <Text style={styles.successCheck}>SIGNED</Text>
               <Text style={styles.successTitle}>Contract Signed Successfully</Text>
               <Text style={styles.successDesc}>
                 {isConversion
@@ -674,18 +644,13 @@ export default function ContractScreen({ navigation, route }) {
           </View>
         )}
 
-        {/* ── Production coordination (visible after activation) ─────────── */}
+        {/* Production coordination (visible after activation) */}
         {fullyActive && <InfluencerProductionPanel contractId={contract.id} />}
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* ── Sign Modal ──────────────────────────────────────────────────────
-          Renders in its own root view, not inside the ScrollView, so the
-          keyboard appearing doesn't trigger ScrollView re-layout / focus
-          loss. Fixes the MIUI Redmi 13C "keyboard pops up and closes"
-          flicker. KeyboardAvoidingView pushes the form up on iOS; on
-          Android, AndroidManifest.xml's adjustResize handles it. */}
+      {/* ── Sign Modal ──────────────────────────────────────────────────── */}
       <Modal
         visible={signModalOpen}
         transparent
@@ -708,7 +673,7 @@ export default function ContractScreen({ navigation, route }) {
                 value={typedName}
                 onChangeText={setTypedName}
                 placeholder="Your full name"
-                placeholderTextColor={colors.t3}
+                placeholderTextColor={P.muted3}
                 autoCapitalize="words"
                 autoFocus
                 returnKeyType="done"
@@ -723,7 +688,7 @@ export default function ContractScreen({ navigation, route }) {
                 onPress={() => setSignModalOpen(false)}
                 disabled={signing}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>CANCEL</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalSignBtn, (signing || !typedName.trim()) && styles.signBtnDisabled]}
@@ -733,9 +698,9 @@ export default function ContractScreen({ navigation, route }) {
                 disabled={signing || !typedName.trim()}
               >
                 {signing ? (
-                  <ActivityIndicator color={colors.white} />
+                  <ActivityIndicator color={P.yellow} />
                 ) : (
-                  <Text style={styles.signBtnText}>Sign Now</Text>
+                  <Text style={styles.signBtnText}>SIGN NOW</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -756,15 +721,11 @@ function InfluencerProductionPanel({ contractId }) {
   const [busy, setBusy]    = useState(false);
   const [dateRange, setDateRange] = useState(null);
 
-  // Slot proposal form (influencer's primary input). slotDateTime is a single
-  // Date value populated by DateTimeChipPicker — replaced the old separate
-  // YYYY-MM-DD / HH:MM text inputs to avoid hand-typed dates.
   const [slotDateTime, setSlotDateTime] = useState(null);
   const [slotWindow, setSlotWindow] = useState(60);
   const [slotNotes, setSlotNotes] = useState('');
   const [slotFormOpen, setSlotFormOpen] = useState(false);
 
-  // Shipment counter form (address)
   const [counterAddress, setCounterAddress] = useState('');
   const [counterNotes, setCounterNotes]   = useState('');
   const [counterOpen, setCounterOpen]     = useState(false);
@@ -787,10 +748,6 @@ function InfluencerProductionPanel({ contractId }) {
   }
   useEffect(() => { load(); }, [contractId]);
 
-  const dateHint = dateRange
-    ? `Pick a date between ${new Date(dateRange.earliest).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} and ${new Date(dateRange.latest).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-    : null;
-
   async function handleAccept() {
     if (!event) return;
     setBusy(true);
@@ -800,7 +757,6 @@ function InfluencerProductionPanel({ contractId }) {
     else Alert.alert('Failed', res.error?.message || 'Could not accept');
   }
 
-  // Influencer first-time slot proposal OR re-proposal (counts as reschedule).
   async function handleProposeSlot() {
     if (!slotDateTime) { Alert.alert('Missing', 'Pick a date and time'); return; }
     setBusy(true);
@@ -819,7 +775,6 @@ function InfluencerProductionPanel({ contractId }) {
     }
   }
 
-  // Counter brand's proposed slot OR brand's counter-of-influencer's slot.
   async function handleCounterSlot() {
     if (!slotDateTime) { Alert.alert('Missing', 'Pick a date and time'); return; }
     setBusy(true);
@@ -838,7 +793,6 @@ function InfluencerProductionPanel({ contractId }) {
     }
   }
 
-  // Shipment-only counter (different address).
   async function handleCounterShipment() {
     if (!counterAddress.trim()) { Alert.alert('Missing', 'Enter the new address'); return; }
     setBusy(true);
@@ -851,7 +805,6 @@ function InfluencerProductionPanel({ contractId }) {
     else Alert.alert('Failed', res.error?.message || 'Counter failed.');
   }
 
-  // Mutual flip to remote.
   async function handleFlipToRemote() {
     if (!event) return;
     Alert.alert(
@@ -901,7 +854,7 @@ function InfluencerProductionPanel({ contractId }) {
     ]);
   }
 
-  if (loading) return <View style={ipStyles.loading}><ActivityIndicator color={colors.navy} /></View>;
+  if (loading) return <View style={ipStyles.loading}><ActivityIndicator color={P.yellow} /></View>;
   if (mode === 'remote') {
     return (
       <View style={ipStyles.remoteBox}>
@@ -923,14 +876,6 @@ function InfluencerProductionPanel({ contractId }) {
     );
   }
 
-  const STATUS_PILL = {
-    proposed:    { bg: '#FFF4D6', fg: '#7A5500', label: 'Action needed' },
-    confirmed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Confirmed' },
-    in_progress: { bg: '#EEEDFE', fg: '#5C50C8', label: 'In transit' },
-    completed:   { bg: '#E0FAF5', fg: '#007A63', label: 'Completed' },
-    cancelled:   { bg: '#FDEEE9', fg: '#E8401A', label: 'Cancelled' },
-  }[event.status] || { bg: colors.surface2, fg: colors.t2, label: event.status };
-
   const visit = event.mode === 'visit';
   const ship  = event.mode === 'shipment';
 
@@ -938,9 +883,7 @@ function InfluencerProductionPanel({ contractId }) {
     <View style={ipStyles.panel}>
       <View style={ipStyles.head}>
         <Text style={ipStyles.title}>{visit ? '🏬 Visit Coordination' : '📦 Product Shipment'}</Text>
-        <View style={[ipStyles.pill, { backgroundColor: STATUS_PILL.bg }]}>
-          <Text style={[ipStyles.pillTxt, { color: STATUS_PILL.fg }]}>{STATUS_PILL.label}</Text>
-        </View>
+        <StatusPill status={event.status} />
       </View>
 
       {visit && (() => {
@@ -955,22 +898,20 @@ function InfluencerProductionPanel({ contractId }) {
 
         return (
           <>
-            {/* Remote flip confirmation banner (other side initiated) */}
             {flipPending && !flipByMe && !isCompleted && (
               <View style={ipStyles.flipBanner}>
                 <Text style={ipStyles.flipBannerTxt}>
                   Brand wants to switch this to remote — no in-person shoot, you create content from the brief alone. Confirm?
                 </Text>
                 <TouchableOpacity style={ipStyles.flipConfirmBtn} disabled={busy} onPress={handleFlipToRemote}>
-                  <Text style={ipStyles.flipConfirmBtnTxt}>Confirm flip</Text>
+                  <Text style={ipStyles.flipConfirmBtnTxt}>CONFIRM FLIP</Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            {/* Always show location once set */}
             {hasLocation && (
               <View style={ipStyles.detailBox}>
-                <Text style={ipStyles.label}>Visit location</Text>
+                <Text style={ipStyles.label}>VISIT LOCATION</Text>
                 <Text style={ipStyles.value}>
                   {event.visit_address}
                   {event.visit_city ? `, ${event.visit_city}` : ''}
@@ -983,7 +924,7 @@ function InfluencerProductionPanel({ contractId }) {
                 )}
                 {(event.visit_contact_name || event.visit_contact_phone) && (
                   <>
-                    <Text style={[ipStyles.label, { marginTop: 8 }]}>Contact</Text>
+                    <Text style={[ipStyles.label, { marginTop: 8 }]}>CONTACT</Text>
                     <Text style={ipStyles.value}>
                       {event.visit_contact_name || ''}{event.visit_contact_phone ? ` · ${event.visit_contact_phone}` : ''}
                     </Text>
@@ -992,14 +933,12 @@ function InfluencerProductionPanel({ contractId }) {
               </View>
             )}
 
-            {/* STATE 1: brand hasn't sent location yet */}
             {!hasLocation && !isCompleted && (
               <Text style={ipStyles.note}>
                 The brand will send you their visit location shortly. You'll get a notification when they do.
               </Text>
             )}
 
-            {/* STATE 2: location sent, no slot yet — INFLUENCER PICKS SLOT */}
             {hasLocation && !hasSlot && !isCompleted && (
               <>
                 <Text style={ipStyles.helpHeader}>Pick a date + time when you can visit. Brand will confirm.</Text>
@@ -1009,10 +948,10 @@ function InfluencerProductionPanel({ contractId }) {
                   value={slotDateTime}
                   onChange={setSlotDateTime}
                 />
-                <Text style={[ipStyles.label, { marginTop: 8 }]}>Notes (optional)</Text>
-                <TextInput style={[ipStyles.input, { height: 50 }]} multiline value={slotNotes} onChangeText={setSlotNotes} placeholder="Anything the brand should know…" placeholderTextColor={colors.t3} />
+                <Text style={[ipStyles.label, { marginTop: 8 }]}>NOTES (OPTIONAL)</Text>
+                <TextInput style={[ipStyles.input, { height: 50 }]} multiline value={slotNotes} onChangeText={setSlotNotes} placeholder="Anything the brand should know…" placeholderTextColor={P.muted3} />
                 <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleProposeSlot}>
-                  <Text style={ipStyles.primaryTxt}>{busy ? 'Sending…' : 'Send my slot'}</Text>
+                  <Text style={ipStyles.primaryTxt}>{busy ? 'SENDING…' : 'SEND MY SLOT'}</Text>
                 </TouchableOpacity>
                 {!flipPending && (
                   <TouchableOpacity style={ipStyles.linkBtn} disabled={busy} onPress={handleFlipToRemote}>
@@ -1022,13 +961,12 @@ function InfluencerProductionPanel({ contractId }) {
               </>
             )}
 
-            {/* STATE 3: BRAND proposed/countered a slot — accept or counter */}
             {hasLocation && hasSlot && proposedByBrand && event.status === 'proposed' && (
               <>
                 <View style={ipStyles.slotCard}>
-                  <Text style={ipStyles.slotLabel}>Brand suggests</Text>
+                  <Text style={ipStyles.slotLabel}>BRAND SUGGESTS</Text>
                   <Text style={ipStyles.slotTime}>
-                    {new Date(event.visit_scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {formatDateTime(event.visit_scheduled_at)}
                   </Text>
                   {event.visit_window_minutes && (
                     <Text style={ipStyles.smallNote}>{event.visit_window_minutes} min slot</Text>
@@ -1037,10 +975,10 @@ function InfluencerProductionPanel({ contractId }) {
                 {!slotFormOpen ? (
                   <>
                     <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleAccept}>
-                      <Text style={ipStyles.primaryTxt}>Accept slot</Text>
+                      <Text style={ipStyles.primaryTxt}>ACCEPT SLOT</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[ipStyles.altBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={() => setSlotFormOpen(true)}>
-                      <Text style={ipStyles.altTxt}>Suggest a different time</Text>
+                      <Text style={ipStyles.altTxt}>SUGGEST A DIFFERENT TIME</Text>
                     </TouchableOpacity>
                     {!flipPending && (
                       <TouchableOpacity style={ipStyles.linkBtn} disabled={busy} onPress={handleFlipToRemote}>
@@ -1057,7 +995,7 @@ function InfluencerProductionPanel({ contractId }) {
                       onChange={setSlotDateTime}
                     />
                     <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleCounterSlot}>
-                      <Text style={ipStyles.primaryTxt}>{busy ? 'Sending…' : 'Send counter'}</Text>
+                      <Text style={ipStyles.primaryTxt}>{busy ? 'SENDING…' : 'SEND COUNTER'}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={ipStyles.linkBtn} disabled={busy} onPress={() => setSlotFormOpen(false)}>
                       <Text style={ipStyles.linkBtnTxt}>Cancel</Text>
@@ -1070,13 +1008,12 @@ function InfluencerProductionPanel({ contractId }) {
               </>
             )}
 
-            {/* STATE 4: SELF proposed — waiting on brand */}
             {hasLocation && hasSlot && proposedByInfluencer && event.status === 'proposed' && (
               <>
                 <View style={ipStyles.slotCard}>
-                  <Text style={ipStyles.slotLabel}>Your proposed slot</Text>
+                  <Text style={ipStyles.slotLabel}>YOUR PROPOSED SLOT</Text>
                   <Text style={ipStyles.slotTime}>
-                    {new Date(event.visit_scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {formatDateTime(event.visit_scheduled_at)}
                   </Text>
                   {event.visit_window_minutes && (
                     <Text style={ipStyles.smallNote}>{event.visit_window_minutes} min slot</Text>
@@ -1086,27 +1023,24 @@ function InfluencerProductionPanel({ contractId }) {
               </>
             )}
 
-            {/* STATE 5: confirmed — mark visit done */}
             {isConfirmed && (
               <>
                 <View style={ipStyles.slotCard}>
-                  <Text style={ipStyles.slotLabel}>✓ Confirmed</Text>
+                  <Text style={ipStyles.slotLabel}>CONFIRMED</Text>
                   <Text style={ipStyles.slotTime}>
-                    {new Date(event.visit_scheduled_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {formatDateTime(event.visit_scheduled_at)}
                   </Text>
                 </View>
                 <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleMarkVisitDone}>
-                  <Text style={ipStyles.primaryTxt}>Visit done — mark complete</Text>
+                  <Text style={ipStyles.primaryTxt}>VISIT DONE — MARK COMPLETE</Text>
                 </TouchableOpacity>
               </>
             )}
 
-            {/* STATE 6: completed */}
             {isCompleted && (
-              <Text style={ipStyles.completeTxt}>✓ Visit complete — start creating your content.</Text>
+              <Text style={ipStyles.completeTxt}>Visit complete — start creating your content.</Text>
             )}
 
-            {/* Self-initiated flip request — info note */}
             {flipPending && flipByMe && !isCompleted && (
               <Text style={ipStyles.smallNote}>You requested a switch to remote. Waiting for brand to confirm.</Text>
             )}
@@ -1117,7 +1051,7 @@ function InfluencerProductionPanel({ contractId }) {
       {ship && (
         <>
           <View style={ipStyles.detailBox}>
-            <Text style={ipStyles.label}>Shipping to</Text>
+            <Text style={ipStyles.label}>SHIPPING TO</Text>
             <Text style={ipStyles.value}>
               {[event.shipment_to_address_line, event.shipment_to_city, event.shipment_to_state, event.shipment_to_pincode].filter(Boolean).join(', ') || '— address pending —'}
             </Text>
@@ -1128,20 +1062,20 @@ function InfluencerProductionPanel({ contractId }) {
               <Text style={ipStyles.note}>The brand will ship to this address. Confirm or send a different one.</Text>
               <View style={ipStyles.actionRow}>
                 <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleAccept}>
-                  <Text style={ipStyles.primaryTxt}>Confirm address</Text>
+                  <Text style={ipStyles.primaryTxt}>CONFIRM ADDRESS</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[ipStyles.altBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={() => setCounterOpen(o => !o)}>
-                  <Text style={ipStyles.altTxt}>{counterOpen ? 'Cancel' : 'Use a different address'}</Text>
+                  <Text style={ipStyles.altTxt}>{counterOpen ? 'CANCEL' : 'USE DIFFERENT ADDRESS'}</Text>
                 </TouchableOpacity>
               </View>
               {counterOpen && (
                 <View style={ipStyles.counterBox}>
-                  <Text style={ipStyles.label}>New address</Text>
-                  <TextInput style={[ipStyles.input, { height: 80 }]} multiline value={counterAddress} onChangeText={setCounterAddress} placeholder="Full shipping address with city + pincode" placeholderTextColor={colors.t3} />
-                  <Text style={ipStyles.label}>Notes (optional)</Text>
-                  <TextInput style={ipStyles.input} value={counterNotes} onChangeText={setCounterNotes} placeholder="Why you need a different address" placeholderTextColor={colors.t3} />
-                  <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleCounter}>
-                    <Text style={ipStyles.primaryTxt}>Send new address</Text>
+                  <Text style={ipStyles.label}>NEW ADDRESS</Text>
+                  <TextInput style={[ipStyles.input, { height: 80 }]} multiline value={counterAddress} onChangeText={setCounterAddress} placeholder="Full shipping address with city + pincode" placeholderTextColor={P.muted3} />
+                  <Text style={ipStyles.label}>NOTES (OPTIONAL)</Text>
+                  <TextInput style={ipStyles.input} value={counterNotes} onChangeText={setCounterNotes} placeholder="Why you need a different address" placeholderTextColor={P.muted3} />
+                  <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleCounterShipment}>
+                    <Text style={ipStyles.primaryTxt}>SEND NEW ADDRESS</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -1153,24 +1087,24 @@ function InfluencerProductionPanel({ contractId }) {
           {event.status === 'in_progress' && (
             <>
               <View style={ipStyles.detailBox}>
-                <Text style={ipStyles.label}>Courier</Text>
+                <Text style={ipStyles.label}>COURIER</Text>
                 <Text style={ipStyles.value}>{event.shipment_courier || '—'}</Text>
-                <Text style={[ipStyles.label, { marginTop: 6 }]}>Tracking</Text>
+                <Text style={[ipStyles.label, { marginTop: 6 }]}>TRACKING</Text>
                 <Text style={ipStyles.value}>{event.shipment_awb || '—'}</Text>
                 {event.shipment_expected_at && (
                   <>
-                    <Text style={[ipStyles.label, { marginTop: 6 }]}>Expected</Text>
-                    <Text style={ipStyles.value}>{new Date(event.shipment_expected_at).toLocaleDateString('en-IN')}</Text>
+                    <Text style={[ipStyles.label, { marginTop: 6 }]}>EXPECTED</Text>
+                    <Text style={ipStyles.value}>{formatDate(event.shipment_expected_at).toUpperCase()}</Text>
                   </>
                 )}
               </View>
               <TouchableOpacity style={[ipStyles.primaryBtn, busy && { opacity: 0.6 }]} disabled={busy} onPress={handleConfirmReceived}>
-                <Text style={ipStyles.primaryTxt}>Package received — confirm</Text>
+                <Text style={ipStyles.primaryTxt}>PACKAGE RECEIVED — CONFIRM</Text>
               </TouchableOpacity>
             </>
           )}
           {event.status === 'completed' && (
-            <Text style={ipStyles.completeTxt}>✓ Package received — go ahead and create content.</Text>
+            <Text style={ipStyles.completeTxt}>Package received — go ahead and create content.</Text>
           )}
         </>
       )}
@@ -1178,12 +1112,12 @@ function InfluencerProductionPanel({ contractId }) {
       {/* History strip */}
       {log.length > 0 && (
         <View style={ipStyles.logBox}>
-          <Text style={ipStyles.logTitle}>History</Text>
+          <Text style={ipStyles.logTitle}>HISTORY</Text>
           {log.slice(-5).reverse().map(l => (
             <Text key={l.id} style={ipStyles.logRow}>
-              <Text style={ipStyles.logTime}>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</Text>
+              <Text style={ipStyles.logTime}>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }).toUpperCase()}</Text>
               {' · '}
-              <Text style={ipStyles.logActor}>{l.actor_role}</Text>
+              <Text style={ipStyles.logActor}>{(l.actor_role || '').toUpperCase()}</Text>
               {' · '}
               {(l.action || '').replace(/_/g, ' ')}{l.notes ? ` — ${l.notes}` : ''}
             </Text>
@@ -1194,341 +1128,164 @@ function InfluencerProductionPanel({ contractId }) {
   );
 }
 
-const ipStyles = StyleSheet.create({
-  loading:      { padding: 24, alignItems: 'center' },
-  panel:        { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.navyPale, borderWidth: 1, borderColor: colors.border },
-  head:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  title:        { fontSize: 14, fontWeight: '800', color: colors.t1 },
-  pill:         { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  pillTxt:      { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
-
-  remoteBox:    { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, alignItems: 'center' },
-  remoteTitle:  { fontSize: 13, fontWeight: '800', color: colors.t1, marginBottom: 4 },
-  remoteBody:   { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 16 },
-
-  detailBox:    { padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
-  label:        { fontSize: 9, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 2 },
-  value:        { fontSize: 12, color: colors.t1 },
-  note:         { fontSize: 11, color: colors.t3, marginVertical: 6, lineHeight: 16 },
-  smallNote:    { fontSize: 10, color: colors.t3, marginTop: 6, textAlign: 'center' },
-
-  actionRow:    { flexDirection: 'row', gap: 8, marginTop: 8 },
-  primaryBtn:   { flex: 1, paddingVertical: 11, backgroundColor: colors.navy, borderRadius: 10, alignItems: 'center', marginTop: 8 },
-  primaryTxt:   { color: colors.white, fontSize: 12, fontWeight: '800' },
-  altBtn:       { flex: 1, paddingVertical: 11, backgroundColor: colors.surface2, borderRadius: 10, alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: colors.border },
-  altTxt:       { color: colors.t2, fontSize: 12, fontWeight: '800' },
-
-  counterBox:   { marginTop: 10, padding: 10, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.border },
-  input:        { backgroundColor: colors.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9, fontSize: 12, color: colors.t1, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
-  row2:         { flexDirection: 'row', gap: 8 },
-  helpHeader:   { fontSize: 11, color: colors.t3, marginBottom: 6, lineHeight: 16 },
-  dateHint:     { fontSize: 10, color: colors.orange, marginTop: 2, marginBottom: 4, textAlign: 'center', fontWeight: '700' },
-
-  slotCard:     { padding: 12, backgroundColor: colors.white, borderRadius: 10, borderWidth: 1, borderColor: colors.teal, marginVertical: 4 },
-  slotLabel:    { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  slotTime:     { fontSize: 15, fontWeight: '800', color: colors.t1, marginBottom: 4 },
-
-  linkBtn:      { marginTop: 8, paddingVertical: 8, alignItems: 'center' },
-  linkBtnTxt:   { color: colors.t3, fontSize: 11, fontWeight: '600', textDecorationLine: 'underline' },
-
-  flipBanner:   { backgroundColor: colors.orange + '20', borderRadius: 10, padding: 10, marginBottom: 10, borderWidth: 1, borderColor: colors.orange },
-  flipBannerTxt:{ fontSize: 11, color: colors.t1, lineHeight: 15, marginBottom: 8 },
-  flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.orange, borderRadius: 8 },
-  flipConfirmBtnTxt: { color: colors.white, fontSize: 11, fontWeight: '800' },
-
-  completeTxt:  { fontSize: 12, color: colors.tealDeep, fontWeight: '700', marginTop: 8, textAlign: 'center' },
-
-  logBox:       { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border },
-  logTitle:     { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  logRow:       { fontSize: 10, color: colors.t2, marginBottom: 2 },
-  logTime:      { color: colors.t3 },
-  logActor:     { color: colors.t2, fontWeight: '700' },
-});
-
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  outer: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  loadingText: { fontSize: 13, color: colors.t3, marginTop: 12 },
-  errorText: { fontSize: 14, color: colors.t2, marginBottom: 16 },
-  goBackBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.surface2, borderRadius: 12 },
-  goBackBtnText: { fontSize: 14, fontWeight: '600', color: colors.navy },
+const ipStyles = StyleSheet.create({
+  loading:      { padding: 24, alignItems: 'center' },
+  panel:        { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border },
+  head:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  title:        { fontSize: 14, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
 
-  // Header
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  sub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  remoteBox:    { marginHorizontal: 16, marginTop: 12, padding: 14, borderRadius: 14, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border, alignItems: 'center' },
+  remoteTitle:  { fontSize: 13, fontWeight: '800', color: P.ink, marginBottom: 4, fontFamily: fonts.displayBold },
+  remoteBody:   { fontSize: 11, color: P.muted2, textAlign: 'center', lineHeight: 16, fontFamily: fonts.sansRegular },
+
+  detailBox:    { padding: 11, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 8 },
+  label:        { fontSize: 9.5, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2, fontFamily: fonts.monoBold },
+  value:        { fontSize: 12, color: P.ink, fontFamily: fonts.sansRegular, fontWeight: '600' },
+  note:         { fontSize: 11, color: P.muted, marginVertical: 6, lineHeight: 16, fontFamily: fonts.sansRegular },
+  smallNote:    { fontSize: 10, color: P.muted2, marginTop: 6, textAlign: 'center', fontFamily: fonts.sansRegular },
+
+  actionRow:    { flexDirection: 'row', gap: 8, marginTop: 8 },
+  primaryBtn:   { flex: 1, paddingVertical: 12, backgroundColor: P.ink, borderRadius: 10, alignItems: 'center', marginTop: 8 },
+  primaryTxt:   { color: P.yellow, fontSize: 12, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+  altBtn:       { flex: 1, paddingVertical: 12, backgroundColor: P.white, borderRadius: 10, alignItems: 'center', marginTop: 8, borderWidth: 1.5, borderColor: P.ink },
+  altTxt:       { color: P.ink, fontSize: 12, fontWeight: '800', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBold },
+
+  counterBox:   { marginTop: 10, padding: 11, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border },
+  input:        { backgroundColor: P.white, borderRadius: 10, paddingHorizontal: 11, paddingVertical: 10, fontSize: 12, color: P.ink, marginBottom: 8, borderWidth: 1.5, borderColor: P.ink, fontFamily: fonts.sansRegular },
+  helpHeader:   { fontSize: 11, color: P.muted, marginBottom: 6, lineHeight: 16, fontFamily: fonts.sansRegular },
+
+  slotCard:     { padding: 12, backgroundColor: P.white, borderRadius: 10, borderWidth: 1.5, borderColor: P.success, marginVertical: 4 },
+  slotLabel:    { fontSize: 9.5, fontWeight: '800', color: P.successText, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4, fontFamily: fonts.monoBold },
+  slotTime:     { fontSize: 15, fontWeight: '900', color: P.ink, marginBottom: 4, fontFamily: fonts.monoBold },
+
+  linkBtn:      { marginTop: 8, paddingVertical: 8, alignItems: 'center' },
+  linkBtnTxt:   { color: P.muted2, fontSize: 11, fontWeight: '700', textDecorationLine: 'underline', fontFamily: fonts.sansRegular },
+
+  flipBanner:   { backgroundColor: P.yellowPale, borderRadius: 10, padding: 11, marginBottom: 10, borderWidth: 1, borderColor: '#F0DA88' },
+  flipBannerTxt:{ fontSize: 11, color: P.ink, lineHeight: 15, marginBottom: 8, fontFamily: fonts.sansRegular },
+  flipConfirmBtn:{ alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 7, backgroundColor: P.ink, borderRadius: 8 },
+  flipConfirmBtnTxt: { color: P.yellow, fontSize: 11, fontWeight: '900', letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
+
+  completeTxt:  { fontSize: 12, color: P.successText, fontWeight: '800', marginTop: 8, textAlign: 'center', fontFamily: fonts.displayBold },
+
+  logBox:       { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: P.border },
+  logTitle:     { fontSize: 9.5, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 4, fontFamily: fonts.monoBold },
+  logRow:       { fontSize: 10, color: P.muted, marginBottom: 2, fontFamily: fonts.sansRegular },
+  logTime:      { color: P.muted2, fontWeight: '700', fontFamily: fonts.monoMedium },
+  logActor:     { color: P.ink, fontWeight: '800', fontFamily: fonts.monoBold },
+});
+
+const styles = StyleSheet.create({
+  outer: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+  loadingText: { fontSize: 13, color: P.muted2, marginTop: 12, fontFamily: fonts.sansRegular },
+  errorText: { fontSize: 14, color: P.muted, marginBottom: 16, fontFamily: fonts.sansRegular },
+  goBackBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: P.ink, borderRadius: 12 },
+  goBackBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+
+  // Header — ink + yellow rule
+  header: { backgroundColor: P.ink, padding: 18, paddingTop: 50, paddingBottom: 22, position: 'relative' },
+  headerAccent: { position: 'absolute', left: 18, bottom: 8, width: 30, height: 3, backgroundColor: P.yellow, borderRadius: 2 },
+  backRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
+  backText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  title: { fontSize: 20, fontWeight: '900', color: P.white, letterSpacing: -0.3, fontFamily: fonts.displayBlack },
+  sub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
   // Banners
-  activeBanner: {
-    backgroundColor: colors.teal,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
-  activeBannerText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  successBanner: {
-    backgroundColor: colors.tealPale,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.teal,
-  },
-  successBannerText: { fontSize: 12, fontWeight: '600', color: colors.tealDeep },
+  activeBanner: { backgroundColor: P.success, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
+  activeBannerText: { fontSize: 12, fontWeight: '900', color: P.white, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  successBanner: { backgroundColor: P.successPale, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: P.success },
+  successBannerText: { fontSize: 11, fontWeight: '800', color: P.successText, letterSpacing: 0.3, fontFamily: fonts.monoBold },
 
-  // View PDF button
-  pdfBtn: {
-    margin: 16,
-    marginBottom: 0,
-    backgroundColor: colors.navy,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  pdfBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  // PDF button — ink + yellow
+  pdfBtn: { margin: 16, marginBottom: 0, backgroundColor: P.ink, paddingVertical: 13, borderRadius: 12, alignItems: 'center' },
+  pdfBtnText: { fontSize: 13, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 
-  // Draft banner — shown while brand is still preparing the contract
-  draftBanner: {
-    margin: 16,
-    marginBottom: 0,
-    padding: 14,
-    backgroundColor: '#FFF4D6',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F0D987',
-  },
-  draftBannerTitle: { fontSize: 13, fontWeight: '700', color: '#7A5A00', marginBottom: 4 },
-  draftBannerBody:  { fontSize: 12, color: '#6B5200', lineHeight: 18 },
+  // Draft banner — yellowPale
+  draftBanner: { margin: 16, marginBottom: 0, padding: 14, backgroundColor: P.yellowPale, borderRadius: 12, borderWidth: 1, borderColor: '#F0DA88' },
+  draftBannerTitle: { fontSize: 13, fontWeight: '800', color: P.yellowText, marginBottom: 4, fontFamily: fonts.displayBold },
+  draftBannerBody: { fontSize: 12, color: P.yellowText, lineHeight: 17, fontFamily: fonts.sansRegular },
 
-  // Highlight box for special clauses + bonus the brand attached
-  clauseHighlightBox: {
-    margin: 16,
-    marginBottom: 0,
-    padding: 14,
-    backgroundColor: '#FFF8E0',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#E8D590',
-  },
-  clauseHighlightTitle: { fontSize: 14, fontWeight: '800', color: '#7A5500', marginBottom: 8 },
-  clauseHighlightItem:  { fontSize: 13, color: '#5A3F00', lineHeight: 18 },
-  clauseHighlightDesc:  { fontSize: 11, color: '#7A5500', lineHeight: 16, marginTop: 2, marginLeft: 12 },
+  // Clause highlight box — yellowPale
+  clauseHighlightBox: { margin: 16, marginBottom: 0, padding: 14, backgroundColor: P.yellowPale, borderRadius: 14, borderWidth: 1, borderColor: P.yellow },
+  clauseHighlightTitle: { fontSize: 13, fontWeight: '900', color: P.yellowText, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  clauseHighlightItem: { fontSize: 12.5, color: P.ink, lineHeight: 17, fontFamily: fonts.sansRegular },
+  clauseHighlightDesc: { fontSize: 11, color: P.yellowText, lineHeight: 15, marginTop: 2, marginLeft: 12, fontFamily: fonts.sansRegular },
 
-  // Body
   body: { flex: 1 },
 
-  // Card
-  card: {
-    margin: 16,
-    marginBottom: 0,
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
+  card: { margin: 16, marginBottom: 0, backgroundColor: P.white, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: P.border },
+  cardTitle: { fontSize: 13.5, fontWeight: '800', color: P.ink, marginBottom: 11, fontFamily: fonts.displayBold },
 
-  // Info grid
-  infoGrid: { flexDirection: 'row', gap: 16, marginBottom: 12 },
+  infoGrid: { flexDirection: 'row', gap: 14, marginBottom: 11 },
   infoItem: { flex: 1 },
-  infoLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  infoValue: { fontSize: 13, fontWeight: '600', color: colors.t1, lineHeight: 18 },
+  infoLabel: { fontSize: 9.5, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4, fontFamily: fonts.monoBold },
+  infoValue: { fontSize: 12.5, fontWeight: '700', color: P.ink, lineHeight: 17, fontFamily: fonts.monoMedium },
 
-  // Fee highlight
-  feeHighlight: {
-    backgroundColor: colors.tealPale,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  feeLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.tealDeep,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  feeValue: { fontSize: 28, fontWeight: '800', color: colors.tealDeep },
+  // Fee highlight — successPale
+  feeHighlight: { backgroundColor: P.successPale, borderRadius: 12, padding: 16, alignItems: 'center', borderWidth: 1, borderColor: '#A8E6CC' },
+  feeLabel: { fontSize: 10, fontWeight: '800', color: P.successText, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, fontFamily: fonts.monoBold },
+  feeValue: { fontSize: 28, fontWeight: '900', color: P.successText, fontFamily: fonts.monoBold },
 
   // Deliverables
-  deliverableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 10,
-  },
-  deliverableDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.navy,
-  },
-  deliverableType: { fontSize: 13, fontWeight: '600', color: colors.t1 },
-  deliverableDeadline: { fontSize: 11, color: colors.t3, marginTop: 2 },
+  deliverableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: P.borderSoft, gap: 10 },
+  deliverableDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: P.ink },
+  deliverableType: { fontSize: 12.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  deliverableDeadline: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
 
-  // Payment terms / Tranches
-  paymentNote: { fontSize: 12, color: colors.t3, marginBottom: 14, lineHeight: 18 },
-  trancheRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: 10,
-  },
-  trancheDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
-  trancheTitle: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  trancheDesc: { fontSize: 11, color: colors.t3, marginTop: 2, lineHeight: 16 },
-  trancheAmount: { fontSize: 14, fontWeight: '800', color: colors.t1 },
-  trancheTotalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    marginTop: 4,
-  },
-  trancheTotalLabel: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  trancheTotalValue: { fontSize: 18, fontWeight: '800', color: colors.tealDeep },
-  tdsNote: {
-    backgroundColor: colors.goldPale,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
-  },
-  tdsText: { fontSize: 11, color: '#7A5500', lineHeight: 16 },
+  // Tranches
+  paymentNote: { fontSize: 11.5, color: P.muted2, marginBottom: 12, lineHeight: 17, fontFamily: fonts.sansRegular },
+  trancheRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: P.borderSoft, gap: 10 },
+  trancheDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
+  trancheTitle: { fontSize: 12.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  trancheDesc: { fontSize: 10.5, color: P.muted2, marginTop: 2, lineHeight: 15, fontFamily: fonts.sansRegular },
+  trancheAmount: { fontSize: 13.5, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  trancheTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4 },
+  trancheTotalLabel: { fontSize: 13, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  trancheTotalValue: { fontSize: 18, fontWeight: '900', color: P.successText, fontFamily: fonts.monoBold },
+  tdsNote: { backgroundColor: P.yellowPale, borderRadius: 8, padding: 10, marginTop: 12, borderWidth: 1, borderColor: '#F0DA88' },
+  tdsText: { fontSize: 11, color: P.yellowText, lineHeight: 15, fontFamily: fonts.sansRegular },
 
   // Brief / Guidelines
-  briefBox: {
-    backgroundColor: colors.surface2,
-    borderRadius: 10,
-    padding: 12,
-  },
-  briefText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
+  briefBox: { backgroundColor: P.bg2, borderRadius: 10, padding: 12 },
+  briefText: { fontSize: 12.5, color: P.ink, lineHeight: 18, fontFamily: fonts.sansRegular },
 
-  // Revision
-  revisionText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
+  revisionText: { fontSize: 12.5, color: P.ink, lineHeight: 18, fontFamily: fonts.sansRegular },
 
   // Signatures
-  sigSection: { flexDirection: 'row', gap: 12 },
-  sigBox: {
-    flex: 1,
-    backgroundColor: colors.surface2,
-    borderRadius: 10,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sigBoxSigned: {
-    borderColor: colors.teal,
-    backgroundColor: colors.tealPale,
-  },
-  sigLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.t3,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  sigCheck: { fontSize: 13, fontWeight: '800', color: colors.teal, marginBottom: 4 },
-  sigName: { fontSize: 12, fontWeight: '700', color: colors.t1 },
-  sigDate: { fontSize: 10, color: colors.t3, marginTop: 2 },
-  sigPending: { fontSize: 12, color: colors.t3, fontStyle: 'italic' },
+  sigSection: { flexDirection: 'row', gap: 11 },
+  sigBox: { flex: 1, backgroundColor: P.bg2, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: P.border },
+  sigBoxSigned: { borderColor: P.success, backgroundColor: P.successPale },
+  sigLabel: { fontSize: 9.5, fontWeight: '800', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 6, fontFamily: fonts.monoBold },
+  sigCheck: { fontSize: 12, fontWeight: '900', color: P.successText, marginBottom: 4, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  sigName: { fontSize: 12, fontWeight: '700', color: P.ink, fontFamily: fonts.sansRegular },
+  sigDate: { fontSize: 9.5, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  sigPending: { fontSize: 11.5, color: P.muted2, fontStyle: 'italic', fontFamily: fonts.sansRegular },
 
   // Sign section
-  signHint: { fontSize: 12, color: colors.t3, marginBottom: 12, lineHeight: 18 },
-  nameInputWrap: {
-    borderWidth: 2,
-    borderColor: colors.border2,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  nameInput: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.t1,
-  },
-  signBtn: {
-    backgroundColor: colors.navy,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
+  signHint: { fontSize: 11.5, color: P.muted, marginBottom: 12, lineHeight: 17, fontFamily: fonts.sansRegular },
+  signBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   signBtnDisabled: { opacity: 0.5 },
-  signBtnText: { fontSize: 15, fontWeight: '800', color: colors.white },
+  signBtnText: { fontSize: 14, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 
   // Success state
   successState: { alignItems: 'center', paddingVertical: 8 },
-  successCheck: { fontSize: 18, fontWeight: '800', color: colors.teal, marginBottom: 8 },
-  successTitle: { fontSize: 16, fontWeight: '800', color: colors.t1, marginBottom: 8 },
-  successDesc: { fontSize: 13, color: colors.t3, textAlign: 'center', lineHeight: 20 },
+  successCheck: { fontSize: 16, fontWeight: '900', color: P.successText, marginBottom: 8, letterSpacing: 0.3, fontFamily: fonts.displayBlack },
+  successTitle: { fontSize: 16, fontWeight: '900', color: P.ink, marginBottom: 8, fontFamily: fonts.displayBlack },
+  successDesc: { fontSize: 12.5, color: P.muted, textAlign: 'center', lineHeight: 18, fontFamily: fonts.sansRegular },
 
-  // Sign Modal — bottom-sheet-style card to keep input out of the
-  // ScrollView's resize-on-keyboard race.
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  modalCard: {
-    backgroundColor: colors.surface || '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 22,
-    paddingBottom: 32,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.t1,
-    marginBottom: 6,
-  },
-  modalSub: {
-    fontSize: 12,
-    color: colors.t3,
-    lineHeight: 18,
-    marginBottom: 16,
-  },
-  modalBtnRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.surface2 || '#F2F4F9',
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.t2,
-  },
-  modalSignBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.navy,
-    alignItems: 'center',
-  },
+  // Sign Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+  modalCard: { backgroundColor: P.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 22, paddingBottom: 32 },
+  modalTitle: { fontSize: 17, fontWeight: '900', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBlack },
+  modalSub: { fontSize: 12, color: P.muted, lineHeight: 18, marginBottom: 16, fontFamily: fonts.sansRegular },
+  nameInputWrap: { borderWidth: 1.5, borderColor: P.ink, borderRadius: 12, marginBottom: 12 },
+  nameInput: { paddingVertical: 12, paddingHorizontal: 14, fontSize: 15, fontWeight: '600', color: P.ink, fontFamily: fonts.sansRegular },
+  modalBtnRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+  modalCancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: P.white, borderWidth: 1.5, borderColor: P.ink, alignItems: 'center' },
+  modalCancelText: { fontSize: 13, fontWeight: '800', color: P.ink, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBold },
+  modalSignBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, backgroundColor: P.ink, alignItems: 'center' },
 });

@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors } from '../theme/tokens';
+import { brandPalette as P, fonts } from '../theme/tokens';
 
 /**
  * DateTimeChipPicker — pure JS date + time picker. No native module so no
@@ -16,6 +16,10 @@ import { colors } from '../theme/tokens';
  *
  * Renders nothing chrome of its own (no card / no title) — caller positions
  * it. Pure inputs; no submit button.
+ *
+ * Flow 37 restyle (2026-05-28): brandPalette + Outfit/Plus Jakarta Sans/
+ * JetBrains Mono fonts. Ink-active chips with yellow text (matches Flow 33/
+ * 35/36 picker pattern). Summary box = successPale + successText.
  */
 export default function DateTimeChipPicker({ minDate, maxDate, value, onChange, maxDaysShown = 30 }) {
   // Anchor "today" at midnight so chip identity is stable across renders.
@@ -94,7 +98,7 @@ export default function DateTimeChipPicker({ minDate, maxDate, value, onChange, 
 
   return (
     <View>
-      <Text style={styles.section}>Date</Text>
+      <Text style={styles.section}>DATE</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {dateChips.length === 0 ? (
           <Text style={styles.emptyText}>No dates available — campaign window too tight.</Text>
@@ -109,14 +113,14 @@ export default function DateTimeChipPicker({ minDate, maxDate, value, onChange, 
                 {d.getDate()}
               </Text>
               <Text style={[styles.dateChipMonth, isSel && styles.chipTxtActive]}>
-                {d.toLocaleDateString('en-IN', { month: 'short' })}
+                {d.toLocaleDateString('en-IN', { month: 'short' }).toUpperCase()}
               </Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      <Text style={styles.section}>Hour</Text>
+      <Text style={styles.section}>HOUR</Text>
       <View style={styles.row}>
         {HOURS.map(h => {
           const isSel = h === selHour;
@@ -128,7 +132,7 @@ export default function DateTimeChipPicker({ minDate, maxDate, value, onChange, 
         })}
       </View>
 
-      <Text style={styles.section}>Minute</Text>
+      <Text style={styles.section}>MINUTE</Text>
       <View style={styles.row}>
         {MINUTES.map(m => {
           const isSel = m === selMinute;
@@ -143,7 +147,7 @@ export default function DateTimeChipPicker({ minDate, maxDate, value, onChange, 
       {/* Selected summary */}
       {selDate && (
         <View style={styles.summary}>
-          <Text style={styles.summaryLabel}>Selected</Text>
+          <Text style={styles.summaryLabel}>SELECTED</Text>
           <Text style={styles.summaryValue}>
             {selDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} · {fmt12(selHour)}{selMinute > 0 ? `:${selMinute.toString().padStart(2, '0')}` : ''}
           </Text>
@@ -154,32 +158,43 @@ export default function DateTimeChipPicker({ minDate, maxDate, value, onChange, 
 }
 
 const styles = StyleSheet.create({
-  section:     { fontSize: 10, fontWeight: '800', color: colors.t3, textTransform: 'uppercase', marginTop: 10, marginBottom: 6 },
-  row:         { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 2 },
-  emptyText:   { fontSize: 11, color: colors.red, padding: 8 },
+  section: {
+    fontSize: 10, fontWeight: '800', color: P.muted2,
+    textTransform: 'uppercase', letterSpacing: 0.4,
+    marginTop: 10, marginBottom: 6,
+    fontFamily: fonts.monoBold,
+  },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingVertical: 2 },
+  emptyText: { fontSize: 11, color: P.dangerText, padding: 8, fontFamily: fonts.sansRegular },
 
-  dateChip:    {
+  dateChip: {
     minWidth: 56, paddingVertical: 8, paddingHorizontal: 10, marginRight: 6,
-    borderRadius: 10, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white,
+    borderRadius: 10, borderWidth: 1, borderColor: P.border, backgroundColor: P.white,
     alignItems: 'center',
   },
-  dateChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  dateChipDay:   { fontSize: 9, fontWeight: '700', color: colors.t3, marginBottom: 2 },
-  dateChipNum:   { fontSize: 16, fontWeight: '800', color: colors.t1 },
-  dateChipMonth: { fontSize: 9, fontWeight: '600', color: colors.t3, marginTop: 1 },
+  dateChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  dateChipDay: { fontSize: 9, fontWeight: '800', color: P.muted2, marginBottom: 2, letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  dateChipNum: { fontSize: 16, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  dateChipMonth: { fontSize: 9, fontWeight: '700', color: P.muted2, marginTop: 1, letterSpacing: 0.3, fontFamily: fonts.monoMedium },
 
   timeChip: {
-    paddingHorizontal: 10, paddingVertical: 7, borderRadius: 18,
-    borderWidth: 1, borderColor: colors.border, backgroundColor: colors.white,
+    paddingHorizontal: 11, paddingVertical: 7, borderRadius: 18,
+    borderWidth: 1, borderColor: P.border, backgroundColor: P.white,
   },
-  timeChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  timeChipTxt:    { fontSize: 11, fontWeight: '700', color: colors.t2 },
+  timeChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  timeChipTxt: { fontSize: 11, fontWeight: '800', color: P.muted, letterSpacing: 0.2, fontFamily: fonts.monoBold },
 
-  chipTxtActive: { color: colors.white },
+  chipTxtActive: { color: P.yellow, fontWeight: '900' },
 
   summary: {
-    marginTop: 10, padding: 10, borderRadius: 8, backgroundColor: colors.tealPale, borderWidth: 1, borderColor: colors.teal,
+    marginTop: 10, padding: 11, borderRadius: 10,
+    backgroundColor: P.successPale,
+    borderWidth: 1, borderColor: '#A8E6CC',
   },
-  summaryLabel: { fontSize: 9, fontWeight: '800', color: colors.tealDeep, textTransform: 'uppercase', marginBottom: 2 },
-  summaryValue: { fontSize: 13, fontWeight: '800', color: colors.tealDeep },
+  summaryLabel: {
+    fontSize: 9.5, fontWeight: '800', color: P.successText,
+    textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: 2,
+    fontFamily: fonts.monoBold,
+  },
+  summaryValue: { fontSize: 13, fontWeight: '900', color: P.successText, fontFamily: fonts.monoBold },
 });
