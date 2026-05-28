@@ -40,9 +40,9 @@
     "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
     "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 47 emulator after-screenshots skipped (deep data-gated detail screen); dispatchAction/tracking/cart/CTA-branching/reviews-meals-API integrity verified by code markers + babel transform + 3 restaurant jest suites green; founder physical APK smoke-test = real-device confirm'",
     "deploy": {
-      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "commit": "3c433fd", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "3c433fd", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "3c433fd", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
       "ota_brand":      { "version": 97, "bundle_hash": "sha256:2e52d839cc6307ac7a9efac531af8f76a27be8365a925f15ebbf6a3b4eb2b3f8", "published_at": "2026-05-28T14:55:58.951Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 47 (F4) — follower RestaurantDetail'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
       "ota_influencer": { "version": 86, "bundle_hash": "sha256:2e52d839cc6307ac7a9efac531af8f76a27be8365a925f15ebbf6a3b4eb2b3f8", "published_at": "2026-05-28T14:56:05.231Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 47 (F4) — follower RestaurantDetail'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
       "ota_follower":   { "version": 60, "bundle_hash": "sha256:2e52d839cc6307ac7a9efac531af8f76a27be8365a925f15ebbf6a3b4eb2b3f8", "published_at": "2026-05-28T14:56:11.704Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 47 (F4) — follower RestaurantDetail'", "scope": "follower audience manifest (RestaurantDetail light restyle live here)" }
