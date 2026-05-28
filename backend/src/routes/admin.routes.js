@@ -76,6 +76,9 @@ router.post('/withdrawals/:id/process', authenticate, requireAdminRole('finance'
 router.get('/brand-withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getBrandWithdrawals);
 router.post('/brand-withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processBrandWithdrawal);
 
+// Monthly tax summary (Wave 4 — compliance reporting) — finance+
+router.get('/tax-summary', authenticate, requireAdminRole('finance'), ctrl.getTaxSummary);
+
 // Analytics — any admin role
 router.get('/analytics', authenticate, requireAnyAdminRole, ctrl.getAnalytics);
 

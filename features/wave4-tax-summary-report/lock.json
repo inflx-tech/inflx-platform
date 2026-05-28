@@ -1,0 +1,32 @@
+{
+  "feature": "wave4-tax-summary-report",
+  "area": "backend-service+controller+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — 'go for wave 4'. Wave 4 commit 1 (monthly tax-summary report), started first as the highest-value, lowest-risk compliance piece.",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING, NO migration. Render + Vercel redeploy. Read-only admin report; no writes, no money movement.",
+  "fix": "taxReport.service.monthlySummary(month) aggregates GST collected (subscription gst + commission gst + escrow-fee gst), TCS owed, TDS withheld for a YYYY-MM window. GET /admin/tax-summary (finance+). /admin/tax-summary page with month picker + GST breakdown.",
+  "related": [
+    "features/wave1-tax-config-foundation",
+    "features/wave2-l2-gst-protection-fee",
+    "features/wave3-commerce-settlement-engine"
+  ],
+  "result": "Monthly GST/TCS/TDS summary computed from already-recorded tax columns; finance-gated endpoint + admin UI. Read-only. Backend boot smoke clean.",
+  "regression_proof": "Read-only + additive — 4 SUM aggregations, a finance-gated endpoint, an admin page. No schema, no writes. pnpm qa GREEN. tax-summary.test.js 3/3 (full aggregation across all sources + window exclusion, empty month, malformed month). brand-web build compiles.",
+  "discipline": "Verify-twice: confirmed all source tax columns exist + that escrow_entries has NO created_at (used released_at for the fee-GST date basis); documented the per-source date basis for the CA; finance-gated like other money reports. Discovered (again) truncateAll's users-CASCADE clears subscription_tiers → test re-seeds before registerBrand.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'go for wave 4'; read-only + additive, safe to ship.",
+    "released_at": "2026-05-28",
+    "maestro_green": false,
+    "deploy": "Deployed via git push (Render + Vercel redeploy). NO migration. Read-only report. No mobile change (no OTA)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — new /admin/tax-summary uses the standard admin card/table styling + tokens; no new design language.",
+  "mockup_locked_at": "2026-05-28"
+}

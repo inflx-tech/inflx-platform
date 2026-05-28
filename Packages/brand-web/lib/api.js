@@ -440,6 +440,8 @@ export const adminApi = {
   processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
   getBrandWithdrawals: (status, search, page) => api.get(`/admin/brand-withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   processBrandWithdrawal: (id, action, reason) => api.post(`/admin/brand-withdrawals/${id}/process`, { action, reason }),
+  // Wave 4 — monthly tax summary (GST / TCS / TDS) for filing
+  getTaxSummary: (month) => api.get(`/admin/tax-summary${month ? `?month=${encodeURIComponent(month)}` : ''}`),
   // Master dishes — admin CRUD for the restaurant dish catalogue
   listMasterDishes: (cuisine, section, search, page) =>
     api.get(`/admin/master-dishes?cuisine=${encodeURIComponent(cuisine || '')}&section=${encodeURIComponent(section || '')}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),

@@ -1420,6 +1420,26 @@ const getProductionQueue = asyncHandler(async (req, res) => {
   return success(res, { items, total: items.length });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/tax-summary?month=YYYY-MM   (Wave 4 — compliance reporting)
+// Monthly GST collected / TCS owed / TDS withheld for filing returns.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getTaxSummary = asyncHandler(async (req, res) => {
+  const month = String(req.query.month || '').trim() || new Date().toISOString().slice(0, 7);
+  const taxReportSvc = require('../services/taxReport.service');
+  let summary;
+  try {
+    summary = await taxReportSvc.monthlySummary(month);
+  } catch (err) {
+    if (err.code === 'VALIDATION_ERROR') {
+      throw new AppError('VALIDATION_ERROR', err.message, 422, 'month');
+    }
+    throw err;
+  }
+  return success(res, summary);
+});
+
 module.exports = {
   getBrandQueue,
   getInfluencerQueue,
@@ -1442,6 +1462,7 @@ module.exports = {
   processWithdrawal,
   getBrandWithdrawals,
   processBrandWithdrawal,
+  getTaxSummary,
   getBrands,
   getAnalytics,
   getProductionQueue,
