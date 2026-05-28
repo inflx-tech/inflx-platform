@@ -1,0 +1,51 @@
+{
+  "feature": "redesign-flow-47-follower-restaurant-detail",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F4 RestaurantDetail mockup GREEN-SIGNALED via AskUserQuestion ('Green — implement') BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 47 mockup design/wave3/flow-47-follower-restaurant-detail/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F4 (restaurant vertical), centerpiece detail screen. RestaurantDetailScreen (1,106 LOC, 3 StyleSheets: styles + rvStyles + mo) converged lightColors (#EAB308) → brandPalette (#FFC107): surface/surface2→bg2, paper→white, yellow200→yellowPale, yellowDeep→yellowText, border2→muted4, success50→successPale, warning→#FFB800 literal (rating stays gold). Composes Flow-45 converged atoms (StatusPill/OfferPill/CreatorChip/SagarStrip/VegDot/FilterChip). Inline-rendered by BrandStore for category==='restaurant' (BrandStore untouched). ZERO functional change: dispatchAction (call/directions/book/pay/order/enquiry) + nav to PreBook/PayAtStore/OrderCart/Enquiry, 4-ID tracking prop threaded into every nav, local cart (addToCart/decFromCart/cartCount/cartTotal/goToCart items mapping), CTA branching (showBookTable/showPayAtStore/showOnlineOrder/showEnquiry; cart-bar vs action-bar), offer selection (best across influencers), tab state, sections grouping, photo carousel, reviews + write-review modal, INFLX Meals offers, APIs (mealsApi.getStore/getBrandReviews/getReviewable/postReview) ALL preserved verbatim. Verified: 0 orphaned tokens, babel PASS, 3 restaurant jest suites 9/9, 18 logic markers intact. No native rebuild (NATIVE_RUNTIME=2). Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T14-52-38-409Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 46,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN. Mobile-only change cannot affect web; gate confirms zero regression.",
+      "mobile_checks": {
+        "babel_transform": "PASS — RestaurantDetailScreen transforms via Mobile metro preset",
+        "jest": "RestaurantBooking / RestaurantCart / RestaurantBill suites PASS 9/9 (exercise the screen's nav + composed atoms)",
+        "integrity_grep": "0 orphaned lightColors.{paper|surface|surface2|border2|yellowDeep|yellow200|success50|warning} refs; dispatchAction/buildTracking/navigation.navigate/goToCart/mealsApi.getStore/getBrandReviews/postReview present (18 occ) — logic untouched."
+      },
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Deep, data-gated detail screen (inline-rendered by BrandStore for a restaurant brand). After-evidence = mockup + founder physical APK smoke-test on live follower v60. Before = Flow 47 mockup.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 47 integrity (dispatchAction + 4-ID tracking + local cart + CTA branching + reviews/meals APIs) verified via code markers + babel transform + 3 restaurant jest suites green."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 47 mockup green-signaled ('Green — implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-28",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 47 emulator after-screenshots skipped (deep data-gated detail screen); dispatchAction/tracking/cart/CTA-branching/reviews-meals-API integrity verified by code markers + babel transform + 3 restaurant jest suites green; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 97, "bundle_hash": "sha256:2e52d839cc6307ac7a9efac531af8f76a27be8365a925f15ebbf6a3b4eb2b3f8", "published_at": "2026-05-28T14:55:58.951Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 47 (F4) — follower RestaurantDetail'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 86, "bundle_hash": "sha256:2e52d839cc6307ac7a9efac531af8f76a27be8365a925f15ebbf6a3b4eb2b3f8", "published_at": "2026-05-28T14:56:05.231Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 47 (F4) — follower RestaurantDetail'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 60, "bundle_hash": "sha256:2e52d839cc6307ac7a9efac531af8f76a27be8365a925f15ebbf6a3b4eb2b3f8", "published_at": "2026-05-28T14:56:11.704Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 47 (F4) — follower RestaurantDetail'", "scope": "follower audience manifest (RestaurantDetail light restyle live here)" }
+    }
+  }
+}

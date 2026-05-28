@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F4 · follower RESTAURANT DETAIL — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00; --yellow-50:#FFFDEB;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857; --success-dotborder:#6EE7B7;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE; --gold:#FFB800;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:340px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:340px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:840px;position:relative;display:flex;flex-direction:column}
+.status-bar{height:40px;background:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;flex-shrink:0;position:absolute;top:0;left:0;right:0;z-index:5}
+.body{flex:1;overflow-y:auto}
+
+/* hero */
+.hero{height:200px;background:linear-gradient(135deg,#3a2a1a,#1a1a1a);position:relative;display:flex;align-items:center;justify-content:center;font-size:60px}
+.hero-bar{position:absolute;top:42px;left:0;right:0;display:flex;justify-content:space-between;padding:0 14px}
+.hero-btn{width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--ink)}
+.hero-pag{position:absolute;bottom:10px;right:12px;background:rgba(10,10,10,.7);color:#fff;font-family:'JetBrains Mono';font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px}
+
+/* header block */
+.sec{padding:14px 16px 8px}
+.h-row{display:flex;gap:10px;align-items:flex-start}
+.b-name{font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.4px;line-height:1.1}
+.cuisine{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted);margin-top:4px}
+.rate-pill{background:var(--success);color:#fff;font-family:'JetBrains Mono';font-size:12px;font-weight:800;padding:3px 8px;border-radius:4px;white-space:nowrap}
+.meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:8px}
+.meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+.spill{display:inline-flex;align-items:center;gap:5px;border-radius:4px;border:1px solid var(--success-dotborder);background:var(--success-pale);color:var(--success-text);padding:2.5px 8px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;letter-spacing:.5px}
+.sdot{width:6px;height:6px;border-radius:3px;background:var(--success)}
+.offer-card{display:flex;align-items:center;background:var(--yellow-50);border:1px solid var(--yellow-pale);border-radius:10px;padding:12px;margin-top:14px}
+.offer-l{font-family:'Outfit';font-size:16px;font-weight:900;color:var(--ink)}
+.offer-s{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:2px}
+.offer-code{background:var(--yellow);color:var(--ink);font-family:'JetBrains Mono';font-size:11px;font-weight:800;padding:4px 8px;border-radius:4px}
+.amenity-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.amenity{background:var(--bg2);border:1px solid var(--border);padding:4px 8px;border-radius:4px;font-family:'Plus Jakarta Sans';font-size:10px;color:var(--ink-2)}
+
+/* sagar quote */
+.sagar-q{margin:12px 16px 0;padding:12px;border-radius:10px;background:var(--ink);display:flex;align-items:center;gap:10px}
+.cchip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border-radius:999px;padding:3px 8px 3px 3px}
+.cchip-av{width:18px;height:18px;border-radius:9px;background:var(--yellow);color:var(--ink);font-family:'Outfit';font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.cchip-l{font-family:'JetBrains Mono';font-size:11px;color:#fff}
+.cchip-v{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow);font-weight:700}
+.sagar-qt{flex:1;font-family:'Plus Jakarta Sans';font-size:11px;color:var(--yellow);font-style:italic}
+
+/* sub-tabs */
+.subtabs{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--white);margin-top:10px}
+.subtab{flex:1;text-align:center;padding:12px 0;border-bottom:2px solid transparent;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:600;color:var(--muted)}
+.subtab.on{border-bottom-color:var(--yellow);color:var(--ink);font-weight:700}
+
+/* overview */
+.body-tx{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--ink-2);line-height:1.5}
+.h4{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink);margin-top:18px;margin-bottom:8px}
+.vibe-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.vibe-tag{background:var(--yellow-50);border:1px solid var(--yellow-pale);padding:4px 10px;border-radius:999px;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--yellow-text)}
+.cchip.dark{background:var(--ink)}
+
+/* menu */
+.sec-chips{display:flex;gap:6px;overflow-x:auto;padding:12px 16px}
+.fchip{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid;padding:6px 12px;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:500;white-space:nowrap}
+.fchip.def{background:var(--white);border-color:var(--muted-4);color:var(--ink-2)}
+.fchip.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.fchip .ct{font-family:'JetBrains Mono';font-size:11px;opacity:.7}
+.dish{display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.dish-img{width:78px;height:78px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
+.dish-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.vegbox{width:11px;height:11px;border-radius:2px;border:1.5px solid var(--success);display:flex;align-items:center;justify-content:center}
+.vegbox.non{border-color:var(--danger)}
+.vegdot{width:5px;height:5px;border-radius:50%;background:var(--success)}
+.vegdot.non{background:var(--danger)}
+.bestseller{background:var(--yellow-50);border:1px solid var(--yellow-pale);color:var(--yellow-text);font-family:'JetBrains Mono';font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px}
+.pickchip{background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px}
+.dish-nm{font-family:'Plus Jakarta Sans';font-size:14px;font-weight:700;color:var(--ink)}
+.dish-d{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:2px}
+.dish-pr-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.dish-pr{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink)}
+.add-btn{background:var(--yellow);color:var(--ink);font-family:'JetBrains Mono';font-size:10px;font-weight:800;padding:6px 12px;border-radius:6px}
+.qty{display:flex;align-items:center;background:var(--yellow);border-radius:6px;padding:0 4px}
+.qty-b{padding:4px 8px;font-family:'Outfit';font-size:14px;font-weight:900;color:var(--ink)}
+.qty-n{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink);min-width:16px;text-align:center}
+.cart-bar{display:flex;align-items:center;justify-content:space-between;background:var(--yellow);margin:8px 16px;padding:14px 18px;border-radius:12px}
+.cart-l,.cart-r{font-family:'Plus Jakarta Sans';font-size:14px;font-weight:700;color:var(--ink)}
+
+/* reviews */
+.rv-sum{display:flex;padding:16px 0;border-bottom:1px solid var(--border)}
+.rv-big{font-family:'Outfit';font-size:34px;font-weight:900;color:var(--ink);letter-spacing:-1px}
+.stars{color:var(--gold);font-size:13px;letter-spacing:1px}
+.stars .off{color:var(--muted-4)}
+.rv-ct{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:4px}
+.rv-cc{font-family:'JetBrains Mono';font-size:10px;color:var(--success);margin-top:2px}
+.dist{flex:1;margin-left:18px}
+.dist-row{display:flex;align-items:center;margin-bottom:4px;gap:6px}
+.dist-n{width:10px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+.dist-track{flex:1;height:5px;background:var(--bg2);border-radius:3px}
+.dist-fill{height:100%;background:var(--success);border-radius:3px}
+.dist-p{width:30px;text-align:right;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)}
+.rv-filter{display:flex;align-items:center;gap:8px;background:var(--ink);border-radius:10px;padding:12px;margin-top:14px}
+.rv-filter-t{flex:1;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:600;color:#fff}
+.toggle{width:38px;height:22px;border-radius:11px;background:var(--yellow);padding:2px;display:flex;justify-content:flex-end}
+.knob{width:18px;height:18px;border-radius:9px;background:#fff}
+.write-btn{margin-top:14px;background:var(--yellow);border-radius:10px;padding:12px;text-align:center;font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink)}
+.rv-card{padding:14px 0;border-bottom:1px solid var(--border)}
+.rv-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.rv-auth{font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink)}
+.rv-date{margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)}
+.rv-body{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--ink-2);line-height:1.5}
+.cchip.lite{background:var(--bg2)}.cchip.lite .cchip-l{color:var(--ink)}
+
+/* sticky CTA */
+.cta-bar{position:absolute;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:8px}
+.cta-sec{width:52px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.cta-prim{flex:2;background:var(--yellow);border-radius:10px;padding:14px;text-align:center;font-family:'Plus Jakarta Sans';font-size:14px;font-weight:700;color:var(--ink)}
+
+/* side panel */
+.side{width:340px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">
+  <h1>F4 · follower RESTAURANT DETAIL — Flow 47 mockup (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Flow 47 = RestaurantDetailScreen (1,106 LOC) — the dining centerpiece, inline-rendered by BrandStore for category='restaurant'.</b> Convergence of an already-light screen to brandPalette (#EAB308→#FFC107 + token alignment), composing the Flow-45 atoms (StatusPill / OfferPill / CreatorChip / SagarStrip / VegDot / FilterChip). Photo-carousel hero · header + offer card + amenities · Sagar's Table strip · sticky sub-tabs (Overview/Menu/Offers/Reviews/Photos) · local cart (online-order) · reviews + write-review modal · INFLX Meals offers · action-branched sticky CTA. <b>dispatchAction (call/book/pay/order/enquiry) + 4-ID tracking + local cart + reviews/meals APIs + CTA branching — all preserved verbatim (visual only).</b>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- 1 · OVERVIEW -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body">
+        <div class="hero">🍽️
+          <div class="hero-bar"><span class="hero-btn">←</span><span class="hero-btn">♡</span></div>
+          <span class="hero-pag">1 / 6</span>
+        </div>
+        <div class="sec">
+          <div class="h-row">
+            <div style="flex:1"><div class="b-name">Spice Garden</div><div class="cuisine">North Indian · Biryani · Mughlai</div></div>
+            <span class="rate-pill">★ 4.5</span>
+          </div>
+          <div class="meta-row"><span class="meta">₹800/two</span><span class="meta">📍 Banjara Hills</span><span class="spill"><span class="sdot"></span>OPEN TILL 11 PM</span></div>
+          <div class="offer-card"><div style="flex:1"><div class="offer-l">FLAT 40% OFF</div><div class="offer-s">Valid until 30 Jun · via @sagar.eats</div></div><span class="offer-code">SAGAR40</span></div>
+          <div class="amenity-row"><span class="amenity">🅿 Parking</span><span class="amenity">🌳 Outdoor</span><span class="amenity">📶 Wi-Fi</span><span class="amenity">👶 Kids</span></div>
+        </div>
+        <div class="sagar-q"><span class="cchip"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span><span class="sagar-qt">"My go-to for biryani nights."</span></div>
+        <div class="subtabs"><span class="subtab on">Overview</span><span class="subtab">Menu (24)</span><span class="subtab">Offers</span><span class="subtab">Reviews</span><span class="subtab">Photos</span></div>
+        <div class="sec">
+          <div class="body-tx">Authentic Hyderabadi & North Indian cooking since 1998. Rooftop seating, live ghazals on weekends.</div>
+          <div class="h4">Vibe</div>
+          <div class="vibe-wrap"><span class="vibe-tag">rooftop</span><span class="vibe-tag">date night</span><span class="vibe-tag">family</span></div>
+          <div class="h4">Creator endorsement</div>
+          <span class="cchip dark"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span>
+        </div>
+      </div>
+      <div class="cta-bar"><span class="cta-sec">📞</span><span class="cta-prim">Book Table · 40% off →</span></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · Overview</b><br/>photo-carousel hero (ink overlay buttons) · Outfit name + green rating pill + mono meta + open StatusPill · yellow50 offer card with yellow code · bg2 amenity chips · ink Sagar's-quote bar (yellow italic) · yellow-underline sub-tabs · vibe tags (yellowPale) + CreatorChip · sticky <b>Book Table</b> (ink phone + yellow primary). dispatchAction('book') → PreBook w/ tracking preserved.</div>
+  </div>
+
+  <!-- 2 · MENU -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body" style="padding-top:40px">
+        <div class="subtabs" style="margin-top:0"><span class="subtab">Overview</span><span class="subtab on">Menu (24)</span><span class="subtab">Offers</span><span class="subtab">Reviews</span><span class="subtab">Photos</span></div>
+        <div class="sagar-q" style="margin-top:12px"><span class="cchip"><span class="cchip-av">S</span><span class="cchip-l">@sagar.eats</span><span class="cchip-v">✓</span></span><span class="sagar-qt">"These are non-negotiable."</span></div>
+        <div class="sec-chips">
+          <span class="fchip sel">★ Picks <span class="ct">(5)</span></span>
+          <span class="fchip def">Starters <span class="ct">(8)</span></span>
+          <span class="fchip def">Biryani <span class="ct">(6)</span></span>
+          <span class="fchip def">Breads <span class="ct">(5)</span></span>
+        </div>
+        <div class="dish">
+          <div class="dish-img">🍛</div>
+          <div style="flex:1">
+            <div class="dish-meta"><span class="vegbox non"><span class="vegdot non"></span></span><span class="bestseller">⭐ BESTSELLER</span><span class="pickchip">★ Pick</span></div>
+            <div class="dish-nm">Mutton Dum Biryani</div>
+            <div class="dish-d">Slow-cooked with saffron & fried onions.</div>
+            <div class="dish-pr-row"><span class="dish-pr">₹ 420</span><span class="qty"><span class="qty-b">−</span><span class="qty-n">2</span><span class="qty-b">+</span></span></div>
+          </div>
+        </div>
+        <div class="dish">
+          <div class="dish-img">🍚</div>
+          <div style="flex:1">
+            <div class="dish-meta"><span class="vegbox"><span class="vegdot"></span></span><span class="pickchip">★ Pick</span></div>
+            <div class="dish-nm">Veg Dum Biryani</div>
+            <div class="dish-d">Basmati, garden veg, house masala.</div>
+            <div class="dish-pr-row"><span class="dish-pr">₹ 260</span><span class="add-btn">+ ADD</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cart-bar"><span class="cart-l">2 items · ₹840</span><span class="cart-r">View cart →</span></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · Menu (online-order)</b><br/>ink Sagar-quote · converged FilterChip section chips (ink-on-selected + mono count) · dish rows = VegDot + yellowPale BESTSELLER + ink Pick chip + mono ₹price + <b>yellow ADD / qty stepper</b> · sticky <b>yellow cart bar</b> (count · ₹total · View cart). Local cart state + <code>goToCart</code>→RestaurantCart (items mapping + tracking) preserved.</div>
+  </div>
+
+  <!-- 3 · REVIEWS -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body" style="padding-top:40px">
+        <div class="subtabs" style="margin-top:0"><span class="subtab">Overview</span><span class="subtab">Menu (24)</span><span class="subtab">Offers</span><span class="subtab on">Reviews</span><span class="subtab">Photos</span></div>
+        <div class="sec">
+          <div class="rv-sum">
+            <div>
+              <div class="rv-big">4.5</div>
+              <div class="stars">★★★★<span class="off">★</span></div>
+              <div class="rv-ct">128 RATINGS</div>
+              <div class="rv-cc">12 creator-verified</div>
+            </div>
+            <div class="dist">
+              <div class="dist-row"><span class="dist-n">5</span><span class="dist-track"><span class="dist-fill" style="width:72%"></span></span><span class="dist-p">72%</span></div>
+              <div class="dist-row"><span class="dist-n">4</span><span class="dist-track"><span class="dist-fill" style="width:18%"></span></span><span class="dist-p">18%</span></div>
+              <div class="dist-row"><span class="dist-n">3</span><span class="dist-track"><span class="dist-fill" style="width:6%"></span></span><span class="dist-p">6%</span></div>
+              <div class="dist-row"><span class="dist-n">2</span><span class="dist-track"><span class="dist-fill" style="width:2%"></span></span><span class="dist-p">2%</span></div>
+              <div class="dist-row"><span class="dist-n">1</span><span class="dist-track"><span class="dist-fill" style="width:2%"></span></span><span class="dist-p">2%</span></div>
+            </div>
+          </div>
+          <div class="rv-filter"><span class="cchip lite"><span class="cchip-av">✓</span><span class="cchip-l">creator-verified</span></span><span class="rv-filter-t">Show only creator reviews</span><span class="toggle"><span class="knob"></span></span></div>
+          <div class="write-btn">★  Rate your visit</div>
+          <div class="rv-card"><div class="rv-head"><span class="cchip lite"><span class="cchip-av">R</span><span class="cchip-l">@riya.eats</span><span class="cchip-v" style="color:var(--info)">✓</span></span><span class="stars" style="font-size:12px">★★★★★</span><span class="rv-date">2 DAYS AGO</span></div><div class="rv-body">The mutton biryani lives up to the hype. Rooftop is perfect for date night.</div></div>
+          <div class="rv-card"><div class="rv-head"><span class="rv-auth">Aditya K</span><span class="stars" style="font-size:12px">★★★★<span class="off">★</span></span><span class="rv-date">1 WK AGO</span></div><div class="rv-body">Great food, slightly slow service on weekends.</div></div>
+        </div>
+      </div>
+      <div class="cta-bar"><span class="cta-sec">📞</span><span class="cta-prim">Book Table · 40% off →</span></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · Reviews</b><br/>Outfit-Black avg + gold stars + mono RATINGS + success creator-verified · success distribution bars · <b>ink creator-only filter</b> (yellow toggle) · yellow "Rate your visit" · review cards with CreatorChip (info ✓) + gold stars + mono date. <code>getBrandReviews</code> / <code>getReviewable</code> / <code>postReview</code> + write-modal preserved. (Offers tab = INFLX Meals; Photos tab = grid — same convergence.)</div>
+  </div>
+
+</div>
+
+<!-- side panel -->
+<div class="row" style="justify-content:center;align-items:flex-start">
+  <div class="side">
+    <div class="panel">
+      <h3>Flow 47 scope (1 screen, 1,106 LOC)</h3>
+      <ul>
+        <li><b>RestaurantDetailScreen</b> — lightColors → brandPalette: surface→bg2, paper→white, yellow200→yellowPale, yellowDeep→yellowText, border2→muted4, success50→successPale, warning→#FFB800 (stars)</li>
+        <li>3 StyleSheets: <code>styles</code> + <code>rvStyles</code> (reviews) + <code>mo</code> (meals offers)</li>
+        <li>Composes Flow-45 atoms: StatusPill · OfferPill · CreatorChip · SagarStrip · VegDot · FilterChip</li>
+        <li>Inline-rendered by BrandStore for <code>category==='restaurant'</code> — BrandStore untouched</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li><b>dispatchAction</b> — call/directions/book/pay/order/enquiry → PreBook/PayAtStore/OrderCart/Enquiry nav</li>
+        <li><b>4-ID tracking</b> threaded into every nav (PreBook/PayAtStore/Enquiry/ProductDetail/RestaurantCart)</li>
+        <li><b>Local cart</b> — addToCart/decFromCart/cartCount/cartTotal/goToCart items mapping</li>
+        <li><b>CTA branching</b> — showBookTable/showPayAtStore/showOnlineOrder/showEnquiry; cart-bar vs action-bar</li>
+        <li>offer selection (best across influencers) · sections grouping · tab state · photo carousel</li>
+        <li>APIs: <code>mealsApi.getStore</code> · <code>getBrandReviews</code> · <code>getReviewable</code> · <code>postReview</code></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Then (remaining F4 → F5)</h3>
+      <ul>
+        <li><b>Flow 48</b> — RestaurantCart · RestaurantBooking · RestaurantBill · MealsChat</li>
+        <li><b>F5</b> — ProductDetail · LookbookDetail (fashion) · SchemaDetail/SalonDetail (beauty) · CarDetail · CarBooking</li>
+        <li>Then follower bucket COMPLETE → all 3 apps unified on brandPalette</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

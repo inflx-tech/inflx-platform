@@ -26,7 +26,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linking, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { followerApi, mealsApi } from '../../services/api';
 import {
   CreatorChip, VegDot, StatusPill, SagarStrip, FilterChip,
@@ -515,7 +515,7 @@ function StarRow({ value, size = 14, color = '#FFB800' }) {
   return (
     <Text style={{ color, fontSize: size, letterSpacing: 1 }}>
       {'★★★★★'.slice(0, full)}
-      <Text style={{ color: lightColors.border2 }}>{'★★★★★'.slice(full)}</Text>
+      <Text style={{ color: lightColors.muted4 }}>{'★★★★★'.slice(full)}</Text>
     </Text>
   );
 }
@@ -747,7 +747,7 @@ const rvStyles = StyleSheet.create({
   creatorCount: { fontFamily: fonts.monoBold, fontSize: 10, color: lightColors.success, marginTop: 2 },
   distRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   distNum: { width: 14, fontFamily: fonts.monoMedium, fontSize: 11, color: lightColors.muted2 },
-  distTrack: { flex: 1, height: 5, backgroundColor: lightColors.surface2, borderRadius: 3, marginHorizontal: 6 },
+  distTrack: { flex: 1, height: 5, backgroundColor: lightColors.bg2, borderRadius: 3, marginHorizontal: 6 },
   distFill: { height: '100%', backgroundColor: lightColors.success, borderRadius: 3 },
   distPct: { width: 32, textAlign: 'right', fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: lightColors.ink, borderRadius: 10, padding: 12, marginTop: 14 },
@@ -764,16 +764,16 @@ const rvStyles = StyleSheet.create({
   date: { marginLeft: 'auto', fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted },
   body: { fontFamily: fonts.sansRegular, fontSize: 13, lineHeight: 19, color: lightColors.ink2 },
   photoRow: { flexDirection: 'row', gap: 6, marginTop: 8 },
-  photo: { width: 50, height: 50, borderRadius: 5, backgroundColor: lightColors.surface2 },
+  photo: { width: 50, height: 50, borderRadius: 5, backgroundColor: lightColors.bg2 },
   modalBg: { flex: 1, backgroundColor: 'rgba(10,10,10,0.45)', justifyContent: 'flex-end' },
-  modalCard: { backgroundColor: lightColors.paper, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 32 },
+  modalCard: { backgroundColor: lightColors.white, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 20, paddingBottom: 32 },
   modalTitle: { fontFamily: fonts.displayBold, fontSize: 18, color: lightColors.ink, letterSpacing: -0.3 },
   starPick: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginVertical: 18 },
-  starPickGlyph: { fontSize: 38, color: lightColors.border2 },
+  starPickGlyph: { fontSize: 38, color: lightColors.muted4 },
   starPickGlyphOn: { color: '#FFB800' },
-  modalInput: { borderColor: lightColors.border2, borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 70, fontFamily: fonts.sansRegular, fontSize: 13, color: lightColors.ink, textAlignVertical: 'top' },
+  modalInput: { borderColor: lightColors.muted4, borderWidth: 1, borderRadius: 10, padding: 12, minHeight: 70, fontFamily: fonts.sansRegular, fontSize: 13, color: lightColors.ink, textAlignVertical: 'top' },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  modalCancel: { flex: 1, paddingVertical: 13, borderRadius: 10, borderColor: lightColors.border2, borderWidth: 1, alignItems: 'center' },
+  modalCancel: { flex: 1, paddingVertical: 13, borderRadius: 10, borderColor: lightColors.muted4, borderWidth: 1, alignItems: 'center' },
   modalCancelText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink2 },
   modalSubmit: { flex: 2, paddingVertical: 13, borderRadius: 10, backgroundColor: lightColors.yellow, alignItems: 'center' },
   modalSubmitText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
@@ -866,7 +866,7 @@ function MealsOffersTab({ data, brand, navigation }) {
 }
 
 const mo = StyleSheet.create({
-  noteRow: { backgroundColor: lightColors.success50 || '#ECFDF5', borderColor: '#cde9d6', borderWidth: 1, borderRadius: 10, padding: 10 },
+  noteRow: { backgroundColor: lightColors.successPale, borderColor: '#cde9d6', borderWidth: 1, borderRadius: 10, padding: 10 },
   note: { fontFamily: fonts.sansMedium, fontSize: 11.5, color: '#2c6e44' },
   psize: { borderColor: lightColors.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, backgroundColor: '#fff' },
   psizeOn: { backgroundColor: lightColors.ink, borderColor: lightColors.ink },
@@ -880,7 +880,7 @@ const mo = StyleSheet.create({
   cFree: { fontFamily: fonts.sansBold, fontSize: 11.5, color: lightColors.success, marginTop: 3 },
   orderBtn: { marginTop: 10, backgroundColor: lightColors.yellow, borderRadius: 9, paddingVertical: 10, alignItems: 'center' },
   orderText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
-  chatBtn: { marginTop: 6, borderColor: lightColors.border2, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
+  chatBtn: { marginTop: 6, borderColor: lightColors.muted4, borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   chatBtnText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: lightColors.ink2 },
 });
 
@@ -913,9 +913,9 @@ function AmenityChips({ brandData }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: lightColors.bg },
 
-  hero: { height: HERO_HEIGHT, backgroundColor: lightColors.surface, position: 'relative' },
+  hero: { height: HERO_HEIGHT, backgroundColor: lightColors.bg2, position: 'relative' },
   heroFallback: {
-    height: HERO_HEIGHT, backgroundColor: lightColors.surface,
+    height: HERO_HEIGHT, backgroundColor: lightColors.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   heroFallbackEmoji: { fontSize: 64 },
@@ -960,7 +960,7 @@ const styles = StyleSheet.create({
   offerCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: lightColors.yellow50,
-    borderColor: lightColors.yellow200, borderWidth: 1,
+    borderColor: lightColors.yellowPale, borderWidth: 1,
     borderRadius: 10, padding: 12, marginTop: 14,
   },
   offerLabel: {
@@ -979,7 +979,7 @@ const styles = StyleSheet.create({
 
   amenityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 14 },
   amenityChip: {
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderColor: lightColors.border, borderWidth: 1,
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4,
   },
@@ -989,7 +989,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderTopWidth: 1, borderBottomWidth: 1,
     borderColor: lightColors.border,
-    backgroundColor: lightColors.paper, marginTop: 10,
+    backgroundColor: lightColors.white, marginTop: 10,
   },
   subTab: {
     flex: 1, alignItems: 'center', paddingVertical: 12,
@@ -1009,10 +1009,10 @@ const styles = StyleSheet.create({
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   vibeTagOverview: {
     backgroundColor: lightColors.yellow50,
-    borderColor: lightColors.yellow200, borderWidth: 1,
+    borderColor: lightColors.yellowPale, borderWidth: 1,
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999,
   },
-  vibeTagText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: lightColors.yellowDeep },
+  vibeTagText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: lightColors.yellowText },
 
   creatorEndorse: { gap: 8 },
   creatorEndorseLine: { fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.muted },
@@ -1033,7 +1033,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', gap: 12, paddingVertical: 14,
     borderBottomColor: lightColors.border, borderBottomWidth: 1,
   },
-  dishImg: { width: 80, height: 80, borderRadius: 8, backgroundColor: lightColors.surface },
+  dishImg: { width: 80, height: 80, borderRadius: 8, backgroundColor: lightColors.bg2 },
   dishImgFallback: { alignItems: 'center', justifyContent: 'center' },
   dishBody: { flex: 1, minWidth: 0 },
   dishMetaRow: { flexDirection: 'row', gap: 6, alignItems: 'center', marginBottom: 4 },
@@ -1058,10 +1058,10 @@ const styles = StyleSheet.create({
   cartBarRight: { fontFamily: fonts.sansBold, fontSize: 14, color: lightColors.ink },
   bestsellerChip: {
     backgroundColor: lightColors.yellow50,
-    borderColor: lightColors.yellow200, borderWidth: 1,
+    borderColor: lightColors.yellowPale, borderWidth: 1,
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4,
   },
-  bestsellerText: { fontFamily: fonts.monoBold, fontSize: 8, color: lightColors.yellowDeep },
+  bestsellerText: { fontFamily: fonts.monoBold, fontSize: 8, color: lightColors.yellowText },
   pickChip: { backgroundColor: lightColors.ink, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   pickChipText: { fontFamily: fonts.monoBold, fontSize: 8, color: lightColors.yellow },
 
@@ -1074,7 +1074,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.displayBlack, fontSize: 36,
     color: lightColors.ink, letterSpacing: -1, lineHeight: 38,
   },
-  ratingStars: { color: lightColors.warning, fontSize: 13, marginTop: 4 },
+  ratingStars: { color: '#FFB800', fontSize: 13, marginTop: 4 },
   ratingCount: { fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted, marginTop: 4 },
   reviewsEmpty: { alignItems: 'center', paddingVertical: 40 },
   reviewsEmptyEmoji: { fontSize: 40, marginBottom: 8 },
@@ -1082,19 +1082,19 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   photoCell: {
     width: (SCREEN_WIDTH - 32 - 12) / 3, aspectRatio: 1,
-    borderRadius: 6, overflow: 'hidden', backgroundColor: lightColors.surface,
+    borderRadius: 6, overflow: 'hidden', backgroundColor: lightColors.bg2,
   },
   photoImg: { width: '100%', height: '100%' },
 
   ctaBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderTopColor: lightColors.border, borderTopWidth: 1,
   },
   ctaInner: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   ctaBtn: { paddingVertical: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   ctaBtnSecondary: {
-    width: 52, backgroundColor: lightColors.surface,
+    width: 52, backgroundColor: lightColors.bg2,
     borderColor: lightColors.border, borderWidth: 1,
   },
   ctaBtnPrimary: { backgroundColor: lightColors.yellow },
