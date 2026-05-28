@@ -26,7 +26,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { mockPayment } from '../../services/payment';
 import { ensureFollowerAuth } from '../../utils/authGate';
@@ -295,7 +295,7 @@ export default function RestaurantBillScreen({ route, navigation }) {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function Row({ label, labelNode, value, mono, accent }) {
-  const valColor = accent === 'yellow'  ? lightColors.yellowDeep
+  const valColor = accent === 'yellow'  ? lightColors.yellowText
                 : accent === 'success'  ? lightColors.success
                 : lightColors.ink;
   return (
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   iconBtnGlyph: { fontSize: 16, color: lightColors.ink },
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     marginHorizontal: 16, marginTop: 10,
     padding: 12, borderRadius: 10,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
   },
   brandStripPhoto: {
     width: 44, height: 44, borderRadius: 8,
@@ -365,8 +365,8 @@ const styles = StyleSheet.create({
 
   billInput: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: lightColors.paper,
-    borderColor: lightColors.border2, borderWidth: 1,
+    backgroundColor: lightColors.white,
+    borderColor: lightColors.muted4, borderWidth: 1,
     borderRadius: 12, paddingHorizontal: 14,
   },
   rupeeMark: {
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   subtotalNoteMono: { fontFamily: fonts.monoBold, color: lightColors.ink2 },
 
   breakdownCard: {
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderColor: lightColors.border, borderWidth: 1,
     borderRadius: 12, padding: 14, marginHorizontal: 16,
     marginTop: 14, paddingHorizontal: 14,
@@ -403,14 +403,14 @@ const styles = StyleSheet.create({
   discountLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   discountPct: {
     backgroundColor: lightColors.yellow50,
-    borderColor: lightColors.yellow200, borderWidth: 1,
+    borderColor: lightColors.yellowPale, borderWidth: 1,
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4,
   },
   discountPctText: {
-    fontFamily: fonts.monoBold, fontSize: 9, color: lightColors.yellowDeep,
+    fontFamily: fonts.monoBold, fontSize: 9, color: lightColors.yellowText,
   },
   discountLabelText: {
-    fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.yellowDeep,
+    fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.yellowText,
   },
 
   divider: {
@@ -435,7 +435,7 @@ const styles = StyleSheet.create({
   methodRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     padding: 12, borderRadius: 10, borderWidth: 1,
-    borderColor: lightColors.border, backgroundColor: lightColors.paper,
+    borderColor: lightColors.border, backgroundColor: lightColors.white,
     marginBottom: 8,
   },
   methodRowActive: {
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   methodSub:  { fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted, marginTop: 2 },
   radio: {
     width: 18, height: 18, borderRadius: 9,
-    borderColor: lightColors.border2, borderWidth: 2,
+    borderColor: lightColors.muted4, borderWidth: 2,
     alignItems: 'center', justifyContent: 'center',
   },
   radioActive: { borderColor: lightColors.yellow },
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     marginHorizontal: 16, marginTop: 14,
     paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderRadius: 8,
   },
   attributionRef: {
@@ -469,14 +469,14 @@ const styles = StyleSheet.create({
 
   ctaBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderTopColor: lightColors.border, borderTopWidth: 1,
   },
   payBtn: {
     margin: 16, paddingVertical: 16, borderRadius: 12,
     backgroundColor: lightColors.yellow, alignItems: 'center',
   },
-  payBtnDisabled: { backgroundColor: lightColors.surface2 },
+  payBtnDisabled: { backgroundColor: lightColors.bg2 },
   payBtnText: {
     fontFamily: fonts.sansBold, fontSize: 15,
     color: lightColors.ink, letterSpacing: -0.1,

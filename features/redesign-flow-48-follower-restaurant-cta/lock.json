@@ -1,0 +1,51 @@
+{
+  "feature": "redesign-flow-48-follower-restaurant-cta",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F4 restaurant-CTA cluster mockup GREEN-SIGNALED via AskUserQuestion ('Green — implement') BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 48 mockup design/wave3/flow-48-follower-restaurant-cta/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F4 (restaurant vertical), FINAL flow — restaurant transaction cluster. RestaurantCartScreen (251: surface/surface2→bg2, paper→white, yellowDeep→yellowText) + RestaurantBookingScreen (420: surface/surface2→bg2, paper→white, border2→muted4) + RestaurantBillScreen (484: + yellow200→yellowPale, yellowDeep→yellowText) + MealsChatScreen (244: yellowDeep→yellowText, success50→successPale). lightColors → brandPalette; compose Flow-45 atoms (CreatorChip/OfferPill/TimeSlot/FilterChip). ZERO functional change: createOrder/verifyOrder + canOrder gate + setQty (Cart); prebook/prebookVerify + navigation.replace('BookingConfirmed') param shape (asserted by RestaurantBookingScreen.test) + pay_mock_ (Booking); payAtStore/verifyPayAtStore + prebook-balance token math + discount math + method selector (Bill); mealsApi.chat/pay + address-first + offers/recommendation/order + OFFER_EXPIRED/SLOT_FULL (MealsChat); mockPayment + 4-ID attribution + ensureFollowerAuth gates ALL preserved verbatim. Verified: 0 orphaned tokens, babel 4/4, 3 restaurant jest suites 9/9. No native rebuild (NATIVE_RUNTIME=2). Completes F4. Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T15-31-21-443Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 60,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN. Mobile-only change cannot affect web; gate confirms zero regression.",
+      "mobile_checks": {
+        "babel_transform": "PASS — all 4 screens (Cart/Booking/Bill/MealsChat) transform via Mobile metro preset",
+        "jest": "RestaurantBooking / RestaurantCart / RestaurantBill suites PASS 9/9 (exercise these exact screens + the BookingConfirmed nav param shape)",
+        "integrity_grep": "0 orphaned lightColors.{paper|surface|surface2|border2|yellowDeep|yellow200|success50} refs across the 4 screens; order/booking/pay/chat APIs + mockPayment + 4-ID + ensureFollowerAuth gates preserved."
+      },
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Deep, payment/data-gated screens (reached after menu/booking/pay flows). After-evidence = mockup + founder physical APK smoke-test on live follower v61. Before = Flow 48 mockup.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 48 integrity (createOrder/verifyOrder, prebook/prebookVerify + BookingConfirmed param shape, payAtStore/verifyPayAtStore + token math, mealsApi.chat/pay, mockPayment, 4-ID, auth gates) verified via code markers + babel + 3 restaurant jest suites green."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 48 mockup green-signaled ('Green — implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-28",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 48 emulator after-screenshots skipped (deep payment/data-gated screens); order/booking/pay/chat-API + mockPayment + 4-ID + auth-gate + BookingConfirmed-param-shape integrity verified by code markers + babel + 3 restaurant jest suites green; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 98, "bundle_hash": "sha256:0157cee00a06ef8cff2db9706352caf9045d7fcbbac5500481230162a5c8fea6", "published_at": "2026-05-28T15:32:36.533Z", "bundle_size_kb": 2519, "trigger": "pnpm publish-ota:all -m 'Flow 48 (F4) — follower restaurant CTA cluster'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 87, "bundle_hash": "sha256:0157cee00a06ef8cff2db9706352caf9045d7fcbbac5500481230162a5c8fea6", "published_at": "2026-05-28T15:32:51.980Z", "bundle_size_kb": 2519, "trigger": "pnpm publish-ota:all -m 'Flow 48 (F4) — follower restaurant CTA cluster'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 61, "bundle_hash": "sha256:0157cee00a06ef8cff2db9706352caf9045d7fcbbac5500481230162a5c8fea6", "published_at": "2026-05-28T15:32:59.694Z", "bundle_size_kb": 2519, "trigger": "pnpm publish-ota:all -m 'Flow 48 (F4) — follower restaurant CTA cluster'", "scope": "follower audience manifest (Cart + Booking + Bill + MealsChat light restyle live here) — completes F4" }
+    }
+  }
+}

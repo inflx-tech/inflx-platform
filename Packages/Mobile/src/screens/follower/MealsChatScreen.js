@@ -13,7 +13,7 @@ import {
   View, Text, ScrollView, Pressable, TextInput, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { mealsApi } from '../../services/api';
 
 export default function MealsChatScreen({ route, navigation }) {
@@ -219,11 +219,11 @@ const styles = StyleSheet.create({
   bubbleText: { fontFamily: fonts.sansMedium, fontSize: 13, color: lightColors.ink2 },
   ocard: { alignSelf: 'stretch', backgroundColor: '#fff', borderColor: lightColors.border, borderWidth: 1, borderRadius: 14, padding: 12 },
   ocardBest: { borderColor: lightColors.yellow, borderWidth: 2 },
-  bestTag: { fontFamily: fonts.monoBold, fontSize: 10, color: lightColors.yellowDeep, marginBottom: 4 },
+  bestTag: { fontFamily: fonts.monoBold, fontSize: 10, color: lightColors.yellowText, marginBottom: 4 },
   rName: { fontFamily: fonts.sansBold, fontSize: 14, color: lightColors.ink },
   rPrice: { fontFamily: fonts.displayBold, fontSize: 18, color: lightColors.ink, marginTop: 4 },
   rStrike: { fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.muted3, textDecorationLine: 'line-through' },
-  rWhy: { fontFamily: fonts.sansMedium, fontSize: 11, color: lightColors.yellowDeep, marginTop: 4 },
+  rWhy: { fontFamily: fonts.sansMedium, fontSize: 11, color: lightColors.yellowText, marginTop: 4 },
   pick: { marginTop: 10, backgroundColor: lightColors.ink, borderRadius: 9, paddingVertical: 10, alignItems: 'center' },
   pickBest: { backgroundColor: lightColors.yellow },
   pickText: { fontFamily: fonts.sansBold, fontSize: 13, color: '#fff' },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   pickerChipNew: { borderStyle: 'dashed' },
   pickerChipText: { fontFamily: fonts.sansBold, fontSize: 12.5, color: lightColors.ink },
   pickerChipSub: { fontFamily: fonts.sansMedium, fontSize: 11, color: lightColors.muted, marginTop: 1 },
-  paid: { alignSelf: 'stretch', backgroundColor: lightColors.success50 || '#ECFDF5', borderColor: '#b7ebdc', borderWidth: 1, borderRadius: 14, padding: 14 },
+  paid: { alignSelf: 'stretch', backgroundColor: lightColors.successPale, borderColor: '#b7ebdc', borderWidth: 1, borderRadius: 14, padding: 14 },
   paidTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: lightColors.success },
   paidLine: { fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.ink2, marginTop: 2 },
   inbar: { flexDirection: 'row', gap: 8, padding: 10, borderTopColor: lightColors.border, borderTopWidth: 1, backgroundColor: '#fff' },

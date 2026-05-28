@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F4 · follower RESTAURANT CTA (Cart · Booking · Bill · MealsChat) — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00; --yellow-50:#FFFDEB;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:330px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:330px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:800px;position:relative;display:flex;flex-direction:column}
+.status-bar{height:38px;background:var(--bg);display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 5px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;flex-shrink:0}
+.body{flex:1;overflow-y:auto}
+
+/* app bar */
+.appbar{display:flex;align-items:center;gap:10px;padding:6px 16px 8px;background:var(--bg)}
+.icbtn{width:36px;height:36px;border-radius:18px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink)}
+.appbar-t{flex:1;text-align:center;font-family:'Outfit';font-size:17px;font-weight:800;color:var(--ink)}
+.spacer{width:36px}
+
+/* brand strip */
+.bstrip{display:flex;align-items:center;gap:10px;margin:10px 16px 0;padding:12px;border-radius:10px;background:var(--bg2)}
+.bstrip-ph{width:44px;height:44px;border-radius:8px;background:var(--yellow-50);display:flex;align-items:center;justify-content:center;font-size:22px}
+.bstrip-nm{font-family:'Outfit';font-size:14px;font-weight:700;color:var(--ink)}
+.bstrip-mt{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.5px}
+.opill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--yellow);background:var(--yellow);color:var(--ink);padding:3px 8px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.5px}
+
+/* generic */
+.sec{padding:0 16px;margin-top:16px}
+.flabel{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin-bottom:8px}
+
+/* cart rows */
+.crow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.cthumb{width:48px;height:48px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:22px}
+.cnm{font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink)}
+.cpr{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink-2);margin-top:3px}
+.step{display:flex;align-items:center;background:var(--yellow);border-radius:8px;padding:0 4px}
+.step-b{padding:5px 9px;font-family:'Outfit';font-size:15px;font-weight:900;color:var(--ink)}
+.step-n{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink);min-width:18px;text-align:center}
+.billcard{margin:16px 16px 0;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px}
+.billrow{display:flex;justify-content:space-between;padding:4px 0}
+.bl{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--ink-2)}
+.bl.disc{color:var(--yellow-text)}
+.bv{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink)}
+.bv.disc{color:var(--yellow-text)}
+.bnote{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:8px}
+.attr{display:flex;align-items:center;gap:10px;margin:14px 16px 0;padding:10px 12px;background:var(--bg2);border-radius:8px}
+.cchip{display:inline-flex;align-items:center;gap:5px;background:var(--ink);border-radius:999px;padding:3px 8px 3px 3px}
+.cchip-av{width:18px;height:18px;border-radius:9px;background:var(--yellow);color:var(--ink);font-family:'Outfit';font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.cchip-l{font-family:'JetBrains Mono';font-size:11px;color:#fff}
+.cchip-v{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow);font-weight:700}
+.attr-t{font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+/* sticky CTA */
+.cta-bar{background:var(--white);border-top:1px solid var(--border);padding:0}
+.pay-btn{margin:14px 16px;padding:16px;border-radius:12px;background:var(--yellow);text-align:center;font-family:'Plus Jakarta Sans';font-size:15px;font-weight:700;color:var(--ink)}
+.cta-sum{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted);margin:10px 16px 0}
+
+/* booking */
+.sec-h{display:flex;align-items:baseline;gap:8px;padding:0 16px;margin-top:18px;margin-bottom:8px}
+.sec-t{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.6px}
+.sec-opt{font-family:'Plus Jakarta Sans';font-size:10px;color:var(--muted-2)}
+.dscroll{display:flex;gap:8px;overflow-x:auto;padding:0 16px}
+.dtile{width:54px;flex-shrink:0;padding:10px 0;border-radius:10px;border:1px solid var(--muted-4);background:var(--white);text-align:center}
+.dtile.on{background:var(--yellow);border-color:var(--yellow)}
+.dtop{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px}
+.dtile.on .dtop{color:var(--ink-2)}
+.dbig{font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink);margin-top:2px}
+.party{display:flex;gap:6px;padding:0 16px}
+.ptile{flex:1;padding:10px 0;border-radius:8px;border:1px solid var(--muted-4);background:var(--white);text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink-2)}
+.ptile.on{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.slotg{display:flex;flex-wrap:wrap;padding:0 13px}
+.scell{width:33.33%;padding:3px}
+.tslot{padding:10px 0;border-radius:10px;border:1.5px solid var(--muted-4);background:var(--white);text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:var(--ink)}
+.tslot.on{background:var(--yellow);border-color:var(--yellow)}
+.tslot.full{background:var(--bg2);border-color:var(--border);color:var(--muted-2);text-decoration:line-through}
+.chipw{display:flex;flex-wrap:wrap;gap:6px;padding:0 16px}
+.fchip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid;padding:6px 12px;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:500}
+.fchip.def{background:var(--white);border-color:var(--muted-4);color:var(--ink-2)}
+.fchip.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* bill */
+.bill-in{display:flex;align-items:center;background:var(--white);border:1px solid var(--muted-4);border-radius:12px;padding:0 14px;margin:0 16px}
+.rupee{font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink);margin-right:6px}
+.bill-f{flex:1;padding:14px 0;font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink)}
+.brkcard{margin:14px 16px 0;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:14px}
+.brow{display:flex;justify-content:space-between;align-items:center;padding:5px 0}
+.discpct{background:var(--yellow-50);border:1px solid var(--yellow-pale);color:var(--yellow-text);font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px}
+.bdivider{height:1px;background:var(--border);margin:10px 0}
+.totrow{display:flex;justify-content:space-between;align-items:baseline}
+.totl{font-family:'Plus Jakarta Sans';font-size:14px;font-weight:700;color:var(--ink)}
+.totv{font-family:'Outfit';font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-.5px}
+.saved{text-align:right;margin-top:4px;font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--success-text)}
+.method{display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--white);margin:0 16px 8px}
+.method.on{border-color:var(--yellow);background:var(--yellow-50)}
+.m-nm{font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink)}
+.m-sub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:2px}
+.radio{width:18px;height:18px;border-radius:9px;border:2px solid var(--muted-4);display:flex;align-items:center;justify-content:center}
+.radio.on{border-color:var(--yellow)}
+.radio-dot{width:8px;height:8px;border-radius:4px;background:var(--yellow)}
+
+/* meals chat */
+.chat-hdr{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--ink)}
+.chat-back{color:#fff;font-size:20px}
+.chat-t{color:#fff;font-family:'Outfit';font-size:16px;font-weight:700}
+.chat-t .x{color:var(--yellow)}
+.chat-sub{color:rgba(255,255,255,.6);font-size:11px}
+.thread{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.bub{max-width:82%;padding:9px 12px;border-radius:14px;font-family:'Plus Jakarta Sans';font-size:13px}
+.bub.bot{align-self:flex-start;background:#fff;border:1px solid var(--border);border-bottom-left-radius:4px;color:var(--ink-2)}
+.bub.me{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:4px}
+.ocard{align-self:stretch;background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px}
+.ocard.best{border:2px solid var(--yellow)}
+.best-tag{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow-text);margin-bottom:4px}
+.o-nm{font-family:'Plus Jakarta Sans';font-size:14px;font-weight:700;color:var(--ink)}
+.o-pr{font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);margin-top:4px}
+.o-why{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--yellow-text);margin-top:4px}
+.o-pick{margin-top:10px;border-radius:9px;padding:10px;text-align:center;font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;background:var(--ink);color:#fff}
+.o-pick.best{background:var(--yellow);color:var(--ink)}
+.inbar{display:flex;gap:8px;padding:10px;border-top:1px solid var(--border);background:#fff}
+.chat-in{flex:1;border:1px solid var(--border);border-radius:99px;padding:9px 14px;font-family:'Plus Jakarta Sans';font-size:13px;color:var(--muted-3)}
+.send{background:var(--yellow);border-radius:99px;padding:9px 18px;font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center}
+
+/* side panel */
+.side{width:330px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">
+  <h1>F4 · follower RESTAURANT CTA — Flow 48 mockup (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Flow 48 = the restaurant transaction cluster: RestaurantCart (online order) · RestaurantBooking (table) · RestaurantBill (pay-at-restaurant) · MealsChat (AI meal planner).</b> Convergence of 4 already-light screens to brandPalette, composing the Flow-45 atoms (CreatorChip / OfferPill / TimeSlot / FilterChip). <b>createOrder/verifyOrder · prebook/prebookVerify + navigation.replace('BookingConfirmed') · payAtStore/verifyPayAtStore + prebook-balance token math · mealsApi.chat/pay (address-first) · mockPayment · 4-ID attribution · ensureFollowerAuth — ALL preserved verbatim (visual only).</b> Completes F4 (restaurant vertical).
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- 1 · CART -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="appbar"><span class="icbtn">←</span><span class="appbar-t">Spice Garden</span><span class="spacer"></span></div>
+      <div class="body">
+        <div class="sec">
+          <div class="crow"><div class="cthumb">🍛</div><div style="flex:1"><div class="cnm">Mutton Dum Biryani</div><div class="cpr">₹ 420</div></div><div class="step"><span class="step-b">−</span><span class="step-n">2</span><span class="step-b">+</span></div></div>
+          <div class="crow"><div class="cthumb">🍚</div><div style="flex:1"><div class="cnm">Veg Dum Biryani</div><div class="cpr">₹ 260</div></div><div class="step"><span class="step-b">−</span><span class="step-n">1</span><span class="step-b">+</span></div></div>
+        </div>
+        <div class="billcard">
+          <div class="billrow"><span class="bl">Subtotal</span><span class="bv">₹ 1,100</span></div>
+          <div class="billrow"><span class="bl disc">40% creator offer</span><span class="bv disc">applied at payment</span></div>
+          <div class="bnote">Final discount is computed by the offer engine at checkout.</div>
+        </div>
+        <div class="attr"><span class="cchip"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span><span class="attr-t">via your creator link</span></div>
+      </div>
+      <div class="cta-bar"><div class="pay-btn">Place order · ₹1,100 →</div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · RestaurantCart</b><br/>online-order checkout · bg2 thumbs + Outfit name + mono ₹ + yellow qty steppers · white bill card (yellowText creator-offer line) · bg2 CreatorChip attribution · yellow Place-order CTA. <code>createOrder/verifyOrder</code> + 4-ID + <code>ensureFollowerAuth</code> preserved.</div>
+  </div>
+
+  <!-- 2 · BOOKING -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="appbar"><span class="icbtn">←</span><span class="appbar-t">Book a Table</span><span class="spacer"></span></div>
+      <div class="body">
+        <div class="bstrip"><div class="bstrip-ph">🍽️</div><div style="flex:1"><div class="bstrip-nm">Spice Garden</div><div class="bstrip-mt">BANJARA HILLS</div></div><span class="opill">40% OFF</span></div>
+        <div class="sec-h"><span class="sec-t">WHEN</span></div>
+        <div class="dscroll"><span class="dtile on"><div class="dtop">TONIGHT</div><div class="dbig">28</div></span><span class="dtile"><div class="dtop">FRI</div><div class="dbig">29</div></span><span class="dtile"><div class="dtop">SAT</div><div class="dbig">30</div></span><span class="dtile"><div class="dtop">SUN</div><div class="dbig">31</div></span></div>
+        <div class="sec-h"><span class="sec-t">PARTY SIZE</span></div>
+        <div class="party"><span class="ptile">1</span><span class="ptile on">2</span><span class="ptile">3</span><span class="ptile">4</span><span class="ptile">5</span><span class="ptile">6+</span></div>
+        <div class="sec-h"><span class="sec-t">TIME · DINNER</span></div>
+        <div class="slotg">
+          <span class="scell"><div class="tslot">7:00</div></span><span class="scell"><div class="tslot on">7:30</div></span><span class="scell"><div class="tslot">8:00</div></span>
+          <span class="scell"><div class="tslot full">8:30</div></span><span class="scell"><div class="tslot">9:00</div></span><span class="scell"><div class="tslot">9:30</div></span>
+        </div>
+        <div class="sec-h"><span class="sec-t">ANY REQUESTS</span><span class="sec-opt">optional</span></div>
+        <div class="chipw"><span class="fchip sel">🎂 Birthday</span><span class="fchip def">🌳 Outdoor</span><span class="fchip def">👶 High chair</span></div>
+      </div>
+      <div class="cta-bar"><div class="cta-sum">Tonight · 7:30 · 2 guests · Birthday</div><div class="pay-btn">Confirm booking →</div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · RestaurantBooking</b><br/>table booking · bg2 brand strip + OfferPill · ink-selected date tiles + party tiles · 3-col TimeSlot grid (yellow selected, bg2 booked struck) · FilterChip requests · sticky summary + yellow Confirm. <code>prebook/prebookVerify</code> + 4-ID + <code>navigation.replace('BookingConfirmed')</code> param shape preserved.</div>
+  </div>
+
+  <!-- 3 · BILL -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="appbar"><span class="icbtn">←</span><span class="appbar-t">Pay at Spice Garden</span><span class="spacer"></span></div>
+      <div class="body">
+        <div class="bstrip"><div class="bstrip-ph">🍽️</div><div style="flex:1"><div class="bstrip-nm">Spice Garden</div><div class="bstrip-mt">BILL · WALK-IN</div></div><span class="opill">40% OFF</span></div>
+        <div class="sec"><div class="flabel">YOUR BILL</div></div>
+        <div class="bill-in"><span class="rupee">₹</span><span class="bill-f">1,200</span></div>
+        <div class="brkcard">
+          <div class="brow"><span class="bl">Subtotal</span><span class="bv">₹ 1,200</span></div>
+          <div class="brow"><span style="display:flex;align-items:center;gap:6px"><span class="discpct">40%</span><span class="bl disc">Follower discount</span></span><span class="bv disc">− ₹ 480</span></div>
+          <div class="bdivider"></div>
+          <div class="totrow"><span class="totl">You pay</span><span class="totv">₹ 720</span></div>
+          <div class="saved">You saved ₹ 480</div>
+        </div>
+        <div class="sec"><div class="flabel">PAY USING</div></div>
+        <div class="method on"><span style="font-size:22px">📱</span><div style="flex:1"><div class="m-nm">UPI / Cards</div><div class="m-sub">via Razorpay · GooglePay, PhonePe</div></div><span class="radio on"><span class="radio-dot"></span></span></div>
+        <div class="method"><span style="font-size:22px">💰</span><div style="flex:1"><div class="m-nm">INFLX Wallet</div><div class="m-sub">Coming soon</div></div><span class="radio"></span></div>
+      </div>
+      <div class="cta-bar"><div class="pay-btn">Pay ₹ 720 →</div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · RestaurantBill</b><br/>pay-at-restaurant · bg2 brand strip + OfferPill · Outfit-Black ₹ bill input · white breakdown (yellowPale % chip + yellowText discount + successText "You saved" + Outfit-Black "You pay") · yellow50-active method rows + yellow radio · yellow Pay CTA. <code>payAtStore/verifyPayAtStore</code> + prebook-balance token math + 4-ID preserved.</div>
+  </div>
+
+  <!-- 4 · MEALS CHAT -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="chat-hdr"><span class="chat-back">←</span><div><div class="chat-t">INFL<span class="x">X</span> Meals</div><div class="chat-sub">Plan your meal</div></div></div>
+      <div class="thread">
+        <div class="bub bot">Hi! Tell me what you'd like from Spice Garden — e.g. "family lunch tomorrow, 2 chicken & 2 veg biryani, medium".</div>
+        <div class="bub me">Family dinner tonight, 4 biryanis, 2 veg 2 chicken</div>
+        <div class="bub bot">Here's what I found 👇 I've starred my pick.</div>
+        <div class="ocard best">
+          <div class="best-tag">⭐ AI suggests this</div>
+          <div class="o-nm">Spice Garden</div>
+          <div class="o-pr">₹1,440 <span style="font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted-3);text-decoration:line-through">₹1,680</span></div>
+          <div class="o-why">Best value for 4 — 2 veg + 2 chicken family packs, fits your slot.</div>
+          <div class="o-pick best">Pay ₹1,440 &amp; lock</div>
+        </div>
+        <div class="ocard">
+          <div class="o-nm">Spice Garden</div>
+          <div class="o-pr">₹1,560</div>
+          <div class="o-pick">Pay ₹1,560 &amp; lock</div>
+        </div>
+      </div>
+      <div class="inbar"><span class="chat-in">Reply or tweak your order…</span><span class="send">Send</span></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 4 · MealsChat</b><br/>AI meal planner · ink header (yellow "X") · chat bubbles (white bot / ink me) · offer cards (yellow-border AI pick + yellowText reasoning + mono strike-through) · ink/yellow "Pay & lock" · yellow Send. Address-first flow + <code>mealsApi.chat/pay</code> + OFFER_EXPIRED/SLOT_FULL handling preserved.</div>
+  </div>
+
+</div>
+
+<!-- side panel -->
+<div class="row" style="justify-content:center;align-items:flex-start">
+  <div class="side">
+    <div class="panel">
+      <h3>Flow 48 scope (4 screens)</h3>
+      <ul>
+        <li><b>RestaurantCartScreen</b> (251) — surface/surface2→bg2, paper→white, yellowDeep→yellowText</li>
+        <li><b>RestaurantBookingScreen</b> (420) — surface/surface2→bg2, paper→white, border2→muted4</li>
+        <li><b>RestaurantBillScreen</b> (484) — + yellow200→yellowPale, yellowDeep→yellowText</li>
+        <li><b>MealsChatScreen</b> (244) — yellowDeep→yellowText, success50→successPale</li>
+        <li>Compose Flow-45 atoms: CreatorChip · OfferPill · TimeSlot · FilterChip</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li><b>Cart</b> — createOrder/verifyOrder + mockPayment + 4-ID + canOrder gate + setQty</li>
+        <li><b>Booking</b> — prebook/prebookVerify + 4-ID + navigation.replace('BookingConfirmed') param shape (asserted by test) + pay_mock_</li>
+        <li><b>Bill</b> — payAtStore/verifyPayAtStore + mockPayment + prebook-balance token math + discount math + method selector</li>
+        <li><b>MealsChat</b> — mealsApi.chat/pay + address-first + offers/recommendation/order + OFFER_EXPIRED/SLOT_FULL</li>
+        <li><b>ensureFollowerAuth</b> sign-in gate on cart/booking/bill</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>After Flow 48 → F5 (final)</h3>
+      <ul>
+        <li><b>F5</b> — ProductDetail · LookbookDetail (fashion) · SchemaDetail/SalonDetail (beauty + 26-engine) · CarDetail · CarBooking</li>
+        <li>Then follower bucket COMPLETE → all 3 INFLX apps unified on brandPalette</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

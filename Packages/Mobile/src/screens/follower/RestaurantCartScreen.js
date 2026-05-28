@@ -19,7 +19,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { mockPayment } from '../../services/payment';
 import { ensureFollowerAuth } from '../../utils/authGate';
@@ -161,10 +161,10 @@ export default function RestaurantCartScreen({ route, navigation }) {
               </View>
               {offer?.discount_value > 0 && (
                 <View style={styles.billRow}>
-                  <Text style={[styles.billLabel, { color: lightColors.yellowDeep }]}>
+                  <Text style={[styles.billLabel, { color: lightColors.yellowText }]}>
                     {offer.discount_value}% creator offer
                   </Text>
-                  <Text style={[styles.billVal, { color: lightColors.yellowDeep }]}>
+                  <Text style={[styles.billVal, { color: lightColors.yellowText }]}>
                     applied at payment
                   </Text>
                 </View>
@@ -212,13 +212,13 @@ export default function RestaurantCartScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: lightColors.bg },
   appbar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, backgroundColor: lightColors.bg },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: lightColors.surface, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: lightColors.bg2, alignItems: 'center', justifyContent: 'center' },
   iconBtnGlyph: { fontSize: 16, color: lightColors.ink },
   appbarTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.displayBold, fontSize: 17, color: lightColors.ink, letterSpacing: -0.2 },
 
   section: { paddingHorizontal: 16, marginTop: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomColor: lightColors.border, borderBottomWidth: 1 },
-  thumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: lightColors.surface2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  thumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: lightColors.bg2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   thumbImg: { width: '100%', height: '100%' },
   thumbGlyph: { fontSize: 22 },
   itemName: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
@@ -228,13 +228,13 @@ const styles = StyleSheet.create({
   stepBtnText: { fontFamily: fonts.displayBlack, fontSize: 15, color: lightColors.ink },
   stepNum: { fontFamily: fonts.monoBold, fontSize: 13, color: lightColors.ink, minWidth: 18, textAlign: 'center' },
 
-  billCard: { marginHorizontal: 16, marginTop: 16, backgroundColor: lightColors.paper, borderColor: lightColors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
+  billCard: { marginHorizontal: 16, marginTop: 16, backgroundColor: lightColors.white, borderColor: lightColors.border, borderWidth: 1, borderRadius: 12, padding: 14 },
   billRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
   billLabel: { fontFamily: fonts.sansMedium, fontSize: 13, color: lightColors.ink2 },
   billVal: { fontFamily: fonts.monoBold, fontSize: 13, color: lightColors.ink },
   billNote: { fontFamily: fonts.sansMedium, fontSize: 11, color: lightColors.muted, marginTop: 8 },
 
-  attr: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: lightColors.surface, borderRadius: 8 },
+  attr: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginTop: 14, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: lightColors.bg2, borderRadius: 8 },
   attrText: { fontFamily: fonts.monoMedium, fontSize: 11, color: lightColors.muted },
   warn: { marginHorizontal: 16, marginTop: 14, fontFamily: fonts.sansMedium, fontSize: 12, color: lightColors.danger, lineHeight: 17 },
 
@@ -244,8 +244,8 @@ const styles = StyleSheet.create({
   emptyBtn: { marginTop: 14, backgroundColor: lightColors.yellow, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
   emptyBtnText: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
 
-  ctaBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: lightColors.paper, borderTopColor: lightColors.border, borderTopWidth: 1 },
+  ctaBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: lightColors.white, borderTopColor: lightColors.border, borderTopWidth: 1 },
   payBtn: { margin: 16, paddingVertical: 16, borderRadius: 12, backgroundColor: lightColors.yellow, alignItems: 'center' },
-  payBtnDisabled: { backgroundColor: lightColors.surface2 },
+  payBtnDisabled: { backgroundColor: lightColors.bg2 },
   payBtnText: { fontFamily: fonts.sansBold, fontSize: 15, color: lightColors.ink, letterSpacing: -0.1 },
 });

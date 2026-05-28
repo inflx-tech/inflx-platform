@@ -26,7 +26,7 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { ensureFollowerAuth } from '../../utils/authGate';
 import { TimeSlot, FilterChip, OfferPill } from '../../components/restaurant';
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   iconBtnGlyph: { fontSize: 16, color: lightColors.ink },
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10,
     marginHorizontal: 16, marginTop: 10,
     padding: 12, borderRadius: 10,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
   },
   brandStripPhoto: {
     width: 44, height: 44, borderRadius: 8,
@@ -351,8 +351,8 @@ const styles = StyleSheet.create({
   dateTile: {
     width: 56, paddingVertical: 10,
     borderRadius: 10, borderWidth: 1,
-    borderColor: lightColors.border2,
-    backgroundColor: lightColors.paper,
+    borderColor: lightColors.muted4,
+    backgroundColor: lightColors.white,
     alignItems: 'center',
   },
   dateTileActive: {
@@ -374,8 +374,8 @@ const styles = StyleSheet.create({
   partyTile: {
     flex: 1, paddingVertical: 10,
     borderRadius: 8, borderWidth: 1,
-    borderColor: lightColors.border2,
-    backgroundColor: lightColors.paper,
+    borderColor: lightColors.muted4,
+    backgroundColor: lightColors.white,
     alignItems: 'center',
   },
   partyTileActive: {
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
 
   ctaBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderTopColor: lightColors.border, borderTopWidth: 1,
   },
   ctaInner: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: 10,
     alignItems: 'center',
   },
-  ctaBtnDisabled: { backgroundColor: lightColors.surface2 },
+  ctaBtnDisabled: { backgroundColor: lightColors.bg2 },
   ctaBtnText: {
     fontFamily: fonts.sansBold, fontSize: 14,
     color: lightColors.ink, letterSpacing: -0.1,
