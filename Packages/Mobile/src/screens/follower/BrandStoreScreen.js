@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
-import { darkColors, spacing, radius, fmtMoney, getBusinessAccent } from '../../theme/tokens';
+import { brandPalette as P, spacing, radius, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import BrandActionRow from '../../components/BrandActionRow';
@@ -54,7 +54,7 @@ export default function BrandStoreScreen({ navigation, route }) {
   }, [fetchStore]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={darkColors.amber} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
   }
 
   const brand = store?.brand;
@@ -62,7 +62,7 @@ export default function BrandStoreScreen({ navigation, route }) {
   const influencers = store?.influencers || [];
   const creator = store?.creator || null;   // Phase Salon-2: via-influencer for sticky header
   const creatorPicks = store?.creator_picks || []; // Phase E: published dishes when via creator
-  const accent = getBusinessAccent(brand?.category);
+  const accent = getBusinessAccentLight(brand?.category);
   const icon = accent.icon;
 
   // Wave 4 PR 4.2 — dispatch the entire screen to the redesigned dining
@@ -151,9 +151,9 @@ export default function BrandStoreScreen({ navigation, route }) {
         </TouchableOpacity>
       )}
 
-      <ScrollView style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}>
+      <ScrollView style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} />}>
       {/* Banner */}
-      <View style={[s.banner, { backgroundColor: accent.dim }]}>
+      <View style={[s.banner, { backgroundColor: accent.pale }]}>
         <Text style={s.bannerIcon}>{icon}</Text>
         <View style={[s.logo, { backgroundColor: accent.accent }]}>
           <Text style={s.logoText}>{brand?.business_name?.[0] || '?'}</Text>
@@ -189,7 +189,7 @@ export default function BrandStoreScreen({ navigation, route }) {
               ]} />
               <Text style={[
                 s.openPillText,
-                { color: brand.open_status.is_open ? '#22C55E' : darkColors.textMuted },
+                { color: brand.open_status.is_open ? '#22C55E' : P.muted2 },
               ]} numberOfLines={1}>
                 {brand.open_status.status_text}
               </Text>
@@ -227,7 +227,7 @@ export default function BrandStoreScreen({ navigation, route }) {
                       {
                         left: i * 14,
                         backgroundColor: accent.accent,
-                        borderColor: darkColors.bg2,
+                        borderColor: P.bg,
                         zIndex: 3 - i,
                       },
                     ]}>
@@ -282,7 +282,7 @@ export default function BrandStoreScreen({ navigation, route }) {
 
         {/* Active offers banner */}
         {bestOffer && (
-          <View style={[s.offerBanner, { backgroundColor: accent.dim, borderColor: `${accent.accent}33` }]}>
+          <View style={[s.offerBanner, { backgroundColor: accent.pale, borderColor: `${accent.accent}33` }]}>
             <Text style={[s.offerBannerText, { color: accent.accent }]}>
               {bestOffer.discount_value}% OFF via influencer deal
             </Text>
@@ -347,7 +347,7 @@ export default function BrandStoreScreen({ navigation, route }) {
                       });
                     }}
                   >
-                    <View style={[s.creatorPickImg, { backgroundColor: accent.dim }]}>
+                    <View style={[s.creatorPickImg, { backgroundColor: accent.pale }]}>
                       {pick.image_url
                         ? <Image source={{ uri: pick.image_url }} style={s.creatorPickImgFill} resizeMode="cover" />
                         : <Text style={s.creatorPickEmoji}>{accent.icon}</Text>}
@@ -529,8 +529,8 @@ function renderTrustChips(template, accentColor) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg2 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkColors.bg2 },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
   banner: {
     height: 100, justifyContent: 'center', alignItems: 'center', position: 'relative',
   },
@@ -539,12 +539,12 @@ const s = StyleSheet.create({
     position: 'absolute', bottom: -18, left: 20,
     width: 48, height: 48, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 3, borderColor: darkColors.bg2,
+    borderWidth: 3, borderColor: P.bg,
   },
   logoText: { fontSize: 18, fontWeight: '800', color: '#fff' },
   storeInfo: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  storeName: { fontSize: 18, fontWeight: '800', color: darkColors.text, flexShrink: 1 },
+  storeName: { fontSize: 18, fontWeight: '800', color: P.ink, flexShrink: 1 },
   verifiedBadge: {
     width: 18, height: 18, borderRadius: 9,
     backgroundColor: '#22C55E',                  // green-500
@@ -563,11 +563,11 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   openPillOpen:   { backgroundColor: '#22C55E15', borderColor: '#22C55E55' },
-  openPillClosed: { backgroundColor: darkColors.card, borderColor: darkColors.border },
+  openPillClosed: { backgroundColor: P.white, borderColor: P.border },
   openDot:        { width: 6, height: 6, borderRadius: 3 },
   openPillText:   { fontSize: 9, fontWeight: '700' },
-  cuisineRow: { fontSize: 10, color: darkColors.textMuted, marginTop: 4 },
-  storeMeta: { fontSize: 11, color: darkColors.textSecondary, marginTop: 2 },
+  cuisineRow: { fontSize: 10, color: P.muted2, marginTop: 4 },
+  storeMeta: { fontSize: 11, color: P.muted, marginTop: 2 },
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   trustChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -627,19 +627,19 @@ const s = StyleSheet.create({
   },
   offerBannerText: { fontSize: 12, fontWeight: '700' },
   tabRow: {
-    flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: darkColors.border,
+    flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: P.border,
   },
   tab: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
     borderBottomWidth: 2, borderBottomColor: 'transparent',
   },
-  tabText: { fontSize: 12, fontWeight: '600', color: darkColors.textSecondary },
+  tabText: { fontSize: 12, fontWeight: '600', color: P.muted },
   // Phase E — creator picks strip (creator's published dishes for this brand)
   creatorPicksBlock: {
     marginTop: 6,
     paddingTop: 12,
     paddingBottom: 6,
-    backgroundColor: darkColors.bg2,
+    backgroundColor: P.bg,
   },
   creatorPicksHeader: { paddingHorizontal: 20, marginBottom: 8 },
   creatorPicksAvatarRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -652,10 +652,10 @@ const s = StyleSheet.create({
   creatorPicksScroll: { paddingHorizontal: 20, gap: 10, paddingBottom: 4 },
   creatorPickCard: {
     width: 140,
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: P.border,
     overflow: 'hidden',
   },
   creatorPickImg: {
@@ -664,19 +664,19 @@ const s = StyleSheet.create({
   },
   creatorPickImgFill: { width: '100%', height: '100%' },
   creatorPickEmoji: { fontSize: 32 },
-  creatorPickName: { fontSize: 11, fontWeight: '700', color: darkColors.text, paddingHorizontal: 10, paddingTop: 8, lineHeight: 14 },
+  creatorPickName: { fontSize: 11, fontWeight: '700', color: P.ink, paddingHorizontal: 10, paddingTop: 8, lineHeight: 14 },
   creatorPickNote: { fontSize: 9, fontStyle: 'italic', paddingHorizontal: 10, paddingTop: 4, lineHeight: 12 },
-  creatorPickPrice: { fontSize: 12, fontWeight: '800', color: darkColors.text, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 10 },
+  creatorPickPrice: { fontSize: 12, fontWeight: '800', color: P.ink, paddingHorizontal: 10, paddingTop: 6, paddingBottom: 10 },
 
   sectionPills: { paddingHorizontal: 20, paddingVertical: 10, gap: 6 },
   sectionPill: {
     paddingHorizontal: 12, paddingVertical: 6,
-    borderRadius: 20, backgroundColor: darkColors.card,
-    borderWidth: 1, borderColor: darkColors.border,
+    borderRadius: 20, backgroundColor: P.white,
+    borderWidth: 1, borderColor: P.border,
   },
-  sectionPillText: { fontSize: 11, fontWeight: '600', color: darkColors.textSecondary },
+  sectionPillText: { fontSize: 11, fontWeight: '600', color: P.muted },
   sectionHeader: { paddingHorizontal: 20, marginBottom: 8 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: darkColors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5 },
   productGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
     paddingHorizontal: 20, gap: 10,
@@ -684,16 +684,16 @@ const s = StyleSheet.create({
   gridItem: { width: '48%' },
   influencerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: darkColors.card, padding: 16, borderRadius: 16,
-    borderWidth: 1, borderColor: darkColors.border, marginBottom: 8,
+    backgroundColor: P.white, padding: 16, borderRadius: 16,
+    borderWidth: 1, borderColor: P.border, marginBottom: 8,
   },
   infAvatar: {
     width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center',
   },
   infAvatarText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  infName: { fontSize: 14, fontWeight: '600', color: darkColors.text },
-  infHandle: { fontSize: 11, color: darkColors.textSecondary, marginTop: 2 },
+  infName: { fontSize: 14, fontWeight: '600', color: P.ink },
+  infHandle: { fontSize: 11, color: P.muted, marginTop: 2 },
   viewText: { fontSize: 12, fontWeight: '600' },
   stickyCTA: {
     marginHorizontal: 20, marginTop: 12,
@@ -702,5 +702,5 @@ const s = StyleSheet.create({
   },
   stickyText: { fontSize: 14, fontWeight: '800', color: '#fff' },
   empty: { alignItems: 'center', paddingTop: 40 },
-  emptyText: { fontSize: 14, color: darkColors.textSecondary },
+  emptyText: { fontSize: 14, color: P.muted },
 });

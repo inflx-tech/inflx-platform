@@ -18,7 +18,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts, getBusinessAccent } from '../../theme/tokens';
+import { brandPalette as P, fonts, getBusinessAccentLight } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { OfferPill } from '../../components/restaurant';
 
@@ -152,14 +152,14 @@ export default function InfluencerStoreScreen({ route, navigation }) {
     navigation.navigate('CategoryList', {
       superCategory: cat.key === 'restaurant' ? 'eat' : cat.key,
       label: labelForCategory(cat.key),
-      icon: getBusinessAccent(cat.key).icon,
+      icon: getBusinessAccentLight(cat.key).icon,
     });
   }
 
   if (loading) {
     return (
       <View style={[styles.root, styles.center]}>
-        <ActivityIndicator color={lightColors.ink} />
+        <ActivityIndicator color={P.ink} />
       </View>
     );
   }
@@ -172,7 +172,7 @@ export default function InfluencerStoreScreen({ route, navigation }) {
     <ScrollView
       style={styles.root}
       contentContainerStyle={{ paddingBottom: 32 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={lightColors.ink} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
     >
       {/* ── Creator hero (ink bg) ───────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.hero}>
@@ -250,7 +250,7 @@ function SectionH({ title, subtitle }) {
 }
 
 function CategoryCard({ data, onPress }) {
-  const accent = getBusinessAccent(data.key);
+  const accent = getBusinessAccentLight(data.key);
   return (
     <Pressable onPress={onPress} style={styles.catCard}>
       <Text style={styles.catIcon}>{accent.icon}</Text>
@@ -269,10 +269,10 @@ function CategoryCard({ data, onPress }) {
 }
 
 function HotPickRow({ offer, onPress }) {
-  const accent = getBusinessAccent(offer.brand_category);
+  const accent = getBusinessAccentLight(offer.brand_category);
   return (
     <Pressable onPress={onPress} style={styles.pickRow}>
-      <View style={[styles.pickIcon, { backgroundColor: accent.dim }]}>
+      <View style={[styles.pickIcon, { backgroundColor: accent.pale }]}>
         <Text style={styles.pickIconGlyph}>{accent.icon}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -298,54 +298,54 @@ function fmtCount(n) {
 // ── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: lightColors.bg },
+  root:   { flex: 1, backgroundColor: P.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: lightColors.ink, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
+  hero: { backgroundColor: P.ink, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
   heroInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
     width: 64, height: 64, borderRadius: 32,
-    backgroundColor: lightColors.yellow,
+    backgroundColor: P.yellow,
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 2, borderColor: lightColors.white,
+    borderWidth: 2, borderColor: P.white,
   },
   avatarImg: { width: '100%', height: '100%' },
   avatarText: {
-    fontFamily: fonts.displayBlack, fontSize: 28, color: lightColors.ink,
+    fontFamily: fonts.displayBlack, fontSize: 28, color: P.ink,
   },
   heroHandle: {
     fontFamily: fonts.displayBlack, fontSize: 19,
-    color: lightColors.white, letterSpacing: -0.3,
+    color: P.white, letterSpacing: -0.3,
   },
   heroCounters: {
     fontFamily: fonts.monoMedium, fontSize: 11,
-    color: lightColors.yellow100, marginTop: 2, letterSpacing: 0.3,
+    color: P.yellowPale, marginTop: 2, letterSpacing: 0.3,
   },
   followBtn: {
     paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 999, backgroundColor: lightColors.yellow,
+    borderRadius: 999, backgroundColor: P.yellow,
   },
-  followBtnActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: lightColors.yellow },
+  followBtnActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: P.yellow },
   followBtnText: {
-    fontFamily: fonts.sansBold, fontSize: 12, color: lightColors.ink,
+    fontFamily: fonts.sansBold, fontSize: 12, color: P.ink,
   },
-  followBtnTextActive: { color: lightColors.yellow },
+  followBtnTextActive: { color: P.yellow },
   heroBio: {
     fontFamily: fonts.sansMedium, fontSize: 13, fontStyle: 'italic',
-    color: lightColors.yellow100, marginTop: 14, lineHeight: 18,
+    color: P.yellowPale, marginTop: 14, lineHeight: 18,
   },
 
   searchBar: {
     marginHorizontal: 16, marginTop: 14,
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: lightColors.paper,
-    borderColor: lightColors.border2, borderWidth: 1,
+    backgroundColor: P.white,
+    borderColor: P.muted4, borderWidth: 1,
     borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
   },
   searchGlyph: { fontSize: 14 },
   searchPlaceholder: {
-    fontFamily: fonts.sansMedium, fontSize: 13, color: lightColors.muted2,
+    fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2,
   },
 
   sectionH: {
@@ -353,14 +353,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.displayBold, fontSize: 17,
-    color: lightColors.ink, letterSpacing: -0.3,
+    color: P.ink, letterSpacing: -0.3,
   },
   sectionSubtitle: {
-    fontFamily: fonts.monoMedium, fontSize: 11, color: lightColors.muted2,
+    fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2,
   },
   emptyMuted: {
     paddingHorizontal: 16, fontFamily: fonts.sansMedium,
-    fontSize: 12, color: lightColors.muted,
+    fontSize: 12, color: P.muted,
   },
 
   catGrid: {
@@ -369,18 +369,18 @@ const styles = StyleSheet.create({
   },
   catCard: {
     flexBasis: '48.5%',
-    backgroundColor: lightColors.paper,
-    borderColor: lightColors.border, borderWidth: 1,
+    backgroundColor: P.white,
+    borderColor: P.border, borderWidth: 1,
     borderRadius: 12, padding: 14, minHeight: 110,
   },
   catIcon: { fontSize: 26 },
   catName: {
     fontFamily: fonts.displayBold, fontSize: 14,
-    color: lightColors.ink, marginTop: 8, letterSpacing: -0.1,
+    color: P.ink, marginTop: 8, letterSpacing: -0.1,
   },
   catMeta: {
     fontFamily: fonts.sansMedium, fontSize: 11,
-    color: lightColors.muted, marginTop: 2,
+    color: P.muted, marginTop: 2,
   },
   catOfferRow: { marginTop: 6 },
 
@@ -388,8 +388,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16, paddingVertical: 12,
     marginHorizontal: 16, marginBottom: 8,
-    backgroundColor: lightColors.paper,
-    borderColor: lightColors.border, borderWidth: 1,
+    backgroundColor: P.white,
+    borderColor: P.border, borderWidth: 1,
     borderRadius: 10,
   },
   pickIcon: {
@@ -398,13 +398,13 @@ const styles = StyleSheet.create({
   },
   pickIconGlyph: { fontSize: 22 },
   pickTitle: {
-    fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink,
+    fontFamily: fonts.sansBold, fontSize: 13, color: P.ink,
   },
   pickMeta: {
     fontFamily: fonts.monoMedium, fontSize: 10,
-    color: lightColors.muted, marginTop: 2,
+    color: P.muted, marginTop: 2,
   },
   pickChevron: {
-    fontFamily: fonts.displayBold, fontSize: 18, color: lightColors.yellowDeep,
+    fontFamily: fonts.displayBold, fontSize: 18, color: P.yellowHover,
   },
 });

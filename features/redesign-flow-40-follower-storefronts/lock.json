@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-40-follower-storefronts",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat \"ok proceed to F1\" (design language locked at F0/Flow 38; F1 applies it)",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · F0 master design-language mockup (Flow 38), Surface 2 (Brand Store), is the locked design authority; mirrored into 04-preview/mockups/web.html",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F1 (common spine), 2nd flow. BrandStoreScreen (706, darkColors→brandPalette flip) + InfluencerStoreScreen (410, lightColors→brandPalette migration) unified onto the F0-locked light brandPalette. BrandStore: getBusinessAccent→getBusinessAccentLight, accent.dim→accent.pale, #fff text retained on accent.accent saturated surfaces (logo/creatorBar/avatars/sticky CTA — readable), renders RestaurantDetailScreen INLINE for restaurant brands (component import — confirmed NOT a nav bug; explains the F0-flagged RestaurantDetail nav gap). InfluencerStore: lightColors→brandPalette (yellow #EAB308→#FFC107, paper→white, yellow100→yellowPale; ink/muted/border/bg identical hexes); fonts already present (Wave 4). Clears the BrandStore ProductCard light-on-dark cascade. ZERO API/backend/navigation/tracking change; getBrandStore/getStore/getStoreProducts/follow/unfollow/saveOffer + Path-B 4-ID tracking preserved verbatim. No native rebuild. Design authority = F0 master mockup (mirrored).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); founder physical smoke-test on installed APK covers the storefront restyle + inline restaurant render + follow flow'"
+  }
+}
