@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-41-follower-me-wallet",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — per-flow mockup SIGNED OFF via AskUserQuestion (2 design calls: MCI menu icons + Maestro after-screenshot method) BEFORE implementation, per corrected governance loop",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion sign-off on the per-flow mockup design/wave3/flow-41-follower-me-wallet/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F2 (account + wallet), 1st flow — FIRST flow under the corrected governance loop (per-flow mockup → founder sign-off BEFORE implementation → after-screenshots). MeScreen (147, dark→light flip + MCI menu icons + yellow avatar + danger logout) + FollowerWalletScreen (293, lightColors→brandPalette + successPale MCI gift tx icon). 2 design calls founder-signed-off: (1) Me menu emoji 💰📦📍👥🔖 → MCI wallet/package-variant/map-marker-outline/account-group-outline/bookmark-outline in yellowPale tiles; (2) after-screenshots via Maestro follower OTP login (000000) capture. ZERO API/backend/navigation/tracking change. getMe/getWallet/getWalletTransactions graceful zero-fallback + logout (AsyncStorage.multiRemove + setRole) + CreatorChip + negative/pending/lifetime math preserved verbatim. No native rebuild (NATIVE_RUNTIME=2; MCI pre-baked). Design authority = this flow's own mockup.",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
+    "maestro_green": "n/a until release-flip; after-screenshots (Me + Wallet) captured via Maestro follower OTP login into 06-diff/. Will use GOVERNANCE_OVERRIDE if deep visual gate unmet; founder physical smoke-test fallback documented."
+  }
+}

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 41 · follower Me + Wallet — wave3 mockup</title>
+<meta name="viewport" content="width=1100" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1100px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:380px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:380px;background:var(--ink);border-radius:42px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:118px;height:28px;background:var(--ink);border-radius:18px;z-index:20}
+.status-bar{height:44px;background:var(--white);color:var(--ink);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.body{flex:1;overflow-y:auto;background:var(--bg)}
+.ico{display:inline-block;vertical-align:middle}.ico svg{width:100%;height:100%;display:block}
+
+/* Me header */
+.me-top{padding:50px 16px 8px;background:var(--white);border-bottom:1px solid var(--border)}
+.me-title{font-family:'Outfit';font-size:20px;font-weight:900;color:var(--ink)}
+/* profile card */
+.profile{display:flex;align-items:center;gap:14px;margin:14px 16px;padding:16px;background:var(--white);border:1px solid var(--border);border-radius:16px}
+.avatar{width:58px;height:58px;border-radius:29px;background:var(--yellow);display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:'Outfit';font-size:20px;font-weight:900}
+.p-name{font-family:'Outfit';font-size:18px;font-weight:900;color:var(--ink)}
+.p-phone{font-family:'JetBrains Mono';font-size:12px;color:var(--muted-2);margin-top:2px;font-weight:700}
+.p-city{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-3);margin-top:3px;font-weight:700}
+/* menu */
+.menu{margin:4px 16px;background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.mi{display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:1px solid var(--border-soft)}
+.mi:last-child{border-bottom:none}
+.mi-ico{width:38px;height:38px;border-radius:11px;background:var(--yellow-pale);display:flex;align-items:center;justify-content:center;color:var(--yellow-text);flex-shrink:0}
+.mi-lbl{font-family:'Outfit';font-size:14.5px;font-weight:800;color:var(--ink)}
+.mi-sub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px;font-weight:700}
+.mi-chev{color:var(--muted-3)}
+.logout{margin:18px 16px;border:1.5px solid var(--danger);border-radius:14px;height:50px;display:flex;align-items:center;justify-content:center;background:var(--white)}
+.logout-tx{font-family:'Outfit';font-size:14px;font-weight:900;color:var(--danger-text);text-transform:uppercase;letter-spacing:.3px}
+
+/* Wallet */
+.w-appbar{padding:50px 16px 10px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px}
+.w-back{width:34px;height:34px;border-radius:17px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.w-title{font-family:'Outfit';font-size:16px;font-weight:900;color:var(--ink);flex:1;text-align:center;margin-right:34px}
+.bal-card{margin:14px 16px;background:var(--ink);border-radius:18px;padding:20px;position:relative;overflow:hidden}
+.bal-card::after{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:60px;background:var(--yellow);opacity:.12}
+.bal-lbl{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow);letter-spacing:.6px;font-weight:800}
+.bal-big{font-family:'JetBrains Mono';font-size:40px;color:var(--white);font-weight:900;letter-spacing:-1px;margin-top:8px}
+.bal-break{display:flex;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12)}
+.bal-col{flex:1}
+.bal-cv{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--white)}
+.bal-cl{font-family:'JetBrains Mono';font-size:9px;color:var(--yellow-pale);margin-top:4px;letter-spacing:.5px;font-weight:700}
+.bal-div{width:1px;height:32px;background:rgba(255,255,255,.12);margin:0 16px}
+.sec-h{padding:0 16px;margin:22px 0 10px}
+.sec-t{font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink);letter-spacing:-.3px}
+/* tx row */
+.tx{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border-soft)}
+.tx-ico{width:38px;height:38px;border-radius:19px;background:var(--success-pale);display:flex;align-items:center;justify-content:center;color:var(--success-text);flex-shrink:0}
+.tx-t{font-family:'Plus Jakarta Sans';font-size:13px;font-weight:800;color:var(--ink)}
+.tx-m{display:flex;align-items:center;gap:8px;margin-top:4px}
+.creator-chip{display:inline-flex;align-items:center;gap:3px;background:var(--yellow-pale);padding:2px 7px;border-radius:999px;font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;color:var(--yellow-text)}
+.tx-date{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);font-weight:700}
+.tx-amt{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--success-text)}
+/* empty */
+.empty{margin:0 16px;padding:28px 18px;align-items:center;display:flex;flex-direction:column;background:var(--white);border:1px dashed var(--border);border-radius:14px}
+.empty-tile{width:60px;height:60px;border-radius:14px;background:var(--yellow-pale);display:flex;align-items:center;justify-content:center;color:var(--yellow-text);margin-bottom:10px}
+.empty-t{font-family:'Outfit';font-size:16px;font-weight:900;color:var(--ink)}
+.empty-b{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);text-align:center;margin-top:6px;line-height:1.5}
+.empty-btn{margin-top:14px;background:var(--ink);color:var(--yellow);padding:10px 16px;border-radius:10px;font-family:'Outfit';font-size:12px;font-weight:900;text-transform:uppercase}
+/* how */
+.how{margin:22px 16px 0;background:var(--bg2);border-radius:14px;padding:16px}
+.how-t{font-family:'Outfit';font-size:14px;font-weight:900;color:var(--ink);margin-bottom:11px}
+.how-r{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start}
+.how-n{width:22px;height:22px;border-radius:11px;background:var(--yellow);color:var(--ink);text-align:center;font-family:'Outfit';font-size:11px;font-weight:900;line-height:22px;flex-shrink:0}
+.how-x{flex:1;font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--ink-2);line-height:1.5}
+
+/* side panel */
+.side{width:360px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 L15 12 L9 18"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7 h15 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H5 a2 2 0 0 1-2-2 Z"/><path d="M3 7 V6 a1 1 0 0 1 1-1 h12"/><circle cx="16" cy="13" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="i-package" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L20 7 V17 L12 21 L4 17 V7 Z"/><path d="M4 7 L12 11 L20 7"/><path d="M12 11 V21"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21 s7-6 7-11 a7 7 0 0 0-14 0 c0 5 7 11 7 11 Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20 c0-3.5 3-5.5 6-5.5 s6 2 6 5.5"/><path d="M16 5.5 a3 3 0 0 1 0 5.5"/><path d="M18 20 c0-2.6-1-4.2-2.5-5"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4 h12 v16 l-6-4 -6 4 Z"/></symbol>
+  <symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="5"/><path d="M5 14 v7 h14 v-7"/><path d="M12 9 V21"/><path d="M12 9 S10 4 7.5 5 S9 9 12 9 Z"/><path d="M12 9 S14 4 16.5 5 S15 9 12 9 Z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+<div class="banner">
+  <h1>Flow 41 · follower Me + Wallet — wave3 mockup (PROPER GOVERNANCE — awaiting founder sign-off)</h1>
+  <div class="sub">
+    <b>Phase F2 (account + wallet), 1st flow.</b> Applies the F0-locked light brandPalette to MeScreen (dark→light flip) + FollowerWalletScreen (lightColors→brandPalette). 2 design calls to confirm: <b>(1) Me menu icons → MCI</b> (wallet/package/pin/users/bookmark in yellowPale tiles, replacing 💰📦📍👥🔖 emoji per the F0 action-icon-drop pattern) · <b>(2) cashback tx icon = successPale gift</b>. Wallet balance card stays ink+yellow (already on-brand). Yellow #EAB308 → #FFC107 migration on Wallet. <b>No implementation until you sign off.</b>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- Me -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="me-top"><div class="me-title">Me</div></div>
+      <div class="body">
+        <div class="profile">
+          <div class="avatar">RS</div>
+          <div style="flex:1">
+            <div class="p-name">Riya Sharma</div>
+            <div class="p-phone">+91 98765 43210</div>
+            <div class="p-city">📍 VIJAYAWADA</div>
+          </div>
+        </div>
+        <div class="menu">
+          <div class="mi"><div class="mi-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-wallet"/></svg></span></div><div style="flex:1"><div class="mi-lbl">Wallet &amp; Rewards</div><div class="mi-sub">CASHBACK FROM CREATOR VISITS</div></div><span class="ico mi-chev" style="width:16px;height:16px"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="mi"><div class="mi-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-package"/></svg></span></div><div style="flex:1"><div class="mi-lbl">My Orders</div><div class="mi-sub">HISTORY &amp; TRACKING</div></div><span class="ico mi-chev" style="width:16px;height:16px"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="mi"><div class="mi-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-pin"/></svg></span></div><div style="flex:1"><div class="mi-lbl">My Addresses</div><div class="mi-sub">DELIVERY ADDRESSES</div></div><span class="ico mi-chev" style="width:16px;height:16px"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="mi"><div class="mi-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-users"/></svg></span></div><div style="flex:1"><div class="mi-lbl">Following</div><div class="mi-sub">INFLUENCERS YOU FOLLOW</div></div><span class="ico mi-chev" style="width:16px;height:16px"><svg><use href="#i-chev"/></svg></span></div>
+          <div class="mi"><div class="mi-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-bookmark"/></svg></span></div><div style="flex:1"><div class="mi-lbl">Saved Offers</div><div class="mi-sub">BOOKMARKED DEALS</div></div><span class="ico mi-chev" style="width:16px;height:16px"><svg><use href="#i-chev"/></svg></span></div>
+        </div>
+        <div class="logout"><div class="logout-tx">LOG OUT</div></div>
+        <div style="height:40px"></div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>SURFACE 1 · MeScreen (dark→light)</b><br/>Light bg · white profile card with <b>yellow avatar tile + ink initials</b> + Outfit-Black name + mono phone/city · white menu card with <b>yellowPale MCI icon tiles</b> (wallet/package/pin/users/bookmark) + Outfit-Bold labels + mono uppercase subs + muted chevrons · danger-border LOG OUT</div>
+  </div>
+
+  <!-- Wallet -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="w-appbar"><div class="w-back"><span class="ico" style="width:16px;height:16px"><svg><use href="#i-back"/></svg></span></div><div class="w-title">Wallet</div></div>
+      <div class="body">
+        <div class="bal-card">
+          <div class="bal-lbl">AVAILABLE BALANCE</div>
+          <div class="bal-big">₹ 1,240</div>
+          <div class="bal-break">
+            <div class="bal-col"><div class="bal-cv">₹ 320</div><div class="bal-cl">PENDING</div></div>
+            <div class="bal-div"></div>
+            <div class="bal-col"><div class="bal-cv">₹ 4,850</div><div class="bal-cl">LIFETIME</div></div>
+          </div>
+        </div>
+        <div class="sec-h"><div class="sec-t">Recent activity</div></div>
+        <div class="tx">
+          <div class="tx-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-gift"/></svg></span></div>
+          <div style="flex:1;min-width:0">
+            <div class="tx-t">Cashback from Spice Garden</div>
+            <div class="tx-m"><span class="creator-chip">@riya.eats ✓</span><span class="tx-date">13 NOV</span></div>
+          </div>
+          <div class="tx-amt">+ ₹85</div>
+        </div>
+        <div class="tx">
+          <div class="tx-ico"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-gift"/></svg></span></div>
+          <div style="flex:1;min-width:0">
+            <div class="tx-t">Cashback from Glow Salon</div>
+            <div class="tx-m"><span class="creator-chip">@kavya.glow ✓</span><span class="tx-date">10 NOV</span></div>
+          </div>
+          <div class="tx-amt">+ ₹120</div>
+        </div>
+        <div class="how">
+          <div class="how-t">How rewards work</div>
+          <div class="how-r"><div class="how-n">1</div><div class="how-x">Tap a creator's share link or scan their store — your visit gets tracked.</div></div>
+          <div class="how-r"><div class="how-n">2</div><div class="how-x">Pay via INFLX at the brand. The follower discount is auto-applied at the bill.</div></div>
+          <div class="how-r"><div class="how-n">3</div><div class="how-x">A portion comes back here as wallet rewards. Use it on your next visit.</div></div>
+        </div>
+        <div style="height:30px"></div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>SURFACE 2 · FollowerWalletScreen (lightColors→brandPalette)</b><br/>ink balance card with yellow label + white big mono ₹ + pending/lifetime breakdown (yellow #EAB308→#FFC107) · Outfit-Black "Recent activity" · tx rows with <b>successPale gift icon</b> + Outfit-Bold title + yellowPale creator-chip + mono date + successText "+₹" mono amount · bg2 "how rewards work" card with yellow numbered steps · (empty-state variant: dashed yellowPale tile + ink/yellow "Browse partners")</div>
+  </div>
+
+  <!-- side panel -->
+  <div class="side">
+    <div class="panel">
+      <h3>2 design calls to confirm</h3>
+      <ul>
+        <li><b>Me menu icons:</b> 💰📦📍👥🔖 emoji → MCI vectors (wallet / package-variant / map-marker / account-group / bookmark) in yellowPale tiles. Matches the F0 action-icon-drop pattern. (Recommended)</li>
+        <li><b>Cashback tx icon:</b> successPale circle + MCI gift. (Recommended) — or keep no icon / use 💰?</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Backend (verify-twice ✓)</h3>
+      <ul>
+        <li>Me: <code>getMe()</code> → follower profile + AsyncStorage logout</li>
+        <li>Wallet: <code>getWallet()</code> + <code>getWalletTransactions()</code> (graceful zero-fallback preserved)</li>
+        <li>Menu nav: FollowerWallet · OrderHistory · Address · FollowedInfluencers · SavedList</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim</h3>
+      <ul>
+        <li>useFocusEffect reload (Me) · graceful wallet zero-fallback</li>
+        <li>logout 2-confirm Alert + AsyncStorage.multiRemove + setRole('')</li>
+        <li>CreatorChip component (Wallet tx attribution)</li>
+        <li>negative/redeem tx rendering + pending/lifetime math</li>
+        <li>all 5 menu nav routes + tracking</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>After-implementation evidence (governance)</h3>
+      <ul>
+        <li>Before = this mockup rendered via Playwright.</li>
+        <li>After = real screen screenshots captured. <b>Note:</b> Me + Wallet are login-gated (follower OTP). Plan: drive Maestro follower OTP login (000000) → screenshot Me + Wallet → store in <code>06-diff/</code>. If the emulator login proves flaky, fallback = founder physical APK smoke-test, noted explicitly.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+</div>
+</body>
+</html>

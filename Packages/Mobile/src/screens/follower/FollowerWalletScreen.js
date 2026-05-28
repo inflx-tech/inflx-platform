@@ -23,7 +23,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { CreatorChip } from '../../components/restaurant';
 
@@ -81,7 +82,7 @@ export default function FollowerWalletScreen({ navigation }) {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={lightColors.ink} />}>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}>
         {/* Balance card */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>AVAILABLE BALANCE</Text>
@@ -117,6 +118,9 @@ export default function FollowerWalletScreen({ navigation }) {
           <View style={styles.section}>
             {wallet.transactions.map(t => (
               <View key={t.id} style={styles.txRow}>
+                <View style={[styles.txIco, t.negative && styles.txIcoNeg]}>
+                  <Icon name={t.negative ? 'arrow-up' : 'gift-outline'} size={19} color={t.negative ? P.muted : P.successText} />
+                </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={styles.txTitle} numberOfLines={1}>
                     {t.negative ? t.brand_name : `Cashback from ${t.brand_name}`}
@@ -130,7 +134,7 @@ export default function FollowerWalletScreen({ navigation }) {
                 </View>
                 <Text style={[
                   styles.txAmount,
-                  { color: t.negative ? lightColors.muted : lightColors.success },
+                  { color: t.negative ? P.muted : P.successText },
                 ]}>
                   {t.negative ? '−' : '+'} ₹{Math.round(t.amount)}
                 </Text>
@@ -175,7 +179,7 @@ function SectionH({ title }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: lightColors.bg },
+  root: { flex: 1, backgroundColor: P.bg },
 
   appbar: {
     flexDirection: 'row', alignItems: 'center',
@@ -183,28 +187,28 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: lightColors.surface,
+    backgroundColor: P.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
-  iconBtnGlyph: { fontSize: 16, color: lightColors.ink },
+  iconBtnGlyph: { fontSize: 16, color: P.ink },
   appbarTitle: {
     flex: 1, textAlign: 'center',
     fontFamily: fonts.displayBold, fontSize: 17,
-    color: lightColors.ink, letterSpacing: -0.2,
+    color: P.ink, letterSpacing: -0.2,
   },
 
   balanceCard: {
     marginHorizontal: 16, marginTop: 10,
-    backgroundColor: lightColors.ink,
+    backgroundColor: P.ink,
     borderRadius: 16, padding: 20,
   },
   balanceLabel: {
     fontFamily: fonts.monoBold, fontSize: 10,
-    color: lightColors.yellow, letterSpacing: 0.6,
+    color: P.yellow, letterSpacing: 0.6,
   },
   balanceBig: {
     fontFamily: fonts.displayBlack, fontSize: 40,
-    color: lightColors.white, letterSpacing: -1, marginTop: 8,
+    color: P.white, letterSpacing: -1, marginTop: 8,
   },
   balanceBreakdown: {
     flexDirection: 'row', alignItems: 'center',
@@ -213,11 +217,11 @@ const styles = StyleSheet.create({
   },
   balanceCol: { flex: 1 },
   balanceColValue: {
-    fontFamily: fonts.monoBold, fontSize: 15, color: lightColors.white,
+    fontFamily: fonts.monoBold, fontSize: 15, color: P.white,
   },
   balanceColLabel: {
     fontFamily: fonts.monoMedium, fontSize: 9,
-    color: lightColors.yellow100, marginTop: 4, letterSpacing: 0.5,
+    color: P.yellowPale, marginTop: 4, letterSpacing: 0.5,
   },
   balanceColDivider: {
     width: 1, height: 32,
@@ -228,52 +232,58 @@ const styles = StyleSheet.create({
   sectionH: { paddingHorizontal: 16, marginTop: 22, marginBottom: 10 },
   sectionTitle: {
     fontFamily: fonts.displayBold, fontSize: 17,
-    color: lightColors.ink, letterSpacing: -0.3,
+    color: P.ink, letterSpacing: -0.3,
   },
 
   empty: {
     marginHorizontal: 16, paddingHorizontal: 18, paddingVertical: 28,
-    alignItems: 'center', backgroundColor: lightColors.paper,
-    borderColor: lightColors.border, borderWidth: 1,
+    alignItems: 'center', backgroundColor: P.white,
+    borderColor: P.border, borderWidth: 1,
     borderStyle: 'dashed', borderRadius: 14,
   },
   emptyEmoji: { fontSize: 42, marginBottom: 8 },
   emptyTitle: {
     fontFamily: fonts.displayBold, fontSize: 17,
-    color: lightColors.ink, letterSpacing: -0.2,
+    color: P.ink, letterSpacing: -0.2,
   },
   emptyBody: {
     fontFamily: fonts.sansMedium, fontSize: 12,
-    color: lightColors.muted, textAlign: 'center',
+    color: P.muted, textAlign: 'center',
     marginTop: 6, lineHeight: 17,
   },
   emptyBtn: {
-    marginTop: 14, backgroundColor: lightColors.yellow,
+    marginTop: 14, backgroundColor: P.yellow,
     paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8,
   },
   emptyBtnText: {
-    fontFamily: fonts.sansBold, fontSize: 12, color: lightColors.ink,
+    fontFamily: fonts.sansBold, fontSize: 12, color: P.ink,
   },
 
   section: { paddingHorizontal: 16 },
   txRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingVertical: 12,
-    borderBottomColor: lightColors.border, borderBottomWidth: 1,
+    borderBottomColor: P.border, borderBottomWidth: 1,
   },
-  txTitle: { fontFamily: fonts.sansBold, fontSize: 13, color: lightColors.ink },
+  txIco: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: P.successPale,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  txIcoNeg: { backgroundColor: P.bg2 },
+  txTitle: { fontFamily: fonts.sansBold, fontSize: 13, color: P.ink },
   txMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  txDate: { fontFamily: fonts.monoMedium, fontSize: 10, color: lightColors.muted },
+  txDate: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted },
   txAmount: { fontFamily: fonts.monoBold, fontSize: 14 },
 
   howCard: {
     marginHorizontal: 16, marginTop: 22,
-    backgroundColor: lightColors.surface,
+    backgroundColor: P.bg2,
     borderRadius: 12, padding: 16,
   },
   howTitle: {
     fontFamily: fonts.displayBold, fontSize: 14,
-    color: lightColors.ink, marginBottom: 10, letterSpacing: -0.1,
+    color: P.ink, marginBottom: 10, letterSpacing: -0.1,
   },
   howRow: {
     flexDirection: 'row', alignItems: 'flex-start',
@@ -281,13 +291,13 @@ const styles = StyleSheet.create({
   },
   howNum: {
     width: 22, height: 22, borderRadius: 11,
-    backgroundColor: lightColors.yellow,
-    color: lightColors.ink, textAlign: 'center',
+    backgroundColor: P.yellow,
+    color: P.ink, textAlign: 'center',
     fontFamily: fonts.displayBlack, fontSize: 11,
     lineHeight: 22,
   },
   howText: {
     flex: 1, fontFamily: fonts.sansMedium,
-    fontSize: 12, color: lightColors.ink2, lineHeight: 17,
+    fontSize: 12, color: P.ink2, lineHeight: 17,
   },
 });

@@ -1,10 +1,20 @@
 import React, { useState, useCallback, useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { darkColors, spacing, radius } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, spacing, radius } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
+/**
+ * MeScreen — follower account hub.
+ *
+ * Flow 41 (F2) restyle (2026-05-28): dark → light brandPalette. Yellow avatar
+ * tile + ink initials (matches F0 MyStore/profile avatar). Menu emoji
+ * (💰📦📍👥🔖) → MCI vector icons in yellowPale tiles (founder design call).
+ * Danger-border logout. getMe + useFocusEffect reload + logout flow preserved.
+ */
 
 export default function MeScreen({ navigation }) {
   const { setRole } = useContext(AuthContext);
@@ -39,19 +49,24 @@ export default function MeScreen({ navigation }) {
   };
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator size="large" color={darkColors.amber} /></View>;
+    return <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>;
   }
 
   const menuItems = [
-    { icon: '💰', label: 'Wallet & Rewards', sub: 'Cashback from creator-attributed visits', onPress: () => navigation.navigate('FollowerWallet') },
-    { icon: '📦', label: 'My Orders', sub: 'View order history & tracking', onPress: () => navigation.navigate('OrderHistory') },
-    { icon: '📍', label: 'My Addresses', sub: 'Manage delivery addresses', onPress: () => navigation.navigate('Address') },
-    { icon: '👥', label: 'Following', sub: 'Influencers you follow', onPress: () => navigation.navigate('FollowedInfluencers') },
-    { icon: '🔖', label: 'Saved Offers', sub: 'Bookmarked deals', onPress: () => navigation.navigate('SavedList') },
+    { icon: 'wallet', label: 'Wallet & Rewards', sub: 'CASHBACK FROM CREATOR VISITS', onPress: () => navigation.navigate('FollowerWallet') },
+    { icon: 'package-variant', label: 'My Orders', sub: 'HISTORY & TRACKING', onPress: () => navigation.navigate('OrderHistory') },
+    { icon: 'map-marker-outline', label: 'My Addresses', sub: 'DELIVERY ADDRESSES', onPress: () => navigation.navigate('Address') },
+    { icon: 'account-group-outline', label: 'Following', sub: 'INFLUENCERS YOU FOLLOW', onPress: () => navigation.navigate('FollowedInfluencers') },
+    { icon: 'bookmark-outline', label: 'Saved Offers', sub: 'BOOKMARKED DEALS', onPress: () => navigation.navigate('SavedList') },
   ];
 
   return (
     <ScrollView style={s.container}>
+      {/* Title */}
+      <View style={s.topBar}>
+        <Text style={s.topTitle}>Me</Text>
+      </View>
+
       {/* Profile card */}
       <View style={s.profileCard}>
         <View style={s.avatar}>
@@ -60,7 +75,7 @@ export default function MeScreen({ navigation }) {
         <View style={{ flex: 1 }}>
           <Text style={s.name}>{profile?.name || 'Follower'}</Text>
           <Text style={s.phone}>{profile?.phone || ''}</Text>
-          {profile?.user_city && <Text style={s.city}>📍 {profile.user_city}</Text>}
+          {profile?.user_city && <Text style={s.city}>📍 {String(profile.user_city).toUpperCase()}</Text>}
         </View>
       </View>
 
@@ -68,19 +83,21 @@ export default function MeScreen({ navigation }) {
       <View style={s.menuSection}>
         {menuItems.map((item, i) => (
           <TouchableOpacity key={i} style={[s.menuItem, i === menuItems.length - 1 && { borderBottomWidth: 0 }]} onPress={item.onPress}>
-            <Text style={{ fontSize: 22 }}>{item.icon}</Text>
+            <View style={s.menuIco}>
+              <Icon name={item.icon} size={20} color={P.yellowText} />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={s.menuLabel}>{item.label}</Text>
               <Text style={s.menuSub}>{item.sub}</Text>
             </View>
-            <Text style={{ color: darkColors.textMuted, fontSize: 16 }}>›</Text>
+            <Icon name="chevron-right" size={18} color={P.muted3} />
           </TouchableOpacity>
         ))}
       </View>
 
       {/* Logout */}
       <TouchableOpacity style={s.logoutBtn} onPress={handleLogout}>
-        <Text style={s.logoutText}>Logout</Text>
+        <Text style={s.logoutText}>LOG OUT</Text>
       </TouchableOpacity>
 
       <View style={{ height: 100 }} />
@@ -94,54 +111,69 @@ function getInitials(name) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg2, paddingTop: 50 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: darkColors.bg2 },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
+
+  topBar: {
+    paddingTop: 50, paddingHorizontal: 16, paddingBottom: 8,
+    backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  topTitle: { fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     margin: spacing.lg,
     padding: spacing.lg,
-    borderRadius: radius.lg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: P.border,
   },
   avatar: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: darkColors.amber, alignItems: 'center', justifyContent: 'center',
+    width: 58, height: 58, borderRadius: 29,
+    backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: 18, fontWeight: '800', color: '#000' },
-  name: { fontSize: 18, fontWeight: '700', color: darkColors.text },
-  phone: { fontSize: 13, color: darkColors.textSecondary, marginTop: 2 },
-  city: { fontSize: 11, color: darkColors.textMuted, marginTop: 2 },
+  avatarText: { fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  name: { fontSize: 18, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  phone: { fontSize: 12, color: P.muted2, marginTop: 2, fontWeight: '700', fontFamily: fonts.monoMedium },
+  city: { fontSize: 10, color: P.muted3, marginTop: 3, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+
   menuSection: {
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     marginHorizontal: spacing.lg,
-    borderRadius: radius.lg,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: P.border,
     overflow: 'hidden',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 13,
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: darkColors.border,
+    borderBottomColor: P.borderSoft,
   },
-  menuLabel: { fontSize: 15, fontWeight: '600', color: darkColors.text },
-  menuSub: { fontSize: 11, color: darkColors.textMuted, marginTop: 2 },
+  menuIco: {
+    width: 38, height: 38, borderRadius: 11,
+    backgroundColor: P.yellowPale,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  menuLabel: { fontSize: 14.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  menuSub: { fontSize: 10, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+
   logoutBtn: {
     margin: spacing.lg,
     marginTop: spacing.xl,
-    height: 48,
-    borderRadius: radius.lg,
+    height: 50,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: darkColors.red,
+    borderColor: P.danger,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: P.white,
   },
-  logoutText: { fontSize: 14, fontWeight: '700', color: darkColors.red },
+  logoutText: { fontSize: 14, fontWeight: '900', color: P.dangerText, textTransform: 'uppercase', letterSpacing: 0.3, fontFamily: fonts.displayBlack },
 });
