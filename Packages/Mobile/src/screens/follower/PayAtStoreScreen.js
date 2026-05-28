@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { darkColors, fmtMoney } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
 // Wave 4 PR 4.3 — restaurant bill payments dispatch to the redesigned
@@ -162,7 +163,7 @@ export default function PayAtStoreScreen({ navigation, route }) {
       <ScrollView style={s.container}>
         <View style={s.successCard}>
           <View style={s.successIcon}>
-            <Text style={{ fontSize: 32 }}>✅</Text>
+            <Icon name="check-bold" size={30} color={P.ink} />
           </View>
           <Text style={s.successTitle}>Payment Successful!</Text>
           <Text style={s.successRef}>Ref: {receipt.reference}</Text>
@@ -191,8 +192,8 @@ export default function PayAtStoreScreen({ navigation, route }) {
   if (step === 'processing') {
     return (
       <View style={[s.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={darkColors.amber} />
-        <Text style={{ color: darkColors.textSecondary, marginTop: 16, fontSize: 14 }}>Processing payment...</Text>
+        <ActivityIndicator size="large" color={P.yellow} />
+        <Text style={{ color: P.muted, marginTop: 16, fontSize: 14 }}>Processing payment...</Text>
       </View>
     );
   }
@@ -243,7 +244,7 @@ export default function PayAtStoreScreen({ navigation, route }) {
             onChangeText={setBillAmount}
             keyboardType="numeric"
             placeholder="0"
-            placeholderTextColor={darkColors.textMuted}
+            placeholderTextColor={P.muted2}
             editable={!isKnownAmount}
           />
         </View>
@@ -260,16 +261,16 @@ export default function PayAtStoreScreen({ navigation, route }) {
               <>
                 <View style={s.breakdownRow}>
                   <Text style={s.breakdownLabel}>Discount ({discountPct}%)</Text>
-                  <Text style={[s.breakdownVal, { color: darkColors.green }]}>- {fmtMoney(discountRupees)}</Text>
+                  <Text style={[s.breakdownVal, { color: P.successText }]}>- {fmtMoney(discountRupees)}</Text>
                 </View>
                 <View style={s.breakdownRow}>
-                  <Text style={[s.breakdownLabel, { fontWeight: '700', color: darkColors.text }]}>Discounted Total</Text>
+                  <Text style={[s.breakdownLabel, { fontWeight: '700', color: P.ink }]}>Discounted Total</Text>
                   <Text style={[s.breakdownVal, { fontWeight: '700' }]}>{fmtMoney(discountedTotal)}</Text>
                 </View>
                 {isPrebookBalance && tokenPaidRupees > 0 && (
                   <View style={s.breakdownRow}>
                     <Text style={s.breakdownLabel}>Token already paid</Text>
-                    <Text style={[s.breakdownVal, { color: darkColors.amber }]}>- {fmtMoney(tokenPaidRupees)}</Text>
+                    <Text style={[s.breakdownVal, { color: P.yellowText }]}>- {fmtMoney(tokenPaidRupees)}</Text>
                   </View>
                 )}
                 <View style={s.savingsRow}>
@@ -309,11 +310,11 @@ export default function PayAtStoreScreen({ navigation, route }) {
 function ReceiptRow({ label, value, green, bold, amber }) {
   return (
     <View style={rs.row}>
-      <Text style={[rs.label, bold && { fontWeight: '700', color: darkColors.text }]}>{label}</Text>
+      <Text style={[rs.label, bold && { fontWeight: '700', color: P.ink }]}>{label}</Text>
       <Text style={[
         rs.value,
-        green && { color: darkColors.green },
-        amber && { color: darkColors.amber },
+        green && { color: P.successText },
+        amber && { color: P.yellowText },
         bold && { fontSize: 16, fontWeight: '800' },
       ]}>{value}</Text>
     </View>
@@ -322,72 +323,72 @@ function ReceiptRow({ label, value, green, bold, amber }) {
 
 const rs = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  label: { fontSize: 12, color: darkColors.textSecondary },
-  value: { fontSize: 12, fontWeight: '600', color: darkColors.text },
+  label: { fontSize: 12, color: P.muted },
+  value: { fontSize: 12, fontWeight: '600', color: P.ink },
 });
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg },
-  header: { backgroundColor: darkColors.bg2, padding: 20, paddingTop: 52 },
+  container: { flex: 1, backgroundColor: P.bg },
+  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: darkColors.textSecondary, fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '800', color: darkColors.text },
-  sub: { fontSize: 12, color: darkColors.textMuted, marginTop: 4 },
+  backText: { fontSize: 13, color: 'rgba(255,255,255,0.65)', fontWeight: '700', fontFamily: fonts.monoBold },
+  title: { fontSize: 20, fontWeight: '900', color: P.white, fontFamily: fonts.displayBlack },
+  sub: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4, fontWeight: '700', fontFamily: fonts.monoMedium },
   dealCard: {
     marginHorizontal: 16, marginTop: 12,
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: darkColors.amberDim, borderRadius: 12,
-    padding: 12, borderWidth: 1, borderColor: darkColors.borderAccent,
+    backgroundColor: P.yellowPale, borderRadius: 12,
+    padding: 12, borderWidth: 1, borderColor: '#F0DA88',
   },
-  dealBadge: { backgroundColor: darkColors.amber, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  dealBadgeText: { fontSize: 12, fontWeight: '800', color: '#000' },
-  dealInfo: { fontSize: 11, color: darkColors.amber, fontWeight: '600' },
+  dealBadge: { backgroundColor: P.ink, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  dealBadgeText: { fontSize: 11, fontWeight: '900', color: P.yellow, fontFamily: fonts.monoBold },
+  dealInfo: { fontSize: 11, color: P.yellowText, fontWeight: '800', fontFamily: fonts.monoBold },
   // Q2 token banner
   tokenBanner: {
     marginHorizontal: 16, marginTop: 10,
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: 'rgba(34,197,94,0.10)', borderRadius: 12, padding: 12,
-    borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)',
+    backgroundColor: P.successPale, borderRadius: 12, padding: 12,
+    borderWidth: 1, borderColor: '#A8E6CC',
   },
-  tokenBannerIcon: { fontSize: 22, color: darkColors.green, fontWeight: '900' },
-  tokenBannerText: { flex: 1, fontSize: 11, color: darkColors.text, lineHeight: 15 },
+  tokenBannerIcon: { fontSize: 22, color: P.successText, fontWeight: '900' },
+  tokenBannerText: { flex: 1, fontSize: 11, color: P.ink, lineHeight: 15 },
   card: {
-    margin: 16, backgroundColor: darkColors.card, borderRadius: 20,
-    padding: 20, borderWidth: 1, borderColor: darkColors.border,
+    margin: 16, backgroundColor: P.white, borderRadius: 20,
+    padding: 20, borderWidth: 1, borderColor: P.border,
   },
-  label: { fontSize: 13, fontWeight: '700', color: darkColors.textSecondary, marginBottom: 10 },
+  label: { fontSize: 13, fontWeight: '700', color: P.muted, marginBottom: 10 },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 2, borderColor: darkColors.border, borderRadius: 14, marginBottom: 20,
-    backgroundColor: darkColors.input,
+    borderWidth: 2, borderColor: P.border, borderRadius: 14, marginBottom: 20,
+    backgroundColor: P.white,
   },
-  rupee: { paddingHorizontal: 16, fontSize: 22, fontWeight: '700', color: darkColors.textSecondary },
-  input: { flex: 1, paddingVertical: 16, paddingRight: 16, fontSize: 28, fontWeight: '800', color: darkColors.text },
+  rupee: { paddingHorizontal: 16, fontSize: 22, fontWeight: '700', color: P.muted },
+  input: { flex: 1, paddingVertical: 16, paddingRight: 16, fontSize: 28, fontWeight: '800', color: P.ink },
   breakdown: {
-    backgroundColor: darkColors.bg2, borderRadius: 12, padding: 14, marginBottom: 20,
-    borderWidth: 1, borderColor: darkColors.border,
+    backgroundColor: P.bg2, borderRadius: 12, padding: 14, marginBottom: 20,
+    borderWidth: 1, borderColor: P.border,
   },
   breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  breakdownLabel: { fontSize: 14, color: darkColors.textSecondary },
-  breakdownVal: { fontSize: 14, fontWeight: '600', color: darkColors.text },
+  breakdownLabel: { fontSize: 14, color: P.muted },
+  breakdownVal: { fontSize: 14, fontWeight: '600', color: P.ink },
   savingsRow: { marginBottom: 8 },
-  savingsText: { fontSize: 11, fontWeight: '700', color: darkColors.green },
-  totalRow: { borderTopWidth: 1, borderTopColor: darkColors.border, paddingTop: 10, marginTop: 4, marginBottom: 0 },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: darkColors.text },
-  totalVal: { fontSize: 20, fontWeight: '800', color: darkColors.amber },
-  payBtn: { backgroundColor: darkColors.amber, borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginBottom: 12 },
+  savingsText: { fontSize: 11, fontWeight: '700', color: P.successText },
+  totalRow: { borderTopWidth: 1, borderTopColor: P.border, paddingTop: 10, marginTop: 4, marginBottom: 0 },
+  totalLabel: { fontSize: 16, fontWeight: '700', color: P.ink },
+  totalVal: { fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  payBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 17, alignItems: 'center', marginBottom: 12 },
   payBtnDisabled: { opacity: 0.5 },
-  payBtnText: { fontSize: 16, fontWeight: '800', color: '#000' },
+  payBtnText: { fontSize: 15, fontWeight: '900', color: P.yellow, letterSpacing: 0.3, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
   methodsRow: { alignItems: 'center', marginBottom: 12 },
-  methodsText: { fontSize: 10, color: darkColors.textMuted },
-  note: { fontSize: 11, color: darkColors.textMuted, textAlign: 'center', lineHeight: 18 },
+  methodsText: { fontSize: 10, color: P.muted2 },
+  note: { fontSize: 11, color: P.muted2, textAlign: 'center', lineHeight: 18 },
   // Success
-  successCard: { margin: 16, marginTop: 80, backgroundColor: darkColors.card, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: darkColors.border, alignItems: 'center' },
-  successIcon: { marginBottom: 16 },
-  successTitle: { fontSize: 22, fontWeight: '800', color: darkColors.text, marginBottom: 4 },
-  successRef: { fontSize: 12, color: darkColors.amber, fontWeight: '600', marginBottom: 20 },
-  receiptBox: { width: '100%', backgroundColor: darkColors.bg2, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: darkColors.border, marginBottom: 20 },
-  receiptDivider: { height: 1, backgroundColor: darkColors.border, marginVertical: 6 },
-  doneBtn: { backgroundColor: darkColors.amber, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 40 },
-  doneBtnText: { fontSize: 14, fontWeight: '800', color: '#000' },
+  successCard: { margin: 16, marginTop: 80, backgroundColor: P.white, borderRadius: 20, padding: 24, borderWidth: 1, borderColor: P.border, alignItems: 'center' },
+  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  successTitle: { fontSize: 22, fontWeight: '900', color: P.ink, marginBottom: 4, fontFamily: fonts.displayBlack },
+  successRef: { fontSize: 12, color: P.yellowText, fontWeight: '800', marginBottom: 20, fontFamily: fonts.monoBold },
+  receiptBox: { width: '100%', backgroundColor: P.bg2, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: P.border, marginBottom: 20 },
+  receiptDivider: { height: 1, backgroundColor: P.border, marginVertical: 6 },
+  doneBtn: { backgroundColor: P.ink, borderRadius: 12, paddingVertical: 14, paddingHorizontal: 40 },
+  doneBtnText: { fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 });

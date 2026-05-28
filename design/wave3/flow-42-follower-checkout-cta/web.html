@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F3 · follower checkout / CTA flows — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:360px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:360px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:780px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:116px;height:26px;background:var(--ink);border-radius:16px;z-index:20}
+.status-bar{height:42px;background:var(--white);color:var(--ink);display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 7px;font-family:'JetBrains Mono';font-size:11.5px;font-weight:700;flex-shrink:0}
+.body{flex:1;overflow-y:auto;background:var(--bg)}
+.ico{display:inline-block;vertical-align:middle}.ico svg{width:100%;height:100%;display:block}
+
+/* ink hero header */
+.h-ink{background:var(--ink);color:var(--white);padding:44px 16px 18px;flex-shrink:0;position:relative}
+.h-ink::after{content:'';position:absolute;left:16px;bottom:7px;width:28px;height:3px;background:var(--yellow);border-radius:2px}
+.h-back{display:flex;align-items:center;gap:5px;margin-bottom:11px;color:rgba(255,255,255,.65)}
+.h-back-tx{font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.3px}
+.h-ttl{font-family:'Outfit';font-size:19px;font-weight:900;color:var(--white)}
+.h-sub{font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,.6);margin-top:3px;font-weight:700}
+
+/* white header (cart) */
+.h-w{background:var(--white);border-bottom:1px solid var(--border);padding:46px 16px 12px;flex-shrink:0;display:flex;align-items:center;gap:10px}
+.h-w-back{width:32px;height:32px;border-radius:16px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.h-w-ttl{font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink)}
+
+/* deal badge card */
+.deal{margin:12px 14px;display:flex;align-items:center;gap:10px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:12px;padding:11px}
+.deal-badge{background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:11px;font-weight:900;padding:4px 9px;border-radius:8px}
+.deal-tx{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow-text)}
+
+/* card */
+.card{margin:0 14px 12px;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px}
+.card-ttl{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.4px;margin-bottom:11px}
+.label{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px}
+
+/* amount input */
+.amt-wrap{display:flex;align-items:center;border:1.5px solid var(--ink);border-radius:13px;background:var(--white);overflow:hidden;margin-bottom:16px}
+.amt-rupee{padding:0 14px;font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink)}
+.amt-in{flex:1;padding:15px 14px 15px 0;font-family:'JetBrains Mono';font-size:26px;font-weight:900;color:var(--ink)}
+
+/* breakdown */
+.bd{background:var(--bg2);border-radius:12px;padding:13px;margin-bottom:16px}
+.bd-row{display:flex;justify-content:space-between;padding:5px 0}
+.bd-l{font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--muted)}
+.bd-l.bold{font-family:'Outfit';font-weight:800;color:var(--ink)}
+.bd-v{font-family:'JetBrains Mono';font-size:12.5px;font-weight:800;color:var(--ink)}
+.bd-v.disc{color:var(--success-text)}
+.bd-save{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--success-text);padding:4px 0}
+.bd-total{border-top:1px solid var(--border);margin-top:5px;padding-top:9px;display:flex;justify-content:space-between;align-items:center}
+.bd-total-l{font-family:'Outfit';font-size:14px;font-weight:900;color:var(--ink)}
+.bd-total-v{font-family:'JetBrains Mono';font-size:21px;font-weight:900;color:var(--ink)}
+
+/* token banner */
+.token{margin:0 14px 12px;display:flex;align-items:center;gap:9px;background:var(--success-pale);border:1px solid #A8E6CC;border-radius:12px;padding:11px}
+.token-ic{width:22px;height:22px;border-radius:11px;background:var(--success-text);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:13px;font-weight:900;flex-shrink:0}
+.token-tx{font-family:'Plus Jakarta Sans';font-size:10.5px;color:var(--success-text);line-height:1.45}
+.token-tx b{font-weight:800}
+
+/* pay CTA */
+.pay{margin:0 14px;background:var(--ink);color:var(--yellow);border-radius:14px;padding:16px;text-align:center;font-family:'Outfit';font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px}
+.methods{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-align:center;margin:9px 14px 0;font-weight:700;letter-spacing:.2px}
+.note{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-3);text-align:center;margin:6px 14px 0;font-weight:700}
+
+/* cart item */
+.it{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid var(--border-soft)}
+.it-nm{font-family:'Outfit';font-size:13.5px;font-weight:800;color:var(--ink)}
+.it-pr{font-family:'JetBrains Mono';font-size:11.5px;color:var(--muted);margin-top:2px;font-weight:700}
+.qty{display:flex;align-items:center;gap:10px}
+.qty-b{width:30px;height:30px;border-radius:15px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink)}
+.qty-n{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--ink);min-width:20px;text-align:center}
+/* address */
+.addr{display:flex;gap:10px;padding:11px;border:1.5px solid var(--border);border-radius:11px;margin-bottom:8px}
+.addr.sel{border-color:var(--ink);background:var(--bg2)}
+.radio{width:18px;height:18px;border-radius:9px;border:2px solid var(--muted-3);display:flex;align-items:center;justify-content:center;margin-top:1px}
+.addr.sel .radio{border-color:var(--ink)}
+.radio-in{width:9px;height:9px;border-radius:5px;background:var(--ink)}
+.addr-l{font-family:'Outfit';font-size:12px;font-weight:800;color:var(--ink)}
+.addr-t{font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:2px;font-weight:600;line-height:1.4}
+.addr-add{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--yellow-text)}
+/* sticky footer */
+.footer{background:var(--white);border-top:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.f-total{font-family:'JetBrains Mono';font-size:18px;font-weight:900;color:var(--ink)}
+.f-items{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:2px;font-weight:700}
+.f-btn{background:var(--ink);color:var(--yellow);border-radius:12px;padding:14px 22px;font-family:'Outfit';font-size:13.5px;font-weight:900;text-transform:uppercase;letter-spacing:.2px}
+
+/* success receipt */
+.succ{margin:60px 14px 0;background:var(--white);border:1px solid var(--border);border-radius:18px;padding:24px;align-items:center;display:flex;flex-direction:column}
+.succ-tile{width:64px;height:64px;border-radius:32px;background:var(--yellow);display:flex;align-items:center;justify-content:center;color:var(--ink);margin-bottom:16px}
+.succ-t{font-family:'Outfit';font-size:21px;font-weight:900;color:var(--ink)}
+.succ-ref{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--yellow-text);margin-top:5px}
+.rcpt{width:100%;background:var(--bg2);border-radius:12px;padding:14px;margin-top:18px}
+.rcpt-row{display:flex;justify-content:space-between;padding:5px 0}
+.rcpt-l{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted)}
+.rcpt-v{font-family:'JetBrains Mono';font-size:11.5px;font-weight:800;color:var(--ink)}
+.rcpt-v.disc{color:var(--success-text)}
+.rcpt-div{height:1px;background:var(--border);margin:6px 0}
+.rcpt-v.big{font-size:15px;font-weight:900}
+.done{margin-top:18px;background:var(--ink);color:var(--yellow);border-radius:12px;padding:13px 40px;font-family:'Outfit';font-size:13px;font-weight:900;text-transform:uppercase}
+
+/* side panel */
+.side{width:360px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12 L10 17 L19 8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+<div class="banner">
+  <h1>F3 · follower CHECKOUT / CTA flows — wave3 mockup (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Phase F3 — the shared transaction CTAs you named: pay-at-store / pay-at-restaurant · online-order · pre-book.</b> Business-agnostic checkout surfaces on the F0-locked light brandPalette. Spine: <b>yellowPale creator-deal strip</b> (attribution → commission credit) · mono amount + successText discount breakdown · <b>ink/yellow Outfit-Black PAY / PLACE ORDER / RESERVE CTAs</b> · Razorpay secured note · yellow-tile success receipt. <b>Razorpay + 4-ID tracking + all order/pay APIs preserved verbatim — visual only.</b> 4 representative frames below; full F3 = ~8 screens across 3 flows (see panel).
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- 1. Pay at Store -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="h-ink">
+        <div class="h-back"><span class="ico" style="width:14px;height:14px"><svg><use href="#i-back"/></svg></span><span class="h-back-tx">BACK</span></div>
+        <div class="h-ttl">Pay at Spice Garden</div>
+        <div class="h-sub">VIA @riya.eats' DEAL</div>
+      </div>
+      <div class="body">
+        <div class="deal"><div class="deal-badge">30% OFF</div><div class="deal-tx">@RIYA.EATS' DEAL · WALK-IN &amp; PAY</div></div>
+        <div class="card">
+          <div class="label">Enter your bill amount (₹)</div>
+          <div class="amt-wrap"><div class="amt-rupee">₹</div><div class="amt-in">1,200</div></div>
+          <div class="bd">
+            <div class="bd-row"><span class="bd-l">Bill Amount</span><span class="bd-v">₹1,200</span></div>
+            <div class="bd-row"><span class="bd-l">Discount (30%)</span><span class="bd-v disc">− ₹360</span></div>
+            <div class="bd-save">✓ YOU SAVE ₹360 ON THIS BILL</div>
+            <div class="bd-total"><span class="bd-total-l">You Pay Now</span><span class="bd-total-v">₹840</span></div>
+          </div>
+          <div class="pay"><span class="ico" style="width:17px;height:17px;color:var(--yellow)"><svg><use href="#i-bolt"/></svg></span>PAY ₹840 VIA UPI</div>
+          <div class="methods">UPI · GOOGLE PAY · PHONEPE · CARDS · NETBANKING</div>
+          <div class="note">SECURED BY INFLX · RAZORPAY</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · Pay at Store / Restaurant</b><br/>ink hero + yellowPale creator-deal strip (ink/yellow badge) · ink-bordered amount input with Outfit-Black ₹ + mono number · bg2 breakdown (bill → successText discount → mono "You Pay Now") · ink/yellow PAY VIA UPI with bolt · mono methods + Razorpay note</div>
+  </div>
+
+  <!-- 2. Success receipt -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body">
+        <div class="succ">
+          <div class="succ-tile"><span class="ico" style="width:30px;height:30px"><svg><use href="#i-check"/></svg></span></div>
+          <div class="succ-t">Payment Successful!</div>
+          <div class="succ-ref">REF: INFLX-K7Q2M9</div>
+          <div class="rcpt">
+            <div class="rcpt-row"><span class="rcpt-l">Store</span><span class="rcpt-v">Spice Garden</span></div>
+            <div class="rcpt-row"><span class="rcpt-l">Date</span><span class="rcpt-v">13 NOV, 2:14 PM</span></div>
+            <div class="rcpt-row"><span class="rcpt-l">Bill Amount</span><span class="rcpt-v">₹1,200</span></div>
+            <div class="rcpt-row"><span class="rcpt-l">Discount (30%)</span><span class="rcpt-v disc">− ₹360</span></div>
+            <div class="rcpt-div"></div>
+            <div class="rcpt-row"><span class="rcpt-l" style="font-weight:800;color:var(--ink)">Amount Paid</span><span class="rcpt-v big">₹840</span></div>
+            <div class="rcpt-row"><span class="rcpt-l">Via creator</span><span class="rcpt-v">@riya.eats</span></div>
+          </div>
+          <div class="done">DONE</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · Payment Success / Receipt</b><br/>yellow check-tile (matches Flow 32/33 celebration pattern) + Outfit-Black "Payment Successful!" + mono ref · bg2 receipt box with mono rows + successText discount line + big mono "Amount Paid" + creator attribution · ink/yellow DONE</div>
+  </div>
+
+  <!-- 3. Online Order (cart) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="h-w"><div class="h-w-back"><span class="ico" style="width:15px;height:15px"><svg><use href="#i-back"/></svg></span></div><div class="h-w-ttl">Your Cart</div></div>
+      <div class="body">
+        <div class="card" style="margin-top:12px">
+          <div class="card-ttl">Items</div>
+          <div class="it"><div style="flex:1"><div class="it-nm">Hydra Glow Cream</div><div class="it-pr">₹899</div></div><div class="qty"><div class="qty-b">−</div><div class="qty-n">1</div><div class="qty-b">+</div></div></div>
+          <div class="it" style="border-bottom:none"><div style="flex:1"><div class="it-nm">Matte Lipstick</div><div class="it-pr">₹599</div></div><div class="qty"><div class="qty-b">−</div><div class="qty-n">2</div><div class="qty-b">+</div></div></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="card-ttl" style="margin-bottom:0">Delivery Address</span><span class="addr-add">+ ADD</span></div>
+          <div class="addr sel"><div class="radio"><div class="radio-in"></div></div><div style="flex:1"><div class="addr-l">HOME</div><div class="addr-t">12-3-45 Benz Circle, Vijayawada, AP 520010</div></div></div>
+          <div class="addr"><div class="radio"></div><div style="flex:1"><div class="addr-l">WORK</div><div class="addr-t">IT Park, Gannavaram, Vijayawada 521101</div></div></div>
+        </div>
+        <div class="card">
+          <div class="bd-row"><span class="bd-l">Subtotal</span><span class="bd-v">₹2,097</span></div>
+          <div class="bd-row"><span class="bd-l disc" style="color:var(--success-text)">Creator discount (15%)</span><span class="bd-v disc">− ₹315</span></div>
+          <div class="bd-total"><span class="bd-total-l">Total</span><span class="bd-total-v">₹1,782</span></div>
+        </div>
+      </div>
+      <div class="footer"><div><div class="f-total">₹1,782</div><div class="f-items">3 ITEMS</div></div><div class="f-btn">Place Order</div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · Online Order (Cart)</b><br/>white-bg cart · item rows with Outfit-Bold name + mono price + bg2 qty steppers · ink-active address radio + mono address · creator-discount line in summary · sticky footer with mono total + ink/yellow PLACE ORDER</div>
+  </div>
+
+  <!-- 4. Pre-Book -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="h-ink">
+        <div class="h-back"><span class="ico" style="width:14px;height:14px"><svg><use href="#i-back"/></svg></span><span class="h-back-tx">BACK</span></div>
+        <div class="h-ttl">Reserve · Glow Salon</div>
+        <div class="h-sub">VIA @kavya.glow' DEAL</div>
+      </div>
+      <div class="body">
+        <div class="deal"><div class="deal-badge">25% OFF</div><div class="deal-tx">@KAVYA.GLOW' DEAL · PRE-BOOK</div></div>
+        <div class="card">
+          <div class="card-ttl">Booking summary</div>
+          <div class="bd-row"><span class="bd-l">Hair Spa + Cut</span><span class="bd-v">₹1,600</span></div>
+          <div class="bd-row"><span class="bd-l">Discount (25%)</span><span class="bd-v disc">− ₹400</span></div>
+          <div class="bd-row"><span class="bd-l bold">After discount</span><span class="bd-v">₹1,200</span></div>
+        </div>
+        <div class="token">
+          <div class="token-ic">i</div>
+          <div class="token-tx">Pay a small <b>₹120 advance</b> to reserve your slot. The <b>₹1,080 balance</b> is paid at the salon via INFLX — discount auto-applied.</div>
+        </div>
+        <div class="card">
+          <div class="label">Advance to reserve</div>
+          <div class="bd-total" style="border-top:none;padding-top:0;margin-top:0"><span class="bd-total-l">Pay Now</span><span class="bd-total-v">₹120</span></div>
+          <div class="pay" style="margin:14px 0 0"><span class="ico" style="width:17px;height:17px;color:var(--yellow)"><svg><use href="#i-bolt"/></svg></span>RESERVE FOR ₹120</div>
+          <div class="note" style="margin-top:9px">SECURED BY INFLX · RAZORPAY · FREE CANCELLATION</div>
+        </div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 4 · Pre-Book (advance/token)</b><br/>ink hero + yellowPale creator-deal strip · booking summary breakdown · <b>successPale advance-token info banner</b> (₹advance now + ₹balance at venue) · ink/yellow RESERVE FOR ₹X with bolt · free-cancellation note. Balance later flows into Frame 1 (Pay at Store) with the token pre-credited.</div>
+  </div>
+
+</div>
+
+<!-- side panel -->
+<div class="row" style="justify-content:center;align-items:flex-start">
+  <div class="side">
+    <div class="panel">
+      <h3>F3 implementation plan (~8 screens, 3 flows)</h3>
+      <ul>
+        <li><b>Flow 42</b> — PayAtStore (+RestaurantBill dispatch) · OnlineOrder · OrderCart (pay/cart core)</li>
+        <li><b>Flow 43</b> — PreBook · SlotPicker · BookingConfirmed (booking flow)</li>
+        <li><b>Flow 44</b> — Enquiry · MyReturns (lead + returns tail)</li>
+        <li>Each flow: per-flow mockup frames from this set → your sign-off → implement → real after-screenshots → QA → OTA</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Design spine (shared across all CTAs)</h3>
+      <ul>
+        <li><b>Creator-deal strip</b> = yellowPale + ink/yellow badge (attribution carried into the txn = commission credit)</li>
+        <li><b>Amount</b> = ink-bordered input, Outfit-Black ₹ + big mono number</li>
+        <li><b>Breakdown</b> = bg2 rows, successText discount, mono "You Pay"</li>
+        <li><b>Primary CTA</b> = ink-bg + yellow Outfit-Black UPPERCASE (PAY / PLACE ORDER / RESERVE) + bolt</li>
+        <li><b>Success</b> = yellow check-tile + bg2 receipt box (matches Flow 32/33)</li>
+        <li><b>Razorpay</b> note = mono muted</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li><b>Razorpay</b> flows + <code>processPayment</code> + paise-at-boundary (<code>youPay*100</code>) untouched</li>
+        <li><b>4-ID tracking</b> (cid/sid/oid/iid) on payAtStore / createOrder / prebook — commission attribution</li>
+        <li>PayAtStore → <b>RestaurantBillScreen</b> dispatch for restaurant category (inline)</li>
+        <li>Prebook token → balance-pay link into PayAtStore (Q2 flow) + corrected discount math</li>
+        <li>Sign-in gate before pay · address selection · qty controls · order verify+receipt</li>
+        <li>All follower order/pay APIs + OrderDetail navigation</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

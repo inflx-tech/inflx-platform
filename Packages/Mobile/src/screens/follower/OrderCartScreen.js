@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fmtRupees } from '../../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { useCart } from '../../services/CartContext';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
@@ -10,22 +11,13 @@ import { processPayment } from '../../services/payment';
  * OrderCartScreen — cart review + checkout for cart_scope: "brand" templates
  * (restaurant today; future direct-buy verticals).
  *
- * Cart-mismatch enforcement happens at the ADD intent layer
- * (RestaurantDetailScreen's "Add to Order" handler) — by the time the user
- * lands here, all items are guaranteed same-brand. OrderCartScreen never
- * sees a cross-brand state.
- *
- * Wire format note (per Code's isolated decision #2): the existing
- * /follower/orders endpoint takes `items`, not `cart` — the contract's
- * `cart` is a conceptual name. We send `items: [{ product_id, qty }]`.
- *
- * min_order_value gate: brand_data.min_order_value blocks checkout when
- * subtotal < min. Per spec, this is the ONLY place a brand-level field
- * gates a listing-level action.
+ * Flow 42 (F3) restyle (2026-05-28): dark hardcoded hexes → light brandPalette.
+ * ink/yellow Proceed-to-Pay CTA. Razorpay processPayment + paise-at-boundary +
+ * 4-ID tracking + createOrder/verifyOrder + min-order gate preserved verbatim.
  */
 
 export default function OrderCartScreen({ navigation, route }) {
-  const { brandData } = route.params || {};   // brand-level fields surfaced from BrandStoreScreen
+  const { brandData } = route.params || {};
   const { cart, updateQty, removeItem, clear } = useCart();
   const [loading, setLoading] = useState(false);
 
@@ -92,7 +84,7 @@ export default function OrderCartScreen({ navigation, route }) {
       if (verifyRes?.success || verifyRes?.data) {
         const paidRupees = verifyRes?.data?.amount_rupees ?? amountRupees;
         clear();
-        Alert.alert('Order Placed! 🎉', `Total ${fmtRupees(paidRupees)} paid. We'll notify the restaurant.`, [
+        Alert.alert('Order Placed', `Total ${fmtRupees(paidRupees)} paid. We'll notify the restaurant.`, [
           { text: 'Done', onPress: () => navigation.popToTop() },
         ]);
       } else {
@@ -109,12 +101,14 @@ export default function OrderCartScreen({ navigation, route }) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.headerBack}>←</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Icon name="chevron-left" size={18} color={P.ink} />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>Your cart</Text>
-          <View style={{ width: 16 }} />
+          <View style={{ width: 34 }} />
         </View>
         <View style={styles.emptyWrap}>
-          <Text style={styles.emptyIcon}>🛒</Text>
+          <View style={styles.emptyTile}><Text style={{ fontSize: 32 }}>🛒</Text></View>
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
           <Text style={styles.emptySub}>Browse a restaurant and add items to get started.</Text>
         </View>
@@ -125,9 +119,11 @@ export default function OrderCartScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.headerBack}>←</Text></TouchableOpacity>
-        <Text style={styles.headerTitle}>Order from {cart.brandName}</Text>
-        <View style={{ width: 16 }} />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Icon name="chevron-left" size={18} color={P.ink} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>Order from {cart.brandName}</Text>
+        <View style={{ width: 34 }} />
       </View>
 
       <ScrollView style={{ flex: 1 }}>
@@ -180,13 +176,13 @@ export default function OrderCartScreen({ navigation, route }) {
 
       <View style={styles.payCTAWrap}>
         <TouchableOpacity
-          style={[styles.payBtn, (belowMin || loading) && { backgroundColor: '#3a4150' }]}
+          style={[styles.payBtn, (belowMin || loading) && styles.payBtnDisabled]}
           onPress={handleCheckout}
           disabled={belowMin || loading}>
-          <Text style={[styles.payBtnText, (belowMin || loading) && { color: 'rgba(255,255,255,0.5)' }]}>
-            {loading ? 'Processing…' : `Proceed to Pay ${fmtRupees(total)}`}
+          <Text style={[styles.payBtnText, (belowMin || loading) && { color: P.muted3 }]}>
+            {loading ? 'PROCESSING…' : `PROCEED TO PAY ${fmtRupees(total)}`}
           </Text>
-          <Text style={{ fontSize: 14, color: belowMin || loading ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)' }}>→</Text>
+          <Icon name="arrow-right" size={16} color={belowMin || loading ? P.muted3 : P.yellow} />
         </TouchableOpacity>
       </View>
     </View>
@@ -196,42 +192,61 @@ export default function OrderCartScreen({ navigation, route }) {
 function Row({ label, value, big }) {
   return (
     <View style={[rowStyles.row, big && rowStyles.rowBig]}>
-      <Text style={[rowStyles.label, big && { fontWeight: '700', color: 'rgba(255,255,255,0.85)' }]}>{label}</Text>
-      <Text style={[rowStyles.value, big && { fontSize: 16, color: '#F59E0B', fontWeight: '800' }]}>{value}</Text>
+      <Text style={[rowStyles.label, big && rowStyles.labelBig]}>{label}</Text>
+      <Text style={[rowStyles.value, big && rowStyles.valueBig]}>{value}</Text>
     </View>
   );
 }
 
 const rowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
   rowBig: { borderBottomWidth: 0, paddingTop: 10, marginTop: 4 },
-  label: { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
-  value: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  label: { fontSize: 12.5, color: P.muted, fontFamily: fonts.sansRegular },
+  labelBig: { fontFamily: fonts.displayBold, fontWeight: '800', color: P.ink },
+  value: { fontSize: 12.5, fontWeight: '800', color: P.ink, fontFamily: fonts.monoBold },
+  valueBig: { fontSize: 18, color: P.ink, fontWeight: '900', fontFamily: fonts.monoBold },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#07111E' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  headerBack: { fontSize: 18, color: '#fff', fontWeight: '600' },
-  headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  container: { flex: 1, backgroundColor: P.bg },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingTop: 50, paddingBottom: 12,
+    backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  backBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 },
-  emptyIcon: { fontSize: 60, marginBottom: 12, opacity: 0.4 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#fff', marginBottom: 6 },
-  emptySub: { fontSize: 12, color: 'rgba(255,255,255,0.4)', textAlign: 'center' },
+  emptyTile: {
+    width: 66, height: 66, borderRadius: 14, backgroundColor: P.yellowPale,
+    borderWidth: 1.5, borderStyle: 'dashed', borderColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+  },
+  emptyTitle: { fontSize: 16, fontWeight: '900', color: P.ink, marginBottom: 6, fontFamily: fonts.displayBlack },
+  emptySub: { fontSize: 11.5, color: P.muted, textAlign: 'center', fontFamily: fonts.sansRegular },
+
   itemsSection: { padding: 16, gap: 10 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#0D1D2E', borderRadius: 12, padding: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  itemImg: { width: 56, height: 50, borderRadius: 8, overflow: 'hidden', backgroundColor: '#142438', alignItems: 'center', justifyContent: 'center' },
-  itemName: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  itemPrice: { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
-  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#142438', borderRadius: 8, padding: 2 },
-  qtyBtn: { width: 26, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  qtyBtnText: { fontSize: 16, color: '#fff' },
-  qtyVal: { fontSize: 12, fontWeight: '700', color: '#fff', minWidth: 20, textAlign: 'center' },
-  removeText: { fontSize: 22, color: 'rgba(255,255,255,0.3)', paddingHorizontal: 6 },
-  breakdown: { marginHorizontal: 16, padding: 13, backgroundColor: '#0D1D2E', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  belowMinBanner: { marginHorizontal: 16, marginTop: 10, padding: 10, backgroundColor: 'rgba(255,180,90,0.1)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,180,90,0.25)' },
-  belowMinText: { fontSize: 11, color: 'rgba(255,180,90,0.9)', textAlign: 'center', fontWeight: '600' },
-  payCTAWrap: { padding: 12, paddingHorizontal: 16, paddingBottom: 18, backgroundColor: '#07111E', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
-  payBtn: { backgroundColor: '#F59E0B', borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  payBtnText: { fontSize: 14, fontWeight: '800', color: '#000' },
+  itemRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: P.white, borderRadius: 14, padding: 11,
+    borderWidth: 1, borderColor: P.border,
+  },
+  itemImg: { width: 56, height: 50, borderRadius: 10, overflow: 'hidden', backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  itemName: { fontSize: 13.5, fontWeight: '800', color: P.ink, fontFamily: fonts.displayBold },
+  itemPrice: { fontSize: 10.5, color: P.muted, marginTop: 2, fontWeight: '700', fontFamily: fonts.monoMedium },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: P.bg2, borderRadius: 9, padding: 3 },
+  qtyBtn: { width: 26, height: 26, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
+  qtyBtnText: { fontSize: 16, color: P.ink, fontWeight: '900', fontFamily: fonts.displayBlack },
+  qtyVal: { fontSize: 12.5, fontWeight: '900', color: P.ink, minWidth: 20, textAlign: 'center', fontFamily: fonts.monoBold },
+  removeText: { fontSize: 22, color: P.muted3, paddingHorizontal: 6 },
+
+  breakdown: { marginHorizontal: 16, padding: 14, backgroundColor: P.white, borderRadius: 14, borderWidth: 1, borderColor: P.border },
+  belowMinBanner: { marginHorizontal: 16, marginTop: 10, padding: 11, backgroundColor: P.yellowPale, borderRadius: 11, borderWidth: 1, borderColor: '#F0DA88' },
+  belowMinText: { fontSize: 11, color: P.yellowText, textAlign: 'center', fontWeight: '800', fontFamily: fonts.monoMedium },
+
+  payCTAWrap: { padding: 14, paddingBottom: 18, backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border },
+  payBtn: { backgroundColor: P.ink, borderRadius: 13, paddingVertical: 15, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  payBtnDisabled: { backgroundColor: P.muted4 },
+  payBtnText: { fontSize: 13.5, fontWeight: '900', color: P.yellow, letterSpacing: 0.2, textTransform: 'uppercase', fontFamily: fonts.displayBlack },
 });

@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert,
 } from 'react-native';
-import { colors, fmtMoney, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtMoney, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 export default function OnlineOrderScreen({ navigation, route }) {
@@ -141,8 +141,8 @@ export default function OnlineOrderScreen({ navigation, route }) {
             <Text style={styles.totalVal}>{fmtRupees(subtotal)}</Text>
           </View>
           <View style={[styles.totalRow, styles.grandTotal]}>
-            <Text style={[styles.totalLabel, { fontWeight: '800', color: colors.t1 }]}>Total</Text>
-            <Text style={[styles.totalVal, { color: colors.navy }]}>{fmtRupees(subtotal)}</Text>
+            <Text style={[styles.totalLabel, { fontWeight: '800', color: P.ink }]}>Total</Text>
+            <Text style={[styles.totalVal, { color: P.ink }]}>{fmtRupees(subtotal)}</Text>
           </View>
         </View>
 
@@ -162,7 +162,7 @@ export default function OnlineOrderScreen({ navigation, route }) {
             disabled={loading || cart.length === 0 || !selectedAddr}
           >
             {loading
-              ? <ActivityIndicator color={colors.white} />
+              ? <ActivityIndicator color={P.white} />
               : <Text style={styles.orderBtnText}>Place Order</Text>
             }
           </TouchableOpacity>
@@ -173,38 +173,38 @@ export default function OnlineOrderScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  outer: { flex: 1, backgroundColor: colors.bg },
+  outer: { flex: 1, backgroundColor: P.bg },
   container: { flex: 1 },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
+  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
   backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
-  emptyText: { fontSize: 12, color: colors.t3, textAlign: 'center' },
-  itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  itemName: { fontSize: 14, fontWeight: '600', color: colors.t1, marginBottom: 2 },
-  itemPrice: { fontSize: 12, color: colors.t2 },
+  title: { fontSize: 20, fontWeight: '900', color: P.white, fontFamily: fonts.displayBlack },
+  card: { margin: 16, marginBottom: 0, backgroundColor: P.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: P.border },
+  cardTitle: { fontSize: 14, fontWeight: '700', color: P.ink, marginBottom: 12 },
+  emptyText: { fontSize: 12, color: P.muted3, textAlign: 'center' },
+  itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: P.border },
+  itemName: { fontSize: 14, fontWeight: '600', color: P.ink, marginBottom: 2 },
+  itemPrice: { fontSize: 12, color: P.muted },
   qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  qtyBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  qtyBtnText: { fontSize: 18, color: colors.t1, fontWeight: '600' },
-  qtyNum: { fontSize: 16, fontWeight: '800', color: colors.t1, minWidth: 20, textAlign: 'center' },
+  qtyBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  qtyBtnText: { fontSize: 18, color: P.ink, fontWeight: '600' },
+  qtyNum: { fontSize: 16, fontWeight: '800', color: P.ink, minWidth: 20, textAlign: 'center' },
   addrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  addAddrBtn: { fontSize: 12, fontWeight: '700', color: colors.navy },
-  addrCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 8 },
-  addrCardActive: { borderColor: colors.navy, backgroundColor: colors.navy + '08' },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: colors.t3, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  radioInner: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: colors.navy },
-  addrLabel: { fontSize: 12, fontWeight: '700', color: colors.t1, marginBottom: 2 },
-  addrText: { fontSize: 11, color: colors.t2, lineHeight: 16 },
+  addAddrBtn: { fontSize: 12, fontWeight: '700', color: P.ink },
+  addrCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 8 },
+  addrCardActive: { borderColor: P.ink, backgroundColor: P.ink + '08' },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: P.muted3, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  radioInner: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: P.ink },
+  addrLabel: { fontSize: 12, fontWeight: '700', color: P.ink, marginBottom: 2 },
+  addrText: { fontSize: 11, color: P.muted, lineHeight: 16 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  grandTotal: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 6, paddingTop: 10 },
-  totalLabel: { fontSize: 13, color: colors.t2 },
-  totalVal: { fontSize: 13, fontWeight: '700', color: colors.t1 },
-  footer: { backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.border, padding: 16 },
+  grandTotal: { borderTopWidth: 1, borderTopColor: P.border, marginTop: 6, paddingTop: 10 },
+  totalLabel: { fontSize: 13, color: P.muted },
+  totalVal: { fontSize: 13, fontWeight: '700', color: P.ink },
+  footer: { backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border, padding: 16 },
   footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerTotal: { fontSize: 18, fontWeight: '800', color: colors.navy },
-  footerItems: { fontSize: 11, color: colors.t3 },
-  orderBtn: { backgroundColor: colors.navy, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-  orderBtnText: { fontSize: 14, fontWeight: '800', color: colors.white },
+  footerTotal: { fontSize: 18, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
+  footerItems: { fontSize: 11, color: P.muted3, fontWeight: '700', fontFamily: fonts.monoMedium },
+  orderBtn: { backgroundColor: P.ink, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
+  orderBtnText: { fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2, fontFamily: fonts.displayBlack },
 });

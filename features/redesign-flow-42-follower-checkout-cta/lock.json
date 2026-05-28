@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-42-follower-checkout-cta",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F3 checkout/CTA mockup GREEN-SIGNALED via AskUserQuestion ('Green — proceed with Flow 42') BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the F3 mockup design/wave3/flow-42-follower-checkout-cta/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F3 (shared checkout/CTA), 1st flow. PayAtStoreScreen (393, darkColors→brandPalette + ink hero + amber buttons→ink/yellow + ✅→MCI check in yellow tile + green token-banner→successPale) + OnlineOrderScreen (210, legacy navy→brandPalette + ink/yellow PLACE ORDER) + OrderCartScreen (237, hardcoded dark hexes→brandPalette rewrite + ink/yellow PROCEED TO PAY). Highest-stakes screens (real Razorpay money + 4-ID commission attribution). ZERO payment/backend/tracking change: processPayment + paise-at-boundary (Math.round(amount*100)) + 4-ID tracking (cid/sid/oid/iid) on payAtStore/createOrder + verifyPayAtStore/verifyOrder + PayAtStore→RestaurantBillScreen inline dispatch (restaurant category) + Q3 discount math + prebook token subtraction + sign-in gate + useCart context + min-order gate ALL preserved verbatim (verified: 9 integrity markers PayAtStore, 7 OrderCart post-restyle). No native rebuild (MCI pre-baked Flow 28). Governance: per-flow F3 mockup → founder green signal via AskUserQuestion BEFORE implementation → real after-screenshots.",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
+    "maestro_green": "n/a until release-flip; real emulator after-screenshots (PayAtStore + Cart) into 06-diff/. GOVERNANCE_OVERRIDE on flip; founder physical smoke-test = real-device confirm."
+  }
+}
