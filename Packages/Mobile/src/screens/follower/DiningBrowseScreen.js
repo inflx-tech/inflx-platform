@@ -20,7 +20,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import RestaurantCard from '../../components/restaurant/RestaurantCard';
 import { FilterChip } from '../../components/restaurant';
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   iconBtnGlyph: { fontSize: 16, color: lightColors.ink },
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginHorizontal: 16,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderColor: lightColors.border,
     borderWidth: 1,
     borderRadius: 12,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   sortPanel: {
     marginHorizontal: 16,
     marginTop: 8,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderColor: lightColors.border,
     borderWidth: 1,
     borderRadius: 10,
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     color: lightColors.ink2,
   },
   sortLabelActive: { color: lightColors.ink, fontFamily: fonts.sansBold },
-  sortCheck: { color: lightColors.yellowDeep, fontSize: 14, fontWeight: '700' },
+  sortCheck: { color: lightColors.yellowText, fontSize: 14, fontWeight: '700' },
 
   chipStrip: {
     paddingHorizontal: 16,
@@ -397,9 +397,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderWidth: 1,
-    borderColor: lightColors.border2,
+    borderColor: lightColors.muted4,
   },
   filtersBtnActive: {
     backgroundColor: lightColors.ink,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   mapLink: {
     fontFamily: fonts.sansBold,
     fontSize: 12,
-    color: lightColors.yellowDeep,
+    color: lightColors.yellowText,
   },
 
   list: { paddingHorizontal: 16, paddingBottom: 24 },

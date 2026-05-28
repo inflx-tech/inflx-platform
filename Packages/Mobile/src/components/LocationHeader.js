@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { lightColors, fonts } from '../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../theme/tokens';
 import { useAppLocation } from '../contexts/LocationContext';
 import LocationSheet from './LocationSheet';
 
@@ -56,5 +56,5 @@ const styles = StyleSheet.create({
     color: lightColors.muted2,
     marginTop: 2,
   },
-  caret: { color: lightColors.yellowDeep, fontSize: 11 },
+  caret: { color: lightColors.yellowText, fontSize: 11 },
 });

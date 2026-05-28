@@ -22,7 +22,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import RestaurantCard from '../../components/restaurant/RestaurantCard';
 import LocationHeader from '../../components/LocationHeader';
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     alignItems: 'center', justifyContent: 'center',
   },
   iconBtnGlyph: { fontSize: 16 },
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 6,
     marginBottom: 4,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderColor: lightColors.border,
     borderWidth: 1,
     borderRadius: 12,
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   vibeTile: {
     flexBasis: '48.5%',
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderRadius: 12,
     padding: 14,
     minHeight: 88,
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   vibeTileAccent: {
     backgroundColor: lightColors.yellow50,
     borderWidth: 1,
-    borderColor: lightColors.yellow200,
+    borderColor: lightColors.yellowPale,
   },
   vibeEmoji: { fontSize: 22 },
   vibeLabel: {
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   eatingScroll: { gap: 10, paddingRight: 16 },
   eatingCard: {
     width: 150,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderColor: lightColors.border, borderWidth: 1,
     borderRadius: 12, overflow: 'hidden',
   },

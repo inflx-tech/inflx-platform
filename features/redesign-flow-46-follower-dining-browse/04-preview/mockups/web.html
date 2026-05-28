@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F4 · follower DINING browse (DiningHome · Browse · Search) — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00; --yellow-50:#FFFDEB;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857; --success-dotborder:#6EE7B7;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:340px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:340px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:820px;position:relative;display:flex;flex-direction:column}
+.status-bar{height:40px;background:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;flex-shrink:0}
+.body{flex:1;overflow-y:auto}
+
+/* topbar (DiningHome) */
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px 6px;background:var(--bg)}
+.loc-pill{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.5px}
+.greet{font-family:'Outfit';font-size:22px;font-weight:700;color:var(--ink);letter-spacing:-.4px;margin-top:2px}
+.greet .caret{color:var(--yellow-text);font-size:11px}
+.icbtn{width:36px;height:36px;border-radius:18px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);flex-shrink:0}
+.avatar{width:36px;height:36px;border-radius:18px;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:14px;font-weight:900;color:var(--ink);flex-shrink:0}
+.searchbar{display:flex;align-items:center;gap:10px;margin:6px 16px 4px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.search-ph{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--muted-2)}
+.scroll{padding:0 16px 24px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;margin-bottom:12px}
+.sec-t{font-family:'Outfit';font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.sec-sub{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2)}
+.vibe-grid{display:flex;flex-wrap:wrap;gap:8px}
+.vibe{flex-basis:calc(50% - 4px);background:var(--bg2);border-radius:12px;padding:14px;min-height:84px}
+.vibe.accent{background:var(--yellow-50);border:1px solid var(--yellow-pale)}
+.vibe-em{font-size:22px}
+.vibe-l{font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink);margin-top:6px}
+.vibe-c{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+.eat-scroll{display:flex;gap:10px;overflow-x:auto;padding-bottom:2px}
+.eat-card{width:150px;flex-shrink:0;background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.eat-photo{height:74px;background:var(--yellow-50);display:flex;align-items:center;justify-content:center;font-size:26px}
+.eat-body{padding:8px}
+.eat-chip{display:inline-flex;align-items:center;gap:5px;background:var(--ink);border-radius:999px;padding:2px 7px 2px 2px}
+.eat-av{width:14px;height:14px;border-radius:7px;background:var(--yellow);color:var(--ink);font-family:'Outfit';font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.eat-ch-t{font-family:'JetBrains Mono';font-size:9px;font-weight:700;color:#fff}
+.eat-meta{font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--ink-2);margin-top:5px}
+
+/* RestaurantCard (converged Flow 45 atom) */
+.rcard{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:12px}
+.rc-hero{height:140px;background:var(--bg2);position:relative;display:flex;align-items:center;justify-content:center;font-size:46px}
+.rc-top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between}
+.rc-rate{background:var(--success);color:#fff;font-family:'JetBrains Mono';font-size:11px;font-weight:800;padding:2px 7px;border-radius:4px}
+.rc-heart{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink)}
+.rc-bot{position:absolute;bottom:10px;left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap}
+.rc-body{padding:12px;display:flex;flex-direction:column;gap:6px}
+.rc-nm{font-family:'Outfit';font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.rc-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+.rc-vibes{display:flex;gap:4px;flex-wrap:wrap}
+.rc-vibe{background:var(--bg2);border:1px solid var(--border);padding:2px 7px;border-radius:4px;font-family:'Plus Jakarta Sans';font-size:10px;color:var(--ink-2)}
+.spill{display:inline-flex;align-items:center;gap:5px;border-radius:4px;border:1px solid;padding:2.5px 8px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;letter-spacing:.5px}
+.sdot{width:6px;height:6px;border-radius:3px}
+.spill.open{background:var(--success-pale);border-color:var(--success-dotborder);color:var(--success-text)} .spill.open .sdot{background:var(--success)}
+.spill.closed{background:var(--bg2);border-color:var(--border);color:var(--muted-2)} .spill.closed .sdot{background:var(--muted-2)}
+.opill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--yellow);background:var(--yellow);color:var(--ink);padding:3px 8px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.5px}
+.opill.soft{background:var(--yellow-50);border-color:var(--yellow-pale);color:var(--yellow-text)}
+.cchip{display:inline-flex;align-items:center;gap:5px;background:var(--ink);border-radius:999px;padding:3px 8px 3px 3px;align-self:flex-start}
+.cchip-av{width:18px;height:18px;border-radius:9px;background:var(--yellow);color:var(--ink);font-family:'Outfit';font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.cchip-l{font-family:'JetBrains Mono';font-size:11px;color:#fff}
+.cchip-v{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow);font-weight:700}
+
+/* Browse */
+.appbar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--bg)}
+.appbar-t{flex:1;font-family:'Outfit';font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.2px}
+.chip-strip{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;align-items:center}
+.fbtn{flex-shrink:0;padding:6px 12px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:#fff}
+.fbtn .badge{font-family:'JetBrains Mono';color:var(--yellow);font-weight:800}
+.fchip{flex-shrink:0;display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid;padding:6px 12px;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:500;white-space:nowrap}
+.fchip.def{background:var(--white);border-color:var(--muted-4);color:var(--ink-2)}
+.fchip.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:4px 16px 8px}
+.result-c{font-family:'JetBrains Mono';font-size:11px;color:var(--muted);letter-spacing:.5px}
+.map-link{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--yellow-text)}
+
+/* Search */
+.s-appbar{display:flex;align-items:center;gap:10px;padding:10px 12px 8px}
+.s-box{flex:1;display:flex;align-items:center;gap:8px;background:var(--white);border:1px solid var(--muted-4);border-radius:12px;padding:9px 12px}
+.s-in{flex:1;font-family:'Plus Jakarta Sans';font-size:14px;color:var(--muted-3)}
+.s-clear{font-size:13px;color:var(--muted)}
+.veg-row{padding:10px 16px}
+.veg-toggle{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--success);background:var(--success-pale);border-radius:999px;padding:6px 12px}
+.vegbox{width:12px;height:12px;border-radius:2px;border:1.5px solid var(--success);display:flex;align-items:center;justify-content:center}
+.vegdot{width:5px;height:5px;border-radius:50%;background:var(--success)}
+.veg-t{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--success)}
+.s-label{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.6px;padding:0 16px;margin:16px 0 6px}
+.s-rowc{}
+.s-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border)}
+.s-thumb{width:46px;height:46px;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.s-rt{font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink)}
+.s-rm{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:3px}
+.s-chev{font-family:'Outfit';font-size:16px;font-weight:700;color:var(--yellow-text)}
+.s-price{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink)}
+.dish-head{display:flex;align-items:center;gap:6px}
+
+/* side panel */
+.side{width:340px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">
+  <h1>F4 · follower DINING browse — Flow 46 mockup (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Flow 46 = the dining discovery surfaces: DiningHome (vibe entry) · DiningBrowse (filtered list) · DiningSearch (debounced search).</b> Thin screen-chrome restyle on top of the Flow-45 converged atoms (RestaurantCard / FilterChip / VegDot already brandPalette). Spine: light bg · ink Outfit headings · bg2 search/tiles · yellow avatar + yellow50 accent vibe · ink-active Filters + chips · mono result counts · yellowText links. <b>getCategoryStores / search / FilterSheet / 4-ID tracking (buildTrackingFromOffer) / client-side filter+sort / debounce — all preserved verbatim (visual only).</b> <b>+ LocationHeader (shared general atom, DiningHome dependency) converges too → also touches shipped F1 HomeScreenV2/Find (near-invisible caret-yellow shift).</b>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- 1 · DINING HOME -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="topbar">
+        <div style="flex:1">
+          <div class="loc-pill">📍 BANJARA HILLS</div>
+          <div class="greet">What's on tonight? <span class="caret">▾</span></div>
+        </div>
+        <div class="icbtn">🔔</div>
+        <div class="avatar">M</div>
+      </div>
+      <div class="searchbar"><span>🔍</span><span class="search-ph">Search restaurants, dishes…</span></div>
+      <div class="body"><div class="scroll">
+        <div class="sec-h"><span class="sec-t">Pick a vibe</span></div>
+        <div class="vibe-grid">
+          <div class="vibe accent"><div class="vibe-em">🍷</div><div class="vibe-l">Date night</div><div class="vibe-c">12 spots</div></div>
+          <div class="vibe"><div class="vibe-em">👨‍👩‍👧</div><div class="vibe-l">Family dinner</div><div class="vibe-c">28 spots</div></div>
+          <div class="vibe"><div class="vibe-em">⚡</div><div class="vibe-l">Quick bite</div><div class="vibe-c">19 spots</div></div>
+          <div class="vibe"><div class="vibe-em">🌃</div><div class="vibe-l">Rooftop</div><div class="vibe-c">7 spots</div></div>
+        </div>
+        <div class="sec-h"><span class="sec-t">Creators eating now</span></div>
+        <div class="eat-scroll">
+          <div class="eat-card"><div class="eat-photo">🍽️</div><div class="eat-body"><span class="eat-chip"><span class="eat-av">S</span><span class="eat-ch-t">@sagar.eats</span></span><div class="eat-meta">Spice Garden · 20m ago</div></div></div>
+          <div class="eat-card"><div class="eat-photo">🍜</div><div class="eat-body"><span class="eat-chip"><span class="eat-av">R</span><span class="eat-ch-t">@riya.eats</span></span><div class="eat-meta">Noodle House · 1h ago</div></div></div>
+        </div>
+        <div class="sec-h"><span class="sec-t">Nearby<span class="sec-sub">  · 4.2km radius</span></span></div>
+        <div class="rcard">
+          <div class="rc-hero">🍽️
+            <div class="rc-top"><span class="rc-rate">★ 4.5</span><span class="rc-heart">♡</span></div>
+            <div class="rc-bot"><span class="spill open"><span class="sdot"></span>OPEN TILL 11 PM</span><span class="opill">🏷 FLAT 40% OFF</span></div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-nm">Spice Garden</div>
+            <div class="rc-meta">North Indian · Biryani  ·  ₹800/2  ·  1.2 km</div>
+            <span class="cchip"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span>
+          </div>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · DiningHome</b><br/>yellow avatar + mono location pill + Outfit greeting (caret yellowText via LocationHeader) · bg2 search · "Pick a vibe" 2-col tiles (date-night = yellow50/yellowPale accent) · "Creators eating now" ink-chip strip · "Nearby" converged RestaurantCards. <code>getCategoryStores('eat')</code> + tracking preserved.</div>
+  </div>
+
+  <!-- 2 · DINING BROWSE -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="appbar"><div class="icbtn">←</div><div class="appbar-t">Browse</div><div class="icbtn">⇅</div></div>
+      <div class="searchbar" style="margin-top:0"><span>🔍</span><span class="search-ph">Search restaurants, dishes…</span></div>
+      <div class="chip-strip">
+        <span class="fbtn">⇅ Filters <span class="badge">3</span></span>
+        <span class="fchip sel">Sort: Distance</span>
+        <span class="fchip sel">🟢 Veg only</span>
+        <span class="fchip def">⏱ Open now</span>
+        <span class="fchip sel">✕ date night</span>
+      </div>
+      <div class="result-row"><span class="result-c">14 RESULTS · BANJARA HILLS</span><span class="map-link">Map view</span></div>
+      <div class="body"><div style="padding:0 16px 16px">
+        <div class="rcard">
+          <div class="rc-hero">🍛
+            <div class="rc-top"><span class="rc-rate">★ 4.5</span><span class="rc-heart">♡</span></div>
+            <div class="rc-bot"><span class="spill open"><span class="sdot"></span>OPEN TILL 11 PM</span><span class="opill">🏷 FLAT 40% OFF</span></div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-nm">Spice Garden</div>
+            <div class="rc-meta">North Indian · Biryani  ·  ₹800/2  ·  1.2 km</div>
+            <div class="rc-vibes"><span class="rc-vibe">date night</span><span class="rc-vibe">rooftop</span></div>
+          </div>
+        </div>
+        <div class="rcard">
+          <div class="rc-hero">🥘
+            <div class="rc-top"><span class="rc-rate">★ 4.3</span><span class="rc-heart">♥</span></div>
+            <div class="rc-bot"><span class="spill open"><span class="sdot"></span>OPEN</span><span class="opill soft">₹100 OFF ON ₹500</span></div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-nm">Paradise Biryani</div>
+            <div class="rc-meta">Hyderabadi · Biryani  ·  ₹700/2  ·  2.0 km</div>
+            <div class="rc-vibes"><span class="rc-vibe">family</span></div>
+          </div>
+        </div>
+      </div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · DiningBrowse</b><br/>app bar (← Browse ⇅) · bg2 search input · chip strip = <b>ink Filters button + yellow count badge</b> + converged FilterChips (ink-on-selected, ✕ to remove vibe) · mono "N RESULTS · locality" + yellowText "Map view" · converged RestaurantCard list. FilterSheet (Flow 45 atom) opens from Filters. Client-side filter+sort + tracking preserved.</div>
+  </div>
+
+  <!-- 3 · DINING SEARCH -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="s-appbar"><div class="icbtn">←</div><div class="s-box"><span>🔍</span><span class="s-in">Search for 'Biryani'</span><span class="s-clear">✕</span></div></div>
+      <div class="veg-row"><span class="veg-toggle"><span class="vegbox"><span class="vegdot"></span></span><span class="veg-t">Veg only</span></span></div>
+      <div class="body">
+        <div class="s-label">RESTAURANTS · 2</div>
+        <div class="s-row"><div class="s-thumb">🍽️</div><div style="flex:1"><div class="s-rt">Spice Garden</div><div class="s-rm">North Indian · Biryani  ·  ₹800/2  ·  Banjara Hills</div></div><span class="s-chev">→</span></div>
+        <div class="s-row"><div class="s-thumb">🥘</div><div style="flex:1"><div class="s-rt">Paradise Biryani</div><div class="s-rm">Hyderabadi  ·  ₹700/2  ·  Jubilee Hills</div></div><span class="s-chev">→</span></div>
+        <div class="s-label">DISHES · 3</div>
+        <div class="s-row"><div class="s-thumb">🍛</div><div style="flex:1"><div class="dish-head"><span class="vegbox" style="border-color:var(--danger)"><span class="vegdot" style="background:var(--danger)"></span></span><span class="s-rt">Mutton Biryani</span></div><div class="s-rm">Spice Garden  ·  Mains</div></div><span class="s-price">₹420</span></div>
+        <div class="s-row"><div class="s-thumb">🍚</div><div style="flex:1"><div class="dish-head"><span class="vegbox"><span class="vegdot"></span></span><span class="s-rt">Veg Dum Biryani</span></div><div class="s-rm">Paradise Biryani  ·  Mains</div></div><span class="s-price">₹260</span></div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 3 · DiningSearch</b><br/>app bar + white search box (muted4 border, rotating "Search for 'X'" placeholder, ✕ clear) · <b>successPale Veg-only toggle</b> (converged VegDot) · mono section labels (RESTAURANTS / DISHES · N) · brand rows with yellowText → chevron · dish rows with VegDot + mono ₹price. Debounced <code>followerApi.search</code> preserved.</div>
+  </div>
+
+</div>
+
+<!-- side panel -->
+<div class="row" style="justify-content:center;align-items:flex-start">
+  <div class="side">
+    <div class="panel">
+      <h3>Flow 46 scope (3 screens + 1 dep)</h3>
+      <ul>
+        <li><b>DiningHomeScreen</b> (448) — surface→bg2, paper→white, yellow200→yellowPale</li>
+        <li><b>DiningBrowseScreen</b> (471) — surface→bg2, paper→white, yellowDeep→yellowText, border2→muted4</li>
+        <li><b>DiningSearchScreen</b> (228) — paper→white, border2→muted4, success50→successPale, surface→bg2, yellowDeep→yellowText</li>
+        <li><b>LocationHeader</b> (general atom, DiningHome dep) — yellowDeep→yellowText caret; cascades to shipped F1 HomeScreenV2/Find</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Composes (already brandPalette, Flow 45)</h3>
+      <ul>
+        <li><b>RestaurantCard</b> — nearby + browse lists</li>
+        <li><b>FilterChip</b> + <b>FilterSheet</b> — browse filters</li>
+        <li><b>VegDot</b> — search veg toggle + dish rows</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li><b>4-ID tracking</b> — <code>buildTrackingFromOffer</code> on every card → BrandStore nav</li>
+        <li><b>Data</b> — <code>getCategoryStores('eat')</code>, <code>getCreatorsEatingNow</code>, debounced <code>search</code>, <code>storeToCardProps</code> mapper</li>
+        <li><b>Browse logic</b> — client-side filter + sort + activeFilterCount + FilterSheet apply</li>
+        <li><b>Search</b> — 300ms debounce, rotating placeholder, veg toggle, brand/dish render branches</li>
+        <li>vibe→initialVibe nav · empty/hint/loading branches</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

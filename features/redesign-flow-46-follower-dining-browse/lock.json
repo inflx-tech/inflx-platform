@@ -1,0 +1,51 @@
+{
+  "feature": "redesign-flow-46-follower-dining-browse",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F4 dining-browse mockup GREEN-SIGNALED via AskUserQuestion ('Green — incl. LocationHeader') BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 46 mockup design/wave3/flow-46-follower-dining-browse/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F4 (restaurant vertical), dining-discovery flow. DiningHomeScreen (448, lightColors→brandPalette: surface→bg2, paper→white, yellow200→yellowPale) + DiningBrowseScreen (471: surface→bg2, paper→white, yellowDeep→yellowText, border2→muted4) + DiningSearchScreen (228: paper→white, border2→muted4, success50→successPale, surface→bg2, surface2→bg2, yellowDeep→yellowText) + LocationHeader (general atom, DiningHome dep: yellowDeep→yellowText caret — cascades to shipped F1 HomeScreenV2/Find, founder-approved). Thin screen-chrome restyle on top of the Flow-45 converged atoms (RestaurantCard/FilterChip/FilterSheet/VegDot). ZERO functional change: 4-ID tracking (buildTrackingFromOffer→BrandStore), data calls (getCategoryStores('eat'), getCreatorsEatingNow, debounced search), storeToCardProps mappers, client-side filter+sort + activeFilterCount + FilterSheet apply, 300ms search debounce + rotating placeholder + veg toggle, vibe→initialVibe nav, all empty/hint/loading branches ALL preserved verbatim. No native rebuild (NATIVE_RUNTIME=2). Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T14-09-30-635Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 45,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN. Mobile-only change cannot affect web; gate confirms zero regression.",
+      "mobile_checks": {
+        "babel_transform": "PASS — all 4 files (DiningHome/Browse/Search + LocationHeader) transform via Mobile metro preset",
+        "integrity_grep": "0 orphaned lightColors.{paper|surface|surface2|border2|yellowDeep|yellow200|success50} refs; buildTrackingFromOffer/getCategoryStores/getCreatorsEatingNow/followerApi.search/storeToCardProps all present (13 occ) — logic untouched.",
+        "jest_note": "Pre-existing FollowerWallet vector-icons jest load failure is unrelated (flagged Flow 45). Dining screens have no dedicated jest suite; integrity verified by grep + babel."
+      },
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Founder instructed skip emulator after-screenshots for Flow 46 (dining screens are data/login-gated). After-evidence = mockup + founder physical APK smoke-test on live follower v59. Before = Flow 46 mockup.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 46 integrity (4-ID tracking + data calls + client filter/sort + debounce + render branches) verified via code markers + babel transform."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 46 mockup green-signaled ('Green — incl. LocationHeader'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-28",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle; LocationHeader caret shift reaches HomeScreenV2/Find (follower-rendered) via shared atom — no brand/influencer-screen change.",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 46 emulator after-screenshots skipped per founder this round (data/login-gated dining screens); tracking/data/filter-sort/debounce integrity verified by code markers + babel transform; LocationHeader cascade founder-approved; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 96, "bundle_hash": "sha256:b99cf454b6ce02b0b3f4aa6424dd8003d5fa49535e074f15f93ae557c4d18770", "published_at": "2026-05-28T14:10:36.412Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 46 (F4) — follower dining browse'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 85, "bundle_hash": "sha256:b99cf454b6ce02b0b3f4aa6424dd8003d5fa49535e074f15f93ae557c4d18770", "published_at": "2026-05-28T14:10:41.805Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 46 (F4) — follower dining browse'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 59, "bundle_hash": "sha256:b99cf454b6ce02b0b3f4aa6424dd8003d5fa49535e074f15f93ae557c4d18770", "published_at": "2026-05-28T14:10:47.071Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 46 (F4) — follower dining browse'", "scope": "follower audience manifest (DiningHome + DiningBrowse + DiningSearch + LocationHeader live here)" }
+    }
+  }
+}
