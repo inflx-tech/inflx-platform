@@ -72,6 +72,8 @@ const CSS = `
 .esc .tr-mid{min-width:0}
 .esc .tr-num{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
 .esc .tr-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.esc .tr-fee{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2);margin-top:3px}
+.esc .tr-fee b{color:var(--ink);font-weight:700}
 .esc .tr-amt{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800;color:var(--ink);text-align:right}
 .esc .status-pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px}
 .esc .status-pill.queued{background:var(--yellow-pale);color:var(--yellow-text)}
@@ -223,6 +225,11 @@ export default function EscrowDetailPage() {
                           {(t.trigger_event || '').replace(/_/g, ' ')}
                           {t.released_at && (<span> · Released {fmtDate(t.released_at)}</span>)}
                         </div>
+                        {Number(t.escrow_fee_amount) > 0 && (
+                          <div className="tr-fee">
+                            Protection fee <b>{fmtMoney(t.escrow_fee_amount)}</b> · GST <b>{fmtMoney(t.fee_gst_amount)}</b>
+                          </div>
+                        )}
                       </div>
                       <div className="tr-amt">{fmtMoney(t.amount)}</div>
                       <span className={`status-pill ${cls}`}>{t.status}</span>

@@ -11,6 +11,9 @@ const db          = require('../config/db');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const taxService  = require('../services/tax.service');
+
+function _round2(n) { return parseFloat((parseFloat(n) || 0).toFixed(2)); }
 
 async function getBrandOrThrow(userId) {
   const { rows } = await db.query(
@@ -101,6 +104,9 @@ const getCampaignEscrow = asyncHandler(async (req, res) => {
     `SELECT
        ee.id,
        ee.amount,
+       ee.escrow_fee_amount,
+       ee.fee_gst_amount,
+       ee.net_to_influencer,
        ee.status,
        ee.tranche_number,
        ee.trigger_event,
@@ -119,16 +125,28 @@ const getCampaignEscrow = asyncHandler(async (req, res) => {
     [campaign_id]
   );
 
+  // Resolve GST on the Protection Fee. Persisted on rows created since M076;
+  // for older rows fee_gst_amount is NULL → derive from the current gst_pct.
+  const gstPct = await taxService.getGstPct();
+  const resolveFeeGst = (e) =>
+    e.fee_gst_amount != null
+      ? _round2(e.fee_gst_amount)
+      : _round2((parseFloat(e.escrow_fee_amount) || 0) * gstPct / 100);
+
   // Compute summary totals
   let totalLocked   = 0;
   let totalReleased = 0;
   let totalQueued   = 0;
+  let totalFee      = 0;
+  let totalFeeGst   = 0;
 
   for (const e of escrowEntries) {
     const amt = parseFloat(e.amount);
     if (e.status === 'released') totalReleased += amt;
     else if (e.status === 'locked') totalLocked += amt;
     else if (e.status === 'queued') totalQueued += amt;
+    totalFee    += parseFloat(e.escrow_fee_amount) || 0;
+    totalFeeGst += resolveFeeGst(e);
   }
 
   // Group entries by influencer for per-influencer breakdown
@@ -148,6 +166,9 @@ const getCampaignEscrow = asyncHandler(async (req, res) => {
       tranche_number: e.tranche_number,
       trigger_event: e.trigger_event,
       amount: e.amount,
+      escrow_fee_amount: e.escrow_fee_amount != null ? _round2(e.escrow_fee_amount) : 0,
+      fee_gst_amount: resolveFeeGst(e),
+      net_to_influencer: e.net_to_influencer,
       status: e.status,
       released_at: e.released_at,
       created_at: e.created_at,
@@ -172,6 +193,8 @@ const getCampaignEscrow = asyncHandler(async (req, res) => {
       total_released: totalReleased,
       total_queued:   totalQueued,
       total:          totalLocked + totalReleased + totalQueued,
+      total_fee:      _round2(totalFee),
+      total_fee_gst:  _round2(totalFeeGst),
     },
   });
 });

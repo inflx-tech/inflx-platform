@@ -314,6 +314,11 @@ describe('escrow.service uses locked rate from campaign', () => {
     // Total fee should be 100000 * 2% = 2000, not 99% of anything
     const total = entries.reduce((s, e) => s + parseFloat(e.escrow_fee_amount), 0);
     expect(Math.round(total)).toBe(2000);
+
+    // Wave 2 commit 3 — GST on the Protection Fee is persisted per tranche,
+    // EXCLUSIVE at the configured gst_pct (default 18%): 2000 * 18% = 360.
+    const totalGst = entries.reduce((s, e) => s + parseFloat(e.fee_gst_amount), 0);
+    expect(Math.round(totalGst)).toBe(360);
   });
 
   test('legacy campaigns (no locked rate) fall back to caller-supplied pct', async () => {

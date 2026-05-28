@@ -11,6 +11,7 @@
 const env               = require('../config/env');
 const paymentConfigSvc  = require('./paymentConfig.service');
 const pricingService    = require('./pricing.service');
+const taxService        = require('./tax.service');
 
 // Tranche schedule — percents loaded from payment_config table at runtime
 function buildTranches(cfg) {
@@ -66,14 +67,18 @@ async function createEscrowEntries(client, campaignInfluencerId, influencerFee, 
     const amount            = fee * t.pct;
     const escrowFeeAmount   = parseFloat((amount * feePct).toFixed(2));
     const netToInfluencer   = parseFloat((amount - escrowFeeAmount).toFixed(2));
+    // Wave 2 commit 3 — GST on the Protection Fee, EXCLUSIVE (recorded +
+    // surfaced to the brand; does not alter net_to_influencer or the brand
+    // charge). Reuses the centralized tax helper (payment_config.gst_pct).
+    const feeGstAmount      = await taxService.gstOn(escrowFeeAmount);
 
     const { rows } = await client.query(
       `INSERT INTO escrow_entries
          (campaign_influencer_id, tranche_number, amount, escrow_fee_amount,
-          net_to_influencer, status, trigger_event)
-       VALUES ($1, $2, $3, $4, $5, 'locked', $6)
+          fee_gst_amount, net_to_influencer, status, trigger_event)
+       VALUES ($1, $2, $3, $4, $5, $6, 'locked', $7)
        RETURNING *`,
-      [campaignInfluencerId, t.tranche_number, amount, escrowFeeAmount, netToInfluencer, t.trigger_event]
+      [campaignInfluencerId, t.tranche_number, amount, escrowFeeAmount, feeGstAmount, netToInfluencer, t.trigger_event]
     );
     entries.push(rows[0]);
   }

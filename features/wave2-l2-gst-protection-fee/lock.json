@@ -1,0 +1,31 @@
+{
+  "feature": "wave2-l2-gst-protection-fee",
+  "area": "backend-migration+service+controller+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — explicit 'start commit 3 (L2 GST)'. Wave 2 commit 3, implementing settled decision 2 (exclusive GST on the Protection Fee).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING + MIGRATION (M076). Render + Vercel redeploy. M076 batched with M075 for ONE combined prod migration go at the end of Wave 2 — explicit founder go required.",
+  "fix": "Record + surface GST on the L2 Protection Fee (escrow fee), EXCLUSIVE. M076 adds escrow_entries.fee_gst_amount. createEscrowEntries persists fee_gst = tax.service.gstOn(escrow_fee_amount) per tranche; getCampaignEscrow surfaces fee + GST (derives for pre-076 NULLs); brand escrow statement shows Protection fee + GST sub-lines.",
+  "related": [
+    "features/wave1-tax-config-foundation",
+    "features/wave2-brand-wallet-withdrawal"
+  ],
+  "result": "fee_gst_amount persisted per tranche = escrow_fee_amount × gst_pct/100 (EXCLUSIVE, via centralized tax.service.gstOn). Brand statement shows fee + GST as separate lines. Record + display only — net_to_influencer, tranche amount, brand charge, and tranche release UNCHANGED (actual GST invoice/collection is Wave 4). Backend boot smoke clean.",
+  "regression_proof": "Additive — one nullable column + one persisted value + a display line. Money movement untouched. pnpm qa GREEN (no workflow touches the escrow statement math). escrow-fee-tiers.test.js 23/23 incl. new fee_gst assertion (360 on a 2000 fee @ 18%). brand-web build compiles.",
+  "discipline": "Verify-twice: reused the existing Wave 1 tax.service.gstOn (reads payment_config.gst_pct, fallback 18) rather than re-implementing; confirmed escrow_fee_amount is the renamed L2 fee (M037), computed in createEscrowEntries and netted from the influencer tranche; confirmed getCampaignEscrow previously hid the fee from the brand. Flagged the scope boundary (record+display, not charge) explicitly in the spec — the charge/invoice is Wave 4.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "Pending explicit founder go. Production-impacting + M076 migration; batched with M075 for one combined prod go. Code push (Render+Vercel) coincides with M075+M076 on prod."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — reuses the locked escrow `.esc` palette; one new `.tr-fee` sub-line class composed of existing tokens, no new design language. Per the wave2-brand-wallet-withdrawal precedent.",
+  "mockup_locked_at": "2026-05-28"
+}
