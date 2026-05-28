@@ -1,9 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { darkColors } from '../theme/tokens';
+import { brandPalette as P, getBusinessAccentLight, fonts } from '../theme/tokens';
 
 /**
- * CategoryGrid — 2x4 grid of super-categories with icon, label, and deal count badge.
+ * CategoryGrid — grid of super-categories with icon, label, and deal count badge.
+ *
+ * Flow 38 (F0) restyle (2026-05-27): light brandPalette tiles. Each tile uses
+ * a per-business pale tint (wayfinding only) mapped from its category key; the
+ * label + count badge stay ink/yellow brand. Falls back to yellowPale for keys
+ * without a focus-vertical accent.
  */
 
 const DEFAULT_CATEGORIES = [
@@ -17,27 +22,45 @@ const DEFAULT_CATEGORIES = [
   { key: 'all',     icon: '•••', label: 'All' },
 ];
 
+// Map super-category keys → the focus-vertical accent key (for the pale tint).
+const SUPERCAT_ACCENT = {
+  eat: 'restaurant',
+  shop: 'fashion',
+  fashion: 'fashion',
+  groom: 'salon',
+  beauty: 'salon',
+  cars: 'car_rental',
+  car: 'car_rental',
+  travel: 'car_rental',
+};
+
 export default function CategoryGrid({ categories, onPressCategory }) {
   const items = categories || DEFAULT_CATEGORIES;
 
   return (
     <View style={styles.grid}>
-      {items.map(cat => (
-        <TouchableOpacity
-          key={cat.key}
-          style={styles.item}
-          onPress={() => onPressCategory?.(cat)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.icon}>{cat.icon}</Text>
-          <Text style={styles.label}>{cat.label}</Text>
-          {cat.deal_count > 0 && (
-            <View style={styles.countBadge}>
-              <Text style={styles.countText}>{cat.deal_count}</Text>
+      {items.map(cat => {
+        const accentKey = SUPERCAT_ACCENT[cat.key] || cat.key;
+        const tint = getBusinessAccentLight(accentKey).pale;
+        return (
+          <TouchableOpacity
+            key={cat.key}
+            style={styles.item}
+            onPress={() => onPressCategory?.(cat)}
+            activeOpacity={0.8}
+          >
+            <View style={[styles.tile, { backgroundColor: tint }]}>
+              <Text style={styles.icon}>{cat.icon}</Text>
             </View>
-          )}
-        </TouchableOpacity>
-      ))}
+            <Text style={styles.label}>{cat.label}</Text>
+            {cat.deal_count > 0 && (
+              <View style={styles.countBadge}>
+                <Text style={styles.countText}>{cat.deal_count}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -46,45 +69,45 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    gap: 7,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 10,
   },
   item: {
-    width: '23%', // ~4 columns with gap
+    width: '22%',
     alignItems: 'center',
-    gap: 2,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-    borderRadius: 14,
-    backgroundColor: darkColors.card,
-    borderWidth: 1,
-    borderColor: darkColors.border,
+    gap: 6,
     position: 'relative',
   },
-  icon: {
-    fontSize: 22,
+  tile: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: P.border,
   },
+  icon: { fontSize: 26 },
   label: {
     fontSize: 9,
-    fontWeight: '600',
-    color: darkColors.textSecondary,
+    fontWeight: '800',
+    color: P.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+    fontFamily: fonts.monoBold,
   },
   countBadge: {
     position: 'absolute',
     top: 4,
-    right: 4,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: darkColors.amber,
+    right: '14%',
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: P.ink,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
-  countText: {
-    fontSize: 7,
-    fontWeight: '800',
-    color: '#000',
-  },
+  countText: { fontSize: 8, fontWeight: '900', color: P.yellow, fontFamily: fonts.monoBold },
 });

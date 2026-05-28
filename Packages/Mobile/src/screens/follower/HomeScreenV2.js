@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, FlatList, TouchableOpacity,
   StyleSheet, RefreshControl, ActivityIndicator,
 } from 'react-native';
-import { darkColors, fmtMoney, getBusinessAccent } from '../../theme/tokens';
+import { brandPalette as P, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
 import ProductCard from '../../components/cards/ProductCard';
 import NewOfferCard from '../../components/cards/NewOfferCard';
 import ServiceCard from '../../components/cards/ServiceCard';
@@ -83,7 +83,7 @@ export default function HomeScreenV2({ navigation }) {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={darkColors.amber} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={P.yellow} />}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -274,7 +274,7 @@ export default function HomeScreenV2({ navigation }) {
       )}
 
       {loading && (
-        <ActivityIndicator color={darkColors.amber} size="large" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={P.yellow} size="large" style={{ marginTop: 40 }} />
       )}
 
       <View style={{ height: 80 }} />
@@ -294,7 +294,7 @@ function SectionHeader({ title, onSeeAll }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: darkColors.bg2,
+    backgroundColor: P.bg,
   },
   header: {
     flexDirection: 'row',
@@ -305,78 +305,87 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerSub: {
-    fontSize: 10,
-    color: darkColors.textMuted,
+    fontSize: 9,
+    color: P.muted2,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    fontFamily: fonts.monoMedium,
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: darkColors.text,
+    fontWeight: '900',
+    color: P.ink,
+    fontFamily: fonts.displayBlack,
   },
   headerArrow: {
-    fontSize: 10,
-    color: darkColors.amber,
+    fontSize: 11,
+    color: P.yellowText,
   },
   bellBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: darkColors.card,
-    borderWidth: 1,
-    borderColor: darkColors.border,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: P.bg2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   search: {
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: darkColors.card,
-    borderWidth: 1,
-    borderColor: darkColors.border,
+    backgroundColor: P.white,
+    borderWidth: 1.5,
+    borderColor: P.ink,
     borderRadius: 14,
-    padding: 11,
-    paddingHorizontal: 16,
+    padding: 12,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   searchText: {
-    fontSize: 13,
-    color: darkColors.textMuted,
+    fontSize: 12.5,
+    color: P.muted2,
+    fontFamily: fonts.sansRegular,
   },
   section: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    marginBottom: 9,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: darkColors.text,
+    fontSize: 15,
+    fontWeight: '900',
+    color: P.ink,
+    fontFamily: fonts.displayBlack,
   },
   seeAll: {
-    fontSize: 11,
-    color: darkColors.amber,
+    fontSize: 10,
+    color: P.yellowText,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.2,
+    fontFamily: fonts.monoBold,
   },
   productGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 11,
   },
   productGridItem: {
     width: '48%',
   },
   horizontalScroll: {
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 11,
   },
   horizontalCard: {
-    width: 160,
+    width: 172,
   },
   empty: {
     alignItems: 'center',
@@ -389,14 +398,16 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: darkColors.text,
+    fontWeight: '900',
+    color: P.ink,
     marginBottom: 6,
+    fontFamily: fonts.displayBlack,
   },
   emptyText: {
     fontSize: 12,
-    color: darkColors.textSecondary,
+    color: P.muted,
     textAlign: 'center',
     lineHeight: 18,
+    fontFamily: fonts.sansRegular,
   },
 });

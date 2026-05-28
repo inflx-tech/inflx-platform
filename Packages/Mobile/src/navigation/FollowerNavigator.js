@@ -1,8 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text } from 'react-native';
-import { colors, darkColors } from '../theme/tokens';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { colors, darkColors, brandPalette as P, fonts } from '../theme/tokens';
 
 // V2 screens (dark theme, products-first)
 import HomeScreenV2 from '../screens/follower/HomeScreenV2';
@@ -140,24 +140,24 @@ export default function FollowerNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: darkColors.amber,
-        tabBarInactiveTintColor: darkColors.textMuted,
+        tabBarActiveTintColor: P.ink,
+        tabBarInactiveTintColor: P.muted3,
         tabBarStyle: {
-          borderTopColor: darkColors.border,
-          backgroundColor: darkColors.card,
-          paddingTop: 4,
-          height: 60,
+          borderTopColor: P.border,
+          backgroundColor: P.white,
+          paddingTop: 6,
+          height: 62,
         },
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginBottom: 4 },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: '800', fontFamily: fonts.monoBold, marginBottom: 6, letterSpacing: 0.2 },
       }}
     >
       <Tab.Screen
         name="HomeTab"
         component={HomeStack}
         options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>🏠</Text>
+          tabBarLabel: 'HOME',
+          tabBarIcon: ({ focused, color }) => (
+            <Icon name={focused ? 'home-variant' : 'home-variant-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -165,9 +165,9 @@ export default function FollowerNavigator() {
         name="DealsTab"
         component={DealsStack}
         options={{
-          tabBarLabel: 'Deals',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>🏷️</Text>
+          tabBarLabel: 'DEALS',
+          tabBarIcon: ({ focused, color }) => (
+            <Icon name={focused ? 'tag' : 'tag-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -175,9 +175,9 @@ export default function FollowerNavigator() {
         name="MyStuffTab"
         component={MyStuffStack}
         options={{
-          tabBarLabel: 'My Stuff',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>📋</Text>
+          tabBarLabel: 'MY STUFF',
+          tabBarIcon: ({ focused, color }) => (
+            <Icon name={focused ? 'bag-personal' : 'bag-personal-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -185,9 +185,9 @@ export default function FollowerNavigator() {
         name="MeTab"
         component={MeStack}
         options={{
-          tabBarLabel: 'Me',
-          tabBarIcon: ({ focused }) => (
-            <Text style={{ fontSize: 20, opacity: focused ? 1 : 0.5 }}>👤</Text>
+          tabBarLabel: 'ME',
+          tabBarIcon: ({ focused, color }) => (
+            <Icon name={focused ? 'account' : 'account-outline'} size={22} color={color} />
           ),
         }}
       />

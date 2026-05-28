@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { darkColors, getBusinessAccent } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 
 /**
- * NewOfferCard — full-width shop/category level deal card.
+ * NewOfferCard — full-width shop/category-level deal banner.
  *
- * Matches the HTML mockup: gradient bg, store logo + name + deal description
- * + tags (left), big discount % (right), influencer strip (bottom).
+ * Flow 38 (F0) restyle (2026-05-27): ink + yellow brand banner (replaces the
+ * per-business gradient). Yellow tag + white title + big yellow discount +
+ * ink/yellow influencer strip. The per-business accent is intentionally NOT
+ * used here — shop-level deals are a brand moment, so they wear the master
+ * yellow.
  */
 
 export default function NewOfferCard({
@@ -17,38 +20,30 @@ export default function NewOfferCard({
   tags,          // ['Sarees', "Men's", 'Bridal']
   influencer,    // { name, avatar_initial }
   validTill,     // e.g. "Apr 15"
-  accentColor,   // override accent
   onPress,
 }) {
-  const accent = accentColor || getBusinessAccent(store?.category).accent;
-  const accentDim = getBusinessAccent(store?.category).dim;
-
   return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: accentDim, borderColor: `${accent}33` }]}
-      onPress={onPress}
-      activeOpacity={0.85}
-    >
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
+      <View style={styles.glow} />
+
       {/* Main content row */}
       <View style={styles.inner}>
-        {/* Store logo */}
-        <View style={[styles.logo, { backgroundColor: accent }]}>
+        {/* Store logo — yellow tile, ink initial */}
+        <View style={styles.logo}>
           <Text style={styles.logoText}>{store?.logo_initial || store?.name?.[0] || '?'}</Text>
         </View>
 
         {/* Info */}
         <View style={styles.info}>
-          <Text style={styles.storeName}>{store?.name}</Text>
-          <Text style={styles.dealDesc}>
-            {dealType === 'shop' ? '🏪' : '📂'} {dealLabel}
-          </Text>
+          <Text style={styles.tag}>{dealType === 'shop' ? '⚡ SHOP-LEVEL DEAL' : '⚡ CATEGORY DEAL'}</Text>
+          <Text style={styles.storeName} numberOfLines={1}>{store?.name}</Text>
+          <Text style={styles.dealDesc} numberOfLines={1}>{dealLabel}</Text>
 
-          {/* Tags */}
           {tags && tags.length > 0 && (
             <View style={styles.tags}>
               {tags.map((tag, i) => (
-                <View key={i} style={[styles.tag, { backgroundColor: accentDim }]}>
-                  <Text style={[styles.tagText, { color: accent }]}>{tag}</Text>
+                <View key={i} style={styles.tagChip}>
+                  <Text style={styles.tagText}>{tag}</Text>
                 </View>
               ))}
             </View>
@@ -57,22 +52,22 @@ export default function NewOfferCard({
 
         {/* Big discount % */}
         <View style={styles.dealRight}>
-          <Text style={[styles.dealValue, { color: accent }]}>{discountValue}</Text>
-          <Text style={[styles.dealOff, { color: accent }]}>OFF</Text>
+          <Text style={styles.dealValue}>{discountValue}</Text>
+          <Text style={styles.dealOff}>OFF</Text>
         </View>
       </View>
 
       {/* Influencer strip */}
       {influencer && (
-        <View style={[styles.infStrip, { backgroundColor: `${accent}08` }]}>
-          <View style={[styles.infAvatar, { backgroundColor: accent }]}>
+        <View style={styles.infStrip}>
+          <View style={styles.infAvatar}>
             <Text style={styles.infAvatarText}>{influencer.avatar_initial || influencer.name?.[0] || '?'}</Text>
           </View>
-          <Text style={styles.infLine}>
-            <Text style={styles.infName}>{influencer.name}</Text>
-            <Text style={styles.infMeta}> · {dealType === 'shop' ? 'Shop-level deal' : 'Category deal'} · Walk-in & pay</Text>
+          <Text style={styles.infLine} numberOfLines={1}>
+            <Text style={styles.infName}>VIA @{influencer.name}</Text>
+            <Text style={styles.infMeta}> · {dealType === 'shop' ? 'SHOP-LEVEL' : 'CATEGORY'} · WALK-IN &amp; PAY</Text>
           </Text>
-          {validTill && <Text style={styles.validity}>Till {validTill}</Text>}
+          {validTill && <Text style={styles.validity}>TILL {validTill}</Text>}
         </View>
       )}
     </TouchableOpacity>
@@ -81,104 +76,50 @@ export default function NewOfferCard({
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 20,
-    marginBottom: 14,
+    marginHorizontal: 16,
+    marginBottom: 16,
     borderRadius: 16,
-    borderWidth: 1.5,
+    backgroundColor: P.ink,
     overflow: 'hidden',
+    position: 'relative',
   },
-  inner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 14,
+  glow: {
+    position: 'absolute',
+    right: -30,
+    top: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: P.yellow,
+    opacity: 0.12,
   },
+  inner: { flexDirection: 'row', alignItems: 'center', padding: 15, gap: 13 },
   logo: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 13,
+    backgroundColor: P.yellow,
+    alignItems: 'center', justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#000',
-  },
-  info: {
-    flex: 1,
-    minWidth: 0,
-  },
-  storeName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: darkColors.text,
-  },
-  dealDesc: {
-    fontSize: 11,
-    color: darkColors.textSecondary,
-    marginTop: 2,
-  },
-  tags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 3,
-    marginTop: 6,
-  },
-  tag: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  tagText: {
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  dealRight: {
-    alignItems: 'center',
-  },
-  dealValue: {
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  dealOff: {
-    fontSize: 9,
-    fontWeight: '600',
-  },
+  logoText: { fontSize: 19, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  info: { flex: 1, minWidth: 0 },
+  tag: { fontSize: 9, color: P.yellow, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', fontFamily: fonts.monoBold },
+  storeName: { fontSize: 15, fontWeight: '900', color: P.white, marginTop: 3, fontFamily: fonts.displayBlack },
+  dealDesc: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2, fontWeight: '700', fontFamily: fonts.monoMedium },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
+  tagChip: { backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 },
+  tagText: { fontSize: 8.5, fontWeight: '800', color: P.white, fontFamily: fonts.monoBold },
+  dealRight: { alignItems: 'center' },
+  dealValue: { fontSize: 24, fontWeight: '900', color: P.yellow, fontFamily: fonts.monoBold },
+  dealOff: { fontSize: 9, fontWeight: '800', color: P.yellow, letterSpacing: 0.5, fontFamily: fonts.monoBold },
   infStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: darkColors.border,
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    paddingHorizontal: 15, paddingVertical: 9,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  infAvatar: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infAvatarText: {
-    fontSize: 7,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  infLine: {
-    flex: 1,
-    fontSize: 10,
-  },
-  infName: {
-    fontWeight: '700',
-    color: darkColors.text,
-  },
-  infMeta: {
-    color: darkColors.textSecondary,
-  },
-  validity: {
-    fontSize: 9,
-    color: darkColors.textMuted,
-  },
+  infAvatar: { width: 20, height: 20, borderRadius: 10, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center' },
+  infAvatarText: { fontSize: 8, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  infLine: { flex: 1, fontSize: 9 },
+  infName: { fontWeight: '800', color: P.yellow, fontFamily: fonts.monoBold },
+  infMeta: { color: 'rgba(255,255,255,0.55)', fontFamily: fonts.monoMedium, fontWeight: '700' },
+  validity: { fontSize: 8.5, color: 'rgba(255,255,255,0.5)', fontWeight: '700', fontFamily: fonts.monoMedium },
 });

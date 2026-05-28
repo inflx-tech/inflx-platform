@@ -1,32 +1,27 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
-import { darkColors } from '../theme/tokens';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { brandPalette as P, fonts } from '../theme/tokens';
 
 /**
  * InfluencerStoryRow — horizontal scroll of influencer story circles.
  *
- * Ring states:
- *   - 'pulse' = pulsing amber ring (new deals since last visit)
- *   - 'ring'  = static amber ring (followed, no new deals)
- *   - 'grey'  = grey ring (followed but inactive)
+ * Flow 38 (F0) restyle (2026-05-27): light brandPalette. Yellow story rings
+ * (the creator-vibe signature) + ink avatar with yellow initial. Ring states:
+ *   - 'pulse' / 'ring' = yellow ring (active / followed)
+ *   - 'grey'           = border ring, dimmed (inactive)
  */
 
 export function InfluencerStoryCircle({ story, onPress }) {
   const { name, avatar_initial, active_deals, ring_state } = story;
 
-  const ringStyle = ring_state === 'pulse'
-    ? { borderColor: darkColors.amber, borderWidth: 2.5 }
-    : ring_state === 'ring'
-    ? { borderColor: darkColors.amber, borderWidth: 2 }
-    : { borderColor: darkColors.textMuted, borderWidth: 1.5, opacity: 0.6 };
-
-  // Simple gradient-like background using solid color
-  const avatarBg = ring_state === 'grey' ? '#475569' : darkColors.amber;
+  const ringStyle = ring_state === 'grey'
+    ? { backgroundColor: P.border }
+    : { backgroundColor: P.yellow };
 
   return (
     <TouchableOpacity style={styles.circleContainer} onPress={onPress}>
       <View style={[styles.avatarOuter, ringStyle]}>
-        <View style={[styles.avatar, { backgroundColor: avatarBg }]}>
+        <View style={styles.avatar}>
           <Text style={styles.avatarText}>{avatar_initial || name?.[0] || '?'}</Text>
         </View>
         {active_deals > 0 && ring_state === 'pulse' && (
@@ -46,7 +41,7 @@ export function DiscoverMoreCircle({ onPress }) {
       <View style={styles.addOuter}>
         <Text style={styles.addIcon}>+</Text>
       </View>
-      <Text style={[styles.name, { color: darkColors.textMuted }]}>More</Text>
+      <Text style={[styles.name, { color: P.muted2 }]}>More</Text>
     </TouchableOpacity>
   );
 }
@@ -74,72 +69,63 @@ export default function InfluencerStoryRow({ stories, onPressStory, onPressMore 
 
 const styles = StyleSheet.create({
   row: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 14,
     gap: 12,
   },
-  circleContainer: {
-    alignItems: 'center',
-    gap: 4,
-    width: 60,
-  },
+  circleContainer: { alignItems: 'center', gap: 5, width: 60 },
   avatarOuter: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 58,
+    height: 58,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 2,
+    padding: 2.5,
   },
   avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 53,
+    height: 53,
+    borderRadius: 27,
+    backgroundColor: P.ink,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: P.white,
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#fff',
-  },
+  avatarText: { fontSize: 18, fontWeight: '900', color: P.yellow, fontFamily: fonts.displayBlack },
   dealBadge: {
     position: 'absolute',
     top: -1,
     right: -1,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: darkColors.red,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: P.ink,
     borderWidth: 2,
-    borderColor: darkColors.bg2,
+    borderColor: P.white,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 3,
   },
-  dealBadgeText: {
-    fontSize: 7,
-    fontWeight: '800',
-    color: '#fff',
-  },
+  dealBadgeText: { fontSize: 7.5, fontWeight: '900', color: P.yellow, fontFamily: fonts.monoBold },
   name: {
-    fontSize: 9,
-    color: darkColors.textSecondary,
+    fontSize: 8.5,
+    color: P.muted,
     textAlign: 'center',
     maxWidth: 60,
+    fontWeight: '700',
+    fontFamily: fonts.monoMedium,
   },
   addOuter: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 2,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: darkColors.textMuted,
+    borderColor: P.muted3,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: darkColors.card,
+    backgroundColor: P.bg2,
   },
-  addIcon: {
-    fontSize: 18,
-    color: darkColors.textMuted,
-  },
+  addIcon: { fontSize: 20, color: P.muted },
 });

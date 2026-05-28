@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Flow 38 · follower FOUNDATION — creator-vibe light brandPalette design language — wave3 mockup</title>
+<meta name="viewport" content="width=1600" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-50:#FFFDEB; --yellow-text:#6B5A00;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+  /* per-business accents (restrained — used for wayfinding only) */
+  --acc-restaurant:#E8401A; --acc-restaurant-pale:#FDEEE9;
+  --acc-fashion:#DB2777;    --acc-fashion-pale:#FCE7F3;
+  --acc-beauty:#7E22CE;     --acc-beauty-pale:#F3E8FF;
+  --acc-car:#1D4ED8;        --acc-car-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px;min-height:100vh}
+.wrap{max-width:1600px;margin:0 auto}
+
+.banner{background:var(--ink);color:var(--white);padding:16px 22px;border-radius:16px;margin-bottom:24px}
+.banner h1{font-family:'Outfit';font-size:16px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);max-width:1500px;line-height:1.6;margin-top:5px;font-family:'JetBrains Mono'}
+.banner .sub b{color:var(--yellow);font-weight:700}
+
+.row{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:26px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:390px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+
+.phone{width:390px;background:var(--ink);border-radius:44px;padding:10px;box-shadow:0 30px 60px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.05)}
+.phone-inner{background:var(--bg);border-radius:36px;overflow:hidden;height:800px;position:relative;display:flex;flex-direction:column}
+.notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:120px;height:28px;background:var(--ink);border-radius:18px;z-index:30}
+.status-bar{height:44px;background:var(--white);color:var(--ink);display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-family:'JetBrains Mono';font-size:12px;font-weight:700;flex-shrink:0}
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:62px;background:var(--white);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;z-index:20}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted-3)}
+.tab .ico{width:22px;height:22px}
+.tab .tl{font-family:'JetBrains Mono';font-size:8.5px;font-weight:800;letter-spacing:.2px}
+.tab.active{color:var(--ink)}
+.tab.active .tl{color:var(--ink)}
+.tab.active .ico{color:var(--ink)}
+.tab .dotwrap{position:relative}
+.tab.active .pillbg{position:absolute;inset:-5px -12px;background:var(--yellow);border-radius:999px;z-index:-1}
+.tab.active.acc .ico{color:var(--ink)}
+
+.ico{display:inline-block;vertical-align:middle}
+.ico svg{width:100%;height:100%;display:block}
+
+.body{flex:1;overflow-y:auto;background:var(--bg);padding-bottom:74px}
+.body::-webkit-scrollbar{width:0}
+
+/* ─── Location header ───── */
+.loc-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px}
+.loc-l{display:flex;flex-direction:column}
+.loc-tag{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+.loc-city{font-family:'Outfit';font-size:16px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:4px}
+.bell{width:36px;height:36px;border-radius:18px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+
+/* ─── Search ───── */
+.search{margin:6px 16px 12px;background:var(--white);border:1.5px solid var(--ink);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:9px}
+.search .ico{width:16px;height:16px;color:var(--muted-2)}
+.search-txt{font-family:'Plus Jakarta Sans';font-size:12.5px;color:var(--muted-2)}
+
+/* ─── Influencer story row ───── */
+.story-row{display:flex;gap:12px;padding:6px 16px 14px;overflow-x:auto}
+.story{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0}
+.story-ring{width:58px;height:58px;border-radius:30px;padding:2.5px;background:var(--yellow)}
+.story-ring.seen{background:var(--border)}
+.story-av{width:100%;height:100%;border-radius:28px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--yellow);font-family:'Outfit';font-size:18px;font-weight:900;border:2px solid var(--white)}
+.story-nm{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted);font-weight:700;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.story.more .story-ring{background:var(--bg2);border:1.5px dashed var(--muted-3)}
+.story.more .story-av{background:var(--bg2);color:var(--muted)}
+
+/* ─── Category grid ───── */
+.cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:2px 16px 16px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:6px}
+.cat-tile{width:100%;aspect-ratio:1;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid var(--border)}
+.cat-tile.eat{background:var(--acc-restaurant-pale)}
+.cat-tile.fashion{background:var(--acc-fashion-pale)}
+.cat-tile.beauty{background:var(--acc-beauty-pale)}
+.cat-tile.car{background:var(--acc-car-pale)}
+.cat-tile.more{background:var(--yellow-pale)}
+.cat-nm{font-family:'JetBrains Mono';font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.2px}
+
+/* ─── Section header ───── */
+.sec{display:flex;justify-content:space-between;align-items:center;padding:6px 16px 9px}
+.sec-ttl{font-family:'Outfit';font-size:15px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:6px}
+.sec-all{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.2px}
+
+/* ─── Product card (THE core atom) ───── */
+.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:0 16px 16px}
+.pcard{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.pcard-hero{height:128px;position:relative;display:flex;align-items:center;justify-content:center;font-size:46px}
+.pcard-hero.eat{background:var(--acc-restaurant-pale)}
+.pcard-hero.fashion{background:var(--acc-fashion-pale)}
+.pcard-badge{position:absolute;top:8px;left:8px;background:var(--ink);color:var(--yellow);padding:3px 8px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;letter-spacing:.2px}
+.pcard-heart{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:13px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+.pcard-inf{position:absolute;bottom:7px;left:7px;display:flex;align-items:center;gap:5px;background:rgba(10,10,10,.82);padding:3px 9px 3px 3px;border-radius:999px}
+.pcard-inf-av{width:18px;height:18px;border-radius:9px;background:var(--yellow);display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:'Outfit';font-size:8px;font-weight:900}
+.pcard-inf-nm{font-family:'JetBrains Mono';font-size:8px;color:#fff;font-weight:700}
+.pcard-body{padding:10px}
+.pcard-nm{font-family:'Outfit';font-size:12.5px;font-weight:800;color:var(--ink);line-height:1.3}
+.pcard-note{font-family:'Plus Jakarta Sans';font-size:10px;font-style:italic;color:var(--muted);margin-top:3px;line-height:1.4}
+.pcard-brand{display:flex;align-items:center;gap:4px;margin-top:5px}
+.pcard-brand-nm{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);font-weight:700}
+.pcard-verified{color:var(--success);font-size:9px;font-weight:800}
+.pcard-trust{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tchip{display:flex;align-items:center;gap:3px;border:1px solid var(--border);border-radius:7px;padding:2px 6px}
+.tchip-tx{font-family:'JetBrains Mono';font-size:8px;font-weight:800;color:var(--muted)}
+.pcard-price{display:flex;align-items:baseline;gap:6px;margin-top:7px}
+.pcard-offer{font-family:'JetBrains Mono';font-size:15px;font-weight:900;color:var(--ink)}
+.pcard-mrp{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-3);text-decoration:line-through;font-weight:500}
+
+/* ─── Offer banner card ───── */
+.offer-card{margin:0 16px 16px;background:var(--ink);border-radius:16px;padding:15px;position:relative;overflow:hidden}
+.offer-card::after{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;background:var(--yellow);opacity:.12;border-radius:60px}
+.offer-tag{font-family:'JetBrains Mono';font-size:9px;color:var(--yellow);text-transform:uppercase;letter-spacing:.4px;font-weight:800}
+.offer-ttl{font-family:'Outfit';font-size:17px;font-weight:900;color:var(--white);margin-top:4px}
+.offer-sub{font-family:'JetBrains Mono';font-size:10px;color:rgba(255,255,255,.6);margin-top:3px;font-weight:700}
+.offer-cta{margin-top:11px;background:var(--yellow);color:var(--ink);align-self:flex-start;display:inline-block;padding:8px 16px;border-radius:10px;font-family:'Outfit';font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.2px}
+
+/* ─── Service horizontal scroll ───── */
+.hscroll{display:flex;gap:11px;padding:0 16px 16px;overflow-x:auto}
+.scard{width:172px;flex-shrink:0;background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.scard-hero{height:96px;display:flex;align-items:center;justify-content:center;font-size:34px;position:relative}
+.scard-hero.beauty{background:var(--acc-beauty-pale)}
+.scard-hero.car{background:var(--acc-car-pale)}
+.scard-badge{position:absolute;top:7px;left:7px;background:var(--ink);color:var(--yellow);padding:2px 7px;border-radius:999px;font-family:'JetBrains Mono';font-size:8px;font-weight:800}
+.scard-body{padding:9px}
+.scard-nm{font-family:'Outfit';font-size:12px;font-weight:800;color:var(--ink)}
+.scard-loc{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);margin-top:2px;font-weight:700}
+.scard-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.scard-price{font-family:'JetBrains Mono';font-size:12px;font-weight:900;color:var(--ink)}
+.scard-book{background:var(--ink);color:var(--yellow);padding:5px 11px;border-radius:8px;font-family:'Outfit';font-size:9.5px;font-weight:900;text-transform:uppercase}
+
+/* ─── Generic header (sub-screens) ───── */
+.h-top{background:var(--white);border-bottom:1px solid var(--border);padding:50px 16px 13px;flex-shrink:0;display:flex;align-items:center;gap:11px}
+.h-back{width:34px;height:34px;border-radius:17px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--ink);flex-shrink:0}
+.h-title{font-family:'Outfit';font-size:16px;font-weight:900;color:var(--ink);flex:1}
+.h-actions{display:flex;gap:8px}
+
+/* ─── Brand store hero ───── */
+.store-hero{height:150px;background:var(--acc-restaurant-pale);position:relative;display:flex;align-items:center;justify-content:center;font-size:54px;flex-shrink:0}
+.store-back{position:absolute;top:50px;left:14px;width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.store-card{margin:-28px 16px 0;background:var(--white);border:1px solid var(--border);border-radius:18px;padding:15px;position:relative;z-index:2}
+.store-logo-row{display:flex;align-items:flex-start;gap:12px}
+.store-logo{width:52px;height:52px;border-radius:13px;background:var(--acc-restaurant-pale);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1px solid var(--border)}
+.store-nm{font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:5px}
+.store-meta{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);margin-top:3px;font-weight:700}
+.store-stat-row{display:flex;gap:8px;margin-top:11px}
+.store-stat{flex:1;background:var(--bg2);border-radius:10px;padding:9px;text-align:center}
+.store-stat-v{font-family:'JetBrains Mono';font-size:13px;font-weight:900;color:var(--ink)}
+.store-stat-l{font-family:'JetBrains Mono';font-size:8px;color:var(--muted-2);font-weight:800;text-transform:uppercase;margin-top:2px;letter-spacing:.2px}
+
+/* ─── creator endorsement strip ───── */
+.endorse{margin:12px 16px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px}
+.endorse-av{width:38px;height:38px;border-radius:19px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--yellow);font-family:'Outfit';font-size:15px;font-weight:900;flex-shrink:0}
+.endorse-q{font-family:'Plus Jakarta Sans';font-size:11.5px;font-style:italic;color:var(--yellow-text);line-height:1.4}
+.endorse-by{font-family:'JetBrains Mono';font-size:8.5px;color:var(--yellow-text);font-weight:800;margin-top:3px;text-transform:uppercase;letter-spacing:.2px;opacity:.85}
+
+/* ─── status pill ───── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-family:'JetBrains Mono';font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.2px}
+.pill .dot{width:6px;height:6px;border-radius:3px}
+.pill.open{background:var(--success-pale);color:var(--success-text)}
+.pill.open .dot{background:var(--success)}
+
+/* ─── detail hero + sticky CTA ───── */
+.det-hero{height:240px;position:relative;display:flex;align-items:center;justify-content:center;font-size:64px;flex-shrink:0;background:var(--acc-fashion-pale)}
+.det-back{position:absolute;top:50px;left:14px;width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.det-body{padding:15px;flex:1;overflow-y:auto}
+.det-nm{font-family:'Outfit';font-size:21px;font-weight:900;color:var(--ink);letter-spacing:-.3px}
+.det-sub{font-family:'JetBrains Mono';font-size:10.5px;color:var(--muted-2);margin-top:3px;font-weight:700}
+.det-price-row{display:flex;align-items:baseline;gap:9px;margin-top:11px}
+.det-price{font-family:'JetBrains Mono';font-size:24px;font-weight:900;color:var(--ink)}
+.det-mrp{font-family:'JetBrains Mono';font-size:13px;color:var(--muted-3);text-decoration:line-through}
+.det-disc{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--success-text);background:var(--success-pale);padding:3px 8px;border-radius:6px}
+.det-sec-l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin:16px 0 8px}
+.variant-row{display:flex;gap:7px;flex-wrap:wrap}
+.vchip{border:1.5px solid var(--border);border-radius:9px;padding:7px 13px;font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--ink)}
+.vchip.sel{border-color:var(--ink);background:var(--ink);color:var(--yellow)}
+.vchip.oos{color:var(--muted-3);border-color:var(--border-soft);text-decoration:line-through}
+.det-cta-wrap{padding:12px 14px 18px;background:var(--white);border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:10px;align-items:center}
+.det-cta-ghost{width:50px;height:50px;border-radius:13px;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.det-cta-main{flex:1;background:var(--ink);color:var(--yellow);border-radius:13px;padding:15px;text-align:center;font-family:'Outfit';font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.2px}
+
+/* ─── checkout/CTA surface ───── */
+.co-summary{margin:14px 16px;background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px}
+.co-line{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.co-line.total{border-top:1px dashed var(--border);margin-top:6px;padding-top:10px}
+.co-l{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted)}
+.co-l.bold{font-family:'Outfit';font-weight:900;color:var(--ink);font-size:13px}
+.co-v{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink)}
+.co-v.disc{color:var(--success-text)}
+.co-v.big{font-size:18px;font-weight:900}
+.co-deal{margin:0 16px 14px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:14px;padding:11px;display:flex;align-items:center;gap:9px}
+.co-deal-av{width:34px;height:34px;border-radius:17px;background:var(--ink);display:flex;align-items:center;justify-content:center;color:var(--yellow);font-family:'Outfit';font-size:13px;font-weight:900}
+.co-deal-tx{font-family:'JetBrains Mono';font-size:9.5px;color:var(--yellow-text);font-weight:800}
+.co-deal-tx b{font-family:'Outfit';font-weight:900}
+.mode-row{display:flex;gap:9px;margin:0 16px 14px}
+.mode{flex:1;border:1.5px solid var(--border);border-radius:13px;padding:13px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mode.sel{border-color:var(--ink);background:var(--ink)}
+.mode .ico{width:22px;height:22px;color:var(--ink)}
+.mode.sel .ico{color:var(--yellow)}
+.mode-l{font-family:'JetBrains Mono';font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.2px}
+.mode.sel .mode-l{color:var(--white)}
+.pay-cta{margin:6px 16px;background:var(--ink);color:var(--yellow);border-radius:14px;padding:16px;text-align:center;font-family:'Outfit';font-size:14.5px;font-weight:900;text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:8px}
+.razor-note{font-family:'JetBrains Mono';font-size:8.5px;color:var(--muted-2);text-align:center;margin:8px 16px 0;font-weight:700;letter-spacing:.2px}
+
+/* ─── side panel ───── */
+.side{display:flex;flex-direction:column;gap:14px;width:380px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.panel .ph{font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px;color:var(--ink-2)}
+.swatch-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:3px}
+.sw-box{width:42px;height:42px;border-radius:10px;border:1px solid var(--border)}
+.sw-l{font-family:'JetBrains Mono';font-size:7.5px;color:var(--muted-2);font-weight:700}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6 L9 12 L15 18"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21 L16 16"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8 a6 6 0 0 0-12 0 c0 7-3 9-3 9 h18 s-3-2-3-9"/><path d="M13.7 21 a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 L12 3 L21 11"/><path d="M5 10 V20 H19 V10"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 V4 H11 L21 14 L14 21 L3 12 Z"/><circle cx="7.5" cy="7.5" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8 H18 L19 21 H5 Z"/><path d="M9 8 V6 a3 3 0 0 1 6 0 V8"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21 c0-4 4-6 8-6 s8 2 8 6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 S4 14 4 8.5 A4 4 0 0 1 12 6 A4 4 0 0 1 20 8.5 C20 14 12 20 12 20 Z"/></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9 L5 4 H19 L20 9"/><path d="M4 9 H20 V20 H4 Z"/><path d="M9 20 V14 H15 V20"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M10 22 L11 14 L9 10 L11 7 H13 L16 11 M11 14 L14 18"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 L4 14 H11 L10 22 L20 9 H13 Z"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<div class="banner">
+  <h1>Flow 38 · follower FOUNDATION — creator-vibe LIGHT brandPalette design language (wave3 master mockup)</h1>
+  <div class="sub">
+    <b>Phase F0 — sets the visual contract for all 16 follower flows that follow.</b> Establishes: dark→light flip onto <b>brandPalette</b> (white/yellow #FFC107/ink) + Outfit/Plus Jakarta Sans/JetBrains Mono · <b>creator vibe via content not chrome</b> (yellow story rings + ink/yellow influencer avatars + "X's deal" yellowPale endorsement strips + creator notes on cards) · <b>restrained per-business accents for wayfinding</b> (restaurant #E8401A · fashion #DB2777 · beauty #7E22CE · car #1D4ED8 — used ONLY on category tiles + card hero tints + store hero, never on chrome/CTAs) · <b>ink+yellow primary CTAs</b> everywhere · <b>JetBrains Mono for all prices/IDs</b> · light tab bar with yellow active pill. 4 representative surfaces below.
+  </div>
+</div>
+
+<!-- Row 1: Home + Brand Store -->
+<div class="row">
+
+  <!-- PHONE 1: UNIFIED HOME -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="body">
+        <div class="loc-head">
+          <div class="loc-l">
+            <div class="loc-tag">📍 DEALS NEAR YOU</div>
+            <div class="loc-city">Vijayawada <span style="color:var(--yellow-text);font-size:11px">▼</span></div>
+          </div>
+          <div class="bell"><span class="ico" style="width:18px;height:18px"><svg><use href="#i-bell"/></svg></span></div>
+        </div>
+
+        <div class="search">
+          <span class="ico"><svg><use href="#i-search"/></svg></span>
+          <span class="search-txt">Search products, stores, creators…</span>
+        </div>
+
+        <!-- Influencer stories -->
+        <div class="story-row">
+          <div class="story"><div class="story-ring"><div class="story-av">M</div></div><div class="story-nm">meena_style</div></div>
+          <div class="story"><div class="story-ring"><div class="story-av">R</div></div><div class="story-nm">riya.eats</div></div>
+          <div class="story"><div class="story-ring seen"><div class="story-av">A</div></div><div class="story-nm">aman_drives</div></div>
+          <div class="story"><div class="story-ring seen"><div class="story-av">K</div></div><div class="story-nm">kavya.glow</div></div>
+          <div class="story more"><div class="story-ring"><div class="story-av">+</div></div><div class="story-nm">more</div></div>
+        </div>
+
+        <!-- Category grid -->
+        <div class="cat-grid">
+          <div class="cat"><div class="cat-tile eat">🍽️</div><div class="cat-nm">Eat</div></div>
+          <div class="cat"><div class="cat-tile fashion">👗</div><div class="cat-nm">Fashion</div></div>
+          <div class="cat"><div class="cat-tile beauty">💇</div><div class="cat-nm">Beauty</div></div>
+          <div class="cat"><div class="cat-tile car">🚗</div><div class="cat-nm">Cars</div></div>
+        </div>
+
+        <!-- Hot products -->
+        <div class="sec"><div class="sec-ttl">🔥 Hot Near You</div><div class="sec-all">SEE ALL →</div></div>
+        <div class="prod-grid">
+          <div class="pcard">
+            <div class="pcard-hero fashion">👗
+              <div class="pcard-badge">25% OFF</div>
+              <div class="pcard-heart"><span class="ico" style="width:13px;height:13px"><svg><use href="#i-heart"/></svg></span></div>
+              <div class="pcard-inf"><div class="pcard-inf-av">M</div><div class="pcard-inf-nm">meena_style</div></div>
+            </div>
+            <div class="pcard-body">
+              <div class="pcard-nm">Banarasi Silk Saree</div>
+              <div class="pcard-note">"The drape on this is unreal for festivals ✨"</div>
+              <div class="pcard-brand"><span class="pcard-brand-nm">Kanchi Threads · Benz Circle</span><span class="pcard-verified">✓</span></div>
+              <div class="pcard-trust">
+                <div class="tchip"><span class="tchip-tx">↩ 7-DAY RETURNS</span></div>
+                <div class="tchip"><span class="tchip-tx">💸 PAY AT STORE</span></div>
+              </div>
+              <div class="pcard-price"><span class="pcard-offer">₹6,749</span><span class="pcard-mrp">₹8,999</span></div>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <div class="pcard-hero eat">🍛
+              <div class="pcard-badge">FLAT ₹150</div>
+              <div class="pcard-heart"><span class="ico" style="width:13px;height:13px"><svg><use href="#i-heart"/></svg></span></div>
+              <div class="pcard-inf"><div class="pcard-inf-av">R</div><div class="pcard-inf-nm">riya.eats</div></div>
+            </div>
+            <div class="pcard-body">
+              <div class="pcard-nm">Andhra Thali (Unlimited)</div>
+              <div class="pcard-note">"Best gongura mutton in town, trust me 🔥"</div>
+              <div class="pcard-brand"><span class="pcard-brand-nm">Spice Garden · Governorpet</span><span class="pcard-verified">✓</span></div>
+              <div class="pcard-trust">
+                <div class="tchip"><span class="tchip-tx">💸 PAY AT VENUE</span></div>
+              </div>
+              <div class="pcard-price"><span class="pcard-offer">₹349</span><span class="pcard-mrp">₹499</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Offer banner (ink + yellow) -->
+        <div class="offer-card">
+          <div class="offer-tag">⚡ SHOP-LEVEL DEAL</div>
+          <div class="offer-ttl">Flat 30% off at Glow Salon</div>
+          <div class="offer-sub">VIA @kavya.glow · ENDS IN 2 DAYS</div>
+          <div class="offer-cta">Browse store →</div>
+        </div>
+
+        <!-- Services scroll -->
+        <div class="sec"><div class="sec-ttl">✨ Services &amp; Experiences</div><div class="sec-all">SEE ALL →</div></div>
+        <div class="hscroll">
+          <div class="scard">
+            <div class="scard-hero beauty">💇<div class="scard-badge">30% OFF</div></div>
+            <div class="scard-body">
+              <div class="scard-nm">Hair Spa + Cut</div>
+              <div class="scard-loc">GLOW SALON · MG ROAD</div>
+              <div class="scard-foot"><span class="scard-price">₹899</span><span class="scard-book">Book</span></div>
+            </div>
+          </div>
+          <div class="scard">
+            <div class="scard-hero car">🚗<div class="scard-badge">₹400 OFF</div></div>
+            <div class="scard-body">
+              <div class="scard-nm">Swift · Self Drive</div>
+              <div class="scard-loc">ZOOM CARS · 1.2 KM</div>
+              <div class="scard-foot"><span class="scard-price">₹1,800<span style="font-size:8px;color:var(--muted-2)">/day</span></span><span class="scard-book">Book</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar (light + yellow active) -->
+      <div class="tabbar">
+        <div class="tab active"><div class="dotwrap"><span class="pillbg"></span><span class="ico"><svg><use href="#i-home"/></svg></span></div><span class="tl">HOME</span></div>
+        <div class="tab"><span class="ico"><svg><use href="#i-tag"/></svg></span><span class="tl">DEALS</span></div>
+        <div class="tab"><span class="ico"><svg><use href="#i-bag"/></svg></span><span class="tl">MY STUFF</span></div>
+        <div class="tab"><span class="ico"><svg><use href="#i-user"/></svg></span><span class="tl">ME</span></div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>SURFACE 1 · UNIFIED HOME (HomeScreenV2)</b><br/>Light bg · location header + ink-bordered search · <b>yellow story rings with ink/yellow creator avatars</b> · 4 category tiles in restrained per-business pale accents · mixed product+service feed · ProductCard = white card + ink-badge + creator avatar overlay + <b>creator note quote</b> + trust chips + JetBrains-Mono prices · ink+yellow offer banner · light tab bar with <b>yellow active pill</b></div>
+  </div>
+
+  <!-- PHONE 2: BRAND STORE -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="store-hero">🍽️
+        <div class="store-back"><span class="ico" style="width:16px;height:16px"><svg><use href="#i-back"/></svg></span></div>
+      </div>
+
+      <div class="body" style="padding-top:0">
+        <div class="store-card">
+          <div class="store-logo-row">
+            <div class="store-logo">🍽️</div>
+            <div style="flex:1">
+              <div class="store-nm">Spice Garden <span class="pcard-verified" style="font-size:13px">✓</span></div>
+              <div class="store-meta">ANDHRA · GOVERNORPET · 1.4 KM</div>
+              <div style="margin-top:7px"><span class="pill open"><span class="dot"></span>OPEN TILL 11 PM</span></div>
+            </div>
+          </div>
+          <div class="store-stat-row">
+            <div class="store-stat"><div class="store-stat-v">4.5★</div><div class="store-stat-l">Rating</div></div>
+            <div class="store-stat"><div class="store-stat-v">₹500</div><div class="store-stat-l">For Two</div></div>
+            <div class="store-stat"><div class="store-stat-v">30%</div><div class="store-stat-l">Max Deal</div></div>
+          </div>
+        </div>
+
+        <!-- Creator endorsement -->
+        <div class="endorse">
+          <div class="endorse-av">R</div>
+          <div style="flex:1">
+            <div class="endorse-q">"Best gongura mutton in Vijayawada — order the unlimited thali, you won't regret it 🔥"</div>
+            <div class="endorse-by">— @riya.eats' recommendation</div>
+          </div>
+        </div>
+
+        <div class="sec"><div class="sec-ttl">Menu Highlights</div><div class="sec-all">FULL MENU →</div></div>
+        <div class="prod-grid">
+          <div class="pcard">
+            <div class="pcard-hero eat">🍛<div class="pcard-badge">FLAT ₹150</div></div>
+            <div class="pcard-body">
+              <div class="pcard-nm">Andhra Thali</div>
+              <div class="pcard-price"><span class="pcard-offer">₹349</span><span class="pcard-mrp">₹499</span></div>
+            </div>
+          </div>
+          <div class="pcard">
+            <div class="pcard-hero eat">🍤<div class="pcard-badge">20% OFF</div></div>
+            <div class="pcard-body">
+              <div class="pcard-nm">Prawn Roast</div>
+              <div class="pcard-price"><span class="pcard-offer">₹399</span><span class="pcard-mrp">₹499</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="det-cta-wrap" style="padding-bottom:18px">
+        <div class="det-cta-ghost"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-bag"/></svg></span></div>
+        <div class="det-cta-main">Book a Table →</div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>SURFACE 2 · BRAND STORE (BrandStoreScreen)</b><br/>Per-business pale hero (restaurant) · floating white store card with verified ✓ + open/closed StatusPill (canonical) + 3 mono stat tiles · <b>yellowPale creator-endorsement strip</b> (the creator-vibe centerpiece — ink/yellow avatar + italic quote + mono attribution) · menu-highlight product grid · sticky ink+yellow "Book a Table" CTA + ghost cart. Path-B tracking forwarded on every tap.</div>
+  </div>
+
+</div>
+
+<!-- Row 2: Detail + Checkout -->
+<div class="row">
+
+  <!-- PHONE 3: PRODUCT DETAIL (fashion, with variants) -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="det-hero">👗
+        <div class="det-back"><span class="ico" style="width:16px;height:16px"><svg><use href="#i-back"/></svg></span></div>
+      </div>
+
+      <div class="det-body">
+        <div class="det-nm">Banarasi Silk Saree</div>
+        <div class="det-sub">KANCHI THREADS · BENZ CIRCLE · ✓ VERIFIED</div>
+        <div class="det-price-row">
+          <span class="det-price">₹6,749</span>
+          <span class="det-mrp">₹8,999</span>
+          <span class="det-disc">25% OFF</span>
+        </div>
+
+        <!-- creator deal strip -->
+        <div class="co-deal" style="margin:14px 0 0">
+          <div class="co-deal-av">M</div>
+          <div class="co-deal-tx"><b>@meena_style</b>'s deal · 25% OFF applied at checkout</div>
+        </div>
+
+        <div class="det-sec-l">SELECT SIZE</div>
+        <div class="variant-row">
+          <div class="vchip">5.5m</div>
+          <div class="vchip sel">6.3m</div>
+          <div class="vchip oos">6.8m</div>
+        </div>
+
+        <div class="det-sec-l">COLOR</div>
+        <div class="variant-row">
+          <div class="vchip sel">Maroon</div>
+          <div class="vchip">Royal Blue</div>
+          <div class="vchip">Emerald</div>
+        </div>
+
+        <div class="det-sec-l">CREATOR'S NOTE</div>
+        <div class="endorse" style="margin:0">
+          <div class="endorse-av">M</div>
+          <div style="flex:1">
+            <div class="endorse-q">"The drape on this is unreal for festivals — the gold zari catches every light ✨"</div>
+            <div class="endorse-by">— @meena_style</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="det-cta-wrap">
+        <div class="det-cta-ghost"><span class="ico" style="width:20px;height:20px"><svg><use href="#i-heart"/></svg></span></div>
+        <div class="det-cta-main">Add to Cart · ₹6,749</div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>SURFACE 3 · PRODUCT DETAIL (fashion variant)</b><br/>Per-business pale hero · Outfit-Black name + mono brand·verified · big mono price + strikethrough MRP + successPale discount badge · <b>creator "X's deal" strip</b> (ink/yellow avatar) · ink-bordered/ink-fill size+color variant chips (selected = ink+yellow, OOS = struck) · yellowPale creator-note strip · sticky ink+yellow "Add to Cart" + ghost heart. <i>This bespoke layout = the hand-built path for the 4 focus verticals.</i></div>
+  </div>
+
+  <!-- PHONE 4: CHECKOUT / CTA SURFACE -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="notch"></div>
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+
+      <div class="h-top">
+        <div class="h-back"><span class="ico" style="width:16px;height:16px"><svg><use href="#i-back"/></svg></span></div>
+        <div class="h-title">Checkout</div>
+      </div>
+
+      <div class="body" style="padding-top:14px">
+        <!-- mode selector -->
+        <div class="mode-row">
+          <div class="mode sel"><span class="ico"><svg><use href="#i-walk"/></svg></span><span class="mode-l">Pay at Store</span></div>
+          <div class="mode"><span class="ico"><svg><use href="#i-bag"/></svg></span><span class="mode-l">Online Order</span></div>
+        </div>
+
+        <!-- creator deal -->
+        <div class="co-deal">
+          <div class="co-deal-av">M</div>
+          <div class="co-deal-tx"><b>@meena_style</b>'s deal applied · you save ₹2,250</div>
+        </div>
+
+        <!-- order summary -->
+        <div class="co-summary">
+          <div class="co-line"><span class="co-l">Banarasi Silk Saree (6.3m, Maroon)</span><span class="co-v">₹8,999</span></div>
+          <div class="co-line"><span class="co-l">Creator discount (25%)</span><span class="co-v disc">− ₹2,250</span></div>
+          <div class="co-line"><span class="co-l">Platform fee</span><span class="co-v">₹0</span></div>
+          <div class="co-line total"><span class="co-l bold">You Pay</span><span class="co-v big">₹6,749</span></div>
+        </div>
+
+        <div class="pay-cta">
+          <span class="ico" style="width:18px;height:18px;color:var(--yellow)"><svg><use href="#i-bolt"/></svg></span>
+          PAY ₹6,749
+        </div>
+        <div class="razor-note">SECURED BY RAZORPAY · UPI / CARD / NETBANKING</div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>SURFACE 4 · CHECKOUT / CTA (PayAtStore / Cart / PreBook)</b><br/>White light header · ink-active mode selector with MCI walk/bag icons · <b>yellowPale creator-deal applied strip</b> (attribution carried to the transaction = commission credit) · white order-summary card with mono amounts + successText discount line + big mono "You Pay" · ink+yellow "PAY ₹X" CTA with MCI bolt · Razorpay secured-note. <i>Business-agnostic checkout shared across all 4 verticals.</i></div>
+  </div>
+
+</div>
+
+<!-- Side panel: the locked design language + decisions -->
+<div class="row" style="justify-content:center;align-items:flex-start">
+  <div class="side">
+
+    <div class="panel">
+      <h3>Design language (proposed lock)</h3>
+      <div class="ph">brandPalette + creator vibe via content</div>
+      <ul>
+        <li><b>Chrome = light brandPalette</b> — white cards, ink text, #E4E4E7 borders, #FAFAFA bg. Same as brand+influencer apps.</li>
+        <li><b>Primary = ink+yellow</b> — every CTA is ink-bg + yellow-text Outfit-Black UPPERCASE (or yellow-bg + ink on dark heroes).</li>
+        <li><b>All money/IDs = JetBrains Mono.</b> Display/headings = Outfit. Body = Plus Jakarta Sans.</li>
+        <li><b>Creator vibe = content, not theme</b> — yellow story rings, ink/yellow creator avatars, "X's deal" yellowPale strips, creator-note quotes on cards. The soul, carried everywhere.</li>
+        <li><b>Per-business accent = wayfinding only</b> — restaurant/fashion/beauty/car pale tints on category tiles + card hero + store hero. NEVER on chrome, text, or CTAs.</li>
+        <li><b>Tab bar</b> — light, yellow active pill behind the icon.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Per-business accent palette</h3>
+      <div class="ph">restrained wayfinding tints</div>
+      <div class="swatch-row">
+        <div class="sw"><div class="sw-box" style="background:#E8401A"></div><div class="sw-l">EAT</div></div>
+        <div class="sw"><div class="sw-box" style="background:#DB2777"></div><div class="sw-l">FASHION</div></div>
+        <div class="sw"><div class="sw-box" style="background:#7E22CE"></div><div class="sw-l">BEAUTY</div></div>
+        <div class="sw"><div class="sw-box" style="background:#1D4ED8"></div><div class="sw-l">CAR</div></div>
+        <div class="sw"><div class="sw-box" style="background:#FFC107"></div><div class="sw-l">BRAND</div></div>
+      </div>
+      <ul style="margin-top:9px">
+        <li>Replaces the current <code>darkColors</code> amber + <code>businessAccents</code> dark tints. Yellow #FFC107 stays the master brand color.</li>
+        <li>KEY DECISION: keep these 4 accents (wayfinding + marketplace feel) OR go pure yellow+ink everywhere (max unification)?</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>F0 implementation scope</h3>
+      <div class="ph">cascade-first — atoms before screens</div>
+      <ul>
+        <li><b>Restyle shared atoms</b> (cascade to ~30 screens): <code>cards/ProductCard</code> · <code>ServiceCard</code> · <code>NewOfferCard</code> · <code>CarRentalCard</code> · <code>LookbookCard</code> · <code>SchemaCard</code> · <code>CategoryGrid</code> · <code>InfluencerStoryRow</code> · <code>OfferCard</code> · <code>restaurant/RestaurantCard</code> + chips + <code>restaurant/StatusPill</code></li>
+        <li><b>Tab bar</b> → light brandPalette + yellow active pill (FollowerNavigator)</li>
+        <li><b>getBusinessAccent</b> → remap dark tints to the 4 light accents above (tokens.js, additive)</li>
+        <li><b>Retire dead code</b> (~600 LOC): HomeScreen · FollowerProfileScreen · FeedScreen · StoreScreen (all unwired)</li>
+        <li><b>Resolve open items</b>: __action_dispatch route · OrderCart/SchemaDetail/SlotPicker registration · two StatusPills · Razorpay paise boundary</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <div class="ph">zero behavior change</div>
+      <ul>
+        <li><b>4-ID tracking spine</b> (cid/sid/oid/iid via buildTracking) — commission attribution backbone</li>
+        <li><b>All followerApi calls</b> (65 endpoints) byte-for-byte</li>
+        <li><b>Razorpay flows</b> + paise boundary (only <code>*100</code> at the SDK call)</li>
+        <li><b>CategoryList mental-model split</b> (dining/shopping/booking) + per-category routing</li>
+        <li><b>Schema engine</b> kept alive for the 26 deferred businesses</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

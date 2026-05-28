@@ -250,6 +250,44 @@ export function getBusinessAccent(categoryKey) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Follower light-theme per-business accents (Wave 3 — Flow 38 / Phase F0)
+// ─────────────────────────────────────────────────────────────────────────────
+// The follower app flips from dark (Wave-3 darkColors) to LIGHT brandPalette.
+// Per-business accents are now RESTRAINED — used ONLY for wayfinding (category
+// tiles, card hero tints, store hero), never on chrome / text / CTAs (those
+// are always ink + yellow per brandPalette). `pale` is the tint used for hero
+// backgrounds; `accent` is reserved for the rare in-content emphasis. The 4
+// focus verticals get distinct hues; everything else falls back to the brand
+// yellow family. Additive — `businessAccents` (dark) stays for any follower
+// screen not yet migrated to light.
+
+export const businessAccentsLight = {
+  // 🍽️ Eat (restaurant family) — warm red
+  restaurant:      { accent: '#E8401A', pale: '#FDEEE9', icon: '🍽️' },
+  bakery:          { accent: '#E8401A', pale: '#FDEEE9', icon: '🧁' },
+  // 👗 Fashion — pink
+  fashion:         { accent: '#DB2777', pale: '#FCE7F3', icon: '👗' },
+  fashion_walkin:  { accent: '#DB2777', pale: '#FCE7F3', icon: '👗' },
+  fashion_online:  { accent: '#DB2777', pale: '#FCE7F3', icon: '👕' },
+  footwear:        { accent: '#DB2777', pale: '#FCE7F3', icon: '👟' },
+  jewellery:       { accent: '#DB2777', pale: '#FCE7F3', icon: '💎' },
+  // 💇 Beauty (salon family) — purple
+  salon:           { accent: '#7E22CE', pale: '#F3E8FF', icon: '💇' },
+  beauty:          { accent: '#7E22CE', pale: '#F3E8FF', icon: '💄' },
+  home_beauty:     { accent: '#7E22CE', pale: '#F3E8FF', icon: '💅' },
+  // 🚗 Car rental — blue
+  car_rental:      { accent: '#1D4ED8', pale: '#DBEAFE', icon: '🚗' },
+  bike_rental:     { accent: '#1D4ED8', pale: '#DBEAFE', icon: '🏍️' },
+};
+
+// Returns { accent, pale, icon } in the light scheme; falls back to the
+// brand yellow family for the 26 deferred businesses.
+export function getBusinessAccentLight(categoryKey) {
+  return businessAccentsLight[categoryKey]
+    || { accent: brandPalette.yellowText, pale: brandPalette.yellowPale, icon: '🏪' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Font families (Syne for headings, DM Sans for body)
 // ─────────────────────────────────────────────────────────────────────────────
 

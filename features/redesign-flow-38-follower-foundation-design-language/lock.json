@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-38-follower-foundation-design-language",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-27 chat \"Start F0\" + 3 design calls confirmed via AskUserQuestion (keep 4 per-business accents / keep creator notes on cards / one foundation flow) + 3 prior foundation decisions (flip to light brandPalette / hand-built 4 verticals + schema for 26 / unified home + dining sub-home)",
+  "approved_at": "2026-05-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-27 AskUserQuestion confirming 3 design calls on the master design-language mockup",
+  "mockup_locked_at": "2026-05-27",
+  "notes": "1st flow of mobile-follower bucket (Wave 3) — FOUNDATION phase F0. Sets the creator-vibe LIGHT brandPalette design language (white/yellow #FFC107/ink + Outfit/Plus Jakarta Sans/JetBrains Mono) as the visual contract for the 16 follower flows that follow. Flips the follower app from its Wave-3 dark theme to light, unifying all 3 INFLX apps. Creator vibe carried via CONTENT (yellow story rings + ink/yellow creator avatars + 'X's deal' strips + creator-note quotes on cards), not a dark theme. 4 restrained per-business accents (restaurant #E8401A / fashion #DB2777 / beauty #7E22CE / car #1D4ED8) used for WAYFINDING ONLY (category tiles + card hero tints + store hero), never on chrome/text/CTAs. Cascade-first: restyled home-cluster shared atoms (ProductCard, ServiceCard, NewOfferCard, CategoryGrid, InfluencerStoryRow) + flagship HomeScreenV2 + light tab bar (MCI icons + yellow active) + added getBusinessAccentLight token helper (additive — darkColors/businessAccents retained for not-yet-migrated screens). Retired ~600 LOC dead code (HomeScreen/FollowerProfileScreen/FeedScreen/StoreScreen — verified-twice unreferenced). ZERO API/backend/tracking change; atoms keep identical prop APIs. 3 locked design calls applied. Open items documented for later phases: nav-registration gap (RestaurantDetail/OrderCart/SlotPicker/SchemaDetail/RestaurantBill/RestaurantBooking → F3/F4) + two StatusPills (→ F4). Intermediate cascade mismatch (light cards on still-dark CategoryList/Deals/Saved/BrandStore until F1) accepted + bounded. No native rebuild (NATIVE_RUNTIME=2 from Flow 28; MCI pre-baked).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 38 = pure JS, ships via OTA.",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); deep follower-home visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test on installed APK covers the light flip + tab bar'"
+  }
+}
