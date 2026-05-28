@@ -12,15 +12,30 @@
   "mockup_locked_at": "2026-05-28",
   "notes": "Phase F1 (common spine), 1st flow. FindScreen (303) + CategoryListScreen (464) + DealsScreen (195) flipped from Wave-3 darkColors to light brandPalette per the F0-locked design language. Pure visual restyle — token-swap darkColors → brandPalette + getBusinessAccent → getBusinessAccentLight (CategoryList hero tints) + Outfit/mono polish + ink/yellowPale active filter tab (Deals). Clears the ProductCard light-on-dark cascade on Category + Deals (flagged in F0). ZERO API/backend/navigation/tracking change. CategoryList DINING/SHOPPING/BOOKING mental-model split + per-category routing + buildTrackingFromOffer 4-ID attribution preserved verbatim. #fff labels on CategoryList dining cards retained (sit on saturated per-business accent badges — readable). No native rebuild. Design authority = F0 master mockup (mirrored).",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T04-47-30-874Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 49.0,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN on first run in 49.0s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot). Founder physical smoke-test on installed APK covers the light restyle."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat \"ok proceed to F1\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); founder physical smoke-test on installed APK covers the light restyle'"
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); founder physical smoke-test on installed APK covers the light restyle'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "f5d1d55", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "f5d1d55", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "f5d1d55", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 89, "bundle_hash": "sha256:d71361f7befae16e1c74c9cb556c55b9ccca527970e38be4a8a0f5fc2ab26f14", "published_at": "2026-05-28T04:48:47.675Z", "bundle_size_kb": 2512, "trigger": "pnpm publish-ota:all -m 'Flow 39 (F1) — follower discovery/browse'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 78, "bundle_hash": "sha256:d71361f7befae16e1c74c9cb556c55b9ccca527970e38be4a8a0f5fc2ab26f14", "published_at": "2026-05-28T04:48:58.968Z", "bundle_size_kb": 2512, "trigger": "pnpm publish-ota:all -m 'Flow 39 (F1) — follower discovery/browse'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 52, "bundle_hash": "sha256:d71361f7befae16e1c74c9cb556c55b9ccca527970e38be4a8a0f5fc2ab26f14", "published_at": "2026-05-28T04:49:04.750Z", "bundle_size_kb": 2512, "trigger": "pnpm publish-ota:all -m 'Flow 39 (F1) — follower discovery/browse'", "scope": "follower audience manifest (Find + Category + Deals light restyle live here)" }
+    }
   }
 }
