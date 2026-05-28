@@ -44,7 +44,7 @@ async function _fetchEntitlements({ refresh = false } = {}) {
   if (_inflight) return _inflight;
   _inflight = (async () => {
     try {
-      const res = await brandApi.getSubscription();
+      const res = await brandApi.getMySubscription();
       if (!res || res.success === false) {
         throw new Error(res?.error?.message || 'Failed to load entitlements');
       }

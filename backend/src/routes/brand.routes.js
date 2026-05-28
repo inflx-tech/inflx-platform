@@ -16,6 +16,7 @@ const bookingsCtrl = require('../controllers/brandBookings.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
 const linkCtrl = require('../controllers/referenceLink.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
+const payoutCtrl = require('../controllers/payoutAccount.controller');
 
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }); // 10MB max
@@ -92,6 +93,10 @@ router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.delet
 // Wallet sub-router — all routes under /brands/me/wallet/*
 // Auth is applied here so wallet routes don't need to repeat it
 router.use('/me/wallet', authenticate, requireRole('brand'), walletRoutes);
+
+// Wave 3 — commerce settlement: brand payout-account (Razorpay Route) onboarding
+router.get ('/me/payout-account', authenticate, requireRole('brand'), payoutCtrl.getPayoutAccount);
+router.post('/me/payout-account', authenticate, requireRole('brand'), payoutCtrl.createPayoutAccount);
 
 // Media Gallery — brand asset library (logos, creatives, brand kits)
 router.post  ('/me/media-assets/upload-url',        authenticate, requireRole('brand'), mediaCtrl.getUploadUrl);

@@ -155,6 +155,9 @@ export const brandApi = {
   upgradeSubscription:   (tier_key, billing_period = 'monthly') =>
                            api.post('/brands/me/subscription/upgrade', { tier_key, billing_period }),
   getMyInvoices:         (params) => api.get(`/brands/me/billing/invoices${params ? '?' + new URLSearchParams(params) : ''}`),
+  // ── Wave 3 — commerce payout account (Razorpay Route) ─────────────────────
+  getPayoutAccount:      () => api.get('/brands/me/payout-account'),
+  createPayoutAccount:   (data = {}) => api.post('/brands/me/payout-account', data),
   // Phase A12.1.5 — pre-flight quota check used by entry buttons
   // (+ New campaign, + Add product, etc.) so the popup fires BEFORE the
   // brand fills out the form.

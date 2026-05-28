@@ -1,0 +1,32 @@
+{
+  "feature": "wave3-commerce-settlement-foundation",
+  "area": "backend-migration+service+controller+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — 'yes pls start wave 3 in test mode'. Wave 3 commit 1 (foundation), built in mock mode in parallel with Razorpay Route enablement (~1 week, founder side).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING + MIGRATION (M077, additive/dormant). Migrate-first (M077 to Supabase prod before the code push, per shared-main). Render + Vercel redeploy. NO live money movement until Wave 3 commit 2 + Razorpay Route enabled.",
+  "fix": "Commerce settlement foundation: M077 adds brand linked-account fields + tcs_applicable + per-transaction tcs/commission_gst/transfer columns. New razorpayRoute.service (mock + dormant-live). Brand payout-account onboarding (GET/POST /brands/me/payout-account + /dashboard/settings/payouts). Adjacent fix: brandApi.getSubscription -> getMySubscription at 3 sites (long-standing latent no-op).",
+  "related": [
+    "features/wave1-tax-config-foundation",
+    "features/wave2-brand-wallet-withdrawal",
+    "features/billing-razorpay-live"
+  ],
+  "result": "Brand can connect a payout account (mock: not_created -> created -> activated); status persisted + refreshed. Route service mock paths exercised. Additive + dormant — no purchase/commission/settlement behaviour changes. getSubscription no-op fixed. Backend boot smoke clean.",
+  "regression_proof": "Additive nullable columns + new service + new onboarding endpoint/screen; nothing in the purchase/settlement path calls createTransfer yet. pnpm qa GREEN. payout-account.test.js 5/5. brand-web build compiles. getSubscription fix restores intended behaviour (was a dead call).",
+  "discipline": "Verify-twice: introspected live schema (follower_transactions already has return_window_ends_at → reused, no redundant commission_releasable_at; brands had no linked-account fields). Confirmed tcsOn + getReturnWindowForCategory still unwired (deferred to commit 2). Git history confirmed getSubscription was never defined (not a Window B regression). Migrate-first for M077 under shared-main.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'start wave 3 in test mode'; additive + dormant, safe to ship now.",
+    "released_at": "2026-05-28",
+    "maestro_green": false,
+    "deploy": "M077 applied to Supabase prod 2026-05-28 (run-077.js, trap+restore) AHEAD of the code push. Render + Vercel redeploy. Dormant — no live money until Wave 3 commit 2 + Razorpay Route enabled. No mobile change (no OTA)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — new /dashboard/settings/payouts uses the standard settings-page card layout + palette; no new design language. Adjacent fixes touch logic only.",
+  "mockup_locked_at": "2026-05-28"
+}

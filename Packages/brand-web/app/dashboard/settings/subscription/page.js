@@ -203,7 +203,7 @@ export default function SubscriptionPage() {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
-        const res = await brandApi.getSubscription();
+        const res = await brandApi.getMySubscription();
         const ms = res?.data?.subscription?.mandate_status;
         if (ms === 'active') return true;
       } catch { /* swallow + retry */ }
@@ -219,7 +219,7 @@ export default function SubscriptionPage() {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       try {
-        const res = await brandApi.getSubscription();
+        const res = await brandApi.getMySubscription();
         const tk = res?.data?.subscription?.tier_key || res?.data?.tier_key;
         if (tk === targetTierKey) return true;
       } catch { /* swallow + retry */ }
