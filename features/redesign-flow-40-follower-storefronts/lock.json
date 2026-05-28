@@ -12,15 +12,30 @@
   "mockup_locked_at": "2026-05-28",
   "notes": "Phase F1 (common spine), 2nd flow. BrandStoreScreen (706, darkColors→brandPalette flip) + InfluencerStoreScreen (410, lightColors→brandPalette migration) unified onto the F0-locked light brandPalette. BrandStore: getBusinessAccent→getBusinessAccentLight, accent.dim→accent.pale, #fff text retained on accent.accent saturated surfaces (logo/creatorBar/avatars/sticky CTA — readable), renders RestaurantDetailScreen INLINE for restaurant brands (component import — confirmed NOT a nav bug; explains the F0-flagged RestaurantDetail nav gap). InfluencerStore: lightColors→brandPalette (yellow #EAB308→#FFC107, paper→white, yellow100→yellowPale; ink/muted/border/bg identical hexes); fonts already present (Wave 4). Clears the BrandStore ProductCard light-on-dark cascade. ZERO API/backend/navigation/tracking change; getBrandStore/getStore/getStoreProducts/follow/unfollow/saveOffer + Path-B 4-ID tracking preserved verbatim. No native rebuild. Design authority = F0 master mockup (mirrored).",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T04-58-14-826Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 48.1,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN on first run in 48.1s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Founder physical smoke-test on installed APK covers the storefront restyle + inline restaurant render + follow flow."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat \"ok proceed to F1\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); founder physical smoke-test on installed APK covers the storefront restyle + inline restaurant render + follow flow'"
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); founder physical smoke-test on installed APK covers the storefront restyle + inline restaurant render + follow flow'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "310c1a8", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "310c1a8", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "310c1a8", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 90, "bundle_hash": "sha256:27e0f1e66dd90bdd3ad5faf5271f31c8b7faaee883715580f505145fc51258bc", "published_at": "2026-05-28T05:01:05.906Z", "bundle_size_kb": 2513, "trigger": "pnpm publish-ota:all -m 'Flow 40 (F1) — follower storefronts'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 79, "bundle_hash": "sha256:27e0f1e66dd90bdd3ad5faf5271f31c8b7faaee883715580f505145fc51258bc", "published_at": "2026-05-28T05:01:12.020Z", "bundle_size_kb": 2513, "trigger": "pnpm publish-ota:all -m 'Flow 40 (F1) — follower storefronts'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 53, "bundle_hash": "sha256:27e0f1e66dd90bdd3ad5faf5271f31c8b7faaee883715580f505145fc51258bc", "published_at": "2026-05-28T05:01:17.118Z", "bundle_size_kb": 2513, "trigger": "pnpm publish-ota:all -m 'Flow 40 (F1) — follower storefronts'", "scope": "follower audience manifest (BrandStore + InfluencerStore light restyle live here)" }
+    }
   }
 }
