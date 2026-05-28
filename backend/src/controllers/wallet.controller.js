@@ -51,26 +51,46 @@ async function getBrandOrThrow(userId) {
 const getWallet = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
 
-  // Also fetch total deposited and escrow locked
-  const { rows: txRows } = await db.query(
-    `SELECT COALESCE(SUM(amount),0) AS total_deposited
-     FROM wallet_transactions
-     WHERE brand_id = $1 AND type = 'topup' AND direction = 'credit'`,
+  // Wave 2 — single-pass ledger aggregation for the Available / Reserved /
+  // Settled breakdown. All computed from wallet_transactions (the audit
+  // ledger); brands.wallet_balance is the live spendable figure (already
+  // net of locks + payouts), so it IS "available".
+  //
+  //   total_loaded     = lifetime top-ups − refunds out
+  //   reserved_balance = escrow_lock debits − escrow_release credits
+  //                      (funds committed to active campaigns, not yet released)
+  //   settled_balance  = payout debits (funds that have left the wallet to
+  //                      influencers via tranche releases)
+  //   available_balance = brands.wallet_balance (live spendable / withdrawable)
+  const { rows } = await db.query(
+    `SELECT
+        COALESCE(SUM(amount) FILTER (WHERE type = 'topup'          AND direction = 'credit'), 0) AS total_topup,
+        COALESCE(SUM(amount) FILTER (WHERE type = 'refund'         AND direction = 'debit'),  0) AS total_refund_out,
+        COALESCE(SUM(amount) FILTER (WHERE type = 'escrow_lock'    AND direction = 'debit'),  0) AS lock_debits,
+        COALESCE(SUM(amount) FILTER (WHERE type = 'escrow_release' AND direction = 'credit'), 0) AS release_credits,
+        COALESCE(SUM(amount) FILTER (WHERE type = 'payout'         AND direction = 'debit'),  0) AS payout_debits
+       FROM wallet_transactions
+      WHERE brand_id = $1`,
     [brand.id]
   );
-  const { rows: escrowRows } = await db.query(
-    `SELECT COALESCE(SUM(amount),0) AS escrow_locked
-     FROM wallet_transactions
-     WHERE brand_id = $1 AND type = 'escrow_lock' AND direction = 'debit'`,
-    [brand.id]
-  );
+  const r = rows[0];
+  const totalLoaded      = parseFloat(r.total_topup) - parseFloat(r.total_refund_out);
+  const reservedBalance  = Math.max(0, parseFloat(r.lock_debits) - parseFloat(r.release_credits));
+  const settledBalance   = parseFloat(r.payout_debits);
+  const availableBalance = parseFloat(brand.wallet_balance);
 
   return success(res, {
     wallet: {
-      wallet_balance:  parseFloat(brand.wallet_balance),
-      escrow_locked:   parseFloat(escrowRows[0].escrow_locked),
-      total_deposited: parseFloat(txRows[0].total_deposited),
-      brand_id:        brand.id,
+      brand_id:          brand.id,
+      // Wave 2 — three-state breakdown (named fields)
+      total_loaded:      totalLoaded,
+      available_balance: availableBalance,
+      reserved_balance:  reservedBalance,
+      settled_balance:   settledBalance,
+      // Backward-compatible legacy fields (pre-Wave-2 consumers)
+      wallet_balance:    availableBalance,
+      escrow_locked:     reservedBalance,
+      total_deposited:   parseFloat(r.total_topup),
     },
   });
 });

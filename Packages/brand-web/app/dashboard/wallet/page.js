@@ -350,10 +350,15 @@ export default function WalletPage() {
     }
   }
 
-  // Derived
-  const balance        = wallet?.wallet_balance  || 0;
-  const escrowLocked   = wallet?.escrow_locked   || 0;
-  const totalDeposited = wallet?.total_deposited || 0;
+  // Derived — Wave 2 three-state breakdown (with legacy fallbacks so the
+  // page renders correctly before/after the backend redeploys).
+  const balance        = wallet?.available_balance ?? wallet?.wallet_balance ?? 0;
+  const reserved       = wallet?.reserved_balance  ?? wallet?.escrow_locked  ?? 0;
+  const settled        = wallet?.settled_balance   ?? 0;
+  const totalLoaded    = wallet?.total_loaded      ?? wallet?.total_deposited ?? 0;
+  // Legacy aliases kept for any references further down the component.
+  const escrowLocked   = reserved;
+  const totalDeposited = totalLoaded;
   // Adjacent-fix: was `balance < 1000000` with a stale paise-era comment.
   // brands.wallet_balance has been rupees since migration 021. ₹10K is the
   // practical floor to publish a small handpick campaign (3-4 micro-
@@ -438,21 +443,26 @@ export default function WalletPage() {
             </div>
           )}
 
-          {/* KPI strip */}
+          {/* KPI strip — Wave 2 Available / Reserved / Settled / Total loaded */}
           <div className="kpis">
             <div className="kpi">
               <div className="kpi-lbl">Available</div>
               <div className={`kpi-v ${isLowBalance ? 'warn' : ''}`}>₹{fmtN(balance)}</div>
-              <div className="kpi-sub">{isLowBalance ? 'below publish floor' : 'spendable now'}</div>
+              <div className="kpi-sub">{isLowBalance ? 'below publish floor' : 'spendable / withdrawable'}</div>
             </div>
             <div className="kpi">
-              <div className="kpi-lbl">Locked in escrow</div>
-              <div className="kpi-v warn">₹{fmtN(escrowLocked)}</div>
-              <div className="kpi-sub">across active campaigns</div>
+              <div className="kpi-lbl">Reserved</div>
+              <div className="kpi-v warn">₹{fmtN(reserved)}</div>
+              <div className="kpi-sub">locked in active campaigns</div>
             </div>
             <div className="kpi">
-              <div className="kpi-lbl">Total deposited</div>
-              <div className="kpi-v">₹{fmtN(totalDeposited)}</div>
+              <div className="kpi-lbl">Settled</div>
+              <div className="kpi-v">₹{fmtN(settled)}</div>
+              <div className="kpi-sub">paid out to influencers</div>
+            </div>
+            <div className="kpi">
+              <div className="kpi-lbl">Total loaded</div>
+              <div className="kpi-v">₹{fmtN(totalLoaded)}</div>
               <div className="kpi-sub">all-time top-ups</div>
             </div>
           </div>

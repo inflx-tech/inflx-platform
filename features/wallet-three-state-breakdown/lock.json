@@ -1,0 +1,29 @@
+{
+  "feature": "wallet-three-state-breakdown",
+  "area": "backend-controller+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — explicit 'move to wave 2'. Wave 2 commit 1 (gap #3 from the revenue audit).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render + Vercel redeploy). NO migration. Read-path + UI only.",
+  "fix": "Expose brand wallet Available/Reserved/Settled/Total-loaded as named API fields (computed from wallet_transactions in one aggregated query) + 4-KPI strip on /dashboard/wallet. Legacy response fields retained for backward compat.",
+  "related": [
+    "features/billing-razorpay-live"
+  ],
+  "result": "getWallet returns total_loaded/available_balance/reserved_balance/settled_balance + legacy aliases. Wallet page KPI strip 3→4 cards. Backend boot smoke clean. pnpm qa 76/76 GREEN STATE=GREEN gate=0 (45.3s). Ready to push.",
+  "regression_proof": "pnpm qa 76/76 GREEN. Read-path change only; legacy fields retained so no consumer breaks. Frontend has ?? fallbacks for the pre-redeploy window. No migration, no write path touched.",
+  "discipline": "Verify-twice: confirmed wallet_transactions type/direction combos against the existing getWallet queries before writing the FILTER aggregation. brands.wallet_balance confirmed as already-net 'available' (rupees since M021) — no double-subtraction of locked funds.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending git push (production-impacting Render + Vercel redeploy; no migration)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — N/A: extends the existing wallet KPI strip with one more card in the same style. No new design tokens.",
+  "mockup_locked_at": "2026-05-28"
+}
