@@ -1,0 +1,51 @@
+{
+  "feature": "redesign-flow-43-follower-booking-flow",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F3 booking-flow mockup GREEN-SIGNALED via AskUserQuestion ('Green — implement') BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 43 booking mockup design/wave3/flow-43-follower-booking-flow/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F3 (shared checkout/CTA), 2nd flow. PreBookScreen (525, legacy colors navy→brandPalette; form→summary→confirmed in-screen; restaurant dispatches to RestaurantBookingScreen untouched; keeps MOCK payment id, no processPayment) + SlotPickerScreen (490, hardcoded dark hexes #07111E/#0D1D2E/#142438 + purple #7c3aed → brandPalette rewrite; salon-pale date/slot/stylist wayfinding chips, ink-selected; yellowPale token breakdown; ink/yellow PAY ₹100) + BookingConfirmedScreen (304, lightColors #EAB308 → brandPalette #FFC107 convergence; QR card + pending ⏳ + ink upsell preserved). ZERO functional change: slot grid + stylist availability logic, Razorpay processPayment(Math.round(advance*100)) [SlotPicker] + mock pay_mock_ [PreBook], prebookVerify(booking_type:'appointment',stylist_id,notes), 4-ID tracking (cid/sid/oid/iid) in prebook body, restaurant→RestaurantBookingScreen dispatch, navigation.replace('BookingConfirmed') param shape (asserted by RestaurantBookingScreen.test.js), sign-in gate, guest/qty controls, pending-vs-booked copy ALL preserved verbatim. No native rebuild (MCI pre-baked Flow 28). Governance: per-flow F3 mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T08-30-21-340Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 90,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN. Mobile-only change cannot affect web; gate confirms zero regression.",
+      "mobile_checks": {
+        "babel_transform": "PASS — all 3 screens (PreBook/SlotPicker/BookingConfirmed) transform via Mobile metro preset (no syntax error)",
+        "jest": "RestaurantBookingScreen.test.js 3/3 PASS — RestaurantBooking→BookingConfirmed handoff renders post-restyle",
+        "integrity_grep": "PreBook: 0 colors.* refs, RestaurantBookingScreen dispatch + pay_mock_ + prebookVerify + 4-ID tracking intact. SlotPicker: 0 dark-hex/purple refs, processPayment(Math.round(advance*100)) + prebookVerify(booking_type) + tracking intact. BookingConfirmed: all tokens map to brandPalette."
+      },
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Founder instructed skip emulator after-screenshot capture for Flow 43 this round (AskUserQuestion 2026-05-28 — 'Skip, like Flow 42'). These screens are deep/payment-gated: BookingConfirmed needs a completed live Razorpay booking; PreBook/SlotPicker are several nav levels in. After-evidence = founder physical APK smoke-test on live follower v56. Before = Flow 43 mockup.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 43 booking-screen integrity (slot/stylist logic + Razorpay processPayment + paise boundary + prebookVerify + 4-ID tracking + restaurant dispatch + navigation.replace param shape) verified preserved via code markers post-restyle + jest 3/3."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 43 mockup green-signaled ('Green — implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-28",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change in this flow).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 43 emulator after-screenshots skipped per founder instruction this round (deep/payment-gated screens); slot/payment/tracking integrity verified by code markers + jest 3/3; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 93, "bundle_hash": "sha256:5726b38bf81dda0807d04bde2c926744727476266f797b0ca28d4afb9f0d748b", "published_at": "2026-05-28T08:32:58.164Z", "bundle_size_kb": 2517, "trigger": "pnpm publish-ota:all -m 'Flow 43 (F3) — follower booking flow'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 82, "bundle_hash": "sha256:5726b38bf81dda0807d04bde2c926744727476266f797b0ca28d4afb9f0d748b", "published_at": "2026-05-28T08:33:20.347Z", "bundle_size_kb": 2517, "trigger": "pnpm publish-ota:all -m 'Flow 43 (F3) — follower booking flow'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 56, "bundle_hash": "sha256:5726b38bf81dda0807d04bde2c926744727476266f797b0ca28d4afb9f0d748b", "published_at": "2026-05-28T08:33:44.035Z", "bundle_size_kb": 2517, "trigger": "pnpm publish-ota:all -m 'Flow 43 (F3) — follower booking flow'", "scope": "follower audience manifest (PreBook + SlotPicker + BookingConfirmed light restyle live here)" }
+    }
+  }
+}

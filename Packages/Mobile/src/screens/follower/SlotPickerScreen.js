@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Alert, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fmtRupees } from '../../theme/tokens';
+import { fmtRupees, brandPalette as P, fonts, getBusinessAccentLight } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
 
@@ -40,7 +40,9 @@ export default function SlotPickerScreen({ navigation, route }) {
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const accent = '#7c3aed';
+  // Salon wayfinding accent (content emphasis only — chrome/selected states are ink+yellow)
+  const salon = getBusinessAccentLight('salon');
+  const accent = salon.accent;
   const variants = parseJson(service?.variants_json);
   const durationMins = Number(variants?.duration_mins || service?.duration_mins || 30);
   const requiresStylistChoice = !!variants?.requires_stylist_choice;
@@ -219,11 +221,11 @@ export default function SlotPickerScreen({ navigation, route }) {
             const isSel = d.value === selectedDate;
             return (
               <TouchableOpacity key={d.value}
-                style={[styles.dateBox, isSel && { backgroundColor: accent, borderColor: accent }]}
+                style={[styles.dateBox, isSel && { backgroundColor: P.ink, borderColor: P.ink }]}
                 onPress={() => { setSelectedDate(d.value); setSelectedTime(null); }}>
-                <Text style={[styles.dateDow, isSel && { color: '#000' }]}>{d.dow}</Text>
-                <Text style={[styles.dateNum, isSel && { color: '#000' }]}>{d.day}</Text>
-                <Text style={[styles.dateMon, isSel && { color: '#000' }]}>{d.mon}</Text>
+                <Text style={[styles.dateDow, isSel && { color: P.white }]}>{d.dow}</Text>
+                <Text style={[styles.dateNum, isSel && { color: P.white }]}>{d.day}</Text>
+                <Text style={[styles.dateMon, isSel && { color: P.white }]}>{d.mon}</Text>
               </TouchableOpacity>
             );
           })}
@@ -245,10 +247,10 @@ export default function SlotPickerScreen({ navigation, route }) {
                   onPress={() => setSelectedTime(slot.time)}
                   style={[
                     styles.slotBtn,
-                    isSel && { backgroundColor: accent, borderColor: accent },
+                    isSel && { backgroundColor: P.ink, borderColor: P.ink },
                     disabled && styles.slotDisabled,
                   ]}>
-                  <Text style={[styles.slotText, isSel && { color: '#000' }, disabled && { color: 'rgba(255,255,255,0.3)' }]}>
+                  <Text style={[styles.slotText, isSel && { color: P.white }, disabled && { color: P.muted3 }]}>
                     {slot.time}
                   </Text>
                   {disabled && !isBooked && (
@@ -286,7 +288,7 @@ export default function SlotPickerScreen({ navigation, route }) {
                       onPress={() => setSelectedStylist(tm.id)}
                       style={[
                         styles.stylistCard,
-                        isSel && { borderColor: accent, backgroundColor: 'rgba(124,58,237,0.1)' },
+                        isSel && { borderColor: P.ink, backgroundColor: P.white },
                         !working && styles.stylistDisabled,
                       ]}>
                       <View style={styles.stylistAvatar}>
@@ -294,7 +296,7 @@ export default function SlotPickerScreen({ navigation, route }) {
                           ? <Image source={{ uri: tm.photo_url }} style={{ width: '100%', height: '100%' }} />
                           : <Text style={{ fontSize: 18 }}>💇</Text>}
                       </View>
-                      <Text style={[styles.stylistName, !working && { color: 'rgba(255,255,255,0.4)' }]}>{tm.name}</Text>
+                      <Text style={[styles.stylistName, !working && { color: P.muted3 }]}>{tm.name}</Text>
                       <Text style={styles.stylistRole}>{tm.role}</Text>
                       {!working && <Text style={styles.stylistOff}>Not available {dayLabel(selectedDate)}</Text>}
                     </TouchableOpacity>
@@ -312,7 +314,7 @@ export default function SlotPickerScreen({ navigation, route }) {
           value={notes}
           onChangeText={setNotes}
           placeholder="Anything the salon should know…"
-          placeholderTextColor="rgba(255,255,255,0.3)"
+          placeholderTextColor={P.muted3}
           multiline
           maxLength={240}
         />
@@ -329,13 +331,13 @@ export default function SlotPickerScreen({ navigation, route }) {
 
       <View style={styles.payCTAWrap}>
         <TouchableOpacity
-          style={[styles.payBtn, (!selectedTime || submitting) && { backgroundColor: '#3a4150' }]}
+          style={[styles.payBtn, (!selectedTime || submitting) && { backgroundColor: P.bg2 }]}
           onPress={handleConfirm}
           disabled={!selectedTime || submitting}>
-          <Text style={[styles.payBtnText, (!selectedTime || submitting) && { color: 'rgba(255,255,255,0.5)' }]}>
+          <Text style={[styles.payBtnText, (!selectedTime || submitting) && { color: P.muted3 }]}>
             {submitting ? 'Processing…' : `Pay ${fmtRupees(tokenAmount)} to confirm`}
           </Text>
-          <Text style={{ fontSize: 14, color: !selectedTime || submitting ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.6)' }}>→</Text>
+          <Text style={{ fontSize: 14, color: !selectedTime || submitting ? P.muted3 : P.yellow }}>→</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -348,15 +350,15 @@ function Row({ label, value, amber }) {
   return (
     <View style={rowStyles.row}>
       <Text style={rowStyles.label}>{label}</Text>
-      <Text style={[rowStyles.value, amber && { color: '#7c3aed', fontWeight: '700' }]}>{value}</Text>
+      <Text style={[rowStyles.value, amber && { color: P.yellowText }]}>{value}</Text>
     </View>
   );
 }
 
 const rowStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  label: { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
-  value: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  label: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted },
+  value: { fontFamily: fonts.monoBold, fontSize: 12, color: P.ink },
 });
 
 function parseJson(raw) {
@@ -449,42 +451,47 @@ function parseTime(s) {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
+// Salon wayfinding tints (this screen is salon-only) — getBusinessAccentLight('salon').pale
+const SALON_PALE = '#F3E8FF';
+const SALON_PALE_BORDER = '#E9D5FF';
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#07111E' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
-  headerBack: { fontSize: 18, color: '#fff', fontWeight: '600' },
-  headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  serviceCard: { margin: 16, backgroundColor: '#0D1D2E', borderRadius: 13, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  serviceImg: { width: 60, height: 50, borderRadius: 8, backgroundColor: '#142438', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  serviceName: { fontSize: 14, fontWeight: '700', color: '#fff' },
-  serviceMeta: { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
-  attrText: { fontSize: 10, fontWeight: '700', marginTop: 4 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: 16, marginTop: 10, marginBottom: 8 },
+  container: { flex: 1, backgroundColor: P.bg },
+  // ink hero header (special-cased: header had no bg, inherited the dark container)
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 13, backgroundColor: P.ink },
+  headerBack: { fontSize: 18, color: '#FFFFFF', fontWeight: '600' },
+  headerTitle: { fontFamily: fonts.displayBlack, fontSize: 16, color: '#FFFFFF' },
+  serviceCard: { margin: 16, backgroundColor: P.white, borderRadius: 13, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: P.border },
+  serviceImg: { width: 60, height: 50, borderRadius: 8, backgroundColor: SALON_PALE, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  serviceName: { fontFamily: fonts.displayBold, fontSize: 14, color: P.ink },
+  serviceMeta: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted, marginTop: 2 },
+  attrText: { fontFamily: fonts.monoBold, fontSize: 10, marginTop: 4 },
+  sectionLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: 16, marginTop: 10, marginBottom: 8 },
   dateStrip: { paddingHorizontal: 16, gap: 8, paddingBottom: 4 },
-  dateBox: { width: 56, alignItems: 'center', backgroundColor: '#0D1D2E', borderRadius: 11, padding: 10, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)' },
-  dateDow: { fontSize: 9, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' },
-  dateNum: { fontSize: 18, fontWeight: '800', color: '#fff', marginVertical: 2 },
-  dateMon: { fontSize: 9, color: 'rgba(255,255,255,0.5)' },
-  loadingText: { paddingHorizontal: 16, fontSize: 11, color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' },
+  dateBox: { width: 56, alignItems: 'center', backgroundColor: SALON_PALE, borderRadius: 11, padding: 10, borderWidth: 1.5, borderColor: SALON_PALE_BORDER },
+  dateDow: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase' },
+  dateNum: { fontFamily: fonts.displayBold, fontSize: 18, color: P.ink, marginVertical: 2 },
+  dateMon: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2 },
+  loadingText: { paddingHorizontal: 16, fontFamily: fonts.sansRegular, fontSize: 11, color: P.muted2, fontStyle: 'italic' },
   slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 16 },
-  slotBtn: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 8, backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)', minWidth: 64, alignItems: 'center' },
-  slotText: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  slotReason: { fontSize: 8, color: 'rgba(255,255,255,0.3)', marginTop: 1 },
-  slotDisabled: { backgroundColor: '#0a1626', opacity: 0.6 },
-  errorBox: { marginHorizontal: 16, padding: 10, backgroundColor: 'rgba(255,90,90,0.1)', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,90,90,0.25)' },
-  errorText: { fontSize: 11, color: 'rgba(255,180,180,0.9)' },
-  singleStylist: { marginHorizontal: 16, padding: 10, backgroundColor: '#0D1D2E', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  singleStylistText: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  slotBtn: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 8, backgroundColor: SALON_PALE, borderWidth: 1.5, borderColor: SALON_PALE_BORDER, minWidth: 64, alignItems: 'center' },
+  slotText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.ink },
+  slotReason: { fontFamily: fonts.monoMedium, fontSize: 8, color: P.muted3, marginTop: 1 },
+  slotDisabled: { backgroundColor: P.bg2, borderColor: P.border },
+  errorBox: { marginHorizontal: 16, padding: 10, backgroundColor: P.dangerPale, borderRadius: 10, borderWidth: 1, borderColor: '#F5C6B8' },
+  errorText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.dangerText },
+  singleStylist: { marginHorizontal: 16, padding: 10, backgroundColor: SALON_PALE, borderRadius: 10, borderWidth: 1, borderColor: SALON_PALE_BORDER },
+  singleStylistText: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted },
   stylistGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 16 },
-  stylistCard: { width: '48%', padding: 10, backgroundColor: '#0D1D2E', borderRadius: 11, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)', alignItems: 'center' },
-  stylistDisabled: { opacity: 0.45 },
-  stylistAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#142438', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  stylistName: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  stylistRole: { fontSize: 9, color: 'rgba(255,255,255,0.4)', marginTop: 1 },
-  stylistOff: { fontSize: 9, color: 'rgba(255,180,90,0.7)', marginTop: 4, fontStyle: 'italic' },
-  notesInput: { marginHorizontal: 16, padding: 10, backgroundColor: '#0D1D2E', borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 12, minHeight: 60, textAlignVertical: 'top' },
-  breakdown: { marginHorizontal: 16, marginTop: 14, padding: 12, backgroundColor: '#0D1D2E', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  payCTAWrap: { padding: 12, paddingHorizontal: 16, paddingBottom: 18, backgroundColor: '#07111E', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
-  payBtn: { backgroundColor: '#7c3aed', borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  payBtnText: { fontSize: 14, fontWeight: '800', color: '#fff' },
+  stylistCard: { width: '48%', padding: 10, backgroundColor: SALON_PALE, borderRadius: 11, borderWidth: 1.5, borderColor: SALON_PALE_BORDER, alignItems: 'center' },
+  stylistDisabled: { opacity: 0.5, backgroundColor: P.bg2, borderColor: P.border },
+  stylistAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: P.white, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 6, borderWidth: 1, borderColor: SALON_PALE_BORDER },
+  stylistName: { fontFamily: fonts.displayBold, fontSize: 12, color: P.ink },
+  stylistRole: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2, marginTop: 1 },
+  stylistOff: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.danger, marginTop: 4, fontStyle: 'italic' },
+  notesInput: { marginHorizontal: 16, padding: 10, backgroundColor: P.white, borderRadius: 10, borderWidth: 1, borderColor: P.border, color: P.ink, fontFamily: fonts.sansRegular, fontSize: 12, minHeight: 60, textAlignVertical: 'top' },
+  breakdown: { marginHorizontal: 16, marginTop: 14, padding: 12, backgroundColor: P.yellowPale, borderRadius: 12, borderWidth: 1, borderColor: '#F0DA88' },
+  payCTAWrap: { padding: 12, paddingHorizontal: 16, paddingBottom: 18, backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border },
+  payBtn: { backgroundColor: P.ink, borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  payBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3 },
 });

@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
-import { colors, fmtMoney } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 // Wave 4 PR 4.3 — restaurant table bookings dispatch to the redesigned
 // RestaurantBookingScreen below.
@@ -228,8 +228,8 @@ export default function PreBookScreen({ navigation, route }) {
   if (step === 'confirmed' && bookingResult) {
     return (
       <ScrollView style={styles.container}>
-        <View style={[styles.header, { alignItems: 'center', paddingBottom: 28 }]}>
-          <Text style={styles.checkMark}>&#10003;</Text>
+        <View style={styles.confirmSplash}>
+          <View style={styles.checkTile}><Text style={styles.checkMark}>&#10003;</Text></View>
           <Text style={styles.confirmedTitle}>Booking Confirmed!</Text>
           <Text style={styles.confirmedSub}>Your reservation is secured</Text>
         </View>
@@ -257,7 +257,7 @@ export default function PreBookScreen({ navigation, route }) {
           <View style={styles.divider} />
           <View style={styles.confirmRow}>
             <Text style={styles.confirmLabel}>Advance Paid</Text>
-            <Text style={[styles.confirmVal, { color: colors.teal, fontWeight: '800' }]}>
+            <Text style={[styles.confirmVal, { color: P.successText, fontFamily: fonts.monoBold }]}>
               {fmtMoney(bookingResult.advancePaid)}
             </Text>
           </View>
@@ -344,7 +344,7 @@ export default function PreBookScreen({ navigation, route }) {
             disabled={loading}
           >
             {loading
-              ? <ActivityIndicator color={colors.white} />
+              ? <ActivityIndicator color={P.yellow} />
               : <Text style={styles.payBtnText}>Pay {fmtMoney(advanceRupees)} & Book</Text>
             }
           </TouchableOpacity>
@@ -401,7 +401,7 @@ export default function PreBookScreen({ navigation, route }) {
             value={time}
             onChangeText={setTime}
             placeholder="e.g. 2:00 PM or 14:00"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
           />
         )}
 
@@ -430,7 +430,7 @@ export default function PreBookScreen({ navigation, route }) {
           value={notes}
           onChangeText={setNotes}
           placeholder="Dietary requirements, occasion, etc."
-          placeholderTextColor={colors.t3}
+          placeholderTextColor={P.muted3}
           multiline
           numberOfLines={3}
         />
@@ -452,74 +452,77 @@ export default function PreBookScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
+  container: { flex: 1, backgroundColor: P.bg },
+  // ink hero header (form + summary views)
+  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  sub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 13, fontWeight: '700', color: colors.t1, marginBottom: 10 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 11, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
+  title: { fontFamily: fonts.displayBlack, fontSize: 20, color: '#FFFFFF' },
+  sub: { fontFamily: fonts.monoMedium, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
+  card: { margin: 16, marginBottom: 0, backgroundColor: P.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: P.border },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 13, color: P.ink, marginBottom: 10 },
   offerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  offerName: { fontSize: 15, fontWeight: '700', color: colors.t1, flex: 1 },
-  offerPrice: { fontSize: 15, fontWeight: '800', color: colors.navy },
-  offerDesc: { fontSize: 12, color: colors.t3, lineHeight: 18, marginBottom: 8 },
-  advanceBadge: { backgroundColor: colors.orangePale, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignSelf: 'flex-start', marginTop: 4 },
-  advanceBadgeText: { fontSize: 12, fontWeight: '700', color: colors.orangeDeep },
+  offerName: { fontFamily: fonts.displayBold, fontSize: 15, color: P.ink, flex: 1 },
+  offerPrice: { fontFamily: fonts.monoBold, fontSize: 15, color: P.ink },
+  offerDesc: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.muted, lineHeight: 18, marginBottom: 8 },
+  advanceBadge: { backgroundColor: P.yellowPale, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignSelf: 'flex-start', marginTop: 4 },
+  advanceBadgeText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.yellowText },
   datePicker: { marginHorizontal: -4 },
-  dateChip: { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 4, borderRadius: 12, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, minWidth: 52 },
-  dateChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  dateDay: { fontSize: 9, fontWeight: '700', color: colors.t3, textTransform: 'uppercase' },
+  dateChip: { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 8, marginHorizontal: 4, borderRadius: 12, backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border, minWidth: 52 },
+  dateChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  dateDay: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase' },
   dateDayActive: { color: 'rgba(255,255,255,0.7)' },
-  dateNum: { fontSize: 16, fontWeight: '800', color: colors.t1, marginTop: 2 },
-  dateNumActive: { color: colors.white },
-  input: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 14, color: colors.t1 },
+  dateNum: { fontFamily: fonts.displayBold, fontSize: 16, color: P.ink, marginTop: 2 },
+  dateNumActive: { color: P.white },
+  input: { borderWidth: 1.5, borderColor: P.muted4, borderRadius: 12, padding: 12, fontFamily: fonts.monoMedium, fontSize: 14, color: P.ink },
   guestRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  guestBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' },
-  guestBtnText: { fontSize: 20, color: colors.t1, fontWeight: '600' },
-  guestCount: { fontSize: 20, fontWeight: '800', color: colors.t1, minWidth: 32, textAlign: 'center' },
-  guestSuffix: { fontSize: 12, color: colors.t3, marginLeft: 4 },
+  guestBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
+  guestBtnText: { fontFamily: fonts.displayBold, fontSize: 20, color: P.ink },
+  guestCount: { fontFamily: fonts.monoBold, fontSize: 20, color: P.ink, minWidth: 32, textAlign: 'center' },
+  guestSuffix: { fontFamily: fonts.monoMedium, fontSize: 12, color: P.muted2, marginLeft: 4 },
 
   // Time-slot chips (restaurants / salons)
   timeSlotChip: {
     paddingHorizontal: 12, paddingVertical: 8,
     marginRight: 6,
-    borderRadius: 18, backgroundColor: colors.surface2,
-    borderWidth: 1, borderColor: colors.border,
+    borderRadius: 18, backgroundColor: P.bg2,
+    borderWidth: 1, borderColor: P.border,
   },
-  timeSlotChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  timeSlotText: { fontSize: 12, fontWeight: '700', color: colors.t1 },
-  timeSlotTextActive: { color: colors.white },
-  noteInput: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 13, color: colors.t1, textAlignVertical: 'top' },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
-  summaryLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
-  summaryVal: { fontSize: 12, color: colors.t1, fontWeight: '700' },
+  timeSlotChipActive: { backgroundColor: P.ink, borderColor: P.ink },
+  timeSlotText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.ink },
+  timeSlotTextActive: { color: P.white },
+  noteInput: { borderWidth: 1.5, borderColor: P.muted4, borderRadius: 12, padding: 12, fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink, textAlignVertical: 'top' },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: P.border },
+  summaryLabel: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted },
+  summaryVal: { fontFamily: fonts.monoBold, fontSize: 12, color: P.ink },
   // Payment summary styles
-  payBreakdown: { backgroundColor: colors.surface2, borderRadius: 12, padding: 14, marginBottom: 12 },
+  payBreakdown: { backgroundColor: P.bg2, borderRadius: 12, padding: 14, marginBottom: 12 },
   payRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  payLabel: { fontSize: 14, color: colors.t2 },
-  payVal: { fontSize: 14, fontWeight: '600', color: colors.t1 },
-  payTotalRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10, marginTop: 4, marginBottom: 0 },
-  payTotalLabel: { fontSize: 16, fontWeight: '700', color: colors.t1 },
-  payTotalVal: { fontSize: 20, fontWeight: '800', color: colors.orange },
-  payNote: { fontSize: 11, color: colors.t3, lineHeight: 16 },
-  payBtn: { backgroundColor: colors.orange, borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  payBtnText: { fontSize: 16, fontWeight: '800', color: colors.white },
-  // Confirmation styles
-  checkMark: { fontSize: 48, color: colors.teal, marginBottom: 8 },
-  confirmedTitle: { fontSize: 22, fontWeight: '800', color: colors.white },
-  confirmedSub: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
-  confirmCard: { borderColor: colors.teal + '44', borderWidth: 1.5 },
+  payLabel: { fontFamily: fonts.sansRegular, fontSize: 14, color: P.muted },
+  payVal: { fontFamily: fonts.monoMedium, fontSize: 14, color: P.ink },
+  payTotalRow: { borderTopWidth: 1, borderTopColor: P.border, paddingTop: 10, marginTop: 4, marginBottom: 0 },
+  payTotalLabel: { fontFamily: fonts.displayBold, fontSize: 16, color: P.ink },
+  payTotalVal: { fontFamily: fonts.monoBold, fontSize: 20, color: P.ink },
+  payNote: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2, lineHeight: 16 },
+  payBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
+  payBtnText: { fontFamily: fonts.displayBlack, fontSize: 16, color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3 },
+  // Confirmation styles — light splash + yellow check tile (locked success pattern)
+  confirmSplash: { alignItems: 'center', paddingTop: 60, paddingBottom: 24 },
+  checkTile: { width: 72, height: 72, borderRadius: 36, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  checkMark: { fontSize: 36, color: P.ink, fontFamily: fonts.displayBlack },
+  confirmedTitle: { fontFamily: fonts.displayBlack, fontSize: 22, color: P.ink },
+  confirmedSub: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, marginTop: 4 },
+  confirmCard: { borderColor: P.successPale, borderWidth: 1.5 },
   confirmRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  confirmLabel: { fontSize: 13, color: colors.t3, fontWeight: '600' },
-  confirmVal: { fontSize: 13, color: colors.t1, fontWeight: '700' },
-  confirmRef: { fontSize: 18, fontWeight: '800', color: colors.navy, letterSpacing: 1 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: 4 },
-  venueNote: { fontSize: 12, color: colors.t3, textAlign: 'center', marginHorizontal: 32, marginTop: 16, lineHeight: 18 },
-  doneBtn: { backgroundColor: colors.navy, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  doneBtnText: { fontSize: 15, fontWeight: '800', color: colors.white },
+  confirmLabel: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted },
+  confirmVal: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink },
+  confirmRef: { fontFamily: fonts.monoBold, fontSize: 18, color: P.ink, letterSpacing: 1 },
+  divider: { height: 1, backgroundColor: P.border, marginVertical: 4 },
+  venueNote: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.muted2, textAlign: 'center', marginHorizontal: 32, marginTop: 16, lineHeight: 18 },
+  doneBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  doneBtnText: { fontFamily: fonts.displayBlack, fontSize: 15, color: P.yellow, textTransform: 'uppercase' },
   // Form footer
   footer: { padding: 16 },
-  bookBtn: { backgroundColor: colors.navy, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  bookBtnText: { fontSize: 15, fontWeight: '800', color: colors.white },
+  bookBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
+  bookBtnText: { fontFamily: fonts.displayBlack, fontSize: 15, color: P.yellow, textTransform: 'uppercase' },
 });

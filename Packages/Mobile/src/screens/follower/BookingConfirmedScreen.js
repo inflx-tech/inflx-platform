@@ -26,7 +26,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import { CreatorChip } from '../../components/restaurant';
 
 // Static QR pattern — visual stand-in only. Real scan target would
@@ -96,7 +96,7 @@ export default function BookingConfirmedScreen({ route, navigation }) {
             </View>
             <Text style={styles.headline}>{headlineText}</Text>
             {subPrefix ? (
-              <Text style={[styles.sub, { color: lightColors.yellowDeep }]}>{subPrefix}</Text>
+              <Text style={[styles.sub, { color: lightColors.yellowHover }]}>{subPrefix}</Text>
             ) : null}
             {subLine ? (
               <Text style={styles.sub}>{subLine}</Text>
@@ -222,14 +222,14 @@ const styles = StyleSheet.create({
 
   qrCard: {
     marginHorizontal: 16, marginTop: 18,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderColor: lightColors.border, borderWidth: 1,
     borderRadius: 14, padding: 20,
     alignItems: 'center',
   },
   qrFrame: {
     width: 140, height: 140,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderColor: lightColors.border, borderWidth: 1,
     borderRadius: 8, padding: 10,
   },
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   },
   upsellQuote: {
     fontFamily: fonts.sansMedium, fontSize: 13,
-    color: lightColors.yellow100, fontStyle: 'italic',
+    color: lightColors.yellowPale, fontStyle: 'italic',
     lineHeight: 18,
   },
   upsellBtn: {
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   requestsRow: {
     marginHorizontal: 16, marginTop: 14,
     paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderRadius: 8,
   },
   requestsLabel: {
@@ -289,13 +289,13 @@ const styles = StyleSheet.create({
 
   ctaBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderTopColor: lightColors.border, borderTopWidth: 1,
   },
   ctaInner: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   ctaBtn: { flex: 1, paddingVertical: 14, borderRadius: 10, alignItems: 'center' },
   ctaBtnSecondary: {
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderColor: lightColors.border, borderWidth: 1,
   },
   ctaBtnPrimary: { backgroundColor: lightColors.yellow },
