@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { lightColors } from '../../theme/tokens';
+import { brandPalette as lightColors } from '../../theme/tokens';
 
 /**
  * VegDot — square Indian veg/non-veg indicator.

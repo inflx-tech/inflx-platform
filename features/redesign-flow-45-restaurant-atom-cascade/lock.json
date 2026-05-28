@@ -1,0 +1,51 @@
+{
+  "feature": "redesign-flow-45-restaurant-atom-cascade",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F4 restaurant atom-cascade mockup GREEN-SIGNALED via AskUserQuestion ('go and implement') BEFORE implementation; decomposition (atom-cascade-first) + StatusPill resolution (re-theme, keep both) chosen via AskUserQuestion same day",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 45 atom-cascade gallery mockup design/wave3/flow-45-restaurant-atom-cascade/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F4 (restaurant vertical), FOUNDATION flow. Converge all 9 components/restaurant/* shared atoms from lightColors (#EAB308) to brandPalette (#FFC107): RestaurantCard (paper→white, surface→bg2, green rating kept, composes CreatorChip/OfferPill/StatusPill) + CreatorChip (#EAB308→#FFC107 avatar/verified) + StatusPill[restaurant] (PALETTE re-themed to brandPalette pales; variant+label+size+dot API kept; canonical brand/StatusPill untouched) + OfferPill (yellow→#FFC107, yellow200→yellowPale, yellowDeep→yellowText, solid/soft branches) + FilterChip (paper→white, border2→muted4, ink-on-selected) + TimeSlot (white default, yellow selected, surface→bg2, 4 state branches) + VegDot (success #00B894→#10B981, danger kept, bool/string coercion) + SagarStrip (surface→bg2, seeAll yellowDeep→yellowText, composes CreatorChip) + FilterSheet (paper→white, border2→muted4, yellow apply, yellowText clear, schema lists + toggle/clear logic kept) + index.js doc-comment. ZERO functional change: every prop API + render branch + composition preserved verbatim → all consumers (DiningHome/Browse/Search, RestaurantDetail, Cart/Booking/Bill, MealsChat, RestaurantBooking + shipped FollowerWallet/BookingConfirmed via CreatorChip) render unchanged. Founder decisions: atom-cascade-first decomposition + re-theme restaurant StatusPill keep both. No native rebuild (NATIVE_RUNTIME=2). Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T13-27-14-724Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 44,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN. Mobile-only change cannot affect web; gate confirms zero regression.",
+      "mobile_checks": {
+        "babel_transform": "PASS — all 9 restaurant atoms transform via Mobile metro preset (no syntax error)",
+        "jest": "RestaurantBookingScreen / RestaurantCartScreen / RestaurantBillScreen suites PASS 9/9 (these render the converged atoms). FollowerWalletScreen.test.js fails to LOAD on a PRE-EXISTING jest transformIgnorePatterns gap for react-native-vector-icons (FollowerWalletScreen.js:26 MCI import, NOT the CreatorChip import) — unrelated to Flow 45; classified GOVERNANCE §6 stale/setup; flagged for separate test-infra fix; production unaffected (Metro bundles MCI, NATIVE_RUNTIME=2).",
+        "integrity_grep": "0 orphaned lightColors.{paper|surface|border2|yellowDeep|yellow200|success50|warning|danger50} refs across the 9 atoms; every prop API + render branch + composition preserved."
+      },
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Atoms have no standalone screen; visible once dining/detail screens ship in the next F4 flows. After-evidence = the gallery mockup + founder physical APK smoke-test on live follower v58. Before = Flow 45 gallery mockup.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 45 integrity (every restaurant-atom prop API + render branch + composition preserved) verified via code markers + babel transform + 3 restaurant jest suites green."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 45 mockup green-signaled ('go and implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-28",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change; restaurant atoms are follower-consumed).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 45 atoms have no standalone screen (after-screenshots skipped — visible when dining screens ship); restaurant-atom prop-API/render-branch integrity verified by babel transform + 3 restaurant jest suites green + grep; FollowerWallet jest failure is pre-existing vector-icons transform gap, unrelated; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 95, "bundle_hash": "sha256:5e2e1e71f8ff4c833c255345e33a21061433a2c25a1c83e1db0cda828ff9f2ab", "published_at": "2026-05-28T13:39:01.636Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 45 (F4) — restaurant shared-atom cascade'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 84, "bundle_hash": "sha256:5e2e1e71f8ff4c833c255345e33a21061433a2c25a1c83e1db0cda828ff9f2ab", "published_at": "2026-05-28T13:39:08.301Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 45 (F4) — restaurant shared-atom cascade'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 58, "bundle_hash": "sha256:5e2e1e71f8ff4c833c255345e33a21061433a2c25a1c83e1db0cda828ff9f2ab", "published_at": "2026-05-28T13:39:13.202Z", "bundle_size_kb": 2518, "trigger": "pnpm publish-ota:all -m 'Flow 45 (F4) — restaurant shared-atom cascade'", "scope": "follower audience manifest (9 converged restaurant atoms live here; cascades into restaurant screens + CreatorChip in shipped Flow 41/43 screens)" }
+    }
+  }
+}

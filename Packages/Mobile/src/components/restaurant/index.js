@@ -6,8 +6,8 @@
  *   import { RestaurantCard, CreatorChip, OfferPill, ... } from
  *     '@/components/restaurant';
  *
- * All components assume the `lightColors` palette and the Outfit /
- * Plus Jakarta / JetBrains Mono fonts registered in tokens.js.
+ * All components use the `brandPalette` palette (Flow 45 cascade) and the
+ * Outfit / Plus Jakarta / JetBrains Mono fonts registered in tokens.js.
  */
 
 export { default as RestaurantCard } from './RestaurantCard';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { lightColors, fonts, radius } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts, radius } from '../../theme/tokens';
 
 /**
  * CreatorChip — unified creator-attribution chip.

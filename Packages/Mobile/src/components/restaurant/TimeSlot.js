@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 
 /**
  * TimeSlot — tap-to-select time slot button for PreBookScreen and the
@@ -71,10 +71,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     alignItems: 'center',
   },
-  default:  { backgroundColor: lightColors.paper,    borderColor: lightColors.border2 },
+  default:  { backgroundColor: lightColors.white,    borderColor: lightColors.muted4 },
   selected: { backgroundColor: lightColors.yellow,   borderColor: lightColors.yellow },
-  full:     { backgroundColor: lightColors.surface,  borderColor: lightColors.border },
-  disabled: { backgroundColor: lightColors.surface,  borderColor: lightColors.border, opacity: 0.5 },
+  full:     { backgroundColor: lightColors.bg2,  borderColor: lightColors.border },
+  disabled: { backgroundColor: lightColors.bg2,  borderColor: lightColors.border, opacity: 0.5 },
 
   time: {
     fontFamily: fonts.monoBold,

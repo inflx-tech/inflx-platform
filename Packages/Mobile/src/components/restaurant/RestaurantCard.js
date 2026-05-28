@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import CreatorChip from './CreatorChip';
 import OfferPill from './OfferPill';
 import StatusPill from './StatusPill';
@@ -136,7 +136,7 @@ export default function RestaurantCard({ restaurant: r, variant = 'feed', liked,
 const styles = StyleSheet.create({
   // === FEED CARD ===
   card: {
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   hero: { height: 180, position: 'relative' },
   heroImg: { width: '100%', height: '100%' },
   heroFallback: {
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
 
   vibeRow: { flexDirection: 'row', gap: 4, flexWrap: 'wrap', marginTop: 2 },
   vibeChip: {
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     borderColor: lightColors.border,
     borderWidth: 1,
     paddingHorizontal: 7,
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: lightColors.border,
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
     alignItems: 'center',
     justifyContent: 'center',
   },

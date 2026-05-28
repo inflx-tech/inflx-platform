@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F4 · restaurant shared-atom cascade → brandPalette — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00; --yellow-50:#FFFDEB;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857; --success-dotborder:#6EE7B7;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --danger-text:#B91C1C;
+  --info:#1D4ED8; --info-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.layout{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+
+/* gallery */
+.gallery{display:flex;flex-direction:column;gap:16px;width:640px;max-width:100%}
+.gcard{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:16px}
+.gh{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.gh .n{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink)}
+.gh .f{font-family:'JetBrains Mono';font-size:9.5px;font-weight:700;color:var(--muted-3);text-transform:uppercase;letter-spacing:.4px}
+.demo{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.demo.col{flex-direction:column;align-items:flex-start}
+
+/* CreatorChip */
+.cchip{display:inline-flex;align-items:center;gap:6px;background:var(--ink);border-radius:999px;padding:3px 10px 3px 3px}
+.cchip-av{width:22px;height:22px;border-radius:11px;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:11px;font-weight:900}
+.cchip-l{font-family:'JetBrains Mono';font-size:12px;color:#fff}
+.cchip-v{font-family:'JetBrains Mono';font-size:11px;color:var(--yellow);font-weight:700}
+.cchip.sm .cchip-av{width:18px;height:18px}.cchip.sm .cchip-l{font-size:11px}
+
+/* FilterChip */
+.fchip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;border:1px solid;padding:6px 12px;font-family:'Plus Jakarta Sans';font-size:12px;font-weight:500}
+.fchip.def{background:var(--white);border-color:var(--muted-4);color:var(--ink-2)}
+.fchip.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* VegDot */
+.vegbox{width:16px;height:16px;border-radius:2px;border:1.5px solid;display:flex;align-items:center;justify-content:center}
+.vegdot{width:7px;height:7px;border-radius:50%}
+.veg .vegbox{border-color:var(--success)} .veg .vegdot{background:var(--success)}
+.non .vegbox{border-color:var(--danger)} .non .vegdot{background:var(--danger)}
+.vegrow{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+
+/* OfferPill */
+.opill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;border:1px solid;padding:3px 8px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;letter-spacing:.5px}
+.opill.solid{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.opill.soft{background:var(--yellow-50);border-color:var(--yellow-pale);color:var(--yellow-text)}
+
+/* StatusPill (restaurant) */
+.spill{display:inline-flex;align-items:center;gap:5px;border-radius:4px;border:1px solid;padding:2.5px 8px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;letter-spacing:.5px}
+.sdot{width:6px;height:6px;border-radius:3px}
+.spill.open{background:var(--success-pale);border-color:var(--success-dotborder);color:var(--success-text)} .spill.open .sdot{background:var(--success)}
+.spill.closed{background:var(--bg2);border-color:var(--border);color:var(--muted-2)} .spill.closed .sdot{background:var(--muted-2)}
+.spill.pending{background:var(--yellow-pale);border-color:var(--yellow);color:var(--yellow-text)} .spill.pending .sdot{background:var(--yellow)}
+.spill.confirmed{background:var(--success-pale);border-color:var(--success-dotborder);color:var(--success-text)} .spill.confirmed .sdot{background:var(--success)}
+.spill.cancelled{background:var(--danger-pale);border-color:var(--danger);color:var(--danger-text)} .spill.cancelled .sdot{background:var(--danger)}
+.spill.live{background:var(--yellow-pale);border-color:var(--yellow-pale);color:var(--ink)} .spill.live .sdot{background:var(--yellow)}
+
+/* TimeSlot */
+.tslot{min-width:84px;padding:9px 12px;border-radius:10px;border:1.5px solid;text-align:center;font-family:'JetBrains Mono';font-size:13px;font-weight:700}
+.tslot.def{background:var(--white);border-color:var(--muted-4);color:var(--ink)}
+.tslot.sel{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+.tslot.full{background:var(--bg2);border-color:var(--border);color:var(--muted-2);text-decoration:line-through}
+.tslot.dis{background:var(--bg2);border-color:var(--border);color:var(--muted-2);opacity:.5}
+
+/* SagarStrip */
+.sagar{}
+.sagar-h{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sagar-t{font-family:'Outfit';font-size:15px;font-weight:800;color:var(--ink)}
+.sagar-all{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--yellow-text);margin-left:auto}
+.sagar-row{display:flex;gap:10px;overflow-x:auto}
+.sagar-tile{width:104px;flex-shrink:0}
+.sagar-img{width:104px;height:104px;border-radius:12px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:34px}
+.sagar-nm{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:600;color:var(--ink);margin-top:6px}
+.sagar-pr{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--ink);margin-top:1px}
+
+/* RestaurantCard (feed) */
+.rcard{width:300px;background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.rc-hero{height:150px;background:var(--bg2);position:relative;display:flex;align-items:center;justify-content:center;font-size:48px}
+.rc-top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between}
+.rc-rate{background:var(--success);color:#fff;font-family:'JetBrains Mono';font-size:11px;font-weight:800;padding:2px 7px;border-radius:4px}
+.rc-heart{width:30px;height:30px;border-radius:15px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink)}
+.rc-bot{position:absolute;bottom:10px;left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap}
+.rc-body{padding:12px;display:flex;flex-direction:column;gap:6px}
+.rc-nm{font-family:'Outfit';font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.rc-meta{font-family:'JetBrains Mono';font-size:11px;color:var(--muted)}
+.rc-vibes{display:flex;gap:4px;flex-wrap:wrap}
+.rc-vibe{background:var(--bg2);border:1px solid var(--border);padding:2px 7px;border-radius:4px;font-family:'Plus Jakarta Sans';font-size:10px;color:var(--ink-2)}
+
+/* phone (in-context feed) */
+.phone{width:340px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18);flex-shrink:0}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:760px;display:flex;flex-direction:column}
+.status-bar{height:40px;background:var(--white);display:flex;align-items:flex-end;justify-content:space-between;padding:0 24px 6px;font-family:'JetBrains Mono';font-size:11px;font-weight:700}
+.p-head{background:var(--white);border-bottom:1px solid var(--border);padding:12px 14px 10px}
+.p-ttl{font-family:'Outfit';font-size:18px;font-weight:900;color:var(--ink)}
+.p-frow{display:flex;gap:6px;margin-top:10px;overflow-x:auto}
+.p-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.p-cap{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-align:center;margin-top:10px;max-width:340px;line-height:1.5;text-transform:uppercase;letter-spacing:.4px}
+.p-cap b{color:var(--ink)}
+
+/* side panel */
+.side{width:340px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">
+  <h1>F4 · restaurant shared-atom cascade → light brandPalette — Flow 45 mockup (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Flow 45 = the F4 foundation: converge all 9 components/restaurant/* atoms from lightColors (#EAB308) to brandPalette (#FFC107).</b> This is the cascade that makes every restaurant screen (DiningHome/Browse/Search · RestaurantDetail · Cart/Booking/Bill · MealsChat) consistent before we restyle them — exactly how F0 did the general atoms. <b>Two-StatusPill resolution: restaurant StatusPill re-themed to brandPalette, API kept (variant+label+dot); canonical brand/StatusPill untouched.</b> Pure palette/font convergence — <b>every prop API, render branch, and composition preserved verbatim. Also retroactively polishes CreatorChip in already-shipped Flow 41/43 screens.</b>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- GALLERY -->
+  <div class="gallery">
+    <div class="gcard">
+      <div class="gh"><span class="n">RestaurantCard</span><span class="f">feed + list · white card · green rating · ink name</span></div>
+      <div class="demo">
+        <div class="rcard">
+          <div class="rc-hero">🍽️
+            <div class="rc-top"><span class="rc-rate">★ 4.5</span><span class="rc-heart">♡</span></div>
+            <div class="rc-bot">
+              <span class="spill open"><span class="sdot"></span>OPEN TILL 11 PM</span>
+              <span class="opill solid">🏷 FLAT 40% OFF</span>
+            </div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-nm">Spice Garden</div>
+            <div class="rc-meta">North Indian · Biryani  ·  ₹800/2  ·  1.2 km</div>
+            <div class="rc-vibes"><span class="rc-vibe">family</span><span class="rc-vibe">rooftop</span><span class="rc-vibe">date night</span></div>
+            <div style="margin-top:2px"><span class="cchip sm"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">CreatorChip</span><span class="f">ink pill · yellow avatar · md + sm</span></div>
+      <div class="demo">
+        <span class="cchip"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span>
+        <span class="cchip sm"><span class="cchip-av">N</span><span class="cchip-l">via @neha.homes</span></span>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">StatusPill (restaurant)</span><span class="f">re-themed · variant+label+dot API kept</span></div>
+      <div class="demo">
+        <span class="spill open"><span class="sdot"></span>OPEN TILL 11 PM</span>
+        <span class="spill closed"><span class="sdot"></span>CLOSED</span>
+        <span class="spill pending"><span class="sdot"></span>PENDING</span>
+        <span class="spill confirmed"><span class="sdot"></span>CONFIRMED</span>
+        <span class="spill cancelled"><span class="sdot"></span>CANCELLED</span>
+        <span class="spill live"><span class="sdot"></span>LIVE</span>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">OfferPill</span><span class="f">solid (yellow/ink) + soft (yellow50/yellowText)</span></div>
+      <div class="demo">
+        <span class="opill solid">🏷 FLAT 40% OFF</span>
+        <span class="opill solid">BOGO</span>
+        <span class="opill soft">₹100 OFF ON ₹500</span>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">FilterChip</span><span class="f">default (white/muted4) + selected (ink/white)</span></div>
+      <div class="demo">
+        <span class="fchip def">Biryani</span>
+        <span class="fchip def">🍷 Date night</span>
+        <span class="fchip sel">⏱ Open now</span>
+        <span class="fchip sel">🟢 Veg only</span>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">TimeSlot</span><span class="f">default · selected (yellow) · full · disabled</span></div>
+      <div class="demo">
+        <span class="tslot def">7:30 PM</span>
+        <span class="tslot sel">8:00 PM</span>
+        <span class="tslot full">8:30 PM</span>
+        <span class="tslot dis">9:00 PM</span>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">VegDot</span><span class="f">veg (green) · non-veg (red)</span></div>
+      <div class="demo">
+        <span class="vegrow veg"><span class="vegbox"><span class="vegdot"></span></span> Veg</span>
+        <span class="vegrow non"><span class="vegbox"><span class="vegdot"></span></span> Non-veg</span>
+      </div>
+    </div>
+
+    <div class="gcard">
+      <div class="gh"><span class="n">SagarStrip</span><span class="f">creator picks strip · composes CreatorChip + ₹mono</span></div>
+      <div class="sagar">
+        <div class="sagar-h"><span class="sagar-t">★ Sagar's picks</span><span class="cchip sm"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span><span class="sagar-all">See all →</span></div>
+        <div class="sagar-row">
+          <div class="sagar-tile"><div class="sagar-img">🍛</div><div class="sagar-nm">Mutton Biryani</div><div class="sagar-pr">₹420</div></div>
+          <div class="sagar-tile"><div class="sagar-img">🍗</div><div class="sagar-nm">Tandoori Platter</div><div class="sagar-pr">₹560</div></div>
+          <div class="sagar-tile"><div class="sagar-img">🧁</div><div class="sagar-nm">Phirni</div><div class="sagar-pr">₹120</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-CONTEXT PHONE -->
+  <div style="display:flex;flex-direction:column;align-items:center">
+    <div class="phone"><div class="phone-inner">
+      <div class="status-bar"><span>9:41</span><span>● ● ●</span></div>
+      <div class="p-head">
+        <div class="p-ttl">Dining near you</div>
+        <div class="p-frow">
+          <span class="fchip sel">⏱ Open now</span>
+          <span class="fchip def">🏷 Offers</span>
+          <span class="fchip def">🟢 Veg</span>
+          <span class="fchip def">🍷 Date night</span>
+        </div>
+      </div>
+      <div class="p-body">
+        <div class="rcard" style="width:100%">
+          <div class="rc-hero">🍽️
+            <div class="rc-top"><span class="rc-rate">★ 4.5</span><span class="rc-heart">♡</span></div>
+            <div class="rc-bot"><span class="spill open"><span class="sdot"></span>OPEN TILL 11 PM</span><span class="opill solid">🏷 FLAT 40% OFF</span></div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-nm">Spice Garden</div>
+            <div class="rc-meta">North Indian · Biryani  ·  ₹800/2  ·  1.2 km</div>
+            <div class="rc-vibes"><span class="rc-vibe">family</span><span class="rc-vibe">rooftop</span></div>
+            <div style="margin-top:2px"><span class="cchip sm"><span class="cchip-av">S</span><span class="cchip-l">via @sagar.eats</span><span class="cchip-v">✓</span></span></div>
+          </div>
+        </div>
+        <div class="rcard" style="width:100%">
+          <div class="rc-hero">🍜
+            <div class="rc-top"><span class="rc-rate">★ 4.2</span><span class="rc-heart">♥</span></div>
+            <div class="rc-bot"><span class="spill closed"><span class="sdot"></span>CLOSED</span><span class="opill soft">₹100 OFF ON ₹500</span></div>
+          </div>
+          <div class="rc-body">
+            <div class="rc-nm">Noodle House</div>
+            <div class="rc-meta">Chinese · Thai  ·  ₹600/2  ·  2.4 km</div>
+            <div class="rc-vibes"><span class="rc-vibe">quick bite</span><span class="rc-vibe">cafe</span></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="p-cap"><b>In context</b> — the converged atoms composed in a sample dining feed (RestaurantCard feed variant + StatusPill + OfferPill + CreatorChip + FilterChip row). The dining SCREENS themselves come in the next F4 flow.</div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side">
+    <div class="panel">
+      <h3>Flow 45 scope (9 atoms)</h3>
+      <ul>
+        <li><b>RestaurantCard</b> — paper→white · surface→bg2 · success rating pill kept</li>
+        <li><b>CreatorChip</b> — #EAB308→#FFC107 avatar + verified</li>
+        <li><b>StatusPill</b> (restaurant) — re-themed to brandPalette pales, dot+label API kept</li>
+        <li><b>OfferPill</b> — yellow→#FFC107 · yellow200→yellowPale · yellowDeep→yellowText</li>
+        <li><b>FilterChip</b> — paper→white · border2→muted4 · ink-on-selected</li>
+        <li><b>TimeSlot</b> — yellow selected · surface→bg2 · border2→muted4</li>
+        <li><b>VegDot</b> — success #00B894→#10B981 · danger kept</li>
+        <li><b>SagarStrip</b> — surface→bg2 · seeAll yellowDeep→yellowText</li>
+        <li><b>FilterSheet</b> — paper→white · apply yellow · clear yellowText</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Two-StatusPill resolution</h3>
+      <ul>
+        <li><b>restaurant/StatusPill</b> → re-theme palette to brandPalette, keep <code>variant</code>+<code>label</code>+dot API</li>
+        <li><b>brand/StatusPill</b> (canonical 43-map) → untouched; stays for lifecycle statuses</li>
+        <li>No consumer rewiring; APIs differ + serve distinct jobs (open-hours vs lifecycle)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li>Every component's <b>prop API</b> (variant/size/label/selected/onPress…) byte-for-byte — consumers don't break</li>
+        <li>Every <b>render branch</b> + composition (RestaurantCard→CreatorChip/OfferPill/StatusPill; SagarStrip→CreatorChip; FilterSheet→FilterChip)</li>
+        <li>VegDot string/bool coercion · FilterSheet schema lists + toggle logic</li>
+        <li>Visual-only: palette + fonts. Cascades into all restaurant screens + shipped Flow 41/43 (CreatorChip)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

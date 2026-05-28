@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 
 /**
  * FilterChip — tap-to-toggle chip used by browse/filter sheets.
@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   chipDefault: {
-    backgroundColor: lightColors.paper,
-    borderColor: lightColors.border2,
+    backgroundColor: lightColors.white,
+    borderColor: lightColors.muted4,
   },
   chipSelected: {
     backgroundColor: lightColors.ink,

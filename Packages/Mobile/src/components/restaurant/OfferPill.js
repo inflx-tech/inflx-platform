@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 
 /**
  * OfferPill — solid-yellow pill announcing an active offer.
@@ -25,13 +25,13 @@ export default function OfferPill({ label, icon, variant = 'solid', size = 'sm' 
       styles.pill,
       isSm ? styles.pillSm : styles.pillMd,
       { backgroundColor: isSolid ? lightColors.yellow : lightColors.yellow50,
-        borderColor:    isSolid ? lightColors.yellow : lightColors.yellow200 },
+        borderColor:    isSolid ? lightColors.yellow : lightColors.yellowPale },
     ]}>
       {icon && (
         <Text style={[
           styles.icon,
           isSm ? styles.iconSm : styles.iconMd,
-          { color: isSolid ? lightColors.ink : lightColors.yellowDeep },
+          { color: isSolid ? lightColors.ink : lightColors.yellowText },
         ]}>
           {icon}
         </Text>
@@ -39,7 +39,7 @@ export default function OfferPill({ label, icon, variant = 'solid', size = 'sm' 
       <Text style={[
         styles.label,
         isSm ? styles.labelSm : styles.labelMd,
-        { color: isSolid ? lightColors.ink : lightColors.yellowDeep },
+        { color: isSolid ? lightColors.ink : lightColors.yellowText },
       ]}>
         {String(label).toUpperCase()}
       </Text>

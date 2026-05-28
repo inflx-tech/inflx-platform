@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import FilterChip from './FilterChip';
 
 /**
@@ -166,7 +166,7 @@ function Section({ title, children }) {
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(10,10,10,0.4)' },
   sheetWrap: {
-    backgroundColor: lightColors.paper,
+    backgroundColor: lightColors.white,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '88%',
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   grip: {
     width: 36, height: 4,
-    backgroundColor: lightColors.border2,
+    backgroundColor: lightColors.muted4,
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   clearLink: {
     fontFamily: fonts.sansBold,
     fontSize: 13,
-    color: lightColors.yellowDeep,
+    color: lightColors.yellowText,
   },
 
   body: { paddingHorizontal: 20 },

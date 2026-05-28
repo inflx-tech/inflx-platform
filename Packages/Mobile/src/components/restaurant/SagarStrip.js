@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 import CreatorChip from './CreatorChip';
 
 /**
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   seeAll: {
     fontFamily: fonts.sansSemiBold,
     fontSize: 12,
-    color: lightColors.yellowDeep,
+    color: lightColors.yellowText,
   },
 
   row: { paddingHorizontal: 16, gap: 10 },
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     height: 112,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: lightColors.surface,
+    backgroundColor: lightColors.bg2,
   },
   img: { width: '100%', height: '100%' },
   imgFallback: { alignItems: 'center', justifyContent: 'center' },

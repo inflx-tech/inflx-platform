@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { lightColors, fonts } from '../../theme/tokens';
+import { brandPalette as lightColors, fonts } from '../../theme/tokens';
 
 /**
  * StatusPill — mono-uppercase status indicator with leading dot.
@@ -23,13 +23,14 @@ import { lightColors, fonts } from '../../theme/tokens';
  *   size    — 'sm' | 'md', default sm.
  */
 
+// Re-themed to brandPalette (Flow 45). API (variant+label+size+dot) unchanged.
 const PALETTE = {
-  open:      { bg: lightColors.success50, fg: '#065F46',          dot: lightColors.success, border: '#6EE7B7' },
-  closed:    { bg: lightColors.surface,   fg: lightColors.muted,  dot: lightColors.muted2,  border: lightColors.border },
-  pending:   { bg: lightColors.warning50, fg: '#92400E',          dot: lightColors.warning, border: lightColors.warning },
-  confirmed: { bg: lightColors.success50, fg: '#065F46',          dot: lightColors.success, border: '#6EE7B7' },
-  cancelled: { bg: lightColors.danger50,  fg: lightColors.danger, dot: lightColors.danger,  border: lightColors.danger },
-  live:      { bg: lightColors.yellow50,  fg: lightColors.ink,    dot: lightColors.yellow,  border: lightColors.yellow200 },
+  open:      { bg: lightColors.successPale, fg: lightColors.successText, dot: lightColors.success, border: '#6EE7B7' },
+  closed:    { bg: lightColors.bg2,         fg: lightColors.muted2,      dot: lightColors.muted2,  border: lightColors.border },
+  pending:   { bg: lightColors.yellowPale,  fg: lightColors.yellowText,  dot: lightColors.yellow,  border: lightColors.yellow },
+  confirmed: { bg: lightColors.successPale, fg: lightColors.successText, dot: lightColors.success, border: '#6EE7B7' },
+  cancelled: { bg: lightColors.dangerPale,  fg: lightColors.dangerText,  dot: lightColors.danger,  border: lightColors.danger },
+  live:      { bg: lightColors.yellowPale,  fg: lightColors.ink,         dot: lightColors.yellow,  border: lightColors.yellowPale },
 };
 
 export default function StatusPill({ variant = 'pending', label, size = 'sm' }) {
