@@ -4,7 +4,7 @@ import {
   TextInput, ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 export default function EnquiryScreen({ navigation, route }) {
@@ -127,7 +127,7 @@ export default function EnquiryScreen({ navigation, route }) {
             value={name}
             onChangeText={setName}
             placeholder="Your full name"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
             autoCapitalize="words"
           />
 
@@ -137,7 +137,7 @@ export default function EnquiryScreen({ navigation, route }) {
             value={phone}
             onChangeText={setPhone}
             placeholder="10-digit mobile number"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
             keyboardType="phone-pad"
             maxLength={15}
           />
@@ -148,7 +148,7 @@ export default function EnquiryScreen({ navigation, route }) {
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
             keyboardType="email-address"
             autoCapitalize="none"
           />
@@ -159,7 +159,7 @@ export default function EnquiryScreen({ navigation, route }) {
             value={message}
             onChangeText={setMsg}
             placeholder="Tell the business what you're looking for..."
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -171,7 +171,7 @@ export default function EnquiryScreen({ navigation, route }) {
             value={preferredDateTime}
             onChangeText={setPreferredDateTime}
             placeholder="e.g. 15 Apr, evening"
-            placeholderTextColor={colors.t3}
+            placeholderTextColor={P.muted3}
           />
         </View>
 
@@ -182,7 +182,7 @@ export default function EnquiryScreen({ navigation, route }) {
             disabled={loading || !canSubmit}
           >
             {loading
-              ? <ActivityIndicator color={colors.white} />
+              ? <ActivityIndicator color={P.yellow} />
               : <Text style={styles.submitBtnText}>Submit Enquiry</Text>
             }
           </TouchableOpacity>
@@ -198,36 +198,37 @@ export default function EnquiryScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
+  container: { flex: 1, backgroundColor: P.bg },
+  // ink hero header
+  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
   back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  sub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 11, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
+  title: { fontFamily: fonts.displayBlack, fontSize: 20, color: '#FFFFFF' },
+  sub: { fontFamily: fonts.monoMedium, fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 },
 
-  offerBanner: { marginHorizontal: 16, marginTop: 16, backgroundColor: colors.orangePale, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.orange + '30' },
-  offerBannerLabel: { fontSize: 10, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', marginBottom: 4 },
-  offerBannerTitle: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 2 },
-  offerBannerDiscount: { fontSize: 13, fontWeight: '700', color: colors.orange, marginTop: 4 },
+  offerBanner: { marginHorizontal: 16, marginTop: 16, backgroundColor: P.yellowPale, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#F0DA88' },
+  offerBannerLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 4 },
+  offerBannerTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: P.ink, marginBottom: 2 },
+  offerBannerDiscount: { fontFamily: fonts.monoBold, fontSize: 11, color: P.yellow, backgroundColor: P.ink, alignSelf: 'flex-start', marginTop: 6, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7, overflow: 'hidden' },
 
-  card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: colors.t1, marginBottom: 16 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: colors.t2, marginBottom: 6, marginTop: 4 },
-  input: { borderWidth: 1.5, borderColor: colors.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.t1, marginBottom: 12, backgroundColor: colors.surface },
-  msgInput: { borderWidth: 1.5, borderColor: colors.border2, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: colors.t1, textAlignVertical: 'top', minHeight: 100, marginBottom: 12, backgroundColor: colors.surface },
+  card: { margin: 16, marginBottom: 0, backgroundColor: P.white, borderRadius: 20, padding: 20, borderWidth: 1, borderColor: P.border },
+  cardTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: P.ink, marginBottom: 16 },
+  fieldLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6, marginTop: 4 },
+  input: { borderWidth: 1.5, borderColor: P.muted4, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontFamily: fonts.sansMedium, fontSize: 15, color: P.ink, marginBottom: 12, backgroundColor: P.white },
+  msgInput: { borderWidth: 1.5, borderColor: P.muted4, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontFamily: fonts.sansMedium, fontSize: 14, color: P.ink, textAlignVertical: 'top', minHeight: 100, marginBottom: 12, backgroundColor: P.white },
 
   footer: { padding: 16 },
-  submitBtn: { backgroundColor: colors.orange, borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginBottom: 10 },
-  submitBtnText: { fontSize: 16, fontWeight: '800', color: colors.white },
-  privacyNote: { fontSize: 11, color: colors.t3, textAlign: 'center', lineHeight: 18 },
+  submitBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginBottom: 10 },
+  submitBtnText: { fontFamily: fonts.displayBlack, fontSize: 16, color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3 },
+  privacyNote: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2, textAlign: 'center', lineHeight: 18 },
 
-  // Success state
-  successContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  successCard: { backgroundColor: colors.white, borderRadius: 24, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: colors.border, width: '100%' },
-  successIconWrap: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.tealPale, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
-  successIcon: { fontSize: 36, color: colors.teal, fontWeight: '800' },
-  successTitle: { fontSize: 22, fontWeight: '800', color: colors.t1, marginBottom: 12 },
-  successMsg: { fontSize: 14, color: colors.t2, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
-  doneBtn: { backgroundColor: colors.teal, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 48, alignItems: 'center' },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: colors.white },
+  // Success state — yellow check-tile (locked success pattern, matches Flow 42/43)
+  successContainer: { flex: 1, backgroundColor: P.bg, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  successCard: { backgroundColor: P.white, borderRadius: 24, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: P.border, width: '100%' },
+  successIconWrap: { width: 78, height: 78, borderRadius: 39, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  successIcon: { fontSize: 36, color: P.ink, fontFamily: fonts.displayBlack },
+  successTitle: { fontFamily: fonts.displayBlack, fontSize: 22, color: P.ink, marginBottom: 12 },
+  successMsg: { fontFamily: fonts.sansMedium, fontSize: 14, color: P.muted, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  doneBtn: { backgroundColor: P.ink, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 48, alignItems: 'center' },
+  doneBtnText: { fontFamily: fonts.displayBlack, fontSize: 16, color: P.yellow, textTransform: 'uppercase' },
 });

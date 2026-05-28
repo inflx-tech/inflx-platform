@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, RefreshControl, StyleSheet, ActivityIndicator, TouchableOpacity, Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { darkColors, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 /**
@@ -14,12 +14,14 @@ import { followerApi } from '../../services/api';
  * (V1: just expands inline since the row already has everything).
  */
 
+// brandPalette status pales — pale bg + dark text (light theme). Same 5 return
+// states; only recoloured (NOT swapped to the canonical 43-StatusPill — F4 decision).
 const STATUS_THEME = {
-  requested: { label: 'Awaiting review',  color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' },
-  approved:  { label: 'Approved',         color: '#22c55e', bg: 'rgba(34,197,94,0.15)' },
-  received:  { label: 'Goods received',   color: '#3b82f6', bg: 'rgba(59,130,246,0.15)' },
-  refunded:  { label: 'Refunded',         color: '#22c55e', bg: 'rgba(34,197,94,0.2)' },
-  rejected:  { label: 'Declined',         color: '#ef4444', bg: 'rgba(239,68,68,0.15)' },
+  requested: { label: 'Awaiting review',  color: P.yellowText,  bg: P.yellowPale },
+  approved:  { label: 'Approved',         color: P.successText, bg: P.successPale },
+  received:  { label: 'Goods received',   color: P.info,        bg: P.infoPale },
+  refunded:  { label: 'Refunded',         color: P.successText, bg: P.successPale },
+  rejected:  { label: 'Declined',         color: P.dangerText,  bg: P.dangerPale },
 };
 
 export default function MyReturnsScreen({ navigation }) {
@@ -51,7 +53,7 @@ export default function MyReturnsScreen({ navigation }) {
   }, [load]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={darkColors.amber} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} /></View>;
   }
 
   return (
@@ -68,7 +70,7 @@ export default function MyReturnsScreen({ navigation }) {
         data={returns}
         keyExtractor={(r) => r.id}
         contentContainerStyle={{ padding: 14, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
         renderItem={({ item }) => <ReturnRow r={item} />}
         ListEmptyComponent={
           <View style={s.empty}>
@@ -130,39 +132,40 @@ function ReturnRow({ r }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg2 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: darkColors.bg2 },
-  header: { paddingTop: 50, paddingHorizontal: 18, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)' },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: P.bg },
+  // ink hero header
+  header: { paddingTop: 50, paddingHorizontal: 18, paddingBottom: 14, backgroundColor: P.ink },
   back: { marginBottom: 8 },
-  backText: { fontSize: 13, color: darkColors.amber },
-  title: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  subtitle: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  backText: { fontFamily: fonts.monoBold, fontSize: 11, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
+  title: { fontFamily: fonts.displayBlack, fontSize: 22, color: '#FFFFFF' },
+  subtitle: { fontFamily: fonts.monoMedium, fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 3 },
 
-  row: { backgroundColor: '#0D1D2E', borderRadius: 14, padding: 13, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  row: { backgroundColor: P.white, borderRadius: 14, padding: 13, marginBottom: 10, borderWidth: 1, borderColor: P.border },
   rowTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  thumbBox: { width: 50, height: 50, borderRadius: 9, backgroundColor: '#142438', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  thumbBox: { width: 50, height: 50, borderRadius: 9, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   thumb: { width: '100%', height: '100%' },
   thumbIcon: { fontSize: 22 },
-  productName: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  brand: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
-  date: { fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 3 },
+  productName: { fontFamily: fonts.displayBold, fontSize: 13, color: P.ink },
+  brand: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 1 },
+  date: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted3, marginTop: 3 },
   statusPill: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8 },
-  statusText: { fontSize: 10, fontWeight: '800' },
+  statusText: { fontFamily: fonts.monoBold, fontSize: 10 },
 
-  detailBlock: { marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
-  reasonLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.3 },
-  reasonText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 3, textTransform: 'capitalize' },
+  detailBlock: { marginTop: 10, paddingTop: 9, borderTopWidth: 1, borderTopColor: P.borderSoft },
+  reasonLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  reasonText: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.ink2, marginTop: 3, textTransform: 'capitalize' },
 
   refundRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 9 },
-  refundLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' },
-  refundAmount: { fontSize: 14, fontWeight: '800' },
+  refundLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase' },
+  refundAmount: { fontFamily: fonts.monoBold, fontSize: 14 },
 
-  notesBox: { marginTop: 9, padding: 10, borderRadius: 9, backgroundColor: 'rgba(245,158,11,0.08)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.15)' },
-  notesLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(245,158,11,0.9)', textTransform: 'uppercase', letterSpacing: 0.3 },
-  notesText: { fontSize: 11, color: 'rgba(255,255,255,0.85)', marginTop: 3 },
+  notesBox: { marginTop: 9, padding: 10, borderRadius: 9, backgroundColor: P.yellowPale, borderWidth: 1, borderColor: '#F0DA88' },
+  notesLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.yellowText, textTransform: 'uppercase', letterSpacing: 0.3 },
+  notesText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.ink2, marginTop: 3 },
 
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyIcon: { fontSize: 50, color: 'rgba(255,255,255,0.2)' },
-  emptyTitle: { fontSize: 14, fontWeight: '700', color: 'rgba(255,255,255,0.8)', marginTop: 14 },
-  emptyText: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 },
+  emptyIcon: { fontSize: 50, color: P.muted4 },
+  emptyTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: P.ink, marginTop: 14 },
+  emptyText: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2, marginTop: 4 },
 });
