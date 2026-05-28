@@ -12,15 +12,52 @@
   "mockup_locked_at": "2026-05-27",
   "notes": "1st flow of mobile-follower bucket (Wave 3) — FOUNDATION phase F0. Sets the creator-vibe LIGHT brandPalette design language (white/yellow #FFC107/ink + Outfit/Plus Jakarta Sans/JetBrains Mono) as the visual contract for the 16 follower flows that follow. Flips the follower app from its Wave-3 dark theme to light, unifying all 3 INFLX apps. Creator vibe carried via CONTENT (yellow story rings + ink/yellow creator avatars + 'X's deal' strips + creator-note quotes on cards), not a dark theme. 4 restrained per-business accents (restaurant #E8401A / fashion #DB2777 / beauty #7E22CE / car #1D4ED8) used for WAYFINDING ONLY (category tiles + card hero tints + store hero), never on chrome/text/CTAs. Cascade-first: restyled home-cluster shared atoms (ProductCard, ServiceCard, NewOfferCard, CategoryGrid, InfluencerStoryRow) + flagship HomeScreenV2 + light tab bar (MCI icons + yellow active) + added getBusinessAccentLight token helper (additive — darkColors/businessAccents retained for not-yet-migrated screens). Retired ~600 LOC dead code (HomeScreen/FollowerProfileScreen/FeedScreen/StoreScreen — verified-twice unreferenced). ZERO API/backend/tracking change; atoms keep identical prop APIs. 3 locked design calls applied. Open items documented for later phases: nav-registration gap (RestaurantDetail/OrderCart/SlotPicker/SchemaDetail/RestaurantBill/RestaurantBooking → F3/F4) + two StatusPills (→ F4). Intermediate cascade mismatch (light cards on still-dark CategoryList/Deals/Saved/BrandStore until F1) accepted + bounded. No native rebuild (NATIVE_RUNTIME=2 from Flow 28; MCI pre-baked).",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T04-28-56-923Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 50.4,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN on first run in 50.4s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline applies; 01-follower-public-browse exercises follower boot. Deep follower-home visual verification deferred per maestro-influencer-coverage open question. Founder physical smoke-test on installed APK covers the light flip + tab bar + atom cascade."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-27 chat \"Start F0\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 38 = pure JS, ships via OTA.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); deep follower-home visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test on installed APK covers the light flip + tab bar'"
+    "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 38 = pure JS, ships via OTA. (Brand/influencer OTA versions higher than naive +1 because Window A published revenue/wallet work concurrently — bundle is shared, so all 3 audiences carry the same hash.)",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); deep follower-home visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test on installed APK covers the light flip + tab bar + atom cascade'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "8fe075a", "note": "auto-redeploy on push; no-op for this mobile-only change (Window A's brand-web wallet edits are separate uncommitted work)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "8fe075a", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "8fe075a", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 88,
+        "bundle_hash": "sha256:32aca2513c76083d8f1733da2b70d663c96415f6c5d0f12f7a803a71b65379fd",
+        "published_at": "2026-05-28T04:34:00.357Z", "bundle_size_kb": 2512,
+        "trigger": "pnpm publish-ota:all -m 'Flow 38 (F0) — follower foundation: creator-vibe light brandPalette design language + shared-atom cascade + Home + tab bar + dead-code retirement'",
+        "scope": "brand audience manifest (shared bundle; no brand-screen changes)"
+      },
+      "ota_influencer": {
+        "version": 77,
+        "bundle_hash": "sha256:32aca2513c76083d8f1733da2b70d663c96415f6c5d0f12f7a803a71b65379fd",
+        "published_at": "2026-05-28T04:34:06.990Z", "bundle_size_kb": 2512,
+        "trigger": "pnpm publish-ota:all -m 'Flow 38 (F0) — follower foundation: creator-vibe light brandPalette design language + shared-atom cascade + Home + tab bar + dead-code retirement'",
+        "scope": "influencer audience manifest (shared bundle; no influencer-screen changes)"
+      },
+      "ota_follower": {
+        "version": 51,
+        "bundle_hash": "sha256:32aca2513c76083d8f1733da2b70d663c96415f6c5d0f12f7a803a71b65379fd",
+        "published_at": "2026-05-28T04:34:12.216Z", "bundle_size_kb": 2512,
+        "trigger": "pnpm publish-ota:all -m 'Flow 38 (F0) — follower foundation: creator-vibe light brandPalette design language + shared-atom cascade + Home + tab bar + dead-code retirement'",
+        "scope": "follower audience manifest (Flow 38 foundation — Home + atoms + tab bar + dead-code retirement live here)"
+      }
+    }
   }
 }
