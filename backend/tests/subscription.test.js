@@ -102,6 +102,93 @@ describe('POST /v1/brands/me/subscription/upgrade (RAZORPAY_MOCK)', () => {
   });
 });
 
+describe('Mid-cycle upgrade proration (Wave 2 commit 4, RAZORPAY_MOCK)', () => {
+  // Helper: put the brand on an active GROWTH monthly sub with `daysLeft`
+  // remaining in the cycle.
+  async function onGrowthMidCycle(token, brandId, daysLeft = 15) {
+    await query(
+      `UPDATE brand_subscriptions SET status = 'cancelled', cancelled_at = now()
+        WHERE brand_id = $1 AND status = 'active'`,
+      [brandId]
+    );
+    await query(
+      `INSERT INTO brand_subscriptions
+         (brand_id, tier_id, status, current_cycle_start, current_cycle_end, next_charge_at, mandate_status)
+       SELECT $1, t.id, 'active', current_date - (30 - $2), current_date + $2, current_date + $2, 'active'
+         FROM subscription_tiers t WHERE t.tier_key = 'growth'`,
+      [brandId, daysLeft]
+    );
+  }
+
+  test('Growth → Pro mid-cycle charges the pro-rata delta + GST, keeps cycle end', async () => {
+    const u  = await createBrandUser();
+    const br = await registerBrand(u.token);
+    await onGrowthMidCycle(u.token, br.id, 15);
+
+    const res = await request(app)
+      .post('/v1/brands/me/subscription/upgrade')
+      .set('Authorization', `Bearer ${u.token}`)
+      .send({ tier_key: 'pro', billing_period: 'monthly' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.status).toBe('activated');
+    expect(res.body.data.proration).toBe(true);
+    const bd = res.body.data.delta_breakdown;
+    // (9999/30 − 2499/30) × 15 = 250 × 15 = 3750 ; GST 18% = 675
+    expect(bd.delta_inr).toBeCloseTo(3750, 1);
+    expect(bd.delta_gst_inr).toBeCloseTo(675, 1);
+    expect(bd.days_remaining).toBe(15);
+
+    // Active sub is now Pro; cycle end preserved (current_date + 15).
+    const { rows: subs } = await query(
+      `SELECT t.tier_key, bs.status, bs.current_cycle_end
+         FROM brand_subscriptions bs JOIN subscription_tiers t ON t.id = bs.tier_id
+        WHERE bs.brand_id = $1 AND bs.status = 'active'`,
+      [br.id]
+    );
+    expect(subs.length).toBe(1);
+    expect(subs[0].tier_key).toBe('pro');
+
+    // Proration invoice = the delta (not the full Pro price).
+    const { rows: invs } = await query(
+      `SELECT amount_inr, gst_amount_inr, tier_key, status FROM subscription_invoices WHERE brand_id = $1`,
+      [br.id]
+    );
+    expect(invs.length).toBe(1);
+    expect(parseFloat(invs[0].amount_inr)).toBeCloseTo(3750, 1);
+    expect(invs[0].tier_key).toBe('pro');
+    expect(invs[0].status).toBe('paid');
+  });
+
+  test('downgrade (Pro → Growth) is NOT proration — falls through to full re-subscribe', async () => {
+    const u  = await createBrandUser();
+    const br = await registerBrand(u.token, { tier: 'pro' });
+
+    const res = await request(app)
+      .post('/v1/brands/me/subscription/upgrade')
+      .set('Authorization', `Bearer ${u.token}`)
+      .send({ tier_key: 'growth', billing_period: 'monthly' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.proration).toBeFalsy();
+    expect(res.body.data.amount_inr).toBe(2499); // full price, existing flow
+  });
+
+  test('Free → Growth is NOT proration — full subscribe', async () => {
+    const u  = await createBrandUser();
+    const br = await registerBrand(u.token, { tier: 'free' });
+
+    const res = await request(app)
+      .post('/v1/brands/me/subscription/upgrade')
+      .set('Authorization', `Bearer ${u.token}`)
+      .send({ tier_key: 'growth', billing_period: 'monthly' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.proration).toBeFalsy();
+    expect(res.body.data.amount_inr).toBe(2499);
+  });
+});
+
 describe('GET /v1/brands/me/subscription', () => {
   test('returns the active subscription + usage counters', async () => {
     const u  = await createBrandUser();

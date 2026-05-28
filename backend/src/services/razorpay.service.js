@@ -54,17 +54,23 @@ function _getClient() {
  * @param {boolean}  [opts.customer_notify=true] — Razorpay emails the customer the UPI Autopay collect link if Checkout isn't used
  * @returns {Promise<{ id: string, plan_id: string, status: string, short_url?: string }>}
  */
-async function createSubscription({ plan_id, total_count, notes, customer_notify = true }) {
+async function createSubscription({ plan_id, total_count, notes, customer_notify = true, start_at = null }) {
   if (!plan_id) throw new Error('createSubscription: plan_id required');
   if (!total_count) throw new Error('createSubscription: total_count required');
 
   const client = _getClient();
-  const sub = await client.subscriptions.create({
+  const params = {
     plan_id,
     total_count,
     customer_notify: customer_notify ? 1 : 0,
     notes: notes || {},
-  });
+  };
+  // start_at (Unix epoch seconds) — defers the first charge to a future
+  // boundary. Used by the mid-cycle proration upgrade so the new full-price
+  // subscription begins charging at the OLD cycle's end (Wave 2 commit 4).
+  if (start_at) params.start_at = Math.floor(Number(start_at));
+
+  const sub = await client.subscriptions.create(params);
 
   return {
     id:        sub.id,
@@ -72,6 +78,30 @@ async function createSubscription({ plan_id, total_count, notes, customer_notify
     status:    sub.status,
     short_url: sub.short_url,
   };
+}
+
+/**
+ * Create a one-off Razorpay Order (Orders API, not Subscriptions). Used by the
+ * mid-cycle upgrade proration flow to charge the pro-rata delta as a single
+ * payment (Wave 2 commit 4). amount is in PAISE (caller converts via toPaise).
+ *
+ * @param {object} opts
+ * @param {number} opts.amount      — PAISE
+ * @param {string} [opts.currency]  — default 'INR'
+ * @param {string} [opts.receipt]
+ * @param {object} [opts.notes]     — webhook correlation (type='proration', …)
+ * @returns {Promise<{ id: string, amount: number, currency: string, status: string }>}
+ */
+async function createOrder({ amount, currency = 'INR', receipt, notes }) {
+  if (!amount || amount < 1) throw new Error('createOrder: amount (paise) required');
+  const client = _getClient();
+  const order = await client.orders.create({
+    amount: Math.round(amount),
+    currency,
+    receipt,
+    notes: notes || {},
+  });
+  return { id: order.id, amount: order.amount, currency: order.currency, status: order.status };
 }
 
 /**

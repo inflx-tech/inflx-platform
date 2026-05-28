@@ -212,8 +212,24 @@ export default function SubscriptionPage() {
     return false;
   }
 
+  // Poll getSubscription until the active tier swaps to `targetTierKey` (used
+  // after the proration delta Order is paid — the order.paid webhook performs
+  // the swap server-side).
+  async function pollUntilTier(targetTierKey, timeoutMs = 30000, intervalMs = 2000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const res = await brandApi.getSubscription();
+        const tk = res?.data?.subscription?.tier_key || res?.data?.tier_key;
+        if (tk === targetTierKey) return true;
+      } catch { /* swallow + retry */ }
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+    return false;
+  }
+
   async function upgrade(tierKey, billingPeriod) {
-    if (!confirm(`Upgrade to ${tierKey.toUpperCase()} (${billingPeriod})? You will be charged at the start of the next cycle.`)) return;
+    if (!confirm(`Upgrade to ${tierKey.toUpperCase()} (${billingPeriod})? If you're mid-cycle on a paid plan, you'll pay only the pro-rata difference now.`)) return;
     setUp(`${tierKey}:${billingPeriod}`); setErr(null); setOk(null);
     try {
       const res = await brandApi.upgradeSubscription(tierKey, billingPeriod);
@@ -223,6 +239,48 @@ export default function SubscriptionPage() {
         return;
       }
       const d = res.data || {};
+
+      // Wave 2 commit 4 — mid-cycle upgrade proration (live). Backend created a
+      // one-off delta Order; open Checkout in ORDER mode for the pro-rata
+      // difference. The order.paid webhook swaps the tier server-side.
+      if (d.status === 'proration_pending' && d.razorpay_order_id && d.razorpay_key_id) {
+        if (!window.Razorpay) {
+          setErr('Razorpay Checkout SDK failed to load. Refresh and try again.');
+          setUp(null);
+          return;
+        }
+        const bd = d.delta_breakdown || {};
+        const rzp = new window.Razorpay({
+          key:         d.razorpay_key_id,
+          order_id:    d.razorpay_order_id,
+          amount:      d.razorpay_amount,
+          name:        'INFLX',
+          description: `Upgrade to ${d.tier_name || tierKey} — pro-rata ₹${bd.delta_inr} + GST ₹${bd.delta_gst_inr}`,
+          theme:       { color: '#0A0A0A' },
+          handler: async () => {
+            setOk('Payment received — applying your upgrade…');
+            const swapped = await pollUntilTier(tierKey);
+            await load();
+            setOk(swapped
+              ? `Upgraded to ${tierKey.toUpperCase()} (${billingPeriod}). Authorize UPI Autopay below to keep renewals active.`
+              : 'Payment received — your upgrade will apply shortly. Refresh in a moment.');
+            setUp(null);
+          },
+          modal: {
+            ondismiss: () => {
+              setOk(null);
+              setErr('Upgrade cancelled — no charge made.');
+              setUp(null);
+            },
+          },
+        });
+        rzp.on('payment.failed', (resp) => {
+          setErr(`Payment failed: ${resp?.error?.description || 'Please try again.'}`);
+          setUp(null);
+        });
+        rzp.open();
+        return; // wait for Checkout callbacks
+      }
 
       // Phase A6.5 — live-mode path. Backend created a Razorpay
       // subscription; we now open Checkout in subscription mode for UPI
@@ -268,7 +326,10 @@ export default function SubscriptionPage() {
 
       // Mock-mode path (RAZORPAY_MOCK=true) — synthetic activation,
       // refresh immediately.
-      setOk(`Upgraded to ${tierKey.toUpperCase()} (${billingPeriod}). Invoice ${d.invoice_id?.slice(0,8) || ''} created.`);
+      const bd = d.delta_breakdown;
+      setOk(d.proration && bd
+        ? `Upgraded to ${tierKey.toUpperCase()} (${billingPeriod}) mid-cycle — pro-rata ₹${bd.delta_inr} + GST ₹${bd.delta_gst_inr} (mock).`
+        : `Upgraded to ${tierKey.toUpperCase()} (${billingPeriod}). Invoice ${d.invoice_id?.slice(0,8) || ''} created.`);
       await load();
     } catch (e) {
       setErr(e?.message || 'Upgrade failed');
@@ -303,6 +364,14 @@ export default function SubscriptionPage() {
     p => p.billing_period === (sub_row?.billing_period || 'monthly') && p.active
   );
 
+  // Mid-cycle upgrade (Wave 2 commit 4): after a proration upgrade the new
+  // full-price subscription needs a fresh UPI Autopay mandate for renewals.
+  // The webhook stores its Razorpay short_url on the sub's notes.
+  let renewalUrl = null;
+  if (sub_row?.mandate_status === 'pending' && sub_row?.notes) {
+    try { renewalUrl = JSON.parse(sub_row.notes)?.renewal_short_url || null; } catch { /* notes may be plain text */ }
+  }
+
   return (
     <div className="s">
       <style>{CSS}</style>
@@ -312,6 +381,13 @@ export default function SubscriptionPage() {
 
         {err && <div className="err">{err}</div>}
         {ok  && <div className="ok">{ok}</div>}
+
+        {renewalUrl && (
+          <div className="ok" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <span>Your upgrade is active for this cycle. Authorize UPI Autopay to keep it active at renewal.</span>
+            <a href={renewalUrl} target="_blank" rel="noreferrer" style={{ fontWeight: 700, textDecoration: 'underline', whiteSpace: 'nowrap' }}>Authorize renewals →</a>
+          </div>
+        )}
 
         <div className="grid two" style={{ marginBottom: 24 }}>
           <div className="card">

@@ -1,0 +1,32 @@
+{
+  "feature": "wave2-midcycle-proration",
+  "area": "backend-service+controller+webhook+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — 'pls proceed' to commit 4 + 'ship live path, I'll test w/ Aveen'. Wave 2 commit 4, implementing settled decision 1 (Option A pro-rata mid-cycle upgrade).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING, NO migration. Render + Vercel redeploy on push. Live path requires the 'order.paid' webhook event enabled on Razorpay + founder test-mode validation (Aveen Growth->Pro) before relying on it.",
+  "fix": "Mid-cycle upgrade pro-ration (Option A). Additive branch on subscription.controller.upgrade: paid->higher-paid same-period mid-cycle charges (newDaily-oldDaily)*daysRemaining + GST. Live = one-off Razorpay Order (proration_pending) completed by a new order.paid webhook (cancel old sub, create new sub start_at=old cycle end, swap brand_subscriptions keeping the aligned cycle end, write proration invoice). Mock = immediate swap. Order-mode Checkout + renewal-mandate banner on the subscription page.",
+  "related": [
+    "features/wave1-tax-config-foundation",
+    "features/billing-razorpay-live",
+    "features/wave2-l2-gst-protection-fee"
+  ],
+  "result": "Pro-rata delta computed + charged (Order live / immediate mock); tier swapped keeping the ORIGINAL cycle end; proration invoice written; renewal mandate surfaced. Existing full-subscribe flow untouched for all non-qualifying cases. No migration. Backend boot smoke clean.",
+  "regression_proof": "Additive branch + new webhook event + Order-mode Checkout; existing upgrade flow byte-for-byte preserved for Free->paid, downgrade, period-switch, no-sub. No schema change. pnpm qa GREEN. subscription.test.js 9/9 incl. 3 new proration tests. brand-web build compiles.",
+  "discipline": "Verify-twice: confirmed existing upgrade = full re-subscribe; layered proration as a guarded additive branch (paid tier + price>current + same period + days left). Confirmed handleSubscriptionAuthenticated's status==='active' guard prevents clobbering the aligned cycle end; added a mandate-only update for the proration case. No migration (Order notes carry state; subscription_invoices reused). Flagged: live Order->webhook->re-mandate path needs founder test-mode validation + 'order.paid' enabled on Razorpay.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'ship live path'. No migration; release = the code push.",
+    "released_at": "2026-05-28",
+    "maestro_green": false,
+    "deploy": "Deployed via git push (Render + Vercel auto-deploy). No migration. ACTION REQUIRED before relying on live upgrades: enable the 'order.paid' webhook event on Razorpay + validate a test-mode Growth->Pro upgrade on Aveen. No mobile change (no OTA)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — reuses the existing subscription page layout + Razorpay Checkout pattern (Order mode vs the existing subscription mode); one inline renewal banner composed of existing styles. No new design language.",
+  "mockup_locked_at": "2026-05-28"
+}

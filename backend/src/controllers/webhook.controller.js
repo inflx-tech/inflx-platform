@@ -172,7 +172,23 @@ async function handleSubscriptionAuthenticated(payload) {
     console.warn(`[WEBHOOK] subscription.authenticated — no brand_subscription for ${sub.id}`);
     return;
   }
-  if (row.status === 'active') return; // idempotent
+  if (row.status === 'active') {
+    // Already active (e.g. a proration-upgrade row activated immediately on
+    // delta payment). The mandate for the new renewal subscription may have
+    // just been authorized — record it WITHOUT overwriting the aligned cycle
+    // dates. Existing fresh-subscribe rows are 'pending_mandate' here, so this
+    // branch never affects them.
+    if (row.mandate_status !== 'active') {
+      await db.query(
+        `UPDATE brand_subscriptions
+            SET mandate_status = 'active',
+                razorpay_mandate_id = COALESCE($2, razorpay_mandate_id)
+          WHERE id = $1`,
+        [row.id, sub.payment_method || sub.token_id || null]
+      );
+    }
+    return; // idempotent — do not touch cycle dates
+  }
 
   const cycleDays = row.billing_period === 'yearly' ? 365 : 30;
   await db.query(
@@ -282,6 +298,126 @@ async function handleSubscriptionHalted(payload) {
     sendSms:  false,
     phone:    row.phone,
   });
+}
+
+// ── order.paid — mid-cycle upgrade proration (Wave 2 commit 4) ──────────────
+// Fires when the one-off delta Order (created by subscription.upgrade) is paid.
+// Completes the upgrade: cancels the old Razorpay subscription, creates the new
+// full-price one starting at the OLD cycle end, swaps brand_subscriptions to
+// the target tier (keeping the original cycle end), and writes the proration
+// invoice. Idempotent via the proration invoice's razorpay_payment_id.
+async function handleProrationOrderPaid(payload) {
+  const order   = payload?.order?.entity;
+  const payment = payload?.payment?.entity;
+  if (!order?.id) { console.warn('[WEBHOOK] order.paid — missing order.entity.id'); return; }
+  const notes = order.notes || {};
+  if (notes.type !== 'proration') return; // not ours (e.g. a wallet top-up order)
+
+  const paymentId = payment?.id || null;
+  console.log(`[WEBHOOK] order.paid (proration) — order ${order.id} payment ${paymentId}`);
+
+  // Idempotency: proration invoice already written for this payment → skip.
+  if (paymentId) {
+    const { rows: dup } = await db.query(
+      `SELECT 1 FROM subscription_invoices WHERE razorpay_payment_id = $1 LIMIT 1`,
+      [paymentId]
+    );
+    if (dup[0]) { console.log('[WEBHOOK] order.paid proration already processed — skip'); return; }
+  }
+
+  const brandId       = notes.brand_id;
+  const oldSubId      = notes.old_subscription_id;
+  const oldRzpSubId   = notes.old_razorpay_subscription_id || null;
+  const oldCycleEnd   = notes.old_cycle_end;               // 'YYYY-MM-DD'
+  const targetTierId  = notes.target_tier_id;
+  const targetPriceId = notes.target_price_id || null;
+  const targetPlanId  = notes.target_plan_id || null;
+  const billingPeriod = notes.billing_period || 'monthly';
+  const targetTierKey = notes.target_tier_key;
+  const deltaInr      = parseFloat(notes.delta_inr || '0');
+  const deltaGstInr   = parseFloat(notes.delta_gst_inr || '0');
+
+  const { rows: oldRows } = await db.query(
+    `SELECT id, status FROM brand_subscriptions WHERE id = $1`, [oldSubId]
+  );
+  if (!oldRows[0]) { console.warn(`[WEBHOOK] proration — old sub ${oldSubId} not found`); return; }
+
+  // External Razorpay ops (outside the DB txn).
+  const razorpayService = require('../services/razorpay.service');
+  if (oldRzpSubId) {
+    try { await razorpayService.cancelSubscription(oldRzpSubId, { cancel_at_cycle_end: false }); }
+    catch (err) { console.warn(`[WEBHOOK] proration — cancel old sub ${oldRzpSubId} failed: ${err.message}`); }
+  }
+  let newSub = null;
+  if (targetPlanId) {
+    const startAtEpoch = Math.floor(new Date(oldCycleEnd).getTime() / 1000);
+    const totalCount   = billingPeriod === 'yearly' ? 5 : 12;
+    try {
+      newSub = await razorpayService.createSubscription({
+        plan_id:     targetPlanId,
+        total_count: totalCount,
+        start_at:    startAtEpoch,
+        notes: { brand_id: brandId, tier_key: targetTierKey, billing_period: billingPeriod, via: 'proration_upgrade' },
+      });
+    } catch (err) {
+      // Brand already paid the delta → still flip entitlements; the renewal
+      // subscription can be retried manually. Don't lose the upgrade.
+      console.error(`[WEBHOOK] proration — createSubscription failed: ${err.message}`);
+    }
+  }
+
+  // DB swap (transactional). Cancel old → insert new active row at the target
+  // tier with the ORIGINAL cycle end → write the proration invoice.
+  await db.withTransaction(async (client) => {
+    await client.query(
+      `UPDATE brand_subscriptions
+          SET status = 'cancelled', cancelled_at = now(),
+              cancel_reason = 'upgraded mid-cycle (proration)'
+        WHERE id = $1 AND status = 'active'`,
+      [oldSubId]
+    );
+    const renewalNote = newSub?.short_url
+      ? JSON.stringify({ renewal_short_url: newSub.short_url, via: 'proration_upgrade' })
+      : null;
+    const { rows: subRows } = await client.query(
+      `INSERT INTO brand_subscriptions
+         (brand_id, tier_id, subscription_price_id, status,
+          current_cycle_start, current_cycle_end, next_charge_at,
+          mandate_status, last_charged_at, razorpay_subscription_id, notes)
+       VALUES ($1, $2, $3, 'active', current_date, $4::date, $4::date,
+               'pending', now(), $5, $6)
+       RETURNING id`,
+      [brandId, targetTierId, targetPriceId, oldCycleEnd, newSub?.id || null, renewalNote]
+    );
+    const newSubId = subRows[0].id;
+    await client.query(
+      `INSERT INTO subscription_invoices
+         (brand_subscription_id, brand_id, tier_key, amount_inr, gst_amount_inr,
+          period_start, period_end, status, paid_at, razorpay_payment_id)
+       VALUES ($1, $2, $3, $4, $5, current_date, $6::date, 'paid', now(), $7)
+       ON CONFLICT (brand_subscription_id, razorpay_payment_id)
+         WHERE razorpay_payment_id IS NOT NULL DO NOTHING`,
+      [newSubId, brandId, targetTierKey, deltaInr, deltaGstInr, oldCycleEnd, paymentId]
+    );
+  });
+
+  const { rows: u } = await db.query(
+    `SELECT u.id AS user_id, u.fcm_token, u.phone
+       FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+    [brandId]
+  );
+  if (u[0]) {
+    await notificationService.send({
+      userId:   u[0].user_id,
+      type:     'subscription.upgraded',
+      title:    'Plan upgraded',
+      body:     `You're on ${targetTierKey} for the rest of this cycle. Authorize UPI Autopay to keep it active at renewal.`,
+      data:     { screen: 'subscription' },
+      fcmToken: u[0].fcm_token,
+      sendSms:  false,
+      phone:    u[0].phone,
+    });
+  }
 }
 
 async function handlePayoutProcessed(payload) {
@@ -415,6 +551,8 @@ async function handleWebhook(req, res) {
       case 'subscription.charged':       await handleSubscriptionCharged(event.payload);       break;
       case 'subscription.cycle_end':     await handleSubscriptionCycleEnd(event.payload);      break;
       case 'subscription.halted':        await handleSubscriptionHalted(event.payload);        break;
+      // Phase A13 + Wave 2 commit 4 — mid-cycle upgrade proration
+      case 'order.paid':                 await handleProrationOrderPaid(event.payload);        break;
       default:
         console.log(`[WEBHOOK] Unhandled event type: ${eventType}`);
     }

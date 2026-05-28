@@ -36,6 +36,7 @@ const asyncHandler = require('../utils/asyncHandler');
 // (defensive fallback to 18% via tax.service). Per the founder's design:
 // brand sees price + GST as a separate line on subscription invoices.
 const taxService = require('../services/tax.service');
+const { toPaise } = require('../utils/money');
 
 async function _getBrandIdFromUser(userId) {
   const { rows } = await db.query(
@@ -155,7 +156,7 @@ const getSubscription = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT bs.id, bs.status, bs.current_cycle_start, bs.current_cycle_end,
             bs.next_charge_at, bs.mandate_status, bs.razorpay_mandate_id,
-            bs.razorpay_subscription_id, bs.last_charged_at,
+            bs.razorpay_subscription_id, bs.last_charged_at, bs.notes,
             t.tier_key, t.name AS tier_name, t.monthly_price_inr,
             t.max_campaigns, t.max_sets_per_campaign,
             t.max_influencers_per_cycle, t.max_products, t.is_enterprise,
@@ -247,6 +248,174 @@ const upgrade = asyncHandler(async (req, res) => {
   const cycleDays = billing_period === 'yearly' ? 365 : 30;
 
   const isMock = String(env.RAZORPAY_MOCK).toLowerCase() === 'true';
+
+  // ── Mid-cycle upgrade pro-ration (Wave 2 commit 4, Option A) ───────────────
+  // ADDITIVE branch. Only intercepts a true mid-cycle UPGRADE: the brand has
+  // an ACTIVE paid sub, SAME billing period, the target price is HIGHER, and
+  // there is cycle time remaining. Everything else (first subscribe, downgrade,
+  // period switch, free target) falls through to the existing full-subscribe
+  // flow UNCHANGED — so live subscriptions cannot be broken by this commit.
+  //
+  // Option A: brand pays (newDailyRate − oldDailyRate) × daysRemaining + GST as
+  // a one-off Razorpay Order; the new tier's cycle ENDS at the ORIGINAL cycle's
+  // end (cycle dates stay aligned). The webhook (order.paid) cancels the old
+  // Razorpay subscription and creates the new full-price one with
+  // start_at = old cycle end.
+  const { rows: curRows } = await db.query(
+    `SELECT bs.id, bs.tier_id, bs.subscription_price_id, bs.current_cycle_end,
+            bs.razorpay_subscription_id,
+            (bs.current_cycle_end - current_date) AS days_remaining,
+            COALESCE(sp.price_inr, ct.monthly_price_inr) AS current_price,
+            COALESCE(sp.billing_period, 'monthly') AS current_period,
+            ct.tier_key AS current_tier_key
+       FROM brand_subscriptions bs
+       JOIN subscription_tiers ct ON ct.id = bs.tier_id
+       LEFT JOIN subscription_prices sp ON sp.id = bs.subscription_price_id
+      WHERE bs.brand_id = $1 AND bs.status = 'active'
+      LIMIT 1`,
+    [brandId]
+  );
+  const current = curRows[0] || null;
+  const daysRemaining = current ? parseInt(current.days_remaining, 10) : 0;
+  const currentPrice  = current ? parseFloat(current.current_price) : 0;
+
+  // Pro-ration applies only when UPGRADING between PAID tiers mid-cycle, same
+  // billing period. Free→paid (no paid cycle to pro-rate against) and
+  // paid→Free / downgrades fall through to the existing full-subscribe flow.
+  const isProrationUpgrade =
+    !!current &&
+    current.current_tier_key !== 'free' &&
+    currentPrice > 0 &&
+    tier.tier_key !== 'free' &&
+    current.current_period === billing_period &&
+    amount > currentPrice &&
+    daysRemaining > 0;
+
+  if (isProrationUpgrade) {
+    const newDaily  = amount / cycleDays;
+    const oldDaily  = currentPrice / cycleDays;
+    const delta     = parseFloat(((newDaily - oldDaily) * daysRemaining).toFixed(2));
+    const deltaGst  = await taxService.gstOn(delta);
+    const deltaTotal = parseFloat((delta + deltaGst).toFixed(2));
+
+    const breakdown = {
+      current_tier_key: current.current_tier_key,
+      target_tier_key:  tier.tier_key,
+      billing_period,
+      days_remaining:   daysRemaining,
+      old_daily_rate:   parseFloat(oldDaily.toFixed(2)),
+      new_daily_rate:   parseFloat(newDaily.toFixed(2)),
+      delta_inr:        delta,
+      delta_gst_inr:    deltaGst,
+      total_inr:        deltaTotal,
+      cycle_end:        current.current_cycle_end,
+    };
+
+    if (isMock) {
+      // Immediate swap; keep the ORIGINAL cycle end so dates stay aligned.
+      let createdSubId, invoiceId;
+      await db.withTransaction(async (client) => {
+        await client.query(
+          `UPDATE brand_subscriptions
+              SET status = 'cancelled', cancelled_at = now(),
+                  cancel_reason = 'upgraded mid-cycle (proration)'
+            WHERE id = $1`,
+          [current.id]
+        );
+        const { rows: subRows } = await client.query(
+          `INSERT INTO brand_subscriptions
+             (brand_id, tier_id, subscription_price_id, status,
+              current_cycle_start, current_cycle_end, next_charge_at,
+              mandate_status, last_charged_at,
+              razorpay_subscription_id, razorpay_mandate_id)
+           VALUES ($1, $2, $3, 'active', current_date, $4, $4,
+                   'active', now(), $5, $6)
+           RETURNING id`,
+          [brandId, tier.id, subscriptionPriceId, current.current_cycle_end,
+           `sub_mock_${Date.now()}`, `mandate_mock_${Date.now()}`]
+        );
+        createdSubId = subRows[0].id;
+        const { rows: invRows } = await client.query(
+          `INSERT INTO subscription_invoices
+             (brand_subscription_id, brand_id, tier_key, amount_inr, gst_amount_inr,
+              period_start, period_end, status, paid_at, razorpay_payment_id)
+           VALUES ($1, $2, $3, $4, $5, current_date, $6, 'paid', now(), $7)
+           RETURNING id`,
+          [createdSubId, brandId, tier.tier_key, delta, deltaGst,
+           current.current_cycle_end, `pay_mock_proration_${Date.now()}`]
+        );
+        invoiceId = invRows[0].id;
+      });
+
+      return success(res, {
+        status:          'activated',
+        mode:            'mock',
+        proration:       true,
+        subscription_id: createdSubId,
+        invoice_id:      invoiceId,
+        tier_key:        tier.tier_key,
+        billing_period,
+        delta_breakdown: breakdown,
+        message:         `Upgraded to ${tier.name} mid-cycle — pro-rata ₹${delta} + GST ₹${deltaGst} (mock, no real charge). Cycle still ends ${current.current_cycle_end}.`,
+      }, 201);
+    }
+
+    // Live: the webhook will create the new full-price subscription, which
+    // needs the target plan_id. Guard BEFORE charging the delta.
+    if (!razorpayPlanId) {
+      throw new AppError(
+        'ADMIN_CONFIG_MISSING',
+        'Subscription setup is in progress, please check back shortly.',
+        422, 'razorpay_plan_id',
+        { tier_key: tier.tier_key, billing_period }
+      );
+    }
+
+    const razorpayService = require('../services/razorpay.service');
+    let order;
+    try {
+      order = await razorpayService.createOrder({
+        amount:  toPaise(deltaTotal),
+        receipt: `prorate_${brandId.slice(0, 8)}_${Date.now()}`,
+        notes: {
+          type:                          'proration',
+          brand_id:                      brandId,
+          old_subscription_id:           current.id,
+          old_razorpay_subscription_id:  current.razorpay_subscription_id || '',
+          old_cycle_end:                 String(current.current_cycle_end),
+          target_tier_id:                tier.id,
+          target_price_id:               subscriptionPriceId || '',
+          target_plan_id:                razorpayPlanId,
+          billing_period,
+          current_tier_key:              current.current_tier_key,
+          target_tier_key:               tier.tier_key,
+          delta_inr:                     String(delta),
+          delta_gst_inr:                 String(deltaGst),
+        },
+      });
+    } catch (err) {
+      console.error('[upgrade] proration createOrder failed:', err.message);
+      throw new AppError(
+        'PAYMENT_PROVIDER_UNAVAILABLE',
+        'Payment provider is temporarily unavailable. Please try again in a moment.',
+        502, 'razorpay'
+      );
+    }
+
+    return success(res, {
+      status:            'proration_pending',
+      mode:              'live',
+      proration:         true,
+      razorpay_order_id: order.id,
+      razorpay_amount:   order.amount,   // paise — Checkout (Order mode) needs this
+      razorpay_key_id:   env.RAZORPAY_KEY_ID,
+      tier_key:          tier.tier_key,
+      tier_name:         tier.name,
+      billing_period,
+      delta_breakdown:   breakdown,
+      message:           `Pay the pro-rata difference (₹${delta} + GST ₹${deltaGst}) to upgrade to ${tier.name} now. Renewals at the full price start ${current.current_cycle_end}.`,
+    }, 201);
+  }
 
   if (!isMock) {
     // Phase A6.5 + A13 — real Razorpay Subscriptions + UPI Autopay
