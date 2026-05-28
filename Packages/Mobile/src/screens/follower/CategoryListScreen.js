@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Image,
 } from 'react-native';
-import { darkColors, getBusinessAccent } from '../../theme/tokens';
+import { brandPalette as P, fonts, getBusinessAccentLight } from '../../theme/tokens';
 import ProductCard from '../../components/cards/ProductCard';
 import { followerApi } from '../../services/api';
 import { buildTrackingFromOffer } from '../../utils/tracking';
@@ -82,8 +82,8 @@ export default function CategoryListScreen({ route, navigation }) {
   // ── Render helpers ──────────────────────────────────────────────────────
 
   function renderDiningCard(store, sIdx) {
-    const accent = getBusinessAccent(store.category).accent;
-    const accentDim = getBusinessAccent(store.category).dim;
+    const accent = getBusinessAccentLight(store.category).accent;
+    const accentDim = getBusinessAccentLight(store.category).pale;
     const bestOffer = store.offers?.[0];
     const otherCreators = (store.offers || []).slice(1);
     const cuisines = store.cuisines || store.listing_data?.cuisines || [];
@@ -174,8 +174,8 @@ export default function CategoryListScreen({ route, navigation }) {
   }
 
   function renderInlineProductStore(store, sIdx) {
-    const accent = getBusinessAccent(store.category).accent;
-    const accentDim = getBusinessAccent(store.category).dim;
+    const accent = getBusinessAccentLight(store.category).accent;
+    const accentDim = getBusinessAccentLight(store.category).pale;
     const bestOffer = store.offers?.[0];
 
     return (
@@ -265,7 +265,7 @@ export default function CategoryListScreen({ route, navigation }) {
         ) : (
           <View style={s.noDealsBanner}>
             <Text style={s.noDealsText}>No active deals · </Text>
-            <Text style={[s.noDealsText, { color: darkColors.amber }]}>Get Directions →</Text>
+            <Text style={[s.noDealsText, { color: P.yellowText }]}>Get Directions →</Text>
           </View>
         )}
 
@@ -304,7 +304,7 @@ export default function CategoryListScreen({ route, navigation }) {
         ))}
       </ScrollView>
 
-      {loading && <ActivityIndicator color={darkColors.amber} size="large" style={{ marginTop: 40 }} />}
+      {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
 
       {/* Layout dispatch */}
       {isDining
@@ -325,46 +325,46 @@ export default function CategoryListScreen({ route, navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg2 },
+  container: { flex: 1, backgroundColor: P.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingTop: 50, paddingHorizontal: 20, paddingBottom: 12,
   },
   backBtn: {
     width: 32, height: 32, borderRadius: 16,
-    backgroundColor: darkColors.card,
-    borderWidth: 1, borderColor: darkColors.border,
+    backgroundColor: P.white,
+    borderWidth: 1, borderColor: P.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  backText: { fontSize: 14, color: darkColors.text },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: darkColors.text },
-  headerSub: { fontSize: 10, color: darkColors.textSecondary },
+  backText: { fontSize: 14, color: P.ink },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: P.ink },
+  headerSub: { fontSize: 10, color: P.muted },
   search: {
     marginHorizontal: 20, marginBottom: 12, marginTop: 10,
-    backgroundColor: darkColors.card,
-    borderWidth: 1, borderColor: darkColors.border,
+    backgroundColor: P.white,
+    borderWidth: 1, borderColor: P.border,
     borderRadius: 14, paddingHorizontal: 16, paddingVertical: 11,
     flexDirection: 'row', alignItems: 'center',
   },
-  searchText: { fontSize: 13, color: darkColors.textMuted },
+  searchText: { fontSize: 13, color: P.muted2 },
   pills: { paddingHorizontal: 20, paddingBottom: 12, gap: 6 },
   pill: {
     paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 20, borderWidth: 1.5, borderColor: darkColors.border,
+    borderRadius: 20, borderWidth: 1.5, borderColor: P.border,
   },
   pillActive: {
-    borderColor: darkColors.green,
-    backgroundColor: darkColors.greenDim,
+    borderColor: P.success,
+    backgroundColor: P.successPale,
   },
-  pillText: { fontSize: 11, fontWeight: '600', color: darkColors.textSecondary },
-  pillTextActive: { color: darkColors.green },
+  pillText: { fontSize: 11, fontWeight: '600', color: P.muted },
+  pillTextActive: { color: P.success },
 
   // Dining card (Swiggy Dineout-style — restaurant first, menu hidden)
   diningCard: {
     marginHorizontal: 20, marginBottom: 14,
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     borderRadius: 16,
-    borderWidth: 1, borderColor: darkColors.border,
+    borderWidth: 1, borderColor: P.border,
     overflow: 'hidden',
   },
   diningHero: {
@@ -392,14 +392,14 @@ const s = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: darkColors.border,
+    borderTopColor: P.border,
   },
   dealBarText: { fontSize: 12, fontWeight: '700', flex: 1 },
   dealBarMore: { fontSize: 11, fontWeight: '600' },
   diningBody: { padding: 14 },
-  diningName: { fontSize: 16, fontWeight: '800', color: darkColors.text },
-  diningCuisine: { fontSize: 11, color: darkColors.textSecondary, marginTop: 4 },
-  diningMeta: { fontSize: 10, color: darkColors.textMuted, marginTop: 4 },
+  diningName: { fontSize: 16, fontWeight: '800', color: P.ink },
+  diningCuisine: { fontSize: 11, color: P.muted, marginTop: 4 },
+  diningMeta: { fontSize: 10, color: P.muted2, marginTop: 4 },
   creatorRow: {
     flexDirection: 'row', alignItems: 'center',
     marginTop: 10, gap: 8,
@@ -416,7 +416,7 @@ const s = StyleSheet.create({
   },
   creatorInitial: { fontSize: 9, fontWeight: '800', color: '#fff' },
   creatorChipText: { fontSize: 10, fontWeight: '700' },
-  moreCreators: { fontSize: 10, color: darkColors.textSecondary },
+  moreCreators: { fontSize: 10, color: P.muted },
 
   // Legacy store-with-inline-products layout (Shopping + Booking)
   storeHeader: { paddingHorizontal: 20, marginBottom: 6 },
@@ -426,9 +426,9 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   storeLogoText: { fontSize: 12, fontWeight: '800', color: '#fff' },
-  storeName: { fontSize: 13, fontWeight: '700', color: darkColors.text },
-  storeMeta: { fontSize: 9, color: darkColors.textSecondary },
-  viewStore: { fontSize: 10, color: darkColors.amber },
+  storeName: { fontSize: 13, fontWeight: '700', color: P.ink },
+  storeMeta: { fontSize: 9, color: P.muted },
+  viewStore: { fontSize: 10, color: P.yellowText },
   offerBadges: { marginTop: 4, marginBottom: 6 },
   offerBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
@@ -450,15 +450,15 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20, paddingVertical: 10,
   },
-  noDealsText: { fontSize: 10, color: darkColors.textMuted },
+  noDealsText: { fontSize: 10, color: P.muted2 },
   divider: {
-    height: 1, backgroundColor: darkColors.border,
+    height: 1, backgroundColor: P.border,
     marginHorizontal: 20, marginVertical: 12,
   },
 
   // Empty state
   empty: { alignItems: 'center', paddingVertical: 40 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: darkColors.text, marginBottom: 6 },
-  emptyText: { fontSize: 12, color: darkColors.textSecondary },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: P.ink, marginBottom: 6 },
+  emptyText: { fontSize: 12, color: P.muted },
 });

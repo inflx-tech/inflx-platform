@@ -1,0 +1,26 @@
+{
+  "feature": "redesign-flow-39-follower-discovery-browse",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat \"ok proceed to F1\" (design language locked at F0/Flow 38; F1 applies it)",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · F0 master design-language mockup (Flow 38) is the locked design authority for all F1-F5 follower flows; mirrored into this contract's 04-preview/mockups/web.html",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F1 (common spine), 1st flow. FindScreen (303) + CategoryListScreen (464) + DealsScreen (195) flipped from Wave-3 darkColors to light brandPalette per the F0-locked design language. Pure visual restyle — token-swap darkColors → brandPalette + getBusinessAccent → getBusinessAccentLight (CategoryList hero tints) + Outfit/mono polish + ink/yellowPale active filter tab (Deals). Clears the ProductCard light-on-dark cascade on Category + Deals (flagged in F0). ZERO API/backend/navigation/tracking change. CategoryList DINING/SHOPPING/BOOKING mental-model split + per-category routing + buildTrackingFromOffer 4-ID attribution preserved verbatim. #fff labels on CategoryList dining cards retained (sit on saturated per-business accent badges — readable). No native rebuild. Design authority = F0 master mockup (mirrored).",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2).",
+    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies (01-follower-public-browse exercises follower boot); founder physical smoke-test on installed APK covers the light restyle'"
+  }
+}

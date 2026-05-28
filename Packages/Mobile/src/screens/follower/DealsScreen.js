@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
-import { darkColors, spacing } from '../../theme/tokens';
+import { brandPalette as P, fonts, spacing } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import { buildTracking } from '../../utils/tracking';
@@ -146,7 +146,7 @@ export default function DealsScreen({ navigation }) {
       </ScrollView>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color={darkColors.amber} /></View>
+        <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>
       ) : (
         <FlatList
           data={deals}
@@ -154,7 +154,7 @@ export default function DealsScreen({ navigation }) {
           numColumns={2}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 20, paddingTop: 10, paddingBottom: 100, gap: 10 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={darkColors.amber} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} />}
           ListEmptyComponent={
             <View style={s.empty}>
               <Text style={{ fontSize: 40, marginBottom: 10 }}>🏷️</Text>
@@ -169,27 +169,27 @@ export default function DealsScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg2 },
+  container: { flex: 1, backgroundColor: P.bg },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
     paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8,
-    backgroundColor: darkColors.bg2,
+    backgroundColor: P.bg,
   },
-  title: { fontSize: 22, fontWeight: '800', color: darkColors.text },
+  title: { fontSize: 22, fontWeight: '800', color: P.ink },
   tabRow: {
     paddingHorizontal: 20, paddingBottom: 12, gap: 6,
   },
   tabPill: {
     paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1.5, borderColor: darkColors.border,
+    borderRadius: 20, borderWidth: 1.5, borderColor: P.border,
   },
   tabPillActive: {
-    borderColor: darkColors.amber, backgroundColor: darkColors.amberDim,
+    borderColor: P.ink, backgroundColor: P.yellowPale,
   },
-  tabText: { fontSize: 11, fontWeight: '600', color: darkColors.textSecondary },
-  tabTextActive: { color: darkColors.amber },
+  tabText: { fontSize: 11, fontWeight: '600', color: P.muted },
+  tabTextActive: { color: P.ink },
   gridItem: { flex: 1 },
   empty: { alignItems: 'center', paddingTop: 60 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: darkColors.text, marginBottom: 4 },
-  emptyText: { fontSize: 12, color: darkColors.textSecondary, textAlign: 'center' },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: P.ink, marginBottom: 4 },
+  emptyText: { fontSize: 12, color: P.muted, textAlign: 'center' },
 });

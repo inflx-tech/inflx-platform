@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { darkColors } from '../../theme/tokens';
+import { brandPalette as P, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
 /**
@@ -121,7 +121,7 @@ export default function FindScreen({ navigation }) {
           value={search}
           onChangeText={setSearch}
           placeholder="Search stores, products, services..."
-          placeholderTextColor={darkColors.textMuted}
+          placeholderTextColor={P.muted2}
         />
       </View>
 
@@ -177,7 +177,7 @@ export default function FindScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: darkColors.bg2,
+    backgroundColor: P.bg,
   },
   header: {
     flexDirection: 'row',
@@ -191,30 +191,31 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: P.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backText: {
     fontSize: 14,
-    color: darkColors.text,
+    color: P.ink,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: darkColors.text,
+    fontWeight: '900',
+    color: P.ink,
+    fontFamily: fonts.displayBlack,
   },
   searchBar: {
     marginHorizontal: 20,
     marginBottom: 16,
-    backgroundColor: darkColors.card,
-    borderWidth: 1,
-    borderColor: darkColors.border,
+    backgroundColor: P.white,
+    borderWidth: 1.5,
+    borderColor: P.ink,
     borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -224,9 +225,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 13,
-    color: darkColors.text,
+    fontSize: 12.5,
+    color: P.ink,
     padding: 0,
+    fontFamily: fonts.sansRegular,
   },
   categorySection: {
     marginBottom: 16,
@@ -238,10 +240,10 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: P.border,
   },
   categoryIcon: {
     fontSize: 24,
@@ -249,23 +251,25 @@ const styles = StyleSheet.create({
   categoryLabel: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '700',
-    color: darkColors.text,
+    fontWeight: '900',
+    color: P.ink,
+    fontFamily: fonts.displayBlack,
   },
   dealBadge: {
-    backgroundColor: darkColors.amberDim,
+    backgroundColor: P.yellowPale,
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
   },
   dealBadgeText: {
     fontSize: 9,
-    fontWeight: '700',
-    color: darkColors.amber,
+    fontWeight: '800',
+    color: P.yellowText,
+    fontFamily: fonts.monoBold,
   },
   arrow: {
     fontSize: 14,
-    color: darkColors.textMuted,
+    color: P.muted2,
   },
   subsRow: {
     flexDirection: 'row',
@@ -281,9 +285,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: darkColors.card,
+    backgroundColor: P.white,
     borderWidth: 1,
-    borderColor: darkColors.border,
+    borderColor: P.border,
   },
   subIcon: {
     fontSize: 12,
@@ -291,11 +295,11 @@ const styles = StyleSheet.create({
   subLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: darkColors.textSecondary,
+    color: P.muted,
   },
   comingSoon: {
     fontSize: 10,
-    color: darkColors.textMuted,
+    color: P.muted2,
     marginTop: 6,
     paddingLeft: 16,
     fontStyle: 'italic',
