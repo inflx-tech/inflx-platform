@@ -22,6 +22,7 @@ const lowWalletJob         = require('./low-wallet-alert.job');
 const negotiationExpiryJob = require('./negotiation-expiry.job');
 const productionReminderJob = require('./production-shipment-reminder.job');
 const subscriptionRenewalJob = require('./subscription-renewal.job');
+const settlementRetryJob     = require('./settlement-retry.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -72,6 +73,11 @@ function startAllJobs() {
   // (mock-mode synthetic invoice; live-mode TODO Razorpay subscription charge).
   cron.schedule('0 2 * * *', subscriptionRenewalJob.run, { timezone: tz });
 
+  // settlement-retry — hourly at :20; retries commerce Route transfers left
+  // null (brand onboarded a payout account after the sale, or a transient Route
+  // failure). Dormant in practice until brands onboard + Route is enabled.
+  cron.schedule('20 * * * *', settlementRetryJob.run, { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -88,4 +94,5 @@ module.exports = {
   negotiationExpiryJob,
   productionReminderJob,
   subscriptionRenewalJob,
+  settlementRetryJob,
 };

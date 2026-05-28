@@ -1,0 +1,31 @@
+{
+  "feature": "wave3-settlement-retry-cron",
+  "area": "backend-service+job",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-28) — 'go for wave 3 commit 3'. Wave 3 commit 3 (settlement-retry cron).",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING, NO migration. Render redeploy. Hourly cron; no-op until brands onboard payout accounts + Razorpay Route is enabled.",
+  "fix": "settlement.service.retryTransfer + settlement-retry.job (hourly :20, registered in jobs/index): retries commerce Route transfers left null (brand onboarded after the sale, or transient Route failure). Uses recorded tcs_amount; idempotent on razorpay_transfer_id.",
+  "related": [
+    "features/wave3-commerce-settlement-engine",
+    "features/wave3-commerce-settlement-foundation"
+  ],
+  "result": "Eligible settled-but-untransferred txns (brand now has a linked account) get their Route transfer completed by the cron (mock verified). Backfills brands that onboard after selling + self-heals transient failures. Boot smoke (app + jobs) clean.",
+  "regression_proof": "Additive backend-only — new service fn + new cron + one schedule/export in jobs/index. No schema change. No eligible rows on prod until onboarding + Route, so effectively dormant. pnpm qa GREEN. settlement-retry.test.js 3/3.",
+  "discipline": "Verify-twice: eligibility requires tcs_amount NOT NULL (settlement already ran) so the retry reuses recorded tax (no drift); idempotent on razorpay_transfer_id; per-txn failures counted, batch continues; cron offset to :20 to avoid the other hourly jobs. Followed the jobs/index registry + ENABLE_CRONS test pattern.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-28) — 'go for wave 3 commit 3'; additive + dormant, safe to ship.",
+    "released_at": "2026-05-28",
+    "maestro_green": false,
+    "deploy": "Deployed via git push (Render redeploy). NO migration. Cron runs hourly but is a no-op until brands onboard + Route is enabled. No mobile change (no OTA)."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-28) — backend-only (no UI files); not UI-governed. Field set for robustness.",
+  "mockup_locked_at": "2026-05-28"
+}

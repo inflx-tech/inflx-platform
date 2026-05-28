@@ -101,4 +101,42 @@ async function settleCommerceTransaction(runner, transactionId) {
   return { tcs, commission_gst: commissionGst, transfer_id: transferId, transfer_amount: transferAmount };
 }
 
-module.exports = { resolveReturnWindowEndsAt, settleCommerceTransaction };
+/**
+ * Retry the Route transfer for an already-settled transaction whose transfer is
+ * still null — e.g. the brand onboarded a payout account AFTER the sale, or a
+ * transient Route failure. Uses the already-recorded tcs_amount. Throws on a
+ * Route failure so the caller (cron) can count + log it.
+ * @returns {Promise<object>}
+ */
+async function retryTransfer(runner, transactionId) {
+  const { rows } = await runner.query(
+    `SELECT ft.id, ft.brand_net, ft.tcs_amount, ft.razorpay_payment_id, ft.razorpay_transfer_id,
+            b.razorpay_linked_account_id
+       FROM follower_transactions ft
+       JOIN brands b ON b.id = ft.brand_id
+      WHERE ft.id = $1`,
+    [transactionId]
+  );
+  const t = rows[0];
+  if (!t) return { skipped: 'not_found' };
+  if (t.razorpay_transfer_id) return { skipped: 'already_transferred' };
+  if (!t.razorpay_linked_account_id) return { skipped: 'no_linked_account' };
+
+  const tcs            = parseFloat(t.tcs_amount) || 0;
+  const transferAmount = _round2(parseFloat(t.brand_net) - tcs);
+  if (transferAmount <= 0) return { skipped: 'zero_amount' };
+
+  const tr = await routeService.createTransfer({
+    paymentId:   t.razorpay_payment_id,
+    accountId:   t.razorpay_linked_account_id,
+    amountPaise: toPaise(transferAmount),
+    notes:       { transaction_id: transactionId, type: 'commerce_settlement_retry' },
+  });
+  await runner.query(
+    `UPDATE follower_transactions SET razorpay_transfer_id = $1 WHERE id = $2`,
+    [tr.id || null, transactionId]
+  );
+  return { transfer_id: tr.id || null, transfer_amount: transferAmount };
+}
+
+module.exports = { resolveReturnWindowEndsAt, settleCommerceTransaction, retryTransfer };
