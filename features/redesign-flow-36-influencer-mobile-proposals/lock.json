@@ -1,7 +1,7 @@
 {
   "feature": "redesign-flow-36-influencer-mobile-proposals",
   "spec_version": "1.0.0",
-  "status": "locked",
+  "status": "released",
   "approved": true,
   "approved_by": "founder · 2026-05-27 chat \"Go with flow 36\" + 4 design calls locked via standing autonomy on design/lock decisions per CLAUDE.md §1 (yellow-underline tab / yellow brand-logo tile / inline 'SENT' pill / ink-yellow Accept Counter — all matching Flow 28-35 patterns)",
   "approved_at": "2026-05-27",
@@ -10,17 +10,54 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-05-27 standing autonomy; 4 calls match Flow 28-35 established patterns",
   "mockup_locked_at": "2026-05-27",
-  "notes": "9th flow of mobile-influencer bucket (9/23). ProposalsHubScreen (298 LOC) + SendProposalScreen (245 LOC) = 543 LOC. LOW risk (read + 2 POST actions + create). ZERO backend change. ZERO StatusPill canonical-map additions. 4 locked design calls applied per standing autonomy: (1) Tab pattern = yellow-underline active + Outfit-Black UPPERCASE labels (matches Flow 30 negotiation tabs); (2) Brand logo tile = yellow + ink Outfit-Black initials (matches Flow 32 MyStore + Flow 35 Profile avatar); (3) 'sent' status = inline yellowPale 'SENT' pill (sender-POV; canonical map 'sent' → 'NEW' is recipient-POV; semantic mismatch resolved via inline render); (4) Counter Accept CTA = ink/yellow Outfit-Black + ghost-ink Decline. ~18 render branches preserved verbatim including 2-tab state machine + 300ms debounced search + brand logo image-or-initials fallback + 7 status pill variants + canWithdraw conditional + withdraw 2-confirm Alert + respondCounter accept/decline + reject reason box + counter offer box + 3-goal chip state machine + goal-conditional fee/commission inputs + 5-format counter rows + submit validation (title+pitch / 1+ deliverable / fee-if-not-conversion) + portfolio_links filter + KeyboardAvoidingView. All 6 APIs preserved (discoverBrands/listMyProposals/withdrawProposal/respondCounter/getBrandProposalCriteria/createProposal). StatusPill canonical migration for 6 statuses (viewed/countered/accepted/rejected/expired/withdrawn) — all already in 43-entry map; 'sent' rendered inline. Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + white-bg light topbar + bg2 MCI chevron-left back-btn + yellow-underline active tab + yellow brand-logo tiles + StatusPill canonical + inline yellowPale 'SENT' pill + dangerPale reject reason + convPale counter w/ ink/yellow Accept + ghost-ink Decline + dashed dangerText WITHDRAW + yellowPale criteria card + mono UPPERCASE labels + ink-bordered inputs + ink-active goal chips + bg2 deliverable counter btns + ink/yellow Outfit-Black SEND PROPOSAL CTA. No native rebuild required (NATIVE_RUNTIME=2 from Flow 28).",
+  "notes": "9th flow of mobile-influencer bucket (9/23). ProposalsHubScreen (298 LOC) + SendProposalScreen (245 LOC) = 543 LOC. LOW risk. ZERO backend change. ZERO StatusPill canonical-map additions. 4 locked design calls applied per standing autonomy. ~18 render branches preserved verbatim. All 6 APIs preserved (discoverBrands/listMyProposals/withdrawProposal/respondCounter/getBrandProposalCriteria/createProposal). StatusPill canonical for 6 statuses + inline 'SENT' for sender-POV. Visual: brandPalette + Outfit/Plus Jakarta Sans/JetBrains Mono + white-bg topbar + yellow-underline active tab + yellow brand-logo tiles + canonical StatusPill + inline yellowPale SENT pill + dangerPale reject + convPale counter w/ ink/yellow Accept + ghost-ink Decline + yellowPale criteria card + mono UPPERCASE labels + ink-bordered inputs + ink-active goal chips + bg2 deliverable +/- btns + ink/yellow SEND PROPOSAL CTA. No native rebuild required. RELEASED 2026-05-28 with web pnpm qa 76/76 GREEN gate 0 first-run in 41s + OTA × 3.",
   "release": {
-    "qa_all_green": false,
-    "qa_evidence": null,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-28",
+      "web_report_path": "qa/reports/2026-05-28T01-52-40-509Z/QA-REPORT.md",
+      "web_pw_tests": 76,
+      "web_passed": 76,
+      "web_failed": 0,
+      "web_gate": 0,
+      "web_state": "GREEN",
+      "web_duration_s": 41.0,
+      "web_note": "Dual-probe pre-warm. 76 passed gate 0 STATE=GREEN on FIRST run in 41s.",
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Deep ProposalsHub/SendProposal visual verification deferred per maestro-influencer-coverage open question. Founder physical smoke-test covers."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat \"Go with flow 36\" (implicit deploy go per locked rhythm)",
+    "released_at": "2026-05-28",
     "deploy_class": "production-impacting",
     "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
     "native_rebuild_note": "Flow 28 laid the MCI font foundation (NATIVE_RUNTIME=2). Flow 36 = pure JS, ships via OTA.",
-    "maestro_green": "n/a until release-flip; will use GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep ProposalsHub/SendProposal visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test covers'"
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; deep ProposalsHub/SendProposal visual verification deferred per maestro-influencer-coverage open question; founder physical smoke-test covers'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "a36e527", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "a36e527", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "a36e527", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand": {
+        "version": 86, "previous_version": 85,
+        "bundle_hash": "sha256:1de697d84fb717f190396f174973e72c9e626b7c1bd1ba3e2b63b2f03532d11f",
+        "published_at": "2026-05-28T01:53:39.561Z", "bundle_size_kb": 2506,
+        "trigger": "pnpm publish-ota:all -m 'Flow 36 — influencer-mobile ProposalsHub + SendProposal (brandPalette + Outfit/PJS/Mono + StatusPill canonical + 4 design calls)'",
+        "scope": "brand audience manifest (shared bundle)"
+      },
+      "ota_influencer": {
+        "version": 75, "previous_version": 74,
+        "bundle_hash": "sha256:1de697d84fb717f190396f174973e72c9e626b7c1bd1ba3e2b63b2f03532d11f",
+        "published_at": "2026-05-28T01:54:18.617Z", "bundle_size_kb": 2506,
+        "trigger": "pnpm publish-ota:all -m 'Flow 36 — influencer-mobile ProposalsHub + SendProposal (brandPalette + Outfit/PJS/Mono + StatusPill canonical + 4 design calls)'",
+        "scope": "influencer audience manifest (ALL Flow 36 redesigns live here)"
+      },
+      "ota_follower": {
+        "version": 49, "previous_version": 48,
+        "bundle_hash": "sha256:1de697d84fb717f190396f174973e72c9e626b7c1bd1ba3e2b63b2f03532d11f",
+        "published_at": "2026-05-28T01:55:03.858Z", "bundle_size_kb": 2506,
+        "trigger": "pnpm publish-ota:all -m 'Flow 36 — influencer-mobile ProposalsHub + SendProposal (brandPalette + Outfit/PJS/Mono + StatusPill canonical + 4 design calls)'",
+        "scope": "follower audience manifest (shared bundle)"
+      }
+    }
   }
 }
