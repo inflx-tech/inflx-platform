@@ -40,9 +40,9 @@
     "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change in this flow).",
     "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 43 emulator after-screenshots skipped per founder instruction this round (deep/payment-gated screens); slot/payment/tracking integrity verified by code markers + jest 3/3; founder physical APK smoke-test = real-device confirm'",
     "deploy": {
-      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "commit": "3e5edbb", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "3e5edbb", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "3e5edbb", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
       "ota_brand":      { "version": 93, "bundle_hash": "sha256:5726b38bf81dda0807d04bde2c926744727476266f797b0ca28d4afb9f0d748b", "published_at": "2026-05-28T08:32:58.164Z", "bundle_size_kb": 2517, "trigger": "pnpm publish-ota:all -m 'Flow 43 (F3) — follower booking flow'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
       "ota_influencer": { "version": 82, "bundle_hash": "sha256:5726b38bf81dda0807d04bde2c926744727476266f797b0ca28d4afb9f0d748b", "published_at": "2026-05-28T08:33:20.347Z", "bundle_size_kb": 2517, "trigger": "pnpm publish-ota:all -m 'Flow 43 (F3) — follower booking flow'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
       "ota_follower":   { "version": 56, "bundle_hash": "sha256:5726b38bf81dda0807d04bde2c926744727476266f797b0ca28d4afb9f0d748b", "published_at": "2026-05-28T08:33:44.035Z", "bundle_size_kb": 2517, "trigger": "pnpm publish-ota:all -m 'Flow 43 (F3) — follower booking flow'", "scope": "follower audience manifest (PreBook + SlotPicker + BookingConfirmed light restyle live here)" }
