@@ -1,0 +1,52 @@
+{
+  "feature": "redesign-flow-50-follower-beauty",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F5 beauty/schema-engine mockup GREEN-SIGNALED via AskUserQuestion ('Green — implement', brand ink/yellow spine) BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 50 mockup design/wave3/flow-50-follower-beauty/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F5 (fashion + beauty + car), beauty/schema-engine flow. SchemaDetailScreen (379, Wave-3 dark hardcoded hexes #07111E/#0A1D3E/#0D1D2E/#142438 + template cfg.accent → brandPalette) + SalonDetailScreen (10-line re-export, untouched). Schema-driven engine for salon/beauty + the 26 deferred businesses. Founder-approved design decision: dropped the dark template cfg.accent for rendering → brand ink/yellow spine (F0: deferred businesses fall back to yellow family; salon purple lives in SlotPicker/Flow 43). creator-deal strip → yellowPale + yellow avatar (ink initial) + ink/yellow badge; CTA → ink bg + yellow text (disabled muted4 + dangerText banner); spec-emphasis + return-notice → yellowPale; brand link / emphasis text → yellowText. ZERO functional change: __action_dispatch route (handlePrimary — half-wired foundation §9, UNTOUCHED), Path-B tracking (handleViewBrand → BrandStore), attribution strip, every SectionRenderer branch (description/spec_grid/feature_chips/gallery/variant_selector/return_policy_notice + no-ops), readPath/formatValue/renderSubtitle helpers, cta_primary action/label data-driven, orderable gate + unavailable reason, schema-driven detail_sections ordering ALL preserved verbatim. Verified: 0 dark-hex/cfg.accent refs, babel both PASS, 18 logic markers. No native rebuild (NATIVE_RUNTIME=2). Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-29",
+      "web_report_path": "qa/reports/2026-05-29T03-05-09-063Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 41,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN.",
+      "mobile_checks": {
+        "babel_transform": "PASS — SchemaDetail + SalonDetail transform via Mobile metro preset",
+        "integrity_grep": "0 dark-hex/cfg.accent/#fff/#000 refs in SchemaDetail (only intentional rgba-white floating-back). __action_dispatch/handleViewBrand/BrandStore-nav/detail_sections/cta_primary/orderable present (18 occ) — logic untouched."
+      },
+      "after_screenshots": { "captured": false, "reason": "Dormant engine (see dormant_code_finding) — not reachable; nothing to screenshot. Before = mockup.", "before": "04-preview/mockups/web.html" },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. No live path to exercise (screens not wired into FollowerNavigator)."
+    },
+    "dormant_code_finding": {
+      "summary": "HONEST FINDING (verify-twice): SchemaDetailScreen + SalonDetailScreen are DORMANT foundation code — NOT imported by any active module and NOT registered in FollowerNavigator (which lists ProductDetail/LookbookDetail/CarDetail/etc. but not SalonDetail/SchemaDetail; nothing imports SalonDetail). They are therefore NOT in the Metro bundle graph.",
+      "consequence": "The restyle is correct + babel-verified, but has ZERO live production effect right now. The publish-ota:all bundle hash (sha256:1c7b1335…) is BYTE-IDENTICAL to Flow 49 (follower v62) — the v100/v89/v63 republish is a no-op (same content, new version numbers). This is the schema engine's half-wired-foundation status (§9 / FOLLOWER_REDESIGN_PLAN §7).",
+      "value": "Future-proofs the schema engine: when SalonDetail/SchemaDetail are wired into navigation (separate behavioral flow), they will already render on brandPalette.",
+      "surfaced_to_founder": true
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 50 mockup green-signaled ('Green — implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-29",
+    "deploy_class": "production-impacting-by-path-but-bundle-identical (no live change — dormant screens; see dormant_code_finding)",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Bundle byte-identical to Flow 49 (dormant screens not in graph).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 50 restyles DORMANT schema-engine foundation (SchemaDetail/SalonDetail not wired into FollowerNavigator → not in bundle graph → bundle byte-identical to v62, zero live change); restyle babel-verified + __action_dispatch/tracking/section-renderers preserved; future-proofs the engine'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 100, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T03:07:38.829Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 50 (F5) — follower beauty/schema-engine'", "scope": "BYTE-IDENTICAL to Flow 49 bundle (dormant schema screens not in graph) — no-op republish" },
+      "ota_influencer": { "version": 89, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T03:07:43.875Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 50 (F5) — follower beauty/schema-engine'", "scope": "byte-identical bundle — no-op republish" },
+      "ota_follower":   { "version": 63, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T03:07:48.351Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 50 (F5) — follower beauty/schema-engine'", "scope": "byte-identical bundle — SchemaDetail/SalonDetail restyle present in source but dormant (not bundled); no live change" }
+    }
+  }
+}

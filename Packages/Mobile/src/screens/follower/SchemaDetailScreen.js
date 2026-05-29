@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, FlatList } from 'react-native';
-import { fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 
 /**
  * SchemaDetailScreen — schema-driven full-screen detail view for a listing.
@@ -30,8 +30,10 @@ import { fmtRupees } from '../../theme/tokens';
 export default function SchemaDetailScreen({ navigation, route }) {
   const { item, template, attribution, tracking, brandId, brandName } = route.params || {};
   const cfg = template?.card_config || {};
-  const accent = cfg.accent || '#F59E0B';
-  const accentDim = cfg.accent_dim || 'rgba(245,158,11,0.1)';
+  // F0: the schema engine uses the brand ink/yellow spine on light. The dark
+  // template accent is dropped; deferred businesses fall back to the yellow family.
+  const accent = P.yellowText;     // emphasis text + brand link (dark gold)
+  const accentDim = P.yellowPale;  // emphasis / strip tints
 
   const sections = Array.isArray(cfg.detail_sections) ? cfg.detail_sections : [];
   const orderable = item?.available?.orderable !== false;
@@ -61,7 +63,7 @@ export default function SchemaDetailScreen({ navigation, route }) {
     <View style={styles.container}>
       <ScrollView style={{ flex: 1 }}>
         {/* Hero */}
-        <View style={[styles.hero, { backgroundColor: '#0A1D3E' }]}>
+        <View style={styles.hero}>
           {item?.cover?.image_url
             ? <Image source={{ uri: item.cover.image_url }} style={styles.heroImg} />
             : <Text style={styles.heroIcon}>{item?.cover?.icon || cfg.icon || '📋'}</Text>}
@@ -84,15 +86,15 @@ export default function SchemaDetailScreen({ navigation, route }) {
 
           {/* Influencer attribution strip */}
           {attribution?.influencer_name && (
-            <View style={[styles.dealStrip, { backgroundColor: accentDim, borderColor: accent + '40' }]}>
-              <View style={[styles.dealAvatar, { backgroundColor: accent }]}>
+            <View style={styles.dealStrip}>
+              <View style={styles.dealAvatar}>
                 <Text style={styles.dealInitial}>{attribution.influencer_initial || attribution.influencer_name[0]}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.dealName, { color: accent }]}>{attribution.influencer_name}'s deal</Text>
                 <Text style={styles.dealSub}>@{attribution.influencer_handle}</Text>
               </View>
-              <View style={[styles.dealBadge, { backgroundColor: accent }]}>
+              <View style={styles.dealBadge}>
                 <Text style={styles.dealBadgeText}>{attribution.discount_label}</Text>
               </View>
             </View>
@@ -120,13 +122,13 @@ export default function SchemaDetailScreen({ navigation, route }) {
           <Text style={styles.unavailBanner}>{unavailReason}</Text>
         )}
         <TouchableOpacity
-          style={[styles.ctaBtn, { backgroundColor: orderable ? accent : '#3a4150' }]}
+          style={[styles.ctaBtn, { backgroundColor: orderable ? P.ink : P.muted4 }]}
           onPress={orderable ? handlePrimary : undefined}
           activeOpacity={orderable ? 0.7 : 1}>
-          <Text style={[styles.ctaBtnText, !orderable && { color: 'rgba(255,255,255,0.5)' }]}>
+          <Text style={[styles.ctaBtnText, !orderable && { color: P.muted2 }]}>
             {cfg.cta_primary?.label || 'Open'}
           </Text>
-          <Text style={{ fontSize: 16, color: orderable ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.3)' }}>→</Text>
+          <Text style={{ fontSize: 16, color: orderable ? P.yellow : P.muted3 }}>→</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -253,7 +255,7 @@ function SectionRenderer({ section, item, template, accent, accentDim }) {
                 const inStock = variants.some(v => v.size === s && (v.stock == null || v.stock > 0));
                 return (
                   <View key={s} style={[styles.variantChip, !inStock && styles.variantChipOOS]}>
-                    <Text style={[styles.variantChipText, !inStock && { color: 'rgba(255,255,255,0.3)' }]}>
+                    <Text style={[styles.variantChipText, !inStock && { color: P.muted3 }]}>
                       {s}
                     </Text>
                   </View>
@@ -270,7 +272,7 @@ function SectionRenderer({ section, item, template, accent, accentDim }) {
                 const inStock = variants.some(v => v.color === c && (v.stock == null || v.stock > 0));
                 return (
                   <View key={c} style={[styles.variantChip, !inStock && styles.variantChipOOS]}>
-                    <Text style={[styles.variantChipText, !inStock && { color: 'rgba(255,255,255,0.3)' }]}>
+                    <Text style={[styles.variantChipText, !inStock && { color: P.muted3 }]}>
                       {c}
                     </Text>
                   </View>
@@ -329,51 +331,52 @@ function formatValue(val) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#07111E' },
-  hero: { height: 228, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  container: { flex: 1, backgroundColor: P.bg },
+  hero: { height: 228, alignItems: 'center', justifyContent: 'center', position: 'relative', backgroundColor: P.bg2 },
   heroImg: { width: '100%', height: '100%' },
   heroIcon: { fontSize: 80, opacity: 0.5 },
-  backBtn: { position: 'absolute', top: 50, left: 13, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 16, color: '#fff', fontWeight: '600' },
+  backBtn: { position: 'absolute', top: 50, left: 13, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
+  backText: { fontSize: 16, color: P.ink, fontWeight: '600' },
   body: { padding: 15 },
-  itemName: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  itemSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  itemName: { fontFamily: fonts.displayBlack, fontSize: 22, color: P.ink },
+  itemSubtitle: { fontFamily: fonts.monoMedium, fontSize: 12, color: P.muted2, marginTop: 2 },
   brandLink: { marginTop: 8, marginBottom: 4 },
-  brandLinkText: { fontSize: 12, fontWeight: '700' },
-  dealStrip: { flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 12, padding: 10, marginVertical: 13 },
-  dealAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  dealInitial: { fontSize: 11, fontWeight: '800', color: '#000' },
-  dealName: { fontSize: 11, fontWeight: '700' },
-  dealSub: { fontSize: 10, color: 'rgba(255,255,255,0.42)', marginTop: 1 },
-  dealBadge: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
-  dealBadgeText: { fontSize: 12, fontWeight: '800', color: '#000' },
+  brandLinkText: { fontFamily: fonts.sansBold, fontSize: 12 },
+  // creator-deal strip — yellowPale + yellow avatar (ink initial) + ink/yellow badge
+  dealStrip: { flexDirection: 'row', alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 12, padding: 10, marginVertical: 13, backgroundColor: P.yellowPale, borderColor: '#F0DA88' },
+  dealAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: P.yellow },
+  dealInitial: { fontFamily: fonts.displayBlack, fontSize: 11, color: P.ink },
+  dealName: { fontFamily: fonts.monoBold, fontSize: 11 },
+  dealSub: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2, marginTop: 1 },
+  dealBadge: { borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5, backgroundColor: P.ink },
+  dealBadgeText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.yellow },
   section: { marginTop: 14 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  descriptionText: { fontSize: 13, color: 'rgba(255,255,255,0.78)', lineHeight: 19 },
+  sectionLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  descriptionText: { fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink2, lineHeight: 19 },
   specGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  specBox: { width: '31%', backgroundColor: '#0D1D2E', borderRadius: 9, padding: 9, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  specVal: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  specKey: { fontSize: 9, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 2 },
+  specBox: { width: '31%', backgroundColor: P.white, borderRadius: 9, padding: 9, alignItems: 'center', borderWidth: 1, borderColor: P.border },
+  specVal: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink },
+  specKey: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 2 },
   featureRow: { gap: 6, paddingBottom: 4 },
-  featureChip: { backgroundColor: '#142438', borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  featureText: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
+  featureChip: { backgroundColor: P.bg2, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6, borderWidth: 1, borderColor: P.border },
+  featureText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.ink2 },
   galleryImg: { width: 240, height: 160, borderRadius: 12 },
   galleryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   galleryGridImg: { width: '32%', aspectRatio: 1, borderRadius: 8 },
-  ctaWrap: { padding: 12, paddingBottom: 18, backgroundColor: '#07111E', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
-  unavailBanner: { fontSize: 11, color: 'rgba(255,180,90,0.85)', textAlign: 'center', marginBottom: 8, fontStyle: 'italic' },
+  ctaWrap: { padding: 12, paddingBottom: 18, backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border },
+  unavailBanner: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.dangerText, textAlign: 'center', marginBottom: 8, fontStyle: 'italic' },
   ctaBtn: { borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ctaBtnText: { fontSize: 15, fontWeight: '800', color: '#000' },
+  ctaBtnText: { fontFamily: fonts.displayBlack, fontSize: 15, color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3 },
 
-  // Fashion-1 variant selector + return policy notice
-  variantGroupLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 5 },
+  // variant selector + return policy notice
+  variantGroupLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 5 },
   variantChipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  variantChip: { backgroundColor: '#142438', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  variantChipOOS: { backgroundColor: 'rgba(20,36,56,0.4)', borderColor: 'rgba(255,255,255,0.05)' },
-  variantChipText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  variantHint: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 8, fontStyle: 'italic' },
-  returnNotice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, backgroundColor: 'rgba(236,72,153,0.05)' },
+  variantChip: { backgroundColor: P.bg2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: P.border },
+  variantChipOOS: { backgroundColor: P.bg2, borderColor: P.border, opacity: 0.55 },
+  variantChipText: { fontFamily: fonts.monoBold, fontSize: 11, color: P.ink },
+  variantHint: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.muted2, marginTop: 8, fontStyle: 'italic' },
+  returnNotice: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, borderWidth: 1, backgroundColor: P.yellowPale },
   returnIcon: { fontSize: 22, fontWeight: '800' },
-  returnTitle: { fontSize: 12, fontWeight: '700', color: '#fff' },
-  returnBody: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+  returnTitle: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink },
+  returnBody: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 2 },
 });
