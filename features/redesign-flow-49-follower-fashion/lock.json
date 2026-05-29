@@ -39,9 +39,9 @@
     "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
     "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 49 emulator after-screenshots skipped (deep data-gated fashion detail screens); availing_modes-dispatch + 4-ID-tracking + discount-math + getStoreProducts/getLookbook + creator-tracking integrity verified by code markers + babel transform; founder physical APK smoke-test = real-device confirm'",
     "deploy": {
-      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "commit": "cf511d7", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "cf511d7", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "cf511d7", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
       "ota_brand":      { "version": 99, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T02:28:07.386Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 49 (F5) — follower fashion'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
       "ota_influencer": { "version": 88, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T02:28:13.216Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 49 (F5) — follower fashion'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
       "ota_follower":   { "version": 62, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T02:28:19.809Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 49 (F5) — follower fashion'", "scope": "follower audience manifest (ProductDetail + LookbookDetail light restyle live here)" }
