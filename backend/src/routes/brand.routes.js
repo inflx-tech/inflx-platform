@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireApproved } = require('../middleware/auth');
+const { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireApproved, requireBrandFeature } = require('../middleware/auth');
 const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/brand.controller');
 const subCtrl = require('../controllers/subscription.controller');
@@ -49,9 +49,12 @@ router.patch('/me/enquiries/:id',   authenticate, requireRole('brand'), enquiryC
 // Wave 2 — BookingsInbox: incoming follower_bookings with creator attribution.
 // Brand confirms/rejects; rejecting also flips the underlying booking_status
 // to 'cancelled'. See brandBookings.controller.js for the brand_status model.
-router.get ('/me/bookings',              authenticate, requireRole('brand'), bookingsCtrl.list);
-router.post('/me/bookings/:id/confirm',  authenticate, requireRole('brand'), bookingsCtrl.confirm);
-router.post('/me/bookings/:id/reject',   authenticate, requireRole('brand'), bookingsCtrl.reject);
+// Gated by requireBrandFeature('booking'): only booking-capable verticals
+// (restaurant, car_rental, salon, hotel, …) reach the inbox; non-booking
+// verticals (fashion, jewellery, grocery, …) get 403 even via direct call.
+router.get ('/me/bookings',              authenticate, requireRole('brand'), requireBrandFeature('booking'), bookingsCtrl.list);
+router.post('/me/bookings/:id/confirm',  authenticate, requireRole('brand'), requireBrandFeature('booking'), bookingsCtrl.confirm);
+router.post('/me/bookings/:id/reject',   authenticate, requireRole('brand'), requireBrandFeature('booking'), bookingsCtrl.reject);
 
 // Online orders — brand-side order management
 router.get('/me/orders',                       authenticate, requireRole('brand'), ctrl.listBrandOrders);

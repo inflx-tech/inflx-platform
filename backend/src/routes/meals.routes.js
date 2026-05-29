@@ -12,7 +12,7 @@
 
 const { Router } = require('express');
 const ctrl = require('../controllers/meals.controller');
-const { authenticate, authenticateOptional, requireRole } = require('../middleware/auth');
+const { authenticate, authenticateOptional, requireRole, requireBrandFeature } = require('../middleware/auth');
 
 const router = Router();
 
@@ -23,17 +23,22 @@ router.get('/store/:brandId', authenticateOptional, ctrl.getStore);
 router.use(authenticate);
 
 // ── Restaurant side (brand) ──────────────────────────────────────────────────
-router.get('/config',              requireRole('brand'), ctrl.getConfig);
-router.put('/config',              requireRole('brand'), ctrl.putConfig);
-router.get('/slots',               requireRole('brand'), ctrl.listSlots);
-router.post('/slots',              requireRole('brand'), ctrl.createSlot);
-router.get('/offer-rules',          requireRole('brand'), ctrl.listOfferRules);
-router.post('/offer-rules',         requireRole('brand'), ctrl.createOfferRule);
-router.post('/offer-rules/suggest', requireRole('brand'), ctrl.suggestOffers);
-router.post('/restaurant-chat',     requireRole('brand'), ctrl.restaurantChat);
-router.patch('/offer-rules/:id',    requireRole('brand'), ctrl.updateOfferRule);
-router.get('/dashboard',           requireRole('brand'), ctrl.getDashboard);
-router.post('/orders/:id/deliver', requireRole('brand'), ctrl.deliverOrder);
+// Meals is a restaurant-only vertical subsystem. requireBrandFeature('meals')
+// gates every brand-side endpoint by the brand's category schema, so a brand
+// of any other vertical (car_rental, fashion, …) gets 403 even on a direct
+// API call. Only restaurant.json declares features.meals=true.
+const mealsBrand = [requireRole('brand'), requireBrandFeature('meals')];
+router.get('/config',              ...mealsBrand, ctrl.getConfig);
+router.put('/config',              ...mealsBrand, ctrl.putConfig);
+router.get('/slots',               ...mealsBrand, ctrl.listSlots);
+router.post('/slots',              ...mealsBrand, ctrl.createSlot);
+router.get('/offer-rules',          ...mealsBrand, ctrl.listOfferRules);
+router.post('/offer-rules',         ...mealsBrand, ctrl.createOfferRule);
+router.post('/offer-rules/suggest', ...mealsBrand, ctrl.suggestOffers);
+router.post('/restaurant-chat',     ...mealsBrand, ctrl.restaurantChat);
+router.patch('/offer-rules/:id',    ...mealsBrand, ctrl.updateOfferRule);
+router.get('/dashboard',           ...mealsBrand, ctrl.getDashboard);
+router.post('/orders/:id/deliver', ...mealsBrand, ctrl.deliverOrder);
 
 // ── Customer side (follower) ─────────────────────────────────────────────────
 router.post('/chat',               requireRole('follower'), ctrl.chat);

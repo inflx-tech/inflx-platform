@@ -18,7 +18,8 @@
     "booking": true,
     "enquiry_only": false,
     "availability": true,
-    "master_catalogue": false
+    "master_catalogue": false,
+    "meals": true
   },
 
   "sections": [

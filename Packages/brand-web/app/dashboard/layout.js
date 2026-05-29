@@ -8,14 +8,21 @@ import Logo from '../../../shared/components/Logo';
 // 12-item NAV — order + hrefs preserved exactly.
 // Window A's future "Subscription" + "Billing" appends slot in below
 // at array-tail without disturbing existing items.
+//
+// `feature` marks a vertical-specific item: it renders only when the
+// brand's category schema declares features[feature]===true. Items
+// without `feature` are universal (every vertical sees them). Meals is
+// restaurant-only; Bookings is for booking-capable verticals. Until the
+// schema resolves, gated items stay hidden so a non-restaurant brand
+// never flashes "Meals".
 const NAV = [
   { href: '/dashboard',             label: 'Dashboard',   icon: '⌂' },
   { href: '/dashboard/campaigns',   label: 'Campaigns',   icon: '⊟' },
   { href: '/dashboard/contracts',   label: 'Contracts',   icon: '≡' },
   { href: '/dashboard/influencers', label: 'Influencers', icon: '★' },
   { href: '/dashboard/products',    label: 'Listings',    icon: '▤' },
-  { href: '/dashboard/meals',       label: 'Meals',       icon: '◉' },
-  { href: '/dashboard/bookings',    label: 'Bookings',    icon: '▦' },
+  { href: '/dashboard/meals',       label: 'Meals',       icon: '◉', feature: 'meals' },
+  { href: '/dashboard/bookings',    label: 'Bookings',    icon: '▦', feature: 'booking' },
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '▢' },
   { href: '/dashboard/proposals',   label: 'Proposals',   icon: '✉' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
@@ -29,6 +36,7 @@ export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [brandStatus, setBrandStatus] = useState(null); // 'pending' | 'approved' | 'rejected'
+  const [features, setFeatures] = useState(null); // brand's category schema feature flags; null until loaded
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -69,6 +77,11 @@ export default function DashboardLayout({ children }) {
         setBrandStatus(brand?.status || null);
       }
     });
+    // Resolve the brand's category schema to gate vertical-specific nav
+    // (Meals / Bookings). Same source of truth the Listings wizard uses.
+    brandApi.getSchema().then(res => {
+      if (res.success) setFeatures(res.data?.schema?.features || {});
+    });
   }, [pathname]);
 
   async function logout() {
@@ -97,7 +110,7 @@ export default function DashboardLayout({ children }) {
 
         {/* 12-item horizontal nav */}
         <nav className="flex items-center gap-0.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {NAV.map(item => {
+          {NAV.filter(item => !item.feature || features?.[item.feature] === true).map(item => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link

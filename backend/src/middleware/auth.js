@@ -2,6 +2,7 @@
 
 const jwtService = require('../services/jwt.service');
 const db = require('../config/db');
+const { loadSchema } = require('../services/schema.service');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
@@ -149,4 +150,31 @@ const requireApproved = asyncHandler(async (req, res, next) => {
   return next(new AppError('FORBIDDEN', 'Account access restricted.', 403));
 });
 
-module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional, requireApproved };
+/**
+ * requireBrandFeature(featureKey)
+ * Gates a brand-side route by the brand's category schema. The brand's
+ * `category` (brands.category) resolves to public/schemas/<category>.json;
+ * the route is only reachable when that schema declares
+ * `features[featureKey] === true`. Anything else (flag false or absent)
+ * → 403.
+ *
+ * This is the backend half of vertical feature-gating: it stops a brand of
+ * the wrong vertical from reaching another vertical's endpoints by a direct
+ * API call, even when the dashboard nav already hides the link. Place AFTER
+ * authenticate + requireRole('brand').
+ *
+ *   router.put('/config', requireRole('brand'), requireBrandFeature('meals'), ctrl.putConfig)
+ */
+function requireBrandFeature(featureKey) {
+  return asyncHandler(async (req, res, next) => {
+    if (!req.user?.sub) return next(new AppError('UNAUTHORIZED', 'Authentication required', 401));
+    const { rows } = await db.query('SELECT category FROM brands WHERE user_id = $1', [req.user.sub]);
+    const category = rows[0]?.category;
+    if (!category) return next(new AppError('NOT_FOUND', 'Brand profile not found', 404));
+    const schema = loadSchema(category);
+    if (schema?.features?.[featureKey] === true) return next();
+    return next(new AppError('FORBIDDEN', 'This feature is not available for your business type.', 403));
+  });
+}
+
+module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional, requireApproved, requireBrandFeature };

@@ -1,55 +1,12 @@
 'use strict';
 
-const fs   = require('fs');
-const path = require('path');
 const db   = require('../config/db');
 const notificationService = require('../services/notification.service');
 const entitlementsService = require('../services/entitlements.service');
+const { loadSchema, clearSchemaCache } = require('../services/schema.service');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Schema service — reads JSON from local public/schemas/{category_key}.json
-// Falls back to a minimal schema for unknown categories.
-// ─────────────────────────────────────────────────────────────────────────────
-
-const schemaCache = new Map();
-
-function loadSchema(categoryKey) {
-  if (!categoryKey) return null;
-  const key = categoryKey.toLowerCase().replace(/\s+/g, '_');
-  if (schemaCache.has(key)) return schemaCache.get(key);
-
-  const filePath = path.join(__dirname, '../../public/schemas', `${key}.json`);
-  try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const schema = JSON.parse(raw);
-    schemaCache.set(key, schema);
-    return schema;
-  } catch {
-    // Schema file not found — return a minimal generic schema
-    const generic = {
-      category_key: key,
-      label: key.replace(/_/g, ' '),
-      icon: '🏪',
-      product_noun: 'Product',
-      product_noun_plural: 'Products',
-      features: { sections: false, veg_flag: false, duration_mins: false, stock: true, booking: false, enquiry_only: false },
-      sections: [],
-      availing_modes: ['pay_at_store'],
-      fields: [
-        { key: 'name',      label: 'Name',        type: 'text',     required: true  },
-        { key: 'price',     label: 'Price (₹)',   type: 'number',   required: true  },
-        { key: 'description', label: 'Description', type: 'textarea', required: false },
-        { key: 'image_url', label: 'Image URL',   type: 'url',      required: false },
-      ],
-      buyer_config: { cta_label: 'Buy Now' },
-    };
-    schemaCache.set(key, generic);
-    return generic;
-  }
-}
 
 // Category-aware validation using schema
 function validateProductFields(schema, body) {
@@ -820,7 +777,7 @@ const getListingConfig = asyncHandler(async (req, res) => {
   // obvious. Cache stays for non-brand-facing reads (getCategoryStores
   // etc.) where the schema is unchanged-during-session.
   listingService.clearSchemaCache();
-  schemaCache.clear();
+  clearSchemaCache();
 
   const brand = await getBrandByUserId(req.user.sub);
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);

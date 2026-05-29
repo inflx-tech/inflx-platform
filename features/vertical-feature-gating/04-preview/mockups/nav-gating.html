@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vertical feature-gating — dashboard nav (mockup)</title>
+<style>
+  body { margin:0; background:#FAFAFA; font-family:-apple-system,Segoe UI,Roboto,sans-serif; color:#1F1F22; }
+  h2 { padding:16px 20px 0; font-size:14px; color:#71717A; font-weight:600; }
+  .bar { background:#0A0A0A; height:56px; display:flex; align-items:center; gap:4px;
+         padding:0 20px; margin:8px 20px 24px; border-radius:12px; overflow-x:auto; }
+  .logo { color:#FFC107; font-weight:800; margin-right:12px; white-space:nowrap; }
+  .item { color:#A1A1AA; font-size:12.5px; padding:8px 12px; border-radius:10px;
+          white-space:nowrap; display:inline-flex; gap:6px; }
+  .item.active { background:#FFC107; color:#0A0A0A; font-weight:700; }
+  .gated { outline:1px dashed #FFC107; outline-offset:2px; }
+  .legend { padding:0 20px 24px; font-size:12px; color:#71717A; }
+  .legend b { color:#1F1F22; }
+</style>
+</head>
+<body>
+  <h2>Restaurant (features.meals=true, booking=true) — sees Meals + Bookings</h2>
+  <div class="bar">
+    <span class="logo">INFLX</span>
+    <span class="item active">⌂ Dashboard</span>
+    <span class="item">⊟ Campaigns</span>
+    <span class="item">≡ Contracts</span>
+    <span class="item">★ Influencers</span>
+    <span class="item">▤ Listings</span>
+    <span class="item gated">◉ Meals</span>
+    <span class="item gated">▦ Bookings</span>
+    <span class="item">▢ Gallery</span>
+    <span class="item">✉ Proposals</span>
+    <span class="item">₹ Conversions</span>
+    <span class="item">◫ Wallet</span>
+    <span class="item">⚙ Settings</span>
+  </div>
+
+  <h2>Car rental (no meals flag, booking=true) — Bookings only, NO Meals</h2>
+  <div class="bar">
+    <span class="logo">INFLX</span>
+    <span class="item active">⌂ Dashboard</span>
+    <span class="item">⊟ Campaigns</span>
+    <span class="item">≡ Contracts</span>
+    <span class="item">★ Influencers</span>
+    <span class="item">▤ Listings</span>
+    <span class="item gated">▦ Bookings</span>
+    <span class="item">▢ Gallery</span>
+    <span class="item">✉ Proposals</span>
+    <span class="item">₹ Conversions</span>
+    <span class="item">◫ Wallet</span>
+    <span class="item">⚙ Settings</span>
+  </div>
+
+  <h2>Fashion (no meals flag, booking=false) — neither Meals nor Bookings</h2>
+  <div class="bar">
+    <span class="logo">INFLX</span>
+    <span class="item active">⌂ Dashboard</span>
+    <span class="item">⊟ Campaigns</span>
+    <span class="item">≡ Contracts</span>
+    <span class="item">★ Influencers</span>
+    <span class="item">▤ Listings</span>
+    <span class="item">▢ Gallery</span>
+    <span class="item">✉ Proposals</span>
+    <span class="item">₹ Conversions</span>
+    <span class="item">◫ Wallet</span>
+    <span class="item">⚙ Settings</span>
+  </div>
+
+  <p class="legend">Dashed outline = <b>vertical-gated</b> item (rendered only when the
+  brand's category schema declares the feature). All other items are universal.</p>
+</body>
+</html>

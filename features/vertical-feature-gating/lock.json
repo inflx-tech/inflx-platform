@@ -1,0 +1,22 @@
+{
+  "feature": "vertical-feature-gating",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder (report + AskUserQuestion, session 2026-05-29: schema-driven gating, frontend+backend depth)",
+  "approved_at": "2026-05-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated lock, session 2026-05-29)",
+  "mockup_locked_at": "2026-05-29",
+  "notes": "Closes cross-vertical leak: restaurant-only Meals + non-booking Bookings were visible/reachable for every vertical. Gating reads public/schemas/<category>.json features (schema-driven) at both the brand-web nav and the brand-side API routes (defense in depth).",
+  "release": {
+    "qa_all_green": true,
+    "qa_run": "qa/reports/2026-05-29T08-39-03-705Z/QA-REPORT.md — 76/76 workflows passed (1.5m), STATE=GREEN. Regression net green incl. brand-web Meals control surface (restaurant happy-path through new guard).",
+    "released": true,
+    "released_by": "founder (AskUserQuestion, session 2026-05-29 — Commit + push now)",
+    "released_at": "2026-05-29",
+    "deploy": "git push origin main → Render (backend) + Vercel (brand-web) auto-deploy. No migration, no mobile/OTA. Prod-served schema restaurant.json ships in the push."
+  }
+}
