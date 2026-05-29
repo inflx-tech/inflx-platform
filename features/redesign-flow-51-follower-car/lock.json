@@ -1,0 +1,48 @@
+{
+  "feature": "redesign-flow-51-follower-car",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F5 car mockup GREEN-SIGNALED via AskUserQuestion ('Green — implement') BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 51 mockup design/wave3/flow-51-follower-car/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F5 (fashion + beauty + car), FINAL flow — car_rental vertical. CarDetailScreen (302, hardcoded dark hexes #07111E/#0A1D3E/#0D1D2E/#142438 + amber #F59E0B → brandPalette) + CarBookingScreen (298, hardcoded dark + amber, real Razorpay → brandPalette). Both Wave-3 DARK → light. car accent getBusinessAccentLight('car_rental') = #1D4ED8/pale #DBEAFE (CAR_PALE) → hero/mini-card image TINTS only; amber chrome → ink/yellow CTAs; prices → ink-mono; discounts/insurance/Save → successText/successPale; stars → gold #FFB800; creator-deal strip → yellowPale (yellow avatar + ink/yellow badge); CarBooking header → ink hero; pickup/date selected → ink border; pricing tabs → ink-selected. ZERO functional change: Razorpay processPayment({amount: Math.round(advanceRupees*100)}) paise boundary, prebookDateRange + prebookDateRangeVerify (date-range contract), 4-ID tracking + product_id, sign-in gate (AsyncStorage inflx_token → FollowerLogin), duration/pickup/doorstep/date price math, pricing-tab data (with_driver/self_drive/outstation), dual-CTA routing (full vs token) → CarBooking with bookingType ALL preserved verbatim. Verified: 0 dark-hex/amber/darkColors refs, babel both PASS, 7 CarBooking markers. No native rebuild (NATIVE_RUNTIME=2). COMPLETES THE FOLLOWER BUCKET — all 3 INFLX apps unified on brandPalette. Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-29",
+      "web_report_path": "qa/reports/2026-05-29T03-39-51-354Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 31,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN.",
+      "mobile_checks": {
+        "babel_transform": "PASS — CarDetail + CarBooking transform via Mobile metro preset",
+        "integrity_grep": "0 dark-hex/#F59E0B/darkColors refs (only intentional rgba-white floating buttons + white-on-ink CTA sub). CarBooking: processPayment/prebookDateRange/prebookDateRangeVerify/campaign_influencer_id/inflx_token/Math.round(advanceRupees) present (7 occ) — logic untouched.",
+        "bundle_changed": "CONFIRMED LIVE — bundle hash sha256:24cf6ff2… (2523 KB) differs from Flow 50's sha256:1c7b1335… (2520 KB); car screens are registered in FollowerNavigator (CarDetail/CarBooking) so the restyle is in the bundle graph + serving."
+      },
+      "after_screenshots": { "captured": false, "reason": "Deep, payment/data-gated screens. After-evidence = mockup + founder physical APK smoke-test on live follower v64.", "before": "04-preview/mockups/web.html" },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 51 integrity (Razorpay processPayment + paise boundary + prebookDateRange/Verify + 4-ID + sign-in gate + price math + pricing tabs + dual-CTA routing) verified via code markers + babel transform."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 51 mockup green-signaled ('Green — implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-29",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 51 emulator after-screenshots skipped (deep payment/data-gated car screens); Razorpay processPayment + paise boundary + prebookDateRange/Verify + 4-ID + sign-in gate + price math integrity verified by code markers + babel transform; founder physical APK smoke-test = real-device confirm. FINAL follower flow — bucket complete.'",
+    "follower_bucket_complete": true,
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 101, "bundle_hash": "sha256:24cf6ff256ac2ee8243605f37a202a5721f5743808f405b7b69469314f74e00b", "published_at": "2026-05-29T03:40:37.497Z", "bundle_size_kb": 2523, "trigger": "pnpm publish-ota:all -m 'Flow 51 (F5) — follower car — BUCKET COMPLETE'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 90, "bundle_hash": "sha256:24cf6ff256ac2ee8243605f37a202a5721f5743808f405b7b69469314f74e00b", "published_at": "2026-05-29T03:40:41.667Z", "bundle_size_kb": 2523, "trigger": "pnpm publish-ota:all -m 'Flow 51 (F5) — follower car — BUCKET COMPLETE'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 64, "bundle_hash": "sha256:24cf6ff256ac2ee8243605f37a202a5721f5743808f405b7b69469314f74e00b", "published_at": "2026-05-29T03:40:47.332Z", "bundle_size_kb": 2523, "trigger": "pnpm publish-ota:all -m 'Flow 51 (F5) — follower car — BUCKET COMPLETE'", "scope": "follower audience manifest (CarDetail + CarBooking light restyle LIVE here) — completes the follower bucket" }
+    }
+  }
+}

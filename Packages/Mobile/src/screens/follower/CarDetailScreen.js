@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { darkColors, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { openDirections } from '../../hooks/useLocation';
+
+// Car wayfinding tint (this screen is car-rental) — getBusinessAccentLight('car_rental').pale
+const CAR_PALE = '#DBEAFE';
 
 /**
  * CarDetailScreen — vehicle detail page matching the follower app mockup.
@@ -79,8 +82,8 @@ export default function CarDetailScreen({ navigation, route }) {
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
           <View style={styles.actionBtns}>
-            <View style={styles.actionBtn}><Text style={{ fontSize: 13, color: '#fff' }}>♡</Text></View>
-            <View style={styles.actionBtn}><Text style={{ fontSize: 13, color: '#fff' }}>↗</Text></View>
+            <View style={styles.actionBtn}><Text style={{ fontSize: 13, color: P.ink }}>♡</Text></View>
+            <View style={styles.actionBtn}><Text style={{ fontSize: 13, color: P.ink }}>↗</Text></View>
           </View>
         </View>
 
@@ -107,7 +110,7 @@ export default function CarDetailScreen({ navigation, route }) {
           {/* Influencer deal strip */}
           {discount?.influencer_name && (
             <View style={styles.dealStrip}>
-              <View style={[styles.dealAvatar, { backgroundColor: '#F59E0B' }]}>
+              <View style={[styles.dealAvatar, { backgroundColor: P.yellow }]}>
                 <Text style={styles.dealInitial}>{discount.influencer_initial || discount.influencer_name[0]}</Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -172,7 +175,7 @@ export default function CarDetailScreen({ navigation, route }) {
             {currentTab.rows.map((row, i) => (
               <View key={i} style={styles.priceRow}>
                 <Text style={styles.priceLabel}>{row[0]}</Text>
-                <Text style={[styles.priceValue, row[2] && { color: '#10B981' }]}>{row[1]}</Text>
+                <Text style={[styles.priceValue, row[2] && { color: P.successText }]}>{row[1]}</Text>
               </View>
             ))}
           </View>
@@ -195,18 +198,18 @@ export default function CarDetailScreen({ navigation, route }) {
           {/* Directions button */}
           {vehicle?.brand_lat && vehicle?.brand_lng && (
             <TouchableOpacity
-              style={{ backgroundColor: '#142438', borderRadius: 11, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+              style={{ backgroundColor: P.bg2, borderRadius: 11, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14, borderWidth: 1, borderColor: P.border }}
               onPress={() => openDirections(vehicle.brand_lat, vehicle.brand_lng, vehicle.location)}
             >
               <Text style={{ fontSize: 14 }}>📍</Text>
-              <Text style={{ color: '#F59E0B', fontSize: 12, fontWeight: '700' }}>Get Directions to {vehicle.location || 'Garage'}</Text>
+              <Text style={{ color: P.yellowText, fontSize: 12, fontFamily: fonts.sansBold }}>Get Directions to {vehicle.location || 'Garage'}</Text>
             </TouchableOpacity>
           )}
 
           {/* Distance badge */}
           {vehicle?.distance_text && (
-            <View style={{ backgroundColor: '#142438', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', marginBottom: 14 }}>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>📍 {vehicle.distance_text} away</Text>
+            <View style={{ backgroundColor: P.bg2, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start', marginBottom: 14 }}>
+              <Text style={{ color: P.muted, fontSize: 11, fontFamily: fonts.monoMedium }}>📍 {vehicle.distance_text} away</Text>
             </View>
           )}
 
@@ -221,17 +224,17 @@ export default function CarDetailScreen({ navigation, route }) {
             <Text style={styles.ctaBtnText}>Book {vehicle?.name?.split(' ').pop()}</Text>
             <Text style={styles.ctaBtnSub}>Pay full amount & confirm instantly</Text>
           </View>
-          <Text style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)' }}>→</Text>
+          <Text style={{ fontSize: 16, color: P.yellow }}>→</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.ctaBtn, { backgroundColor: '#142438', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)', marginTop: 8 }]}
+          style={[styles.ctaBtn, { backgroundColor: P.bg2, borderWidth: 1, borderColor: P.border, marginTop: 8 }]}
           onPress={() => navigation.navigate('CarBooking', { vehicle, pricing, discount, tracking, pickupType, bookingType: 'token' })}
         >
           <View>
-            <Text style={[styles.ctaBtnText, { color: '#F59E0B' }]}>Pre-book with ₹300 token</Text>
-            <Text style={[styles.ctaBtnSub, { color: 'rgba(255,255,255,0.4)' }]}>Pay balance at garage</Text>
+            <Text style={[styles.ctaBtnText, { color: P.ink }]}>Pre-book with ₹300 token</Text>
+            <Text style={[styles.ctaBtnSub, { color: P.muted }]}>Pay balance at garage</Text>
           </View>
-          <Text style={{ fontSize: 16, color: 'rgba(245,158,11,0.6)' }}>→</Text>
+          <Text style={{ fontSize: 16, color: P.yellowText }}>→</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -239,64 +242,64 @@ export default function CarDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#07111E' },
-  hero: { height: 228, backgroundColor: '#0A1D3E', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  heroEmoji: { fontSize: 80, opacity: 0.5 },
-  backBtn: { position: 'absolute', top: 50, left: 13, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 16, color: '#fff', fontWeight: '600' },
+  container: { flex: 1, backgroundColor: P.bg },
+  hero: { height: 228, backgroundColor: CAR_PALE, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  heroEmoji: { fontSize: 80, opacity: 0.6 },
+  backBtn: { position: 'absolute', top: 50, left: 13, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
+  backText: { fontSize: 16, color: P.ink, fontWeight: '600' },
   actionBtns: { position: 'absolute', top: 50, right: 13, flexDirection: 'row', gap: 7 },
-  actionBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  actionBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
   body: { padding: 15 },
   nameRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
-  vehicleName: { fontSize: 20, fontWeight: '800', color: '#fff' },
-  vehicleSub: { fontSize: 11, color: 'rgba(255,255,255,0.38)' },
-  ratingBox: { backgroundColor: '#0D1D2E', borderRadius: 10, padding: 6, paddingHorizontal: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  ratingVal: { fontSize: 14, fontWeight: '800', color: '#F59E0B' },
-  ratingTrips: { fontSize: 9, color: 'rgba(255,255,255,0.38)' },
+  vehicleName: { fontFamily: fonts.displayBlack, fontSize: 20, color: P.ink },
+  vehicleSub: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2 },
+  ratingBox: { backgroundColor: P.white, borderRadius: 10, padding: 6, paddingHorizontal: 10, alignItems: 'center', borderWidth: 1, borderColor: P.border },
+  ratingVal: { fontFamily: fonts.monoBold, fontSize: 14, color: P.ink },
+  ratingTrips: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
-  stars: { color: '#F59E0B', fontSize: 11 },
-  reviewCount: { fontSize: 10, color: 'rgba(255,255,255,0.35)' },
-  dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.2)' },
-  locText: { fontSize: 10, color: 'rgba(255,255,255,0.4)' },
-  dealStrip: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.25)', borderRadius: 12, padding: 10, marginBottom: 13 },
+  stars: { color: '#FFB800', fontSize: 11 },
+  reviewCount: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted },
+  dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: P.muted4 },
+  locText: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted },
+  dealStrip: { flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: P.yellowPale, borderWidth: 1, borderColor: '#F0DA88', borderRadius: 12, padding: 10, marginBottom: 13 },
   dealAvatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  dealInitial: { fontSize: 11, fontWeight: '800', color: '#000' },
-  dealName: { fontSize: 11, fontWeight: '700', color: '#F59E0B' },
-  dealSub: { fontSize: 10, color: 'rgba(255,255,255,0.42)', marginTop: 1 },
-  dealBadge: { backgroundColor: '#F59E0B', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
-  dealBadgeText: { fontSize: 12, fontWeight: '800', color: '#000' },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 7, marginTop: 4 },
+  dealInitial: { fontFamily: fonts.displayBlack, fontSize: 11, color: P.ink },
+  dealName: { fontFamily: fonts.monoBold, fontSize: 11, color: P.yellowText },
+  dealSub: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2, marginTop: 1 },
+  dealBadge: { backgroundColor: P.ink, borderRadius: 7, paddingHorizontal: 9, paddingVertical: 5 },
+  dealBadgeText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.yellow },
+  sectionLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 7, marginTop: 4 },
   specGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 13 },
-  specBox: { width: '31%', backgroundColor: '#0D1D2E', borderRadius: 9, padding: 9, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  specBoxGreen: { backgroundColor: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.2)' },
-  specVal: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  specValGreen: { color: '#10B981' },
-  specKey: { fontSize: 9, color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 2 },
+  specBox: { width: '31%', backgroundColor: P.white, borderRadius: 9, padding: 9, alignItems: 'center', borderWidth: 1, borderColor: P.border },
+  specBoxGreen: { backgroundColor: P.successPale, borderColor: '#A8E6CC' },
+  specVal: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink },
+  specValGreen: { color: P.successText },
+  specKey: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 2 },
   featuresRow: { gap: 6, paddingBottom: 13 },
-  featureChip: { backgroundColor: '#142438', borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  featureText: { fontSize: 11, fontWeight: '500', color: 'rgba(255,255,255,0.6)' },
-  tabBar: { flexDirection: 'row', backgroundColor: '#0D1D2E', borderRadius: 11, padding: 4, marginBottom: 13 },
+  featureChip: { backgroundColor: P.bg2, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6, borderWidth: 1, borderColor: P.border },
+  featureText: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.ink2 },
+  tabBar: { flexDirection: 'row', backgroundColor: P.bg2, borderRadius: 11, padding: 4, marginBottom: 13 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8 },
-  tabOn: { backgroundColor: '#F59E0B' },
-  tabText: { fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.38)' },
-  tabTextOn: { color: '#000' },
-  pricingBox: { backgroundColor: '#0D1D2E', borderRadius: 13, padding: 13, marginBottom: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
+  tabOn: { backgroundColor: P.ink },
+  tabText: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: P.muted },
+  tabTextOn: { color: P.white },
+  pricingBox: { backgroundColor: P.white, borderRadius: 13, padding: 13, marginBottom: 12, borderWidth: 1, borderColor: P.border },
   priceMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 },
-  priceBig: { fontSize: 26, fontWeight: '800', color: '#fff' },
-  pricePer: { fontSize: 11, color: 'rgba(255,255,255,0.38)', marginTop: 3 },
-  saveBadge: { backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 4 },
-  saveText: { fontSize: 10, fontWeight: '700', color: '#10B981' },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
-  priceLabel: { fontSize: 11, color: 'rgba(255,255,255,0.42)' },
-  priceValue: { fontSize: 11, color: 'rgba(255,255,255,0.75)', fontWeight: '500' },
+  priceBig: { fontFamily: fonts.monoBold, fontSize: 26, color: P.ink },
+  pricePer: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2, marginTop: 3 },
+  saveBadge: { backgroundColor: P.successPale, borderWidth: 1, borderColor: '#A8E6CC', borderRadius: 7, paddingHorizontal: 9, paddingVertical: 4 },
+  saveText: { fontFamily: fonts.monoBold, fontSize: 10, color: P.successText },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
+  priceLabel: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted },
+  priceValue: { fontFamily: fonts.monoMedium, fontSize: 11, color: P.ink },
   pickupRow: { flexDirection: 'row', gap: 7, marginBottom: 14 },
-  pickupOpt: { flex: 1, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 11, padding: 10 },
-  pickupOptOn: { borderColor: '#F59E0B' },
-  pickupTitle: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  pickupSub: { fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 2 },
-  pickupExtra: { fontSize: 10, color: '#F59E0B', marginTop: 2, fontWeight: '600' },
-  ctaWrap: { padding: 11, paddingHorizontal: 15, paddingBottom: 16, backgroundColor: '#07111E', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' },
-  ctaBtn: { backgroundColor: '#F59E0B', borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ctaBtnText: { fontSize: 14, fontWeight: '800', color: '#000' },
-  ctaBtnSub: { fontSize: 10, fontWeight: '600', color: 'rgba(0,0,0,0.65)' },
+  pickupOpt: { flex: 1, borderWidth: 1.5, borderColor: P.muted4, borderRadius: 11, padding: 10 },
+  pickupOptOn: { borderColor: P.ink },
+  pickupTitle: { fontFamily: fonts.sansBold, fontSize: 11, color: P.ink },
+  pickupSub: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2, marginTop: 2 },
+  pickupExtra: { fontFamily: fonts.monoBold, fontSize: 10, color: P.yellowText, marginTop: 2 },
+  ctaWrap: { padding: 11, paddingHorizontal: 15, paddingBottom: 16, backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border },
+  ctaBtn: { backgroundColor: P.ink, borderRadius: 13, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ctaBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, color: P.yellow },
+  ctaBtnSub: { fontFamily: fonts.sansMedium, fontSize: 10, color: 'rgba(255,255,255,0.6)' },
 });

@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F5 · follower CAR (CarDetail · CarBooking) — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00; --yellow-50:#FFFDEB;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9; --gold:#FFB800;
+  /* car_rental wayfinding accent — getBusinessAccentLight('car_rental') */
+  --car:#1D4ED8; --car-pale:#DBEAFE;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:340px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:340px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:840px;position:relative;display:flex;flex-direction:column}
+.body{flex:1;overflow-y:auto;position:relative}
+.status-bar{height:38px;background:var(--bg);display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 5px;font-family:'JetBrains Mono';font-size:11px;font-weight:700;flex-shrink:0}
+
+/* CAR DETAIL */
+.hero{height:200px;background:var(--car-pale);display:flex;align-items:center;justify-content:center;font-size:80px;position:relative}
+.back{position:absolute;top:40px;left:13px;width:32px;height:32px;border-radius:16px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.acts{position:absolute;top:40px;right:13px;display:flex;gap:7px}
+.act{width:32px;height:32px;border-radius:16px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ink)}
+.cbody{padding:15px}
+.namerow{display:flex;justify-content:space-between;align-items:flex-start}
+.vname{font-family:'Outfit';font-size:20px;font-weight:900;color:var(--ink)}
+.vsub{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-top:2px}
+.ratebox{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:6px 10px;text-align:center}
+.rateval{font-family:'JetBrains Mono';font-size:14px;font-weight:800;color:var(--ink)}
+.ratetrips{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2)}
+.raterow{display:flex;align-items:center;gap:6px;margin:8px 0 12px}
+.stars{color:var(--gold);font-size:11px}
+.rev{font-family:'JetBrains Mono';font-size:10px;color:var(--muted)}
+.deal{display:flex;align-items:center;gap:9px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:12px;padding:10px;margin-bottom:13px}
+.deal-av{width:32px;height:32px;border-radius:16px;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:12px;font-weight:900;color:var(--ink)}
+.deal-nm{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--yellow-text)}
+.deal-sub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:1px}
+.deal-badge{background:var(--ink);color:var(--yellow);border-radius:7px;padding:5px 9px;font-family:'JetBrains Mono';font-size:12px;font-weight:900}
+.slabel{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin:4px 0 7px}
+.specgrid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px}
+.specbox{width:calc(33.33% - 5px);background:var(--white);border:1px solid var(--border);border-radius:9px;padding:9px;text-align:center}
+.specbox.green{background:var(--success-pale);border-color:#A8E6CC}
+.specval{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink)}
+.specval.green{color:var(--success-text)}
+.speckey{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-transform:uppercase;margin-top:2px}
+.featrow{display:flex;gap:6px;overflow-x:auto;padding-bottom:13px}
+.featchip{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:6px 11px;font-family:'Plus Jakarta Sans';font-size:11px;color:var(--ink-2);white-space:nowrap}
+.tabbar{display:flex;background:var(--bg2);border-radius:11px;padding:4px;margin-bottom:13px}
+.tab{flex:1;text-align:center;padding:8px 0;border-radius:8px;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted)}
+.tab.on{background:var(--ink);color:#fff}
+.pricebox{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:13px;margin-bottom:12px}
+.pmain{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+.pbig{font-family:'JetBrains Mono';font-size:26px;font-weight:900;color:var(--ink)}
+.pper{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-top:3px}
+.savebadge{background:var(--success-pale);border:1px solid #A8E6CC;border-radius:7px;padding:4px 9px;font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--success-text)}
+.prow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-soft)}
+.pl{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted)}
+.pv{font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:var(--ink)}
+.pv.green{color:var(--success-text)}
+.pickrow{display:flex;gap:7px;margin-bottom:14px}
+.pickopt{flex:1;border:1.5px solid var(--muted-4);border-radius:11px;padding:10px}
+.pickopt.on{border-color:var(--ink)}
+.picktitle{font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;color:var(--ink)}
+.picksub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+.pickextra{font-family:'JetBrains Mono';font-size:10px;color:var(--yellow-text);margin-top:2px;font-weight:700}
+.cta-wrap{padding:11px 15px 16px;background:var(--white);border-top:1px solid var(--border)}
+.cta{background:var(--ink);border-radius:13px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+.cta-t{font-family:'Outfit';font-size:14px;font-weight:900;color:var(--yellow)}
+.cta-s{font-family:'Plus Jakarta Sans';font-size:10px;font-weight:600;color:rgba(255,255,255,.6);margin-top:2px}
+.cta-arrow{font-size:16px;color:var(--yellow)}
+.cta.sec{background:var(--bg2);border:1px solid var(--border);margin-top:8px}
+.cta.sec .cta-t{color:var(--ink)}
+.cta.sec .cta-s{color:var(--muted)}
+.cta.sec .cta-arrow{color:var(--yellow-text)}
+
+/* CAR BOOKING */
+.h-ink{background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:42px 16px 13px}
+.h-back{font-size:18px;color:#fff}
+.h-ttl{font-family:'Outfit';font-size:15px;font-weight:900;color:#fff}
+.mini{margin:12px 16px;background:var(--white);border:1px solid var(--border);border-radius:13px;padding:11px;display:flex;align-items:center;gap:11px}
+.mini-img{width:76px;height:50px;border-radius:8px;background:var(--car-pale);display:flex;align-items:center;justify-content:center;font-size:30px}
+.mini-nm{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink)}
+.mini-sub{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);margin-top:2px}
+.mini-offer{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow-text);margin-top:4px}
+.sec{padding:0 16px;margin-bottom:13px}
+.daterow{display:flex;align-items:center;gap:7px}
+.datebox{flex:1;background:var(--white);border:1.5px solid var(--border);border-radius:11px;padding:11px}
+.datebox.on{border-color:var(--ink)}
+.datelbl{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);text-transform:uppercase;margin-bottom:2px}
+.dateval{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink)}
+.dateday{font-family:'JetBrains Mono';font-size:9px;color:var(--muted-2);margin-top:1px}
+.datearrow{color:var(--muted-3);font-size:16px}
+.durrow{display:flex;align-items:center;gap:10px}
+.durbtn{width:34px;height:34px;border-radius:17px;background:var(--bg2);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:17px;font-weight:900;color:var(--ink)}
+.durval{font-family:'JetBrains Mono';font-size:17px;font-weight:900;color:var(--ink);min-width:60px;text-align:center}
+.durlabel{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2)}
+.pbox2{margin:0 16px 12px;background:var(--white);border:1px solid var(--border);border-radius:13px;padding:13px}
+.pbox2-t{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;margin-bottom:9px}
+.pr2{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-soft)}
+.pr2-l{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted)}
+.pr2-v{font-family:'JetBrains Mono';font-size:12px;font-weight:700;color:var(--ink)}
+.pr2-v.green{color:var(--success-text)} .pr2-v.amber{color:var(--yellow-text)}
+.pr2.big{border-bottom:none;padding-top:9px;margin-top:4px}
+.pr2.big .pr2-l{font-weight:800;color:var(--ink)} .pr2.big .pr2-v{font-size:15px;font-weight:900;color:var(--ink)}
+.payhero{margin:0 16px 14px;background:var(--yellow-pale);border:1px solid #F0DA88;border-radius:13px;padding:13px;display:flex;justify-content:space-between;align-items:center}
+.payhero-l{font-family:'Plus Jakarta Sans';font-size:10px;color:var(--muted);margin-bottom:2px}
+.payhero-amt{font-family:'JetBrains Mono';font-size:24px;font-weight:900;color:var(--ink)}
+.payhero-sub{font-family:'Plus Jakarta Sans';font-size:10px;color:var(--muted-2);margin-top:2px}
+.payhero-r{font-family:'JetBrains Mono';font-size:10px;color:var(--muted-2);text-align:right;line-height:1.4}
+.paybtn{margin:0 16px;background:var(--ink);border-radius:13px;padding:15px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit';font-size:15px;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:.3px}
+.paynote{text-align:center;margin:9px 16px 0;font-family:'JetBrains Mono';font-size:9.5px;color:var(--muted-3)}
+
+/* side panel */
+.side{width:340px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+.panel.car li::before{background:var(--car)}
+.fin{background:linear-gradient(135deg,#1a1a1a,#0A0A0A);color:#fff;border:1px solid #333}
+.fin h3{color:var(--yellow)}
+.fin li{color:rgba(255,255,255,.75)} .fin li b{color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">
+  <h1>F5 · follower CAR — Flow 51 mockup · THE FINALE (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Flow 51 = car_rental: CarDetail (specs · pricing tabs · pickup · dual CTA) + CarBooking (dates · duration · breakdown · token pay).</b> Both Wave-3 DARK → light brandPalette. <b>car accent</b> (getBusinessAccentLight('car_rental') = blue <code>#1D4ED8</code>/pale <code>#DBEAFE</code>) → hero/image <b>tints only</b>; amber chrome → <b>ink/yellow CTA</b>, prices → ink-mono, discounts/insurance → successText, stars → gold, creator-deal → yellowPale. <b>Razorpay processPayment(advance×100) + prebookDateRange/prebookDateRangeVerify + 4-ID tracking + sign-in gate + duration/pickup/date math — ALL preserved verbatim.</b> <b>This is the LAST follower screen → bucket complete after this.</b>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- 1 · CAR DETAIL -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="body">
+        <div class="hero">🚗<span class="back">←</span><span class="acts"><span class="act">♡</span><span class="act">↗</span></span></div>
+        <div class="cbody">
+          <div class="namerow"><div><div class="vname">Swift Dzire</div><div class="vsub">2022 · VXi</div></div><div class="ratebox"><div class="rateval">4.8</div><div class="ratetrips">124 trips</div></div></div>
+          <div class="raterow"><span class="stars">★★★★★</span><span class="rev">124 reviews · Banjara Hills · 1.2 km</span></div>
+          <div class="deal"><div class="deal-av">A</div><div style="flex:1"><div class="deal-nm">Arjun's exclusive deal</div><div class="deal-sub">@arjun.drives · Valid till Apr 30</div></div><span class="deal-badge">15% OFF</span></div>
+          <div class="slabel">Vehicle specs</div>
+          <div class="specgrid">
+            <div class="specbox"><div class="specval">5</div><div class="speckey">Seats</div></div>
+            <div class="specbox"><div class="specval">Petrol</div><div class="speckey">Fuel</div></div>
+            <div class="specbox"><div class="specval">Auto</div><div class="speckey">Gearbox</div></div>
+            <div class="specbox"><div class="specval">1497cc</div><div class="speckey">Engine</div></div>
+            <div class="specbox"><div class="specval">17</div><div class="speckey">KMPL</div></div>
+            <div class="specbox green"><div class="specval green">Covered</div><div class="speckey">Insurance</div></div>
+          </div>
+          <div class="slabel">Pricing</div>
+          <div class="tabbar"><span class="tab on">With Driver</span><span class="tab">Self Drive</span><span class="tab">Outstation</span></div>
+          <div class="pricebox">
+            <div class="pmain"><div><div class="pbig">₹1,530</div><div class="pper">per day · Arjun's 15% off applied</div></div><span class="savebadge">Save ₹270</span></div>
+            <div class="prow"><span class="pl">Base rate</span><span class="pv">₹1,800 / day</span></div>
+            <div class="prow"><span class="pl">Arjun's offer</span><span class="pv green">−15% (₹270 off)</span></div>
+            <div class="prow"><span class="pl">Driver allowance</span><span class="pv">₹300 / day</span></div>
+            <div class="prow"><span class="pl">KM included</span><span class="pv">250 km / day</span></div>
+          </div>
+          <div class="slabel">Pickup</div>
+          <div class="pickrow"><div class="pickopt on"><div class="picktitle">Garage pickup</div><div class="picksub">Banjara Hills</div><div class="pickextra">Free</div></div><div class="pickopt"><div class="picktitle">Doorstep</div><div class="picksub">To your address</div><div class="pickextra">+₹200 extra</div></div></div>
+          <div style="height:70px"></div>
+        </div>
+      </div>
+      <div class="cta-wrap">
+        <div class="cta"><div><div class="cta-t">Book Dzire</div><div class="cta-s">Pay full amount &amp; confirm instantly</div></div><span class="cta-arrow">→</span></div>
+        <div class="cta sec"><div><div class="cta-t">Pre-book with ₹300 token</div><div class="cta-s">Pay balance at garage</div></div><span class="cta-arrow">→</span></div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · CarDetail</b><br/>dark → light. <b>car-pale hero tint</b> · Outfit name + gold stars + ink-mono rating · <b>yellowPale creator-deal strip</b> · white spec grid (successPale insurance) · <b>ink-selected pricing tabs</b> · white pricing box (ink-mono + successText offer + successPale Save) · ink-selected pickup · dual sticky CTA = <b>ink/yellow Book</b> + bg2 ink-outline Pre-book. Routes to CarBooking with tracking + bookingType preserved.</div>
+  </div>
+
+  <!-- 2 · CAR BOOKING -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="h-ink"><span class="h-back">←</span><span class="h-ttl">Confirm Pre-booking</span><span style="width:15px"></span></div>
+      <div class="body">
+        <div class="mini"><div class="mini-img">🚗</div><div><div class="mini-nm">Swift Dzire</div><div class="mini-sub">2022 · With Driver · 5 seats</div><div class="mini-offer">Arjun's deal · 15% OFF applied</div></div></div>
+        <div class="sec"><div class="slabel">Select dates</div>
+          <div class="daterow">
+            <div class="datebox"><div class="datelbl">Pick up</div><div class="dateval">Apr 10</div><div class="dateday">Thu · 10:00 AM</div></div>
+            <span class="datearrow">→</span>
+            <div class="datebox on"><div class="datelbl">Return</div><div class="dateval">Apr 12</div><div class="dateday">Sat · 10:00 AM</div></div>
+          </div>
+        </div>
+        <div class="sec"><div class="slabel">Duration</div>
+          <div class="durrow"><span class="durbtn">−</span><span class="durval">2 days</span><span class="durbtn">+</span><span class="durlabel">= ₹3,060 base</span></div>
+        </div>
+        <div class="sec"><div class="slabel">Pickup type</div>
+          <div class="pickrow"><div class="pickopt on"><div class="picktitle">Garage pickup</div><div class="picksub">Free · Banjara Hills</div></div><div class="pickopt"><div class="picktitle">Doorstep</div><div class="pickextra">+₹200 · Your address</div></div></div>
+        </div>
+        <div class="pbox2">
+          <div class="pbox2-t">Price breakdown</div>
+          <div class="pr2"><span class="pr2-l">2 × ₹1,800</span><span class="pr2-v">₹3,600</span></div>
+          <div class="pr2"><span class="pr2-l">Arjun's 15% offer</span><span class="pr2-v green">−₹540</span></div>
+          <div class="pr2"><span class="pr2-l">Driver allowance</span><span class="pr2-v">₹600</span></div>
+          <div class="pr2 big"><span class="pr2-l">Total trip cost</span><span class="pr2-v">₹3,660</span></div>
+          <div class="pr2"><span class="pr2-l">Token now</span><span class="pr2-v amber">₹300</span></div>
+          <div class="pr2"><span class="pr2-l">Balance at garage</span><span class="pr2-v">₹3,360</span></div>
+        </div>
+        <div class="payhero"><div><div class="payhero-l">Pay now to lock this booking</div><div class="payhero-amt">₹300</div><div class="payhero-sub">Fully refundable · Balance at garage</div></div><div class="payhero-r">UPI · Cards<br/>Accepted</div></div>
+        <div class="paybtn">⚡ Pay ₹300 via UPI →</div>
+        <div class="paynote">Secured by INFLX · Token is 100% refundable on cancellation 24hrs prior to pickup</div>
+        <div style="height:20px"></div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · CarBooking</b><br/>dark → light. <b>ink hero header</b> · white mini car card (car-pale img + yellowText creator offer) · ink-selected date/pickup boxes + bg2 duration stepper · white breakdown (ink-mono, successText discount, yellowText token, ink total) · <b>yellowPale pay-hero</b> (ink-mono ₹300) · <b>ink/yellow PAY VIA UPI</b> + mono refund note. <code>processPayment(advance×100)</code> + <code>prebookDateRange/Verify</code> + 4-ID + sign-in gate preserved.</div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side">
+    <div class="panel car">
+      <h3>Flow 51 scope (2 screens)</h3>
+      <ul>
+        <li><b>CarDetailScreen</b> (302, hardcoded dark + amber) → brandPalette + car-pale hero</li>
+        <li><b>CarBookingScreen</b> (298, hardcoded dark + amber, Razorpay) → brandPalette + ink hero</li>
+        <li>car accent #1D4ED8/pale #DBEAFE → hero/image tints only; chrome/CTA → ink/yellow</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li><b>Razorpay</b> — <code>processPayment({ amount: Math.round(advanceRupees×100) })</code> paise boundary</li>
+        <li><b>APIs</b> — <code>prebookDateRange</code> + <code>prebookDateRangeVerify</code> (date-range contract)</li>
+        <li><b>4-ID tracking</b> (cid/sid/oid/iid) + product_id in the prebook body</li>
+        <li>sign-in gate (AsyncStorage inflx_token → FollowerLogin) · duration/pickup/doorstep/date math</li>
+        <li>CarDetail pricing tabs (with_driver/self_drive/outstation) + dual CTA (full vs token) → CarBooking</li>
+      </ul>
+    </div>
+    <div class="panel fin">
+      <h3>🏁 After Flow 51 — FOLLOWER BUCKET COMPLETE</h3>
+      <ul>
+        <li><b>All 3 INFLX apps unified on brandPalette</b> (brand · influencer · follower)</li>
+        <li>F0 foundation → F1 spine → F2 account → F3 checkout → F4 restaurant → F5 fashion/beauty/car</li>
+        <li>Open follow-ups: schema-engine wiring (dormant), vector-icons jest config</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

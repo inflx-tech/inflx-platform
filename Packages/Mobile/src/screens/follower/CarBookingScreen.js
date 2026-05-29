@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
+
+// Car wayfinding tint (car-rental) — getBusinessAccentLight('car_rental').pale
+const CAR_PALE = '#DBEAFE';
 
 /**
  * CarBookingScreen — pre-booking confirmation screen matching the follower app mockup.
@@ -163,7 +166,7 @@ export default function CarBookingScreen({ navigation, route }) {
             <Text style={styles.dateArrow}>→</Text>
             <View style={[styles.dateBox, styles.dateBoxActive]}>
               <Text style={styles.dateLbl}>Return</Text>
-              <Text style={[styles.dateVal, { color: '#F59E0B' }]}>Apr {10 + duration}</Text>
+              <Text style={[styles.dateVal, { color: P.ink }]}>Apr {10 + duration}</Text>
               <Text style={styles.dateDay}>{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][(4 + duration) % 7]} · 10:00 AM</Text>
             </View>
           </View>
@@ -194,7 +197,7 @@ export default function CarBookingScreen({ navigation, route }) {
             </TouchableOpacity>
             <TouchableOpacity style={[styles.pickupOpt, pickupType === 'doorstep' && styles.pickupOn]} onPress={() => setPickupType('doorstep')}>
               <Text style={styles.pickupTitle}>Doorstep</Text>
-              <Text style={[styles.pickupSub, { color: '#F59E0B' }]}>+₹200 · Your address</Text>
+              <Text style={[styles.pickupSub, { color: P.yellowText }]}>+₹200 · Your address</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -225,7 +228,7 @@ export default function CarBookingScreen({ navigation, route }) {
         <View style={styles.payCTAWrap}>
           <TouchableOpacity style={styles.payBtn} onPress={handlePay} disabled={loading}>
             <Text style={styles.payBtnText}>{loading ? 'Processing...' : `Pay ${fmtRupees(tokenAmount)} via UPI`}</Text>
-            <Text style={{ fontSize: 14, color: 'rgba(0,0,0,0.6)' }}>→</Text>
+            <Text style={{ fontSize: 14, color: P.yellow }}>→</Text>
           </TouchableOpacity>
           <Text style={styles.payNote}>Secured by INFLX · Token is 100% refundable on cancellation 24hrs prior to pickup</Text>
         </View>
@@ -237,62 +240,63 @@ export default function CarBookingScreen({ navigation, route }) {
 function PriceRow({ label, value, green, amber, big }) {
   return (
     <View style={[prStyles.row, big && prStyles.rowBig]}>
-      <Text style={[prStyles.label, big && { fontWeight: '700', color: 'rgba(255,255,255,0.65)' }]}>{label}</Text>
+      <Text style={[prStyles.label, big && { fontFamily: fonts.sansBold, color: P.ink }]}>{label}</Text>
       <Text style={[
         prStyles.value,
-        green && { color: '#10B981' },
-        amber && { color: '#F59E0B' },
-        big && { fontSize: 15, color: '#F59E0B', fontWeight: '800' },
+        green && { color: P.successText },
+        amber && { color: P.yellowText },
+        big && { fontSize: 15, color: P.ink, fontFamily: fonts.monoBold },
       ]}>{value}</Text>
     </View>
   );
 }
 
 const prStyles = StyleSheet.create({
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: P.borderSoft },
   rowBig: { borderBottomWidth: 0, paddingTop: 9, marginTop: 4 },
-  label: { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
-  value: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  label: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted },
+  value: { fontFamily: fonts.monoBold, fontSize: 12, color: P.ink },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#07111E' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', backgroundColor: '#07111E' },
-  headerBack: { fontSize: 18, color: '#fff', fontWeight: '600' },
-  headerTitle: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  miniCard: { margin: 12, marginHorizontal: 16, backgroundColor: '#0D1D2E', borderRadius: 13, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  miniImg: { width: 76, height: 50, borderRadius: 8, backgroundColor: '#142438', alignItems: 'center', justifyContent: 'center' },
-  miniName: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  miniSub: { fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  miniOffer: { fontSize: 10, color: '#F59E0B', fontWeight: '700', marginTop: 4 },
+  container: { flex: 1, backgroundColor: P.bg },
+  // ink hero header
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 13, backgroundColor: P.ink },
+  headerBack: { fontSize: 18, color: '#FFFFFF', fontWeight: '600' },
+  headerTitle: { fontFamily: fonts.displayBlack, fontSize: 15, color: '#FFFFFF' },
+  miniCard: { margin: 12, marginHorizontal: 16, backgroundColor: P.white, borderRadius: 13, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: P.border },
+  miniImg: { width: 76, height: 50, borderRadius: 8, backgroundColor: CAR_PALE, alignItems: 'center', justifyContent: 'center' },
+  miniName: { fontFamily: fonts.displayBold, fontSize: 13, color: P.ink },
+  miniSub: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2, marginTop: 2 },
+  miniOffer: { fontFamily: fonts.monoBold, fontSize: 10, color: P.yellowText, marginTop: 4 },
   section: { paddingHorizontal: 16, marginBottom: 13 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  sectionLabel: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  dateBox: { flex: 1, backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 11, padding: 11 },
-  dateBoxActive: { borderColor: 'rgba(245,158,11,0.45)' },
-  dateLbl: { fontSize: 9, color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 },
-  dateVal: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  dateDay: { fontSize: 9, color: 'rgba(255,255,255,0.38)', marginTop: 1 },
-  dateArrow: { color: 'rgba(255,255,255,0.25)', fontSize: 16, fontWeight: '300' },
+  dateBox: { flex: 1, backgroundColor: P.white, borderWidth: 1.5, borderColor: P.border, borderRadius: 11, padding: 11 },
+  dateBoxActive: { borderColor: P.ink },
+  dateLbl: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 2 },
+  dateVal: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink },
+  dateDay: { fontFamily: fonts.monoMedium, fontSize: 9, color: P.muted2, marginTop: 1 },
+  dateArrow: { color: P.muted3, fontSize: 16, fontWeight: '300' },
   durRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  durBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-  durBtnText: { fontSize: 17, color: '#fff' },
-  durVal: { fontSize: 17, fontWeight: '800', color: '#fff', minWidth: 52, textAlign: 'center' },
-  durLabel: { fontSize: 10, color: 'rgba(255,255,255,0.38)' },
+  durBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: P.bg2, borderWidth: 1.5, borderColor: P.border, alignItems: 'center', justifyContent: 'center' },
+  durBtnText: { fontFamily: fonts.displayBold, fontSize: 17, color: P.ink },
+  durVal: { fontFamily: fonts.monoBold, fontSize: 17, color: P.ink, minWidth: 52, textAlign: 'center' },
+  durLabel: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2 },
   pickupRow: { flexDirection: 'row', gap: 8 },
-  pickupOpt: { flex: 1, backgroundColor: '#0D1D2E', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.09)', borderRadius: 10, padding: 9 },
-  pickupOn: { borderColor: '#F59E0B' },
-  pickupTitle: { fontSize: 11, fontWeight: '700', color: '#fff' },
-  pickupSub: { fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 2 },
-  priceBox: { marginHorizontal: 16, marginBottom: 12, backgroundColor: '#0D1D2E', borderRadius: 13, padding: 13, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' },
-  priceBoxTitle: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 9 },
-  payHero: { marginHorizontal: 16, marginBottom: 14, backgroundColor: 'rgba(245,158,11,0.1)', borderWidth: 1.5, borderColor: 'rgba(245,158,11,0.3)', borderRadius: 13, padding: 13, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  payHeroLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', marginBottom: 2 },
-  payHeroAmount: { fontSize: 24, fontWeight: '800', color: '#F59E0B' },
-  payHeroSub: { fontSize: 10, color: 'rgba(255,255,255,0.38)', marginTop: 2 },
-  payHeroRight: { fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'right', lineHeight: 15 },
+  pickupOpt: { flex: 1, backgroundColor: P.white, borderWidth: 1.5, borderColor: P.border, borderRadius: 10, padding: 9 },
+  pickupOn: { borderColor: P.ink },
+  pickupTitle: { fontFamily: fonts.sansBold, fontSize: 11, color: P.ink },
+  pickupSub: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2, marginTop: 2 },
+  priceBox: { marginHorizontal: 16, marginBottom: 12, backgroundColor: P.white, borderRadius: 13, padding: 13, borderWidth: 1, borderColor: P.border },
+  priceBoxTitle: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 9 },
+  payHero: { marginHorizontal: 16, marginBottom: 14, backgroundColor: P.yellowPale, borderWidth: 1, borderColor: '#F0DA88', borderRadius: 13, padding: 13, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  payHeroLabel: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.muted, marginBottom: 2 },
+  payHeroAmount: { fontFamily: fonts.monoBold, fontSize: 24, color: P.ink },
+  payHeroSub: { fontFamily: fonts.sansMedium, fontSize: 10, color: P.muted2, marginTop: 2 },
+  payHeroRight: { fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted2, textAlign: 'right', lineHeight: 15 },
   payCTAWrap: { paddingHorizontal: 16, paddingBottom: 28 },
-  payBtn: { backgroundColor: '#F59E0B', borderRadius: 13, paddingVertical: 15, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  payBtnText: { fontSize: 15, fontWeight: '800', color: '#000' },
-  payNote: { textAlign: 'center', marginTop: 9, fontSize: 10, color: 'rgba(255,255,255,0.28)' },
+  payBtn: { backgroundColor: P.ink, borderRadius: 13, paddingVertical: 15, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  payBtnText: { fontFamily: fonts.displayBlack, fontSize: 15, color: P.yellow },
+  payNote: { textAlign: 'center', marginTop: 9, fontFamily: fonts.monoMedium, fontSize: 10, color: P.muted3 },
 });
