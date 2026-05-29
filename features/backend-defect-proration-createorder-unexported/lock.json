@@ -1,0 +1,30 @@
+{
+  "feature": "backend-defect-proration-createorder-unexported",
+  "area": "backend-service",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-29) — reproduced PAYMENT_PROVIDER_UNAVAILABLE on live Growth→Pro mid-cycle upgrade; asked to resolve. Hotfix lock delegated; prod deploy surfaced for explicit go.",
+  "approved_at": "2026-05-29",
+  "owner": "Code-builder (backend territory — razorpay.service.js)",
+  "severity": "production revenue-blocking — mid-cycle paid-tier upgrade (proration) returns 502 for every brand until shipped",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING, NO migration, NO OTA. Render backend redeploy. One-line export fix; no money-math/controller/schema change.",
+  "fix": "Add createOrder to module.exports in backend/src/services/razorpay.service.js. The function was already implemented (Orders API wrapper for the proration delta charge) but never exported, so subscription.controller.js line 379 (razorpayService.createOrder) threw TypeError, masked as PAYMENT_PROVIDER_UNAVAILABLE.",
+  "discipline": "Verify-twice: read razorpay.service.js (createOrder defined L95-105, missing from exports L130-134) and subscription.controller.js (only live proration path calls createOrder at L379; createSubscription/cancelSubscription used elsewhere ARE exported). Confirmed existing subscription.test.js proration test runs in RAZORPAY_MOCK=true and takes the mock branch, never exercising createOrder — explaining the gap.",
+  "related": [
+    "features/wave4-subscription-invoice-pdf",
+    "features/billing-subscriptions-schema"
+  ],
+  "result": "createOrder exported; mid-cycle proration upgrade reaches the Razorpay Orders API. Regression test tests/razorpay-service.test.js added (exports + SDK-mocked createOrder + amount guard).",
+  "regression_proof": "razorpay-service jest 3/3 (export + SDK-mocked createOrder + amount guard); subscription 9/9; invoice-pdf 5/5 (17/17 total). pnpm qa 76/76 GREEN, gate 0 (qa/reports/2026-05-29T08-15-21-145Z). One-line export-only change; no other flow touched.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-29) — explicit go after QA green on the live-incident hotfix",
+    "released_at": "2026-05-29",
+    "maestro_green": false,
+    "deploy": "pnpm qa 76/76 GREEN (gate 0); razorpay-service + subscription + invoice-pdf jest 17/17. Production-impacting (Render backend redeploy). No migration, no OTA, no money-math change."
+  }
+}

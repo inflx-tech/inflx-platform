@@ -129,6 +129,7 @@ async function cancelSubscription(subscription_id, { cancel_at_cycle_end = true 
 
 module.exports = {
   createSubscription,
+  createOrder,
   fetchSubscription,
   cancelSubscription,
 };
