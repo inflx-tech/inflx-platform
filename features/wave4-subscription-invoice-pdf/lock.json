@@ -1,0 +1,32 @@
+{
+  "feature": "wave4-subscription-invoice-pdf",
+  "area": "backend-service+controller+route+brand-web-ui",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-29) — Wave 4 handoff authorizes resuming at commit 2 (subscription invoice PDF); lock decision delegated. No migration, no money movement → proceeds through implement+QA autonomously; prod deploy surfaced for explicit go.",
+  "approved_at": "2026-05-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING, NO migration. Render + Vercel redeploy. No OTA. PDF generated lazily on first download; no live charging path touched.",
+  "fix": "invoice.service.renderSubscriptionInvoicePdf renders a GST tax invoice (platform seller / brand buyer / GST as a separate line). GET /v1/brands/me/billing/invoices/:id/pdf (brand-scoped, paid-only, authenticateWithQuery) generates lazily, stores invoice_pdf_r2_key under invoices/, streams the PDF. storage.uploadPDF gains an optional keyPrefix. brand-web billing page gets a Download link on paid rows.",
+  "related": [
+    "features/wave1-tax-config-foundation",
+    "features/wave4-tax-summary-report",
+    "features/billing-subscriptions-schema"
+  ],
+  "result": "invoice.service + GET /me/billing/invoices/:id/pdf + brand-web Download link shipped. invoice-pdf jest 5/5 green; pnpm qa 76/76 GREEN (gate 0).",
+  "regression_proof": "pnpm qa 76/76 GREEN, STATE=GREEN, gate 0 (qa/reports/2026-05-29T05-44-43-375Z). Backend jest invoice-pdf.test.js 5/5. Only red = pre-existing carved features/backend-defect-quota-check-missing-free-tier (untouched by this change). No migration, no money path modified.",
+  "discipline": "Verify-twice: confirmed invoice_pdf_r2_key exists (M058, no migration); tax.service.getInvoiceIdentity shape; storage.uploadPDF returns a key; authenticateWithQuery reads ?download_token=; reused the proven contract-PDF browser-download mechanism. Lazy generation chosen to avoid touching the 6 invoice-insert sites incl. the live Razorpay webhook. Rs. money format (PDFKit can't render the rupee glyph).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-29) — explicit go/no-go answered GO after QA green",
+    "released_at": "2026-05-29",
+    "maestro_green": false,
+    "deploy": "pnpm qa 76/76 GREEN (gate 0); invoice-pdf jest 5/5 green; production-impacting (Render backend + Vercel brand-web auto-deploy on push). No migration, no OTA, no money path touched."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-29) — reuse-existing-styling: the only UI change is one Download link inside the existing /dashboard/settings/billing table; no new design language or tokens (same justification pattern as wave4-tax-summary-report).",
+  "mockup_locked_at": "2026-05-29"
+}

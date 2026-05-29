@@ -22,11 +22,11 @@ const UPLOAD_DIR = path.join(os.tmpdir(), 'inflx-uploads');
 // Android WebView was dropping the Bearer header when forwarding the PDF to
 // its native download manager, so the retry always hit 401.
 
-async function uploadPDF(buffer, filename) {
+async function uploadPDF(buffer, filename, { keyPrefix = 'contracts' } = {}) {
   if (env.R2_MOCK) {
-    return _saveLocally(buffer, filename);
+    return _saveLocally(buffer, filename, keyPrefix);
   }
-  return _uploadToR2(buffer, filename);
+  return _uploadToR2(buffer, filename, keyPrefix);
 }
 
 /**
@@ -125,7 +125,7 @@ function getUploadDir() {
 
 // ─── Private helpers ────────────────────────────────────────────────────────
 
-async function _saveLocally(buffer, filename) {
+async function _saveLocally(buffer, filename, keyPrefix = 'contracts') {
   const dir = path.resolve(env.PDF_STORAGE_PATH || UPLOAD_DIR);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -134,14 +134,14 @@ async function _saveLocally(buffer, filename) {
   fs.writeFileSync(filePath, buffer);
   console.log(`[R2 MOCK] PDF saved locally: ${filePath}`);
   // Return the same key shape as prod so downstream code doesn't have to branch.
-  return `contracts/${filename}`;
+  return `${keyPrefix}/${filename}`;
 }
 
-async function _uploadToR2(buffer, filename) {
+async function _uploadToR2(buffer, filename, keyPrefix = 'contracts') {
   const { PutObjectCommand } = require('@aws-sdk/client-s3');
 
   const client = _getR2Client();
-  const key = `contracts/${filename}`;
+  const key = `${keyPrefix}/${filename}`;
 
   await client.send(new PutObjectCommand({
     Bucket:      env.R2_BUCKET,

@@ -36,6 +36,8 @@ const asyncHandler = require('../utils/asyncHandler');
 // (defensive fallback to 18% via tax.service). Per the founder's design:
 // brand sees price + GST as a separate line on subscription invoices.
 const taxService = require('../services/tax.service');
+const storageService = require('../services/storage.service');
+const invoiceService = require('../services/invoice.service');
 const { toPaise } = require('../utils/money');
 
 async function _getBrandIdFromUser(userId) {
@@ -598,6 +600,58 @@ const listInvoices = asyncHandler(async (req, res) => {
   return success(res, { invoices: rows });
 });
 
+// ── GET /v1/brands/me/billing/invoices/:id/pdf ──────────────────────────────
+// Wave 4 commit 2. Streams a GST tax-invoice PDF for one PAID subscription
+// invoice, scoped to the caller's brand. The PDF is generated LAZILY on first
+// download (no live charging path is touched at invoice-creation time) and the
+// resulting R2 key is cached on the row. Auth via authenticateWithQuery so the
+// browser can open the binary with ?download_token= (no Authorization header).
+const getInvoicePdf = asyncHandler(async (req, res) => {
+  const brandId = await _getBrandIdFromUser(req.user.sub);
+  if (!brandId) throw new AppError('FORBIDDEN', 'No brand profile for this user', 403);
+
+  const { rows } = await db.query(
+    `SELECT si.id, si.tier_key, si.amount_inr, si.gst_amount_inr, si.total_inr,
+            si.period_start, si.period_end, si.paid_at, si.razorpay_payment_id,
+            si.status, si.invoice_pdf_r2_key,
+            b.business_name AS brand_name,
+            u.city  AS buyer_city,
+            u.state AS buyer_state
+       FROM subscription_invoices si
+       JOIN brands b ON b.id = si.brand_id
+       JOIN users  u ON u.id = b.user_id
+      WHERE si.id = $1 AND si.brand_id = $2`,
+    [req.params.id, brandId]
+  );
+  const inv = rows[0];
+  if (!inv) throw new AppError('NOT_FOUND', 'Invoice not found', 404);
+  if (inv.status !== 'paid') {
+    throw new AppError('VALIDATION_ERROR', 'A tax invoice is only available for paid invoices', 409, 'status');
+  }
+
+  const identity = await taxService.getInvoiceIdentity();
+  const buffer = await invoiceService.renderSubscriptionInvoicePdf(inv, identity);
+
+  // Lazy backfill: store the PDF once, then cache the key. Best-effort — a
+  // failed upload/update must not block the download.
+  if (!inv.invoice_pdf_r2_key) {
+    try {
+      const key = await storageService.uploadPDF(buffer, `invoice_${inv.id}.pdf`, { keyPrefix: 'invoices' });
+      await db.query(
+        `UPDATE subscription_invoices SET invoice_pdf_r2_key = $1 WHERE id = $2`,
+        [key, inv.id]
+      );
+    } catch (err) {
+      console.error('[invoice] PDF store failed (serving anyway):', err.message);
+    }
+  }
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="invoice_${inv.id}.pdf"`);
+  res.setHeader('Cache-Control', 'private, max-age=300');
+  return res.send(buffer);
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN ENDPOINTS  (Phase A7-admin)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -857,7 +911,7 @@ const adminListInvoices = asyncHandler(async (req, res) => {
 
 module.exports = {
   // Public + brand
-  listTiers, getSubscription, upgrade, listInvoices, quotaPreflight,
+  listTiers, getSubscription, upgrade, listInvoices, getInvoicePdf, quotaPreflight,
   // Admin (Phase A7-admin)
   adminListTiers, adminCreateTier, adminUpdateTier, adminListSubscriptions, adminListInvoices,
 };

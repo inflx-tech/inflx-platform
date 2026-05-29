@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, requireRole, requireAdminRole, requireApproved } = require('../middleware/auth');
+const { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireApproved } = require('../middleware/auth');
 const { checkQuota } = require('../middleware/quotaCheck');
 const ctrl = require('../controllers/brand.controller');
 const subCtrl = require('../controllers/subscription.controller');
@@ -86,6 +86,7 @@ router.post('/me/products',       authenticate, requireRole('brand'), requireApp
 router.get('/me/subscription',          authenticate, requireRole('brand'), subCtrl.getSubscription);
 router.post('/me/subscription/upgrade', authenticate, requireRole('brand'), subCtrl.upgrade);
 router.get('/me/billing/invoices',      authenticate, requireRole('brand'), subCtrl.listInvoices);
+router.get('/me/billing/invoices/:id/pdf', authenticateWithQuery, requireRole('brand'), subCtrl.getInvoicePdf);
 router.get('/me/quota-preflight',       authenticate, requireRole('brand'), subCtrl.quotaPreflight);  // Phase A12.1.5
 router.patch('/me/products/:pid', authenticate, requireRole('brand'), ctrl.updateProduct);
 router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.deleteProduct);

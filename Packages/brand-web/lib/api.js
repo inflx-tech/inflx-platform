@@ -155,6 +155,10 @@ export const brandApi = {
   upgradeSubscription:   (tier_key, billing_period = 'monthly') =>
                            api.post('/brands/me/subscription/upgrade', { tier_key, billing_period }),
   getMyInvoices:         (params) => api.get(`/brands/me/billing/invoices${params ? '?' + new URLSearchParams(params) : ''}`),
+  // Wave 4 — GST tax-invoice PDF (paid invoices only). Streaming URL with the
+  // JWT in the query string so a plain <a>/new-tab can fetch the binary without
+  // an Authorization header (same mechanism as contractApi.pdfUrl).
+  invoicePdfUrl:         (id) => `${API_BASE}/brands/me/billing/invoices/${id}/pdf?download_token=${encodeURIComponent(getToken() || '')}`,
   // ── Wave 3 — commerce payout account (Razorpay Route) ─────────────────────
   getPayoutAccount:      () => api.get('/brands/me/payout-account'),
   createPayoutAccount:   (data = {}) => api.post('/brands/me/payout-account', data),

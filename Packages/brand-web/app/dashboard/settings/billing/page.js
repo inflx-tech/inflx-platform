@@ -33,6 +33,8 @@ const CSS = `
 .b .pill.failed{background:#FEE2E2; color:#991B1B}
 .b .pill.refunded{background:#DBEAFE; color:#1E40AF}
 .b .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; color:var(--ink2)}
+.b .dl{color:#1E40AF; font-weight:600; font-size:13px; text-decoration:none}
+.b .dl:hover{text-decoration:underline}
 .b .empty{padding:48px 24px; text-align:center; color:var(--ink3); font-size:14px}
 .b .summary{display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap}
 .b .stat{background:var(--white); border:1px solid var(--border); border-radius:12px; padding:16px 20px; min-width:180px}
@@ -100,6 +102,7 @@ export default function BillingPage() {
                   <th>Total</th>
                   <th>Status</th>
                   <th>Paid at</th>
+                  <th>Invoice</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,6 +116,11 @@ export default function BillingPage() {
                     <td><strong>{fmtMoney(inv.total_inr || (parseFloat(inv.amount_inr || 0) + parseFloat(inv.gst_amount_inr || 0)))}</strong></td>
                     <td><span className={pillClass(inv.status)}>{inv.status}</span></td>
                     <td>{inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : '—'}</td>
+                    <td>
+                      {inv.status === 'paid'
+                        ? <a className="dl" href={brandApi.invoicePdfUrl(inv.id)} target="_blank" rel="noopener noreferrer">Download</a>
+                        : <span className="mono">—</span>}
+                    </td>
                   </tr>
                 ))}
               </tbody>
