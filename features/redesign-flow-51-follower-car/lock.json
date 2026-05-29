@@ -37,9 +37,9 @@
     "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 51 emulator after-screenshots skipped (deep payment/data-gated car screens); Razorpay processPayment + paise boundary + prebookDateRange/Verify + 4-ID + sign-in gate + price math integrity verified by code markers + babel transform; founder physical APK smoke-test = real-device confirm. FINAL follower flow — bucket complete.'",
     "follower_bucket_complete": true,
     "deploy": {
-      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
-      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "commit": "7a18e9c", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "7a18e9c", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "7a18e9c", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
       "ota_brand":      { "version": 101, "bundle_hash": "sha256:24cf6ff256ac2ee8243605f37a202a5721f5743808f405b7b69469314f74e00b", "published_at": "2026-05-29T03:40:37.497Z", "bundle_size_kb": 2523, "trigger": "pnpm publish-ota:all -m 'Flow 51 (F5) — follower car — BUCKET COMPLETE'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
       "ota_influencer": { "version": 90, "bundle_hash": "sha256:24cf6ff256ac2ee8243605f37a202a5721f5743808f405b7b69469314f74e00b", "published_at": "2026-05-29T03:40:41.667Z", "bundle_size_kb": 2523, "trigger": "pnpm publish-ota:all -m 'Flow 51 (F5) — follower car — BUCKET COMPLETE'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
       "ota_follower":   { "version": 64, "bundle_hash": "sha256:24cf6ff256ac2ee8243605f37a202a5721f5743808f405b7b69469314f74e00b", "published_at": "2026-05-29T03:40:47.332Z", "bundle_size_kb": 2523, "trigger": "pnpm publish-ota:all -m 'Flow 51 (F5) — follower car — BUCKET COMPLETE'", "scope": "follower audience manifest (CarDetail + CarBooking light restyle LIVE here) — completes the follower bucket" }
