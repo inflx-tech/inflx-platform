@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>F5 · follower FASHION (ProductDetail · LookbookDetail) — wave3 mockup</title>
+<meta name="viewport" content="width=1500" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --white:#FFFFFF; --bg:#FAFAFA; --bg2:#F4F4F5;
+  --yellow:#FFC107; --yellow-hover:#E0A800; --yellow-pale:#FFF7CC; --yellow-text:#6B5A00; --yellow-50:#FFFDEB;
+  --ink:#0A0A0A; --ink-2:#1F1F22;
+  --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA; --muted-4:#D4D4D8;
+  --border:#E4E4E7; --border-soft:#F4F4F5;
+  --success:#10B981; --success-pale:#D1FAE5; --success-text:#047857;
+  --danger:#E8401A; --danger-pale:#FDEEE9;
+  /* fashion wayfinding accent — getBusinessAccentLight('fashion') */
+  --fashion:#DB2777; --fashion-pale:#FCE7F3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg2);color:var(--ink);font-size:13px;line-height:1.45}
+body{padding:32px 24px 64px}
+.wrap{max-width:1500px;margin:0 auto}
+.banner{background:var(--ink);color:var(--white);padding:15px 20px;border-radius:14px;margin-bottom:22px}
+.banner h1{font-family:'Outfit';font-size:15px;font-weight:900}
+.banner .sub{font-size:11.5px;color:rgba(255,255,255,.72);margin-top:5px;font-family:'JetBrains Mono';line-height:1.6}
+.banner .sub b{color:var(--yellow);font-weight:700}
+.row{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;margin-bottom:24px}
+.col{display:flex;flex-direction:column;gap:12px;align-items:center}
+.col-label{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;text-align:center;max-width:340px;line-height:1.5}
+.col-label b{color:var(--ink);font-weight:800}
+.phone{width:340px;background:var(--ink);border-radius:42px;padding:9px;box-shadow:0 30px 60px rgba(0,0,0,.18)}
+.phone-inner{background:var(--bg);border-radius:34px;overflow:hidden;height:830px;position:relative;display:flex;flex-direction:column}
+.body{flex:1;overflow-y:auto;position:relative}
+
+/* floating back */
+.back-fl{position:absolute;top:40px;left:14px;z-index:10;width:36px;height:36px;border-radius:18px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+
+/* PRODUCT DETAIL */
+.hero{height:280px;background:var(--fashion-pale);display:flex;align-items:center;justify-content:center;font-size:90px;position:relative}
+.hero-badge{position:absolute;top:50px;right:16px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono';font-size:12px;font-weight:900;padding:6px 12px;border-radius:14px}
+.pbody{padding:20px}
+.pname{font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink);letter-spacing:-.4px}
+.brandrow{display:flex;align-items:center;gap:4px;margin-top:6px}
+.brandline{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--muted)}
+.chev{font-size:16px;color:var(--muted-2)}
+.psec{font-family:'JetBrains Mono';font-size:11px;color:var(--muted-2);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.note{margin-top:14px;padding:12px;border-radius:12px;background:var(--ink)}
+.note-attr{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--yellow);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.note-q{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--yellow-pale);font-style:italic;line-height:1.5}
+.priceblock{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.pricerow{display:flex;align-items:baseline;gap:10px}
+.pfinal{font-family:'JetBrains Mono';font-size:28px;font-weight:900;color:var(--ink)}
+.pmrp{font-family:'JetBrains Mono';font-size:14px;color:var(--muted-3);text-decoration:line-through}
+.psave{font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:var(--success-text);margin-top:4px}
+.descb{margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.desct{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.descbody{font-family:'Plus Jakarta Sans';font-size:13px;color:var(--ink-2);line-height:1.55}
+.sec-cta-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+.sec-cta{display:flex;align-items:center;gap:6px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--ink);font-family:'Plus Jakarta Sans';font-size:13px;font-weight:700;color:var(--ink)}
+.more-t{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-top:22px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
+.more-row{display:flex;gap:10px;overflow-x:auto}
+.more-card{width:120px;flex-shrink:0}
+.more-img{width:120px;height:96px;border-radius:10px;background:var(--fashion-pale);display:flex;align-items:center;justify-content:center;font-size:32px}
+.more-nm{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--ink);margin-top:6px;line-height:1.25}
+.more-pr{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink);margin-top:2px}
+.footer{position:absolute;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);padding:12px 16px 20px;display:flex;align-items:center;gap:12px}
+.f-pr{font-family:'JetBrains Mono';font-size:20px;font-weight:900;color:var(--ink)}
+.f-nm{font-family:'Plus Jakarta Sans';font-size:11px;color:var(--muted);margin-top:2px}
+.f-cta{flex:1;background:var(--ink);color:var(--yellow);border-radius:12px;padding:14px;text-align:center;font-family:'Outfit';font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:.3px}
+
+/* LOOKBOOK */
+.cover{height:230px;background:var(--fashion-pale);display:flex;align-items:center;justify-content:center;font-size:70px;position:relative}
+.lbody{padding:16px}
+.creatorrow{display:flex;align-items:center;gap:12px;padding:12px;background:var(--white);border:1px solid var(--border);border-radius:14px;margin-bottom:16px}
+.cr-av{width:38px;height:38px;border-radius:19px;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-family:'Outfit';font-size:14px;font-weight:900;color:var(--ink)}
+.cr-label{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px}
+.cr-name{font-family:'Outfit';font-size:13px;font-weight:800;color:var(--ink);margin-top:2px}
+.cr-handle{font-family:'JetBrains Mono';font-weight:500;color:var(--muted)}
+.visit{padding:6px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:9px;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;color:var(--ink)}
+.ltitle{font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink)}
+.ldesc{font-family:'Plus Jakarta Sans';font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px}
+.lmeta{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;margin-top:14px}
+.grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.pcard{width:calc(50% - 5px);background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pimg{aspect-ratio:1;background:var(--fashion-pale);display:flex;align-items:center;justify-content:center;font-size:32px;position:relative}
+.vbadge{position:absolute;bottom:6px;left:6px;background:var(--ink);color:#fff;font-family:'JetBrains Mono';font-size:9px;font-weight:800;padding:3px 7px;border-radius:6px}
+.pcbody{padding:10px}
+.pc-brand{font-family:'JetBrains Mono';font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.3px}
+.pc-name{font-family:'Plus Jakarta Sans';font-size:12px;font-weight:700;color:var(--ink);margin-top:3px}
+.pc-price{font-family:'JetBrains Mono';font-size:13px;font-weight:800;color:var(--ink);margin-top:4px}
+.pc-note{margin-top:7px;padding:7px;background:var(--yellow-pale);border-radius:6px;border-left:2px solid var(--yellow)}
+.pc-note-t{font-family:'Plus Jakarta Sans';font-size:10px;font-style:italic;color:var(--ink-2);line-height:1.35}
+
+/* side panel */
+.side{width:340px;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:15px 17px}
+.panel h3{font-family:'Outfit';font-size:13px;font-weight:900;color:var(--ink);margin-bottom:9px;text-transform:uppercase;letter-spacing:.3px}
+.panel ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:7px}
+.panel li{font-family:'Plus Jakarta Sans';font-size:11.5px;color:var(--muted);line-height:1.55;padding-left:13px;position:relative}
+.panel li::before{content:'';position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;background:var(--yellow)}
+.panel li b{color:var(--ink);font-weight:700}
+.panel li code{font-family:'JetBrains Mono';font-size:10px;background:var(--bg2);padding:1px 5px;border-radius:4px}
+.panel.pink li::before{background:var(--fashion)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="banner">
+  <h1>F5 · follower FASHION — Flow 49 mockup (MOCK ONLY — awaiting your green signal, no implementation yet)</h1>
+  <div class="sub">
+    <b>Flow 49 = the fashion vertical: ProductDetail (single product + CTAs) + LookbookDetail (creator-curated look grid).</b> These are Wave-3 DARK screens → converge to light brandPalette. <b>Key design correction (per F0 rule):</b> the per-business accent (fashion = pink <code>#DB2777</code>/pale <code>#FCE7F3</code> via getBusinessAccentLight) is used for <b>hero/image TINTS only (wayfinding)</b> — moved OFF the primary CTA + prices, which become <b>ink+yellow CTA / ink-mono price / successText savings</b>. Creator notes carry the yellow creator-vibe. <b>availing_modes CTA dispatch (Buy/Pay/Book/Enquire) + 4-ID tracking + discount math + getStoreProducts/getLookbook APIs + nav — ALL preserved verbatim.</b>
+  </div>
+</div>
+
+<div class="row">
+
+  <!-- 1 · PRODUCT DETAIL -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="body">
+        <span class="back-fl">←</span>
+        <div class="hero">👗<span class="hero-badge">30% OFF</span></div>
+        <div class="pbody">
+          <div class="pname">Hand-block Cotton Kurta</div>
+          <div class="brandrow"><span class="brandline">from Indie Threads · Hyderabad</span><span class="chev">›</span></div>
+          <div class="psec">WOMENS · ETHNIC</div>
+          <div class="note"><div class="note-attr">@neha.styles' take</div><div class="note-q">"The fit is unreal — size down if between sizes. My most-worn kurta this season."</div></div>
+          <div class="priceblock">
+            <div class="pricerow"><span class="pfinal">₹1,399</span><span class="pmrp">₹1,999</span></div>
+            <div class="psave">You save ₹600</div>
+          </div>
+          <div class="descb"><div class="desct">Details</div><div class="descbody">Pure cotton, hand-block printed in Jaipur. Relaxed fit with side pockets. Machine wash cold.</div></div>
+          <div class="sec-cta-row"><span class="sec-cta">✉️ Enquire</span></div>
+          <div class="more-t">More from Indie Threads</div>
+          <div class="more-row">
+            <div class="more-card"><div class="more-img">👗</div><div class="more-nm">Linen Wrap Dress</div><div class="more-pr">₹1,799</div></div>
+            <div class="more-card"><div class="more-img">👚</div><div class="more-nm">Block-print Top</div><div class="more-pr">₹899</div></div>
+          </div>
+          <div style="height:120px"></div>
+        </div>
+      </div>
+      <div class="footer"><div style="flex:0 0 auto"><div class="f-pr">₹1,399</div><div class="f-nm">Hand-block Kurta</div></div><div class="f-cta">🛒 Buy Now</div></div>
+    </div></div>
+    <div class="col-label"><b>FRAME 1 · ProductDetail</b><br/>dark → light. <b>fashion-pale hero tint</b> (wayfinding) + <b>ink/yellow discount badge</b> · Outfit name + muted brand row · <b>ink creator-note bar (yellow attribution + yellowPale quote)</b> · ink-mono price + muted3 MRP strike + <b>successText "You save"</b> · ink-outline secondary CTA · fashion-pale "More from brand" tiles (ink-mono price) · sticky <b>ink/yellow Buy Now</b>. availing_modes dispatch + 4-ID tracking + discount math preserved.</div>
+  </div>
+
+  <!-- 2 · LOOKBOOK DETAIL -->
+  <div class="col">
+    <div class="phone"><div class="phone-inner">
+      <div class="body">
+        <div class="cover">👗<span class="back-fl" style="background:rgba(255,255,255,.92)">←</span></div>
+        <div class="lbody">
+          <div class="creatorrow">
+            <div class="cr-av">N</div>
+            <div style="flex:1"><div class="cr-label">Curated by</div><div class="cr-name">Neha Styles <span class="cr-handle">@neha.styles</span></div></div>
+            <span class="visit">Visit store</span>
+          </div>
+          <div class="ltitle" style="font-family:'Outfit';font-size:22px;font-weight:900;color:var(--ink)">Festive Layering Edit</div>
+          <div class="ldesc">My go-to mix-and-match pieces for the wedding season — easy to dress up or down.</div>
+          <div class="lmeta">4 ITEMS IN THIS LOOK</div>
+          <div class="grid">
+            <div class="pcard">
+              <div class="pimg">👗<span class="vbadge">M · Maroon</span></div>
+              <div class="pcbody"><div class="pc-brand">INDIE THREADS</div><div class="pc-name">Hand-block Kurta</div><div class="pc-price">₹1,399</div><div class="pc-note"><div class="pc-note-t">"wearing M in this"</div></div></div>
+            </div>
+            <div class="pcard">
+              <div class="pimg">👜<span class="vbadge">Gold</span></div>
+              <div class="pcbody"><div class="pc-brand">LUMEN BAGS</div><div class="pc-name">Potli Clutch</div><div class="pc-price">₹899</div></div>
+            </div>
+            <div class="pcard">
+              <div class="pimg">👠</div>
+              <div class="pcbody"><div class="pc-brand">STRIDE CO</div><div class="pc-name">Block Heels</div><div class="pc-price">₹2,199</div><div class="pc-note"><div class="pc-note-t">"so comfy for long events"</div></div></div>
+            </div>
+            <div class="pcard">
+              <div class="pimg">💍</div>
+              <div class="pcbody"><div class="pc-brand">AUREA</div><div class="pc-name">Jhumka Set</div><div class="pc-price">₹649</div></div>
+            </div>
+          </div>
+          <div style="height:40px"></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="col-label"><b>FRAME 2 · LookbookDetail</b><br/>dark → light. <b>fashion-pale cover tint</b> · white creator card (<b>yellow avatar + ink initial</b> = CreatorChip DNA, mono handle) + bg2 "Visit store" · Outfit title + muted desc + mono meta · 2-col product grid (white cards, fashion-pale image tint, ink variant badge, <b>ink-mono price</b>, <b>yellowPale creator-note</b> with yellow left-border). getLookbook + creator-tracking nav preserved.</div>
+  </div>
+
+  <!-- SIDE PANEL -->
+  <div class="side">
+    <div class="panel pink">
+      <h3>Accent rule (F0) — corrected here</h3>
+      <ul>
+        <li><b>fashion accent</b> #DB2777 / pale #FCE7F3 (getBusinessAccentLight) → <b>hero + image TINTS only</b> (wayfinding)</li>
+        <li>Primary CTA → <b>ink + yellow</b> (was business-accent)</li>
+        <li>Prices → <b>ink mono</b>; savings → <b>successText</b> (were accent)</li>
+        <li>Discount badge → <b>ink/yellow</b>; creator note → yellow vibe</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Flow 49 scope (2 screens)</h3>
+      <ul>
+        <li><b>ProductDetailScreen</b> (465, <code>colors</code> navy + <code>getBusinessAccent</code> dark) → brandPalette + getBusinessAccentLight</li>
+        <li><b>LookbookDetailScreen</b> (189, <code>darkColors</code> + hardcoded #142438/#0D1D2E/#ec4899) → brandPalette + fashion-pale</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Preserved verbatim (NON-NEGOTIABLE)</h3>
+      <ul>
+        <li><b>availing_modes</b> CTA dispatch (online_order→Buy / walkin_pay→Pay / prebook→Book / enquiry→Enquire) + category-aware verbs</li>
+        <li><b>4-ID tracking</b> threaded into every dispatchCta nav + lookbook openProduct creator-tracking</li>
+        <li>discount math (percentage/flat/bogo/bundle/volume/gift badges) + price computation</li>
+        <li>APIs: <code>getStoreProducts</code>, <code>getLookbook</code> · "More from brand" replace-nav · variant badges</li>
+        <li>CATEGORY_EMOJI / MODE_LABELS / CATEGORY_LABELS maps (type emoji kept)</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Then (F5 remaining)</h3>
+      <ul>
+        <li><b>Flow 50</b> — SchemaDetail + SalonDetail (beauty + the 26-business engine)</li>
+        <li><b>Flow 51</b> — CarDetail + CarBooking</li>
+        <li>Then follower bucket COMPLETE → all 3 INFLX apps unified on brandPalette</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

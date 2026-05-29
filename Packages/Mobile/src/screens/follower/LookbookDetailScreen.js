@@ -2,7 +2,10 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { darkColors, fmtRupees } from '../../theme/tokens';
+import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
+
+// Fashion wayfinding tint (this screen is fashion-only) — getBusinessAccentLight('fashion').pale
+const FASHION_PALE = '#FCE7F3';
 import { followerApi } from '../../services/api';
 import { buildTrackingFromOffer } from '../../utils/tracking';
 
@@ -42,7 +45,7 @@ export default function LookbookDetailScreen({ navigation, route }) {
   }, [handle, lookbookId]);
 
   if (loading) {
-    return <View style={s.center}><ActivityIndicator color={darkColors.amber} /></View>;
+    return <View style={s.center}><ActivityIndicator color={P.ink} /></View>;
   }
   if (!data || !data.lookbook) {
     return (
@@ -144,46 +147,48 @@ export default function LookbookDetailScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: darkColors.bg2 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: darkColors.bg2 },
-  errText: { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginBottom: 14 },
-  backTab: { backgroundColor: '#142438', borderRadius: 11, paddingHorizontal: 18, paddingVertical: 9 },
-  backTabText: { fontSize: 12, color: '#fff', fontWeight: '700' },
+  container: { flex: 1, backgroundColor: P.bg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: P.bg },
+  errText: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, marginBottom: 14 },
+  backTab: { backgroundColor: P.bg2, borderRadius: 11, paddingHorizontal: 18, paddingVertical: 9 },
+  backTabText: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink },
 
-  cover: { height: 240, position: 'relative', backgroundColor: '#142438' },
+  cover: { height: 240, position: 'relative', backgroundColor: FASHION_PALE },
   coverImg: { width: '100%', height: '100%' },
   coverFallback: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
   coverFallbackIcon: { fontSize: 70, opacity: 0.3 },
-  back: { position: 'absolute', top: 50, left: 14, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
-  backText: { fontSize: 16, color: '#fff', fontWeight: '700' },
+  back: { position: 'absolute', top: 50, left: 14, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
+  backText: { fontSize: 16, color: P.ink, fontWeight: '700' },
 
   body: { padding: 16 },
 
-  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, backgroundColor: '#0D1D2E', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
-  creatorAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#ec4899', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  // creator chip — yellow avatar + ink initial (CreatorChip DNA)
+  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, backgroundColor: P.white, borderRadius: 14, borderWidth: 1, borderColor: P.border, marginBottom: 16 },
+  creatorAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: P.yellow, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   creatorAvatarImg: { width: '100%', height: '100%' },
-  creatorAvatarInitial: { fontSize: 14, fontWeight: '900', color: '#fff' },
-  creatorLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.4 },
-  creatorName: { fontSize: 13, fontWeight: '800', color: '#fff', marginTop: 2 },
-  creatorHandle: { fontWeight: '500', color: 'rgba(255,255,255,0.5)' },
-  followBtn: { paddingHorizontal: 11, paddingVertical: 6, backgroundColor: 'rgba(236,72,153,0.18)', borderRadius: 9, borderWidth: 1, borderColor: 'rgba(236,72,153,0.4)' },
-  followBtnText: { fontSize: 11, fontWeight: '700', color: '#ec4899' },
+  creatorAvatarInitial: { fontFamily: fonts.displayBlack, fontSize: 14, color: P.ink },
+  creatorLabel: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.4 },
+  creatorName: { fontFamily: fonts.displayBold, fontSize: 13, color: P.ink, marginTop: 2 },
+  creatorHandle: { fontFamily: fonts.monoMedium, fontWeight: '500', color: P.muted },
+  followBtn: { paddingHorizontal: 11, paddingVertical: 6, backgroundColor: P.bg2, borderRadius: 9, borderWidth: 1, borderColor: P.border },
+  followBtnText: { fontFamily: fonts.sansBold, fontSize: 11, color: P.ink },
 
-  title: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  description: { fontSize: 12, color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginTop: 6 },
-  meta: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14 },
+  title: { fontFamily: fonts.displayBold, fontSize: 22, color: P.ink },
+  description: { fontFamily: fonts.sansMedium, fontSize: 12, color: P.muted, lineHeight: 18, marginTop: 6 },
+  meta: { fontFamily: fonts.monoBold, fontSize: 10, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14 },
 
   productGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  productCard: { width: '48.5%', backgroundColor: '#0D1D2E', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  productImgBox: { aspectRatio: 1, backgroundColor: '#142438', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  productCard: { width: '48.5%', backgroundColor: P.white, borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: P.border },
+  productImgBox: { aspectRatio: 1, backgroundColor: FASHION_PALE, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   productImg: { width: '100%', height: '100%' },
   productImgFallback: { fontSize: 32, opacity: 0.4 },
-  variantBadge: { position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
-  variantBadgeText: { fontSize: 9, fontWeight: '800', color: '#fff' },
+  variantBadge: { position: 'absolute', bottom: 6, left: 6, backgroundColor: P.ink, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 },
+  variantBadgeText: { fontFamily: fonts.monoBold, fontSize: 9, color: '#FFFFFF' },
   productBody: { padding: 10 },
-  brandName: { fontSize: 9, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.3 },
-  productName: { fontSize: 12, fontWeight: '700', color: '#fff', marginTop: 3 },
-  productPrice: { fontSize: 13, fontWeight: '800', color: '#ec4899', marginTop: 4 },
-  noteBox: { marginTop: 7, padding: 7, backgroundColor: 'rgba(236,72,153,0.08)', borderRadius: 6, borderLeftWidth: 2, borderLeftColor: '#ec4899' },
-  noteText: { fontSize: 10, fontStyle: 'italic', color: 'rgba(255,255,255,0.75)', lineHeight: 14 },
+  brandName: { fontFamily: fonts.monoBold, fontSize: 9, color: P.muted2, textTransform: 'uppercase', letterSpacing: 0.3 },
+  productName: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink, marginTop: 3 },
+  productPrice: { fontFamily: fonts.monoBold, fontSize: 13, color: P.ink, marginTop: 4 },
+  // creator-note — yellow-vibe (yellowPale + yellow left border)
+  noteBox: { marginTop: 7, padding: 7, backgroundColor: P.yellowPale, borderRadius: 6, borderLeftWidth: 2, borderLeftColor: P.yellow },
+  noteText: { fontFamily: fonts.sansMedium, fontSize: 10, fontStyle: 'italic', color: P.ink2, lineHeight: 14 },
 });

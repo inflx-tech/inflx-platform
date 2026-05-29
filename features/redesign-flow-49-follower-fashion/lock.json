@@ -1,0 +1,50 @@
+{
+  "feature": "redesign-flow-49-follower-fashion",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-05-28 chat — F5 fashion mockup GREEN-SIGNALED via AskUserQuestion ('Green — implement', incl. accent→ink/yellow correction) BEFORE implementation",
+  "approved_at": "2026-05-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-05-28 AskUserQuestion green signal on the Flow 49 mockup design/wave3/flow-49-follower-fashion/web.html (mirrored into 04-preview/mockups/web.html)",
+  "mockup_locked_at": "2026-05-28",
+  "notes": "Phase F5 (fashion + beauty + car), FIRST flow — fashion vertical. ProductDetailScreen (465, colors navy StyleSheet + getBusinessAccent dark → brandPalette + getBusinessAccentLight) + LookbookDetailScreen (189, darkColors + hardcoded #142438/#0D1D2E/#ec4899 → brandPalette + FASHION_PALE #FCE7F3). Both Wave-3 DARK → light. Founder-approved design correction (F0 rule): per-business accent (fashion #DB2777/pale #FCE7F3) used for hero/card image TINTS only — moved OFF primary CTA + prices, which become ink+yellow CTA / ink-mono price / successText savings; discount badge ink/yellow; creator notes yellow-vibe (ink note-bar + yellow attribution + yellowPale quote / yellowPale + yellow left-border); creator avatar yellow+ink (CreatorChip DNA). ZERO functional change: availing_modes CTA dispatch (online_order→Buy/walkin_pay→Pay/prebook→Book/enquiry→Enquire) + category-aware verb maps, dispatchCta nav + 4-ID tracking, discount math (percentage/flat/bogo/bundle/volume/gift), getStoreProducts/getLookbook APIs, More-from-brand replace-nav, lookbook openProduct creator-tracking, CATEGORY_EMOJI ALL preserved verbatim. Verified: 0 orphaned tokens, babel 2/2, 25 logic markers. No native rebuild (NATIVE_RUNTIME=2). Governance: per-flow mockup → founder green signal via AskUserQuestion BEFORE implementation.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": {
+      "web_run_at": "2026-05-29",
+      "web_report_path": "qa/reports/2026-05-29T02-26-08-269Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN", "web_duration_s": 38,
+      "web_note": "Dual-probe pre-warm cleared cold-start. 76 passed gate 0 STATE=GREEN. Mobile-only change cannot affect web; gate confirms zero regression.",
+      "mobile_checks": {
+        "babel_transform": "PASS — ProductDetail + LookbookDetail transform via Mobile metro preset",
+        "integrity_grep": "ProductDetail: 0 colors./accentDim/getBusinessAccent/darkColors/fmtMoney refs. LookbookDetail: 0 darkColors/dark-hex/#ec4899 refs (only intentional rgba-white floating-back). availing_modes/dispatchCta/getStoreProducts/getLookbook/tracking/nav present (25 occ) — logic untouched."
+      },
+      "after_screenshots": {
+        "captured": false,
+        "reason": "Deep, data-gated detail screens (reached from product/lookbook taps). After-evidence = mockup + founder physical APK smoke-test on live follower v62. Before = Flow 49 mockup.",
+        "before": "04-preview/mockups/web.html"
+      },
+      "maestro_coverage_note": "Maestro 4/4 baseline applies. Flow 49 integrity (availing_modes CTA dispatch + 4-ID tracking + discount math + getStoreProducts/getLookbook + creator-tracking nav) verified via code markers + babel transform."
+    },
+    "released": true,
+    "released_by": "founder · 2026-05-28 chat — Flow 49 mockup green-signaled ('Green — implement'), then implementation + deploy per locked rhythm",
+    "released_at": "2026-05-29",
+    "deploy_class": "production-impacting",
+    "deploy_targets": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS, ships via OTA (NATIVE_RUNTIME=2). Brand/influencer carry the shared bundle (no brand/influencer-screen change).",
+    "maestro_green": "overridden — GOVERNANCE_OVERRIDE='Maestro 4/4 baseline applies; Flow 49 emulator after-screenshots skipped (deep data-gated fashion detail screens); availing_modes-dispatch + 4-ID-tracking + discount-math + getStoreProducts/getLookbook + creator-tracking integrity verified by code markers + babel transform; founder physical APK smoke-test = real-device confirm'",
+    "deploy": {
+      "vercel_brand_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "render_backend":   { "commit": "PENDING_BACKFILL", "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 99, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T02:28:07.386Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 49 (F5) — follower fashion'", "scope": "brand audience manifest (shared bundle; no brand-screen change)" },
+      "ota_influencer": { "version": 88, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T02:28:13.216Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 49 (F5) — follower fashion'", "scope": "influencer audience manifest (shared bundle; no influencer-screen change)" },
+      "ota_follower":   { "version": 62, "bundle_hash": "sha256:1c7b1335f142f5efc2edbfb5699f1677d5235c9acbfb33c1a7b23c4e0610a6a9", "published_at": "2026-05-29T02:28:19.809Z", "bundle_size_kb": 2520, "trigger": "pnpm publish-ota:all -m 'Flow 49 (F5) — follower fashion'", "scope": "follower audience manifest (ProductDetail + LookbookDetail light restyle live here)" }
+    }
+  }
+}
