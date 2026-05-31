@@ -17,11 +17,11 @@
   ],
   "model_locked": "Admin config + manage + audit on top of the C1 engine. Global default_pct (referral_settings, override per edge). Reads=any admin, writes=superadmin. POST /edges routes through referral.service.createEdge (guards/dedup intact). Ledger read-only this contract; settlement/mark-paid deferred to C3 (no agency wallet yet).",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Not yet — pending mockup-lock + implementation + qa green + diff sign-off."
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-31) — explicit go: 'migrate prod, then push'.",
+    "released_at": "2026-05-31",
+    "deploy": "DEPLOYED 2026-05-31. Migration 079 applied to Supabase prod (referral_settings singleton seeded default_pct=25.00). git push 392e15f..89cff7a -> Render (backend /admin/referrals API) + Vercel (admin-web Referrals section). No OTA/mobile. Evidence: pnpm qa GREEN 76/76 (exit 0, STATE=GREEN); backend jest referral-admin 13/13 + referral-engine 12/12 on fresh DB; admin-web next build compiled all 3 referral routes. Engine remains dormant; Earnings shows empty state until edges exist."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-05-31) — approved the 3 rendered mockups (Settings/Relationships/Earnings), 'Approve — lock & implement'.",
