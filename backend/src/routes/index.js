@@ -46,6 +46,7 @@ const ingestRoutes = require('./ingest.routes');
 
 // Marketing Engine admin API (admin-only, JWT-authenticated)
 const marketingAdminRoutes = require('./marketingAdmin.routes');
+const referralAdminRoutes  = require('./referralAdmin.routes');
 
 // Fashion-1 — product variants (brand-side SKU CRUD) + returns workflow
 const productVariantsRoutes = require('./productVariants.routes');
@@ -78,6 +79,9 @@ router.use('/internal/ingest', ingestRoutes);
 
 // ── Marketing Engine admin API (JWT-authenticated, admin only) ───────────────
 router.use('/admin/marketing', marketingAdminRoutes);
+
+// ── Referral admin API (JWT-authenticated, admin only) ───────────────────────
+router.use('/admin/referrals', referralAdminRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

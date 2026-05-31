@@ -1,0 +1,121 @@
+<!-- preview-size: 1280x820 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Referrals → Settings (Contract 2)</title>
+<style>
+  :root{
+    --navy:#141b2d;--gold:#d4a017;--gold-pale:#fbf3da;
+    --t1:#1a2233;--t2:#5b6577;--t3:#8a93a6;--border:#e5e8ee;
+    --s2:#f6f7f9;--bg:#eef1f6;--white:#fff;--ok:#16a34a;--orange:#f47920;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:13px/1.5 'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--t1)}
+  .app{display:flex;height:820px;overflow:hidden}
+  /* sidebar */
+  .sb{width:192px;background:var(--navy);color:#fff;flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto}
+  .logo{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px}
+  .logo .x{background:linear-gradient(90deg,#e23b3b,#f47920);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .role{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(212,160,23,.2);color:var(--gold);border:1px solid rgba(212,160,23,.3)}
+  nav{padding:8px}
+  .sec{padding:12px 8px 4px;font-size:9px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:1.5px}
+  .nav-i{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:500;color:rgba(255,255,255,.55);margin-bottom:2px;text-decoration:none}
+  .nav-i .ic{width:16px;text-align:center}
+  .nav-i.active{background:rgba(212,160,23,.15);color:var(--gold);font-weight:600}
+  /* main */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .top{height:44px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+  .top .title{font-weight:700;font-size:14px}
+  .av{width:28px;height:28px;border-radius:99px;background:var(--gold-pale);border:1px solid rgba(212,160,23,.3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#9a7415}
+  .content{flex:1;overflow-y:auto;padding:16px;background:var(--bg)}
+  .wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:18px}
+  .h1{font-size:17px;font-weight:800;margin:0 0 3px}
+  .sub{font-size:12px;color:var(--t3);margin:0}
+  .lbl{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);margin:0 0 6px}
+  .pct-row{display:flex;align-items:center;gap:10px}
+  .pct-input{width:120px;border:1.5px solid var(--gold);border-radius:9px;padding:10px 12px;font-size:18px;font-weight:800;color:var(--t1);text-align:center}
+  .pct-suffix{font-size:14px;font-weight:700;color:var(--t2)}
+  .help{font-size:11.5px;color:var(--t2);margin:8px 0 0}
+  .ro{display:flex;gap:18px;margin-top:6px}
+  .ro .box{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px}
+  .ro .k{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--t3);letter-spacing:.4px}
+  .ro .v{font-size:15px;font-weight:800;margin-top:3px}
+  .ro .lock{font-size:10px;color:var(--t3);margin-top:2px}
+  .foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+  .meta{font-size:11px;color:var(--t3)}
+  .btn{background:var(--gold);color:#3a2c05;border:none;border-radius:9px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer}
+  .toast{background:#ecfdf3;border:1px solid #abefc6;color:#067647;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;display:flex;gap:7px;align-items:center}
+  .gate{font-size:11px;color:var(--t2);background:var(--white);border:1px dashed var(--border);border-radius:10px;padding:11px 14px}
+  .gate b{color:var(--t1)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <div class="logo"><span>INFL<span class="x">X</span></span><span class="role">SUPERADMIN</span></div>
+    <nav>
+      <div class="sec">OVERVIEW</div>
+      <div class="nav-i"><span class="ic">📊</span>Platform Stats</div>
+      <div class="nav-i"><span class="ic">📈</span>Analytics</div>
+      <div class="sec">MANAGEMENT</div>
+      <div class="nav-i"><span class="ic">✅</span>Approvals</div>
+      <div class="nav-i"><span class="ic">🏢</span>Brands</div>
+      <div class="nav-i"><span class="ic">⭐</span>Influencers</div>
+      <div class="sec">REFERRALS</div>
+      <div class="nav-i active"><span class="ic">🛠️</span>Settings</div>
+      <div class="nav-i"><span class="ic">🤝</span>Relationships</div>
+      <div class="nav-i"><span class="ic">💰</span>Earnings</div>
+      <div class="sec">FINANCE</div>
+      <div class="nav-i"><span class="ic">🔒</span>Escrow</div>
+      <div class="nav-i"><span class="ic">💸</span>Payouts</div>
+    </nav>
+  </aside>
+  <!-- MAIN -->
+  <div class="main">
+    <div class="top"><div class="title">Settings</div><div class="av">42</div></div>
+    <div class="content">
+      <div class="wrap">
+        <div class="card">
+          <h1 class="h1">🛠️ Referral Settings</h1>
+          <p class="sub">The default commission a referrer earns on the platform's revenue from anyone they refer.</p>
+        </div>
+
+        <div class="card">
+          <p class="lbl">Default referral %</p>
+          <div class="pct-row">
+            <input class="pct-input" value="25.00">
+            <span class="pct-suffix">%</span>
+          </div>
+          <p class="help">New referrals start at this %. You can still override it per relationship on the <b>Relationships</b> page (e.g. a specific agency at 30%).</p>
+
+          <div class="ro">
+            <div class="box">
+              <div class="k">Earning window</div>
+              <div class="v">12 months</div>
+              <div class="lock">🔒 fixed — from the referral date</div>
+            </div>
+            <div class="box">
+              <div class="k">Carved from</div>
+              <div class="v">Platform slice only</div>
+              <div class="lock">never reduces influencer / brand</div>
+            </div>
+          </div>
+
+          <div class="foot">
+            <span class="meta">Last changed 31 May 2026 · admin ••42</span>
+            <button class="btn">Save</button>
+          </div>
+        </div>
+
+        <div class="toast">✓ Default updated to 25.00% — applies to new referrals.</div>
+
+        <div class="gate"><b>Role note:</b> only <b>superadmin</b> can change this. Reviewer / finance admins see the value read-only (Save hidden); the API rejects a non-superadmin write with 403.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

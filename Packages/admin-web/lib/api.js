@@ -181,6 +181,25 @@ export const marketingApi = {
   updateSettings: (data) => api.patch('/admin/marketing/settings', data),
 };
 
+// Referral admin API (Contract 2 — /admin/referrals/*)
+export const referralApi = {
+  getSettings:    () => api.get('/admin/referrals/settings'),
+  updateSettings: (data) => api.patch('/admin/referrals/settings', data),
+  listEdges: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/referrals/edges?${q.toString()}`);
+  },
+  createEdge: (data) => api.post('/admin/referrals/edges', data),
+  updateEdge: (id, data) => api.patch(`/admin/referrals/edges/${id}`, data),
+  listLedger: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/referrals/ledger?${q.toString()}`);
+  },
+  getSummary: () => api.get('/admin/referrals/summary'),
+};
+
 export function getStoredUser() {
   if (typeof window === 'undefined') return null;
   try { return JSON.parse(localStorage.getItem('inflx_user') || 'null'); } catch { return null; }

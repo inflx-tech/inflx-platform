@@ -1,0 +1,29 @@
+{
+  "feature": "referral-admin-controls",
+  "area": "admin-web+backend-api+migration",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-31) — 'go to contract 2' + 'pls proceed'; scope decisions delegated under standing autonomy (single global default pct + override; 3 screens Settings/Relationships/Earnings; manual edge create now, settlement deferred to C3).",
+  "approved_at": "2026-05-31",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render API + Vercel admin-web + migration 079. Additive/reversible. Engine stays dormant; Earnings shows empty state until edges exist.",
+  "notes": "Contract 2 of 4 (Referral / Strategic-Partner-Agency). Spec-lock (Step 5) delegated by founder. UI-governed: mockup-lock + before/after-diff gates ENFORCED — NO implementation until mockup_locked=true (founder reviews 04-preview mockups first).",
+  "related": [
+    "features/referral-engine (Contract 1, deployed)",
+    "_planned: features/referral-agency-role (Contract 3)",
+    "_planned: features/referral-influencer-refer-earn (Contract 4)"
+  ],
+  "model_locked": "Admin config + manage + audit on top of the C1 engine. Global default_pct (referral_settings, override per edge). Reads=any admin, writes=superadmin. POST /edges routes through referral.service.createEdge (guards/dedup intact). Ledger read-only this contract; settlement/mark-paid deferred to C3 (no agency wallet yet).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Not yet — pending mockup-lock + implementation + qa green + diff sign-off."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-05-31) — approved the 3 rendered mockups (Settings/Relationships/Earnings), 'Approve — lock & implement'.",
+  "mockup_locked_at": "2026-05-31"
+}
