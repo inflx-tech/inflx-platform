@@ -19,11 +19,11 @@
   ],
   "model_locked": "Referrer earns admin-set % for 12 months from referral. Brand referred => % of subscription + protection fee. Influencer referred => % of public-purchase commission. One % per edge, flat 12mo window, no caps/operators. One active referrer per entity (first-touch). Carved from platform slice only; accrues on confirmed revenue only.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Not yet — pending Step-5 lock + implementation + qa green."
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-05-31) — explicit go: 'migrate prod, then push'.",
+    "released_at": "2026-05-31",
+    "deploy": "DEPLOYED 2026-05-31. Migration 078 applied to Supabase prod (3 tables + 2 indexes + influencers.referral_earned_total, all sanity-checked OK). git push fae922b..76a976f -> Render auto-deploy (backend-only; no OTA/web). Evidence: pnpm qa GREEN 76/76 (exit 0, STATE=GREEN); referral-engine jest 12/12 on fresh DB; money-path hook suites (commission-confirm, tranche3, subscription, escrow-fee-tiers) green; the 4 pre-existing-RED jest suites proven identical with/without these edits via baseline (backend-test-debt, not a regression from this change). DORMANT: zero referral_edges rows in prod => engine never accrues until Contracts 2/3 create edges."
   },
   "mockup_locked": true,
   "mockup_locked_by": "N/A — backend-only contract, no UI surface.",
