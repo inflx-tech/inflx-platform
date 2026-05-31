@@ -1,0 +1,31 @@
+{
+  "feature": "referral-engine",
+  "area": "backend-service+migration",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-31) — explicit 'lock it and start implementation and do all tests and push the code' after reviewing the functional model + 4-contract plan.",
+  "approved_at": "2026-05-31",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING but DORMANT — engine + migration 078 ship live; with zero referral_edges rows in prod it never accrues. Activates only when Contracts 2/3 create edges.",
+  "notes": "Contract 1 of 4 (Referral / Strategic-Partner-Agency feature). Step-5 gate: set approved=true (with approved_by/at) only after founder agrees the spec + workflow + expected-outputs. No implementation (Step 7) until approved=true. Backend-only; UI-governed mockup/diff gates N/A.",
+  "related": [
+    "features/billing-attribution-l3",
+    "features/billing-subscriptions-schema",
+    "_planned: features/referral-admin-controls (Contract 2)",
+    "_planned: features/referral-agency-role (Contract 3)",
+    "_planned: features/referral-influencer-refer-earn (Contract 4)"
+  ],
+  "model_locked": "Referrer earns admin-set % for 12 months from referral. Brand referred => % of subscription + protection fee. Influencer referred => % of public-purchase commission. One % per edge, flat 12mo window, no caps/operators. One active referrer per entity (first-touch). Carved from platform slice only; accrues on confirmed revenue only.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Not yet — pending Step-5 lock + implementation + qa green."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A — backend-only contract, no UI surface.",
+  "mockup_locked_at": "N/A"
+}

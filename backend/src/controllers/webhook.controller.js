@@ -27,6 +27,9 @@ const notificationService = require('../services/notification.service');
 // Wave 1 — centralized tax math. GST rate now read from payment_config
 // (defensive fallback to 18% via tax.service).
 const taxService = require('../services/tax.service');
+// Contract: features/referral-engine — accrue referral commission to the
+// brand's active referrer on a confirmed (paid) subscription invoice.
+const referralService = require('../services/referral.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Signature verification
@@ -231,10 +234,14 @@ async function handleSubscriptionCharged(payload) {
   const amountInr = row.price_inr ? parseFloat(row.price_inr) : 0;
   const gstInr    = amountInr ? await taxService.gstOn(amountInr) : 0;
 
+  let newInvoiceId = null;
   await db.withTransaction(async (client) => {
     // Idempotent invoice insert — partial unique index on
     // (brand_subscription_id, razorpay_payment_id) prevents duplicates.
-    await client.query(
+    // RETURNING id yields a row ONLY on first delivery; a retry hits the
+    // conflict (DO NOTHING) and returns nothing — which is exactly the signal
+    // we use below to accrue referral commission once and only once.
+    const { rows: invRows } = await client.query(
       `INSERT INTO subscription_invoices
          (brand_subscription_id, brand_id, tier_key, amount_inr,
           gst_amount_inr, period_start, period_end, status, paid_at,
@@ -243,12 +250,14 @@ async function handleSubscriptionCharged(payload) {
                current_date + ($6 || ' days')::interval,
                'paid', now(), $7, $8)
        ON CONFLICT (brand_subscription_id, razorpay_payment_id)
-         WHERE razorpay_payment_id IS NOT NULL DO NOTHING`,
+         WHERE razorpay_payment_id IS NOT NULL DO NOTHING
+       RETURNING id`,
       [
         row.id, row.brand_id, row.tier_key, amountInr, gstInr,
         String(cycleDays), payment?.id || null, payment?.invoice_id || null,
       ]
     );
+    newInvoiceId = invRows[0] ? invRows[0].id : null;
     await client.query(
       `UPDATE brand_subscriptions
           SET last_charged_at      = now(),
@@ -260,6 +269,22 @@ async function handleSubscriptionCharged(payload) {
       [row.id, String(cycleDays)]
     );
   });
+
+  // Referral accrual (contract: features/referral-engine). Fire only when a NEW
+  // paid invoice was written (newInvoiceId set) — a duplicate webhook delivery
+  // skips this, so we never double-accrue. Best-effort + own-transaction:
+  // accrue() swallows+logs any error so the subscription charge above stays
+  // committed regardless. base_amount = the subscription amount_inr (the
+  // platform's slice); referred entity = the brand.
+  if (newInvoiceId) {
+    await referralService.accrue({
+      source:       'subscription',
+      sourceRefId:  newInvoiceId,
+      referredType: 'brand',
+      referredId:   row.brand_id,
+      baseAmount:   amountInr,
+    });
+  }
 }
 
 async function handleSubscriptionCycleEnd(payload) {

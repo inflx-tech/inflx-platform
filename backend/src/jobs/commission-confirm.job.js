@@ -2,6 +2,10 @@
 
 const db = require('../config/db');
 const notificationService = require('../services/notification.service');
+// Contract: features/referral-engine — accrue referral commission to the
+// referred influencer's active referrer on confirmed (return-window-closed)
+// follower commission.
+const referralService = require('../services/referral.service');
 
 async function run() {
   console.log('[CRON commission-confirm] Running...');
@@ -42,6 +46,20 @@ async function run() {
        WHERE id = $2`,
       [commission, tx.influencer_id]
     );
+
+    // 2b. Referral accrual (contract: features/referral-engine). The platform's
+    // commission slice on this confirmed txn is marketplace_fee_amount (was
+    // platform_fee pre-M059). If the referred INFLUENCER has an active in-window
+    // referrer, accrue their %. Best-effort own-transaction + idempotent on
+    // (source, source_ref_id) so a cron re-run never double-pays; the
+    // influencer's own commission credit above is untouched.
+    await referralService.accrue({
+      source:       'commission',
+      sourceRefId:  tx.id,
+      referredType: 'influencer',
+      referredId:   tx.influencer_id,
+      baseAmount:   parseFloat(tx.marketplace_fee_amount) || 0,
+    });
 
     // 3. Notify influencer
     await notificationService.send({

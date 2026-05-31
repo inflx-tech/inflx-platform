@@ -39,6 +39,9 @@ async function query(text, params) {
 
 const TRUNCATE_SQL = `
     TRUNCATE
+      referral_ledger,
+      referral_edges,
+      referral_codes,
       notifications,
       deliverable_stats,
       enquiry_leads,

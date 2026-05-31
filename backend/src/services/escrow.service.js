@@ -12,6 +12,9 @@ const env               = require('../config/env');
 const paymentConfigSvc  = require('./paymentConfig.service');
 const pricingService    = require('./pricing.service');
 const taxService        = require('./tax.service');
+// Contract: features/referral-engine — accrue referral commission to the
+// brand's active referrer on a released escrow tranche's protection fee.
+const referralService   = require('./referral.service');
 
 // Tranche schedule — percents loaded from payment_config table at runtime
 function buildTranches(cfg) {
@@ -173,6 +176,22 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
       `Tranche ${entry.tranche_number} released — payout ${payoutId}`,
     ]
   );
+
+  // Referral accrual (contract: features/referral-engine). The platform's
+  // protection-fee slice on this tranche is escrow_fee_amount. If the campaign's
+  // BRAND has an active in-window referrer, accrue their %. SAVEPOINT-isolated
+  // inside this host transaction + idempotent on (source, source_ref_id), so an
+  // accrual failure rolls back ONLY the referral work — this tranche release
+  // (wallet credit + audit row above) still commits, and the influencer's
+  // net_to_influencer is untouched. One ledger row per escrow_entries.id, so
+  // T1/T2/T3 each accrue separately.
+  await referralService.accrueWithClient(client, {
+    source:       'protection_fee',
+    sourceRefId:  escrowEntryId,
+    referredType: 'brand',
+    referredId:   brandId,
+    baseAmount:   parseFloat(entry.escrow_fee_amount) || 0,
+  });
 
   return { payoutId, netAmount };
 }
