@@ -19,12 +19,12 @@
   ],
   "model_locked": "Influencer Refer & Earn screen (Earnings stack): referral code (Copy + Share), total earned hero, how-it-works, earnings ledger. Backed by read-only GET /influencers/me/referral. Engine already credits influencer-referrers inline; this is the view+share surface. OTA-deployed; Maestro boot smoke is the gate.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-06-01) — explicit go: 'push + OTA influencer'.",
+    "released_at": "2026-06-01",
     "maestro_green": true,
-    "deploy": "Not yet — pending mockup-lock + implementation + qa green + maestro green + diff sign-off + explicit deploy go."
+    "deploy": "DEPLOYED 2026-06-01. No migration. git push 04abc21..0c679ea -> Render (GET /influencers/me/referral, verified live 404->401). OTA: publish-ota:influencer -> version 91 (2537 KB) published; installed influencer apps pick up the Refer & Earn screen on next launch. Evidence: backend jest referral-influencer 6/6 + referral-engine 12/12; RN bundle compiled via Metro (200, 9.5MB); pnpm qa:maestro 4/4 PASSED on emulator-5554 (maestro_green); pnpm qa GREEN 76/76."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-06-01) — reviewed the rendered Refer & Earn mobile mockup, 'Approve — lock & build'.",
