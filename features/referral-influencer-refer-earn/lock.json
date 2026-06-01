@@ -1,0 +1,32 @@
+{
+  "feature": "referral-influencer-refer-earn",
+  "area": "mobile-influencer+backend-api",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-01) — 'check my local has all these environment... start implement remaining pieces which mobile' (env verified GREEN: Maestro 2.5.1 + adb + Pixel_6 emulator). Agent chose C4 first (lighter than the C3b native APK). Scope delegated under standing autonomy.",
+  "approved_at": "2026-06-01",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render (1 read GET) + OTA influencer JS bundle. No migration, no native rebuild, no money-path change.",
+  "notes": "Contract 4 of 4. Spec-lock delegated. MOBILE-GOVERNED + UI-governed: mockup-lock (Rule 3), before/after-diff (Rule 4), AND maestro-green (Rule 5) ALL ENFORCED. NO Packages/Mobile/src code until mockup_locked=true. Release requires release.maestro_green=true (pnpm qa:maestro GREEN on a connected device). This is the REFERRER side only; the 'enter a code' redemption UI for referred users is shared with Contract 3b (out of scope here).",
+  "related": [
+    "features/referral-engine (Contract 1 — already settles influencer-referrers)",
+    "features/referral-admin-controls (Contract 2)",
+    "features/referral-agency-role (Contract 3a)",
+    "features/referral-agency-admin (agency admin page)",
+    "_planned: features/referral-agency-mobile (Contract 3b — agency APK + signup-code UI)"
+  ],
+  "model_locked": "Influencer Refer & Earn screen (Earnings stack): referral code (Copy + Share), total earned hero, how-it-works, earnings ledger. Backed by read-only GET /influencers/me/referral. Engine already credits influencer-referrers inline; this is the view+share surface. OTA-deployed; Maestro boot smoke is the gate.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": true,
+    "deploy": "Not yet — pending mockup-lock + implementation + qa green + maestro green + diff sign-off + explicit deploy go."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-01) — reviewed the rendered Refer & Earn mobile mockup, 'Approve — lock & build'.",
+  "mockup_locked_at": "2026-06-01"
+}

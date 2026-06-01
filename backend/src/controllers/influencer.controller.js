@@ -10,6 +10,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const { resolveAvatars } = require('../utils/avatarResolver');
+const referralService = require('../services/referral.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -1346,4 +1347,55 @@ const getMyTransactions = asyncHandler(async (req, res) => {
   }, 200, { page: pageNum, limit: limitNum, total: countRows[0].count });
 });
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions };
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /influencers/me/referral  (Contract 4 — Refer & Earn)
+// Read-only: the influencer's own referral code, total earned, and ledger.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getReferralInfo = asyncHandler(async (req, res) => {
+  const influencer = await getInfluencerByUserId(req.user.sub);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const codeRow = await referralService.getOrCreateCode('influencer', influencer.id);
+
+  const { rows: ledger } = await db.query(
+    `SELECT l.id, l.source, l.base_amount, l.pct, l.amount, l.payout_status, l.created_at,
+            e.referred_type,
+            CASE WHEN e.referred_type = 'influencer' THEN di.instagram_handle
+                 WHEN e.referred_type = 'brand'      THEN db_.business_name END AS referred_name
+       FROM referral_ledger l
+       JOIN referral_edges e ON e.id = l.edge_id
+       LEFT JOIN influencers di ON e.referred_type = 'influencer' AND di.id = e.referred_id
+       LEFT JOIN brands      db_ ON e.referred_type = 'brand'     AND db_.id = e.referred_id
+      WHERE l.referrer_type = 'influencer' AND l.referrer_id = $1
+      ORDER BY l.created_at DESC
+      LIMIT 50`,
+    [influencer.id]
+  );
+
+  const { rows: cnt } = await db.query(
+    `SELECT COUNT(*)::int AS n FROM referral_edges
+      WHERE referrer_type = 'influencer' AND referrer_id = $1 AND status = 'active'`,
+    [influencer.id]
+  );
+
+  return success(res, {
+    code: codeRow.code,
+    earned_total: parseFloat(influencer.referral_earned_total || 0),
+    window_months: referralService.REFERRAL_WINDOW_MONTHS,
+    referred_count: cnt[0].n,
+    ledger: ledger.map(r => ({
+      id: r.id,
+      referred_type: r.referred_type,
+      referred_name: r.referred_name || (r.referred_type === 'brand' ? 'A brand' : 'An influencer'),
+      source: r.source,
+      base_amount: parseFloat(r.base_amount),
+      pct: parseFloat(r.pct),
+      amount: parseFloat(r.amount),
+      payout_status: r.payout_status,
+      created_at: r.created_at,
+    })),
+  });
+});
+
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo };

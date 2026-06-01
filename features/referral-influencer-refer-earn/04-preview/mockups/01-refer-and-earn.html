@@ -1,0 +1,123 @@
+<!-- preview-size: 412x915 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Influencer — Refer & Earn</title>
+<style>
+  :root{
+    --yellow:#FFC107;--yellowHover:#E0A800;--yellowPale:#FFF7CC;--yellow50:#FFFDEB;--yellowText:#6B5A00;
+    --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;--muted4:#D4D4D8;
+    --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--border:#E4E4E7;--borderSoft:#F4F4F5;
+    --teal:#00B894;--tealDeep:#007A63;--tealPale:#E0FAF5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.45 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:#000}
+  .phone{width:412px;height:915px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+  /* status + appbar */
+  .status{height:30px;background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;font-weight:700;color:var(--ink)}
+  .appbar{height:52px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 14px}
+  .appbar .back{font-size:20px;color:var(--ink)}
+  .appbar .ttl{font-size:17px;font-weight:800}
+  .scroll{flex:1;overflow-y:auto;padding:14px}
+  /* hero */
+  .hero{background:var(--ink);border-radius:18px;padding:18px;color:var(--white);position:relative;overflow:hidden}
+  .hero .spark{position:absolute;right:-10px;top:-10px;font-size:80px;opacity:.10}
+  .hero .lbl{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--yellow)}
+  .hero .amt{font-size:34px;font-weight:900;margin-top:2px;letter-spacing:-.5px}
+  .hero .sub{font-size:12px;color:var(--muted3);margin-top:1px}
+  /* code card */
+  .codeCard{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:12px}
+  .codeCard .cap{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted2)}
+  .codeRow{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .code{flex:1;font-family:ui-monospace,Menlo,monospace;font-size:22px;font-weight:800;letter-spacing:1px;background:var(--yellowPale);border:1.5px dashed var(--yellow);color:var(--ink);border-radius:12px;padding:12px 14px;text-align:center}
+  .btns{display:flex;gap:10px;margin-top:12px}
+  .btn{flex:1;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:7px}
+  .btn.primary{background:var(--yellow);color:var(--ink)}
+  .btn.ghost{background:var(--white);border:1.5px solid var(--ink);color:var(--ink)}
+  /* how it works */
+  .sec{font-size:13px;font-weight:800;color:var(--ink);margin:18px 4px 8px}
+  .how{background:var(--yellow50);border:1px solid var(--yellowPale);border-radius:14px;padding:14px}
+  .how .it{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+  .how .it:last-child{margin-bottom:0}
+  .how .ic{font-size:16px;width:22px;text-align:center;flex-shrink:0}
+  .how .tx{font-size:12.5px;color:var(--ink2);line-height:1.4}
+  .how .tx b{color:var(--ink)}
+  /* ledger */
+  .row{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:12px 13px;margin-bottom:8px;display:flex;align-items:center;gap:11px}
+  .row .av{width:34px;height:34px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .row .mid{flex:1;min-width:0}
+  .row .nm{font-size:13.5px;font-weight:700}
+  .row .meta{font-size:11px;color:var(--muted2);margin-top:1px}
+  .src{font-size:9px;font-weight:800;text-transform:uppercase;padding:1px 6px;border-radius:5px}
+  .src.subscription{background:#e0f2fe;color:#075985}
+  .src.protection_fee{background:#dcfce7;color:#166534}
+  .src.commission{background:var(--yellowPale);color:var(--yellowText)}
+  .row .right{text-align:right;flex-shrink:0}
+  .row .amt{font-size:14px;font-weight:900}
+  .pill{font-size:9px;font-weight:800;text-transform:uppercase;padding:1px 7px;border-radius:99px;margin-top:2px;display:inline-block}
+  .pill.paid{background:var(--tealDeep);color:#fff}
+  .pill.pending{background:#fff;border:1px solid var(--yellow);color:var(--yellowText)}
+  .note{font-size:11px;color:var(--muted2);text-align:center;padding:6px 0 16px}
+  /* tabbar */
+  .tabs{height:60px;background:var(--white);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;color:var(--muted3)}
+  .tab.on{color:var(--ink)}
+  .tab .ti{font-size:18px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+  <div class="appbar"><span class="back">‹</span><span class="ttl">Refer & Earn</span></div>
+  <div class="scroll">
+
+    <div class="hero">
+      <div class="spark">🎁</div>
+      <div class="lbl">You've earned</div>
+      <div class="amt">₹1,250</div>
+      <div class="sub">Paid straight to your wallet · 2 active referrals</div>
+    </div>
+
+    <div class="codeCard">
+      <div class="cap">Your referral code</div>
+      <div class="codeRow"><div class="code">INFLX-7QK4M2</div></div>
+      <div class="btns">
+        <button class="btn ghost">⧉ Copy</button>
+        <button class="btn primary">↗ Share</button>
+      </div>
+    </div>
+
+    <div class="sec">How it works</div>
+    <div class="how">
+      <div class="it"><span class="ic">🏢</span><span class="tx">Refer a <b>brand</b> → earn a share of their <b>subscription + campaign protection fee</b>.</span></div>
+      <div class="it"><span class="ic">⭐</span><span class="tx">Refer an <b>influencer</b> → earn a share of the <b>commission</b> on their sales.</span></div>
+      <div class="it"><span class="ic">🗓️</span><span class="tx">You earn for <b>12 months</b> from each referral — paid to your wallet as we earn. It never reduces their pay.</span></div>
+    </div>
+
+    <div class="sec">Your referral earnings</div>
+
+    <div class="row">
+      <div class="av">⭐</div>
+      <div class="mid"><div class="nm">@anita_eats</div><div class="meta"><span class="src commission">commission</span> · 30 May</div></div>
+      <div class="right"><div class="amt">₹1,120</div><span class="pill paid">paid</span></div>
+    </div>
+    <div class="row">
+      <div class="av">⭐</div>
+      <div class="mid"><div class="nm">@anita_eats</div><div class="meta"><span class="src commission">commission</span> · 28 May</div></div>
+      <div class="right"><div class="amt">₹130</div><span class="pill paid">paid</span></div>
+    </div>
+
+    <div class="note">Showing your last 2 earnings · pull to refresh</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab"><span class="ti">🏠</span>Home</div>
+    <div class="tab"><span class="ti">🏷️</span>Offers</div>
+    <div class="tab"><span class="ti">📋</span>Campaigns</div>
+    <div class="tab on"><span class="ti">💰</span>Earnings</div>
+    <div class="tab"><span class="ti">👤</span>Profile</div>
+  </div>
+</div>
+</body>
+</html>

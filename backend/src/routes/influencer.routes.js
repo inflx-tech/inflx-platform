@@ -28,6 +28,9 @@ router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.ge
 // ── Earnings overview (Phase 3 — Block E) ─────────────────────────────────────
 router.get('/me/earnings', authenticate, requireRole('influencer'), ctrl.getEarnings);
 
+// ── Refer & Earn (Contract 4) — own referral code + earnings ─────────────────
+router.get('/me/referral', authenticate, requireRole('influencer'), ctrl.getReferralInfo);
+
 // ── My Campaigns (HIGH #6) ───────────────────────────────────────────────────
 router.get('/me/campaigns',                          authenticate, requireRole('influencer'), ctrl.getMyCampaigns);
 router.get('/me/campaigns/:campaign_influencer_id',  authenticate, requireRole('influencer'), ctrl.getMyCampaignDetail);

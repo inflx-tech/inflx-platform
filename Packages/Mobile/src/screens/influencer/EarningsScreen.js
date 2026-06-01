@@ -105,6 +105,16 @@ export default function EarningsScreen() {
         <View style={styles.headerAccent} />
       </View>
 
+      {/* Refer & Earn entry (Contract 4) */}
+      <TouchableOpacity style={styles.referTile} onPress={() => navigation.navigate('ReferAndEarn')} activeOpacity={0.85}>
+        <Text style={styles.referEmoji}>🎁</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.referTitle}>Refer & Earn</Text>
+          <Text style={styles.referSub}>Share your code — earn for 12 months</Text>
+        </View>
+        <Icon name="chevron-right" size={22} color={P.ink} />
+      </TouchableOpacity>
+
       {/* Campaign Earnings */}
       <View style={styles.sectionMargin}>
         <Text style={styles.sectionTitle}>Campaign Earnings</Text>
@@ -271,6 +281,11 @@ export default function EarningsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
+  // Refer & Earn entry tile (Contract 4)
+  referTile: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: P.yellowPale, borderWidth: 1, borderColor: P.yellow, borderRadius: 16, padding: 14, marginHorizontal: 16, marginTop: 14 },
+  referEmoji: { fontSize: 26 },
+  referTitle: { fontFamily: fonts.displayBold, fontSize: 15, color: P.ink },
+  referSub: { fontFamily: fonts.sansRegular, fontSize: 12, color: P.yellowText, marginTop: 1 },
 
   // Hero
   headerCard: { backgroundColor: P.ink, padding: 20, paddingTop: 50, paddingBottom: 22, position: 'relative' },

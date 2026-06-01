@@ -234,6 +234,7 @@ export const influencerApi = {
   getMe: () => api.get('/influencers/me'),
   updateMe: (data) => api.patch('/influencers/me', data),
   getEarnings: () => api.get('/influencers/me/earnings'),
+  getReferralInfo: () => api.get('/influencers/me/referral'),
   getOffers: (status) => api.get(`/offers/inbox${status ? `?status=${status}` : ''}`),
   getOfferDetail: (id) => api.get(`/offers/${id}`),
   acceptOffer: (id) => api.post(`/offers/${id}/accept`),
