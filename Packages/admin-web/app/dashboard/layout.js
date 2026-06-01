@@ -26,6 +26,7 @@ const NAV = [
   { href: '/dashboard/referrals/settings',      label: 'Settings',      icon: '🛠️' },
   { href: '/dashboard/referrals/relationships', label: 'Relationships', icon: '🤝' },
   { href: '/dashboard/referrals/earnings',      label: 'Earnings',      icon: '💰' },
+  { href: '/dashboard/referrals/agencies',      label: 'Agencies',      icon: '🏛️' },
   { section: 'FINANCE' },
   { href: '/dashboard/escrow', label: 'Escrow', icon: '🔒' },
   { href: '/dashboard/payouts', label: 'Payouts', icon: '💸' },

@@ -1519,12 +1519,66 @@ const updateAgencyStatus = asyncHandler(async (req, res) => {
   return success(res, { agency: updated[0], notification_sent: true });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/agencies  (referral-agency-admin) — full directory + wallet/earnings
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getAgencies = asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit = Math.min(100, parseInt(req.query.limit || '50', 10));
+  const offset = (page - 1) * limit;
+
+  const where = [];
+  const params = [];
+  const status = req.query.status;
+  if (status && status !== 'all') { params.push(status); where.push(`u.status = $${params.length}`); }
+  if (req.query.search) { params.push(`%${req.query.search}%`); where.push(`a.agency_name ILIKE $${params.length}`); }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int AS total FROM agencies a JOIN users u ON u.id = a.user_id ${whereSql}`,
+    params
+  );
+
+  const { rows } = await db.query(
+    `SELECT a.id, a.agency_name, a.contact_person, a.contact_email, a.city, a.state,
+            u.status AS user_status, a.wallet_balance, a.referral_earned_total, a.created_at,
+            rc.code AS referral_code,
+            (SELECT COUNT(*)::int FROM referral_edges e
+               WHERE e.referrer_type = 'agency' AND e.referrer_id = a.id AND e.status = 'active') AS active_edges
+       FROM agencies a
+       JOIN users u ON u.id = a.user_id
+       LEFT JOIN referral_codes rc ON rc.referrer_type = 'agency' AND rc.referrer_id = a.id
+       ${whereSql}
+      ORDER BY a.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}`,
+    params
+  );
+
+  const data = rows.map(r => ({
+    id: r.id,
+    agency_name: r.agency_name,
+    contact_person: r.contact_person,
+    contact_email: r.contact_email,
+    city: r.city,
+    state: r.state,
+    user_status: r.user_status,
+    wallet_balance: parseFloat(r.wallet_balance),
+    referral_earned_total: parseFloat(r.referral_earned_total),
+    referral_code: r.referral_code || null,
+    active_edges: r.active_edges,
+    created_at: r.created_at,
+  }));
+  return success(res, { agencies: data }, 200, { page, limit, total: countRows[0].total });
+});
+
 module.exports = {
   getBrandQueue,
   getInfluencerQueue,
   updateBrandStatus,
   updateInfluencerStatus,
   getAgencyQueue,
+  getAgencies,
   updateAgencyStatus,
   getStats,
   getEscrowOverview,

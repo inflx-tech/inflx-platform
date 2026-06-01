@@ -1,0 +1,153 @@
+<!-- preview-size: 1280x820 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Referrals → Agencies (admin)</title>
+<style>
+  :root{
+    --navy:#141b2d;--gold:#d4a017;--gold-pale:#fbf3da;
+    --t1:#1a2233;--t2:#5b6577;--t3:#8a93a6;--border:#e5e8ee;
+    --s2:#f6f7f9;--bg:#eef1f6;--white:#fff;--ok:#16a34a;--orange:#f47920;
+    --teal-deep:#0f766e;--teal-pale:#ccfbf1;--red:#e23b3b;--red-pale:#fde8e8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:13px/1.5 'Plus Jakarta Sans',-apple-system,Segoe UI,Roboto,sans-serif;color:var(--t1)}
+  .app{display:flex;height:820px;overflow:hidden}
+  .sb{width:192px;background:var(--navy);color:#fff;flex-shrink:0;display:flex;flex-direction:column;overflow-y:auto}
+  .logo{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:15px}
+  .logo .x{background:linear-gradient(90deg,#e23b3b,#f47920);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .role{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(212,160,23,.2);color:var(--gold);border:1px solid rgba(212,160,23,.3)}
+  nav{padding:8px}
+  .sec{padding:12px 8px 4px;font-size:9px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:1.5px}
+  .nav-i{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;font-size:11px;font-weight:500;color:rgba(255,255,255,.55);margin-bottom:2px}
+  .nav-i .ic{width:16px;text-align:center}
+  .nav-i.active{background:rgba(212,160,23,.15);color:var(--gold);font-weight:600}
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .top{height:44px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;flex-shrink:0}
+  .top .title{font-weight:700;font-size:14px}
+  .av{width:28px;height:28px;border-radius:99px;background:var(--gold-pale);border:1px solid rgba(212,160,23,.3);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#9a7415}
+  .content{flex:1;overflow-y:auto;padding:16px;background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .h1{font-size:17px;font-weight:800;margin:0 0 3px}
+  .sub{font-size:12px;color:var(--t3);margin:0}
+  .filters{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .chip{font-size:11px;font-weight:600;padding:5px 11px;border-radius:99px;border:1px solid var(--border);background:var(--white);color:var(--t2);cursor:pointer}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chip .n{opacity:.6;margin-left:4px}
+  .search{flex:1;min-width:170px;border:1px solid var(--border);border-radius:9px;padding:6px 11px;font-size:12px}
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);text-align:left;padding:8px;background:var(--s2)}
+  th.r,td.r{text-align:right}
+  td{padding:10px 8px;border-top:1px solid var(--border);font-size:12px;vertical-align:middle}
+  tr:hover td{background:#fafbfc}
+  .nm{font-weight:700}.nm .meta{font-weight:500;color:var(--t3);font-size:10.5px}
+  .badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:2px 8px;border-radius:99px}
+  .badge.pending{background:var(--gold-pale);color:#9a7415}
+  .badge.approved{background:var(--teal-deep);color:#fff}
+  .badge.rejected{background:var(--red-pale);color:var(--red)}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:11px;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+  .amt{font-weight:800;font-variant-numeric:tabular-nums}
+  .muted{color:var(--t3)}
+  .actions{display:flex;gap:6px;justify-content:flex-end}
+  .btn{border:none;border-radius:8px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer}
+  .btn.ok{background:var(--teal-deep);color:#fff}
+  .btn.rej{background:var(--white);border:1px solid var(--red-pale);color:var(--red)}
+  .gate{font-size:11px;color:var(--t2);background:var(--white);border:1px dashed var(--border);border-radius:10px;padding:11px 14px}
+  .gate b{color:var(--t1)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sb">
+    <div class="logo"><span>INFL<span class="x">X</span></span><span class="role">REVIEWER</span></div>
+    <nav>
+      <div class="sec">OVERVIEW</div>
+      <div class="nav-i"><span class="ic">📊</span>Platform Stats</div>
+      <div class="sec">MANAGEMENT</div>
+      <div class="nav-i"><span class="ic">✅</span>Approvals</div>
+      <div class="nav-i"><span class="ic">🏢</span>Brands</div>
+      <div class="nav-i"><span class="ic">⭐</span>Influencers</div>
+      <div class="sec">REFERRALS</div>
+      <div class="nav-i"><span class="ic">🛠️</span>Settings</div>
+      <div class="nav-i"><span class="ic">🤝</span>Relationships</div>
+      <div class="nav-i"><span class="ic">💰</span>Earnings</div>
+      <div class="nav-i active"><span class="ic">🏛️</span>Agencies</div>
+      <div class="sec">FINANCE</div>
+      <div class="nav-i"><span class="ic">🔒</span>Escrow</div>
+      <div class="nav-i"><span class="ic">💸</span>Payouts</div>
+    </nav>
+  </aside>
+  <div class="main">
+    <div class="top"><div class="title">Agencies</div><div class="av">42</div></div>
+    <div class="content">
+      <div class="wrap">
+        <div class="card">
+          <h1 class="h1">🏛️ Partner Agencies</h1>
+          <p class="sub">Approve partner agencies and track what each has earned. Approved agencies can share their code and withdraw.</p>
+          <div class="filters">
+            <span class="chip">Pending <span class="n">2</span></span>
+            <span class="chip on">All <span class="n">5</span></span>
+            <span class="chip">Approved <span class="n">3</span></span>
+            <span class="chip">Rejected</span>
+            <input class="search" placeholder="Search agency name…">
+          </div>
+
+          <table>
+            <thead><tr>
+              <th>Agency</th><th>City</th><th>Status</th><th>Code</th>
+              <th class="r">Wallet</th><th class="r">Earned</th><th class="r">Active refs</th><th></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td class="nm">Vizag Media Partners<div class="meta">Ravi · ravi@vmp.in</div></td>
+                <td>Visakhapatnam</td>
+                <td><span class="badge pending">pending</span></td>
+                <td class="muted">—</td>
+                <td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td>
+                <td class="actions"><button class="btn ok">Approve</button><button class="btn rej">Reject</button></td>
+              </tr>
+              <tr>
+                <td class="nm">Coastal Reach Agency<div class="meta">Sneha · sneha@coastal.in</div></td>
+                <td>Vijayawada</td>
+                <td><span class="badge pending">pending</span></td>
+                <td class="muted">—</td>
+                <td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td>
+                <td class="actions"><button class="btn ok">Approve</button><button class="btn rej">Reject</button></td>
+              </tr>
+              <tr>
+                <td class="nm">Tier2 Growth Co<div class="meta">Imran · imran@t2g.in</div></td>
+                <td>Guntur</td>
+                <td><span class="badge approved">approved</span></td>
+                <td><span class="code">INFLX-7QK4M2</span></td>
+                <td class="r amt">₹3,500.00</td><td class="r amt">₹6,000.00</td><td class="r">4</td>
+                <td class="actions"></td>
+              </tr>
+              <tr>
+                <td class="nm">South Spark Media<div class="meta">Kavya · kavya@ssm.in</div></td>
+                <td>Tirupati</td>
+                <td><span class="badge approved">approved</span></td>
+                <td><span class="code">INFLX-3MK9PA</span></td>
+                <td class="r amt">₹0.00</td><td class="r amt">₹1,250.00</td><td class="r">1</td>
+                <td class="actions"></td>
+              </tr>
+              <tr style="opacity:.6">
+                <td class="nm">Unknown Promoters<div class="meta">— · —</div></td>
+                <td>—</td>
+                <td><span class="badge rejected">rejected</span></td>
+                <td class="muted">—</td>
+                <td class="r muted">—</td><td class="r muted">—</td><td class="r muted">—</td>
+                <td class="actions"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="gate"><b>Role note:</b> any admin can view this list; <b>reviewer+</b> can Approve / Reject (same gate as brand/influencer approval; API enforces it). Wallet / Earned / Active-refs are read live from the agency's wallet + the referral ledger. Empty state (no agencies yet) shows a placeholder, not a crash.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -25,6 +25,9 @@ router.patch('/influencers/:id/status', authenticate, requireAdminRole('reviewer
 router.get('/queue/agencies',        authenticate, requireAdminRole('reviewer'), ctrl.getAgencyQueue);
 router.patch('/agencies/:id/status', authenticate, requireAdminRole('reviewer'), ctrl.updateAgencyStatus);
 
+// Agency directory (referral-agency-admin) — any admin can view
+router.get('/agencies',              authenticate, requireAnyAdminRole,          ctrl.getAgencies);
+
 // Platform stats — any admin role
 router.get('/stats', authenticate, requireAnyAdminRole, ctrl.getStats);
 

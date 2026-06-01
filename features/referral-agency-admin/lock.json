@@ -1,0 +1,30 @@
+{
+  "feature": "referral-agency-admin",
+  "area": "admin-web+backend-api",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-01) — 'take your best one'; agent chose the admin-web Agencies page (operationalizes C3a; web-only so not blocked by the Maestro device gate that blocks C3b/C4). Scope delegated under standing autonomy.",
+  "approved_at": "2026-06-01",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render (1 read-only GET) + Vercel (admin-web Agencies page). No migration, no money movement, no mobile/OTA, no Maestro gate.",
+  "notes": "Fast-follow to Contract 3a. Spec-lock delegated. UI-governed (admin-web): mockup-lock + before/after-diff gates ENFORCED — NO implementation until mockup_locked=true (founder reviews mockups first). Approve/reject reuses C3a PATCH; only new backend is read-only GET /admin/agencies.",
+  "related": [
+    "features/referral-agency-role (Contract 3a, deployed — provides the endpoints this UI drives)",
+    "features/referral-admin-controls (Contract 2, deployed — sibling Referrals section)",
+    "_planned: features/referral-agency-mobile (Contract 3b)",
+    "_planned: features/referral-influencer-refer-earn (Contract 4)"
+  ],
+  "model_locked": "admin-web Agencies page (Referrals section): status-filtered list of agencies w/ wallet/earnings/code/active-edge count; Approve/Reject pending via existing C3a PATCH. New read-only GET /admin/agencies. No schema change.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Not yet — pending mockup-lock + implementation + qa green + diff sign-off."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-01) — reviewed the rendered Agencies mockup + file paths, 'Approve — lock & ship'.",
+  "mockup_locked_at": "2026-06-01"
+}

@@ -198,6 +198,13 @@ export const referralApi = {
     return api.get(`/admin/referrals/ledger?${q.toString()}`);
   },
   getSummary: () => api.get('/admin/referrals/summary'),
+  // Agencies directory + approval (referral-agency-admin)
+  listAgencies: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/agencies?${q.toString()}`);
+  },
+  updateAgencyStatus: (id, data) => api.patch(`/admin/agencies/${id}/status`, data),
 };
 
 export function getStoredUser() {
