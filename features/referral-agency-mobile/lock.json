@@ -1,0 +1,30 @@
+{
+  "feature": "referral-agency-mobile",
+  "area": "mobile-agency-flavor+backend-ota",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-01) — 'pls proceed' on C3b (agency native app), then cleared the Firebase blocker by registering in.inflx.app.agency in project aveen-inflx + supplying the updated google-services.json. Scope delegated under standing autonomy.",
+  "approved_at": "2026-06-01",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend ota.controller FLAVORS (+agency) → Render; OTA agency bundle. The agency APK is a native build; Play Store listing/signing/review is a MANUAL founder step (not automatable here).",
+  "notes": "Contract 3b. Spec-lock delegated. MOBILE-GOVERNED + UI-governed: mockup-lock (Rule 3) + before/after-diff (Rule 4) + maestro-green (Rule 5) ALL ENFORCED. NO Packages/Mobile/src code until mockup_locked=true. Release requires release.maestro_green=true. Firebase registration of in.inflx.app.agency DONE (google-services.json updated, 5 apps). New flavor is purely additive gradle+resource — no new Kotlin (AppConfig resolves role generically).",
+  "related": [
+    "features/referral-agency-role (Contract 3a — agency backend this app drives)",
+    "features/referral-agency-admin (agency approval admin page)",
+    "features/referral-influencer-refer-earn (Contract 4 — sibling mobile referral screen)"
+  ],
+  "model_locked": "New in.inflx.app.agency Android flavor (APP_ROLE=agency) → AgencyNavigator (Home: code+share+earnings; Wallet: withdraw TDS 194H 5% + history; Profile) + AgencyRegisterScreen (+optional referral-code redeem). Shared auth flow gains an agency branch+guard. ota.controller FLAVORS += agency. Play Store submission manual.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": true,
+    "deploy": "Not yet — pending qa green + explicit deploy go. Play Store submission tracked separately as a manual founder step."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-01) — reviewed the 3 rendered agency-app mockups (Register/Home/Wallet), 'Approve — lock & build'.",
+  "mockup_locked_at": "2026-06-01"
+}

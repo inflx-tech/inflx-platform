@@ -11,6 +11,7 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import InfluencerNavigator from './src/navigation/InfluencerNavigator';
 import FollowerNavigator from './src/navigation/FollowerNavigator';
 import BrandNavigator from './src/navigation/BrandNavigator';
+import AgencyNavigator from './src/navigation/AgencyNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
 import { LocationProvider } from './src/contexts/LocationContext';
@@ -89,7 +90,7 @@ export default function App() {
         // clear the session and return to auth. Follower APKs accept any
         // logged-in follower; follower flavor also serves unauthenticated
         // browsing, so only guard brand + influencer flavors here.
-        if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer') && storedRole !== APP_ROLE) {
+        if (APP_ROLE && (APP_ROLE === 'brand' || APP_ROLE === 'influencer' || APP_ROLE === 'agency') && storedRole !== APP_ROLE) {
           await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
           setRole('');
           return;
@@ -130,6 +131,7 @@ export default function App() {
           <NavigationContainer>
             {role === 'brand' ? <BrandNavigator /> :
              role === 'influencer' ? <InfluencerNavigator /> :
+             role === 'agency' ? <AgencyNavigator /> :
              role === 'follower' ? <FollowerNavigator /> :
              isFollowerApp ? <FollowerNavigator /> :
              <AuthNavigator />}

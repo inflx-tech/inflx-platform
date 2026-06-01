@@ -26,7 +26,7 @@ async function getAgencyByUserId(userId) {
   return rows[0] || null;
 }
 
-function publicAgency(a, referralCode) {
+function publicAgency(a, referralCode, referredCount) {
   return {
     id: a.id,
     agency_name: a.agency_name,
@@ -43,6 +43,7 @@ function publicAgency(a, referralCode) {
     referral_earned_total: parseFloat(a.referral_earned_total),
     user_status: a.user_status,
     referral_code: referralCode || null,
+    referred_count: typeof referredCount === 'number' ? referredCount : undefined,
   };
 }
 
@@ -90,7 +91,12 @@ const getMe = asyncHandler(async (req, res) => {
   const agency = await getAgencyByUserId(req.user.sub);
   if (!agency) throw new AppError('NOT_FOUND', 'Agency profile not found', 404);
   const code = await referralService.getOrCreateCode('agency', agency.id);
-  return success(res, { agency: publicAgency(agency, code.code) });
+  const { rows: cnt } = await db.query(
+    `SELECT COUNT(*)::int AS n FROM referral_edges
+      WHERE referrer_type = 'agency' AND referrer_id = $1 AND status = 'active'`,
+    [agency.id]
+  );
+  return success(res, { agency: publicAgency(agency, code.code, cnt[0].n) });
 });
 
 // PATCH /agencies/me — update payout details (encrypted) / contact

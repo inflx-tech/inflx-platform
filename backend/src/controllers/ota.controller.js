@@ -29,7 +29,7 @@ const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
-const FLAVORS = ['brand', 'influencer', 'follower'];
+const FLAVORS = ['brand', 'influencer', 'follower', 'agency'];
 
 let _r2Client = null;
 function r2() {

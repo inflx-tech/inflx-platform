@@ -1,0 +1,76 @@
+<!-- preview-size: 412x915 -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Agency — Home</title>
+<style>
+  :root{--yellow:#FFC107;--yellowPale:#FFF7CC;--yellow50:#FFFDEB;--yellowText:#6B5A00;
+  --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;
+  --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--border:#E4E4E7;--teal:#00B894;--tealDeep:#007A63;--tealPale:#E0FAF5;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.45 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:#000}
+  .phone{width:412px;height:915px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+  .status{height:30px;background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;font-weight:700}
+  .appbar{height:52px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px}
+  .appbar .ttl{font-size:18px;font-weight:900}
+  .scroll{flex:1;overflow-y:auto;padding:14px}
+  .hero{background:var(--ink);border-radius:18px;padding:18px;color:var(--white);position:relative;overflow:hidden}
+  .hero .spark{position:absolute;right:-8px;top:-12px;font-size:78px;opacity:.10}
+  .hero .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--yellow)}
+  .hero .amt{font-size:32px;font-weight:900;margin-top:2px}
+  .hero .sub{font-size:12px;color:var(--muted3);margin-top:1px}
+  .stats{display:flex;gap:10px;margin-top:12px}
+  .stat{flex:1;background:var(--white);border:1px solid var(--border);border-radius:14px;padding:12px}
+  .stat .k{font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted2)}
+  .stat .v{font-size:18px;font-weight:900;margin-top:3px}
+  .stat .v.pend{color:var(--yellowText)}
+  .codeCard{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:12px}
+  .cap{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted2)}
+  .codeChip{background:var(--yellowPale);border:1.5px dashed var(--yellow);border-radius:12px;padding:12px;text-align:center;margin-top:8px;font-family:ui-monospace,monospace;font-size:22px;font-weight:800;letter-spacing:1px}
+  .btnRow{display:flex;gap:10px;margin-top:12px}
+  .btn{flex:1;border-radius:12px;padding:13px;font-size:14px;font-weight:800;text-align:center}
+  .btn.primary{background:var(--yellow);color:var(--ink)}
+  .btn.ghost{background:var(--white);border:1.5px solid var(--ink);color:var(--ink)}
+  .sec{font-size:13px;font-weight:800;margin:18px 4px 8px}
+  .how{background:var(--yellow50);border:1px solid var(--yellowPale);border-radius:14px;padding:14px}
+  .how .it{display:flex;gap:10px;margin-bottom:9px;font-size:12.5px;color:var(--ink2);line-height:1.4}
+  .how .it:last-child{margin-bottom:0}
+  .tabs{height:60px;background:var(--white);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;color:var(--muted3)}
+  .tab.on{color:var(--ink)}.tab .ti{font-size:18px}
+</style></head><body>
+<div class="phone">
+  <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+  <div class="appbar"><span class="ttl">Vizag Media Partners</span></div>
+  <div class="scroll">
+    <div class="hero">
+      <div class="spark">🏛️</div>
+      <div class="lbl">Wallet balance</div>
+      <div class="amt">₹3,500</div>
+      <div class="sub">Withdraw anytime from the Wallet tab</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="k">Total earned</div><div class="v">₹6,000</div></div>
+      <div class="stat"><div class="k">Active referrals</div><div class="v">4</div></div>
+    </div>
+
+    <div class="codeCard">
+      <div class="cap">Your referral code</div>
+      <div class="codeChip">INFLX-7QK4M2</div>
+      <div class="btnRow">
+        <div class="btn ghost">⧉ Copy</div>
+        <div class="btn primary">↗ Share</div>
+      </div>
+    </div>
+
+    <div class="sec">How you earn</div>
+    <div class="how">
+      <div class="it"><span>🏢</span><span>Refer a <b>brand</b> → share of their subscription + campaign protection fee.</span></div>
+      <div class="it"><span>⭐</span><span>Refer an <b>influencer</b> → share of the commission on their sales.</span></div>
+      <div class="it"><span>🗓️</span><span>You earn for <b>12 months</b> per referral, paid to your wallet as we earn.</span></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <div class="tab on"><span class="ti">🏠</span>Home</div>
+    <div class="tab"><span class="ti">💰</span>Wallet</div>
+    <div class="tab"><span class="ti">👤</span>Profile</div>
+  </div>
+</div></body></html>

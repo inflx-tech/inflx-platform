@@ -71,6 +71,7 @@ export default function PhoneScreen({ navigation }) {
   const workspaceLabel =
     APP_ROLE === 'brand'      ? 'Brand workspace' :
     APP_ROLE === 'influencer' ? 'Influencer app' :
+    APP_ROLE === 'agency'     ? 'Agency app' :
     APP_ROLE === 'follower'   ? 'Discover deals' :
                                 "India's micro-influencer platform";
 

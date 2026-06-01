@@ -11,7 +11,7 @@
  * Usage:
  *   node scripts/publish-ota.js <flavor> [--message "what changed"]
  *
- *   Flavor is one of: brand | influencer | follower | all
+ *   Flavor is one of: brand | influencer | follower | agency | all
  *
  * Env vars read from .env.ota (or ambient env):
  *   BACKEND_URL          default https://inflx-platform.onrender.com
@@ -42,7 +42,7 @@ try {
 const BACKEND_URL       = (process.env.BACKEND_URL || 'https://inflx-platform.onrender.com').replace(/\/+$/, '');
 const OTA_PUBLISH_TOKEN = process.env.OTA_PUBLISH_TOKEN || '';
 
-const FLAVORS = ['brand', 'influencer', 'follower'];
+const FLAVORS = ['brand', 'influencer', 'follower', 'agency'];
 const MOBILE_ROOT = path.join(__dirname, '..', 'Packages', 'Mobile');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -116,8 +116,8 @@ async function main() {
   const msgIdx = args.indexOf('--message');
   const message = msgIdx >= 0 ? args.slice(msgIdx + 1).join(' ') : '';
 
-  if (!['brand', 'influencer', 'follower', 'all'].includes(flavorArg)) {
-    console.error('Usage: node scripts/publish-ota.js <brand|influencer|follower|all> [--message "text"]');
+  if (!['brand', 'influencer', 'follower', 'agency', 'all'].includes(flavorArg)) {
+    console.error('Usage: node scripts/publish-ota.js <brand|influencer|follower|agency|all> [--message "text"]');
     process.exit(2);
   }
   if (!OTA_PUBLISH_TOKEN) {

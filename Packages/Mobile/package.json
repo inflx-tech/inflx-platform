@@ -6,6 +6,8 @@
     "android:brand": "react-native run-android --variant=brandDebug",
     "android:influencer": "react-native run-android --variant=influencerDebug",
     "android:follower": "react-native run-android --variant=followerDebug",
+    "android:agency": "react-native run-android --mode=agencyDebug",
+    "android:agency:gradle": "cd android && gradlew.bat :app:installAgencyDebug",
     "android": "react-native run-android --variant=influencerDebug",
     "ios": "react-native run-ios",
     "start": "react-native start",

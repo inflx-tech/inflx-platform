@@ -1,0 +1,54 @@
+<!-- preview-size: 412x915 -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Agency — Register</title>
+<style>
+  :root{--yellow:#FFC107;--yellowPale:#FFF7CC;--yellow50:#FFFDEB;--yellowText:#6B5A00;
+  --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;--muted4:#D4D4D8;
+  --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--border:#E4E4E7;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.45 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:#000}
+  .phone{width:412px;height:915px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+  .status{height:30px;background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;font-weight:700}
+  .appbar{height:52px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 14px}
+  .appbar .ttl{font-size:17px;font-weight:800}
+  .scroll{flex:1;overflow-y:auto;padding:16px}
+  .intro{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted2);margin:14px 0 6px}
+  .lbl:first-child{margin-top:0}
+  .inp{width:100%;border:1.5px solid var(--border);border-radius:11px;padding:12px 13px;font-size:14px;color:var(--ink);background:var(--white)}
+  .inp::placeholder{color:var(--muted3)}
+  .seg{display:flex;gap:8px}
+  .seg .opt{flex:1;border:1.5px solid var(--border);border-radius:11px;padding:11px;text-align:center;font-size:13px;font-weight:700;color:var(--muted)}
+  .seg .opt.on{border-color:var(--ink);background:var(--ink);color:var(--white)}
+  .hint{font-size:11px;color:var(--muted2);margin-top:5px}
+  .codeBox{background:var(--yellow50);border:1px solid var(--yellowPale);border-radius:11px;padding:12px;margin-top:6px}
+  .codeBox .h{font-size:12px;font-weight:800;color:var(--ink)}
+  .cta{position:sticky;bottom:0;background:var(--bg);padding-top:12px}
+  .btn{width:100%;background:var(--yellow);color:var(--ink);border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:800}
+</style></head><body>
+<div class="phone">
+  <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+  <div class="appbar"><span class="ttl">Set up your agency</span></div>
+  <div class="scroll">
+    <div class="intro">Tell us about your agency. After you submit, our team approves you — then you can share your code and start earning.</div>
+
+    <div class="lbl">Agency name</div>
+    <input class="inp" placeholder="e.g. Vizag Media Partners">
+    <div class="lbl">Contact person</div>
+    <input class="inp" placeholder="Your name">
+    <div class="lbl">Contact email</div>
+    <input class="inp" placeholder="you@agency.in">
+    <div class="lbl">City</div>
+    <input class="inp" placeholder="Visakhapatnam">
+
+    <div class="lbl">Payout method</div>
+    <div class="seg"><div class="opt on">UPI</div><div class="opt">Bank account</div></div>
+    <input class="inp" placeholder="yourname@upi" style="margin-top:8px">
+
+    <div class="lbl">Have a referral code? <span style="color:var(--muted3);font-weight:600;text-transform:none">(optional)</span></div>
+    <input class="inp" placeholder="INFLX-XXXXXX">
+    <div class="hint">If another partner invited you, enter their code.</div>
+
+    <div class="cta"><button class="btn">Create agency account</button></div>
+  </div>
+</div></body></html>

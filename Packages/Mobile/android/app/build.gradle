@@ -22,7 +22,7 @@ react {
     //   The list of variants to that are debuggable. For those we're going to
     //   skip the bundling of the JS bundle and the assets. By default is just 'debug'.
     //   If you add flavors like lite, prod, etc. you'll have to list your debuggableVariants.
-    debuggableVariants = ["brandDebug", "influencerDebug", "followerDebug"]
+    debuggableVariants = ["brandDebug", "influencerDebug", "followerDebug", "agencyDebug"]
 
     /* Bundling */
     //   A list containing the node command and its flags. Default is just 'node'.
@@ -101,6 +101,11 @@ android {
             dimension "role"
             applicationIdSuffix ".follower"
             resValue "string", "app_role", "follower"
+        }
+        agency {
+            dimension "role"
+            applicationIdSuffix ".agency"
+            resValue "string", "app_role", "agency"
         }
     }
     signingConfigs {

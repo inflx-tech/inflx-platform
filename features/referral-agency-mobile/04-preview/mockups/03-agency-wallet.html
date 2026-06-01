@@ -1,0 +1,72 @@
+<!-- preview-size: 412x915 -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Agency — Wallet</title>
+<style>
+  :root{--yellow:#FFC107;--yellowPale:#FFF7CC;--yellow50:#FFFDEB;--yellowText:#6B5A00;
+  --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;
+  --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--border:#E4E4E7;--teal:#00B894;--tealDeep:#007A63;--tealPale:#E0FAF5;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:14px/1.45 -apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:#000}
+  .phone{width:412px;height:915px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column}
+  .status{height:30px;background:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:11px;font-weight:700}
+  .appbar{height:52px;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px}
+  .appbar .ttl{font-size:18px;font-weight:900}
+  .scroll{flex:1;overflow-y:auto;padding:14px}
+  .hero{background:var(--ink);border-radius:18px;padding:18px;color:var(--white)}
+  .hero .lbl{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--yellow)}
+  .hero .amt{font-size:32px;font-weight:900;margin-top:2px}
+  .card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:12px}
+  .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted2);margin-bottom:6px}
+  .seg{display:flex;gap:8px;margin-bottom:12px}
+  .seg .opt{flex:1;border:1.5px solid var(--border);border-radius:11px;padding:11px;text-align:center;font-size:13px;font-weight:700;color:var(--muted)}
+  .seg .opt.on{border-color:var(--ink);background:var(--ink);color:var(--white)}
+  .amtInp{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:11px;padding:12px 13px}
+  .amtInp .rs{font-size:18px;font-weight:800;color:var(--muted2);margin-right:6px}
+  .amtInp .val{font-size:18px;font-weight:800}
+  .preview{background:var(--yellow50);border:1px solid var(--yellowPale);border-radius:12px;padding:12px;margin-top:12px}
+  .prow{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+  .prow .k{color:var(--muted)}
+  .prow.tot{border-top:1px dashed var(--yellowPale);margin-top:5px;padding-top:7px;font-weight:900}
+  .tds{font-size:10.5px;color:var(--muted2);margin-top:4px}
+  .btn{width:100%;background:var(--yellow);color:var(--ink);border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:800;margin-top:14px}
+  .sec{font-size:13px;font-weight:800;margin:18px 4px 8px}
+  .wrow{background:var(--white);border:1px solid var(--border);border-radius:13px;padding:12px 13px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+  .wrow .amt2{font-weight:900}
+  .wrow .meta{font-size:11px;color:var(--muted2)}
+  .pill{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 8px;border-radius:99px}
+  .pill.done{background:var(--tealDeep);color:#fff}
+  .pill.proc{background:#fff;border:1px solid var(--yellow);color:var(--yellowText)}
+  .tabs{height:60px;background:var(--white);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding-bottom:6px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:700;color:var(--muted3)}
+  .tab.on{color:var(--ink)}.tab .ti{font-size:18px}
+</style></head><body>
+<div class="phone">
+  <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+  <div class="appbar"><span class="ttl">Wallet</span></div>
+  <div class="scroll">
+    <div class="hero"><div class="lbl">Available to withdraw</div><div class="amt">₹3,500</div></div>
+
+    <div class="card">
+      <div class="lbl">Withdraw to</div>
+      <div class="seg"><div class="opt on">UPI</div><div class="opt">Bank</div></div>
+      <div class="lbl">Amount</div>
+      <div class="amtInp"><span class="rs">₹</span><span class="val">2,000</span></div>
+      <div class="preview">
+        <div class="prow"><span class="k">Requested</span><span>₹2,000.00</span></div>
+        <div class="prow"><span class="k">TDS (194H, 5%)</span><span>− ₹100.00</span></div>
+        <div class="prow tot"><span>You receive</span><span>₹1,900.00</span></div>
+        <div class="tds">Agency commission TDS is 5% (Section 194H), vs 10% for influencers.</div>
+      </div>
+      <button class="btn">Withdraw now</button>
+    </div>
+
+    <div class="sec">Recent withdrawals</div>
+    <div class="wrow"><div><div class="amt2">₹1,900.00</div><div class="meta">UPI · 31 May</div></div><span class="pill done">completed</span></div>
+    <div class="wrow"><div><div class="amt2">₹950.00</div><div class="meta">UPI · 24 May</div></div><span class="pill done">completed</span></div>
+  </div>
+  <div class="tabs">
+    <div class="tab"><span class="ti">🏠</span>Home</div>
+    <div class="tab on"><span class="ti">💰</span>Wallet</div>
+    <div class="tab"><span class="ti">👤</span>Profile</div>
+  </div>
+</div></body></html>

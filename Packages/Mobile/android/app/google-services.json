@@ -26,6 +26,25 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:728830348327:android:957570734858c5b2c79202",
+        "android_client_info": {
+          "package_name": "in.inflx.app.agency"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1jvwREa5n4tIVmmpK_47N5gnefJsiD9I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:728830348327:android:d9325aaf324e39bcc79202",
         "android_client_info": {
           "package_name": "in.inflx.app.brand"

@@ -1,0 +1,21 @@
+# Contract 3b — Agency app launches without crash.
+#
+# Proves: the new in.inflx.app.agency flavor boots, the JS bundle (incl. the new
+# AgencyNavigator + agency screens) loads, and the auth screen renders with the
+# agency workspace label. Mirrors 02-influencer-launch.yaml.
+#
+# Contract: features/referral-agency-mobile/
+# Run:
+#   pnpm qa:maestro            # runs all qa/maestro/flows/*.yaml
+#   pnpm qa:maestro:doctor     # verify readiness first
+
+appId: in.inflx.app.agency
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- assertVisible: "Agency app"
+- assertVisible: "Send OTP"
+- takeScreenshot: 04-agency-launch-phone

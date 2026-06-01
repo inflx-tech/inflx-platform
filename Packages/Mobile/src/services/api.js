@@ -229,6 +229,16 @@ export const brandApi = {
   listBrandContracts:     ()      => api.get('/brands/me/contracts'),
 };
 
+// Agency app (Contract 3b) — drives the Contract 3a backend.
+export const agencyApi = {
+  register: (data) => api.post('/agencies/register', data),
+  getMe: () => api.get('/agencies/me'),
+  updateMe: (data) => api.patch('/agencies/me', data),
+  withdraw: (data) => api.post('/agencies/me/withdraw', data),
+  getWithdrawals: () => api.get('/agencies/me/withdrawals'),
+  redeemReferral: (code) => api.post('/referrals/redeem', { code }),
+};
+
 export const influencerApi = {
   register: (data) => api.post('/influencers/register', data),
   getMe: () => api.get('/influencers/me'),
