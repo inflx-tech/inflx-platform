@@ -18,11 +18,11 @@
   ],
   "model_locked": "Agency = first-class role + profile + wallet, admin-approved (same lifecycle as brand/influencer). Agency referral accrual settles INLINE into agencies.wallet_balance + referral_earned_total and marks ledger 'paid' (mirrors influencer branch). Withdrawal TDS 194H @ 5% (payment_config.agency_tds_pct), vs influencer 194J/C 10% / brand 0. Code-redeem endpoint creates source='signup' edge via referral.service (guards intact). Mobile surface + signup UI deferred to 3b.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Not yet — pending implementation + qa green + explicit deploy go."
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-06-01) — explicit go: 'migrate prod, then push'.",
+    "released_at": "2026-06-01",
+    "deploy": "DEPLOYED 2026-06-01. Migration 080 applied to Supabase prod (user_role enum +agency; agencies + agency_withdrawals tables; payment_config.agency_tds_pct=5.00). git push bb64af3..59c8278 -> Render backend. No web/mobile/OTA. Evidence: backend jest referral-agency 10/10 + referral-engine 12/12 + referral-admin 13/13 + payout-account + subscription green; migrations 79/79; pnpm qa GREEN 76/76 (exit 0). Agency mobile app + code-at-signup UI = Contract 3b (Mobile-governed)."
   },
   "mockup_locked": true,
   "mockup_locked_by": "N/A — backend-only contract, no UI surface (mobile UI is 3b).",
