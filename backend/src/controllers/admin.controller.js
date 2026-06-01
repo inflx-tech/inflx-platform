@@ -1440,11 +1440,92 @@ const getTaxSummary = asyncHandler(async (req, res) => {
   return success(res, summary);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/queue/agencies  (Contract 3a)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getAgencyQueue = asyncHandler(async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit = Math.min(50, parseInt(req.query.limit || '20', 10));
+  const offset = (page - 1) * limit;
+
+  const { rows: agencies } = await db.query(
+    `SELECT a.id, a.agency_name, a.contact_person, a.contact_email, a.city, a.state,
+            a.created_at, u.status AS user_status, u.phone, u.name
+     FROM agencies a JOIN users u ON u.id = a.user_id
+     WHERE u.status = 'pending'
+     ORDER BY a.created_at ASC
+     LIMIT $1 OFFSET $2`,
+    [limit, offset]
+  );
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*) AS total FROM agencies a JOIN users u ON u.id = a.user_id WHERE u.status = 'pending'`
+  );
+  return success(res, { agencies }, 200, { page, limit, total: parseInt(countRows[0].total, 10) });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/agencies/:id/status  (Contract 3a)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const updateAgencyStatus = asyncHandler(async (req, res) => {
+  const { status, reason } = req.body;
+  const adminUserId = req.user.sub;
+
+  if (!['approved', 'rejected', 'suspended'].includes(status)) {
+    throw new AppError('VALIDATION_ERROR', 'status must be approved, rejected, or suspended', 422, 'status');
+  }
+  if (status === 'rejected' && !reason) {
+    throw new AppError('VALIDATION_ERROR', 'reason is required when rejecting', 422, 'reason');
+  }
+
+  const { rows: agencyRows } = await db.query(
+    `SELECT a.*, u.status AS user_status, u.phone, u.fcm_token
+     FROM agencies a JOIN users u ON u.id = a.user_id WHERE a.id = $1`,
+    [req.params.id]
+  );
+  if (!agencyRows.length) throw new AppError('NOT_FOUND', 'Agency not found', 404);
+  const agency = agencyRows[0];
+
+  if (status === 'approved') {
+    await db.query(
+      `UPDATE agencies SET rejection_reason = NULL, approved_at = now(), approved_by = $2 WHERE id = $1`,
+      [agency.id, adminUserId]
+    );
+  } else {
+    await db.query(
+      `UPDATE agencies SET rejection_reason = $2, approved_at = NULL, approved_by = NULL WHERE id = $1`,
+      [agency.id, reason || null]
+    );
+  }
+  await db.query(`UPDATE users SET status = $1 WHERE id = $2`, [status, agency.user_id]);
+
+  const { rows: updated } = await db.query(
+    `SELECT a.*, u.status AS user_status FROM agencies a JOIN users u ON u.id = a.user_id WHERE a.id = $1`,
+    [agency.id]
+  );
+
+  const templates = {
+    approved:  { type: 'account.approved',  title: 'Agency Approved',         body: 'Your agency account is approved. Share your referral code to start earning!' },
+    rejected:  { type: 'account.rejected',  title: 'Agency Needs More Info',   body: `Your agency account needs more info. Reason: ${reason}` },
+    suspended: { type: 'account.suspended', title: 'Agency Suspended',         body: 'Your agency account has been suspended. Please contact support.' },
+  };
+  const tpl = templates[status];
+  await notificationService.send({
+    userId: agency.user_id, type: tpl.type, title: tpl.title, body: tpl.body,
+    data: { screen: 'agency_dashboard' }, fcmToken: agency.fcm_token, sendSms: true, phone: agency.phone,
+  });
+
+  return success(res, { agency: updated[0], notification_sent: true });
+});
+
 module.exports = {
   getBrandQueue,
   getInfluencerQueue,
   updateBrandStatus,
   updateInfluencerStatus,
+  getAgencyQueue,
+  updateAgencyStatus,
   getStats,
   getEscrowOverview,
   adminReleaseEscrow,

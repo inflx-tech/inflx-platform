@@ -21,6 +21,10 @@ router.get('/queue/influencers', authenticate, requireAdminRole('reviewer'), ctr
 router.patch('/brands/:id/status',      authenticate, requireAdminRole('reviewer'), ctrl.updateBrandStatus);
 router.patch('/influencers/:id/status', authenticate, requireAdminRole('reviewer'), ctrl.updateInfluencerStatus);
 
+// Agency approval (Contract 3a) — reviewer+
+router.get('/queue/agencies',        authenticate, requireAdminRole('reviewer'), ctrl.getAgencyQueue);
+router.patch('/agencies/:id/status', authenticate, requireAdminRole('reviewer'), ctrl.updateAgencyStatus);
+
 // Platform stats — any admin role
 router.get('/stats', authenticate, requireAnyAdminRole, ctrl.getStats);
 

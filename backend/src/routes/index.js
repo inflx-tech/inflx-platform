@@ -5,6 +5,8 @@ const { Router } = require('express');
 const authRoutes        = require('./auth.routes');
 const brandRoutes       = require('./brand.routes');
 const influencerRoutes  = require('./influencer.routes');
+const agencyRoutes      = require('./agency.routes');
+const referralRoutes    = require('./referral.routes');
 const adminRoutes       = require('./admin.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
@@ -86,6 +88,8 @@ router.use('/admin/referrals', referralAdminRoutes);
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);
 router.use('/brands',        brandRoutes);
+router.use('/agencies',      agencyRoutes);
+router.use('/referrals',     referralRoutes);
 router.use('/influencers',   influencerRoutes);
 router.use('/admin',         adminRoutes);
 router.use('/campaigns',     campaignRoutes);

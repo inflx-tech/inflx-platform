@@ -1,0 +1,30 @@
+{
+  "feature": "referral-agency-role",
+  "area": "backend-api+migration",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-05-31) — 'pls move to contract 3' + AskUserQuestion: 'Backend spine first (C3a), mobile later' + signup-code 'Take best decision' (→ redeem endpoint now, UI in 3b).",
+  "approved_at": "2026-05-31",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Render API + migration 080 (enum value + agencies/agency_withdrawals tables + payment_config.agency_tds_pct). No web, no mobile, no OTA. Low blast radius: inert until an agency + edges exist.",
+  "notes": "Contract 3 sub-contract 3a (backend spine). Spec-lock (Step 5) delegated by founder. Backend-only/API-DB-governed: mockup-lock + before/after-diff gates N/A. The agency MOBILE app (new APK flavor + screens + code-at-signup UI) is sub-contract 3b — Mobile-governed (Maestro gate, native build) — NOT in this contract. An admin-web Agencies approval page is a flagged fast-follow (UI-governed); 3a ships the approval ENDPOINTS only.",
+  "related": [
+    "features/referral-engine (Contract 1, deployed)",
+    "features/referral-admin-controls (Contract 2, deployed)",
+    "_planned: features/referral-agency-mobile (Contract 3b — Mobile-governed)",
+    "_planned: features/referral-influencer-refer-earn (Contract 4)"
+  ],
+  "model_locked": "Agency = first-class role + profile + wallet, admin-approved (same lifecycle as brand/influencer). Agency referral accrual settles INLINE into agencies.wallet_balance + referral_earned_total and marks ledger 'paid' (mirrors influencer branch). Withdrawal TDS 194H @ 5% (payment_config.agency_tds_pct), vs influencer 194J/C 10% / brand 0. Code-redeem endpoint creates source='signup' edge via referral.service (guards intact). Mobile surface + signup UI deferred to 3b.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Not yet — pending implementation + qa green + explicit deploy go."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A — backend-only contract, no UI surface (mobile UI is 3b).",
+  "mockup_locked_at": "N/A"
+}

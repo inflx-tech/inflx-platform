@@ -27,8 +27,8 @@ async function getConfig() {
   try {
     const { rows } = await db.query(
       `SELECT platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
-              tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr,
-              allow_commission_negotiation
+              tds_pct, agency_tds_pct, offer_expiry_hours, return_window_days,
+              min_withdrawal_inr, allow_commission_negotiation
        FROM payment_config WHERE id = 1`
     );
     if (rows[0]) {
@@ -38,6 +38,7 @@ async function getConfig() {
         tranche2Pct:      parseFloat(rows[0].tranche_2_pct),
         tranche3Pct:      parseFloat(rows[0].tranche_3_pct),
         tdsPct:           parseFloat(rows[0].tds_pct),
+        agencyTdsPct:     rows[0].agency_tds_pct != null ? parseFloat(rows[0].agency_tds_pct) : 5,
         offerExpiryHours: parseInt(rows[0].offer_expiry_hours, 10),
         returnWindowDays: parseInt(rows[0].return_window_days, 10),
         minWithdrawalInr: parseFloat(rows[0].min_withdrawal_inr),
@@ -57,6 +58,7 @@ async function getConfig() {
     tranche2Pct:      25,
     tranche3Pct:      50,
     tdsPct:           env.TDS_PCT            ?? 10,
+    agencyTdsPct:     env.AGENCY_TDS_PCT     ?? 5,
     offerExpiryHours: env.OFFER_EXPIRY_HOURS ?? 48,
     returnWindowDays: env.RETURN_WINDOW_DAYS ?? 30,
     minWithdrawalInr: 100,

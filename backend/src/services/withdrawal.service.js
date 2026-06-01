@@ -347,4 +347,175 @@ async function executeBrandPayout(brand, withdrawal) {
   };
 }
 
-module.exports = { initiateWithdrawal, retryWithdrawal, ensureBrandFundAccount, executeBrandPayout };
+// ─────────────────────────────────────────────────────────────────────────────
+// Agency withdrawals (Contract 3a)
+//
+// Mirrors the influencer path but with TDS 194H (brokerage, default 5% from
+// payment_config.agency_tds_pct) instead of 194J/194C 10%. Agency payout fields
+// (upi_id / bank_account_no) are AES-256-GCM encrypted like influencers'.
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function ensureAgencyFundAccount(agency) {
+  const keyId     = env.RAZORPAY_PAYOUT_KEY_ID     || env.RAZORPAY_KEY_ID;
+  const keySecret = env.RAZORPAY_PAYOUT_KEY_SECRET  || env.RAZORPAY_KEY_SECRET;
+
+  let contactId = agency.razorpay_contact_id;
+  if (!contactId) {
+    const contactRes = await axios.post(
+      'https://api.razorpay.com/v1/contacts',
+      {
+        name:         agency.account_holder_name || agency.agency_name,
+        type:         'vendor',
+        reference_id: agency.id,
+        email:        agency.contact_email || undefined,
+        contact:      agency.phone,
+      },
+      { auth: { username: keyId, password: keySecret }, timeout: 10000 }
+    );
+    contactId = contactRes.data.id;
+    await db.query(
+      `UPDATE agencies SET razorpay_contact_id = $1 WHERE id = $2`,
+      [contactId, agency.id]
+    );
+  }
+
+  let faPayload;
+  if (agency.upi_id) {
+    faPayload = {
+      contact_id:   contactId,
+      account_type: 'vpa',
+      vpa:          { address: decrypt(agency.upi_id) },
+    };
+  } else {
+    faPayload = {
+      contact_id:   contactId,
+      account_type: 'bank_account',
+      bank_account: {
+        name:           agency.account_holder_name || agency.agency_name,
+        ifsc:           agency.bank_ifsc,
+        account_number: decrypt(agency.bank_account_no),
+      },
+    };
+  }
+
+  const faRes = await axios.post(
+    'https://api.razorpay.com/v1/fund_accounts',
+    faPayload,
+    { auth: { username: keyId, password: keySecret }, timeout: 10000 }
+  );
+  return faRes.data.id;
+}
+
+async function initiateAgencyWithdrawal(agency, amountRequested, method) {
+  // amountRequested is in RUPEES.
+  const cfg = await paymentConfigSvc.getConfig();
+  const minWithdrawal = parseFloat(cfg.minWithdrawalInr);
+  if (amountRequested < minWithdrawal) {
+    const err = new Error(`Minimum withdrawal amount is ₹${minWithdrawal}`);
+    err.code = 'WITHDRAWAL_TOO_SMALL'; err.statusCode = 422;
+    throw err;
+  }
+
+  const walletBalance = parseFloat(agency.wallet_balance);
+  if (amountRequested > walletBalance) {
+    const err = new Error('Insufficient wallet balance');
+    err.code = 'INSUFFICIENT_BALANCE'; err.statusCode = 422;
+    throw err;
+  }
+
+  if (!agency.upi_id && !agency.bank_account_no) {
+    const err = new Error('No payment method on file. Please add UPI ID or bank account.');
+    err.code = 'PAYMENT_METHOD_MISSING'; err.statusCode = 422;
+    throw err;
+  }
+
+  // TDS 194H (brokerage) — agency override / exemption honored, else global
+  // payment_config.agency_tds_pct (default 5%).
+  const effectiveTdsPct = agency.tds_exempt
+    ? 0
+    : (agency.tds_override_pct != null
+        ? parseFloat(agency.tds_override_pct)
+        : parseFloat(cfg.agencyTdsPct));
+  const tdsDeducted = parseFloat((amountRequested * (effectiveTdsPct / 100)).toFixed(2));
+  const netPaid     = parseFloat((amountRequested - tdsDeducted).toFixed(2));
+
+  // Deduct wallet immediately (prevents double-withdrawal)
+  await db.query(
+    `UPDATE agencies SET wallet_balance = wallet_balance - $1 WHERE id = $2`,
+    [amountRequested, agency.id]
+  );
+
+  let razorpayPayoutId;
+  let status;
+  const referenceId = `aw_${agency.id.slice(0, 8)}_${Date.now()}`;
+
+  if (env.RAZORPAY_MOCK) {
+    razorpayPayoutId = `mock_payout_${Date.now()}`;
+    status           = 'completed';
+    console.log(`[RAZORPAY MOCK] Agency payout ${razorpayPayoutId} — ₹${netPaid.toFixed(2)} via ${method}`);
+  } else {
+    try {
+      const fundAccountId = await ensureAgencyFundAccount(agency);
+      const payoutRes = await createRazorpayPayout({
+        fundAccountId,
+        amountPaise:  toPaise(netPaid),
+        purpose:      'payout',
+        referenceId,
+        narration:    'INFLX Agency Payout',
+      });
+      razorpayPayoutId = payoutRes.id;
+      status = payoutRes.status === 'processed' ? 'completed' : 'processing';
+    } catch (err) {
+      // Rollback wallet deduction on payout failure
+      await db.query(
+        `UPDATE agencies SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+        [amountRequested, agency.id]
+      );
+      const msg = err?.response?.data?.error?.description || err.message;
+      const e   = new Error(`Razorpay payout failed: ${msg}`);
+      e.code = 'PAYOUT_FAILED'; e.statusCode = 502;
+      throw e;
+    }
+  }
+
+  const { rows } = await db.query(
+    `INSERT INTO agency_withdrawals
+       (agency_id, amount_requested, tds_deducted, net_paid, method,
+        upi_id, bank_account_no, bank_ifsc, razorpay_payout_id, status, completed_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     RETURNING *`,
+    [
+      agency.id,
+      amountRequested,
+      tdsDeducted,
+      netPaid,
+      method,
+      method === 'upi'           ? agency.upi_id          : null,
+      method === 'bank_transfer' ? agency.bank_account_no : null,
+      method === 'bank_transfer' ? agency.bank_ifsc       : null,
+      razorpayPayoutId,
+      status,
+      status === 'completed' ? new Date() : null,
+    ]
+  );
+
+  const withdrawal = rows[0];
+
+  await notificationService.send({
+    userId:   agency.user_id,
+    type:     'withdrawal.initiated',
+    title:    status === 'completed' ? 'Withdrawal Processed' : 'Withdrawal Initiated',
+    body:     `₹${netPaid.toFixed(2)} sent to your ${method === 'upi' ? 'UPI' : 'bank account'}. TDS deducted: ₹${tdsDeducted.toFixed(2)}`,
+    data:     { screen: 'withdrawals', withdrawal_id: withdrawal.id },
+    fcmToken: agency.fcm_token,
+    sendSms:  true,
+    phone:    agency.phone,
+  });
+
+  return withdrawal;
+}
+
+module.exports = {
+  initiateWithdrawal, retryWithdrawal, ensureBrandFundAccount, executeBrandPayout,
+  initiateAgencyWithdrawal, ensureAgencyFundAccount,
+};

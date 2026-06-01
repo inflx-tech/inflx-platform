@@ -42,6 +42,8 @@ const TRUNCATE_SQL = `
       referral_ledger,
       referral_edges,
       referral_codes,
+      agency_withdrawals,
+      agencies,
       notifications,
       deliverable_stats,
       enquiry_leads,

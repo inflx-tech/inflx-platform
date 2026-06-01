@@ -13,7 +13,7 @@ const env = require('../config/env');
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PHONE_REGEX = /^\+91[6-9]\d{9}$/; // Indian mobile numbers only
-const VALID_ROLES = ['brand', 'influencer', 'follower'];
+const VALID_ROLES = ['brand', 'influencer', 'follower', 'agency'];
 
 function setRefreshCookie(res, token) {
   res.cookie('refresh_token', token, {
@@ -46,6 +46,9 @@ async function buildTokenPayload(user) {
   } else if (user.role === 'influencer') {
     const { rows } = await db.query(`SELECT id FROM influencers WHERE user_id = $1`, [user.id]);
     if (rows.length) payload.influencer_id = rows[0].id;
+  } else if (user.role === 'agency') {
+    const { rows } = await db.query(`SELECT id FROM agencies WHERE user_id = $1`, [user.id]);
+    if (rows.length) payload.agency_id = rows[0].id;
   } else if (user.role === 'admin') {
     const { rows } = await db.query(`SELECT admin_role FROM admin_profiles WHERE user_id = $1`, [user.id]);
     if (rows.length) payload.admin_role = rows[0].admin_role;

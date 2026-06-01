@@ -206,24 +206,35 @@ async function _accrueOnClient(client, opts) {
 
   let ledger = ledgerRows[0];
 
-  // Influencer referrer → wallet credit is live (their wallet exists). Agency
-  // referrer → leave pending (no agency wallet until Contract 3).
-  if (edge.referrer_type === 'influencer') {
-    await client.query(
-      `UPDATE influencers
+  // Settlement — credit the referrer's wallet inline + mark the ledger row
+  // 'paid'. Both referrer types now have a wallet (influencers since launch;
+  // agencies since Contract 3a), so accrual settles immediately ("if we earn,
+  // they earn"). The target table is the only difference.
+  const walletTable =
+    edge.referrer_type === 'influencer' ? 'influencers' :
+    edge.referrer_type === 'agency'     ? 'agencies'    : null;
+
+  if (walletTable) {
+    const credited = await client.query(
+      `UPDATE ${walletTable}
           SET wallet_balance        = wallet_balance        + $1,
               referral_earned_total = referral_earned_total + $1
         WHERE id = $2`,
       [amount, edge.referrer_id]
     );
-    const { rows: paidRows } = await client.query(
-      `UPDATE referral_ledger
-          SET payout_status = 'paid', paid_at = now()
-        WHERE id = $1
-        RETURNING *`,
-      [ledger.id]
-    );
-    ledger = paidRows[0];
+    // Only mark the row 'paid' if the referrer's wallet was actually credited.
+    // If the referrer row is missing (rowCount 0), leave it 'pending' — no
+    // silent loss; a later settlement can still pay it idempotently.
+    if (credited.rowCount === 1) {
+      const { rows: paidRows } = await client.query(
+        `UPDATE referral_ledger
+            SET payout_status = 'paid', paid_at = now()
+          WHERE id = $1
+          RETURNING *`,
+        [ledger.id]
+      );
+      ledger = paidRows[0];
+    }
   }
 
   return ledger;
