@@ -18,11 +18,11 @@
   ],
   "model_locked": "admin-web Agencies page (Referrals section): status-filtered list of agencies w/ wallet/earnings/code/active-edge count; Approve/Reject pending via existing C3a PATCH. New read-only GET /admin/agencies. No schema change.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Not yet — pending mockup-lock + implementation + qa green + diff sign-off."
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-06-01) — explicit go: 'push (no migration)'.",
+    "released_at": "2026-06-01",
+    "deploy": "DEPLOYED 2026-06-01. No migration. git push 88c42a7..f8df9a7 -> Render (GET /admin/agencies) + Vercel (admin-web Agencies page). No money movement, no mobile/OTA. Evidence: backend jest referral-agency-admin 6/6 + referral-agency 10/10 + referral-engine 12/12 + referral-admin 13/13; admin-web next build compiled /dashboard/referrals/agencies; pnpm qa GREEN 76/76 (exit 0)."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-06-01) — reviewed the rendered Agencies mockup + file paths, 'Approve — lock & ship'.",
