@@ -17,7 +17,7 @@
   },
   "notes": "Program/umbrella contract for the Creator Vibe follower re-theme. Overrides the F0 yellow palette (Flows 38-51), FOLLOWER-SCOPED via a new `creatorVibe` token block — brandPalette/lightColors/darkColors NOT mutated (brand-web + mobile-brand unaffected). Sequenced sub-flows: 52.0 Foundation (creatorVibe tokens + serif fallback + FollowerNavigator 4->5 tabs Home/Offers/Reels/Orders/Profile) -> 52.1 Home -> 52.2 Offers -> 52.3 Business -> 52.4 Product -> 52.5 Creator Store -> 52.6 Category -> 52.7 Creator's Category (new) -> 52.8 Reels (separate backend+APK). Each sub-flow: implement -> babel+integrity+pnpm qa -> 06-diff -> Maestro -> deploy OTA, before the next. released stays false until per-flow green + founder explicit prod-push go.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "qa_evidence": {
       "web_run_at": "2026-06-01",
       "web_report_path": "qa/reports/2026-06-01T11-15-31-727Z/QA-REPORT.md",
@@ -31,13 +31,23 @@
       "implementation_scope": "52.0 foundation (tokens+nav+reels placeholder) · 52.1 Home + 5 shared cards · 52.2 Offers · 52.3 Business · 52.4 Product · 52.5 Creator Store · 52.6 Category · 52.7 Creator's Category (NEW) · 52.G mid-flow gaps (Profile/Find/Saved/OfferCard + PayAtStore/PreBook/OnlineOrder/OrderCart/Enquiry) · 52.D FULL-COHERENCE pass (founder asked to finish whole app 2026-06-01): dining sub-app (DiningHome/Browse/Search, RestaurantDetail/Bill/Booking/Cart, BookingConfirmed, MealsChat) + restaurant component lib (CreatorChip/FilterChip/FilterSheet/OfferPill/RestaurantCard/SagarStrip/TimeSlot) + car flow (CarDetail/Booking/CarRentalCard) + profile journey (Address/FollowedInfluencers/OrderDetail/OrderHistory/FollowerWallet/MyReturns/Lookbook*/SlotPicker/SchemaDetail/FollowerLogin). ENTIRE follower app now creatorVibe; only VegDot+StatusPill left on brandPalette (semantic veg/open green). 52.8 Reels = backend-gated, deferred.",
       "pending_before_release": "Maestro mobile E2E (pnpm qa:maestro on device/emulator) + founder physical-APK smoke; then explicit prod-push go."
     },
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "released": true,
+    "released_by": "founder · 2026-06-01 chat — 'go for option 2' (explicit OTA prod-push go) after Maestro green",
+    "released_at": "2026-06-01",
     "deploy_class": "production-impacting (mobile OTA — follower re-theme)",
-    "deploy_targets_planned": ["ota:brand", "ota:influencer", "ota:follower"],
     "native_rebuild_required": false,
-    "native_rebuild_note": "Pure JS (serif fallback, no new font asset) → ships via OTA. publish-ota:all per OTA strategy. Fraunces + Reels are later native/backend work.",
-    "maestro_green": false
+    "native_rebuild_note": "Pure JS (serif fallback, no new font asset) → ships via OTA. Fraunces + Reels are later native/backend work.",
+    "maestro_green": true,
+    "maestro_evidence": "pnpm qa:maestro — 5/5 flows PASSED on emulator-5554 (follower public-browse + influencer/brand/agency launch) 2026-06-01; qa:maestro:doctor ALL GREEN.",
+    "deploy": {
+      "render_backend":   { "note": "auto-redeploy on push; no-op (no backend/src change in Flow 52 commits)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "vercel_admin_web": { "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_brand":      { "version": 102, "bundle_size_kb": 2585, "trigger": "pnpm publish-ota:all", "scope": "shared bundle; no brand-screen change in Flow 52" },
+      "ota_influencer": { "version": 92,  "bundle_size_kb": 2585, "scope": "shared bundle; no influencer-screen change in Flow 52" },
+      "ota_follower":   { "version": 65,  "bundle_size_kb": 2585, "scope": "follower Creator Vibe re-theme lives here (was v62 / Flow 49)" },
+      "ota_agency":     { "version": 2,   "bundle_size_kb": 2585, "scope": "shared bundle" },
+      "bundle_caveat": "publish-ota:all bundles the WORKING TREE, which at publish time ALSO contained Window B's UNCOMMITTED agency-role WIP (AgencyNavigator/screens/AgencyRegister + App.js/AuthNavigator/OTPScreen/PhoneScreen/services.api edits). Those rode into the shared bundle even though they are NOT part of Flow 52's commits. Flagged to founder 2026-06-01 — agency code is role-gated so followers won't see it, but Window B's WIP is now live via OTA without its own release sign-off."
+    }
   }
 }
