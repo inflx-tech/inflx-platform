@@ -1,6 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { darkColors, fmtRupees } from '../../theme/tokens';
+import { creatorVibe as C, fmtRupees } from '../../theme/tokens';
+
+// Flow 52.D — Creator Vibe: was dark-themed. Remap darkColors → cream/terracotta.
+const darkColors = {
+  bg: C.screenBg, bg2: C.screenBg, card: C.card, input: C.soft,
+  text: C.ink, textSecondary: C.muted, textMuted: C.muted,
+  border: C.line, borderAccent: C.line,
+  amber: C.brown, amberDim: C.soft, green: '#1E9E5A', greenDim: C.soft,
+  red: C.offer, redDim: C.soft, blue: C.verify, blueDim: C.soft,
+  pink: C.brown, pinkDim: C.soft, teal: C.verify, tealDim: C.soft,
+  purple: C.brown, purpleDim: C.soft, orange: C.brown, orangeDim: C.soft,
+};
 
 /**
  * CarRentalCard — vehicle card for follower app, matching the HTML mockup.

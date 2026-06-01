@@ -57,12 +57,22 @@ regression (76/76 GREEN, mobile-only change cannot touch the web suite).
   `Enquiry`) — warm ink header + ink CTA with amber text on cream. **Payment/
   booking/order logic byte-identical.**
 
-## Out of scope (still on the prior palette — a later flow)
-Dining sub-app (`DiningHome/Browse/Search`, `RestaurantDetail/Bill/Booking/Cart`),
-car flow (`CarDetail/Booking`, `CarRentalCard`), `FollowerWallet`, `MyReturns`,
-`Lookbook*`, `FollowerLogin`, `SlotPicker`, `SchemaDetail`, `MealsChat`,
-`BookingConfirmed`. Founder chose (2026-06-01) to theme the mid-flow gaps first;
-these deeper surfaces remain yellow until a follow-up flow.
+### 52.D — full coherence pass (founder asked to finish the whole app, 2026-06-01)
+Themed the remaining surfaces so the ENTIRE follower app is one palette:
+- Dining sub-app: `DiningHome/Browse/Search`, `RestaurantDetail/Bill/Booking/Cart`,
+  `BookingConfirmed`, `MealsChat` + the restaurant component lib (`CreatorChip`,
+  `FilterChip`, `FilterSheet`, `OfferPill`, `RestaurantCard`, `SagarStrip`,
+  `TimeSlot`).
+- Car flow: `CarDetail`, `CarBooking`, `CarRentalCard`.
+- Profile journey: `Address`, `FollowedInfluencers`, `OrderDetail`, `OrderHistory`,
+  `FollowerWallet`, `MyReturns`, `Lookbook*`, `SlotPicker`, `SchemaDetail`,
+  `FollowerLogin` (last dark-theme screen → cream).
+
+## Intentionally NOT recolored
+`VegDot` + `StatusPill` stay on `brandPalette` — their green/red are semantic
+food-safety / open-status indicators (veg=green, open=green) that must not shift
+to the theme's blue. Verified by sweep: these are the only two follower files left
+on the prior palette.
 
 ## Verification
 - Babel transform: PASS on every touched file (Mobile metro preset).

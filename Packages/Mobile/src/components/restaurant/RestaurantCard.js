@@ -1,6 +1,19 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
-import { brandPalette as lightColors, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+
+// Flow 52.D — Creator Vibe recolor shim (restaurant component lib). Visual only.
+const lightColors = {
+  white: C.card, paper: C.card, bg: C.screenBg, bg2: C.soft, surface: C.soft, surface2: C.line,
+  ink: C.ink, ink2: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
+  border: C.line, borderSoft: C.line, border2: C.line,
+  yellow: C.brown, yellowHover: C.brownDark, yellowDeep: C.brownDark, yellowLight: C.star,
+  yellowPale: C.soft, yellow50: C.soft, yellow100: C.soft, yellow200: C.soft, yellowText: C.brown,
+  success: '#1E9E5A', successPale: C.soft, successText: '#1E9E5A', success50: C.soft, success100: C.soft,
+  warning: C.star, warning50: C.soft, warning100: C.soft,
+  danger: C.offer, dangerPale: C.soft, dangerText: C.offer, danger50: C.soft,
+  star: C.star, black: C.ink,
+};
 import CreatorChip from './CreatorChip';
 import OfferPill from './OfferPill';
 import StatusPill from './StatusPill';

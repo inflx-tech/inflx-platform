@@ -2,7 +2,18 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { brandPalette as P, fonts, fmtRupees } from '../../theme/tokens';
+import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
+
+// Flow 52.D — Creator Vibe recolor shim. Visual only; lookbook/product logic unchanged.
+const P = {
+  white: C.card, black: C.ink, bg: C.screenBg, bg2: C.soft,
+  ink: C.ink, ink2: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
+  border: C.line, borderSoft: C.line,
+  yellow: C.brown, yellowHover: C.brownDark, yellowPale: C.soft, yellow50: C.soft, yellowText: C.brown,
+  success: '#1E9E5A', successPale: C.soft, successText: '#1E9E5A',
+  danger: C.offer, dangerPale: C.soft, dangerText: C.offer,
+  conv: C.brown, convPale: C.soft, eng: C.verify, engPale: C.soft, hyb: C.brown, hybPale: C.soft, info: C.verify, infoPale: C.soft,
+};
 
 // Fashion wayfinding tint (this screen is fashion-only) — getBusinessAccentLight('fashion').pale
 const FASHION_PALE = '#FCE7F3';

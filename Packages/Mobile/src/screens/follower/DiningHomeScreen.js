@@ -22,7 +22,23 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, TextInput, StyleSheet, FlatList, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { brandPalette as lightColors, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+
+// Flow 52.D — Creator Vibe recolor shim for the dining sub-app. Maps the
+// brandPalette keys these screens used (aliased `lightColors`) → creatorVibe:
+// cream surfaces, terracotta accents/CTAs, amber ratings, blue verify, offer red.
+// Visual only — restaurant data + booking/bill/cart/order logic + tracking + nav unchanged.
+const lightColors = {
+  white: C.card, paper: C.card, bg: C.screenBg, bg2: C.soft, surface: C.soft, surface2: C.line,
+  ink: C.ink, ink2: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
+  border: C.line, borderSoft: C.line, border2: C.line,
+  yellow: C.brown, yellowHover: C.brownDark, yellowDeep: C.brownDark, yellowLight: C.star,
+  yellowPale: C.soft, yellow50: C.soft, yellow100: C.soft, yellow200: C.soft, yellowText: C.brown,
+  success: C.verify, successPale: C.soft, successText: C.brown, success50: C.soft, success100: C.soft,
+  warning: C.star, warning50: C.soft, warning100: C.soft,
+  danger: C.offer, dangerPale: C.soft, dangerText: C.offer, danger50: C.soft,
+  star: C.star, black: C.ink,
+};
 import { followerApi } from '../../services/api';
 import RestaurantCard from '../../components/restaurant/RestaurantCard';
 import LocationHeader from '../../components/LocationHeader';

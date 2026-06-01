@@ -24,7 +24,18 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { brandPalette as P, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+
+// Flow 52.D — Creator Vibe recolor shim. Visual only; wallet scaffold logic unchanged.
+const P = {
+  white: C.card, black: C.ink, bg: C.screenBg, bg2: C.soft,
+  ink: C.ink, ink2: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
+  border: C.line, borderSoft: C.line,
+  yellow: C.brown, yellowHover: C.brownDark, yellowPale: C.soft, yellow50: C.soft, yellowText: C.brown,
+  success: '#1E9E5A', successPale: C.soft, successText: '#1E9E5A',
+  danger: C.offer, dangerPale: C.soft, dangerText: C.offer,
+  conv: C.brown, convPale: C.soft, eng: C.verify, engPale: C.soft, hyb: C.brown, hybPale: C.soft, info: C.verify, infoPale: C.soft,
+};
 import { followerApi } from '../../services/api';
 import { CreatorChip } from '../../components/restaurant';
 

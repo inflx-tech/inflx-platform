@@ -26,7 +26,20 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linking, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { brandPalette as lightColors, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+
+// Flow 52.D — Creator Vibe recolor shim for the dining sub-app (see DiningHome).
+const lightColors = {
+  white: C.card, paper: C.card, bg: C.screenBg, bg2: C.soft, surface: C.soft, surface2: C.line,
+  ink: C.ink, ink2: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
+  border: C.line, borderSoft: C.line, border2: C.line,
+  yellow: C.brown, yellowHover: C.brownDark, yellowDeep: C.brownDark, yellowLight: C.star,
+  yellowPale: C.soft, yellow50: C.soft, yellow100: C.soft, yellow200: C.soft, yellowText: C.brown,
+  success: C.verify, successPale: C.soft, successText: C.brown, success50: C.soft, success100: C.soft,
+  warning: C.star, warning50: C.soft, warning100: C.soft,
+  danger: C.offer, dangerPale: C.soft, dangerText: C.offer, danger50: C.soft,
+  star: C.star, black: C.ink,
+};
 import { followerApi, mealsApi } from '../../services/api';
 import {
   CreatorChip, VegDot, StatusPill, SagarStrip, FilterChip,
