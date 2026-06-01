@@ -3,7 +3,20 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Image,
 } from 'react-native';
-import { brandPalette as P, fonts, fmtRupees, getBusinessAccentLight } from '../../theme/tokens';
+import { creatorVibe as C, fonts, fmtRupees, getBusinessAccentLight } from '../../theme/tokens';
+
+// Flow 52.4 — Creator Vibe recolor shim. Per-business accent stays wayfinding-only
+// (hero/more-card tints, via getBusinessAccentLight). Chrome → cream/ink; primary +
+// secondary CTAs overridden to terracotta-brown below. Visual only — price math,
+// availing_modes → CTA dispatch (getModeConfig/dispatchCta), getStoreProducts,
+// tracking, and More-from-brand replace-nav all untouched.
+const P = {
+  white: C.card, bg: C.screenBg, bg2: C.soft,
+  border: C.line, ink: C.ink, ink2: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.star, yellowPale: C.soft,
+  successText: C.brown,
+};
 import { followerApi } from '../../services/api';
 
 /**
@@ -323,11 +336,11 @@ export default function ProductDetailScreen({ navigation, route }) {
               {secondaryCtas.map(cta => (
                 <TouchableOpacity
                   key={cta.mode}
-                  style={[styles.secondaryCta, { borderColor: P.ink }]}
+                  style={[styles.secondaryCta, { borderColor: C.brown }]}
                   onPress={() => dispatchCta(cta)}
                 >
                   <Text style={styles.secondaryCtaEmoji}>{cta.emoji}</Text>
-                  <Text style={[styles.secondaryCtaText, { color: P.ink }]}>{cta.label}</Text>
+                  <Text style={[styles.secondaryCtaText, { color: C.brown }]}>{cta.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -379,7 +392,7 @@ export default function ProductDetailScreen({ navigation, route }) {
           <Text style={styles.footerName} numberOfLines={1}>{selected.name}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.primaryCta, { backgroundColor: P.ink }]}
+          style={[styles.primaryCta, { backgroundColor: C.brown }]}
           onPress={() => dispatchCta(primaryCta)}
         >
           <Text style={styles.primaryCtaText}>{primaryCta.emoji} {primaryCta.label}</Text>
@@ -416,7 +429,7 @@ const styles = StyleSheet.create({
   heroBadgeText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.yellow },
 
   body: { padding: 20 },
-  productName: { fontFamily: fonts.displayBlack, fontSize: 22, color: P.ink, marginBottom: 6 },
+  productName: { fontFamily: fonts.serifDisplay, fontWeight: '600', fontSize: 22, color: P.ink, marginBottom: 6 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandLine: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, flexShrink: 1 },
   brandChevron: { fontSize: 16, fontWeight: '300' },
@@ -465,5 +478,5 @@ const styles = StyleSheet.create({
   footerPrice: { fontFamily: fonts.monoBold, fontSize: 20, color: P.ink },
   footerName: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 2 },
   primaryCta: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12 },
-  primaryCtaText: { fontFamily: fonts.displayBlack, fontSize: 14, color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.3 },
+  primaryCtaText: { fontFamily: fonts.displayBlack, fontSize: 14, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.3 },
 });

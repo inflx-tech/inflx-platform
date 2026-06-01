@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { brandPalette as P, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+
+// Flow 52.G — Creator Vibe recolor shim. Visual only; category/sub-category
+// navigation + deal-count fetch unchanged.
+const P = {
+  white: C.card, bg: C.screenBg,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted,
+  yellow: C.brown, yellowText: C.brown, yellowPale: C.soft,
+};
 import { followerApi } from '../../services/api';
 
 /**
@@ -211,10 +220,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 16,
     backgroundColor: P.white,
-    borderWidth: 1.5,
-    borderColor: P.ink,
-    borderRadius: 14,
-    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: P.border,
+    borderRadius: 24,
+    paddingHorizontal: 16,
     paddingVertical: 11,
     flexDirection: 'row',
     alignItems: 'center',

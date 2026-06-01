@@ -1,6 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { brandPalette as P, fonts } from '../theme/tokens';
+import { creatorVibe as C, fonts } from '../theme/tokens';
+
+// Flow 52.1 — Creator Vibe recolor shim. Story rings/initials → warm amber
+// (C.star); ink avatar kept. Visual only; ring-state logic untouched.
+const P = {
+  white: C.card, card: C.card, bg2: C.soft,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.star, yellowText: C.brown, yellowPale: C.soft,
+  success: C.verify, danger: C.offer,
+};
 
 /**
  * InfluencerStoryRow — horizontal scroll of influencer story circles.

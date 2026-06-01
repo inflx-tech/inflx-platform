@@ -3,7 +3,20 @@ import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Image,
 } from 'react-native';
-import { brandPalette as P, fonts, getBusinessAccentLight } from '../../theme/tokens';
+import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
+
+// Flow 52.6 — Creator Vibe recolor shim. Sort-pill active goes terracotta
+// (was green success). Per-business accent (getBusinessAccentLight) stays on the
+// store-card badges/chips as wayfinding. Visual only — getCategoryStores, the
+// dining/shopping/booking layout dispatch, tracking, and all nav unchanged.
+const P = {
+  white: C.card, bg: C.screenBg, bg2: C.soft,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.brown, yellowText: C.brown, yellowPale: C.soft,
+  success: C.brown, successPale: C.soft,
+  danger: C.offer,
+};
 import ProductCard from '../../components/cards/ProductCard';
 import { followerApi } from '../../services/api';
 import { buildTrackingFromOffer } from '../../utils/tracking';
@@ -337,7 +350,7 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   backText: { fontSize: 14, color: P.ink },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: P.ink },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: P.ink, fontFamily: fonts.serifDisplay },
   headerSub: { fontSize: 10, color: P.muted },
   search: {
     marginHorizontal: 20, marginBottom: 12, marginTop: 10,

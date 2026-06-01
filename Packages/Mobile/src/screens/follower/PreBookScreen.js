@@ -3,7 +3,18 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
-import { brandPalette as P, fonts, fmtMoney } from '../../theme/tokens';
+import { creatorVibe as C, fonts, fmtMoney } from '../../theme/tokens';
+
+// Flow 52.G — Creator Vibe recolor shim (transaction screens). Visual only —
+// slot/guest/date selection, advance math, book flow, and navigation untouched.
+const P = {
+  white: C.card, bg: C.screenBg, bg2: C.soft,
+  border: C.line, ink: C.ink, ink2: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
+  yellow: C.star, yellowHover: C.brown, yellowPale: C.soft, yellowText: C.brown,
+  success: C.verify, successPale: C.soft, successText: C.brown,
+  danger: C.offer, dangerPale: C.soft, dangerText: C.offer,
+};
 import { followerApi } from '../../services/api';
 // Wave 4 PR 4.3 — restaurant table bookings dispatch to the redesigned
 // RestaurantBookingScreen below.

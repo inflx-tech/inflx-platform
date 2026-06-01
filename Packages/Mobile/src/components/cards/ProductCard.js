@@ -1,6 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { brandPalette as P, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+
+// Flow 52.1 — Creator Vibe recolor via local palette shim. Maps the F0 tokens
+// this component used onto the creatorVibe palette (white→card, yellow→star amber,
+// yellowText→brown, yellowPale→soft, success→verify blue tick, danger→offer).
+// Chrome re-themes; all card logic (offer-badge math, trust chips, prices) untouched.
+const P = {
+  white: C.card, card: C.card, bg2: C.soft,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.star, yellowText: C.brown, yellowPale: C.soft,
+  success: C.verify, danger: C.offer,
+};
 
 /**
  * ProductCard — 2-column grid product card for the follower app.

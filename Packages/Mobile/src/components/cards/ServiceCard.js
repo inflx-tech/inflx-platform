@@ -1,6 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { brandPalette as P, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+
+// Flow 52.1 — Creator Vibe recolor shim (see ProductCard). Visual only.
+const P = {
+  white: C.card, card: C.card, bg2: C.soft,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.star, yellowText: C.brown, yellowPale: C.soft,
+  success: C.verify, danger: C.offer,
+};
 
 /**
  * ServiceCard — for service businesses (salon, gym, travel, car-rental, etc.)

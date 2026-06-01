@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, RefreshControl, Alert, Image } from 'react-native';
-import { brandPalette as P, spacing, radius, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+import { creatorVibe as C, spacing, radius, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+
+// Flow 52.3 — Creator Vibe recolor shim (loaders/refresh → brown). Visual only;
+// fetchStore / dispatchBrandAction / tracking / RestaurantDetail dispatch unchanged.
+const P = {
+  white: C.card, card: C.card, bg: C.screenBg, bg2: C.soft,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.brown, yellowText: C.brown, yellowPale: C.soft,
+  success: C.verify, danger: C.offer,
+};
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import BrandActionRow from '../../components/BrandActionRow';
@@ -62,7 +72,11 @@ export default function BrandStoreScreen({ navigation, route }) {
   const influencers = store?.influencers || [];
   const creator = store?.creator || null;   // Phase Salon-2: via-influencer for sticky header
   const creatorPicks = store?.creator_picks || []; // Phase E: published dishes when via creator
-  const accent = getBusinessAccentLight(brand?.category);
+  // Flow 52.3 — Creator Vibe: store chrome goes terracotta-brown (the mockup
+  // business page is mono-brown). Per-business hue is dropped here on the store
+  // chrome; `pale` becomes a warm beige tint for the banner. Product cards still
+  // get their OWN per-business hero tint via getBusinessAccentLight internally.
+  const accent = { accent: C.brown, pale: C.soft, icon: getBusinessAccentLight(brand?.category).icon };
   const icon = accent.icon;
 
   // Wave 4 PR 4.2 — dispatch the entire screen to the redesigned dining
@@ -544,10 +558,10 @@ const s = StyleSheet.create({
   logoText: { fontSize: 18, fontWeight: '800', color: '#fff' },
   storeInfo: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 12 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  storeName: { fontSize: 18, fontWeight: '800', color: P.ink, flexShrink: 1 },
+  storeName: { fontSize: 19, fontWeight: '600', color: P.ink, flexShrink: 1, fontFamily: fonts.serifDisplay },
   verifiedBadge: {
     width: 18, height: 18, borderRadius: 9,
-    backgroundColor: '#22C55E',                  // green-500
+    backgroundColor: C.verify,                   // Creator Vibe blue tick
     alignItems: 'center', justifyContent: 'center',
   },
   verifiedCheck: { fontSize: 10, fontWeight: '900', color: '#fff', lineHeight: 11 },

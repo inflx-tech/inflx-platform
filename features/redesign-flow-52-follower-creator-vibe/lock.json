@@ -1,0 +1,43 @@
+{
+  "feature": "redesign-flow-52-follower-creator-vibe",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-06-01 chat — AskUserQuestion green: D1=OTA-safe serif fallback, D2=Reels deferred to 52.8, Step-5='Lock & start 52.0' BEFORE implementation",
+  "approved_at": "2026-06-01",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Mockup all-screens.html iterated with founder across many chat turns; mirrored into 04-preview/mockups/all-screens.html (8 screens).",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-06-01 AskUserQuestion green signal on the Creator Vibe mockup (04-preview/mockups/all-screens.html)",
+  "mockup_locked_at": "2026-06-01",
+  "decisions": {
+    "D1_font": "OTA-safe serif fallback (system serif for headings now; Fraunces deferred to a later native APK build). Repaint flows stay OTA-only.",
+    "D2_reels": "Deferred to sub-flow 52.8 (own backend + APK contract). Reel rails render where reels exist, hide where they don't."
+  },
+  "notes": "Program/umbrella contract for the Creator Vibe follower re-theme. Overrides the F0 yellow palette (Flows 38-51), FOLLOWER-SCOPED via a new `creatorVibe` token block — brandPalette/lightColors/darkColors NOT mutated (brand-web + mobile-brand unaffected). Sequenced sub-flows: 52.0 Foundation (creatorVibe tokens + serif fallback + FollowerNavigator 4->5 tabs Home/Offers/Reels/Orders/Profile) -> 52.1 Home -> 52.2 Offers -> 52.3 Business -> 52.4 Product -> 52.5 Creator Store -> 52.6 Category -> 52.7 Creator's Category (new) -> 52.8 Reels (separate backend+APK). Each sub-flow: implement -> babel+integrity+pnpm qa -> 06-diff -> Maestro -> deploy OTA, before the next. released stays false until per-flow green + founder explicit prod-push go.",
+  "release": {
+    "qa_all_green": false,
+    "qa_evidence": {
+      "web_run_at": "2026-06-01",
+      "web_report_path": "qa/reports/2026-06-01T11-15-31-727Z/QA-REPORT.md",
+      "web_pw_tests": 76, "web_passed": 76, "web_failed": 0, "web_gate": 0,
+      "web_state": "GREEN",
+      "web_note": "Mobile-only re-theme cannot affect the web suite; 76/76 gate 0 confirms zero regression. Re-run twice during the build (52.0 foundation, 52.G transaction batch) — GREEN both times.",
+      "mobile_checks": {
+        "babel_transform": "PASS — every touched file transforms via the Mobile metro preset",
+        "integrity_grep": "0 orphaned old-palette imports on in-scope files; all API / availing_modes-dispatch / 4-ID-tracking / discount-math / navigation markers preserved per screen"
+      },
+      "implementation_scope": "52.0 foundation (tokens+nav+reels placeholder) · 52.1 Home + 5 shared cards · 52.2 Offers · 52.3 Business · 52.4 Product · 52.5 Creator Store · 52.6 Category · 52.7 Creator's Category (NEW) · 52.G mid-flow gaps (Profile/Find/Saved/OfferCard + PayAtStore/PreBook/OnlineOrder/OrderCart/Enquiry). 52.8 Reels = backend-gated, deferred. Deeper surfaces (dining/car/wallet/returns/lookbook/login/etc.) intentionally still on prior palette per founder scope choice 2026-06-01.",
+      "pending_before_release": "Maestro mobile E2E (pnpm qa:maestro on device/emulator) + founder physical-APK smoke; then explicit prod-push go."
+    },
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy_class": "production-impacting (mobile OTA — follower re-theme)",
+    "deploy_targets_planned": ["ota:brand", "ota:influencer", "ota:follower"],
+    "native_rebuild_required": false,
+    "native_rebuild_note": "Pure JS (serif fallback, no new font asset) → ships via OTA. publish-ota:all per OTA strategy. Fraunces + Reels are later native/backend work.",
+    "maestro_green": false
+  }
+}

@@ -1,6 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { brandPalette as P, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+
+// Flow 52.1 — Creator Vibe recolor shim, terracotta-banner variant. The shop-
+// level deal banner becomes brown (ink→brown) to match the mockup's warm deal
+// banner; accents → amber. White text on brown preserved. Logic untouched.
+const P = {
+  ink: C.brown,
+  white: C.card,
+  yellow: C.star,
+  border: C.line, muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellowText: C.brown, yellowPale: C.soft, success: C.verify, danger: C.offer,
+};
 
 /**
  * NewOfferCard — full-width shop/category-level deal banner.

@@ -1,6 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { colors, spacing, radius, fmtMoney } from '../theme/tokens';
+import { creatorVibe as C, spacing, radius, fmtMoney } from '../theme/tokens';
+
+// Flow 52.G — Creator Vibe recolor shim. OfferCard was on the legacy navy/teal/
+// orange `colors` palette; remap → creatorVibe. All mode CTAs collapse to the
+// terracotta action color (enquiry stays an outline). Visual only; discount/
+// price math + CTA dispatch unchanged.
+const colors = {
+  white: C.card, border: C.line, border2: C.line,
+  t1: C.ink, t2: C.muted, t3: C.muted,
+  navy: C.brown, tealDeep: C.brown, orange: C.brown, orangeDeep: C.brown,
+  orangePale: C.soft, red: C.offer, redPale: C.soft,
+};
 
 /**
  * OfferCard — the core card used throughout the Follower app.

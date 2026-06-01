@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Follower App (7 screens, cream/brown, shoppable reels)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --screen-bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown-dark:#6E3A24;
+    --ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;
+    --verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F1ECE3;--soft2:#EFE7DA;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:
+      radial-gradient(900px 500px at 20% -5%, #efe3d2 0%, transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, #e8ddcd 0%, transparent 55%),
+      linear-gradient(160deg,#e7ddcd 0%,#d8cdba 100%);
+    color:var(--ink);min-height:100vh;padding:48px 24px 80px;
+  }
+  .page-head{max-width:1100px;margin:0 auto 42px;text-align:center;}
+  .page-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:46px;letter-spacing:-.5px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:10px;}
+  .page-head h1 .spark{font-size:26px;color:var(--brown);}
+  .page-head p{color:#5e5040;margin-top:8px;font-size:15px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px;}
+  .legend span{background:rgba(255,255,255,.55);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;backdrop-filter:blur(4px);}
+
+  .rail{display:flex;gap:42px;overflow-x:auto;padding:14px 8px 40px;scroll-snap-type:x proximity;align-items:flex-start;}
+  .rail::-webkit-scrollbar{height:10px;}
+  .rail::-webkit-scrollbar-thumb{background:rgba(139,74,47,.4);border-radius:20px;}
+  .rail::-webkit-scrollbar-track{background:transparent;}
+
+  .frame-wrap{scroll-snap-align:center;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;}
+  .frame-label{margin-bottom:16px;text-align:center;max-width:340px;}
+  .frame-label .step{display:inline-block;background:var(--brown);color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px;padding:4px 11px;border-radius:30px;margin-bottom:8px;}
+  .frame-label h3{font-family:'Fraunces',serif;font-weight:600;font-size:20px;color:#2a1d14;}
+  .frame-label p{font-size:12.5px;color:#6a5a47;margin-top:4px;line-height:1.4;}
+
+  .phone{width:340px;height:732px;background:var(--screen-bg);border-radius:42px;box-shadow:0 40px 80px -20px rgba(60,38,20,.45),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:700;color:var(--ink);flex:0 0 auto;z-index:50;}
+  .statusbar .icons{display:flex;gap:6px;font-size:11px;align-items:center;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding-bottom:14px;}
+  .scroll::-webkit-scrollbar{width:0;}
+
+  .row-pad{padding:0 16px;}
+  .sec-head{display:flex;justify-content:space-between;align-items:center;padding:18px 16px 10px;}
+  .sec-head h4{font-size:15.5px;font-weight:800;letter-spacing:-.2px;}
+  .sec-head .more{color:var(--brown);font-size:12px;font-weight:700;}
+  .hscroll{display:flex;gap:14px;overflow-x:auto;padding:2px 16px 4px;}
+  .hscroll::-webkit-scrollbar{display:none;}
+
+  .avatar{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;background:#e9ddca;flex:0 0 auto;}
+  .ring{padding:2.5px;border-radius:50%;background:linear-gradient(135deg,var(--ring1),var(--ring2));flex:0 0 auto;}
+  .ring .avatar{border:2.5px solid var(--screen-bg);}
+  .creator-cell{display:flex;flex-direction:column;align-items:center;gap:6px;width:72px;flex:0 0 auto;}
+  .creator-cell .name{font-size:11px;font-weight:700;text-align:center;line-height:1.2;}
+  .creator-cell .sub{font-size:10px;color:var(--muted);font-weight:600;}
+  .tick{color:var(--verify);font-size:10px;}
+
+  .cat-cell{display:flex;flex-direction:column;align-items:center;gap:7px;width:64px;flex:0 0 auto;}
+  .cat-ico{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--card);box-shadow:0 6px 14px -6px rgba(80,50,25,.3);border:1px solid var(--line);}
+  .cat-ico.all{background:#1f1a14;color:#fff;}
+  .cat-cell .lbl{font-size:11px;font-weight:700;text-align:center;}
+
+  .pill-row{display:flex;gap:8px;overflow-x:auto;padding:2px 16px;}
+  .pill-row::-webkit-scrollbar{display:none;}
+  .pill{flex:0 0 auto;font-size:12px;font-weight:700;padding:8px 15px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .pill.active{background:var(--brown);color:#fff;border-color:var(--brown);}
+
+  .img{background:#e7dcc9;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;overflow:hidden;}
+  .img.g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}
+  .img.g2{background:linear-gradient(135deg,#f0c9b0,#d98a63);}
+  .img.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}
+  .img.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}
+  .img.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}
+  .img.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  .heart{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:13px;color:#c34;}
+
+  .stars{color:var(--star);font-size:11px;letter-spacing:-1px;}
+  .offer{color:var(--offer);font-weight:800;font-size:11.5px;}
+  .tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.6px;color:var(--brown);margin-bottom:3px;}
+
+  .card{background:var(--card);border-radius:16px;border:1px solid var(--line);box-shadow:0 8px 20px -14px rgba(70,45,22,.5);overflow:hidden;}
+
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:9px 6px 16px;position:relative;}
+  .nav .item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9.5px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .item.active{color:var(--brown);}
+  .nav .item .ic{font-size:18px;}
+  /* center reels button (replaces the old "+") */
+  .reels{width:54px;height:54px;border-radius:18px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;margin-top:-26px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:9px;font-weight:800;margin-top:1px;letter-spacing:.3px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 4px;}
+  .topbar .ttl{font-family:'Fraunces',serif;font-weight:600;font-size:21px;}
+  .topbar .ttl.center{flex:1;text-align:center;}
+  .topbar .ico-btn{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;color:#3b332a;flex:0 0 auto;}
+  .badge-dot{position:absolute;top:-3px;right:-3px;background:var(--offer);color:#fff;font-size:8px;font-weight:800;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+  .search{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:30px;padding:11px 16px;margin:8px 16px 4px;color:var(--muted);font-size:13px;font-weight:500;}
+
+  .feat{flex:0 0 158px;height:138px;border-radius:16px;padding:13px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
+  .feat .ftag{font-size:9px;font-weight:800;letter-spacing:.5px;color:var(--brown);}
+  .feat h5{font-family:'Fraunces',serif;font-size:17px;font-weight:600;line-height:1.1;max-width:90px;}
+  .feat .by{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#5e5345;}
+  .feat .by .av{width:18px;height:18px;border-radius:50%;background:#d9c7a8;display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .feat .emoji{position:absolute;right:-6px;bottom:-6px;font-size:62px;opacity:.9;}
+
+  .hero{height:120px;position:relative;display:flex;align-items:flex-end;padding:14px;color:#fff;}
+  .hero::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,12,6,.78),rgba(20,12,6,.15));}
+  .hero>*{position:relative;z-index:2;}
+  .biz-head{display:flex;gap:12px;align-items:flex-end;}
+  .biz-logo{width:58px;height:58px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;border:2px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.25);}
+
+  .btn{background:var(--brown);color:#fff;font-weight:700;font-size:13px;padding:10px 16px;border-radius:30px;border:none;text-align:center;}
+  .btn.outline{background:transparent;border:1.5px solid var(--brown);color:var(--brown);}
+  .btn.block{display:block;width:100%;padding:15px;font-size:15px;}
+
+  .toggle{width:42px;height:24px;border-radius:30px;background:#d8cebd;position:relative;flex:0 0 auto;}
+  .toggle.on{background:var(--brown);}
+  .toggle::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s;}
+  .toggle.on::after{left:21px;}
+
+  .vid{position:relative;border-radius:12px;overflow:hidden;flex:0 0 92px;height:120px;}
+  .vid .play{position:absolute;top:8px;left:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:9px;color:#333;}
+  .vid .cap{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,rgba(0,0,0,.7),transparent);color:#fff;font-size:8px;padding:14px 6px 6px;font-weight:600;}
+  /* shoppable badge on a reel thumbnail */
+  .vid .shop{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.95);color:var(--brown);font-size:8px;font-weight:800;padding:2px 6px;border-radius:20px;}
+
+  .divider{height:1px;background:var(--line);margin:14px 16px;}
+  .muted{color:var(--muted);}
+  .fs11{font-size:11px;}.fs12{font-size:12px;}.fs13{font-size:13px;}.fw7{font-weight:700;}.fw8{font-weight:800;}
+
+  /* ===== STICKY CATEGORY STRIP (Offers) ===== */
+  .catbar{display:flex;gap:7px;overflow-x:auto;padding:9px 16px;background:var(--screen-bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;}
+  .catbar::-webkit-scrollbar{display:none;}
+  .catchip{flex:0 0 auto;font-size:11.5px;font-weight:700;padding:6px 13px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;display:flex;gap:5px;align-items:center;}
+  .catchip.active{background:var(--brown);color:#fff;border-color:var(--brown);}
+
+  /* ===== OFFERS — deal cards ===== */
+  .deal{flex:0 0 196px;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 8px 20px -14px rgba(70,45,22,.5);}
+  .deal .dhead{height:80px;position:relative;display:flex;align-items:flex-end;padding:10px;color:#fff;}
+  .deal .dhead .big{font-family:'Fraunces',serif;font-size:25px;font-weight:600;line-height:1;}
+  .deal .dhead .emoji{position:absolute;right:8px;top:6px;font-size:36px;opacity:.85;}
+  .deal .dbody{padding:10px 11px 12px;}
+  .deal .cby{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:10px;font-weight:700;color:#5e5345;}
+  .deal .cby .av{width:18px;height:18px;border-radius:50%;background:#e0caa3;display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .deal .grab{margin-top:9px;background:var(--brown);color:#fff;font-size:11px;font-weight:800;text-align:center;padding:8px;border-radius:30px;}
+  .bestdeal{margin:10px 16px 2px;border-radius:18px;padding:15px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(120deg,#8a4f2d,#6e3a24);}
+  .bestdeal .lbl{font-size:10px;font-weight:800;letter-spacing:.6px;opacity:.85;}
+  .bestdeal h5{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-top:3px;max-width:200px;}
+  .bestdeal .em{position:absolute;right:-4px;bottom:-10px;font-size:78px;opacity:.85;}
+
+  /* ===== REELS SCREEN ===== */
+  .reel-stage{flex:1 1 auto;position:relative;background:linear-gradient(165deg,#3a2417 0%,#1c120a 70%);display:flex;align-items:center;justify-content:center;font-size:120px;overflow:hidden;}
+  .reel-top{position:absolute;top:14px;left:0;right:0;padding:0 16px;display:flex;justify-content:space-between;align-items:center;color:#fff;z-index:6;}
+  .reel-top .tabs{display:flex;gap:16px;font-size:14px;font-weight:700;}
+  .reel-top .tabs .on{position:relative;}
+  .reel-top .tabs .on::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:2px;background:#fff;border-radius:2px;}
+  .reel-top .tabs .off{opacity:.6;}
+  .reel-actions{position:absolute;right:12px;bottom:172px;display:flex;flex-direction:column;gap:18px;align-items:center;color:#fff;z-index:6;}
+  .reel-actions .act{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:700;}
+  .reel-actions .act .ic{font-size:25px;}
+  .reel-bottom{position:absolute;left:0;right:0;bottom:0;padding:30px 16px 16px;background:linear-gradient(0deg,rgba(15,9,4,.95) 30%,transparent);color:#fff;z-index:6;}
+  .reel-creator{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+  .reel-creator .nm{font-weight:800;font-size:13px;display:flex;align-items:center;gap:4px;}
+  .reel-follow{margin-left:auto;border:1.5px solid #fff;border-radius:30px;padding:5px 14px;font-size:11px;font-weight:800;}
+  .reel-caption{font-size:12px;line-height:1.45;margin-bottom:12px;opacity:.95;max-width:230px;}
+  .reel-product{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.97);border-radius:14px;padding:9px 11px;color:var(--ink);box-shadow:0 8px 22px rgba(0,0,0,.35);}
+  .reel-product .thumb{width:46px;height:46px;border-radius:10px;flex:0 0 46px;display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .reel-product .go{margin-left:auto;background:var(--brown);color:#fff;font-size:11px;font-weight:800;padding:9px 14px;border-radius:30px;}
+  .reel-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:10px;font-weight:700;padding:4px 10px;border-radius:30px;margin-bottom:12px;}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1><span class="spark">✦</span> Creator Vibe — Follower App <span class="spark">✦</span></h1>
+  <p>Cream + terracotta · Fraunces + Jakarta · nav = Home / 🏷️ Offers / 🎬 Reels / Orders / Profile · shoppable reels</p>
+  <div class="legend">
+    <span>1 · Global Home</span><span>2 · Category (Global)</span><span>3 · Creator Store</span>
+    <span>4a · Creator's Category</span><span>4b · Business Page</span><span>5 · Product Detail</span><span>O · Offers (platform-wide)</span><span>R · Shoppable Reels</span>
+  </div>
+</div>
+
+<div class="rail">
+
+<!-- ============ SCREEN 1 — GLOBAL HOME ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">LEVEL 1</span><h3>Global Home</h3><p>Location-based discovery. Creators + all business categories together.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="topbar">
+        <span style="font-size:20px">☰</span>
+        <span class="ttl">Creator Vibe ✦</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="ico-btn" style="position:relative">🔔<span class="badge-dot">3</span></div>
+          <div class="avatar" style="width:34px;height:34px;font-size:16px">🙋‍♀️</div>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);font-weight:600;margin:-2px 0 4px">Shop · Support · Stay Inspired</div>
+      <div class="search">🔍 Search creators, products, stores…</div>
+      <div class="hscroll" style="margin-top:10px">
+        <div class="creator-cell"><div class="ring"><div class="avatar">👩🏻‍🍳</div></div><span class="name">@MamaPizza</span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">👩🏽</div></div><span class="name">@FoodieFarah</span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">🧔🏻</div></div><span class="name">@StyleMaster</span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">💁🏻‍♀️</div></div><span class="name">@GlowRituals</span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">🧗🏽</div></div><span class="name">@UrbanXplor</span></div>
+      </div>
+      <div class="sec-head"><h4>Explore Categories</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="cat-cell"><div class="cat-ico all">▦</div><span class="lbl">All</span></div>
+        <div class="cat-cell"><div class="cat-ico">🍕</div><span class="lbl">Food</span></div>
+        <div class="cat-cell"><div class="cat-ico">👔</div><span class="lbl">Fashion</span></div>
+        <div class="cat-cell"><div class="cat-ico">💇</div><span class="lbl">Salon</span></div>
+        <div class="cat-cell"><div class="cat-ico">🚗</div><span class="lbl">Rentals</span></div>
+        <div class="cat-cell"><div class="cat-ico">🧭</div><span class="lbl">Travel</span></div>
+      </div>
+      <div class="sec-head"><h4>What's Hot in Vijayawada 🔥</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="feat" style="background:linear-gradient(135deg,#f6e2c4,#ecc591)"><span class="ftag">FOOD</span><h5>Vijayawada's Must-Try Pizza</h5><div class="by"><span class="av">👩🏻‍🍳</span>@MamaPizza</div><span class="emoji">🍕</span></div>
+        <div class="feat" style="background:linear-gradient(135deg,#f0d6c8,#e0ab93)"><span class="ftag">FASHION</span><h5>Summer Fits Under ₹999</h5><div class="by"><span class="av">🧔🏻</span>@StyleMaster</div><span class="emoji">👕</span></div>
+        <div class="feat" style="background:linear-gradient(135deg,#ecdfd0,#d3bda3)"><span class="ftag">BEAUTY</span><h5>Glow That Shows</h5><div class="by"><span class="av">💁🏻‍♀️</span>@GlowRituals</div><span class="emoji">🧴</span></div>
+      </div>
+      <div class="sec-head"><h4>Top Picks This Week</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="card" style="flex:0 0 150px"><div class="img g1" style="height:96px;border-radius:0">🍕<div class="heart">♡</div></div><div style="padding:8px 10px 10px"><span class="tag">RESTAURANT</span><div class="fw8 fs13">Mama's Pizza</div><div class="muted fs11">Vijayawada</div><div style="margin-top:4px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.5 (1.2K)</span></div><div class="offer" style="margin-top:3px">20% OFF</div></div></div>
+        <div class="card" style="flex:0 0 150px"><div class="img g4" style="height:96px;border-radius:0">👕<div class="heart">♡</div></div><div style="padding:8px 10px 10px"><span class="tag">STORE</span><div class="fw8 fs13">The Summer Co.</div><div class="muted fs11">Vijayawada</div><div style="margin-top:4px"><span class="stars">★★★★☆</span> <span class="fs11 muted">4.3 (830)</span></div><div class="offer" style="margin-top:3px">Flat 15% OFF</div></div></div>
+        <div class="card" style="flex:0 0 150px"><div class="img g3" style="height:96px;border-radius:0">🧴<div class="heart">♡</div></div><div style="padding:8px 10px 10px"><span class="tag">PRODUCT</span><div class="fw8 fs13">Vitamin C Serum</div><div class="muted fs11">Vilow Theory</div><div style="margin-top:4px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.6 (560)</span></div><div class="offer" style="margin-top:3px">Buy 2 Get 1</div></div></div>
+      </div>
+      <div class="sec-head"><h4>Creators Near You</h4><span class="more">View All</span></div>
+      <div class="hscroll" style="padding-bottom:14px">
+        <div class="card" style="flex:0 0 150px;padding:10px;display:flex;gap:9px;align-items:center"><div class="avatar" style="width:38px;height:38px;font-size:18px">👩🏽</div><div><div class="fw8 fs12">@FoodieFarah</div><div class="muted fs11">Food Creator</div></div></div>
+        <div class="card" style="flex:0 0 150px;padding:10px;display:flex;gap:9px;align-items:center"><div class="avatar" style="width:38px;height:38px;font-size:18px">🧔🏽</div><div><div class="fw8 fs12">@TasteTrail</div><div class="muted fs11">Food Explorer</div></div></div>
+        <div class="card" style="flex:0 0 150px;padding:10px;display:flex;gap:9px;align-items:center"><div class="avatar" style="width:38px;height:38px;font-size:18px">🧑🏻</div><div><div class="fw8 fs12">@VFoodLover</div><div class="muted fs11">Food Blogger</div></div></div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="item active"><span class="ic">🏠</span>Home</div>
+      <div class="item"><span class="ic">🏷️</span>Offers</div>
+      <div class="reels">🎬<span class="rl">Reels</span></div>
+      <div class="item"><span class="ic">🛍️</span>Orders</div>
+      <div class="item"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 2 — CATEGORY (GLOBAL) ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">LEVEL 2</span><h3>Category View (Global)</h3><p>One vertical, platform-wide. Top creators here + the businesses + a reels-fed picks row.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="topbar"><div class="ico-btn">←</div><div class="ttl center" style="line-height:1.05">Food &amp; Dining<div style="font-size:10px;font-weight:600;color:var(--muted);font-family:'Plus Jakarta Sans'">📍 in Vijayawada</div></div><div class="ico-btn">↗</div></div>
+      <div class="hscroll" style="margin-top:8px">
+        <div class="cat-cell"><div class="cat-ico all">▦</div><span class="lbl">All</span></div>
+        <div class="cat-cell"><div class="cat-ico">🍕</div><span class="lbl">Restaurants</span></div>
+        <div class="cat-cell"><div class="cat-ico">☕</div><span class="lbl">Cafes</span></div>
+        <div class="cat-cell"><div class="cat-ico">🌮</div><span class="lbl">Street Food</span></div>
+        <div class="cat-cell"><div class="cat-ico">🧋</div><span class="lbl">Beverages</span></div>
+        <div class="cat-cell"><div class="cat-ico">🍰</div><span class="lbl">Bakery</span></div>
+      </div>
+      <div class="sec-head"><h4>Top Food Creators</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="creator-cell" style="width:78px"><div class="ring"><div class="avatar">👩🏻‍🍳</div></div><span class="name">@MamaPizza <span class="tick">✔</span></span><span class="sub">98K</span></div>
+        <div class="creator-cell" style="width:78px"><div class="ring"><div class="avatar">👩🏽</div></div><span class="name">@FoodieFarah <span class="tick">✔</span></span><span class="sub">76K</span></div>
+        <div class="creator-cell" style="width:78px"><div class="ring"><div class="avatar">🧔🏽</div></div><span class="name">@TasteTrail <span class="tick">✔</span></span><span class="sub">62K</span></div>
+        <div class="creator-cell" style="width:78px"><div class="ring"><div class="avatar">🧑🏻</div></div><span class="name">@VFoodLover</span><span class="sub">54K</span></div>
+      </div>
+      <div class="sec-head"><h4>Popular Restaurants</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="card" style="flex:0 0 150px"><div class="img g1" style="height:100px;border-radius:0">🍕<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">Mama's Pizza</div><div class="muted fs11">Italian, Pizzas</div><div style="margin-top:5px;display:flex;justify-content:space-between"><span><span class="stars">★</span> <span class="fs11 fw7">4.5</span> <span class="fs11 muted">(1.2K)</span></span><span class="fs11 muted">1.2 km</span></div></div></div>
+        <div class="card" style="flex:0 0 150px"><div class="img g5" style="height:100px;border-radius:0">🍝<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">Spice Route</div><div class="muted fs11">North Indian</div><div style="margin-top:5px;display:flex;justify-content:space-between"><span><span class="stars">★</span> <span class="fs11 fw7">4.4</span> <span class="fs11 muted">(980)</span></span><span class="fs11 muted">2.1 km</span></div></div></div>
+        <div class="card" style="flex:0 0 150px"><div class="img g2" style="height:100px;border-radius:0">🍔<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">Burger Barn</div><div class="muted fs11">Burgers, Fast Food</div><div style="margin-top:5px;display:flex;justify-content:space-between"><span><span class="stars">★</span> <span class="fs11 fw7">4.6</span> <span class="fs11 muted">(1.1K)</span></span><span class="fs11 muted">1.8 km</span></div></div></div>
+      </div>
+      <div class="pill-row" style="margin-top:12px"><span class="pill active">All</span><span class="pill">Offers</span><span class="pill">Pure Veg</span><span class="pill">Non Veg</span><span class="pill">Rating 4.0+</span></div>
+      <div class="sec-head"><h4>Today's Food Picks 🎬</h4><span class="more">View All</span></div>
+      <div class="hscroll" style="padding-bottom:14px">
+        <div class="card" style="flex:0 0 160px"><div style="display:flex;gap:7px;align-items:center;padding:8px 10px 6px"><div class="avatar" style="width:26px;height:26px;font-size:13px">👩🏽</div><div style="flex:1"><div class="fw8 fs11">@FoodieFarah</div><div class="muted" style="font-size:9px">2h ago · reel</div></div><span class="muted">⋯</span></div><div class="img g1" style="height:108px;border-radius:0">🍕<div class="play" style="position:absolute;top:8px;left:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:9px;color:#333">▶</div></div><div style="padding:8px 10px 10px"><div class="fs11 fw7" style="line-height:1.3">Cheese Burst at Mama's is a must-try!</div><div style="margin-top:6px" class="muted fs11">♡ 250 &nbsp; 💬 18 &nbsp; 🔗 Mama's</div></div></div>
+        <div class="card" style="flex:0 0 160px"><div style="display:flex;gap:7px;align-items:center;padding:8px 10px 6px"><div class="avatar" style="width:26px;height:26px;font-size:13px">🧔🏽</div><div style="flex:1"><div class="fw8 fs11">@TasteTrail</div><div class="muted" style="font-size:9px">4h ago · reel</div></div><span class="muted">⋯</span></div><div class="img g5" style="height:108px;border-radius:0">🍝<div class="play" style="position:absolute;top:8px;left:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:9px;color:#333">▶</div></div><div style="padding:8px 10px 10px"><div class="fs11 fw7" style="line-height:1.3">Spice Route never disappoints! 🔥</div><div style="margin-top:6px" class="muted fs11">♡ 180 &nbsp; 💬 12 &nbsp; 🔗 Spice Route</div></div></div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="item active"><span class="ic">🏠</span>Home</div>
+      <div class="item"><span class="ic">🏷️</span>Offers</div>
+      <div class="reels">🎬<span class="rl">Reels</span></div>
+      <div class="item"><span class="ic">🛍️</span>Orders</div>
+      <div class="item"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 3 — CREATOR STORE ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">LEVEL 3</span><h3>Creator Store</h3><p>One curator's hub — collab businesses, scoped categories, and their reels.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="topbar"><div class="ico-btn">←</div><span class="ttl center">Creator Store</span><div class="ico-btn">⋯</div></div>
+      <div style="display:flex;gap:14px;align-items:center;padding:8px 18px 4px">
+        <div class="ring" style="padding:3px"><div class="avatar" style="width:72px;height:72px;font-size:34px">🧔🏻</div></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:5px"><span class="fw8" style="font-size:17px">@StyleMasterBen</span><span class="tick" style="font-size:13px">✔</span></div>
+          <div class="muted fs11" style="margin-top:2px">Multi-Business Curator · Local fashion &amp; food</div>
+          <div style="display:flex;gap:14px;margin-top:6px"><span class="fs11"><b class="fw8">124K</b> <span class="muted">followers</span></span><span class="fs11"><b class="fw8">18</b> <span class="muted">collabs</span></span></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;padding:10px 18px 4px"><button class="btn" style="flex:1">Follow</button><button class="btn outline" style="flex:1">Message</button></div>
+      <div class="sec-head"><h4>My Store Collabs</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="creator-cell" style="width:72px"><div class="avatar" style="background:#f3d9a8">🍕</div><span class="name">Mama's Pizza</span></div>
+        <div class="creator-cell" style="width:72px"><div class="avatar" style="background:#dcd2c2">👔</div><span class="name">MODA</span></div>
+        <div class="creator-cell" style="width:72px"><div class="avatar" style="background:#e9d4c0">☕</div><span class="name">Daily Grind</span></div>
+        <div class="creator-cell" style="width:72px"><div class="avatar" style="background:#f0c9b0">🌶️</div><span class="name">Spice Route</span></div>
+        <div class="creator-cell" style="width:72px"><div class="avatar" style="background:#e3d2dd">📱</div><span class="name">TechNest</span></div>
+      </div>
+      <div class="pill-row" style="margin-top:6px"><span class="pill active">All</span><span class="pill">Eateries</span><span class="pill">Fashion</span><span class="pill">Salon</span><span class="pill">Rentals</span></div>
+      <div class="sec-head"><h4>What Ben Promotes</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="card" style="flex:0 0 145px"><div class="img g1" style="height:92px;border-radius:0">🍕</div><div style="padding:8px 10px 10px"><span class="tag">EATERIES · MAMA'S</span><div class="fw8 fs12">Signature Pizza</div><div style="margin-top:3px"><span class="stars">★★★★★</span></div><div class="fw8 fs13" style="margin-top:3px">₹399</div></div></div>
+        <div class="card" style="flex:0 0 145px"><div class="img g4" style="height:92px;border-radius:0">👟</div><div style="padding:8px 10px 10px"><span class="tag">FASHION · MODA</span><div class="fw8 fs12">Street Sneakers</div><div style="margin-top:3px"><span class="stars">★★★★☆</span></div><div class="fw8 fs13" style="margin-top:3px">₹1,299</div></div></div>
+        <div class="card" style="flex:0 0 145px"><div class="img g3" style="height:92px;border-radius:0">⌚</div><div style="padding:8px 10px 10px"><span class="tag">FASHION · MODA</span><div class="fw8 fs12">Minimal Watch</div><div style="margin-top:3px"><span class="stars">★★★★★</span></div><div class="fw8 fs13" style="margin-top:3px">₹2,499</div></div></div>
+      </div>
+      <div class="sec-head"><h4>Ben's Reels 🎬</h4><span class="more">View All</span></div>
+      <div class="hscroll" style="padding-bottom:14px">
+        <div class="vid img g2" style="flex:0 0 110px;height:150px">🎬<div class="play">▶</div><div class="shop">🛍️ Shop</div><div class="cap">Pizza tasting · 🔗 Mama's</div></div>
+        <div class="vid img g6" style="flex:0 0 110px;height:150px">🎬<div class="play">▶</div><div class="shop">🛍️ Shop</div><div class="cap">Summer haul · 🔗 MODA</div></div>
+        <div class="vid img g4" style="flex:0 0 110px;height:150px">🎬<div class="play">▶</div><div class="shop">🛍️ Shop</div><div class="cap">Sneaker review · 🔗 MODA</div></div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="item active"><span class="ic">🏠</span>Home</div>
+      <div class="item"><span class="ic">🏷️</span>Offers</div>
+      <div class="reels">🎬<span class="rl">Reels</span></div>
+      <div class="item"><span class="ic">🛍️</span>Orders</div>
+      <div class="item"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 4a — CREATOR'S CATEGORY ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">LEVEL 4a</span><h3>Creator's Category</h3><p>Tap a category inside a creator's store → only what they promote in it.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="topbar"><div class="ico-btn">←</div><div class="ttl center" style="line-height:1.05">Ben · Eateries<div style="font-size:10px;font-weight:600;color:var(--muted);font-family:'Plus Jakarta Sans'">curated by @StyleMasterBen</div></div><div class="ico-btn">🔍</div></div>
+      <div class="sec-head"><h4>Partner Restaurants</h4></div>
+      <div class="hscroll">
+        <div class="creator-cell" style="width:74px"><div class="avatar" style="background:#f3d9a8">🍕</div><span class="name">Mama's Pizza</span></div>
+        <div class="creator-cell" style="width:74px"><div class="avatar" style="background:#f0c9b0">🌶️</div><span class="name">Spice Route</span></div>
+        <div class="creator-cell" style="width:74px"><div class="avatar" style="background:#e9d4c0">☕</div><span class="name">Daily Grind</span></div>
+        <div class="creator-cell" style="width:74px"><div class="avatar" style="background:#f5e0c2">🍔</div><span class="name">Burger Barn</span></div>
+      </div>
+      <div class="pill-row" style="margin-top:6px"><span class="pill active">All</span><span class="pill">Pizzas</span><span class="pill">Pastas</span><span class="pill">Salads</span><span class="pill">Drinks</span></div>
+      <div class="sec-head"><h4>Ben's Picks in Eateries</h4></div>
+      <div class="row-pad" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="card"><div class="img g1" style="height:96px;border-radius:0">🍕<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Signature Pizza</div><div class="muted fs11">Mama's Pizza</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.8</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="fw8 fs13">₹399</span><span class="offer fs11">15% OFF</span></div></div></div>
+        <div class="card"><div class="img g5" style="height:96px;border-radius:0">🍝<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Creamy Alfredo</div><div class="muted fs11">Spice Route</div><div style="margin-top:3px"><span class="stars">★★★★☆</span> <span class="fs11 muted">4.5</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="fw8 fs13">₹329</span></div></div></div>
+        <div class="card"><div class="img g4" style="height:96px;border-radius:0">🥗<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Green Leaf Salad</div><div class="muted fs11">Daily Grind</div><div style="margin-top:3px"><span class="stars">★★★★☆</span> <span class="fs11 muted">4.3</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="fw8 fs13">₹199</span></div></div></div>
+        <div class="card"><div class="img g2" style="height:96px;border-radius:0">🍔<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Classic Burger</div><div class="muted fs11">Burger Barn</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.7</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="fw8 fs13">₹249</span><span class="offer fs11">B2G1</span></div></div></div>
+        <div class="card"><div class="img g3" style="height:96px;border-radius:0">☕<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Cold Brew</div><div class="muted fs11">Daily Grind</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.6</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="fw8 fs13">₹149</span></div></div></div>
+        <div class="card"><div class="img g6" style="height:96px;border-radius:0">🧁<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Choco Lava</div><div class="muted fs11">Mama's Pizza</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.9</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="fw8 fs13">₹129</span></div></div></div>
+      </div>
+      <div style="height:14px"></div>
+    </div>
+    <div class="nav">
+      <div class="item active"><span class="ic">🏠</span>Home</div>
+      <div class="item"><span class="ic">🏷️</span>Offers</div>
+      <div class="reels">🎬<span class="rl">Reels</span></div>
+      <div class="item"><span class="ic">🛍️</span>Orders</div>
+      <div class="item"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 4b — BUSINESS PAGE ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">LEVEL 4b</span><h3>Business Page</h3><p>The store page — its many creator collabs, trust line, and menu. CTA = business-driven.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar" style="position:absolute;left:0;right:0;color:#fff;z-index:55"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="hero" style="background:linear-gradient(135deg,#c98a4a,#8a4f2d)">
+        <div style="position:absolute;top:42px;left:16px;z-index:3" class="ico-btn">←</div>
+        <div style="position:absolute;top:42px;right:16px;z-index:3" class="ico-btn">↗</div>
+        <div class="biz-head"><div class="biz-logo">🍕</div><div style="padding-bottom:4px"><div style="font-family:'Fraunces',serif;font-size:21px;font-weight:600">Mama's Pizza</div><div style="font-size:11px;opacity:.9">Italian · Pizzas · ★ 4.5 (1.2K)</div></div></div>
+      </div>
+      <div style="display:flex;gap:10px;padding:12px 16px 4px"><button class="btn" style="flex:1">Follow</button><button class="btn outline" style="flex:1">Directions</button></div>
+      <div class="fs11 muted row-pad" style="display:flex;gap:12px;margin-top:6px"><span>🕒 Open · 11am–11pm</span><span>📍 1.2 km</span><span>🛵 30 min</span></div>
+      <div class="sec-head"><h4>Mama's × Creators</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="creator-cell"><div class="ring"><div class="avatar">🧔🏻</div></div><span class="name">@StyleMaster <span class="tick">✔</span></span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">👩🏽</div></div><span class="name">@FoodieFarah <span class="tick">✔</span></span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">🧔🏽</div></div><span class="name">@TasteTrail</span></div>
+        <div class="creator-cell"><div class="ring"><div class="avatar">🧑🏻</div></div><span class="name">@VFoodLover</span></div>
+      </div>
+      <div class="row-pad"><div style="background:#f1ece3;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:11px;font-weight:600;color:#5e5345">✅ 4 creators trusted to collab with Mama's Pizza</div></div>
+      <div class="pill-row" style="margin-top:14px"><span class="pill active">Popular</span><span class="pill">Pizzas</span><span class="pill">Pastas</span><span class="pill">Sides</span><span class="pill">Drinks</span></div>
+      <div class="sec-head"><h4>Menu</h4></div>
+      <div class="row-pad" style="display:flex;flex-direction:column;gap:12px;padding-bottom:14px">
+        <div class="card" style="display:flex;padding:10px;gap:11px;align-items:center"><div class="img g1" style="width:72px;height:72px;flex:0 0 72px;font-size:30px">🍕</div><div style="flex:1"><div class="fw8 fs13">Signature Large Pizza</div><div class="muted fs11" style="margin-top:1px">Loaded cheese, fresh basil, hand-tossed</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px"><span class="fw8 fs13">₹399</span><span class="stars fs11">★ 4.8</span></div></div></div>
+        <div class="card" style="display:flex;padding:10px;gap:11px;align-items:center"><div class="img g5" style="width:72px;height:72px;flex:0 0 72px;font-size:30px">🍝</div><div style="flex:1"><div class="fw8 fs13">Creamy Alfredo Pasta</div><div class="muted fs11" style="margin-top:1px">White sauce, mushrooms, parmesan</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px"><span class="fw8 fs13">₹329</span><span class="stars fs11">★ 4.5</span></div></div></div>
+        <div class="card" style="display:flex;padding:10px;gap:11px;align-items:center"><div class="img g6" style="width:72px;height:72px;flex:0 0 72px;font-size:30px">🧁</div><div style="flex:1"><div class="fw8 fs13">Choco Lava Cake</div><div class="muted fs11" style="margin-top:1px">Molten centre, vanilla scoop</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px"><span class="fw8 fs13">₹129</span><span class="stars fs11">★ 4.9</span></div></div></div>
+      </div>
+    </div>
+    <!-- business-driven CTA: FOOD = 3 modes -->
+    <div class="nav" style="padding:10px 12px 16px;gap:8px;flex-direction:column">
+      <div style="font-size:9px;font-weight:800;color:var(--muted);letter-spacing:.5px;align-self:flex-start;padding-left:4px">FOOD · 3 WAYS TO ORDER</div>
+      <div style="display:flex;gap:8px;width:100%">
+        <button class="btn outline" style="flex:1;font-size:11px;padding:11px 4px">🍽️ Pay at<br>Restaurant</button>
+        <button class="btn outline" style="flex:1;font-size:11px;padding:11px 4px">📅 Pre-book<br>Table</button>
+        <button class="btn" style="flex:1;font-size:11px;padding:11px 4px">🛵 Order<br>Online</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN 5 — PRODUCT DETAIL ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">LEVEL 5</span><h3>Product Detail</h3><p>One item — customize, creator reels, discount code &amp; a business-driven CTA.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar" style="position:absolute;left:0;right:0;color:#fff;z-index:55"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="img g1" style="height:230px;border-radius:0;font-size:90px">🍕<div style="position:absolute;top:42px;left:16px;z-index:3" class="ico-btn">←</div><div style="position:absolute;top:42px;right:16px;z-index:3;display:flex;gap:8px"><div class="ico-btn">♡</div><div class="ico-btn">↗</div></div></div>
+      <div class="row-pad" style="padding-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><div style="font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1.1;max-width:200px">Mama's Signature Large Pizza</div><div style="margin-top:5px"><span class="stars">★★★★★</span> <span class="fs12 fw7">4.8</span> <span class="fs11 muted">(1.2K reviews)</span></div></div><div style="text-align:right"><div class="fw8" style="font-size:22px">₹399</div><div class="muted fs11" style="text-decoration:line-through">₹469</div></div></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px;background:#f1ece3;border-radius:12px;padding:8px 12px"><div class="avatar" style="width:30px;height:30px;font-size:15px;background:#e0caa3">🧔🏻</div><div class="fs11" style="flex:1"><b>Endorsed by @StyleMasterBen</b><br><span class="muted">"Best pizza in Vijayawada — don't wait!"</span></div></div>
+      </div>
+      <div class="sec-head"><h4>Customize</h4></div>
+      <div class="row-pad" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><div><div class="fw7 fs13">Add Avocado</div><div class="muted fs11">+ ₹49</div></div><div class="toggle on"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><div><div class="fw7 fs13">Extra Cheese</div><div class="muted fs11">+ ₹39</div></div><div class="toggle"></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><div><div class="fw7 fs13">Make it a Combo</div><div class="muted fs11">+ ₹99 · drink &amp; fries</div></div><div class="toggle"></div></div>
+      </div>
+      <div class="sec-head"><h4>Creator Reels 🎬</h4></div>
+      <div class="hscroll">
+        <div class="vid img g2">🎬<div class="play">▶</div><div class="shop">🛍️</div><div class="cap">@FoodieFarah · "The best!"</div></div>
+        <div class="vid img g5">🎬<div class="play">▶</div><div class="shop">🛍️</div><div class="cap">@TasteTrail · tasting</div></div>
+        <div class="vid img g3">🎬<div class="play">▶</div><div class="shop">🛍️</div><div class="cap">@VFoodLover · review</div></div>
+        <div class="vid img g6">🎬<div class="play">▶</div><div class="shop">🛍️</div><div class="cap">@MamaPizza · made fresh</div></div>
+      </div>
+      <div class="sec-head"><h4>Creator Discount</h4></div>
+      <div class="row-pad">
+        <div style="background:linear-gradient(120deg,#8a4f2d,#6e3a24);color:#fff;border-radius:14px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;opacity:.85">Use creator code</div><div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600">BEN20</div><div style="font-size:10px;opacity:.85">20% off · pairs with cold brew 🧋</div></div><button style="background:#fff;color:var(--brown);border:none;font-weight:800;font-size:12px;padding:8px 14px;border-radius:30px">Apply</button></div>
+      </div>
+      <div style="height:18px"></div>
+    </div>
+    <!-- business-driven CTA: FOOD product = order online primary -->
+    <div class="nav" style="padding:12px 14px 18px;gap:10px;justify-content:space-between">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid var(--brown);border-radius:30px;width:54px;height:48px;color:var(--brown);font-size:20px">🛒</div>
+      <button class="btn" style="flex:1;padding:14px;font-size:15px">Add to Cart · ₹448</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN O — OFFERS (PLATFORM-WIDE) ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">BOTTOM TAB</span><h3>Offers 🏷️</h3><p>Every creator-backed deal on the platform, sticky categories on top, grouped by category.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+    <div class="scroll">
+      <div class="topbar"><span style="width:34px"></span><div class="ttl center" style="line-height:1.05">Offers<div style="font-size:10px;font-weight:600;color:var(--muted);font-family:'Plus Jakarta Sans'">📍 best deals in Vijayawada</div></div><div class="ico-btn">🔍</div></div>
+      <!-- sticky categories -->
+      <div class="catbar">
+        <div class="catchip active">▦ All</div>
+        <div class="catchip">🍕 Food</div>
+        <div class="catchip">👔 Fashion</div>
+        <div class="catchip">💇 Salon</div>
+        <div class="catchip">🚗 Rentals</div>
+        <div class="catchip">🧭 Travel</div>
+      </div>
+      <!-- sort / filter -->
+      <div class="pill-row" style="margin-top:10px"><span class="pill active">Best Discount</span><span class="pill">Ending Soon</span><span class="pill">Near Me</span><span class="pill">By Creator</span></div>
+
+      <!-- hero best deal -->
+      <div class="bestdeal"><div class="lbl">⚡ TODAY'S BEST DEAL</div><h5>Buy 2 Get 1 on all pizzas</h5><div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;font-weight:700"><span style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-flex;align-items:center;justify-content:center;font-size:9px">👩🏻‍🍳</span>via @MamaPizza · Mama's Pizza · ends in 6h</div><span class="em">🍕</span></div>
+
+      <!-- FOOD offers -->
+      <div class="sec-head"><h4>🍕 Food Offers</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">20%<br>OFF</div><span class="emoji">🍕</span></div><div class="dbody"><div class="fw8 fs13">Signature Pizza</div><div class="muted fs11">Mama's Pizza · Italian</div><div class="cby"><span class="av">🧔🏻</span>via @StyleMasterBen</div><div class="grab">Grab Deal →</div></div></div>
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#d98a63,#b3633c)"><div class="big">Flat<br>₹150</div><span class="emoji">🍔</span></div><div class="dbody"><div class="fw8 fs13">Combo Meals</div><div class="muted fs11">Burger Barn · Fast Food</div><div class="cby"><span class="av">🧔🏽</span>via @TasteTrail</div><div class="grab">Grab Deal →</div></div></div>
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#e9b97a,#cf9550)"><div class="big">B2G1</div><span class="emoji">🍝</span></div><div class="dbody"><div class="fw8 fs13">All Pastas</div><div class="muted fs11">Spice Route · North Indian</div><div class="cby"><span class="av">👩🏽</span>via @FoodieFarah</div><div class="grab">Grab Deal →</div></div></div>
+      </div>
+
+      <!-- FASHION offers -->
+      <div class="sec-head"><h4>👔 Fashion Offers</h4><span class="more">View All</span></div>
+      <div class="hscroll">
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#c79bb3,#9c6f8a)"><div class="big">30%<br>OFF</div><span class="emoji">👟</span></div><div class="dbody"><div class="fw8 fs13">Street Sneakers</div><div class="muted fs11">MODA · Footwear</div><div class="cby"><span class="av">🧔🏻</span>via @StyleMasterBen</div><div class="grab">Grab Deal →</div></div></div>
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#b8a98f,#8f8068)"><div class="big">Flat<br>15%</div><span class="emoji">👕</span></div><div class="dbody"><div class="fw8 fs13">Summer Collection</div><div class="muted fs11">The Summer Co.</div><div class="cby"><span class="av">💁🏻‍♀️</span>via @GlowRituals</div><div class="grab">Grab Deal →</div></div></div>
+      </div>
+
+      <!-- SALON offers -->
+      <div class="sec-head"><h4>💇 Salon Offers</h4><span class="more">View All</span></div>
+      <div class="hscroll" style="padding-bottom:14px">
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#c9a37e,#a07d56)"><div class="big">25%<br>OFF</div><span class="emoji">💆</span></div><div class="dbody"><div class="fw8 fs13">Spa &amp; Facial Combo</div><div class="muted fs11">Glow Studio</div><div class="cby"><span class="av">💁🏻‍♀️</span>via @GlowRituals</div><div class="grab">Grab Deal →</div></div></div>
+        <div class="deal"><div class="dhead" style="background:linear-gradient(135deg,#d3bda3,#a8906f)"><div class="big">Free<br>Trim</div><span class="emoji">✂️</span></div><div class="dbody"><div class="fw8 fs13">Haircut + Styling</div><div class="muted fs11">The Cut Room</div><div class="cby"><span class="av">🧔🏻</span>via @StyleMasterBen</div><div class="grab">Grab Deal →</div></div></div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="item"><span class="ic">🏠</span>Home</div>
+      <div class="item active"><span class="ic">🏷️</span>Offers</div>
+      <div class="reels">🎬<span class="rl">Reels</span></div>
+      <div class="item"><span class="ic">🛍️</span>Orders</div>
+      <div class="item"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCREEN R — SHOPPABLE REELS ============ -->
+<div class="frame-wrap">
+  <div class="frame-label"><span class="step">CENTER TAB</span><h3>Shoppable Reels 🎬</h3><p>Influencer video feed. Every reel deep-links to its tagged product / store.</p></div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="reel-stage">
+      🍕
+      <!-- top tabs -->
+      <div class="reel-top">
+        <div class="tabs"><span class="off">Following</span><span class="on">For You</span><span class="off">Near Me</span></div>
+        <span style="font-size:18px">🔍</span>
+      </div>
+      <!-- right action rail -->
+      <div class="reel-actions">
+        <div class="act"><span class="ic">❤️</span>12.4K</div>
+        <div class="act"><span class="ic">💬</span>318</div>
+        <div class="act"><span class="ic">↗️</span>Share</div>
+        <div class="act"><span class="ic">🔖</span>Save</div>
+        <div class="ring" style="padding:2px;margin-top:4px"><div class="avatar" style="width:42px;height:42px;font-size:20px">👩🏽</div></div>
+      </div>
+      <!-- bottom info + shoppable card -->
+      <div class="reel-bottom">
+        <div class="reel-creator"><div class="avatar" style="width:34px;height:34px;font-size:16px">👩🏽</div><div class="nm">@FoodieFarah <span class="tick" style="font-size:11px">✔</span></div><div class="reel-follow">Follow</div></div>
+        <div class="reel-caption">Cheese burst at Mama's is unreal 🤤 use my code <b>BEN20</b> for 20% off! #vijayawada #pizza</div>
+        <div class="reel-tag">🔗 Tagged in this reel</div>
+        <div class="reel-product">
+          <div class="thumb img g1">🍕</div>
+          <div style="flex:1"><div class="fw8 fs12">Signature Large Pizza</div><div class="muted fs11">Mama's Pizza · ₹399 <span class="offer">20% OFF</span></div></div>
+          <div class="go">View →</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="item"><span class="ic">🏠</span>Home</div>
+      <div class="item"><span class="ic">🏷️</span>Offers</div>
+      <div class="reels" style="background:linear-gradient(145deg,#b5663f,#8b4a2f);box-shadow:0 0 0 3px rgba(139,74,47,.25),0 10px 22px -6px rgba(110,58,36,.7)">🎬<span class="rl">Reels</span></div>
+      <div class="item"><span class="ic">🛍️</span>Orders</div>
+      <div class="item"><span class="ic">👤</span>Profile</div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

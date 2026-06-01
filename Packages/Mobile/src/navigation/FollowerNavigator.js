@@ -1,15 +1,16 @@
 import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, darkColors, brandPalette as P, fonts } from '../theme/tokens';
+import { creatorVibe as C, fonts } from '../theme/tokens';
 
-// V2 screens (dark theme, products-first)
+// V2 screens (products-first)
 import HomeScreenV2 from '../screens/follower/HomeScreenV2';
 import FindScreen from '../screens/follower/FindScreen';
 import CategoryListScreen from '../screens/follower/CategoryListScreen';
 
-// Wave 4 — dining redesign (light theme, replaces CategoryListScreen for eat)
+// Wave 4 — dining redesign (replaces CategoryListScreen for eat)
 import DiningHomeScreen from '../screens/follower/DiningHomeScreen';
 import DiningBrowseScreen from '../screens/follower/DiningBrowseScreen';
 import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
@@ -46,6 +47,11 @@ import AddressScreen from '../screens/follower/AddressScreen';
 import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
 import LookbookDetailScreen from '../screens/follower/LookbookDetailScreen';
 
+// Flow 52.0 — Creator Vibe: Reels center tab (placeholder until 52.8 backend)
+import ReelsScreen from '../screens/follower/ReelsScreen';
+// Flow 52.7 — Creator-scoped category screen (mockup 4a)
+import CreatorCategoryScreen from '../screens/follower/CreatorCategoryScreen';
+
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -64,6 +70,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="Address" component={AddressScreen} />
     <Stack.Screen name="Find" component={FindScreen} />
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
+    <Stack.Screen name="CreatorCategory" component={CreatorCategoryScreen} />
     {/* Wave 4 — restaurant discovery surface (only routed to from the 'eat'
         category tile on HomeScreenV2; other categories keep CategoryList). */}
     <Stack.Screen name="DiningHome" component={DiningHomeScreen} />
@@ -90,29 +97,21 @@ function HomeStack() {
   );
 }
 
-function FindStack() {
+// 🏷️ Offers — platform-wide creator-backed deals (was the DEALS tab).
+function OffersStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="FindHome" component={FindScreen} />
-      <Stack.Screen name="CategoryList" component={CategoryListScreen} />
+      <Stack.Screen name="OffersHome" component={DealsScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );
 }
 
-function DealsStack() {
+// 🛍️ Orders — order/booking history (was MY STUFF; Saved moves to Profile).
+function OrdersStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="DealsBrowse" component={DealsScreen} />
-      {SHARED_SCREENS(Stack)}
-    </Stack.Navigator>
-  );
-}
-
-function MyStuffStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MyStuffHome" component={SavedScreen} />
+      <Stack.Screen name="OrdersHome" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       {SHARED_SCREENS(Stack)}
@@ -120,18 +119,39 @@ function MyStuffStack() {
   );
 }
 
-function MeStack() {
+// 👤 Profile — account + wallet + saved (was ME). 'SavedList' now resolves
+// (MeScreen's "Saved Offers" row pointed at it; previously undefined here).
+function ProfileStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MeHome" component={MeScreen} />
+      <Stack.Screen name="ProfileHome" component={MeScreen} />
+      <Stack.Screen name="SavedList" component={SavedScreen} />
       <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Address" component={AddressScreen} />
       <Stack.Screen name="FollowedInfluencers" component={FollowedInfluencersScreen} />
       <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
-      {/* Wave 4 PR 4.4 — Wallet entry. Reached from MeScreen menu row. */}
       <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
     </Stack.Navigator>
+  );
+}
+
+// 🎬 Reels center button — elevated terracotta FAB (custom tabBarButton).
+function ReelsTabButton({ onPress, accessibilityState }) {
+  const focused = accessibilityState?.selected;
+  return (
+    <View style={navStyles.reelsWrap} pointerEvents="box-none">
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel="Reels"
+        style={[navStyles.reelsBtn, focused && navStyles.reelsBtnActive]}
+      >
+        <Icon name="movie-open" size={24} color="#fff" />
+        <Text style={navStyles.reelsLabel}>Reels</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -140,11 +160,11 @@ export default function FollowerNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: P.ink,
-        tabBarInactiveTintColor: P.muted3,
+        tabBarActiveTintColor: C.brown,
+        tabBarInactiveTintColor: C.muted,
         tabBarStyle: {
-          borderTopColor: P.border,
-          backgroundColor: P.white,
+          borderTopColor: C.line,
+          backgroundColor: C.card,
           paddingTop: 6,
           height: 62,
         },
@@ -162,30 +182,38 @@ export default function FollowerNavigator() {
         }}
       />
       <Tab.Screen
-        name="DealsTab"
-        component={DealsStack}
+        name="OffersTab"
+        component={OffersStack}
         options={{
-          tabBarLabel: 'DEALS',
+          tabBarLabel: 'OFFERS',
           tabBarIcon: ({ focused, color }) => (
             <Icon name={focused ? 'tag' : 'tag-outline'} size={22} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="MyStuffTab"
-        component={MyStuffStack}
+        name="ReelsTab"
+        component={ReelsScreen}
         options={{
-          tabBarLabel: 'MY STUFF',
+          tabBarLabel: '',
+          tabBarButton: (props) => <ReelsTabButton {...props} />,
+        }}
+      />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersStack}
+        options={{
+          tabBarLabel: 'ORDERS',
           tabBarIcon: ({ focused, color }) => (
-            <Icon name={focused ? 'bag-personal' : 'bag-personal-outline'} size={22} color={color} />
+            <Icon name={focused ? 'shopping' : 'shopping-outline'} size={22} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="MeTab"
-        component={MeStack}
+        name="ProfileTab"
+        component={ProfileStack}
         options={{
-          tabBarLabel: 'ME',
+          tabBarLabel: 'PROFILE',
           tabBarIcon: ({ focused, color }) => (
             <Icon name={focused ? 'account' : 'account-outline'} size={22} color={color} />
           ),
@@ -194,3 +222,36 @@ export default function FollowerNavigator() {
     </Tab.Navigator>
   );
 }
+
+const navStyles = StyleSheet.create({
+  reelsWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reelsBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    marginTop: -22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.brown,
+    shadowColor: C.brownDark,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  reelsBtnActive: {
+    backgroundColor: C.brownDark,
+  },
+  reelsLabel: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '800',
+    fontFamily: fonts.monoBold,
+    marginTop: 1,
+    letterSpacing: 0.3,
+  },
+});

@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, FlatList, TouchableOpacity,
   StyleSheet, RefreshControl, ActivityIndicator,
 } from 'react-native';
-import { brandPalette as P, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fmtMoney, getBusinessAccentLight, fonts } from '../../theme/tokens';
 import ProductCard from '../../components/cards/ProductCard';
 import NewOfferCard from '../../components/cards/NewOfferCard';
 import ServiceCard from '../../components/cards/ServiceCard';
@@ -14,7 +14,7 @@ import { buildTracking } from '../../utils/tracking';
 import useLocation from '../../hooks/useLocation';
 
 /**
- * HomeScreenV2 — dark theme, products-first feed matching the HTML mockup.
+ * HomeScreenV2 — Creator Vibe (cream/terracotta) products-first feed. (Flow 52.1)
  *
  * Layout (scrollable):
  * 1. Location header + notification bell
@@ -83,7 +83,7 @@ export default function HomeScreenV2({ navigation }) {
   return (
     <ScrollView
       style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={P.yellow} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.brown} />}
     >
       {/* Header */}
       <View style={styles.header}>
@@ -274,7 +274,7 @@ export default function HomeScreenV2({ navigation }) {
       )}
 
       {loading && (
-        <ActivityIndicator color={P.yellow} size="large" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={C.brown} size="large" style={{ marginTop: 40 }} />
       )}
 
       <View style={{ height: 80 }} />
@@ -294,7 +294,7 @@ function SectionHeader({ title, onSeeAll }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: P.bg,
+    backgroundColor: C.screenBg,
   },
   header: {
     flexDirection: 'row',
@@ -306,46 +306,48 @@ const styles = StyleSheet.create({
   },
   headerSub: {
     fontSize: 9,
-    color: P.muted2,
+    color: C.muted,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
-    fontFamily: fonts.monoMedium,
+    fontFamily: fonts.sansSemiBold,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: P.ink,
-    fontFamily: fonts.displayBlack,
+    fontSize: 20,
+    fontWeight: '600',
+    color: C.ink,
+    fontFamily: fonts.serifDisplay,
   },
   headerArrow: {
     fontSize: 11,
-    color: P.yellowText,
+    color: C.brown,
   },
   bellBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: P.bg2,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
     alignItems: 'center',
     justifyContent: 'center',
   },
   search: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: P.white,
-    borderWidth: 1.5,
-    borderColor: P.ink,
-    borderRadius: 14,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.line,
+    borderRadius: 24,
     padding: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
   searchText: {
     fontSize: 12.5,
-    color: P.muted2,
+    color: C.muted,
     fontFamily: fonts.sansRegular,
   },
   section: {
@@ -356,18 +358,17 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: P.ink,
-    fontFamily: fonts.displayBlack,
+    fontSize: 15.5,
+    fontWeight: '800',
+    color: C.ink,
+    fontFamily: fonts.sansBold,
   },
   seeAll: {
-    fontSize: 10,
-    color: P.yellowText,
+    fontSize: 11,
+    color: C.brown,
     fontWeight: '800',
-    textTransform: 'uppercase',
     letterSpacing: 0.2,
-    fontFamily: fonts.monoBold,
+    fontFamily: fonts.sansBold,
   },
   productGrid: {
     flexDirection: 'row',
@@ -398,14 +399,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '900',
-    color: P.ink,
+    fontWeight: '800',
+    color: C.ink,
     marginBottom: 6,
-    fontFamily: fonts.displayBlack,
+    fontFamily: fonts.sansBold,
   },
   emptyText: {
     fontSize: 12,
-    color: P.muted,
+    color: C.muted,
     textAlign: 'center',
     lineHeight: 18,
     fontFamily: fonts.sansRegular,

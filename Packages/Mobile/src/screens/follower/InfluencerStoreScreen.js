@@ -18,7 +18,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { brandPalette as P, fonts, getBusinessAccentLight } from '../../theme/tokens';
+import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
+
+// Flow 52.5 — Creator Vibe recolor shim. Hero overridden to terracotta below;
+// avatar/follow → warm amber, counters/bio → light on brown. Visual only —
+// getStore / follow-unfollow / offer aggregation / onPickPress dispatch / nav
+// all unchanged.
+const P = {
+  white: C.card, bg: C.screenBg,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted4: C.line,
+  yellow: C.star, yellowPale: C.soft, yellowHover: C.brown,
+};
 import { followerApi } from '../../services/api';
 import { OfferPill } from '../../components/restaurant';
 
@@ -147,12 +158,14 @@ export default function InfluencerStoreScreen({ route, navigation }) {
   }
 
   function onCategoryPress(cat) {
-    // For Wave 4: send into BrandStore browse view for that category. Future
-    // refinement could deep-link into a creator+category-scoped feed.
-    navigation.navigate('CategoryList', {
-      superCategory: cat.key === 'restaurant' ? 'eat' : cat.key,
+    // Flow 52.7 — deep-link into the creator-SCOPED category screen (mockup 4a):
+    // only this creator's partner businesses + picks in the tapped category.
+    // Runs on the offers we already loaded; no extra fetch.
+    navigation.navigate('CreatorCategory', {
+      influencer: store?.influencer,
+      offers,
+      category: cat.key,
       label: labelForCategory(cat.key),
-      icon: getBusinessAccentLight(cat.key).icon,
     });
   }
 
@@ -301,7 +314,7 @@ const styles = StyleSheet.create({
   root:   { flex: 1, backgroundColor: P.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
 
-  hero: { backgroundColor: P.ink, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
+  hero: { backgroundColor: C.brown, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
   heroInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: {
     width: 64, height: 64, borderRadius: 32,

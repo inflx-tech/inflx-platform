@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
-import { brandPalette as P, fonts, spacing } from '../../theme/tokens';
+import { creatorVibe as C, fonts, spacing } from '../../theme/tokens';
+
+// Flow 52.2 — Creator Vibe recolor shim (loaders/refresh → brown). Visual only;
+// fetchDeals / handleSave / renderItem / navigation all unchanged.
+const P = {
+  white: C.card, card: C.card, bg: C.screenBg, bg2: C.soft,
+  border: C.line, ink: C.ink,
+  muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.brown, yellowText: C.brown, yellowPale: C.soft,
+  success: C.verify, danger: C.offer,
+};
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import { buildTracking } from '../../utils/tracking';
@@ -127,10 +137,45 @@ export default function DealsScreen({ navigation }) {
     );
   }, [handleSave, navigation]);
 
+  // "Today's Best Deal" hero — the loaded deal with the highest discount.
+  // Pure client-side derivation from data already fetched (no new endpoint).
+  const bestDeal = React.useMemo(() => {
+    let best = null, max = 0;
+    for (const d of deals) {
+      const v = Number(d.offer?.discount_value ?? d.discount_value ?? d.discount?.value ?? 0);
+      if (v > max) { max = v; best = d; }
+    }
+    return best;
+  }, [deals]);
+
+  const renderHero = () => {
+    if (!bestDeal) return null;
+    const b = bestDeal.brand || { name: bestDeal.brand_name, id: bestDeal.brand_id };
+    const v = Number(bestDeal.offer?.discount_value ?? bestDeal.discount_value ?? bestDeal.discount?.value ?? 0);
+    return (
+      <TouchableOpacity
+        style={s.hero}
+        activeOpacity={0.9}
+        onPress={() => navigation.navigate('BrandStore', {
+          brandId: b.id || bestDeal.brand_id,
+          brandName: b.name,
+          tracking: buildTracking(bestDeal),
+        })}
+      >
+        <Text style={s.heroLabel}>⚡ TODAY'S BEST DEAL</Text>
+        <Text style={s.heroTitle} numberOfLines={2}>{v > 0 ? `${v}% off` : 'Top pick'} at {b.name}</Text>
+        {bestDeal.influencer?.name ? (
+          <Text style={s.heroVia}>via @{bestDeal.influencer.name}</Text>
+        ) : null}
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>Deals</Text>
+        <Text style={s.title}>Offers</Text>
+        <Text style={s.subtitle}>Creator-backed deals near you</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
@@ -153,6 +198,7 @@ export default function DealsScreen({ navigation }) {
           keyExtractor={(item, idx) => `${item.offer?.id || item.offer_id || idx}_${item.product?.id || idx}`}
           numColumns={2}
           renderItem={renderItem}
+          ListHeaderComponent={renderHero}
           contentContainerStyle={{ padding: 20, paddingTop: 10, paddingBottom: 100, gap: 10 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} />}
           ListEmptyComponent={
@@ -175,7 +221,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8,
     backgroundColor: P.bg,
   },
-  title: { fontSize: 22, fontWeight: '800', color: P.ink },
+  title: { fontSize: 22, fontWeight: '600', color: C.ink, fontFamily: fonts.serifDisplay },
+  subtitle: { fontSize: 11, color: C.muted, fontWeight: '600', marginTop: 2, fontFamily: fonts.sansMedium },
+  hero: { backgroundColor: C.brown, borderRadius: 18, padding: 16, marginBottom: 14 },
+  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5, fontFamily: fonts.sansBold },
+  heroTitle: { fontSize: 20, fontWeight: '600', color: '#fff', marginTop: 4, fontFamily: fonts.serifDisplay },
+  heroVia: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.92)', marginTop: 6, fontFamily: fonts.sansSemiBold },
   tabRow: {
     paddingHorizontal: 20, paddingBottom: 12, gap: 6,
   },
@@ -184,10 +235,10 @@ const s = StyleSheet.create({
     borderRadius: 20, borderWidth: 1.5, borderColor: P.border,
   },
   tabPillActive: {
-    borderColor: P.ink, backgroundColor: P.yellowPale,
+    borderColor: C.brown, backgroundColor: C.brown,
   },
-  tabText: { fontSize: 11, fontWeight: '600', color: P.muted },
-  tabTextActive: { color: P.ink },
+  tabText: { fontSize: 11, fontWeight: '700', color: P.muted, fontFamily: fonts.sansSemiBold },
+  tabTextActive: { color: '#fff' },
   gridItem: { flex: 1 },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: P.ink, marginBottom: 4 },

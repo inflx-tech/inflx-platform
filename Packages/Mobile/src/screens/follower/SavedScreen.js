@@ -1,7 +1,17 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { darkColors, spacing } from '../../theme/tokens';
+import { creatorVibe as C, spacing } from '../../theme/tokens';
+
+// Flow 52.G — Creator Vibe: SavedScreen was still on the DARK theme. Remap the
+// darkColors tokens it referenced → creatorVibe (dark bg → cream, light text →
+// ink, amber → brown). Visual only; getSavedOffers / unsave / CTA dispatch kept.
+const darkColors = {
+  bg2: C.screenBg,
+  text: C.ink,
+  textSecondary: C.muted,
+  amber: C.brown,
+};
 import { followerApi } from '../../services/api';
 import OfferCard from '../../components/OfferCard';
 import { buildTracking } from '../../utils/tracking';

@@ -2,7 +2,18 @@ import React, { useState, useCallback, useContext } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { brandPalette as P, fonts, spacing, radius } from '../../theme/tokens';
+import { creatorVibe as C, fonts, spacing, radius } from '../../theme/tokens';
+
+// Flow 52.G — Creator Vibe recolor shim. Avatar → warm amber (ink initials stay
+// readable); menu tiles → soft + brown icons; logout → offer red. Visual only;
+// getMe / useFocusEffect / logout flow unchanged.
+const P = {
+  white: C.card, bg: C.screenBg,
+  border: C.line, borderSoft: C.line,
+  ink: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted,
+  yellow: C.star, yellowText: C.brown, yellowPale: C.soft,
+  danger: C.offer, dangerText: C.offer,
+};
 import { followerApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -64,7 +75,7 @@ export default function MeScreen({ navigation }) {
     <ScrollView style={s.container}>
       {/* Title */}
       <View style={s.topBar}>
-        <Text style={s.topTitle}>Me</Text>
+        <Text style={s.topTitle}>Profile</Text>
       </View>
 
       {/* Profile card */}
@@ -118,7 +129,7 @@ const s = StyleSheet.create({
     paddingTop: 50, paddingHorizontal: 16, paddingBottom: 8,
     backgroundColor: P.white, borderBottomWidth: 1, borderBottomColor: P.border,
   },
-  topTitle: { fontSize: 20, fontWeight: '900', color: P.ink, fontFamily: fonts.displayBlack },
+  topTitle: { fontSize: 22, fontWeight: '600', color: P.ink, fontFamily: fonts.serifDisplay },
 
   profileCard: {
     flexDirection: 'row',

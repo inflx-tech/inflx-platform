@@ -193,6 +193,42 @@ export const brandPalette = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Creator Vibe palette (Flow 52 — follower re-theme: cream + terracotta)
+// ─────────────────────────────────────────────────────────────────────────────
+// FOLLOWER-SCOPED. Overrides the F0 yellow `brandPalette` for the follower app
+// only. brandPalette / lightColors / darkColors are intentionally left intact so
+// brand-web + mobile-brand (and any non-migrated follower screen) see zero change.
+// Hex values mirror the locked Creator Vibe mockup
+// (features/redesign-flow-52-follower-creator-vibe/04-preview/mockups/all-screens.html).
+
+export const creatorVibe = {
+  // Surfaces
+  screenBg:  '#F7F3EC',  // cream app background
+  card:      '#FFFFFF',
+  soft:      '#F1ECE3',  // tinted info/chip background
+  soft2:     '#EFE7DA',
+
+  // Primary — terracotta-brown (CTAs, active states). Text on brown = white.
+  brown:     '#8B4A2F',
+  brownDark: '#6E3A24',
+
+  // Ink + muted ladder
+  ink:       '#1C1A17',
+  muted:     '#8A8275',
+  line:      '#ECE6DC',
+
+  // Accents
+  offer:     '#D9531E',  // discount / offer red-orange
+  star:      '#F2A93B',  // ratings
+  verify:    '#2D9CDB',  // verified tick
+  ring1:     '#FF6A5F',  // creator-story gradient start
+  ring2:     '#FFB24C',  // creator-story gradient end
+
+  white:     '#FFFFFF',
+  black:     '#000000',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Per-Business Accent Colors
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -374,5 +410,16 @@ export const fonts = {
     ios: 'JetBrainsMono-Bold',
     android: 'JetBrainsMono-Bold',
     default: 'monospace',
+  }),
+
+  // ─── Flow 52 (Creator Vibe): serif display headings ───
+  // D1 = OTA-safe fallback: use a system serif now (no native font asset → ships
+  // via OTA). Swap these to 'Fraunces-*' in a later native APK build (52.x) once
+  // the .ttf is bundled + react-native-asset re-linked. Apply fontWeight in the
+  // style (system serif has no separate bold family name on Android).
+  serifDisplay: Platform.select({
+    ios: 'Georgia',
+    android: 'serif',
+    default: 'serif',
   }),
 };
