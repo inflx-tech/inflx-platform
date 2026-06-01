@@ -17,12 +17,12 @@
   ],
   "model_locked": "New in.inflx.app.agency Android flavor (APP_ROLE=agency) → AgencyNavigator (Home: code+share+earnings; Wallet: withdraw TDS 194H 5% + history; Profile) + AgencyRegisterScreen (+optional referral-code redeem). Shared auth flow gains an agency branch+guard. ota.controller FLAVORS += agency. Play Store submission manual.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-06-01) — explicit go: 'push + OTA agency'.",
+    "released_at": "2026-06-01",
     "maestro_green": true,
-    "deploy": "Not yet — pending qa green + explicit deploy go. Play Store submission tracked separately as a manual founder step."
+    "deploy": "DEPLOYED 2026-06-01. git push a4e2426..9d58465 -> Render (ota.controller FLAVORS +agency, verified live: agency manifest 422->204). OTA: publish-ota.js agency -> version 1 (2584 KB). Evidence: agency APK built+installed (gradlew installAgencyDebug); pnpm qa:maestro 5/5 incl. 04-agency-launch (maestro_green); RN bundle 200/9.6MB; backend jest ota-flavors 3/3 + agency suites; pnpm qa GREEN 76/76. MANUAL FOUNDER STEP REMAINING: Play Store listing + production signing + review for in.inflx.app.agency (Firebase app already registered)."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-06-01) — reviewed the 3 rendered agency-app mockups (Register/Home/Wallet), 'Approve — lock & build'.",

@@ -14,6 +14,7 @@
     "publish-ota:brand": "node scripts/publish-ota.js brand",
     "publish-ota:influencer": "node scripts/publish-ota.js influencer",
     "publish-ota:follower": "node scripts/publish-ota.js follower",
+    "publish-ota:agency": "node scripts/publish-ota.js agency",
     "qa": "node qa/scripts/run-qa.mjs",
     "qa:web": "pnpm exec playwright test --config qa/playwright.config.ts",
     "qa:report": "node qa/scripts/qa-report.mjs",
