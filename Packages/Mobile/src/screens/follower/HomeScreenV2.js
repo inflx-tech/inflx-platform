@@ -12,6 +12,8 @@ import CategoryGrid from '../../components/CategoryGrid';
 import { followerApi } from '../../services/api';
 import { buildTracking } from '../../utils/tracking';
 import useLocation from '../../hooks/useLocation';
+import { isEnabled } from '../../config/featureFlags';
+import SectionRenderer from '../../components/SectionRenderer';
 
 /**
  * HomeScreenV2 — Creator Vibe (cream/terracotta) products-first feed. (Flow 52.1)
@@ -32,6 +34,7 @@ export default function HomeScreenV2({ navigation }) {
   const [feed, setFeed] = useState([]);
   const [stories, setStories] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [sections, setSections] = useState(null); // section-engine payload (flag on)
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -40,6 +43,25 @@ export default function HomeScreenV2({ navigation }) {
 
   const loadData = useCallback(async (pageNum = 1, refresh = false) => {
     try {
+      // Section engine (Phase C) — when the flag is on, render Home from the
+      // backend { sections } payload. On error or empty, fall back to the
+      // hardcoded path below (never a blank Home). Contract: follower-section-home.
+      if (isEnabled('SECTION_ENGINE_HOME')) {
+        try {
+          const secRes = await followerApi.getHomeSections(loc);
+          const secs = secRes?.data?.sections || [];
+          if (secs.length) {
+            setSections(secs);
+            setLoading(false);
+            setRefreshing(false);
+            return;
+          }
+        } catch (e) {
+          // fall through to the hardcoded feed
+        }
+        setSections(null);
+      }
+
       const [feedRes, storiesRes, categoriesRes] = await Promise.all([
         followerApi.getHomeFeed(pageNum, loc).catch(() => ({ data: { items: [] } })),
         followerApi.getStories().catch(() => ({ data: { stories: [] } })),
@@ -80,6 +102,10 @@ export default function HomeScreenV2({ navigation }) {
   const hotProducts = productItems.slice(0, 6);
   const trendingProducts = productItems.slice(6, 12);
 
+  // Phase C: render from the section engine when the flag is on AND the backend
+  // returned shelves; otherwise the hardcoded path below (safe fallback).
+  const sectionsActive = isEnabled('SECTION_ENGINE_HOME') && Array.isArray(sections) && sections.length > 0;
+
   return (
     <ScrollView
       style={styles.container}
@@ -101,6 +127,10 @@ export default function HomeScreenV2({ navigation }) {
         <Text style={styles.searchText}>🔍 Search products, stores, services...</Text>
       </TouchableOpacity>
 
+      {sectionsActive ? (
+        <SectionRenderer sections={sections} navigation={navigation} />
+      ) : (
+      <>
       {/* Influencer stories */}
       <InfluencerStoryRow
         stories={stories.map(s => ({
@@ -271,6 +301,8 @@ export default function HomeScreenV2({ navigation }) {
           <Text style={styles.emptyTitle}>No deals yet</Text>
           <Text style={styles.emptyText}>Follow influencers to see their product deals, or browse categories above</Text>
         </View>
+      )}
+      </>
       )}
 
       {loading && (

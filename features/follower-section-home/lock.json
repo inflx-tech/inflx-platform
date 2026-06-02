@@ -11,7 +11,7 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-06-01 — Home design locked in SECTION-CATALOG.md + home-comprehensive.html (design phase)",
   "mockup_locked_at": "2026-06-01",
-  "scope": "Phase C — mobile Home on the section engine. FOUNDATION commit (this): featureFlags (SECTION_ENGINE_HOME=false), followerApi.getHomeSections, components/SectionRenderer (new, unimported → inert). WIRING + OTA cutover = separate gated step. NO backend change (Phase A endpoint live). NO Category/Offers/Creator (Phase C2).",
+  "scope": "Phase C — mobile Home on the section engine. FOUNDATION (1bbc0c4): featureFlags (SECTION_ENGINE_HOME=false), followerApi.getHomeSections, components/SectionRenderer. WIRING (this): HomeScreenV2 branches on the flag (off → unchanged; on → SectionRenderer with fallback). Both INERT — flag default-off + NO OTA. OTA cutover = separate gated step. NO backend change (Phase A endpoint live). NO Category/Offers/Creator (Phase C2).",
   "notes": "Foundation commit is deploy-inert in practice: Packages/Mobile/src code, but new unimported files + default-off flag + additive api method; mobile ships only via OTA, which is NOT performed here, so nothing reaches devices. released stays false. The flag-on cutover (HomeScreenV2 wiring + pnpm publish-ota:all) is production-impacting → before/after-diff + pnpm qa + pnpm qa:maestro + EXPLICIT founder OTA go; publish-ota:all bundles the working tree incl. Window B WIP — flag before OTA.",
   "release": {
     "qa_all_green": false,

@@ -1,10 +1,19 @@
 # 06-diff — Follower Home on the Section Engine (Phase C)
 
-## Foundation commit (this) — no visual change yet
-This commit lands inert foundation only; it does NOT modify the live Home screen,
-so there is no before/after visual delta to capture. The visual diff vs
-`home-comprehensive.html` belongs to the **wiring/cutover step**, when
-`SECTION_ENGINE_HOME` is flipped on and `HomeScreenV2` renders `<SectionRenderer>`.
+## Commits so far — no visual change on devices yet
+
+**Foundation commit (1bbc0c4):** featureFlags (default off) + getHomeSections +
+SectionRenderer (unimported). Inert.
+
+**Wiring commit (this):** `HomeScreenV2` now branches on `SECTION_ENGINE_HOME` —
+flag ON → fetch `/home` + render `<SectionRenderer>` (fallback to the hardcoded
+path on error/empty); flag OFF (default) → the hardcoded path is byte-identical
+to before. Still NO OTA, so devices are unaffected. With the flag off there is no
+before/after delta to capture.
+
+The visual diff vs `home-comprehensive.html` is produced at the **cutover step**,
+when `SECTION_ENGINE_HOME` is flipped on for an internal build and Maestro
+screenshots the new Home — done before the OTA, with the founder's go.
 
 What shipped (inert):
 - `Packages/Mobile/src/config/featureFlags.js` — `SECTION_ENGINE_HOME: false`.
