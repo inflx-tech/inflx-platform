@@ -119,6 +119,39 @@ const CSS = `
 .ml .chat-input textarea{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:12.5px;font-family:inherit;resize:none;outline:none;color:var(--ink);background:var(--white)}
 .ml .chat-input textarea:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
 
+/* Recommended badge + advisory reasoning */
+.ml .rec-badge{display:inline-flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:99px;background:var(--ink);color:var(--yellow);text-transform:uppercase;letter-spacing:.3px}
+.ml .offer.rec{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow-pale)}
+.ml .offer-reason{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ml .offer-reason b{color:var(--yellow-text)}
+
+/* Modify-by-chat panel */
+.ml .modify-box{background:var(--white);border:2px solid var(--ink);border-radius:14px;padding:16px;margin-bottom:14px;scroll-margin-top:80px}
+.ml .modify-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.ml .modify-head h3{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
+.ml .modify-close{background:transparent;border:0;font-size:16px;color:var(--muted-2);cursor:pointer;font-family:inherit;padding:2px 6px}
+.ml .modify-close:hover{color:var(--danger-text)}
+.ml .preview-card{background:var(--yellow-50);border:1px solid var(--yellow);border-radius:12px;padding:12px;margin-bottom:10px}
+.ml .preview-t{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.ml .preview-name{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
+.ml .preview-items{font-size:11px;color:var(--muted);margin-top:3px}
+.ml .preview-free{font-size:11px;color:var(--success-text);margin-top:2px;font-weight:600}
+.ml .preview-price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--ink);margin-top:6px}
+.ml .preview-price .old{color:var(--muted-3);text-decoration:line-through;font-weight:600;margin-left:6px;font-size:12px}
+.ml .apply-btn{width:100%;margin-top:10px;padding:9px;font-size:12px;font-weight:700;background:var(--success);color:var(--white);border:0;border-radius:9px;cursor:pointer;font-family:inherit}
+.ml .apply-btn:hover:not(:disabled){background:#0E9F6E}
+.ml .apply-btn:disabled{opacity:.5;cursor:not-allowed}
+.ml .preview-note{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted-2);margin-top:6px;text-align:center}
+
+/* Menu-cost editor */
+.ml .cost-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border-soft)}
+.ml .cost-row:last-child{border-bottom:0}
+.ml .cost-name{flex:1;font-size:11.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ml .cost-price{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2)}
+.ml .cost-input{width:56px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;text-align:right;font-family:'JetBrains Mono',monospace;outline:none;color:var(--ink);background:var(--white)}
+.ml .cost-input:focus{border-color:var(--yellow);box-shadow:0 0 0 2px var(--yellow-pale)}
+.ml .cost-ok{color:var(--success-text);font-size:11px;font-weight:800}
+
 /* Empty for party */
 .ml .empty-party{background:var(--white);border:2px dashed var(--border);border-radius:14px;padding:36px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted-2);margin-bottom:14px}
 
@@ -241,6 +274,7 @@ function SetupTab() {
   const [suggesting, setSuggesting] = useState(false);
   const [aiMode, setAiMode]     = useState(null);
   const [suggestError, setSuggestError] = useState(null);
+  const [modifying, setModifying] = useState(null);
 
   async function load() {
     setLoading(true);
@@ -288,11 +322,19 @@ function SetupTab() {
         </div>
         {suggestError && <div className="err-msg">{suggestError}</div>}
 
+        {modifying && (
+          <ModifyChat
+            rule={modifying}
+            onClose={() => setModifying(null)}
+            onApplied={() => { setModifying(null); load(); }}
+          />
+        )}
+
         {suggested.length > 0 && (
           <>
             <div className="sec-title">✨ AI suggested — review &amp; accept</div>
             <div className="offer-grid">
-              {suggested.map(r => <OfferCard key={r.id} rule={r} onStatus={setStatus} />)}
+              {suggested.map(r => <OfferCard key={r.id} rule={r} onStatus={setStatus} onModify={setModifying} />)}
             </div>
           </>
         )}
@@ -312,7 +354,7 @@ function SetupTab() {
           <div className="empty-party">No offers for this party size yet. Create one below.</div>
         ) : (
           <div className="offer-grid">
-            {shown.map(r => <OfferCard key={r.id} rule={r} onStatus={setStatus} />)}
+            {shown.map(r => <OfferCard key={r.id} rule={r} onStatus={setStatus} onModify={setModifying} />)}
           </div>
         )}
 
@@ -323,17 +365,19 @@ function SetupTab() {
       <div>
         <DiscountClock config={config} setConfig={setConfig} />
         <Limits config={config} />
+        <MenuCosts />
       </div>
     </div>
   );
 }
 
-function OfferCard({ rule, onStatus }) {
+function OfferCard({ rule, onStatus, onModify }) {
   const accepted = rule.status === 'accepted' || rule.status === 'active';
   const price = computeDisplayPrice(rule);
   const statusCls = rule.status || 'default';
+  const reason = rule.custom_description;
   return (
-    <div className={`offer${accepted ? ' acc' : ''}`}>
+    <div className={`offer${accepted ? ' acc' : ''}${rule.recommended ? ' rec' : ''}`}>
       {rule.photo_url ? (
         <div className="offer-img has">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -346,7 +390,10 @@ function OfferCard({ rule, onStatus }) {
         </div>
       )}
       <div className="offer-body">
-        <div className="offer-name">{rule.name}</div>
+        <div className="offer-name">
+          {rule.name}
+          {rule.recommended && <span className="rec-badge">⭐ Best pick</span>}
+        </div>
         <div className="offer-kind">
           <span className={`offer-status ${statusCls}`}>{rule.status}</span>
           <span style={{ marginLeft: 6 }}>{String(rule.offer_kind || '').replace(/_/g, ' ')}</span>
@@ -360,17 +407,18 @@ function OfferCard({ rule, onStatus }) {
         <div className="offer-actions">
           {accepted ? (
             <>
-              <button className="modify">Modify</button>
+              <button className="modify" onClick={() => onModify && onModify(rule)}>Modify</button>
               <button className="remove" onClick={() => onStatus(rule.id, 'archived')}>Remove</button>
             </>
           ) : (
             <>
               <button className="accept" onClick={() => onStatus(rule.id, 'active')}>Accept</button>
-              <button className="modify">Modify</button>
+              <button className="modify" onClick={() => onModify && onModify(rule)}>Modify</button>
               <button className="reject" onClick={() => onStatus(rule.id, 'rejected', 'owner rejected')}>Reject</button>
             </>
           )}
         </div>
+        {reason && <div className="offer-reason">{reason}</div>}
       </div>
     </div>
   );
@@ -434,6 +482,139 @@ function CreateOfferBox({ party, onCreated }) {
           {busy ? 'Building…' : 'Build with chat'}
         </button>
       </div>
+    </div>
+  );
+}
+
+function ModifyChat({ rule, onClose, onApplied }) {
+  const [thread, setThread] = useState([
+    { from: 'bot', text: `Tell me how to change "${rule.name}" — e.g. "make it 10% cheaper", "add a free small coke", "swap chicken biryani for mutton biryani".` },
+  ]);
+  const [msg, setMsg]   = useState('');
+  const [busy, setBusy] = useState(false);
+  const [preview, setPreview]   = useState(null);
+  const [applying, setApplying] = useState(false);
+
+  async function send() {
+    const text = msg.trim();
+    if (!text || busy) return;
+    setBusy(true);
+    setThread(t => [...t, { from: 'me', text }]);
+    setMsg('');
+    const res = await mealsApi.modifyOfferChat(rule.id, text);
+    setBusy(false);
+    if (!res.success) {
+      setThread(t => [...t, { from: 'bot', text: res.error?.message || 'Could not apply that change. Try again.' }]);
+      return;
+    }
+    const d = res.data;
+    if (d.stage === 'clarify') {
+      setPreview(null);
+      setThread(t => [...t, { from: 'bot', text: d.question }]);
+      return;
+    }
+    setPreview(d.proposed);
+    setThread(t => [...t, { from: 'bot', text: d.reasoning || 'Here is the updated offer — review and Apply.' }]);
+  }
+
+  async function apply() {
+    if (!preview || applying) return;
+    setApplying(true);
+    const res = await mealsApi.updateOfferRule(rule.id, preview);
+    setApplying(false);
+    if (res.success) onApplied();
+    else setThread(t => [...t, { from: 'bot', text: res.error?.message || 'Could not save the change.' }]);
+  }
+
+  const pv = preview ? computeDisplayPrice(preview) : null;
+
+  return (
+    <div className="modify-box">
+      <div className="modify-head">
+        <h3>✏️ Modify "{rule.name}" — by chat</h3>
+        <button className="modify-close" onClick={onClose} aria-label="Close">✕</button>
+      </div>
+      <div className="chat-thread">
+        {thread.map((m, i) => <div key={i} className={`chat-msg ${m.from}`}>{m.text}</div>)}
+      </div>
+      {preview && pv && (
+        <div className="preview-card">
+          <div className="preview-t">Proposed update — review before applying</div>
+          <div className="preview-name">{preview.name}</div>
+          <div className="preview-items">{(preview.items_json || []).map(it => `${it.qty}× ${it.name}`).join(', ')}</div>
+          {(preview.freebies_json || []).length > 0 && (
+            <div className="preview-free">+ free {preview.freebies_json.join(' + ')}</div>
+          )}
+          <div className="preview-price">
+            {fmtMoney(pv.discounted ?? pv.base)}
+            {pv.discounted !== pv.base && <span className="old">{fmtMoney(pv.base)}</span>}
+          </div>
+          <button className="apply-btn" onClick={apply} disabled={applying}>
+            {applying ? 'Applying…' : '✓ Apply changes'}
+          </button>
+          <div className="preview-note">Stays in “suggested” — click Accept on the card to make it live.</div>
+        </div>
+      )}
+      <div className="chat-input">
+        <textarea
+          value={msg}
+          onChange={e => setMsg(e.target.value)}
+          placeholder="e.g. add a free small coke + 3 chicken 65"
+          rows={2}
+          data-testid="meals-modify-input"
+        />
+        <button className="btn-ink" onClick={send} disabled={busy || !msg.trim()} data-testid="meals-modify-send">
+          {busy ? 'Thinking…' : 'Send'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MenuCosts() {
+  const [items, setItems] = useState(null);
+  const [draft, setDraft] = useState({});
+  const [savedId, setSavedId] = useState(null);
+
+  async function load() {
+    const res = await mealsApi.getMenuCosts();
+    if (res.success) setItems(res.data.items || []);
+  }
+  useEffect(() => { load(); }, []);
+
+  async function save(it) {
+    const raw = draft[it.id] != null ? draft[it.id] : it.cost;
+    if (raw == null || raw === '') return;
+    const res = await mealsApi.upsertMenuCost({ brand_product_id: it.id, cost: Number(raw) });
+    if (res.success) { setSavedId(it.id); setTimeout(() => setSavedId(null), 1500); load(); }
+  }
+
+  return (
+    <div className="side-card">
+      <h3>Your dish costs (private)</h3>
+      <div className="helper">Confirm what each dish costs YOU. AI uses this to suggest add-ons that build loyalty without hurting margin. Never shown to customers.</div>
+      {!items ? (
+        <div className="helper" style={{ margin: 0 }}>Loading…</div>
+      ) : items.length === 0 ? (
+        <div className="helper" style={{ margin: 0 }}>Add menu items first.</div>
+      ) : (
+        items.map(it => (
+          <div key={it.id} className="cost-row">
+            <span className="cost-name">{it.name}</span>
+            <span className="cost-price">₹{it.price}</span>
+            <input
+              className="cost-input"
+              type="number"
+              min="0"
+              placeholder="cost"
+              value={draft[it.id] != null ? draft[it.id] : (it.cost ?? '')}
+              onChange={e => setDraft(d => ({ ...d, [it.id]: e.target.value }))}
+              onBlur={() => save(it)}
+            />
+            {savedId === it.id && <span className="cost-ok">✓</span>}
+          </div>
+        ))
+      )}
     </div>
   );
 }

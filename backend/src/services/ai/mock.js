@@ -143,45 +143,138 @@ function extractIntent(rawText, memory = {}) {
  * party_size + offer_kind + freebies + suggested_name + reasoning.
  * Prices are NEVER set here — the backend joins brand_products.price.
  */
+// Heuristic: cheap sides / drinks / sweets are the low-cost loyalty add-ons.
+function isAddon(m) {
+  return /raita|gulab|jamun|soda|coke|cola|pepsi|drink|water|lassi|papad|fries|salad|dessert|sweet|ice ?cream/i.test(m.name)
+    || (m.section && /side|dessert|sweet|drink|beverage|add[\s-]?on|starter/i.test(m.section));
+}
+
+/**
+ * Deterministic offer-combination suggester (AI_MOCK fallback). Menu-generic
+ * (works for any cuisine, not just biryani): ranks mains by price, picks a
+ * low-cost add-on, and emits MULTIPLE combos across party sizes — each with a
+ * small high-loyalty freebie and owner-facing reasoning. Marks the family pack
+ * recommended. The AI returns STRUCTURE only — items reference real
+ * product_ids; prices are joined later from brand_products.
+ */
 function suggestOffers({ menu = [], party_sizes = ['single', 'duo', 'trio', 'family', 'office'] } = {}) {
-  const biryanis = menu.filter((m) => /biryani/i.test(m.name));
-  const nonveg   = biryanis.find((m) => m.veg_flag === 'non_veg') || biryanis[0];
-  const veg      = biryanis.find((m) => m.veg_flag === 'veg')     || biryanis[0];
-  const sides    = menu.filter((m) => /raita|gulab|jamun|soda|papad|dessert/i.test(m.name));
-  const freebieSide    = (sides[0] && sides[0].name) || 'Raita';
-  const freebieDessert = (sides.find((s) => /jamun|dessert/i.test(s.name)) || {}).name || 'Gulab Jamun';
+  if (!menu.length) return { suggestions: [] };
+
+  const mains = menu.filter((m) => !isAddon(m)).sort((a, b) => Number(b.price) - Number(a.price));
+  const addons = menu.filter(isAddon).sort((a, b) => Number(a.price) - Number(b.price));
+  const main = mains.find((m) => m.veg_flag === 'non_veg') || mains[0];
+  if (!main) return { suggestions: [] };
+  const veg = mains.find((m) => m.veg_flag === 'veg' && m.id !== main.id) || mains[1] || main;
+  const addon = addons[0] || null;          // cheapest side/drink = loyalty lever
+  const addon2 = addons[1] || null;
+  const addonName = addon ? addon.name : 'a small complimentary side';
 
   const ref = (item, qty) => ({ product_id: item.id, name: item.name, qty });
+  const loyalty = (lead) =>
+    `${lead} Adding a low-cost extra like ${addonName} barely touches your margin, but the extra perceived value is what brings the customer back next time.`;
   const out = [];
 
   for (const ps of party_sizes) {
-    if (ps === 'single' && nonveg) {
-      out.push({ party_size: 'single', offer_kind: 'free_addon', suggested_name: 'Solo Treat',
-        items: [ref(nonveg, 1)], freebies: [freebieSide],
-        reasoning: 'A welcoming solo combo with a free side.' });
+    if (ps === 'single') {
+      out.push({ party_size: 'single', offer_kind: addon ? 'free_addon' : 'discount', suggested_name: 'Solo Treat',
+        items: [ref(main, 1)], freebies: addon ? [addonName] : [], recommended: false,
+        reasoning: loyalty('A welcoming single-portion combo to win first-time solo diners.') });
     }
-    if (ps === 'duo' && nonveg && veg) {
-      out.push({ party_size: 'duo', offer_kind: 'mixed', suggested_name: 'Duo Mixed Combo',
-        items: [ref(nonveg, 1), ref(veg, 1)], freebies: [freebieSide],
-        reasoning: 'Mixed veg + non-veg pack for two — covers both diets.' });
+    if (ps === 'duo') {
+      const mixed = veg.id !== main.id;
+      out.push({ party_size: 'duo', offer_kind: mixed ? 'mixed' : 'free_addon', suggested_name: 'Duo Combo',
+        items: mixed ? [ref(main, 1), ref(veg, 1)] : [ref(main, 2)], freebies: addon ? [addonName] : [], recommended: false,
+        reasoning: loyalty('A shareable pack for two that covers both diets.') });
     }
-    if (ps === 'trio' && nonveg && veg) {
+    if (ps === 'trio') {
+      const mixed = veg.id !== main.id;
       out.push({ party_size: 'trio', offer_kind: 'mixed', suggested_name: 'Trio Share-pack',
-        items: [ref(nonveg, 2), ref(veg, 1)], freebies: [freebieSide],
-        reasoning: 'Balanced share for three (2 non-veg + 1 veg).' });
+        items: mixed ? [ref(main, 2), ref(veg, 1)] : [ref(main, 3)], freebies: addon ? [addonName] : [], recommended: false,
+        reasoning: loyalty('Balanced share for three.') });
     }
-    if (ps === 'family' && nonveg && veg) {
-      out.push({ party_size: 'family', offer_kind: 'mixed', suggested_name: 'Family Mixed Pack',
-        items: [ref(nonveg, 2), ref(veg, 2)], freebies: [freebieSide, freebieDessert],
-        reasoning: 'Crowd-pleaser for a family of four — even split + dessert.' });
+    if (ps === 'family') {
+      const mixed = veg.id !== main.id;
+      const fb = [];
+      if (addon) fb.push(addonName);
+      if (addon2) fb.push(addon2.name);
+      out.push({ party_size: 'family', offer_kind: 'mixed', suggested_name: 'Family Feast',
+        items: mixed ? [ref(main, 2), ref(veg, 2)] : [ref(main, 4)], freebies: fb, recommended: true,
+        reasoning: loyalty('Your strongest repeat-customer driver: a family pack with a couple of cheap extras (e.g. a small drink + a sweet).') });
     }
-    if (ps === 'office' && nonveg) {
+    if (ps === 'office') {
       out.push({ party_size: 'office', offer_kind: 'early_order', suggested_name: 'Office Pre-book',
-        items: [ref(nonveg, 12)], freebies: ['Free delivery'],
-        reasoning: 'Bulk office pre-book — locks tomorrow\'s lunch the day before.' });
+        items: [ref(main, 12)], freebies: ['Free delivery'], recommended: false,
+        reasoning: loyalty('Bulk office pre-book — locks tomorrow\'s lunch the day before.') });
     }
   }
   return { suggestions: out };
+}
+
+/**
+ * Restaurant-side offer MODIFIER (AI_MOCK fallback). Applies an owner's
+ * plain-English change to an existing offer and returns the FULL updated
+ * structure (cheaper / add-a-freebie / swap-a-dish). Never sets a price the
+ * owner did not state.
+ */
+function modifyOffer(current = {}, instruction = '', ctx = {}) {
+  const t = String(instruction || '').toLowerCase();
+  const menu = Array.isArray(ctx.menu) ? ctx.menu : [];
+  const next = {
+    party_size: current.party_size || null,
+    offer_kind: current.offer_kind || 'mixed',
+    suggested_name: current.name || current.suggested_name || 'Updated offer',
+    items: Array.isArray(current.items)
+      ? current.items.map((it) => ({ product_id: it.product_id, name: it.name, qty: Number(it.qty) || 1 }))
+      : [],
+    base_price: current.base_price != null ? Number(current.base_price) : null,
+    discount_type: current.discount_type || null,
+    discount_value: current.discount_value != null ? Number(current.discount_value) : null,
+    freebies: Array.isArray(current.freebies) ? current.freebies.slice() : [],
+    reasoning: null,
+    missing_fields: [],
+    clarify_question: null,
+  };
+  const notes = [];
+
+  // Cheaper / discount.
+  const pctM = t.match(/(\d{1,2})\s*%\s*(?:off|discount|cheaper)/);
+  const flatM = t.match(/(?:₹|rs\.?|flat)\s*(\d{2,4})/) || t.match(/(\d{2,4})\s*(?:₹|rupees?)?\s*off/);
+  if (pctM) { next.discount_type = 'percentage'; next.discount_value = parseInt(pctM[1], 10); notes.push(`applied ${pctM[1]}% off`); }
+  else if (flatM) { next.discount_type = 'flat'; next.discount_value = parseInt(flatM[1], 10); notes.push(`applied ₹${flatM[1]} off`); }
+  else if (/cheaper|reduce|lower|discount|less/.test(t)) {
+    next.discount_type = 'percentage'; next.discount_value = Math.max(5, Number(next.discount_value) || 10);
+    notes.push(`nudged the price down ${next.discount_value}%`);
+  }
+
+  // Add a free item.
+  const freeM = t.match(/(?:add|with|plus|\+)\s*(?:a\s+)?free\s+([a-z][a-z\s]{1,28}?)(?:[,.!]|$|\s+(?:to|for))/)
+    || t.match(/free\s+([a-z][a-z\s]{1,28}?)(?:[,.!]|$)/);
+  if (freeM) {
+    const f = freeM[1].trim().replace(/\s+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    if (f && !next.freebies.some((x) => x.toLowerCase() === f.toLowerCase())) next.freebies.push(f);
+    next.offer_kind = next.discount_value != null ? 'mixed' : 'free_addon';
+    notes.push(`added free ${f}`);
+  }
+
+  // Swap dish A for dish B (menu-aware).
+  const swapM = t.match(/swap\s+([a-z0-9\s]+?)\s+(?:for|with|to)\s+([a-z0-9\s]+)/);
+  if (swapM && menu.length) {
+    const from = menu.find((m) => String(m.name).toLowerCase().includes(swapM[1].trim()));
+    const to = menu.find((m) => String(m.name).toLowerCase().includes(swapM[2].trim()));
+    if (from && to) {
+      next.items = next.items.map((it) => (it.product_id === from.id ? { product_id: to.id, name: to.name, qty: it.qty } : it));
+      notes.push(`swapped ${from.name} → ${to.name}`);
+    }
+  }
+
+  if (!notes.length) {
+    next.missing_fields = ['instruction'];
+    next.clarify_question = 'What should I change — make it cheaper, add a free item, or swap a dish?';
+    next.reasoning = 'I kept the offer as-is.';
+  } else {
+    next.reasoning = `Done — ${notes.join(', ')}. Small low-cost extras like this lift perceived value and bring customers back without hurting your margin.`;
+  }
+  return next;
 }
 
 function recommend(offers = [], memory = {}) {
@@ -298,4 +391,4 @@ function extractRestaurantOffer(rawText, ctx = {}) {
   };
 }
 
-module.exports = { extractIntent, recommend, suggestOffers, extractRestaurantOffer };
+module.exports = { extractIntent, recommend, suggestOffers, extractRestaurantOffer, modifyOffer };

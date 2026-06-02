@@ -188,7 +188,10 @@ export const mealsApi = {
   createOfferRule: (data) => api.post('/meals/offer-rules', data),
   suggestOffers: () => api.post('/meals/offer-rules/suggest'),
   restaurantChat: (body) => api.post('/meals/restaurant-chat', body),
+  modifyOfferChat: (id, message) => api.post(`/meals/offer-rules/${id}/modify-chat`, { message }),
   updateOfferRule: (id, data) => api.patch(`/meals/offer-rules/${id}`, data),
+  getMenuCosts: () => api.get('/meals/menu-costs'),
+  upsertMenuCost: (data) => request('PUT', '/meals/menu-costs', data),
   getDashboard: (params) => api.get(`/meals/dashboard${params ? '?' + new URLSearchParams(params) : ''}`),
   deliverOrder: (id) => api.post(`/meals/orders/${id}/deliver`),
 };

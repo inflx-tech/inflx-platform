@@ -154,6 +154,28 @@ const restaurantChat = asyncHandler(async (req, res) => {
   return success(res, result);
 });
 
+// Modify an existing offer by chat — returns a PREVIEW (owner Applies via PATCH).
+const modifyOfferChat = asyncHandler(async (req, res) => {
+  const brandId = await meals.brandIdForUser(req.user.sub);
+  const { message } = req.body || {};
+  const result = await meals.modifyOfferByChat(brandId, req.params.id, message || null);
+  return success(res, result);
+});
+
+// Cost-capture — active menu + owner-confirmed costs, and upsert one cost.
+const getMenuCosts = asyncHandler(async (req, res) => {
+  const brandId = await meals.brandIdForUser(req.user.sub);
+  const items = await meals.getMenuWithCosts(brandId);
+  return success(res, { items });
+});
+
+const upsertMenuCost = asyncHandler(async (req, res) => {
+  const brandId = await meals.brandIdForUser(req.user.sub);
+  const { brand_product_id, cost } = req.body || {};
+  const result = await meals.upsertProductCost(brandId, { brand_product_id, cost });
+  return success(res, result);
+});
+
 module.exports = {
   putConfig,
   createSlot,
@@ -174,4 +196,7 @@ module.exports = {
   adminPutSettings,
   suggestOffers,
   restaurantChat,
+  modifyOfferChat,
+  getMenuCosts,
+  upsertMenuCost,
 };

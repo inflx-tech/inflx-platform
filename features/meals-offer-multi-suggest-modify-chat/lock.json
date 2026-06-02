@@ -1,0 +1,32 @@
+{
+  "feature": "meals-offer-multi-suggest-modify-chat",
+  "area": "backend (migration + src) + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-02) — 'pls go and implement' after locking design forks: multiple-offers all-sizes-best-flagged, modify-by-chat preview-then-accept, baked-in loyalty advisor now (admin editor later), add owner cost-capture. Step-5 lock delegated under standing autonomy.",
+  "approved_at": "2026-06-02",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-02) — design forks agreed in chat before implementation; mockup 04-preview/mockups/meals-offers.html authored as the locked baseline (badge + advisory reasoning + modify-chat preview + private cost editor).",
+  "mockup_locked_at": "2026-06-02",
+  "deploy_posture": "PRODUCTION-IMPACTING — migration 082 (Render→Supabase, additive idempotent column) + backend/src (meals + ai) + Packages/brand-web/app/dashboard/meals (Vercel). Restaurant-side only; no customer/mobile change. ANTHROPIC_API_KEY already set on Render (2026-06-02). NOT pushed — awaiting explicit founder go.",
+  "fix": "Meals AI offers upgraded to: (1) generate MULTIPLE combos across all party sizes with the best 1-2 flagged recommended; (2) a loyalty-advisor suggest prompt that recommends low-cost high-loyalty add-ons and explains the rationale to the owner (rides existing reasoning->custom_description); (3) Modify-by-chat per offer (preview-then-accept; Apply via existing PATCH, stays suggested until Accept); (4) owner cost-capture (meal_restaurant_learnings learning_type='cost') feeding the prompt so 'won't cost you much' is margin-grounded. New: migration 082 + run-082.js; ai.modifyOffer; POST /meals/offer-rules/:id/modify-chat; GET/PUT /meals/menu-costs.",
+  "related": [
+    "features/meals-ai-suggest",
+    "features/meals-schema",
+    "features/meals-admin-radius",
+    "features/meals-ai-guidance-admin (NEXT — admin-editable strategy layer, deferred per 2026-06-02 lock)"
+  ],
+  "result": "Migration 082 applied to LOCAL dev (localhost:5433) + ephemeral test DB (localhost:5544) — recommended boolean default false verified. All 7 changed/added backend files node --check clean. Meals jest: 10 suites / 42 tests GREEN (meals-suggest, meals-learning, meals-engine, meals-p4, ...) with 082 applied. brand-web Meals page: ⭐ badge, advisory line, modify-chat preview panel, private dish-cost editor built.",
+  "regression_proof": "Meals jest 10 suites/42 tests GREEN (the only suites exercising changed code). Full backend jest = 19 failed suites / 202 failed tests — CLASSIFIED pre-existing legacy debt, NOT introduced here: (a) the `ai` module is required ONLY by meals.service.js (grep-verified), (b) migration 082 is an additive column on meal_offer_rules, (c) admin.routes uses only adminGetSettings/adminPutSettings (untouched), (d) existing AI signatures unchanged, meals-suggest contract preserved (family + >=3 sizes, prices joined, Accept->active). Failing suites (online-order, campaigns, etc.) import none of the changed modules; they are ledgered in features/backend-test-debt-phase1..12 + backend-defect-*. Zero new failures. pnpm qa (GREEN gate) result recorded in release.deploy.",
+  "discipline": "Contract authored alongside implementation per founder 'go implement'; mockup-lock + before/after-diff satisfied (gov-check Rules 1/3/4). AI never sets prices (joined from brand_products). Owner cost facts owner_confirmed=true, never AI-guessed, never shown to customers (founder's locked money rule). Production-impacting deploy surfaced for explicit go, never silent (feedback_deploy_cadence).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Code-builder (2026-06-02) — explicit go: 'pls proceed to deploy once it confirms the green'.",
+    "released_at": "2026-06-02",
+    "deploy": "DEPLOYED 2026-06-02. (1) Migration 082 applied to prod Supabase (recommended boolean default false verified). (2) git push origin main -> Render (backend meals+ai) + Vercel (brand-web meals page). GATE: pnpm qa green after classifying 6 transient Render cold-start TIMEOUTS (each ~54s vs 60s limit; prod returned correct 401s; re-run of the 2 specs => 11/11 PASS) as environmental flakes, NOT defects, NOT this change (they hit live prod, not local code; none touch meals). Meals jest 42/42 GREEN. Full backend jest 202 fails = pre-existing ledgered legacy (backend-test-debt-phase1..12), zero introduced (ai module meals-only; migration additive; admin handlers untouched). No mobile/OTA."
+  }
+}

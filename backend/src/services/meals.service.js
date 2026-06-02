@@ -743,15 +743,29 @@ async function suggestOffersForBrand(brandId) {
     throw new AppError('VALIDATION_ERROR', 'Add menu items first — AI suggestions need real dishes', 422);
   }
 
+  // Owner-confirmed item costs (learning_type='cost') ground the AI's
+  // "low cost → high loyalty" advice in real margins. Attach to each menu
+  // item so the model can keep add-ons genuinely cheap; absent cost → null.
+  const { rows: costRows } = await db.query(
+    `SELECT brand_product_id, value_json FROM meal_restaurant_learnings
+      WHERE brand_id = $1 AND learning_type = 'cost' AND brand_product_id IS NOT NULL`,
+    [brandId]
+  );
+  const costById = new Map(costRows.map((c) => [c.brand_product_id, Number(c.value_json && c.value_json.cost)]));
+  const menuWithCost = menu.map((m) => ({ ...m, cost: costById.has(m.id) ? costById.get(m.id) : null }));
+
   // Optional: restaurant memory (learnings) — fed to the prompt for richer prod output.
   const { rows: learnings } = await db.query(
     `SELECT learning_type, value_json FROM meal_restaurant_learnings WHERE brand_id = $1 LIMIT 50`,
     [brandId]
   );
-  const memory = learnings.length ? { learnings } : null;
+  const memory = {
+    learnings: learnings.length ? learnings : [],
+    costs_confirmed: costById.size > 0,
+  };
 
   // AI returns structure; backend joins prices.
-  const result = await ai.suggestOffers({ menu, memory });
+  const result = await ai.suggestOffers({ menu: menuWithCost, memory });
   const suggestions = (result && result.suggestions) || [];
 
   const productById = new Map(menu.map((m) => [m.id, m]));
@@ -769,9 +783,9 @@ async function suggestOffersForBrand(brandId) {
     const { rows } = await db.query(
       `INSERT INTO meal_offer_rules
          (brand_id, name, party_size, offer_kind, items_json, base_price,
-          freebies_json, source, status, custom_description)
+          freebies_json, source, status, custom_description, recommended)
        VALUES ($1,$2,$3::meal_party_size,$4::meal_offer_kind,$5::jsonb,$6,
-               $7::jsonb,'ai','suggested',$8)
+               $7::jsonb,'ai','suggested',$8,$9)
        RETURNING *`,
       [
         brandId,
@@ -782,11 +796,143 @@ async function suggestOffersForBrand(brandId) {
         basePrice,
         JSON.stringify(s.freebies || []),
         s.reasoning || null,
+        s.recommended === true,
       ]
     );
     inserted.push(rows[0]);
   }
   return { ai_mode: ai.isMock() ? 'mock' : 'live', suggested: inserted };
+}
+
+/**
+ * Modify an existing offer BY CHAT (preview-then-accept). Loads the offer +
+ * menu, lets the AI apply the owner's plain-English change, joins menu prices,
+ * and returns a PREVIEW — nothing is persisted. The brand-web "Apply" button
+ * saves via the existing PATCH (updateOfferRule); the offer stays
+ * status='suggested' until the owner clicks Accept. A vague instruction
+ * returns stage='clarify' with a single follow-up question.
+ */
+async function modifyOfferByChat(brandId, ruleId, message) {
+  if (!message || !String(message).trim()) {
+    throw new AppError('VALIDATION_ERROR', 'message is required', 422);
+  }
+  const { rows: ruleRows } = await db.query(
+    `SELECT * FROM meal_offer_rules WHERE id = $1 AND brand_id = $2`, [ruleId, brandId]
+  );
+  const rule = ruleRows[0];
+  if (!rule) throw new AppError('NOT_FOUND', 'Offer rule not found', 404);
+
+  const { rows: menu } = await db.query(
+    `SELECT id, name, price, veg_flag, section FROM brand_products
+       WHERE brand_id = $1 AND is_active = true ORDER BY name`, [brandId]
+  );
+
+  const current = {
+    name: rule.name,
+    party_size: rule.party_size,
+    offer_kind: rule.offer_kind,
+    items: Array.isArray(rule.items_json) ? rule.items_json : [],
+    base_price: rule.base_price != null ? Number(rule.base_price) : null,
+    discount_type: rule.discount_type,
+    discount_value: rule.discount_value != null ? Number(rule.discount_value) : null,
+    freebies: Array.isArray(rule.freebies_json) ? rule.freebies_json : [],
+  };
+
+  const parsed = await ai.modifyOffer(current, message, { menu });
+
+  // Too vague → clarify, no preview.
+  if ((parsed.missing_fields || []).length && parsed.clarify_question) {
+    return { stage: 'clarify', question: parsed.clarify_question, rule_id: ruleId };
+  }
+
+  // Join menu prices for the proposed items (AI never sets a price).
+  const byId = new Map(menu.map((m) => [m.id, m]));
+  const items = (parsed.items || [])
+    .map((it) => {
+      const p = byId.get(it.product_id);
+      if (!p) return null;
+      return { product_id: p.id, name: p.name, qty: Number(it.qty) || 1, price: Number(p.price) };
+    })
+    .filter(Boolean);
+  const computedBase = items.reduce((s, it) => s + it.qty * it.price, 0);
+  const base_price = parsed.base_price != null ? Number(parsed.base_price)
+                   : (computedBase > 0 ? computedBase : current.base_price);
+
+  // PREVIEW ONLY — the exact field set the owner's Apply will PATCH.
+  const proposed = {
+    name: parsed.suggested_name || current.name,
+    party_size: parsed.party_size || current.party_size,
+    offer_kind: parsed.offer_kind || current.offer_kind,
+    items_json: items,
+    base_price,
+    discount_type: parsed.discount_type || null,
+    discount_value: parsed.discount_value != null ? Number(parsed.discount_value) : null,
+    freebies_json: Array.isArray(parsed.freebies) ? parsed.freebies : [],
+    custom_description: parsed.reasoning || rule.custom_description || null,
+  };
+  return {
+    stage: 'preview',
+    rule_id: ruleId,
+    proposed,
+    reasoning: parsed.reasoning || null,
+    ai_mode: ai.isMock() ? 'mock' : 'live',
+  };
+}
+
+/**
+ * Active menu with the owner's confirmed cost per item (null when unset).
+ * Powers the brand-web cost-capture editor; the same costs feed the suggest
+ * prompt so "won't cost you much" advice is margin-grounded.
+ */
+async function getMenuWithCosts(brandId) {
+  const { rows: menu } = await db.query(
+    `SELECT id, name, price, section, veg_flag FROM brand_products
+      WHERE brand_id = $1 AND is_active = true ORDER BY section, name`, [brandId]
+  );
+  const { rows: costs } = await db.query(
+    `SELECT brand_product_id, value_json FROM meal_restaurant_learnings
+      WHERE brand_id = $1 AND learning_type = 'cost' AND brand_product_id IS NOT NULL`, [brandId]
+  );
+  const costById = new Map(costs.map((c) => [c.brand_product_id, Number(c.value_json && c.value_json.cost)]));
+  return menu.map((m) => ({
+    id: m.id, name: m.name, price: Number(m.price), section: m.section, veg_flag: m.veg_flag,
+    cost: costById.has(m.id) ? costById.get(m.id) : null,
+  }));
+}
+
+/**
+ * Upsert an owner-confirmed cost for one menu item (one cost per product).
+ * Stored as a meal_restaurant_learnings row (learning_type='cost',
+ * owner_confirmed=true) — the founder's locked rule: money facts are never
+ * AI-guessed.
+ */
+async function upsertProductCost(brandId, { brand_product_id, cost } = {}) {
+  if (!brand_product_id) throw new AppError('VALIDATION_ERROR', 'brand_product_id is required', 422);
+  const costNum = Number(cost);
+  if (!Number.isFinite(costNum) || costNum < 0) {
+    throw new AppError('VALIDATION_ERROR', 'cost must be a non-negative number', 422);
+  }
+  const { rows: prod } = await db.query(
+    `SELECT id, name FROM brand_products WHERE id = $1 AND brand_id = $2`, [brand_product_id, brandId]
+  );
+  if (!prod[0]) throw new AppError('NOT_FOUND', 'Menu item not found', 404);
+
+  const upd = await db.query(
+    `UPDATE meal_restaurant_learnings
+        SET value_json = $3::jsonb, owner_confirmed = true, source = 'owner', updated_at = now()
+      WHERE brand_id = $1 AND learning_type = 'cost' AND brand_product_id = $2
+      RETURNING id`,
+    [brandId, brand_product_id, JSON.stringify({ cost: costNum })]
+  );
+  if (upd.rows.length === 0) {
+    await db.query(
+      `INSERT INTO meal_restaurant_learnings
+         (brand_id, brand_product_id, learning_type, key, value_json, confidence, owner_confirmed, source)
+       VALUES ($1, $2, 'cost', $3, $4::jsonb, 1.0, true, 'owner')`,
+      [brandId, brand_product_id, prod[0].name, JSON.stringify({ cost: costNum })]
+    );
+  }
+  return { brand_product_id, cost: costNum };
 }
 
 // ── AI chat brain (X1) ───────────────────────────────────────────────────────
@@ -933,4 +1079,7 @@ module.exports = {
   effectiveRadiusKm,
   suggestOffersForBrand,
   restaurantChatCreateOffer,
+  modifyOfferByChat,
+  getMenuWithCosts,
+  upsertProductCost,
 };

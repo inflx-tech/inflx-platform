@@ -36,7 +36,10 @@ router.get('/offer-rules',          ...mealsBrand, ctrl.listOfferRules);
 router.post('/offer-rules',         ...mealsBrand, ctrl.createOfferRule);
 router.post('/offer-rules/suggest', ...mealsBrand, ctrl.suggestOffers);
 router.post('/restaurant-chat',     ...mealsBrand, ctrl.restaurantChat);
+router.post('/offer-rules/:id/modify-chat', ...mealsBrand, ctrl.modifyOfferChat);
 router.patch('/offer-rules/:id',    ...mealsBrand, ctrl.updateOfferRule);
+router.get('/menu-costs',           ...mealsBrand, ctrl.getMenuCosts);
+router.put('/menu-costs',           ...mealsBrand, ctrl.upsertMenuCost);
 router.get('/dashboard',           ...mealsBrand, ctrl.getDashboard);
 router.post('/orders/:id/deliver', ...mealsBrand, ctrl.deliverOrder);
 

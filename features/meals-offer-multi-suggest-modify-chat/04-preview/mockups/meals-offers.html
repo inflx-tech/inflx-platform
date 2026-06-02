@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Meals — multi-suggest + modify-chat + cost capture (mockup)</title>
+<style>
+  :root{
+    --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-50:#FFFDEB;--yellow-text:#6B5A00;
+    --ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--border:#E4E4E7;--border-soft:#F4F4F5;
+    --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;--conv:#7E22CE;--conv-pale:#F3E8FF;--danger-text:#B91C1C;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);font-size:13px;background:var(--bg);margin:0;padding:24px}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 2px}
+  .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 16px}
+  .two-col{display:grid;grid-template-columns:1fr 300px;gap:18px}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .ai-card{background:linear-gradient(135deg,var(--yellow-50),var(--yellow-pale));border:1px solid rgba(255,193,7,.4);border-radius:14px;padding:16px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
+  .ai-card-l{flex:1}.ai-card-t{font-size:14px;font-weight:700}.ai-card-s{font-size:11px;color:var(--yellow-text);margin-top:4px}
+  .btn-ink{padding:8px 14px;background:var(--ink);color:var(--yellow);border-radius:10px;font-size:12px;font-weight:700;border:0;cursor:pointer}
+  .sec-title{font-size:10px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.5px;font-weight:800;margin:14px 0 8px;font-family:'JetBrains Mono',monospace}
+  .offer-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+  .offer{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px}
+  .offer.rec{border-color:var(--yellow);box-shadow:0 0 0 1px var(--yellow-pale)}
+  .offer-img{width:64px;height:64px;border-radius:10px;background:var(--yellow-pale);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+  .offer-name{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .rec-badge{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:800;padding:1px 6px;border-radius:99px;background:var(--ink);color:var(--yellow);text-transform:uppercase}
+  .offer-kind{font-size:10px;color:var(--muted-2);margin-top:3px;font-family:'JetBrains Mono',monospace}
+  .offer-status{font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px;background:var(--conv-pale);color:var(--conv);text-transform:uppercase}
+  .offer-price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;margin-top:6px}
+  .offer-actions{display:flex;gap:5px;margin-top:8px}
+  .offer-actions button{flex:1;padding:6px;font-size:10.5px;font-weight:700;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:#fff}
+  .accept{background:var(--success)!important;border-color:var(--success)!important;color:#fff!important}
+  .reject{color:var(--danger-text)!important;border-color:rgba(232,64,26,.3)!important}
+  .offer-reason{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border)}
+  .modify-box{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:16px;margin-bottom:14px}
+  .modify-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .modify-head h3{margin:0;font-size:13px}
+  .chat-thread{background:var(--bg);border:1px solid var(--border-soft);border-radius:10px;padding:10px;margin-bottom:10px;display:flex;flex-direction:column;gap:6px}
+  .chat-msg{max-width:80%;padding:7px 12px;border-radius:14px;font-size:12px}
+  .chat-msg.me{background:var(--ink);color:#fff;align-self:flex-end}
+  .chat-msg.bot{background:#fff;border:1px solid var(--border);align-self:flex-start}
+  .preview-card{background:var(--yellow-50);border:1px solid var(--yellow);border-radius:12px;padding:12px;margin-bottom:10px}
+  .preview-t{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;color:var(--yellow-text);text-transform:uppercase;margin-bottom:4px}
+  .preview-name{font-size:13px;font-weight:700}.preview-items{font-size:11px;color:var(--muted);margin-top:3px}
+  .preview-free{font-size:11px;color:var(--success-text);font-weight:600;margin-top:2px}
+  .preview-price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;margin-top:6px}
+  .apply-btn{width:100%;margin-top:10px;padding:9px;font-size:12px;font-weight:700;background:var(--success);color:#fff;border:0;border-radius:9px;cursor:pointer}
+  .preview-note{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--muted-2);margin-top:6px;text-align:center}
+  .chat-input{display:flex;gap:8px}.chat-input textarea{flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:10px;font-size:12.5px;resize:none}
+  .side-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+  .side-card h3{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;color:var(--muted-2);text-transform:uppercase;margin:0 0 8px}
+  .helper{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted-2);margin-bottom:10px;line-height:1.4}
+  .cost-row{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border-soft)}
+  .cost-name{flex:1;font-size:11.5px}.cost-price{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted-2)}
+  .cost-input{width:56px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-size:11px;text-align:right;font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍽 INFLX Meals — Offers &amp; setup</h1>
+  <div class="rule"></div>
+  <div class="two-col">
+    <div>
+      <div class="ai-card">
+        <div class="ai-card-l">
+          <div class="ai-card-t">✨ AI offer suggestions</div>
+          <div class="ai-card-s">6 suggested combos across all sizes — best picks flagged ⭐. AI picks the combos; you set the final prices.</div>
+        </div>
+        <button class="btn-ink">Generate more</button>
+      </div>
+
+      <!-- Modify-by-chat panel (opens when Modify clicked) -->
+      <div class="modify-box">
+        <div class="modify-head"><h3>✏️ Modify "Family Feast" — by chat</h3><span style="cursor:pointer;color:var(--muted-2)">✕</span></div>
+        <div class="chat-thread">
+          <div class="chat-msg bot">Tell me how to change "Family Feast" — e.g. "make it 10% cheaper", "add a free small coke", "swap chicken biryani for mutton biryani".</div>
+          <div class="chat-msg me">add a free small coke + 3 chicken 65</div>
+          <div class="chat-msg bot">Done — added free Small Coke, added free Chicken 65 (3 pcs). Small low-cost extras like this lift perceived value and bring customers back without hurting your margin.</div>
+        </div>
+        <div class="preview-card">
+          <div class="preview-t">Proposed update — review before applying</div>
+          <div class="preview-name">Family Feast</div>
+          <div class="preview-items">2× Chicken Biryani, 2× Veg Biryani</div>
+          <div class="preview-free">+ free Raita + Small Coke + Chicken 65</div>
+          <div class="preview-price">₹1,040</div>
+          <button class="apply-btn">✓ Apply changes</button>
+          <div class="preview-note">Stays in "suggested" — click Accept on the card to make it live.</div>
+        </div>
+        <div class="chat-input"><textarea rows="2" placeholder="e.g. add a free small coke + 3 chicken 65"></textarea><button class="btn-ink">Send</button></div>
+      </div>
+
+      <div class="sec-title">✨ AI suggested — review &amp; accept</div>
+      <div class="offer-grid">
+        <div class="offer rec">
+          <div class="offer-img">🍽</div>
+          <div style="flex:1">
+            <div class="offer-name">Family Feast <span class="rec-badge">⭐ Best pick</span></div>
+            <div class="offer-kind"><span class="offer-status">suggested</span> &nbsp;mixed</div>
+            <div class="offer-price">₹1,040</div>
+            <div class="offer-actions"><button class="accept">Accept</button><button>Modify</button><button class="reject">Reject</button></div>
+            <div class="offer-reason">Your strongest repeat-customer driver: a family pack with a couple of cheap extras (a small drink + a sweet). The extras barely dent margin but make families choose you again.</div>
+          </div>
+        </div>
+        <div class="offer">
+          <div class="offer-img">🧍</div>
+          <div style="flex:1">
+            <div class="offer-name">Solo Treat</div>
+            <div class="offer-kind"><span class="offer-status">suggested</span> &nbsp;free addon</div>
+            <div class="offer-price">₹300</div>
+            <div class="offer-actions"><button class="accept">Accept</button><button>Modify</button><button class="reject">Reject</button></div>
+            <div class="offer-reason">A welcoming single-portion combo to win first-time solo diners. Adding a low-cost extra like Raita barely touches your margin but builds the habit of coming back.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="side-card">
+        <h3>Your dish costs (private)</h3>
+        <div class="helper">Confirm what each dish costs YOU. AI uses this to suggest add-ons that build loyalty without hurting margin. Never shown to customers.</div>
+        <div class="cost-row"><span class="cost-name">Chicken Biryani</span><span class="cost-price">₹300</span><input class="cost-input" value="180" /></div>
+        <div class="cost-row"><span class="cost-name">Veg Biryani</span><span class="cost-price">₹220</span><input class="cost-input" value="120" /></div>
+        <div class="cost-row"><span class="cost-name">Small Coke</span><span class="cost-price">₹40</span><input class="cost-input" value="15" /></div>
+        <div class="cost-row"><span class="cost-name">Chicken 65</span><span class="cost-price">₹160</span><input class="cost-input" placeholder="cost" /></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

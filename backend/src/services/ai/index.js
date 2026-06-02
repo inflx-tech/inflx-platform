@@ -60,4 +60,14 @@ async function extractRestaurantOffer(rawText, ctx = {}) {
   }
 }
 
-module.exports = { extractIntent, recommendOffer, suggestOffers, extractRestaurantOffer, isMock: useMock };
+async function modifyOffer(current = {}, instruction = '', ctx = {}) {
+  if (useMock()) return mock.modifyOffer(current, instruction, ctx);
+  try {
+    return await client().modifyOffer(current, instruction, ctx);
+  } catch (e) {
+    console.error('[meals-ai] modifyOffer fell back to mock:', e.message);
+    return mock.modifyOffer(current, instruction, ctx);
+  }
+}
+
+module.exports = { extractIntent, recommendOffer, suggestOffers, extractRestaurantOffer, modifyOffer, isMock: useMock };
