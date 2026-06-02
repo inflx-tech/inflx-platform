@@ -1,0 +1,22 @@
+{
+  "feature": "follower-section-home",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-06-02 chat — 'make right decision and proceed' (lock delegated); Phase C of the locked section-engine program, sequenced after Phase A",
+  "approved_at": "2026-06-02",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "home-comprehensive.html mirrored to 04-preview/mockups/; the LOCKED Creator Vibe Home design (SECTION-CATALOG.md 2026-06-01).",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-06-01 — Home design locked in SECTION-CATALOG.md + home-comprehensive.html (design phase)",
+  "mockup_locked_at": "2026-06-01",
+  "scope": "Phase C — mobile Home on the section engine. FOUNDATION commit (this): featureFlags (SECTION_ENGINE_HOME=false), followerApi.getHomeSections, components/SectionRenderer (new, unimported → inert). WIRING + OTA cutover = separate gated step. NO backend change (Phase A endpoint live). NO Category/Offers/Creator (Phase C2).",
+  "notes": "Foundation commit is deploy-inert in practice: Packages/Mobile/src code, but new unimported files + default-off flag + additive api method; mobile ships only via OTA, which is NOT performed here, so nothing reaches devices. released stays false. The flag-on cutover (HomeScreenV2 wiring + pnpm publish-ota:all) is production-impacting → before/after-diff + pnpm qa + pnpm qa:maestro + EXPLICIT founder OTA go; publish-ota:all bundles the working tree incl. Window B WIP — flag before OTA.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

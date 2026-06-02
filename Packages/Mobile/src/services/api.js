@@ -405,6 +405,15 @@ export const followerApi = {
     return api.get(`/follower/deals?${p.join('&')}`);
   },
 
+  // Section Engine — backend-driven { sections:[…] } feeds (Creator Vibe, Phase C).
+  // Consumed by <SectionRenderer>; gated by config/featureFlags SECTION_ENGINE_HOME.
+  getHomeSections: (loc = null) => {
+    const p = [];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    const qs = p.length ? `?${p.join('&')}` : '';
+    return api.get(`/follower/home${qs}`);
+  },
+
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),
   getCategories: () => api.get('/follower/categories'),
