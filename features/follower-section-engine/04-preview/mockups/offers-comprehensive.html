@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Offers (All / Filtered / By Creator) + Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F4EFE6;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1340px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:38px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}.head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{background:rgba(255,255,255,.6);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;}
+  .stage{display:flex;gap:40px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1360px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+  .phone{width:344px;height:792px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .sb{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:12.5px;font-weight:700;flex:0 0 auto;}
+  .sb .i{display:flex;gap:6px;font-size:11px;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding-bottom:12px;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .top{display:flex;align-items:center;gap:10px;padding:7px 16px 4px;}
+  .ib{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;box-shadow:0 4px 10px -6px rgba(80,50,25,.4);}
+  .ttl{flex:1;}.ttl .t1{font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1;}
+  .ttl .t2{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .subbar{display:flex;gap:8px;overflow-x:auto;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;}
+  .subbar::-webkit-scrollbar{display:none;}
+  .subchip{flex:0 0 auto;font-size:11.5px;font-weight:700;padding:7px 14px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .subchip.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .fbar{display:flex;gap:7px;overflow-x:auto;padding:9px 16px 4px;}
+  .fbar::-webkit-scrollbar{display:none;}
+  .fpill{flex:0 0 auto;font-size:11px;font-weight:700;padding:7px 13px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .fpill.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .hero{margin:12px 16px 2px;border-radius:20px;padding:16px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(120deg,#8a4f2d,#6e3a24);box-shadow:0 18px 34px -16px rgba(80,40,18,.6);}
+  .hero .lbl{font-size:9.5px;font-weight:800;letter-spacing:.6px;opacity:.85;display:flex;align-items:center;gap:6px;}
+  .hero .auto{background:rgba(255,255,255,.22);padding:2px 7px;border-radius:20px;font-size:8px;}
+  .hero h3{font-family:'Fraunces',serif;font-size:23px;font-weight:600;margin-top:6px;max-width:200px;line-height:1.05;}
+  .hero .via{display:inline-flex;align-items:center;gap:6px;margin-top:9px;font-size:11px;font-weight:700;background:rgba(255,255,255,.16);padding:4px 11px 4px 4px;border-radius:20px;}
+  .hero .via .a{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .hero .grab{position:absolute;right:16px;bottom:16px;background:#fff;color:var(--brown);font-size:11.5px;font-weight:800;padding:8px 16px;border-radius:30px;}
+  .hero .em{position:absolute;right:-6px;top:-8px;font-size:80px;opacity:.16;}
+  .sh{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 16px 10px;}
+  .sh h4{font-size:14.5px;font-weight:800;letter-spacing:-.2px;}
+  .sh .sub{font-size:9.5px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .sh .tc{display:flex;gap:5px;align-items:center;}
+  .cnt{font-size:9px;font-weight:800;color:var(--brown);background:var(--soft);border:1px solid var(--line);padding:2px 7px;border-radius:20px;}
+  .tt{font-size:8px;font-weight:800;letter-spacing:.5px;color:#fff;background:var(--offer);padding:3px 8px;border-radius:20px;}
+  .more{color:var(--brown);font-size:12px;font-weight:800;}
+  .hsc{display:flex;gap:12px;overflow-x:auto;padding:2px 16px 4px;}
+  .hsc::-webkit-scrollbar{display:none;}
+  .deal{flex:0 0 168px;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 26px -18px rgba(70,45,22,.55);}
+  .dh{height:74px;position:relative;display:flex;align-items:flex-end;padding:9px;color:#fff;}
+  .dh .big{font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1;}
+  .dh .em{position:absolute;right:8px;top:6px;font-size:32px;opacity:.9;}
+  .clk{position:absolute;top:8px;left:8px;background:rgba(20,12,6,.8);color:#fff;font-size:8.5px;font-weight:800;padding:3px 7px;border-radius:20px;}
+  .db{padding:9px 11px 11px;}
+  .vc{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:9px;font-weight:800;color:#5e4631;background:var(--soft);padding:3px 8px 3px 3px;border-radius:20px;}
+  .vc .a{width:15px;height:15px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:8px;}
+  .fs11{font-size:11px;}.fs12{font-size:12px;}.fs13{font-size:13px;}.fw7{font-weight:700;}.fw8{font-weight:800;}.muted{color:var(--muted);}
+  /* grid (filtered view) */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:10px 16px 6px;}
+  .gc{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 26px -18px rgba(70,45,22,.55);}
+  .gc .gh{height:84px;position:relative;display:flex;align-items:flex-end;padding:8px;color:#fff;}
+  .gc .gh .big{font-family:'Fraunces',serif;font-size:18px;font-weight:600;line-height:1;}
+  .gc .gh .em{position:absolute;right:7px;top:5px;font-size:26px;opacity:.9;}
+  /* by-creator groups */
+  .cgrp{display:flex;align-items:center;gap:10px;padding:16px 16px 8px;}
+  .cgrp .ring{padding:2px;border-radius:50%;background:linear-gradient(135deg,var(--ring1),var(--ring2));}
+  .cgrp .a{width:42px;height:42px;border-radius:50%;background:#ecdfc9;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid var(--bg);}
+  .cgrp .nm{font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:5px;}
+  .cgrp .mt{font-size:10px;color:var(--muted);font-weight:600;}
+  .cgrp .vs{margin-left:auto;font-size:11px;font-weight:800;color:var(--brown);}
+  .tick{color:var(--verify);font-size:11px;}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:9px 6px 15px;}
+  .nav .it{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .it.on{color:var(--brown);}.nav .it .ic{font-size:18px;}
+  .reels{width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;margin-top:-22px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7.5px;font-weight:800;}
+  /* admin */
+  .admin{width:540px;background:#fff;border-radius:22px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .ahd{padding:18px 20px;border-bottom:1px solid #efeae0;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .ahd .t{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+  .ahd .t small{display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .pub{background:var(--brown);color:#fff;font-size:12px;font-weight:800;padding:9px 16px;border-radius:10px;}
+  .ahint{font-size:11.5px;color:var(--muted);font-weight:600;padding:11px 20px 4px;}
+  .rows{padding:6px 14px 12px;display:flex;flex-direction:column;gap:8px;}
+  .row{display:flex;align-items:center;gap:11px;border:1px solid #eee7da;border-radius:13px;padding:11px 12px;background:#fff;}
+  .row.hero{background:linear-gradient(120deg,#fbf3ec,#fff);border-color:#e7d6c8;}
+  .grip{color:#c9bda8;font-size:15px;}.rmain{flex:1;min-width:0;}
+  .rname{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .rsub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .rtag{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:#fff;background:var(--offer);padding:3px 7px;border-radius:20px;}
+  .rtag.core{background:#8a8275;}.rtag.hero{background:var(--brown);}.rtag.list{background:#3a2616;}
+  .sel{font-size:10px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:4px 7px;background:#fbf8f2;color:#4a3a2a;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .seg b{font-size:10px;font-weight:800;padding:5px 10px;background:#fbf8f2;color:#6a5a47;}
+  .seg b.on{background:var(--brown);color:#fff;}
+  .pin{font-size:10px;font-weight:800;color:var(--brown);background:#fbf3ec;border:1px dashed var(--brown);border-radius:8px;padding:5px 9px;margin-top:6px;display:inline-flex;gap:6px;align-items:center;}
+  .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .step button{width:24px;height:27px;border:none;background:#fbf8f2;color:var(--brown);font-size:14px;font-weight:800;}
+  .step .v{width:28px;text-align:center;font-size:12px;font-weight:800;}
+  .tog{width:38px;height:22px;border-radius:30px;background:var(--brown);position:relative;flex:0 0 auto;}
+  .tog.off{background:#d8cebd;}.tog::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:19px;}.tog.off::after{left:3px;}
+  .addbtn{margin:2px 14px 16px;border:1.5px dashed var(--brown);color:var(--brown);border-radius:13px;padding:12px;text-align:center;font-size:12px;font-weight:800;background:rgba(139,74,47,.04);}
+  .afoot{padding:12px 20px;border-top:1px solid #efeae0;font-size:10.5px;color:var(--muted);font-weight:600;background:#fbf8f2;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Offers — comprehensive <span class="spark">✦</span></h1>
+  <p>Three follower views (All · Eat-filtered · By Creator) + the Admin Section Manager with the hero PIN control.</p>
+  <div class="legend"><span>📱 follower views</span><span>⚙️ admin configures</span><span>hero = AUTO biggest deal, or admin-PINNED</span><span>every card carries 4-ID creator attribution</span></div>
+</div>
+<div class="stage">
+
+  <!-- ===== ALL ===== -->
+  <div class="col"><div class="cap">📱 Offers · All<span>hero + per-category rails</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ttl" style="padding-left:2px"><div class="t1">Offers</div><div class="t2">📍 best deals in Vijayawada</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">🍽️ Eat</div><div class="subchip">🛍️ Shop</div><div class="subchip">✨ Groom</div><div class="subchip">✈️ Travel</div></div>
+        <div class="fbar"><div class="fpill on">Best Discount</div><div class="fpill">Ending Soon</div><div class="fpill">Near Me</div><div class="fpill">By Creator</div></div>
+        <div class="hero"><div class="lbl">⚡ TODAY'S BEST DEAL <span class="auto">AUTO</span></div><h3>Buy 2 Get 1 — all pizzas</h3><span class="via"><span class="a">👩🏻‍🍳</span>via @MamaPizza · ends in 6h</span><span class="grab">Grab →</span><span class="em">🍕</span></div>
+        <div class="sh"><div><h4>🍽️ Food Offers</h4><div class="sub">top by conversions</div></div><div class="tc"><span class="tt">OFFERS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">20%<br>OFF</div><span class="em">🍕</span></div><div class="db"><div class="fw8 fs12">Signature Pizza</div><div class="muted fs11">Mama's Pizza</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#d98a63,#b3633c)"><div class="big">Flat<br>₹150</div><span class="em">🍔</span></div><div class="db"><div class="fw8 fs12">Combo Meals</div><div class="muted fs11">Burger Barn</div><span class="vc"><span class="a">🧔🏽</span>via @TasteTrail</span></div></div>
+        </div>
+        <div class="sh"><div><h4>👔 Fashion Offers</h4><div class="sub">top by conversions</div></div><div class="tc"><span class="tt">OFFERS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c79bb3,#9c6f8a)"><div class="big">30%<br>OFF</div><span class="em">👟</span></div><div class="db"><div class="fw8 fs12">Street Sneakers</div><div class="muted fs11">MODA</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#b8a98f,#8f8068)"><div class="big">Flat<br>15%</div><span class="em">👜</span></div><div class="db"><div class="fw8 fs12">Handbags</div><div class="muted fs11">The Summer Co.</div><span class="vc"><span class="a">💃🏽</span>via @DrapeDiya</span></div></div>
+        </div>
+        <div class="sh"><div><h4>💇 Salon Offers</h4><div class="sub">top by conversions</div></div><div class="tc"><span class="tt">OFFERS</span><span class="cnt">6</span></div></div>
+        <div class="hsc" style="padding-bottom:14px">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c9a37e,#a07d56)"><div class="big">25%<br>OFF</div><span class="em">💆</span></div><div class="db"><div class="fw8 fs12">Spa &amp; Facial</div><div class="muted fs11">Glow Studio</div><span class="vc"><span class="a">💁🏻‍♀️</span>via @GlowRituals</span></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e9d4c0,#c9a37e)"><div class="big" style="color:#5a3a22">Free<br>Trim</div><span class="em">✂️</span></div><div class="db"><div class="fw8 fs12">Haircut + Style</div><div class="muted fs11">The Cut Room</div><span class="vc"><span class="a">💇🏻‍♀️</span>via @SnipByZoya</span></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="it"><span class="ic">🏠</span>Home</div><div class="it on"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== EAT FILTERED ===== -->
+  <div class="col"><div class="cap">📱 Offers · Eat selected<span>filtered grid, sorted</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ttl" style="padding-left:2px"><div class="t1">Offers</div><div class="t2">📍 Vijayawada</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip">All</div><div class="subchip on">🍽️ Eat</div><div class="subchip">🛍️ Shop</div><div class="subchip">✨ Groom</div><div class="subchip">✈️ Travel</div></div>
+        <div class="fbar"><div class="fpill on">Best Discount</div><div class="fpill">Ending Soon</div><div class="fpill">Near Me</div><div class="fpill">By Creator</div></div>
+        <div class="sh"><div><h4>Eat Offers</h4><div class="sub">sorted by biggest discount</div></div><span class="cnt">42</span></div>
+        <div class="grid">
+          <div class="gc"><div class="gh" style="background:linear-gradient(135deg,#e9b97a,#cf9550)"><div class="big">B2G1</div><span class="em">🍝</span></div><div class="db"><div class="fw8 fs12">All Pastas</div><div class="muted fs11">Spice Route</div><span class="vc"><span class="a">👩🏽</span>via @FoodieFarah</span></div></div>
+          <div class="gc"><div class="gh" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">30% OFF</div><span class="em">🍕</span></div><div class="db"><div class="fw8 fs12">Family Combo</div><div class="muted fs11">Mama's Pizza</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+          <div class="gc"><div class="gh" style="background:linear-gradient(135deg,#d98a63,#b3633c)"><div class="big">Flat ₹150</div><span class="em">🍔</span></div><div class="db"><div class="fw8 fs12">Combo Meals</div><div class="muted fs11">Burger Barn</div><span class="vc"><span class="a">🧔🏽</span>via @TasteTrail</span></div></div>
+          <div class="gc"><div class="gh" style="background:linear-gradient(135deg,#f5e0c2,#e9b97a)"><div class="big" style="color:#5a3a22">25% OFF</div><span class="em">🧁</span></div><div class="db"><div class="fw8 fs12">Desserts</div><div class="muted fs11">Sugar &amp; Spice</div><span class="vc"><span class="a">👩🏽</span>via @FoodieFarah</span></div></div>
+          <div class="gc"><div class="gh" style="background:linear-gradient(135deg,#e9d4c0,#c9a37e)"><div class="big" style="color:#5a3a22">15% OFF</div><span class="em">☕</span></div><div class="db"><div class="fw8 fs12">Cold Brews</div><div class="muted fs11">Daily Grind</div><span class="vc"><span class="a">🧔🏽</span>via @TasteTrail</span></div></div>
+          <div class="gc"><div class="gh" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">B1G1</div><span class="em">🌮</span></div><div class="db"><div class="fw8 fs12">Street Tacos</div><div class="muted fs11">Taco Town</div><span class="vc"><span class="a">👩🏽</span>via @FoodieFarah</span></div></div>
+        </div>
+        <div style="height:10px"></div>
+      </div>
+      <div class="nav"><div class="it"><span class="ic">🏠</span>Home</div><div class="it on"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== BY CREATOR ===== -->
+  <div class="col"><div class="cap">📱 Offers · By Creator<span>grouped under each creator</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ttl" style="padding-left:2px"><div class="t1">Offers</div><div class="t2">📍 Vijayawada</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">🍽️ Eat</div><div class="subchip">🛍️ Shop</div><div class="subchip">✨ Groom</div></div>
+        <div class="fbar"><div class="fpill">Best Discount</div><div class="fpill">Ending Soon</div><div class="fpill">Near Me</div><div class="fpill on">By Creator</div></div>
+        <div class="cgrp"><div class="ring"><div class="a">🧔🏻</div></div><div><div class="nm">@StyleMaster <span class="tick">✔</span></div><div class="mt">124K · 5 live deals</div></div><span class="vs">View →</span></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c79bb3,#9c6f8a)"><div class="big">30%<br>OFF</div><span class="em">👟</span></div><div class="db"><div class="fw8 fs12">Sneakers</div><div class="muted fs11">MODA</div></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">20%<br>OFF</div><span class="em">🍕</span></div><div class="db"><div class="fw8 fs12">Signature Pizza</div><div class="muted fs11">Mama's Pizza</div></div></div>
+        </div>
+        <div class="cgrp"><div class="ring"><div class="a">👩🏽</div></div><div><div class="nm">@FoodieFarah <span class="tick">✔</span></div><div class="mt">76K · 3 live deals</div></div><span class="vs">View →</span></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e9b97a,#cf9550)"><div class="big">B2G1</div><span class="em">🍝</span></div><div class="db"><div class="fw8 fs12">All Pastas</div><div class="muted fs11">Spice Route</div></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#f5e0c2,#e9b97a)"><div class="big" style="color:#5a3a22">25%<br>OFF</div><span class="em">🧁</span></div><div class="db"><div class="fw8 fs12">Desserts</div><div class="muted fs11">Sugar &amp; Spice</div></div></div>
+        </div>
+        <div class="cgrp"><div class="ring"><div class="a">💁🏻‍♀️</div></div><div><div class="nm">@GlowRituals <span class="tick">✔</span></div><div class="mt">54K · 2 live deals</div></div><span class="vs">View →</span></div>
+        <div class="hsc" style="padding-bottom:14px">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c9a37e,#a07d56)"><div class="big">25%<br>OFF</div><span class="em">💆</span></div><div class="db"><div class="fw8 fs12">Spa &amp; Facial</div><div class="muted fs11">Glow Studio</div></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e3d2dd,#c79bb3)"><div class="big">15%<br>OFF</div><span class="em">🧴</span></div><div class="db"><div class="fw8 fs12">Vitamin C Serum</div><div class="muted fs11">Vilow Theory</div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="it"><span class="ic">🏠</span>Home</div><div class="it on"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN ===== -->
+  <div class="col"><div class="cap">⚙️ Admin — Offers Section Manager<span>incl. the hero PIN control</span></div>
+    <div class="admin">
+      <div class="ahd"><div class="t">Offers · Sections<small>drag / toggle / count · hero = auto or pinned</small></div><span class="pub">Publish</span></div>
+      <div class="ahint">Spans all verticals, your-city scoped. "By Creator" groups every live offer under its backing creator.</div>
+      <div class="rows">
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Super-category chips <span class="rtag core">NAV</span></div><div class="rsub">All · Eat · Shop · Groom · Travel <span class="sel">edit ▾</span></div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Sort / filter bar <span class="rtag core">CONTROLS</span></div><div class="rsub">Best Discount · Ending Soon · Near Me · By Creator <span class="sel">edit ▾</span></div></div><div class="tog"></div></div>
+        <div class="row hero"><span class="grip">⠿</span><div class="rmain"><div class="rname">Today's Best Deal <span class="rtag hero">HERO</span></div><div class="rsub">how the hero is chosen:</div><div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="seg"><b class="on">AUTO (biggest live)</b><b>PIN</b></span><span class="pin">📌 or pin: Mama's · B2G1 ✎</span></div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">🍽️ <span class="sel">Eat ▾</span> Offers</div><div class="rsub">top food offers by conversions</div></div><div class="step"><button>−</button><span class="v">8</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">👔 <span class="sel">Shop ▾</span> Offers</div><div class="rsub">top fashion offers by conversions</div></div><div class="step"><button>−</button><span class="v">8</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">💇 <span class="sel">Groom ▾</span> Offers</div><div class="rsub">top groom offers by conversions</div></div><div class="step"><button>−</button><span class="v">6</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">All Offers <span class="rtag list">GRID</span></div><div class="rsub">shown when a chip/sort is applied · default sort <span class="sel">Best Discount ▾</span></div></div><div class="tog"></div></div>
+      </div>
+      <div class="addbtn">＋ Add a {category} Offers rail &nbsp;·&nbsp; Travel · Stay Fit · Events · Home</div>
+      <div class="afoot">💡 <b>Hero</b> = AUTO biggest live deal, or 📌 <b>pin</b> a specific offer to feature (launches, sponsored). Category rails: pick category + count + order. Every deal tap carries the creator's 4-ID attribution.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

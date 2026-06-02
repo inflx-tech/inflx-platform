@@ -28,6 +28,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
+const sectionEngine = require('../services/sectionEngine.service');
 
 // ── Helper: get follower row or throw ────────────────────────────────────────
 
@@ -1030,6 +1031,69 @@ const search = asyncHandler(async (req, res) => {
   return success(res, { brands: brandsOut, dishes: dishesOut });
 });
 
+// ── Section Engine feeds (Creator Vibe, Phase A) ─────────────────────────────
+// Public (authenticateOptional): a follower JWT adds city + follow-graph
+// personalization; anonymous callers pass ?city=. Every actionable item carries
+// its 4-ID tracking block. Contract: features/follower-section-engine/.
+
+async function resolveFollowerContext(req) {
+  const follower = req.user?.sub
+    ? await getFollowerByUserId(req.user.sub).catch(() => null)
+    : null;
+  return {
+    followerId: follower?.id || null,
+    city: follower?.user_city || req.query.city || null,
+  };
+}
+
+// GET /v1/follower/home
+const getHomeSections = asyncHandler(async (req, res) => {
+  const { followerId, city } = await resolveFollowerContext(req);
+  const data = await sectionEngine.buildSections({ screen: 'home', city, followerId });
+  return success(res, data);
+});
+
+// GET /v1/follower/section/category/:key
+const getCategorySections = asyncHandler(async (req, res) => {
+  const { followerId, city } = await resolveFollowerContext(req);
+  const key = req.params.key;
+  const data = await sectionEngine.buildSections({
+    screen: 'category', scopeType: 'vertical', scopeValue: key,
+    categoryKey: key, city, followerId,
+  });
+  return success(res, data);
+});
+
+// GET /v1/follower/section/offers
+const getOffersSections = asyncHandler(async (req, res) => {
+  const { followerId, city } = await resolveFollowerContext(req);
+  const data = await sectionEngine.buildSections({ screen: 'offers', city, followerId });
+  return success(res, data);
+});
+
+// GET /v1/follower/section/creator/:handle
+const getCreatorSections = asyncHandler(async (req, res) => {
+  const { followerId, city } = await resolveFollowerContext(req);
+  const influencer = await sectionEngine.resolveInfluencerByHandle(req.params.handle);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Creator not found', 404);
+  const data = await sectionEngine.buildSections({
+    screen: 'creator_store', city, followerId, influencer,
+  });
+  return success(res, data);
+});
+
+// GET /v1/follower/section/creator/:handle/category/:cat
+const getCreatorCategorySections = asyncHandler(async (req, res) => {
+  const { followerId, city } = await resolveFollowerContext(req);
+  const influencer = await sectionEngine.resolveInfluencerByHandle(req.params.handle);
+  if (!influencer) throw new AppError('NOT_FOUND', 'Creator not found', 404);
+  const data = await sectionEngine.buildSections({
+    screen: 'creator_category', city, followerId, influencer,
+    categoryKey: req.params.cat,
+  });
+  return success(res, data);
+});
+
 module.exports = {
   creatorsEatingNow,
   search,
@@ -1051,4 +1115,9 @@ module.exports = {
   getStories,
   getCategories,
   getCategoryStores,
+  getHomeSections,
+  getCategorySections,
+  getOffersSections,
+  getCreatorSections,
+  getCreatorCategorySections,
 };

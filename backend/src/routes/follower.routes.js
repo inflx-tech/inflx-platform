@@ -33,6 +33,15 @@ router.get('/following', ...followerAuth, ctrl.getFollowing);       // auth requ
 router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influencer story circles
 router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
 
+// ── Section Engine feeds (Creator Vibe, Phase A — public, auth optional) ─────
+// Backend-driven { sections:[...] }; admin-controlled via section_config.
+// Contract: features/follower-section-engine/.
+router.get('/home',                                  authenticateOptional, ctrl.getHomeSections);
+router.get('/section/category/:key',                 authenticateOptional, ctrl.getCategorySections);
+router.get('/section/offers',                        authenticateOptional, ctrl.getOffersSections);
+router.get('/section/creator/:handle',               authenticateOptional, ctrl.getCreatorSections);
+router.get('/section/creator/:handle/category/:cat', authenticateOptional, ctrl.getCreatorCategorySections);
+
 // ── Wave 5 — Reviews + ratings ───────────────────────────────────────────────
 // List is public (followers read reviews before visiting); create +
 // reviewable require follower auth + a qualifying completed transaction.

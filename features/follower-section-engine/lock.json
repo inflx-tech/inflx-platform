@@ -1,0 +1,28 @@
+{
+  "feature": "follower-section-engine",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-06-02 chat — AskUserQuestion 'Approve & lock — build Phase A' (lock decision delegated); product-attribution call delegated 'take best decision'",
+  "approved_at": "2026-06-02",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "5 discovery-screen Creator Vibe mockups mirrored to 04-preview/mockups/ (home/category/offers/creator-store/creator-category); these are the LOCKED design (SECTION-CATALOG.md 2026-06-01). Phase A is backend-only and renders none of them.",
+  "impact_reviewed": true,
+  "scope": "Phase A — section-engine FOUNDATION: migration 083 section_config table + idempotent seed of locked catalog defaults (global scope), ranking rule library, sectionEngine resolver, 5 public follower feed endpoints returning { sections:[...] } with 4-ID tracking, Redis caching, API tests. NO admin UI (Phase B), NO mobile renderer (Phase C), NO detail templates (Phase D), NO orders/profile (Phase E), NO reels (52.8).",
+  "decisions_pending_founder": {
+    "migration_number": "083 (verified: 081 reels uncommitted, 082 meals already run — brief said ~082, reality is 083)",
+    "top_by_sales_product_attribution": "RESOLVED 2026-06-02 (founder-delegated): ship 'trending_items' (products) rails seeded enabled=false in Phase A — no fabricated data. Re-enable in a fast-follow once product->offer resolution is designed.",
+    "seed_scope": "Phase A seeds GLOBAL defaults only; city/vertical override rows are authored by admin in Phase B."
+  },
+  "notes": "Step-5 lock gate. Set approved=true (+ approved_by/at) only after the section_config schema + rule-library data-readiness + feed-endpoint shapes + impact are agreed. NO implementation (migration/backend code) until approved=true. Backend is production-impacting: build + verify (pnpm qa + qa:db + API tests) locally, then surface for EXPLICIT founder go before any push (Render redeploy) or run-083.js prod-run (.env.prod-backup). Dormant on deploy — no mobile consumer until Phase C.",
+  "release": {
+    "qa_all_green": true,
+    "qa_evidence": "pnpm qa GREEN — 76 passed (qa/reports/2026-06-02T10-16-03-975Z/QA-REPORT.md), zero web regression. Section-engine API tests 11/11 green (ranking + 4-ID tracking + disabled-shelf omission + 404 + regression) on an isolated DB. Migration 083 applies to LOCAL dev (35 shelves) + idempotent re-run. qa:db: migration-apply proven via run-083 + Jest globalSetup applying all 83 migrations clean (full qa:db lane informational, host-ceiling per GOVERNANCE §10).",
+    "classification": "production-impacting (backend/src + migration 083). Dormant on deploy (no mobile consumer until Phase C).",
+    "prod_migration": "083 applied to PROD Supabase 2026-06-02 via run-083.js (.env.prod-backup) — 35 shelves seeded (home 12/10, category 7/6, offers 5, creator_store 6, creator_category 5).",
+    "deploy": "2026-06-02 — migration 083 applied to PROD Supabase; backend/src section-engine pushed to main → Render auto-deploy. Production-impacting but dormant (no mobile consumer until Phase C). No OTA, no APK, no web change this phase.",
+    "released": true,
+    "released_by": "founder · 2026-06-02 chat — AskUserQuestion 'Go — migrate prod + push' after pnpm qa GREEN",
+    "released_at": "2026-06-02"
+  }
+}
