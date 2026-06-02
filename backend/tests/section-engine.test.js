@@ -23,14 +23,25 @@
 
 const request = require('supertest');
 const app = require('../src/app');
+const fs = require('fs');
+const path = require('path');
 const { truncateAll, query } = require('./helpers/db');
 const ttlCache = require('../src/utils/ttlCache');
 
 const CITY = 'Vijayawada';
 const HANDLE = 'sectioncreator';
 
+// section_config survives truncateAll (no users FK), and a sibling suite
+// (admin-sections) mutates it — so re-apply migration 083's seed each test to
+// guarantee the locked defaults are present regardless of run order. The
+// migration is idempotent (IF NOT EXISTS + ON CONFLICT DO NOTHING).
+const SEED_083 = fs.readFileSync(
+  path.join(__dirname, '../migrations/083_section_config.sql'), 'utf8'
+);
+
 beforeEach(async () => {
   await truncateAll();
+  await query(SEED_083);
   ttlCache.clear(); // process-global memo — clear so reseeded data isn't shadowed
 });
 

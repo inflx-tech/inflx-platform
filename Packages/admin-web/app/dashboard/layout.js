@@ -15,6 +15,7 @@ const NAV = [
   { href: '/dashboard/production-queue', label: 'Production Queue', icon: '🚚' },
   { section: 'CONTENT' },
   { href: '/dashboard/master-dishes', label: 'Master Dishes', icon: '🍽️' },
+  { href: '/dashboard/sections', label: 'App Sections', icon: '🧩' },
   { href: '/dashboard/returns', label: 'Returns', icon: '↩️' },
   { section: 'MARKETING' },
   { href: '/dashboard/marketing/leads',    label: 'Triage',     icon: '🎯' },

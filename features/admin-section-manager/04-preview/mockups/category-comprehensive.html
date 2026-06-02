@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Category (Eat/Shop/Groom) + Admin control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F4EFE6;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1320px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:38px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}
+  .head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{background:rgba(255,255,255,.6);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;}
+  .stage{display:flex;gap:40px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1340px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+
+  .phone{width:344px;height:792px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .sb{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:12.5px;font-weight:700;flex:0 0 auto;}
+  .sb .i{display:flex;gap:6px;font-size:11px;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding-bottom:12px;position:relative;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .top{display:flex;align-items:center;gap:10px;padding:7px 16px 6px;}
+  .ib{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;box-shadow:0 4px 10px -6px rgba(80,50,25,.4);}
+  .ttl{flex:1;}
+  .ttl .t1{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1;}
+  .ttl .t2{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .subbar{display:flex;gap:8px;overflow-x:auto;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;}
+  .subbar::-webkit-scrollbar{display:none;}
+  .subchip{flex:0 0 auto;font-size:11.5px;font-weight:700;padding:7px 14px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .subchip.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .sh{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 16px 10px;}
+  .sh h4{font-size:14.5px;font-weight:800;letter-spacing:-.2px;}
+  .sh .sub{font-size:9.5px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .sh .tc{display:flex;gap:5px;align-items:center;flex:0 0 auto;}
+  .cnt{font-size:9px;font-weight:800;color:var(--brown);background:var(--soft);border:1px solid var(--line);padding:2px 7px;border-radius:20px;}
+  .tt{font-size:8px;font-weight:800;letter-spacing:.5px;color:#fff;background:var(--brown);padding:3px 8px;border-radius:20px;}
+  .tt.p{background:var(--green);}.tt.o{background:var(--offer);}
+  .hsc{display:flex;gap:12px;overflow-x:auto;padding:2px 16px 4px;}
+  .hsc::-webkit-scrollbar{display:none;}
+  .ring{padding:2.5px;border-radius:50%;background:linear-gradient(135deg,var(--ring1),var(--ring2));flex:0 0 auto;}
+  .avl{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;background:#ecdfc9;border:2.5px solid var(--bg);}
+  .crc{display:flex;flex-direction:column;align-items:center;gap:6px;width:74px;flex:0 0 auto;}
+  .crc .nm{font-size:10px;font-weight:700;text-align:center;}
+  .crc .fc{font-size:9px;color:var(--muted);font-weight:600;}
+  .card{background:var(--card);border-radius:16px;border:1px solid var(--line);box-shadow:0 12px 26px -18px rgba(70,45,22,.55);overflow:hidden;}
+  .img{display:flex;align-items:center;justify-content:center;font-size:36px;position:relative;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g2{background:linear-gradient(135deg,#f0c9b0,#d98a63);}.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  .heart{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;font-size:12px;color:#c34;}
+  .ob{position:absolute;left:8px;bottom:8px;background:var(--offer);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;}
+  .stars{color:var(--star);font-size:11px;letter-spacing:-1px;}
+  .fs11{font-size:11px;}.fs12{font-size:12px;}.fs13{font-size:13px;}.fw7{font-weight:700;}.fw8{font-weight:800;}.muted{color:var(--muted);}
+  .deal{flex:0 0 168px;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 12px 26px -18px rgba(70,45,22,.55);}
+  .dh{height:70px;position:relative;display:flex;align-items:flex-end;padding:9px;color:#fff;}
+  .dh .big{font-family:'Fraunces',serif;font-size:20px;font-weight:600;line-height:1;}
+  .dh .em{position:absolute;right:8px;top:6px;font-size:30px;opacity:.9;}
+  .db{padding:9px 11px 11px;}
+  .vc{display:inline-flex;align-items:center;gap:5px;margin-top:5px;font-size:9px;font-weight:800;color:#5e4631;background:var(--soft);padding:3px 8px 3px 3px;border-radius:20px;}
+  .vc .a{width:15px;height:15px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:8px;}
+  .fbar{display:flex;gap:7px;overflow-x:auto;padding:6px 16px 4px;}
+  .fbar::-webkit-scrollbar{display:none;}
+  .fpill{flex:0 0 auto;font-size:11px;font-weight:700;padding:7px 13px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .fpill.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .listrow{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;margin:0 16px 11px;box-shadow:0 12px 26px -18px rgba(70,45,22,.5);}
+  .listrow .thumb{width:84px;height:84px;border-radius:13px;flex:0 0 84px;font-size:34px;}
+  .listrow .nm{font-size:14px;font-weight:800;}
+  .listrow .cu{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:1px;}
+  .listrow .mt{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .zlbl{font-size:9px;font-weight:800;color:var(--brown);letter-spacing:.4px;text-transform:uppercase;padding:14px 16px 0;border-top:2px dashed rgba(139,74,47,.28);margin:8px 14px 0;}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:9px 6px 15px;}
+  .nav .it{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .it.on{color:var(--brown);}.nav .it .ic{font-size:18px;}
+  .reels{width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;margin-top:-22px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7.5px;font-weight:800;}
+
+  /* admin */
+  .admin{width:540px;background:#fff;border-radius:22px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .ah{padding:18px 20px;border-bottom:1px solid #efeae0;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .ah .t{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+  .ah .t small{display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .pub{background:var(--brown);color:#fff;font-size:12px;font-weight:800;padding:9px 16px;border-radius:10px;}
+  .vtabs{display:flex;gap:6px;overflow-x:auto;padding:12px 18px 4px;}
+  .vtabs::-webkit-scrollbar{display:none;}
+  .vtab{flex:0 0 auto;font-size:12px;font-weight:800;padding:7px 14px;border-radius:10px;background:#f3eee4;color:#6a5a47;border:1px solid #eee7da;}
+  .vtab.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .ahint{font-size:11.5px;color:var(--muted);font-weight:600;padding:8px 20px 4px;}
+  .rows{padding:6px 14px 12px;display:flex;flex-direction:column;gap:8px;}
+  .row{display:flex;align-items:center;gap:11px;border:1px solid #eee7da;border-radius:13px;padding:11px 12px;background:#fff;}
+  .row.off{opacity:.48;background:#faf8f3;}
+  .grip{color:#c9bda8;font-size:15px;}
+  .rmain{flex:1;min-width:0;}
+  .rname{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .rsub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .rtag{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:#fff;background:var(--brown);padding:3px 7px;border-radius:20px;}
+  .rtag.p{background:var(--green);}.rtag.o{background:var(--offer);}.rtag.core{background:#8a8275;}.rtag.list{background:#3a2616;}
+  .sel{font-size:10px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:4px 7px;background:#fbf8f2;color:#4a3a2a;}
+  .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .step button{width:24px;height:27px;border:none;background:#fbf8f2;color:var(--brown);font-size:14px;font-weight:800;}
+  .step .v{width:28px;text-align:center;font-size:12px;font-weight:800;}
+  .tog{width:38px;height:22px;border-radius:30px;background:var(--brown);position:relative;flex:0 0 auto;}
+  .tog.off{background:#d8cebd;}
+  .tog::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:19px;}
+  .tog.off::after{left:3px;}
+  .addbtn{margin:2px 14px 16px;border:1.5px dashed var(--brown);color:var(--brown);border-radius:13px;padding:12px;text-align:center;font-size:12px;font-weight:800;background:rgba(139,74,47,.04);}
+  .afoot{padding:12px 20px;border-top:1px solid #efeae0;font-size:10.5px;color:var(--muted);font-weight:600;background:#fbf8f2;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Category — one engine, many verticals <span class="spark">✦</span></h1>
+  <p>Three follower Category screens (Eat · Shop · Groom) + the Admin Section Manager that configures each vertical.</p>
+  <div class="legend"><span>📱 follower sees this</span><span>⚙️ admin configures per vertical</span><span>Groom drops "Trending Items" — services book, not sold</span></div>
+</div>
+
+<div class="stage">
+
+  <!-- ===== EAT ===== -->
+  <div class="col">
+    <div class="cap">📱 Category · Eat<span>food vertical</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ib">←</div><div class="ttl"><div class="t1">🍽️ Eat</div><div class="t2">📍 Vijayawada · 128 places</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">Restaurants</div><div class="subchip">Cafes</div><div class="subchip">Street Food</div><div class="subchip">Bakery</div></div>
+        <div class="sh"><div><h4>Top Food Creators</h4><div class="sub">most active in Eat · your city</div></div><div class="tc"><span class="tt">CREATORS</span><span class="cnt">10</span></div></div>
+        <div class="hsc">
+          <div class="crc"><div class="ring"><div class="avl">👩🏻‍🍳</div></div><span class="nm">@MamaPizza</span><span class="fc">98K</span></div>
+          <div class="crc"><div class="ring"><div class="avl">👩🏽</div></div><span class="nm">@FoodieFarah</span><span class="fc">76K</span></div>
+          <div class="crc"><div class="ring"><div class="avl">🧔🏽</div></div><span class="nm">@TasteTrail</span><span class="fc">62K</span></div>
+        </div>
+        <div class="sh"><div><h4>Popular Restaurants</h4><div class="sub">top by engagement</div></div><div class="tc"><span class="tt">BRANDS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="card" style="flex:0 0 150px"><div class="img g1" style="height:96px">🍕<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">Mama's Pizza</div><div class="muted fs11">Italian · Pizzas</div><div style="margin-top:4px"><span class="stars">★</span> <span class="fs11 fw7">4.5</span></div></div></div>
+          <div class="card" style="flex:0 0 150px"><div class="img g5" style="height:96px">🍝<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">Spice Route</div><div class="muted fs11">North Indian</div><div style="margin-top:4px"><span class="stars">★</span> <span class="fs11 fw7">4.4</span></div></div></div>
+        </div>
+        <div class="sh"><div><h4>Trending Dishes</h4><div class="sub">top-selling items</div></div><div class="tc"><span class="tt p">PRODUCTS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="card" style="flex:0 0 146px"><div class="img g1" style="height:90px">🍕<div class="ob">20% OFF</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs12">Cheese Burst</div><div class="muted fs11">Mama's Pizza</div><div class="fw8 fs13" style="margin-top:3px">₹399</div></div></div>
+          <div class="card" style="flex:0 0 146px"><div class="img g6" style="height:90px">🧁</div><div style="padding:9px 10px 11px"><div class="fw8 fs12">Choco Lava</div><div class="muted fs11">Mama's Pizza</div><div class="fw8 fs13" style="margin-top:3px">₹129</div></div></div>
+        </div>
+        <div class="sh"><div><h4>Best Eat Deals</h4><div class="sub">top offers by conversions</div></div><div class="tc"><span class="tt o">OFFERS</span><span class="cnt">6</span></div></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">20%<br>OFF</div><span class="em">🍕</span></div><div class="db"><div class="fw8 fs12">Signature Pizza</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e9b97a,#cf9550)"><div class="big">B2G1</div><span class="em">🍝</span></div><div class="db"><div class="fw8 fs12">All Pastas</div><span class="vc"><span class="a">👩🏽</span>via @FoodieFarah</span></div></div>
+        </div>
+        <div class="zlbl">All Restaurants · 128</div>
+        <div class="fbar"><div class="fpill on">Relevance</div><div class="fpill">Offers</div><div class="fpill">Nearest</div><div class="fpill">Top Rated</div><div class="fpill">Pure Veg</div></div>
+        <div style="height:6px"></div>
+        <div class="listrow"><div class="img g1 thumb">🍕</div><div style="flex:1"><div class="nm">Mama's Pizza</div><div class="cu">Italian · Pizzas · ₹400 for two</div><div class="mt"><span><span class="stars">★</span> <span class="fs11 fw7">4.5</span> <span class="fs11 muted">(1.2K)</span> · <span class="fs11 muted">1.2 km</span></span><span class="offer fw8 fs11" style="color:var(--offer)">20% OFF</span></div><span class="vc"><span class="a">🧔🏻</span>@StyleMaster recommends</span></div></div>
+        <div class="listrow"><div class="img g5 thumb">🍝</div><div style="flex:1"><div class="nm">Spice Route</div><div class="cu">North Indian · ₹600 for two</div><div class="mt"><span><span class="stars">★</span> <span class="fs11 fw7">4.4</span> <span class="fs11 muted">(980)</span> · <span class="fs11 muted">2.1 km</span></span><span class="offer fw8 fs11" style="color:var(--offer)">B2G1</span></div><span class="vc"><span class="a">👩🏽</span>@FoodieFarah recommends</span></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== SHOP ===== -->
+  <div class="col">
+    <div class="cap">📱 Category · Shop<span>retail vertical</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ib">←</div><div class="ttl"><div class="t1">🛍️ Shop</div><div class="t2">📍 Vijayawada · 210 stores</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">Fashion</div><div class="subchip">Electronics</div><div class="subchip">Footwear</div><div class="subchip">Jewellery</div></div>
+        <div class="sh"><div><h4>Top Fashion Creators</h4><div class="sub">most active in Shop · your city</div></div><div class="tc"><span class="tt">CREATORS</span><span class="cnt">10</span></div></div>
+        <div class="hsc">
+          <div class="crc"><div class="ring"><div class="avl">🧔🏻</div></div><span class="nm">@StyleMaster</span><span class="fc">124K</span></div>
+          <div class="crc"><div class="ring"><div class="avl">💃🏽</div></div><span class="nm">@DrapeDiya</span><span class="fc">88K</span></div>
+          <div class="crc"><div class="ring"><div class="avl">🕶️</div></div><span class="nm">@TechTon</span><span class="fc">54K</span></div>
+        </div>
+        <div class="sh"><div><h4>Popular Stores</h4><div class="sub">top by engagement</div></div><div class="tc"><span class="tt">BRANDS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="card" style="flex:0 0 150px"><div class="img g4" style="height:96px">👗<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">MODA</div><div class="muted fs11">Apparel · Footwear</div><div style="margin-top:4px"><span class="stars">★</span> <span class="fs11 fw7">4.5</span></div></div></div>
+          <div class="card" style="flex:0 0 150px"><div class="img g3" style="height:96px">📱<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">TechNest</div><div class="muted fs11">Electronics</div><div style="margin-top:4px"><span class="stars">★</span> <span class="fs11 fw7">4.6</span></div></div></div>
+        </div>
+        <div class="sh"><div><h4>Trending Products</h4><div class="sub">top-selling items</div></div><div class="tc"><span class="tt p">PRODUCTS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="card" style="flex:0 0 146px"><div class="img g4" style="height:90px">👟<div class="ob">30% OFF</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs12">Street Sneakers</div><div class="muted fs11">MODA</div><div class="fw8 fs13" style="margin-top:3px">₹1,299</div></div></div>
+          <div class="card" style="flex:0 0 146px"><div class="img g3" style="height:90px">⌚</div><div style="padding:9px 10px 11px"><div class="fw8 fs12">Minimal Watch</div><div class="muted fs11">MODA</div><div class="fw8 fs13" style="margin-top:3px">₹2,499</div></div></div>
+        </div>
+        <div class="sh"><div><h4>Best Shop Deals</h4><div class="sub">top offers by conversions</div></div><div class="tc"><span class="tt o">OFFERS</span><span class="cnt">6</span></div></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c79bb3,#9c6f8a)"><div class="big">30%<br>OFF</div><span class="em">👟</span></div><div class="db"><div class="fw8 fs12">Sneakers</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#b8a98f,#8f8068)"><div class="big">Flat<br>15%</div><span class="em">👜</span></div><div class="db"><div class="fw8 fs12">Handbags</div><span class="vc"><span class="a">💃🏽</span>via @DrapeDiya</span></div></div>
+        </div>
+        <div class="zlbl">All Stores · 210</div>
+        <div class="fbar"><div class="fpill on">Relevance</div><div class="fpill">Offers</div><div class="fpill">Nearest</div><div class="fpill">Top Rated</div><div class="fpill">New</div></div>
+        <div style="height:6px"></div>
+        <div class="listrow"><div class="img g4 thumb">👗</div><div style="flex:1"><div class="nm">MODA</div><div class="cu">Apparel · Footwear · Accessories</div><div class="mt"><span><span class="stars">★</span> <span class="fs11 fw7">4.5</span> <span class="fs11 muted">(910)</span> · <span class="fs11 muted">3.0 km</span></span><span class="fw8 fs11" style="color:var(--offer)">Flat 30%</span></div><span class="vc"><span class="a">🧔🏻</span>@StyleMaster recommends</span></div></div>
+        <div class="listrow"><div class="img g3 thumb">📱</div><div style="flex:1"><div class="nm">TechNest</div><div class="cu">Electronics · Gadgets</div><div class="mt"><span><span class="stars">★</span> <span class="fs11 fw7">4.6</span> <span class="fs11 muted">(1.4K)</span> · <span class="fs11 muted">1.7 km</span></span><span class="fw8 fs11" style="color:var(--offer)">No-cost EMI</span></div><span class="vc"><span class="a">🕶️</span>@TechTon recommends</span></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== GROOM ===== -->
+  <div class="col">
+    <div class="cap">📱 Category · Groom<span>service vertical — no "Products"</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ib">←</div><div class="ttl"><div class="t1">✨ Groom</div><div class="t2">📍 Vijayawada · 76 places</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">Salons</div><div class="subchip">Spa</div><div class="subchip">Home Beauty</div><div class="subchip">Nails</div></div>
+        <div class="sh"><div><h4>Top Beauty Creators</h4><div class="sub">most active in Groom · your city</div></div><div class="tc"><span class="tt">CREATORS</span><span class="cnt">10</span></div></div>
+        <div class="hsc">
+          <div class="crc"><div class="ring"><div class="avl">💁🏻‍♀️</div></div><span class="nm">@GlowRituals</span><span class="fc">54K</span></div>
+          <div class="crc"><div class="ring"><div class="avl">💇🏻‍♀️</div></div><span class="nm">@SnipByZoya</span><span class="fc">41K</span></div>
+          <div class="crc"><div class="ring"><div class="avl">💅</div></div><span class="nm">@NailNanda</span><span class="fc">29K</span></div>
+        </div>
+        <div class="sh"><div><h4>Popular Salons</h4><div class="sub">top by engagement</div></div><div class="tc"><span class="tt">BRANDS</span><span class="cnt">8</span></div></div>
+        <div class="hsc">
+          <div class="card" style="flex:0 0 150px"><div class="img g6" style="height:96px">💇<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">Glow Studio</div><div class="muted fs11">Salon · Spa</div><div style="margin-top:4px"><span class="stars">★</span> <span class="fs11 fw7">4.7</span></div></div></div>
+          <div class="card" style="flex:0 0 150px"><div class="img g3" style="height:96px">✂️<div class="heart">♡</div></div><div style="padding:9px 10px 11px"><div class="fw8 fs13">The Cut Room</div><div class="muted fs11">Unisex Salon</div><div style="margin-top:4px"><span class="stars">★</span> <span class="fs11 fw7">4.5</span></div></div></div>
+        </div>
+        <div class="sh"><div><h4>Best Groom Deals</h4><div class="sub">top offers by conversions</div></div><div class="tc"><span class="tt o">OFFERS</span><span class="cnt">6</span></div></div>
+        <div class="hsc">
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c9a37e,#a07d56)"><div class="big">25%<br>OFF</div><span class="em">💆</span></div><div class="db"><div class="fw8 fs12">Spa &amp; Facial</div><span class="vc"><span class="a">💁🏻‍♀️</span>via @GlowRituals</span></div></div>
+          <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e9d4c0,#c9a37e)"><div class="big" style="color:#5a3a22">Free<br>Trim</div><span class="em">✂️</span></div><div class="db"><div class="fw8 fs12">Haircut + Style</div><span class="vc"><span class="a">💇🏻‍♀️</span>via @SnipByZoya</span></div></div>
+        </div>
+        <div class="zlbl">All Salons · 76 &nbsp;·&nbsp; ⚙️ "Trending Products" OFF for services</div>
+        <div class="fbar"><div class="fpill on">Relevance</div><div class="fpill">Offers</div><div class="fpill">Nearest</div><div class="fpill">Top Rated</div><div class="fpill">Home Service</div></div>
+        <div style="height:6px"></div>
+        <div class="listrow"><div class="img g6 thumb">💇</div><div style="flex:1"><div class="nm">Glow Studio</div><div class="cu">Salon · Spa · Skin</div><div class="mt"><span><span class="stars">★</span> <span class="fs11 fw7">4.7</span> <span class="fs11 muted">(640)</span> · <span class="fs11 muted">0.9 km</span></span><span class="fw8 fs11" style="color:var(--offer)">25% OFF</span></div><span class="vc"><span class="a">💁🏻‍♀️</span>@GlowRituals recommends</span></div></div>
+        <div class="listrow"><div class="img g3 thumb">✂️</div><div style="flex:1"><div class="nm">The Cut Room</div><div class="cu">Unisex Salon</div><div class="mt"><span><span class="stars">★</span> <span class="fs11 fw7">4.5</span> <span class="fs11 muted">(420)</span> · <span class="fs11 muted">2.0 km</span></span><span class="fw8 fs11" style="color:var(--offer)">Free Trim</span></div><span class="vc"><span class="a">💇🏻‍♀️</span>@SnipByZoya recommends</span></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN ===== -->
+  <div class="col">
+    <div class="cap">⚙️ Admin — Category Section Manager<span>configure each vertical</span></div>
+    <div class="admin">
+      <div class="ah"><div class="t">Category · Sections<small>per-vertical shelves · drag / toggle / count</small></div><span class="pub">Publish</span></div>
+      <div class="vtabs"><div class="vtab on">🍽️ Eat</div><div class="vtab">🛍️ Shop</div><div class="vtab">✨ Groom</div><div class="vtab">💪 Stay Fit</div><div class="vtab">✈️ Travel</div><div class="vtab">🏠 Home</div><div class="vtab">🎉 Events</div></div>
+      <div class="ahint">Configuring <b>Eat</b>. Each vertical has its own shelves (seeded from a default template). Switch tabs to configure others — e.g. <b>Groom turns "Trending Items" off</b>.</div>
+      <div class="rows">
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Sub-category chips <span class="rtag core">NAV</span></div><div class="rsub">Restaurants · Cafes · Street Food · Bakery <span class="sel">edit ▾</span></div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Top Food Creators <span class="rtag">CREATORS</span></div><div class="rsub">most active in Eat, by engagement</div></div><div class="step"><button>−</button><span class="v">10</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Popular <span class="sel">Brands ▾</span></div><div class="rsub">top restaurants by engagement</div></div><div class="step"><button>−</button><span class="v">8</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Trending <span class="sel">Products ▾</span></div><div class="rsub">top-selling dishes</div></div><div class="step"><button>−</button><span class="v">8</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Best Deals <span class="sel">Offers ▾</span></div><div class="rsub">top offers by conversions</div></div><div class="step"><button>−</button><span class="v">6</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Filter / Sort bar <span class="rtag core">CONTROLS</span></div><div class="rsub">Offers · Nearest · Top Rated · Pure Veg <span class="sel">edit ▾</span></div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">All Restaurants <span class="rtag list">MAIN LIST</span></div><div class="rsub">default sort <span class="sel">Relevance ▾</span></div></div><div class="tog"></div></div>
+      </div>
+      <div class="addbtn">＋ Add Section to Eat &nbsp;·&nbsp; Top in {sub-category} · New in Category · Budget rail</div>
+      <div class="afoot">💡 "Popular / Trending / Best Deals" rows each carry an <b>item-type dropdown</b> (Brands / Products / Offers). On <b>Groom</b>, "Trending Products" is toggled off — services don't sell products. Ranking auto per type. Publish = instant.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

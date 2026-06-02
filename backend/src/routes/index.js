@@ -8,6 +8,7 @@ const influencerRoutes  = require('./influencer.routes');
 const agencyRoutes      = require('./agency.routes');
 const referralRoutes    = require('./referral.routes');
 const adminRoutes       = require('./admin.routes');
+const adminSectionsRoutes = require('./adminSections.routes');
 const campaignRoutes    = require('./campaign.routes');
 const offerRoutes       = require('./offer.routes');
 const negotiationRoutes = require('./negotiation.routes');
@@ -84,6 +85,9 @@ router.use('/admin/marketing', marketingAdminRoutes);
 
 // ── Referral admin API (JWT-authenticated, admin only) ───────────────────────
 router.use('/admin/referrals', referralAdminRoutes);
+
+// ── Section Manager admin API (Creator Vibe Phase B — admin only) ────────────
+router.use('/admin/sections', adminSectionsRoutes);
 
 // ── Phase 1-3 ────────────────────────────────────────────────────────────────
 router.use('/auth',          authRoutes);

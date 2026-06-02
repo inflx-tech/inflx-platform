@@ -83,6 +83,7 @@ async function request(method, path, body) {
 export const api = {
   get:    (path)        => request('GET', path, null),
   post:   (path, body)  => request('POST', path, body),
+  put:    (path, body)  => request('PUT', path, body),
   patch:  (path, body)  => request('PATCH', path, body),
   delete: (path)        => request('DELETE', path, null),
 };
@@ -205,6 +206,17 @@ export const referralApi = {
     return api.get(`/admin/agencies?${q.toString()}`);
   },
   updateAgencyStatus: (id, data) => api.patch(`/admin/agencies/${id}/status`, data),
+};
+
+// Section Manager admin API (Creator Vibe Phase B — /admin/sections/*)
+export const sectionApi = {
+  getSections: (screen, scopeType = 'global', scopeValue = '') => {
+    const q = new URLSearchParams({ scope_type: scopeType });
+    if (scopeValue) q.set('scope_value', scopeValue);
+    return api.get(`/admin/sections/${screen}?${q.toString()}`);
+  },
+  saveSections: (screen, payload) => api.put(`/admin/sections/${screen}`, payload),
+  deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
 };
 
 export function getStoredUser() {
