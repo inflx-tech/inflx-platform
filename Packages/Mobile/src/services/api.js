@@ -413,6 +413,9 @@ export const followerApi = {
     const qs = p.length ? `?${p.join('&')}` : '';
     return api.get(`/follower/home${qs}`);
   },
+  getCreatorSections: (handle) => api.get(`/follower/section/creator/${encodeURIComponent(handle)}`),
+  getCreatorCategorySections: (handle, cat) =>
+    api.get(`/follower/section/creator/${encodeURIComponent(handle)}/category/${encodeURIComponent(cat)}`),
 
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),

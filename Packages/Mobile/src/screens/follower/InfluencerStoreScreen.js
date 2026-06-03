@@ -32,6 +32,8 @@ const P = {
 };
 import { followerApi } from '../../services/api';
 import { OfferPill } from '../../components/restaurant';
+import { isEnabled } from '../../config/featureFlags';
+import SectionRenderer from '../../components/SectionRenderer';
 
 const CATEGORY_LABELS = {
   restaurant:      'Restaurants',
@@ -83,13 +85,24 @@ export default function InfluencerStoreScreen({ route, navigation }) {
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isFollowing, setFollow]  = useState(false);
+  const [sections, setSections]   = useState(null); // section-engine payload (flag on)
 
   const fetchStore = useCallback(async () => {
     try {
+      // getStore still drives the hero header (avatar/handle/counters/bio).
       const res = await followerApi.getStore(handle);
       const data = res.data || res;
       setStore(data);
       if (data?.is_following != null) setFollow(!!data.is_following);
+
+      // Section engine (Phase C2): when on, also pull the config-driven shelves.
+      // On error/empty, the existing getStore body renders (no functional change).
+      if (isEnabled('SECTION_ENGINE_CREATOR')) {
+        try {
+          const secRes = await followerApi.getCreatorSections(handle);
+          setSections(secRes?.data?.sections || []);
+        } catch { setSections(null); }
+      }
     } catch (e) {
       console.warn('[CreatorStore] fetch failed', e?.message);
     }
@@ -181,6 +194,10 @@ export default function InfluencerStoreScreen({ route, navigation }) {
   const followerCount = influencer.follower_count ?? store?.follower_count ?? null;
   const initial = (influencer.name || influencer.instagram_handle || '?').charAt(0).toUpperCase();
 
+  // Phase C2: render shelves from the section engine when on + populated;
+  // otherwise the existing category-grid + hot-picks body (safe fallback).
+  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && Array.isArray(sections) && sections.length > 0;
+
   return (
     <ScrollView
       style={styles.root}
@@ -222,6 +239,10 @@ export default function InfluencerStoreScreen({ route, navigation }) {
         <Text style={styles.searchPlaceholder}>Search any offer — biryani, salon, suit…</Text>
       </View>
 
+      {sectionsActive ? (
+        <SectionRenderer sections={sections} navigation={navigation} />
+      ) : (
+      <>
       {/* ── Category grid ───────────────────────────────────────────── */}
       <SectionH title="Browse by category" />
       {categories.length === 0 ? (
@@ -244,6 +265,8 @@ export default function InfluencerStoreScreen({ route, navigation }) {
             <HotPickRow key={o.offer_id} offer={o} onPress={() => onPickPress(o)} />
           ))}
         </>
+      )}
+      </>
       )}
     </ScrollView>
   );

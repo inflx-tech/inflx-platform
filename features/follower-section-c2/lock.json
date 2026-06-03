@@ -1,0 +1,22 @@
+{
+  "feature": "follower-section-c2",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder · 2026-06-03 chat — 'take best decision without breaking any functionality' (Phase C2 chosen, inert flag-gated; lock delegated)",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Creator Store / Creator's Category / Category / Offers comprehensive mockups mirrored to 04-preview/mockups/; LOCKED design (SECTION-CATALOG.md 2026-06-01).",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder · 2026-06-01 — discovery screens designed + locked in SECTION-CATALOG.md + the comprehensive mockups",
+  "mockup_locked_at": "2026-06-01",
+  "scope": "Phase C2 — wire remaining discovery screens to the section engine, incrementally, per-screen flag, INERT. This increment: Creator Store (InfluencerStoreScreen, SECTION_ENGINE_CREATOR=false) + getCreatorSections/getCreatorCategorySections. No backend change, no OTA.",
+  "notes": "Inert in practice: Packages/Mobile/src code but default-off flag + additive api methods + guarded body swap; mobile ships only via OTA, not performed here. released stays false. Per-screen flag flip + OTA is the gated cutover (before/after-diff + qa:maestro + founder go; publish-ota bundles working tree incl. Window B WIP).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

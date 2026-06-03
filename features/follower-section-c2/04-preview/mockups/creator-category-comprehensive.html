@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Creator's Category (×2) + Admin template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F4EFE6;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1240px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}.head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{background:rgba(255,255,255,.6);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;}
+  .stage{display:flex;gap:42px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1260px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+  .phone{width:344px;height:792px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .sb{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:12.5px;font-weight:700;flex:0 0 auto;}
+  .sb .i{display:flex;gap:6px;font-size:11px;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding-bottom:12px;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .top{display:flex;align-items:center;gap:10px;padding:7px 16px 4px;}
+  .ib{width:34px;height:34px;border-radius:50%;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;box-shadow:0 4px 10px -6px rgba(80,50,25,.4);}
+  .ttl{flex:1;text-align:center;}.ttl .t1{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1;}
+  .ttl .t2{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:4px;}
+  .miniav{width:15px;height:15px;border-radius:50%;background:#e6cfa6;display:inline-flex;align-items:center;justify-content:center;font-size:9px;}
+  .subbar{display:flex;gap:8px;overflow-x:auto;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30;}
+  .subbar::-webkit-scrollbar{display:none;}
+  .subchip{flex:0 0 auto;font-size:11.5px;font-weight:700;padding:7px 14px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .subchip.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .sh{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 16px 10px;}
+  .sh h4{font-size:14.5px;font-weight:800;letter-spacing:-.2px;}
+  .sh .sub{font-size:9.5px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .sh .tc{display:flex;gap:5px;align-items:center;}
+  .cnt{font-size:9px;font-weight:800;color:var(--brown);background:var(--soft);border:1px solid var(--line);padding:2px 7px;border-radius:20px;}
+  .tt{font-size:8px;font-weight:800;letter-spacing:.5px;color:#fff;background:var(--brown);padding:3px 8px;border-radius:20px;}
+  .tt.p{background:var(--green);}
+  .hsc{display:flex;gap:12px;overflow-x:auto;padding:2px 16px 4px;}
+  .hsc::-webkit-scrollbar{display:none;}
+  .crc{display:flex;flex-direction:column;align-items:center;gap:6px;width:74px;flex:0 0 auto;}
+  .cav{width:60px;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:25px;border:1px solid var(--line);box-shadow:0 6px 14px -8px rgba(80,50,25,.4);}
+  .crc .nm{font-size:10px;font-weight:700;text-align:center;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:8px 16px 6px;}
+  .card{background:var(--card);border-radius:16px;border:1px solid var(--line);box-shadow:0 12px 26px -18px rgba(70,45,22,.55);overflow:hidden;}
+  .img{display:flex;align-items:center;justify-content:center;font-size:36px;position:relative;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g2{background:linear-gradient(135deg,#f0c9b0,#d98a63);}.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  .heart{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;font-size:12px;color:#c34;}
+  .ob{position:absolute;left:8px;bottom:8px;background:var(--offer);color:#fff;font-size:9px;font-weight:800;padding:3px 8px;border-radius:20px;}
+  .rank{position:absolute;top:8px;left:8px;background:rgba(20,12,6,.8);color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:20px;}
+  .stars{color:var(--star);font-size:11px;letter-spacing:-1px;}
+  .fs11{font-size:11px;}.fs12{font-size:12px;}.fs13{font-size:13px;}.fw7{font-weight:700;}.fw8{font-weight:800;}.muted{color:var(--muted);}
+  .note{margin:10px 16px 2px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:11px;font-weight:600;color:#5e5345;}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:9px 6px 15px;}
+  .nav .it{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .it.on{color:var(--brown);}.nav .it .ic{font-size:18px;}
+  .reels{width:52px;height:52px;border-radius:18px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;margin-top:-22px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7.5px;font-weight:800;}
+  /* admin */
+  .admin{width:520px;background:#fff;border-radius:22px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .ahd{padding:18px 20px;border-bottom:1px solid #efeae0;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .ahd .t{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+  .ahd .t small{display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .pub{background:var(--brown);color:#fff;font-size:12px;font-weight:800;padding:9px 16px;border-radius:10px;}
+  .banner{margin:14px 16px 2px;background:#fbf3ec;border:1px solid #e7d6c8;border-radius:12px;padding:11px 13px;font-size:11.5px;font-weight:700;color:#5e4631;}
+  .rows{padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;}
+  .row{display:flex;align-items:center;gap:11px;border:1px solid #eee7da;border-radius:13px;padding:11px 12px;background:#fff;}
+  .row.off{opacity:.5;background:#faf8f3;}
+  .grip{color:#c9bda8;font-size:15px;}.rmain{flex:1;min-width:0;}
+  .rname{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .rsub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .rtag{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:#fff;background:var(--brown);padding:3px 7px;border-radius:20px;}
+  .rtag.core{background:#8a8275;}.rtag.p{background:var(--green);}.rtag.list{background:#3a2616;}.rtag.soon{background:#b9a98f;}
+  .sel{font-size:10px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:4px 7px;background:#fbf8f2;color:#4a3a2a;}
+  .step{display:flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+  .step button{width:24px;height:27px;border:none;background:#fbf8f2;color:var(--brown);font-size:14px;font-weight:800;}
+  .step .v{width:28px;text-align:center;font-size:12px;font-weight:800;}
+  .tog{width:38px;height:22px;border-radius:30px;background:var(--brown);position:relative;flex:0 0 auto;}
+  .tog.off{background:#d8cebd;}.tog::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:19px;}.tog.off::after{left:3px;}
+  .addbtn{margin:2px 14px 16px;border:1.5px dashed var(--brown);color:var(--brown);border-radius:13px;padding:12px;text-align:center;font-size:12px;font-weight:800;background:rgba(139,74,47,.04);}
+  .afoot{padding:12px 20px;border-top:1px solid #efeae0;font-size:10.5px;color:var(--muted);font-weight:600;background:#fbf8f2;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Creator's Category — creator × vertical <span class="spark">✦</span></h1>
+  <p>Same creator (Ben) drilled into two verticals + the single admin template behind it.</p>
+  <div class="legend"><span>📱 follower sees this</span><span>⚙️ one template · any creator × any category</span><span>whole screen carries the creator's 4-ID attribution</span></div>
+</div>
+<div class="stage">
+
+  <!-- ===== BEN · EATERIES ===== -->
+  <div class="col"><div class="cap">📱 Ben · Eateries<span>creator drilled into Eat</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ib">←</div><div class="ttl"><div class="t1">Ben · Eateries</div><div class="t2"><span class="miniav">🧔🏻</span>curated by @StyleMasterBen</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">Pizzas</div><div class="subchip">Pastas</div><div class="subchip">Drinks</div><div class="subchip">Desserts</div></div>
+        <div class="sh"><div><h4>Partner Restaurants</h4><div class="sub">brands Ben collabs with in Eat</div></div><div class="tc"><span class="tt">BRANDS</span><span class="cnt">4</span></div></div>
+        <div class="hsc">
+          <div class="crc"><div class="cav g1">🍕</div><span class="nm">Mama's Pizza</span></div>
+          <div class="crc"><div class="cav g5">🌶️</div><span class="nm">Spice Route</span></div>
+          <div class="crc"><div class="cav g3">☕</div><span class="nm">Daily Grind</span></div>
+          <div class="crc"><div class="cav g2">🍔</div><span class="nm">Burger Barn</span></div>
+        </div>
+        <div class="sh"><div><h4>Ben's Picks in Eateries</h4><div class="sub">everything he promotes here</div></div><div class="tc"><span class="tt p">PRODUCTS</span><span class="cnt">12</span></div></div>
+        <div class="grid">
+          <div class="card"><div class="img g1" style="height:92px">🍕<div class="ob">15% OFF</div><div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Signature Pizza</div><div class="muted fs11">Mama's Pizza</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.8</span></div><div class="fw8 fs13" style="margin-top:3px">₹399</div></div></div>
+          <div class="card"><div class="img g5" style="height:92px">🍝<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Creamy Alfredo</div><div class="muted fs11">Spice Route</div><div style="margin-top:3px"><span class="stars">★★★★☆</span> <span class="fs11 muted">4.5</span></div><div class="fw8 fs13" style="margin-top:3px">₹329</div></div></div>
+          <div class="card"><div class="img g2" style="height:92px">🍔<div class="ob">B2G1</div><div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Classic Burger</div><div class="muted fs11">Burger Barn</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.7</span></div><div class="fw8 fs13" style="margin-top:3px">₹249</div></div></div>
+          <div class="card"><div class="img g3" style="height:92px">☕<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Cold Brew</div><div class="muted fs11">Daily Grind</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.6</span></div><div class="fw8 fs13" style="margin-top:3px">₹149</div></div></div>
+        </div>
+        <div class="sh"><div><h4>Ben's Top in Eateries 🔥</h4><div class="sub">his best performers here</div></div><div class="tc"><span class="tt p">PRODUCTS</span><span class="cnt">5</span></div></div>
+        <div class="hsc" style="padding-bottom:6px">
+          <div class="card" style="flex:0 0 146px"><div class="img g1" style="height:90px">🍕<div class="rank">#1</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Signature Pizza</div><div class="muted fs11">Mama's · 980 bought</div><div class="fw8 fs13" style="margin-top:3px">₹399</div></div></div>
+          <div class="card" style="flex:0 0 146px"><div class="img g6" style="height:90px">🧁<div class="rank">#2</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Choco Lava</div><div class="muted fs11">Mama's · 640 bought</div><div class="fw8 fs13" style="margin-top:3px">₹129</div></div></div>
+        </div>
+        <div class="note">🎬 Ben's reels in Eateries — coming with Reels (52.8)</div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== BEN · FASHION ===== -->
+  <div class="col"><div class="cap">📱 Ben · Fashion<span>same creator, different vertical</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="top"><div class="ib">←</div><div class="ttl"><div class="t1">Ben · Fashion</div><div class="t2"><span class="miniav">🧔🏻</span>curated by @StyleMasterBen</div></div><div class="ib">🔍</div></div>
+      <div class="scroll">
+        <div class="subbar"><div class="subchip on">All</div><div class="subchip">Sneakers</div><div class="subchip">Watches</div><div class="subchip">Apparel</div><div class="subchip">Bags</div></div>
+        <div class="sh"><div><h4>Partner Stores</h4><div class="sub">brands Ben collabs with in Fashion</div></div><div class="tc"><span class="tt">BRANDS</span><span class="cnt">3</span></div></div>
+        <div class="hsc">
+          <div class="crc"><div class="cav g4">👗</div><span class="nm">MODA</span></div>
+          <div class="crc"><div class="cav g6">👜</div><span class="nm">The Summer Co.</span></div>
+          <div class="crc"><div class="cav g3">👟</div><span class="nm">StepUp</span></div>
+        </div>
+        <div class="sh"><div><h4>Ben's Picks in Fashion</h4><div class="sub">everything he promotes here</div></div><div class="tc"><span class="tt p">PRODUCTS</span><span class="cnt">12</span></div></div>
+        <div class="grid">
+          <div class="card"><div class="img g4" style="height:92px">👟<div class="ob">30% OFF</div><div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Street Sneakers</div><div class="muted fs11">MODA</div><div style="margin-top:3px"><span class="stars">★★★★☆</span> <span class="fs11 muted">4.4</span></div><div class="fw8 fs13" style="margin-top:3px">₹1,299</div></div></div>
+          <div class="card"><div class="img g3" style="height:92px">⌚<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Minimal Watch</div><div class="muted fs11">MODA</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.6</span></div><div class="fw8 fs13" style="margin-top:3px">₹2,499</div></div></div>
+          <div class="card"><div class="img g6" style="height:92px">👜<div class="ob">Flat 15%</div><div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Tote Bag</div><div class="muted fs11">The Summer Co.</div><div style="margin-top:3px"><span class="stars">★★★★☆</span> <span class="fs11 muted">4.3</span></div><div class="fw8 fs13" style="margin-top:3px">₹899</div></div></div>
+          <div class="card"><div class="img g4" style="height:92px">👕<div class="heart">♡</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Summer Tee</div><div class="muted fs11">The Summer Co.</div><div style="margin-top:3px"><span class="stars">★★★★★</span> <span class="fs11 muted">4.7</span></div><div class="fw8 fs13" style="margin-top:3px">₹699</div></div></div>
+        </div>
+        <div class="sh"><div><h4>Ben's Top in Fashion 🔥</h4><div class="sub">his best performers here</div></div><div class="tc"><span class="tt p">PRODUCTS</span><span class="cnt">5</span></div></div>
+        <div class="hsc" style="padding-bottom:6px">
+          <div class="card" style="flex:0 0 146px"><div class="img g4" style="height:90px">👟<div class="rank">#1</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Street Sneakers</div><div class="muted fs11">MODA · 1.2K bought</div><div class="fw8 fs13" style="margin-top:3px">₹1,299</div></div></div>
+          <div class="card" style="flex:0 0 146px"><div class="img g3" style="height:90px">⌚<div class="rank">#2</div></div><div style="padding:8px 9px 10px"><div class="fw8 fs12">Minimal Watch</div><div class="muted fs11">MODA · 540 bought</div><div class="fw8 fs13" style="margin-top:3px">₹2,499</div></div></div>
+        </div>
+        <div class="note">🎬 Ben's reels in Fashion — coming with Reels (52.8)</div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN TEMPLATE ===== -->
+  <div class="col"><div class="cap">⚙️ Admin — Creator's Category Template<span>any creator × any vertical</span></div>
+    <div class="admin">
+      <div class="ahd"><div class="t">Creator's Category · Template<small>one layout for every creator × vertical</small></div><span class="pub">Publish</span></div>
+      <div class="banner">🔒 One template — it renders for <b>any creator drilled into any vertical</b>. Both phones ← are the same template, auto-filled from Ben's Eat data vs his Fashion data.</div>
+      <div class="rows">
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Header <span class="rtag core">FIXED</span></div><div class="rsub">"{Creator} · {Category}" + curated-by line + back</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Sub-category chips <span class="rtag core">NAV</span></div><div class="rsub">product types in this vertical (Pizzas / Sneakers / …)</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Partner {Businesses} <span class="rtag">BRANDS</span></div><div class="rsub">brands the creator collabs with in this vertical</div></div><div class="step"><button>−</button><span class="v">10</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">{Creator}'s Picks in {Category} <span class="sel">Products ▾</span> <span class="rtag list">MAIN</span></div><div class="rsub">their picks here · default sort <span class="sel">Relevance ▾</span></div></div><div class="step"><button>−</button><span class="v">12</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">{Creator}'s Top in {Category} <span class="rtag p">PRODUCTS</span></div><div class="rsub">their best performers here (by sales)</div></div><div class="step"><button>−</button><span class="v">5</span><button>+</button></div><div class="tog"></div></div>
+        <div class="row off"><span class="grip">⠿</span><div class="rmain"><div class="rname">{Creator}'s Reels in {Category} <span class="rtag soon">SOON · 52.8</span></div><div class="rsub">enables when Reels ships</div></div><div class="tog off"></div></div>
+      </div>
+      <div class="addbtn">＋ Add Section &nbsp;·&nbsp; Tasting/Reviews · "Also from {creator}"</div>
+      <div class="afoot">💡 Reached by tapping a <b>category tab</b> inside a Creator Store. "Picks" type = Products/Offers. Whole screen carries the creator's 4-ID attribution → commission to them.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

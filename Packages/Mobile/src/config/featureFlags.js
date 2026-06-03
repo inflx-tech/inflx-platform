@@ -13,6 +13,9 @@
 
 export const FEATURE_FLAGS = {
   SECTION_ENGINE_HOME: false,
+  // Creator Store renders from GET /v1/follower/section/creator/:handle via
+  // <SectionRenderer> when on. Default false (existing getStore layout).
+  SECTION_ENGINE_CREATOR: false,
 };
 
 export function isEnabled(flag) {
