@@ -1,0 +1,30 @@
+{
+  "feature": "offer-engine-campaign-attach",
+  "area": "backend-controller",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'start sub contract C' after A+B shipped; the 3-channel model + in-wizard per-influencer attach + engagement-promotional rule were locked during the design phase.",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src) but DORMANT — invite/updateInfluencer accept optional brand_offer_id, snapshot the library offer, derive allocation from goal, and relax engagement to allow a promotional offer (still no coupon/commission). Unreachable until the sibling wizard UI sends it; all existing requests identical (+ dormant allocation metadata). No migration (columns from 084). Backend-only → Render.",
+  "notes": "Sub-contract C of 4 (Offer Engine), BACKEND portion. The campaign-wizard UI (library picker + per-influencer assignment + engagement offer step) is the sibling follow-up offer-engine-campaign-attach-ui. Backend-only; UI-governed mockup/diff gates N/A.",
+  "related": [
+    "features/offer-engine (Sub-contract A — backend spine, DEPLOYED 2026-06-03)",
+    "features/offer-engine-library-ui (Sub-contract B — DEPLOYED 2026-06-03)",
+    "_planned: features/offer-engine-campaign-attach-ui (Sub-contract C UI)",
+    "_planned: features/offer-engine-store-publish (Sub-contract D)"
+  ],
+  "model_locked": "Per-influencer library-offer attach via invite/updateInfluencer. brand_offer_id optional; when present, snapshot offer_type+offer_config_json server-side (library wins) + store brand_offer_id. allocation derived from set goal: engagement='promotional' (no coupon/commission), conversion|hybrid='commissioned'. Relaxes engagement-no-offer rule additively. Coexists with inline authoring.",
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A — backend-only contract, no UI surface (mockups live on the sibling UI contract).",
+  "mockup_locked_at": "N/A",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'pls do' (deploy C-backend).",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. backend ONLY (Render): campaign.controller.js invite/updateInfluencer accept brand_offer_id, snapshot library offer server-side, derive allocation from goal, relax engagement-no-offer rule (promotional; still no coupon/commission). No migration (columns from 084). Evidence: offer-attach.test.js 9/9 GREEN on real test DB (attach conversion/engagement, cross-brand 404, archived 422, engagement+commission 422, inline regression x2 + conversion-no-offer 422, updateInfluencer attach). ZERO regression: campaigns.test.js = 34F/15P IDENTICAL with vs without this change (git-stash baseline) — the reds are pre-existing subscription_tiers-seed harness debt (campaign-create 500s on unseeded local DB), classified independent of C, not introduced here. DORMANT: engagement relaxation unreachable until C-UI sends offers; existing requests identical + dormant allocation metadata (no live reader until D)."
+  }
+}

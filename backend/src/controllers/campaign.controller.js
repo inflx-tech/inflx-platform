@@ -761,6 +761,36 @@ const duplicateSet = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Offer Engine (Sub-contract C) — resolve a per-influencer offer attachment.
+// If brand_offer_id is given, snapshot that library offer onto the assignment
+// (the library row is authoritative — its config wins, and a later edit to the
+// library never mutates this attachment) and record provenance. allocation is
+// derived from the set goal: engagement => 'promotional' (no commission/tracking);
+// conversion|hybrid => 'commissioned'. Returns the effective offer to persist.
+// ─────────────────────────────────────────────────────────────────────────────
+async function resolveOfferAttachment({ brandId, goal, brand_offer_id, offer_type, offer_config_json }) {
+  let effType = offer_type || null;
+  let effConfig = offer_config_json || null;
+  let brandOfferId = null;
+
+  if (brand_offer_id) {
+    const { rows } = await db.query(
+      `SELECT id, offer_type, offer_config_json, status
+         FROM brand_offers WHERE id = $1 AND brand_id = $2`,
+      [brand_offer_id, brandId]
+    );
+    if (!rows[0]) throw new AppError('NOT_FOUND', 'Offer not found in your library', 404, 'brand_offer_id');
+    if (rows[0].status === 'archived') throw new AppError('VALIDATION_ERROR', 'Cannot attach an archived offer', 422, 'brand_offer_id');
+    brandOfferId = rows[0].id;
+    effType = rows[0].offer_type;            // snapshot — library is authoritative
+    effConfig = rows[0].offer_config_json;   // jsonb → JS object
+  }
+
+  const allocation = effType ? (goal === 'engagement' ? 'promotional' : 'commissioned') : null;
+  return { effType, effConfig, brandOfferId, allocation };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Invite influencer (handpick)
 // POST /campaigns/:id/sets/:sid/invite
 // ─────────────────────────────────────────────────────────────────────────────
@@ -776,6 +806,7 @@ const invite = asyncHandler(async (req, res) => {
     posting_date,
     offer_type,
     offer_config_json,
+    brand_offer_id,
     commission_pct,
     coupon_code: customCouponCode,
     physical_delivery,
@@ -789,12 +820,19 @@ const invite = asyncHandler(async (req, res) => {
 
   const goal = set.goal;
 
-  // Goal-conditional validation
+  // Offer Engine (C): resolve a library-offer attachment (snapshot) or inline offer.
+  const { effType, effConfig, brandOfferId, allocation } = await resolveOfferAttachment({
+    brandId: brand.id, goal, brand_offer_id, offer_type, offer_config_json,
+  });
+
+  // Goal-conditional validation.
   if (goal === 'engagement') {
-    if (offer_type) throw new AppError('VALIDATION_ERROR', 'offer_type must not be set for engagement goal', 422, 'offer_type');
-    if (customCouponCode) throw new AppError('VALIDATION_ERROR', 'coupon_code must not be set for engagement goal', 422, 'coupon_code');
+    // Engagement offers are PROMOTIONAL (Offer Engine C): allowed, but never
+    // commissioned/tracked — no coupon, no commission.
+    if (customCouponCode) throw new AppError('VALIDATION_ERROR', 'coupon_code must not be set for engagement (promotional) offers', 422, 'coupon_code');
+    if (commission_pct) throw new AppError('VALIDATION_ERROR', 'commission_pct must not be set for engagement (promotional) offers', 422, 'commission_pct');
   }
-  if ((goal === 'conversion' || goal === 'hybrid') && !offer_type) {
+  if ((goal === 'conversion' || goal === 'hybrid') && !effType) {
     throw new AppError('VALIDATION_ERROR', 'offer_type is required for conversion and hybrid goals', 422, 'offer_type');
   }
 
@@ -866,8 +904,9 @@ const invite = asyncHandler(async (req, res) => {
     `INSERT INTO campaign_influencers
        (set_id, influencer_id, status, agreed_fee, posting_date, offer_expires_at,
         offer_type, offer_config_json, commission_pct, coupon_code,
-        physical_delivery, delivery_address, influencer_budget, submission_deadline)
-     VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        physical_delivery, delivery_address, influencer_budget, submission_deadline,
+        brand_offer_id, allocation)
+     VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      RETURNING *`,
     [
       set.id,
@@ -875,14 +914,16 @@ const invite = asyncHandler(async (req, res) => {
       agreed_fee || null,
       posting_date || null,
       expiresAt,
-      offer_type || null,
-      offer_config_json ? JSON.stringify(offer_config_json) : null,
+      effType || null,
+      effConfig ? JSON.stringify(effConfig) : null,
       commission_pct || null,
       finalCouponCode,
       physical_delivery || false,
       delivery_address || null,
       influencer_budget || null,
       submissionDeadline,
+      brandOfferId,
+      allocation,
     ]
   );
 
@@ -914,7 +955,7 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'Can only update influencer assignments on draft campaigns', 422);
   }
 
-  await getSetOrThrow(req.params.sid, req.params.id);
+  const set = await getSetOrThrow(req.params.sid, req.params.id);
 
   const ciId = req.params.ciId;
   const { rows: existing } = await db.query(
@@ -929,12 +970,20 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     posting_date,
     offer_type,
     offer_config_json,
+    brand_offer_id,
     commission_pct,
     physical_delivery,
     delivery_address,
     influencer_budget,
     coupon_code,
   } = req.body;
+
+  // Offer Engine (C): resolve library-offer attachment (snapshot) or inline offer.
+  const { effType, effConfig, brandOfferId, allocation } = await resolveOfferAttachment({
+    brandId: brand.id, goal: set.goal, brand_offer_id, offer_type, offer_config_json,
+  });
+  // Promotional (engagement) offers never carry a commission.
+  const effCommission = allocation === 'promotional' ? null : (commission_pct != null ? commission_pct : null);
 
   // Recalculate submission deadline
   let submissionDeadline = existing[0].submission_deadline;
@@ -966,20 +1015,24 @@ const updateInfluencer = asyncHandler(async (req, res) => {
        delivery_address = $7,
        influencer_budget = $8,
        submission_deadline = $9,
-       offer_expires_at = $10
+       offer_expires_at = $10,
+       brand_offer_id = $11,
+       allocation = $12
      WHERE id = $1
      RETURNING *`,
     [
       ciId,
       newPostingDate,
-      offer_type || null,
-      offer_config_json ? JSON.stringify(offer_config_json) : null,
-      commission_pct != null ? commission_pct : null,
+      effType || null,
+      effConfig ? JSON.stringify(effConfig) : null,
+      effCommission,
       physical_delivery != null ? physical_delivery : false,
       delivery_address || null,
       influencer_budget != null ? influencer_budget : null,
       submissionDeadline,
       newOfferExpiresAt,
+      brandOfferId,
+      allocation,
     ]
   );
 
