@@ -416,6 +416,18 @@ export const followerApi = {
   getCreatorSections: (handle) => api.get(`/follower/section/creator/${encodeURIComponent(handle)}`),
   getCreatorCategorySections: (handle, cat) =>
     api.get(`/follower/section/creator/${encodeURIComponent(handle)}/category/${encodeURIComponent(cat)}`),
+  getCategorySections: (key, loc = null) => {
+    const p = [];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    const qs = p.length ? `?${p.join('&')}` : '';
+    return api.get(`/follower/section/category/${encodeURIComponent(key)}${qs}`);
+  },
+  getOffersSections: (loc = null) => {
+    const p = [];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    const qs = p.length ? `?${p.join('&')}` : '';
+    return api.get(`/follower/section/offers${qs}`);
+  },
 
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),

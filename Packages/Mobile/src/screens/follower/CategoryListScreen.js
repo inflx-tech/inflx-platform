@@ -20,6 +20,8 @@ const P = {
 import ProductCard from '../../components/cards/ProductCard';
 import { followerApi } from '../../services/api';
 import { buildTrackingFromOffer } from '../../utils/tracking';
+import { isEnabled } from '../../config/featureFlags';
+import SectionRenderer from '../../components/SectionRenderer';
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -66,8 +68,22 @@ export default function CategoryListScreen({ route, navigation }) {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeSort, setActiveSort] = useState('deals');
+  const [sections, setSections] = useState(null); // section-engine payload (flag on)
 
   const isDining = superCategory === 'dining' || superCategory === 'eat';
+
+  // Section engine (Phase C2): when on, render the category from
+  // GET /v1/follower/section/category/:key via <SectionRenderer>. Inert + falls
+  // back to the existing stores layout on error/empty. Default off → unchanged.
+  useEffect(() => {
+    if (!isEnabled('SECTION_ENGINE_CATEGORY') || !superCategory) return;
+    let alive = true;
+    followerApi.getCategorySections(superCategory)
+      .then(r => { if (alive) setSections(r?.data?.sections || []); })
+      .catch(() => { if (alive) setSections(null); });
+    return () => { alive = false; };
+  }, [superCategory]);
+  const sectionsActive = isEnabled('SECTION_ENGINE_CATEGORY') && Array.isArray(sections) && sections.length > 0;
 
   useEffect(() => {
     async function load() {
@@ -319,6 +335,10 @@ export default function CategoryListScreen({ route, navigation }) {
 
       {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
 
+      {sectionsActive ? (
+        <SectionRenderer sections={sections} navigation={navigation} />
+      ) : (
+      <>
       {/* Layout dispatch */}
       {isDining
         ? stores.map(renderDiningCard)
@@ -330,6 +350,8 @@ export default function CategoryListScreen({ route, navigation }) {
           <Text style={s.emptyTitle}>No stores found</Text>
           <Text style={s.emptyText}>Check back later for stores in this category</Text>
         </View>
+      )}
+      </>
       )}
 
       <View style={{ height: 80 }} />

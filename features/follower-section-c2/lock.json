@@ -11,7 +11,7 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder · 2026-06-01 — discovery screens designed + locked in SECTION-CATALOG.md + the comprehensive mockups",
   "mockup_locked_at": "2026-06-01",
-  "scope": "Phase C2 — wire remaining discovery screens to the section engine, incrementally, per-screen flag, INERT. This increment: Creator Store (InfluencerStoreScreen, SECTION_ENGINE_CREATOR=false) + getCreatorSections/getCreatorCategorySections. No backend change, no OTA.",
+  "scope": "Phase C2 — wire remaining discovery screens to the section engine, per-screen flag, INERT. COMPLETE: Creator Store (SECTION_ENGINE_CREATOR), Creator's Category (SECTION_ENGINE_CREATOR), Category (SECTION_ENGINE_CATEGORY), Offers (SECTION_ENGINE_OFFERS) — all default false + getCreator/CreatorCategory/Category/Offers Sections api methods. No backend change, no OTA. Renderer hero/chips/grid polish for Offers/Category deferred to pre-cutover.",
   "notes": "Inert in practice: Packages/Mobile/src code but default-off flag + additive api methods + guarded body swap; mobile ships only via OTA, not performed here. released stays false. Per-screen flag flip + OTA is the gated cutover (before/after-diff + qa:maestro + founder go; publish-ota bundles working tree incl. Window B WIP).",
   "release": {
     "qa_all_green": false,

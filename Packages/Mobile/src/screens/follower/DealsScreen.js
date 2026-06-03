@@ -14,6 +14,8 @@ const P = {
 import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import { buildTracking } from '../../utils/tracking';
+import { isEnabled } from '../../config/featureFlags';
+import SectionRenderer from '../../components/SectionRenderer';
 
 /**
  * DealsScreen — single-feed deals browser with brand-category tabs.
@@ -49,6 +51,20 @@ export default function DealsScreen({ navigation }) {
   const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [sections, setSections] = useState(null); // section-engine payload (flag on)
+
+  // Section engine (Phase C2): when on, render the Offers screen from
+  // GET /v1/follower/section/offers via <SectionRenderer>. Inert + falls back to
+  // the existing deals grid on error/empty. Default off → existing behavior.
+  useEffect(() => {
+    if (!isEnabled('SECTION_ENGINE_OFFERS')) return;
+    let alive = true;
+    followerApi.getOffersSections()
+      .then(r => { if (alive) setSections(r?.data?.sections || []); })
+      .catch(() => { if (alive) setSections(null); });
+    return () => { alive = false; };
+  }, []);
+  const sectionsActive = isEnabled('SECTION_ENGINE_OFFERS') && Array.isArray(sections) && sections.length > 0;
 
   const fetchDeals = useCallback(async (currentTab) => {
     try {
@@ -190,7 +206,14 @@ export default function DealsScreen({ navigation }) {
         ))}
       </ScrollView>
 
-      {loading ? (
+      {sectionsActive ? (
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} />}
+        >
+          <SectionRenderer sections={sections} navigation={navigation} />
+        </ScrollView>
+      ) : loading ? (
         <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>
       ) : (
         <FlatList

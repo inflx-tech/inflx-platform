@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
+import { isEnabled } from '../../config/featureFlags';
+import SectionRenderer from '../../components/SectionRenderer';
+import { followerApi } from '../../services/api';
 
 /**
  * CreatorCategoryScreen — Flow 52.7 (mockup screen 4a).
@@ -29,6 +32,22 @@ export default function CreatorCategoryScreen({ route, navigation }) {
   const { influencer = {}, offers = [], category, label } = route.params || {};
 
   const catOffers = (offers || []).filter(o => (o.brand_category || 'other') === category);
+
+  // Section engine (Phase C2): when on, render shelves from the backend instead
+  // of the param-filtered offers. Inert + fallback to the param body on
+  // error/empty. Default off → existing behavior.
+  const [sections, setSections] = useState(null);
+  useEffect(() => {
+    if (!isEnabled('SECTION_ENGINE_CREATOR')) return;
+    const handle = influencer.instagram_handle;
+    if (!handle || !category) return;
+    let alive = true;
+    followerApi.getCreatorCategorySections(handle, category)
+      .then(r => { if (alive) setSections(r?.data?.sections || []); })
+      .catch(() => { if (alive) setSections(null); });
+    return () => { alive = false; };
+  }, [influencer.instagram_handle, category]);
+  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && Array.isArray(sections) && sections.length > 0;
 
   // Distinct partner businesses the creator promotes in this category.
   const brandsMap = {};
@@ -91,6 +110,10 @@ export default function CreatorCategoryScreen({ route, navigation }) {
       </SafeAreaView>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        {sectionsActive ? (
+        <SectionRenderer sections={sections} navigation={navigation} />
+        ) : (
+        <>
         {/* Partner businesses */}
         {partners.length > 0 && (
           <>
@@ -131,6 +154,8 @@ export default function CreatorCategoryScreen({ route, navigation }) {
               </Pressable>
             ))}
           </View>
+        )}
+        </>
         )}
       </ScrollView>
     </View>

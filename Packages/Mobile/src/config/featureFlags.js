@@ -13,9 +13,13 @@
 
 export const FEATURE_FLAGS = {
   SECTION_ENGINE_HOME: false,
-  // Creator Store renders from GET /v1/follower/section/creator/:handle via
-  // <SectionRenderer> when on. Default false (existing getStore layout).
+  // Creator Store + Creator's Category render from the section engine when on.
+  // Default false (existing layouts).
   SECTION_ENGINE_CREATOR: false,
+  // Category screen (per-vertical) from GET /v1/follower/section/category/:key.
+  SECTION_ENGINE_CATEGORY: false,
+  // Offers tab from GET /v1/follower/section/offers.
+  SECTION_ENGINE_OFFERS: false,
 };
 
 export function isEnabled(flag) {
