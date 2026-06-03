@@ -1,0 +1,29 @@
+{
+  "feature": "offer-engine-store-publish",
+  "area": "backend-service+migration",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'pls proceed' to Sub-contract D after A/B/C shipped; store-direct model locked during design (3-channel model).",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (migration 085 + backend/src) but DORMANT — D Phase 1: publish-to-store API + store_offers surfacing + additive follower_transactions provenance columns (brand_offer_id, offer_source). store_offers unread by current mobile; new columns unwritten until D2's store-direct purchase path. resolveBusinessStore existing output unchanged. Backend-only → Render + prod migration run-085.js.",
+  "notes": "Sub-contract D of 4, PHASE 1 (backend publish + surfacing). The store-direct PURCHASE endpoints (money path) = D2; follower-mobile STORE DEAL rendering + engagement-promotional wizard UI = D3 (Mobile-governed, Maestro, OTA). Backend-only; UI-governed mockup/diff gates N/A this phase.",
+  "related": [
+    "features/offer-engine (A), offer-engine-library-ui (B), offer-engine-campaign-attach (C-backend), offer-engine-campaign-attach-ui (C-UI) — all DEPLOYED 2026-06-03",
+    "_planned: D2 store-direct purchase endpoints",
+    "_planned: D3 follower-mobile STORE DEAL + engagement-promotional UI"
+  ],
+  "model_locked": "Store channel: brand toggles brand_offers.published_to_store; resolveBusinessStore surfaces published+active offers in a store_offers array (brand-direct, offer_source='store', no influencer). Store-direct purchase (D2): skip validateTracking, query brand_offers, commission=0, pricing path='direct' (path_a fee), insert follower_transactions with brand_offer_id + offer_source='store' + null tracking IDs (already nullable). No commission, no tracking, full brand margin.",
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A — backend-only phase (Screen 04 store-preview mockup applies to D3 follower mobile).",
+  "mockup_locked_at": "N/A",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'pls deploy' (D Phase 1).",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. Migration 085 applied to Supabase prod via run-085.js (follower_transactions += brand_offer_id, offer_source — sanity OK). backend push -> Render auto-deploy: updateOffer publish fields + resolveBusinessStore store_offers array. Evidence: offer-store-publish.test.js 4/4 GREEN on real DB (publish persists, surfacing, exclusion, schema). ZERO regression: follower-store.test.js failures NOT increased (8 with vs 9 without — pre-existing subscription_tiers-seed harness debt + truncate ±1 flake). DORMANT: store_offers unread by current mobile; new columns unwritten until D2 store-direct purchase path; existing store/money flows unchanged. No OTA/web."
+  }
+}

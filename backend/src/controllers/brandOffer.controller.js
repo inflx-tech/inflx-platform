@@ -157,6 +157,18 @@ const updateOffer = asyncHandler(async (req, res) => {
     params.push(body.status); sets.push(`status = $${params.length}`);
   }
 
+  // Offer Engine (D): publish-to-store distribution. Consumed by
+  // resolveBusinessStore (surfacing) + the store-direct purchase path (D2).
+  if (body.published_to_store !== undefined) {
+    params.push(!!body.published_to_store); sets.push(`published_to_store = $${params.length}`);
+  }
+  if (body.store_starts_at !== undefined) {
+    params.push(body.store_starts_at || null); sets.push(`store_starts_at = $${params.length}`);
+  }
+  if (body.store_ends_at !== undefined) {
+    params.push(body.store_ends_at || null); sets.push(`store_ends_at = $${params.length}`);
+  }
+
   if (sets.length === 0) {
     throw new AppError('VALIDATION_ERROR', 'No updatable fields provided', 422);
   }

@@ -480,6 +480,28 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
   const ratingMap = await getBrandRatings([brandId]);
   const rating = ratingMap[brandId] || { avg_rating: null, review_count: 0 };
 
+  // Offer Engine (D): store-published offers — brand-direct, NO influencer.
+  // Returned in a distinct `store_offers` array (current mobile reads
+  // `influencers[].offers`, so this is dormant until D3 wires the STORE DEAL UI
+  // + the store-direct purchase path).
+  const { rows: storeOfferRows } = await db.query(
+    `SELECT id, name, offer_type, offer_config_json, availing_modes
+       FROM brand_offers
+      WHERE brand_id = $1 AND published_to_store = true AND status = 'active'
+        AND (store_starts_at IS NULL OR store_starts_at <= now())
+        AND (store_ends_at   IS NULL OR store_ends_at   >= now())
+      ORDER BY created_at DESC`,
+    [brandId]
+  );
+  const storeOffers = storeOfferRows.map(o => ({
+    brand_offer_id: o.id,
+    name: o.name,
+    offer_type: o.offer_type,
+    offer_config_json: o.offer_config_json,
+    availing_modes: o.availing_modes,
+    offer_source: 'store',
+  }));
+
   return {
     brand: {
       id: brand.id,
@@ -515,6 +537,7 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
       variants: variantsByProduct[p.id] || [],
     })),
     influencers: Object.values(byInfluencer),
+    store_offers: storeOffers,                            // Offer Engine (D) — brand-direct store offers (dormant until D3 mobile)
     creator,                                              // null when no via param or unknown influencer
     creator_picks: creatorPicks,                          // Phase E — published dishes when viewed via creator link
     template,                                             // Phase 1 (Dining) — drives BrandActionRow CTAs
