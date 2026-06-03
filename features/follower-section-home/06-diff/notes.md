@@ -15,6 +15,36 @@ The visual diff vs `home-comprehensive.html` is produced at the **cutover step**
 when `SECTION_ENGINE_HOME` is flipped on for an internal build and Maestro
 screenshots the new Home — done before the OTA, with the founder's go.
 
+## ON-DEVICE VERIFICATION DONE (2026-06-03) — `06-diff/after/`
+
+Built a `followerDebug` APK from the working tree, flipped `SECTION_ENGINE_HOME`
+on locally, pointed the dev app at PROD, and Maestro-captured the Home on
+emulator-5554:
+
+- **`after/home-section-engine-rendered.png`** — the new Home renders from the
+  live `/v1/follower/home` payload via `<SectionRenderer>`: the Creator Vibe
+  header ("DEALS NEAR YOU · Vijayawada"), search bar, and the **"Browse by
+  Category"** shelf showing the **7 seeded verticals (Eat · Shop · Groom · Stay
+  Fit · Travel · Home · Events)** straight from `section_config.config_json`.
+  PROOF the backend→engine→renderer→device pipeline works end-to-end.
+- **`after/home-fallback-empty-state.png`** — with no backend reachable, the
+  screen safely falls back to the hardcoded "No deals yet" path (never blank).
+
+Other shelves (stories / what's-hot / deals) render empty because PROD currently
+has sparse live-offer data — correct behavior (empty shelves render nothing).
+
+### Cutover readiness (why the flag stays OFF for now)
+The render is proven, but the OTA flip is **held** for two product reasons, not
+code reasons:
+1. **Sparse prod data** — until there are live offers + admin curation (via the
+   now-live Section Manager, Phase B), the engine Home would look barer than the
+   current hardcoded Home. Flip once prod has data worth showing.
+2. **OTA bundles the working tree** incl. Window B's WIP — flip + `publish-ota`
+   when Window B is shippable.
+
+Flipping = set `SECTION_ENGINE_HOME: true` → `pnpm qa:maestro` → OTA. Reversible
+(flag off + OTA).
+
 What shipped (inert):
 - `Packages/Mobile/src/config/featureFlags.js` — `SECTION_ENGINE_HOME: false`.
 - `Packages/Mobile/src/services/api.js` — `followerApi.getHomeSections(loc)` (additive).
