@@ -1,0 +1,29 @@
+{
+  "feature": "offer-engine-campaign-attach-ui",
+  "area": "brand-web-ui",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'Pls move to C UI' after C-backend shipped; in-wizard per-influencer attach design locked during the mockup phase (Screen 03).",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (brand-web → Vercel) but additive: a 'Use a saved offer' picker on the campaign wizard's per-influencer (handpick, conversion/hybrid) offer step + brand_offer_id in the invite/update payload + draft hydration. Picker only appears when the brand has active library offers; inline authoring path byte-unchanged. No backend change (C-backend already live).",
+  "notes": "Sub-contract C of 4, UI portion. Activates the C-backend attach spine from the campaign wizard. Engagement-promotional offer UI + open-group group offers OUT — engagement deferred to Sub-contract D (follower store-direct path dependency).",
+  "related": [
+    "features/offer-engine (A — DEPLOYED)",
+    "features/offer-engine-library-ui (B — DEPLOYED)",
+    "features/offer-engine-campaign-attach (C-backend — DEPLOYED)",
+    "_planned: features/offer-engine-store-publish (Sub-contract D — incl. engagement offer UI)"
+  ],
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect (2026-06-03) — Screen 03 (03-distribute.html) reviewed/locked across the 3 mockup iteration rounds.",
+  "mockup_locked_at": "2026-06-03",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'pls deploy' (C-UI).",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. brand-web ONLY (Vercel): campaigns/new/page.js gains a 'Use a saved offer' picker on the handpick per-influencer offer step (conversion/hybrid) + brand_offer_id in invite/update payload + draft hydration + OFFER_KEY_TO_LABEL + active-offers load. git push -> Vercel auto-deploy. No backend/OTA (C-backend already live). Evidence: next build GREEN (/dashboard/campaigns/new compiles, 28.2 kB); server side proven by C-backend offer-attach.test.js 9/9. Additive: picker only shows when active offers exist; inline authoring path byte-unchanged. Engagement-promotional UI + open-group group offers deferred to D."
+  }
+}

@@ -34,6 +34,8 @@ const NICHES   = ['Food','Fashion','Fitness','Travel','Lifestyle','Beauty','Tech
 const CITIES   = ['Mumbai','Delhi','Bengaluru','Hyderabad','Chennai','Vijayawada','Pune','Kolkata','Jaipur','Ahmedabad'];
 const TIERS    = [{key:'nano',label:'Nano',sub:'1K–10K'},{key:'micro',label:'Micro',sub:'10K–100K'},{key:'macro',label:'Macro',sub:'100K–1M'},{key:'mega',label:'Mega',sub:'1M+'}];
 const OFFER_TYPES = ['Discount','Volume discount','BOGO','Bundle','Free gift'];
+// Offer Engine: map a saved brand_offers.offer_type (key) to the wizard's display label.
+const OFFER_KEY_TO_LABEL = { discount: 'Discount', volume: 'Volume discount', bogo: 'BOGO', bundle: 'Bundle', free_gift: 'Free gift' };
 const LANGUAGES = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Urdu'];
 const GENDERS = [{key:'male',label:'Male'},{key:'female',label:'Female'},{key:'non_binary',label:'Non-binary'}];
 
@@ -68,6 +70,7 @@ const mkInf = () => ({
   gift_offers: [{ main: null, gift: null }],
   commission_pct: '', physical_delivery: false,
   delivery_address: '', custom_code: '', edit_code: false,
+  brand_offer_id: null,   // Offer Engine: attach a saved library offer instead of authoring inline
   backendId: null,
 });
 const mkGroup = () => ({
@@ -511,6 +514,7 @@ function NewCampaignPageInner() {
   const [galleryPickerSetIdx, setGalleryPickerSetIdx] = useState(null);
   const [duplicateToast, setDuplicateToast] = useState(null);
   const [products, setProducts] = useState([]);
+  const [libOffers, setLibOffers] = useState([]);   // Offer Engine: brand's saved offers
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCtx, setModalCtx] = useState(null);
   const [modalTempSel, setModalTempSel] = useState([]);
@@ -546,6 +550,8 @@ function NewCampaignPageInner() {
 
   useEffect(() => {
     brandApi.getProducts().then(res => { if (res.ok) setProducts(res.data?.products || []); }).catch(() => {});
+    // Offer Engine: load the brand's active saved offers for the in-wizard picker.
+    brandApi.getOffers({ status: 'active' }).then(res => { if (res.success || res.ok) setLibOffers(res.data?.offers || []); }).catch(() => {});
   }, []);
 
   // Draft hydration (verbatim from OLD — adapts ?id=<campaignId>)
@@ -584,6 +590,7 @@ function NewCampaignPageInner() {
               post_date: ci.posting_date ? ci.posting_date.split('T')[0] : '',
               influencer_budget: ci.influencer_budget != null ? String(ci.influencer_budget) : '',
               offer_type: ci.offer_type || '',
+              brand_offer_id: ci.brand_offer_id || null,
               commission_pct: ci.commission_pct != null ? String(ci.commission_pct) : '',
               physical_delivery: ci.physical_delivery || false,
               delivery_address: ci.delivery_address || '',
@@ -1026,7 +1033,10 @@ function NewCampaignPageInner() {
             influencer_id: inf.influencer_id,
             posting_date: inf.post_date || null,
             offer_type: needsOffer(s.goal) ? (inf.offer_type || null) : null,
-            offer_config_json: inf.offer_type ? buildOfferConfig(inf) : null,
+            // Offer Engine: when a saved library offer is attached, the backend
+            // snapshots its config from brand_offer_id (client config is ignored).
+            brand_offer_id: needsOffer(s.goal) ? (inf.brand_offer_id || null) : null,
+            offer_config_json: (inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
             influencer_budget: needsBudget(s.goal) ? (Number(inf.influencer_budget) || null) : null,
             commission_pct: needsCoupon(s.goal) ? (Number(inf.commission_pct) || null) : null,
             physical_delivery: inf.physical_delivery || false,
@@ -2123,11 +2133,33 @@ function NewCampaignPageInner() {
               <div className="te">
                 <h4>Offer for {inf.name || inf.handle}'s audience</h4>
                 <div className="sh">What their followers get when they use the coupon.</div>
-                <div className="oc-types">
-                  {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${inf.offer_type === ot ? 'sel' : ''}`} onClick={() => { onInfChg('offer_type', ot); markTouched(`inf_${activeSet}_${ai}_ot`); }}>{ot}</div>)}
-                </div>
-                {showErr(`inf_${activeSet}_${ai}_ot`, infErr.offer_type) && <div className="field-err" style={{ marginBottom: 10 }}>{infErr.offer_type}</div>}
-                {renderOfferConfig(inf, false)}
+                {libOffers.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <label className="flbl">Use a saved offer</label>
+                    <select className="inp" value={inf.brand_offer_id || ''} onChange={e => {
+                      const o = libOffers.find(x => x.id === e.target.value);
+                      if (o) { updateInf(activeSet, ai, { brand_offer_id: o.id, offer_type: OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type }); markTouched(`inf_${activeSet}_${ai}_ot`); }
+                      else { updateInf(activeSet, ai, { brand_offer_id: null }); }
+                    }}>
+                      <option value="">— Author inline below —</option>
+                      {libOffers.map(o => <option key={o.id} value={o.id}>{o.name} ({OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type})</option>)}
+                    </select>
+                    <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 5 }}>From your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library. Editing a saved offer later won’t change this campaign (snapshotted on attach).</div>
+                  </div>
+                )}
+                {inf.brand_offer_id ? (
+                  <div style={{ background: '#D1FAE5', color: '#047857', border: '1px solid #6EE7B7', borderRadius: 10, padding: '10px 13px', fontSize: 12.5, fontWeight: 700 }}>
+                    ✓ Using saved offer: {(libOffers.find(o => o.id === inf.brand_offer_id) || {}).name || 'saved offer'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="oc-types">
+                      {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${inf.offer_type === ot ? 'sel' : ''}`} onClick={() => { onInfChg('offer_type', ot); markTouched(`inf_${activeSet}_${ai}_ot`); }}>{ot}</div>)}
+                    </div>
+                    {showErr(`inf_${activeSet}_${ai}_ot`, infErr.offer_type) && <div className="field-err" style={{ marginBottom: 10 }}>{infErr.offer_type}</div>}
+                    {renderOfferConfig(inf, false)}
+                  </>
+                )}
               </div>
             )}
 

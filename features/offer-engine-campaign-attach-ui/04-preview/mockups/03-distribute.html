@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Distribution — Store + in-wizard per-influencer attach</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap');
+:root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;--ink:#0A0A0A;--ink-2:#1F1F22;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--muted-4:#D4D4D8;--border:#E4E4E7;--border-soft:#F4F4F5;--success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;--conv:#7E22CE;--conv-pale:#F3E8FF;--eng:#0E7490;--eng-pale:#CFFAFE;--info:#1D4ED8;--info-pale:#DBEAFE;--danger:#E8401A}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h3,h4{font-family:'Outfit',system-ui,sans-serif}.mono{font-family:'JetBrains Mono',monospace}
+.mockbar{background:var(--ink);color:var(--muted-3);font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:7px 28px;display:flex;gap:14px;align-items:center;letter-spacing:.3px}.mockbar a{color:var(--yellow);text-decoration:none;font-weight:700}.mockbar b{color:#fff}
+.topbar{height:64px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 28px;border-bottom:1px solid #2A2A2D}
+.logo{font-family:'Outfit';font-weight:800;font-size:18px;color:#fff;letter-spacing:-.5px}.logo b{color:var(--yellow)}
+.nav{display:flex;gap:4px;flex:1;overflow:hidden}.nav a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;color:var(--muted-3);text-decoration:none;white-space:nowrap}.nav a:hover{color:#fff;background:#2A2A2D}.nav a.active{background:var(--yellow);color:var(--ink);font-weight:800}
+.topbar-r{display:flex;align-items:center;gap:12px}.bell{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted-3);font-size:16px}.avatar{width:36px;height:36px;border-radius:50%;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-weight:800;font-size:12px}
+.page{padding:28px;max-width:1100px;margin:0 auto}
+.page-h{margin-bottom:14px}.page-h h1{font-size:26px;font-weight:700;letter-spacing:-.5px}.page-sub{font-size:13px;color:var(--muted);max-width:700px;margin-top:4px}
+.btn{padding:9px 15px;border-radius:10px;font-size:12.5px;font-weight:700;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit}.btn-ink{background:var(--ink);color:var(--yellow)}.btn-ink:hover{background:var(--ink-2)}.btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink)}.btn-ghost:hover{border-color:var(--ink)}.btn-sm{padding:6px 11px;font-size:11.5px}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}.pill.store{background:var(--info-pale);color:var(--info)}
+.inp{width:100%;font-size:13px;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--ink);outline:none;font-family:inherit}.inp:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.note{background:#FFFDEB;border:1px dashed var(--yellow);border-radius:12px;padding:12px 14px;font-size:11.5px;color:var(--yellow-text);line-height:1.55;margin:14px 0}.note b{color:var(--ink)}.note .tag{font-family:'JetBrains Mono';font-size:9px;font-weight:800;background:var(--ink);color:var(--yellow);padding:2px 6px;border-radius:4px;text-transform:uppercase;margin-right:6px}
+.sw{width:44px;height:24px;background:var(--muted-3);border-radius:99px;position:relative;cursor:pointer;border:0;flex-shrink:0}.sw.on{background:var(--success)}.sw .dot{position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}.sw.on .dot{transform:translateX(20px)}
+.sec-h{display:flex;align-items:center;gap:8px;margin:24px 0 12px;font-family:'Outfit';font-size:14px;font-weight:800}.sec-h .pip{width:7px;height:7px;border-radius:50%;background:var(--yellow)}.sec-h .ch{font-family:'JetBrains Mono';font-size:10px;font-weight:800;color:var(--muted-2);background:var(--bg2);padding:3px 8px;border-radius:6px}
+.head-card{background:var(--ink);color:#fff;border-radius:16px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:6px}.head-card h3{color:#fff;font-size:16px;font-weight:700}.head-card .sub{color:var(--muted-3);font-size:11.5px;margin-top:3px}
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card.store{border-color:var(--info)}
+.c-h{padding:16px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-soft)}.c-h .ic{font-size:23px}.c-h h4{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}.c-h p{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5;max-width:580px}
+.c-b{padding:16px 20px}
+.store-pre{background:var(--info-pale);border:1px solid #BFDBFE;border-radius:12px;padding:13px;display:flex;gap:11px;align-items:center}.store-pre .badge{background:var(--info);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;font-family:'JetBrains Mono';white-space:nowrap}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--border-soft);font-size:12.5px;font-weight:600}
+/* campaign wizard mock */
+.wizard{border:1px solid var(--border);border-radius:14px;background:var(--bg2);padding:6px}
+.wiz-top{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-size:12px;font-weight:700;color:var(--muted)}
+.goaltog{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff}
+.goaltog button{padding:8px 16px;border:0;background:#fff;font-weight:800;cursor:pointer;font-size:12px;font-family:inherit;color:var(--muted)}
+.goaltog button.conv.act{background:var(--conv);color:#fff}.goaltog button.eng.act{background:var(--eng);color:#fff}
+.wiz-body{background:#fff;border:1px solid var(--border);border-radius:11px;padding:16px;position:relative}
+.attach-prompt{background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:11px;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.attach-prompt b{font-size:13px}.attach-prompt .s{font-size:11px;color:var(--yellow-text);margin-top:2px}
+.lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:8px}
+.irow{display:grid;grid-template-columns:34px 1fr auto auto;gap:11px;align-items:center;padding:10px 8px;border:1px solid var(--border-soft);border-radius:10px;margin-bottom:8px}
+.av{width:34px;height:34px;border-radius:50%;background:var(--conv-pale);color:var(--conv);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+.irow .nm{font-size:12.5px;font-weight:700}.irow .meta{font-size:10.5px;color:var(--muted-2)}
+.assigned{display:inline-flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+.assigned .oi{width:22px;height:22px;border-radius:6px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+.assigned .ot{font-size:11.5px;font-weight:700}
+.assign-empty{font-size:11.5px;font-weight:700;color:var(--muted-3);border:1px dashed var(--muted-4);border-radius:8px;padding:6px 10px;cursor:pointer}
+.tail{font-size:10.5px;font-weight:800;white-space:nowrap}
+/* picker popover */
+.picker{position:absolute;top:54px;right:16px;width:300px;background:#fff;border:1px solid var(--ink);border-radius:14px;box-shadow:0 20px 45px rgba(0,0,0,.22);z-index:5;overflow:hidden}
+.picker-h{padding:11px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+.picker-h .x{color:var(--muted-3);font-weight:800;cursor:pointer}
+.picker-b{max-height:220px;overflow-y:auto;padding:6px}
+.poff{display:flex;align-items:center;gap:9px;padding:9px;border-radius:9px;cursor:pointer}.poff:hover{background:var(--bg2)}
+.poff .oi{width:28px;height:28px;border-radius:7px;background:var(--yellow-pale);color:var(--yellow-text);display:flex;align-items:center;justify-content:center;font-weight:800}.poff .nm{font-size:12px;font-weight:700}.poff .ty{font-size:10px;color:var(--muted-2)}
+.behave{margin-top:14px;border-radius:11px;padding:13px 15px}.behave.conv{background:var(--conv-pale)}.behave.eng{background:var(--eng-pale)}
+.behave h5{font-size:12.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:7px}.behave.conv h5{color:var(--conv)}.behave.eng h5{color:var(--eng)}
+.bl{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;margin-bottom:5px;color:#222}.bl .y{color:var(--success-text);font-weight:800}.bl .n{color:var(--danger);font-weight:800}
+</style></head>
+<body>
+<div class="mockbar"><b>MOCKUP</b> · Screen 03 — Distribution (in-wizard, per-influencer) · <a href="02-offer-builder.html">← Builder</a> · <a href="04-store-preview.html">next: Store preview →</a></div>
+<div class="topbar">
+  <div class="logo">IN<b>FLX</b></div>
+  <nav class="nav"><a href="#">⌂ Dashboard</a><a href="#">⊟ Campaigns</a><a href="#">★ Influencers</a><a href="#">▤ Products</a><a href="#" class="active">◆ Offers</a><a href="#">₹ Conversions</a><a href="#">⚙ Settings</a></nav>
+  <div class="topbar-r"><div class="bell">◔</div><div class="avatar">BR</div></div>
+</div>
+<div class="page">
+  <div class="page-h"><h1>How an offer gets distributed</h1><div class="page-sub">A library offer reaches followers two ways: a <b>Store</b> toggle on the offer page, and — separately — by attaching it to influencers <b>inside campaign creation</b>, assigned <b>per influencer</b>. Works the same in conversion and engagement campaigns; only the treatment differs.</div></div>
+  <div class="head-card"><div><h3>◆ Your offer library feeds both</h3><div class="sub">Offers designed on the Offers page · reused, never re-authored</div></div></div>
+
+  <!-- CHANNEL 1: STORE -->
+  <div class="sec-h"><span class="pip"></span>Channel ① — Store <span class="ch">toggle on the offer page</span></div>
+  <div class="card store">
+    <div class="c-h"><div style="display:flex;gap:12px"><span class="ic">◧</span><div><h4>Publish to Store <span class="pill store">Store</span></h4><p>The only distribution set on the offer page itself. Every follower sees it and buys <b>directly</b> — no influencer, no commission, no tracking.</p></div></div><button class="sw on"><span class="dot"></span></button></div>
+    <div class="c-b"><div class="store-pre"><span class="badge">LIVE IN STORE</span><div style="font-size:12px;color:var(--info);font-weight:600">Direct sales earn the brand <b>full margin</b>.</div></div></div>
+  </div>
+
+  <!-- CHANNEL 2+3: IN CAMPAIGN -->
+  <div class="sec-h"><span class="pip"></span>Channels ②/③ — Influencers <span class="ch">a step inside the campaign wizard</span></div>
+  <div class="card">
+    <div class="c-h"><div style="display:flex;gap:12px"><span class="ic">★</span><div><h4>Attach offers — per influencer</h4><p>New step in campaign creation. The wizard <b>asks if you want to attach an offer</b>; choosing yes opens your <b>offer library</b> as a picker, and you assign an offer to <b>each influencer individually</b> (same or different). Toggle the goal to see the treatment change.</p></div></div></div>
+    <div class="c-b">
+      <div class="wizard">
+        <div class="wiz-top"><span>📋 Campaign "Footwear Push — June" · Step 3 of 5 · Offers</span>
+          <div class="goaltog"><button class="conv act" onclick="setGoal('conv')">Conversion</button><button class="eng" onclick="setGoal('eng')">Engagement</button></div>
+        </div>
+        <div class="wiz-body">
+          <!-- the prompt -->
+          <div class="attach-prompt"><div><b id="prompt-q">Attach an offer to these influencers?</b><div class="s" id="prompt-s">Optional. Pick from the offers you designed on the Offers page.</div></div><button class="btn btn-ink" onclick="togglePicker()">＋ Browse offer library</button></div>
+
+          <!-- picker popover -->
+          <div class="picker" id="picker" style="display:none">
+            <div class="picker-h"><span>Your offer library</span><span class="x" onclick="togglePicker()">✕</span></div>
+            <div class="picker-b">
+              <div class="poff"><div class="oi">%</div><div><div class="nm">Monsoon 20% Off — Footwear</div><div class="ty">Discount</div></div></div>
+              <div class="poff"><div class="oi">⇄</div><div><div class="nm">Buy Sneaker → Free Socks</div><div class="ty">BOGO</div></div></div>
+              <div class="poff"><div class="oi">▣</div><div><div class="nm">Festive Combo @ ₹1,499</div><div class="ty">Bundle</div></div></div>
+              <div class="poff"><div class="oi">≣</div><div><div class="nm">Spend More, Save More</div><div class="ty">Volume</div></div></div>
+            </div>
+          </div>
+
+          <div class="lbl">Selected influencers — assign an offer to each <span class="mono">3</span></div>
+          <div class="irow"><div class="av">AK</div><div><div class="nm">Aisha Khan</div><div class="meta">@aisha.styles · 124k</div></div><div class="assigned"><div class="oi">%</div><span class="ot">Monsoon 20% Off</span></div><span class="tail" data-tail>commission 12%</span></div>
+          <div class="irow"><div class="av">RV</div><div><div class="nm">Rahul Verma</div><div class="meta">@rahul.kicks · 88k</div></div><div class="assigned"><div class="oi">⇄</div><span class="ot">BOGO Sneaker→Socks</span></div><span class="tail" data-tail>commission 15%</span></div>
+          <div class="irow"><div class="av">SM</div><div><div class="nm">Sneha Menon</div><div class="meta">@sneha.daily · 56k</div></div><div class="assign-empty" onclick="togglePicker()">＋ Assign offer</div><span class="tail" data-tail>commission —</span></div>
+          <div style="font-size:11px;color:var(--muted-3);margin-top:4px">↑ Aisha and Rahul carry <b>different</b> offers — assignment is per influencer.</div>
+
+          <div class="behave conv" id="behave">
+            <h5 id="bh">⟢ Conversion — transactional</h5>
+            <div id="blist">
+              <div class="bl"><span class="y">✓</span> Tracked share link with all 4 IDs (cid·sid·oid·iid)</div>
+              <div class="bl"><span class="y">✓</span> Influencer earns <b>commission</b> per attributed sale</div>
+              <div class="bl"><span class="y">✓</span> Offer snapshotted to <span class="mono">campaign_influencers</span> · <span class="mono">allocation='commissioned'</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px"><button class="btn btn-ghost">Back</button><button class="btn btn-ink">Continue →</button></div>
+
+  <div class="note" style="margin-top:18px"><span class="tag">flow</span> Wizard step (both goals): <b>ask "attach an offer?"</b> → <b>open offer library picker</b> → <b>assign per influencer</b> (same or different). Each assignment writes <span class="mono">campaign_influencers.brand_offer_id</span> + snapshotted <span class="mono">offer_config_json</span>.<br>
+  <b>Conversion:</b> + <span class="mono">commission_pct</span> + <span class="mono">coupon_code</span> + tracked link · <span class="mono">allocation='commissioned'</span>.<br>
+  <b>Engagement:</b> <span class="mono">commission_pct=NULL</span>, no coupon, no tracking · <span class="mono">allocation='promotional'</span> · offer appears on the influencer, follower buys store-direct. (Relaxes today's "engagement → no offer" rule.)</div>
+</div>
+<script>
+function togglePicker(){const p=document.getElementById('picker');p.style.display=p.style.display==='none'?'block':'none';}
+function setGoal(g){
+  const conv=document.querySelector('.goaltog .conv'), eng=document.querySelector('.goaltog .eng');
+  const box=document.getElementById('behave'), h=document.getElementById('bh'), list=document.getElementById('blist');
+  const tails=document.querySelectorAll('[data-tail]');
+  const q=document.getElementById('prompt-q'), s=document.getElementById('prompt-s');
+  if(g==='conv'){
+    conv.classList.add('act');eng.classList.remove('act');
+    box.className='behave conv';h.textContent='⟢ Conversion — transactional';
+    q.textContent='Attach an offer to these influencers?';s.textContent='Conversion: influencers earn commission on attributed sales.';
+    list.innerHTML='<div class="bl"><span class="y">✓</span> Tracked share link with all 4 IDs (cid·sid·oid·iid)</div><div class="bl"><span class="y">✓</span> Influencer earns <b>commission</b> per attributed sale</div><div class="bl"><span class="y">✓</span> Offer snapshotted to <span class="mono">campaign_influencers</span> · <span class="mono">allocation=\'commissioned\'</span></div>';
+    tails.forEach((t,i)=>{t.textContent=['commission 12%','commission 15%','commission —'][i];t.style.color='var(--conv)';});
+  }else{
+    eng.classList.add('act');conv.classList.remove('act');
+    box.className='behave eng';h.textContent='⟢ Engagement — promotional only';
+    q.textContent='Attach an offer for influencers to promote?';s.textContent='Engagement: pure awareness — no commission, no tracking. Optional.';
+    list.innerHTML='<div class="bl"><span class="n">✕</span> <b>No commission</b> — influencer paid via flat engagement fee</div><div class="bl"><span class="n">✕</span> <b>No tracking link</b>, no attribution</div><div class="bl"><span class="y">✓</span> Offer <b>appears on the influencer</b> · <span class="mono">allocation=\'promotional\'</span></div><div class="bl"><span class="y">✓</span> Follower buys via the store-direct path</div>';
+    tails.forEach(t=>{t.textContent='engagement fee';t.style.color='var(--eng)';});
+  }
+}
+</script>
+</body></html>
