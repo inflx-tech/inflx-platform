@@ -13,6 +13,10 @@ const brandAuth    = [authenticate, requireRole('brand')];
 router.post('/pay-at-store',        ...followerAuth, ctrl.initiatePayAtStore);
 router.post('/pay-at-store/verify', ...followerAuth, ctrl.verifyPayAtStore);
 
+// ── Store-direct (Offer Engine D2) — buy a store-published offer, no influencer
+router.post('/store-offer/pay',     ...followerAuth, ctrl.initiateStoreOfferPay);
+router.post('/store-offer/verify',  ...followerAuth, ctrl.verifyStoreOfferPay);
+
 // ── Slots ─────────────────────────────────────────────────────────────────────
 router.get('/slots', ctrl.getSlots); // no auth — publicly accessible
 

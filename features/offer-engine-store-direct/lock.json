@@ -1,0 +1,29 @@
+{
+  "feature": "offer-engine-store-direct",
+  "area": "backend-controller",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'ok move to D2' after D1 shipped; store-direct money model locked during design (3-channel model, Screen 04).",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (backend/src) but DORMANT — new /follower/store-offer pay+verify endpoints (no influencer, zero commission, offer_source='store'). No migration (uses 085 columns). No caller until D3 mobile. Existing pay-at-store/order/prebook flows + validateTracking untouched. Backend-only → Render.",
+  "notes": "Sub-contract D of 4, PHASE 2 (store-direct purchase money path). Reuses resolveOfferDiscount + pricingService (path 'direct') + settlement. Follower-mobile STORE DEAL + buy wiring + engagement-promotional wizard UI = D3 (Mobile-governed; Maestro; OTA). Backend-only; UI mockup/diff gates N/A.",
+  "related": [
+    "features/offer-engine-store-publish (D1 — DEPLOYED 2026-06-03)",
+    "features/offer-engine (A), offer-engine-library-ui (B), offer-engine-campaign-attach (C-backend), offer-engine-campaign-attach-ui (C-UI) — DEPLOYED",
+    "_planned: D3 follower-mobile STORE DEAL + engagement-promotional UI"
+  ],
+  "model_locked": "Store-direct purchase: POST /follower/store-offer/pay+verify. Resolve offer from brand_offers (published_to_store + active + window + brand match else 409). Discount via resolveOfferDiscount. commission=0, no influencer credit, no attribution write. L3 fee via computeL3OnFollowerTxn(campaignInfluencerId=null) → path 'direct'. follower_transactions row: tracking IDs NULL, brand_offer_id set, offer_source='store'. Brand net settled via existing settlement path.",
+  "mockup_locked": true,
+  "mockup_locked_by": "N/A — backend-only phase (Screen 04 store-preview mockup applies to D3 follower mobile).",
+  "mockup_locked_at": "N/A",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'deploy' (D2).",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. backend ONLY (Render): new /follower/store-offer pay+verify endpoints (store-direct purchase — no influencer, zero commission, offer_source='store', null tracking IDs). No migration (uses 085 columns from D1). Evidence: offer-store-direct.test.js 4/4 GREEN on real DB (pay->verify ₹1000→₹150 off→₹850 commission 0, null tracking IDs, offer_source='store'; unpublished 409; cross-brand 409; validation 422). ZERO regression: pay-at-store.test.js 10F/1P IDENTICAL with vs without (git-stash baseline) — pre-existing tier-seed/campaign-chain harness debt, not introduced here. Additive functions + routes; existing pay-at-store/order/prebook + validateTracking untouched. DORMANT: no caller until D3 mobile. No OTA/web."
+  }
+}

@@ -455,6 +455,156 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   });
 });
 
+// ── Store-direct (Offer Engine D2) ────────────────────────────────────────────
+// A follower buys a brand-store-published offer with NO influencer:
+// no tracking IDs, NO commission, full brand margin. Mirrors pay-at-store but
+// resolves the offer from brand_offers (published_to_store) instead of the
+// campaign chain, and skips validateTracking / commission / attribution.
+
+async function fetchStoreOfferOrThrow(brandOfferId, brandId) {
+  const { rows } = await db.query(
+    `SELECT bo.id, bo.offer_type, bo.offer_config_json, bo.status,
+            bo.published_to_store, bo.store_starts_at, bo.store_ends_at,
+            b.category AS brand_category
+       FROM brand_offers bo
+       JOIN brands b ON b.id = bo.brand_id
+      WHERE bo.id = $1 AND bo.brand_id = $2`,
+    [brandOfferId, brandId]
+  );
+  const o = rows[0];
+  const UNAVAILABLE = new AppError('OFFER_UNAVAILABLE', 'This store offer is not available.', 409, 'brand_offer_id');
+  if (!o) throw UNAVAILABLE;
+  if (o.status !== 'active' || !o.published_to_store) throw UNAVAILABLE;
+  const now = new Date();
+  if (o.store_starts_at && new Date(o.store_starts_at) > now) throw UNAVAILABLE;
+  if (o.store_ends_at && new Date(o.store_ends_at) < now) throw UNAVAILABLE;
+  return o;
+}
+
+// ── POST /follower/store-offer/pay ────────────────────────────────────────────
+const initiateStoreOfferPay = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const { brand_id, brand_offer_id, bill_amount, items, product_id, variant_id } = req.body;
+
+  if (!bill_amount || parseFloat(bill_amount) <= 0) {
+    throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive number (rupees)', 422, 'bill_amount');
+  }
+  if (!brand_id || !brand_offer_id) {
+    throw new AppError('VALIDATION_ERROR', 'brand_id and brand_offer_id are required', 422);
+  }
+
+  const offer = await fetchStoreOfferOrThrow(brand_offer_id, brand_id);
+  const billAmount = parseFloat(bill_amount);
+
+  // Discount via the shared parser. No influencer record — synthesize the
+  // minimal shape computeOfferDiscount needs from the library offer.
+  const offerResult = await computeOfferDiscount({
+    trackingRecord: { ci_offer_type: offer.offer_type, offer_config_json: offer.offer_config_json },
+    items: items || [],
+    billAmount,
+  });
+  const discountAmount = parseFloat(offerResult.discount_amount || 0);
+
+  const netAmount = parseFloat((billAmount - discountAmount).toFixed(2));
+  if (netAmount < 0) throw new AppError('VALIDATION_ERROR', 'Discount exceeds bill amount', 422);
+
+  // NO commission — store-direct has no influencer.
+  const influencerCommission = 0;
+
+  // L3 marketplace fee — campaignInfluencerId null → pricing.service classifies
+  // as 'direct' (path A) unless a prior attribution window exists; either way no
+  // commission is credited here (store-direct never writes attribution).
+  const l3 = await pricingService.computeL3OnFollowerTxn({
+    client:               db,
+    brandId:              brand_id,
+    followerId:           follower.id,
+    campaignInfluencerId: null,
+    brandCategory:        offer.brand_category,
+    netAmount,
+  });
+  const platformFee = l3.fee_amount;
+  const brandNet    = parseFloat((netAmount - influencerCommission - platformFee).toFixed(2));
+
+  const orderId = await txService.createOrder(netAmount, {
+    type: 'store_offer',
+    brand_id, brand_offer_id, offer_source: 'store',
+    bill_amount: billAmount,
+    gross_for_txn: billAmount,
+    discount_amount: discountAmount,
+    influencer_commission: influencerCommission,
+    platform_fee: platformFee,
+    brand_net: brandNet,
+    follower_id: follower.id,
+    product_id: product_id || null,
+    variant_id: variant_id || null,
+    offer_type: offer.offer_type || null,
+  });
+
+  return success(res, {
+    razorpay_order_id: orderId,
+    razorpay_key_id: txService.getRazorpayKeyId(),
+    bill_amount: billAmount,
+    discount_amount: discountAmount,
+    amount_to_charge: netAmount,
+    discount_reason: offerResult.reason,
+    net_amount: netAmount,
+    breakdown: { influencer_commission: 0, platform_fee: platformFee, brand_net: brandNet },
+  }, 201);
+});
+
+// ── POST /follower/store-offer/verify ─────────────────────────────────────────
+const verifyStoreOfferPay = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const { razorpay_order_id, razorpay_payment_id } = req.body;
+  if (!razorpay_order_id || !razorpay_payment_id) {
+    throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
+  }
+
+  const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
+
+  let transactionId;
+  await db.withTransaction(async (client) => {
+    const { rows: txRows } = await client.query(
+      `INSERT INTO follower_transactions
+         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
+          brand_offer_id, offer_source, product_id, variant_id, offer_type,
+          transaction_type, gross_amount, discount_amount, net_amount,
+          influencer_commission, marketplace_fee_amount, brand_net,
+          status, return_window_ends_at, razorpay_payment_id)
+       VALUES ($1,$2,NULL,NULL,NULL,NULL,$3,'store',$4,$5,$6,'pay_at_store',$7,$8,$9,0,$10,$11,'completed',$12,$13)
+       RETURNING id`,
+      [
+        meta.follower_id, meta.brand_id, meta.brand_offer_id,
+        meta.product_id || null, meta.variant_id || null, meta.offer_type || null,
+        meta.gross_for_txn, meta.discount_amount, netAmount,
+        meta.platform_fee, meta.brand_net,
+        returnWindowEndsAt, razorpay_payment_id,
+      ]
+    );
+    transactionId = txRows[0].id;
+    // No influencer commission credit, no attribution_clicks write — store-direct.
+  });
+
+  // Settle the brand's net share (best-effort, post-commit) — unchanged path.
+  await settlementService.settleCommerceTransaction(db, transactionId)
+    .catch(e => console.error('[settlement] failed:', e.message));
+
+  const txIdShort = transactionId.replace(/-/g, '').slice(-4).toUpperCase();
+  const { rows: brandRows } = await db.query(`SELECT business_name FROM brands WHERE id = $1`, [meta.brand_id]);
+
+  return success(res, {
+    transaction_id: transactionId,
+    reference_code: `INFLX-${txIdShort}`,
+    net_amount: netAmount,
+    brand_name: brandRows[0]?.business_name,
+  });
+});
+
 // ── GET /follower/slots ───────────────────────────────────────────────────────
 
 const getSlots = asyncHandler(async (req, res) => {
@@ -1251,6 +1401,8 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 module.exports = {
   initiatePayAtStore,
   verifyPayAtStore,
+  initiateStoreOfferPay,
+  verifyStoreOfferPay,
   getSlots,
   initiatePrebook,
   verifyPrebook,
