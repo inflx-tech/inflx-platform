@@ -1,0 +1,28 @@
+{
+  "feature": "offer-engine-library-ui",
+  "area": "brand-web-ui",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'ok pls go to sub contract B' after Sub-contract A shipped; the screens were reviewed/locked during the design phase (3 mockup iteration rounds).",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (brand-web → Vercel) but additive: new /dashboard/offers route + Offers nav item + OfferBuilder component + 4 brandApi wrappers. No existing page/flow/backend changed. Consumes the already-live (dormant) /brands/me/offers API from Sub-contract A.",
+  "notes": "Sub-contract B of 4 (Offer Engine). Brand-facing offer library authoring UI. UI-governed: mockup-lock + before/after-diff gates apply. Distribution UI (publish-to-store, per-influencer campaign attach, distribution badges) is OUT — deferred to Sub-contracts C/D.",
+  "related": [
+    "features/offer-engine (Sub-contract A — backend spine, DEPLOYED 2026-06-03)",
+    "_planned: features/offer-engine-campaign-attach (Sub-contract C)",
+    "_planned: features/offer-engine-store-publish (Sub-contract D)"
+  ],
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect (2026-06-03) — reviewed mockups 01-offers-list + 02-offer-builder across 3 iteration rounds and approved proceeding to build.",
+  "mockup_locked_at": "2026-06-03",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'pls proceed to deploy'.",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. brand-web ONLY (Vercel): new /dashboard/offers route + Offers nav + OfferBuilder component + 4 brandApi wrappers -> git push -> Vercel auto-deploy. No backend change in this commit (the createOffer availing_modes NOT-NULL fix was already in Sub-contract A's commit d93b6d3 / live on Render). Evidence: brand-web `next build` GREEN (/dashboard/offers compiled 7.23kB, whole app builds clean); backend brand-offer.test.js 11/11 GREEN on real test DB (migration 084 auto-applied via setup.js), covering create (5 types)/list/update/archive/auth/ownership/schema. 06-diff/notes.md authored (structural before/after vs locked mockups). Additive: no existing page/component changed. Distribution UI deferred to Sub-contracts C/D."
+  }
+}

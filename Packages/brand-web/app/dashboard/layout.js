@@ -25,6 +25,7 @@ const NAV = [
   { href: '/dashboard/bookings',    label: 'Bookings',    icon: '▦', feature: 'booking' },
   { href: '/dashboard/gallery',     label: 'Gallery',     icon: '▢' },
   { href: '/dashboard/proposals',   label: 'Proposals',   icon: '✉' },
+  { href: '/dashboard/offers',      label: 'Offers',      icon: '◆' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
   { href: '/dashboard/wallet',                 label: 'Wallet',   icon: '◫' },
   { href: '/dashboard/settings/profile',       label: 'Settings', icon: '⚙' },

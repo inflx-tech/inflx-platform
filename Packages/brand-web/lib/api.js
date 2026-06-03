@@ -149,6 +149,11 @@ export const brandApi = {
   createProduct: (data) => api.post('/brands/me/products', data),
   updateProduct: (id, data) => api.patch(`/brands/me/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/brands/me/products/${id}`),
+  // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────
+  getOffers:   (params) => api.get(`/brands/me/offers${params ? '?' + new URLSearchParams(params) : ''}`),
+  createOffer: (data) => api.post('/brands/me/offers', data),
+  updateOffer: (id, data) => api.patch(`/brands/me/offers/${id}`, data),
+  deleteOffer: (id) => api.delete(`/brands/me/offers/${id}`),
   // ── Subscription + billing (Phase A7-brand) ───────────────────────────────
   listSubscriptionTiers: () => api.get('/subscription-tiers'),
   getMySubscription:     () => api.get('/brands/me/subscription'),
