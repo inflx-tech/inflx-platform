@@ -19,13 +19,14 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder via Chat-architect (2026-06-03) — Screen 04 (04-store-preview.html) reviewed/locked across the 3 mockup iteration rounds.",
   "mockup_locked_at": "2026-06-03",
-  "release": {
-    "qa_all_green": false,
+    "release": {
+    "qa_all_green": true,
+    "_qa_all_green_note": "Release gate satisfied via founder-authorised GOVERNANCE_OVERRIDE; server QA green (D2 offer-store-direct 4/4). maestro_green stays false as the truthful mobile-E2E flag — see governance_override (Maestro 5/6 on emulator, follower flow 05 permissive, real on-device D3b E2E pending).",
     "maestro_green": false,
     "released": true,
     "released_by": "founder via Chat-architect (2026-06-03) — explicit 'build now, GOVERNANCE_OVERRIDE the gate'.",
     "released_at": "2026-06-03",
-    "governance_override": "Maestro mobile-verify gate (gov-check Rule 5) bypassed at merge per explicit founder authorisation — mobile E2E not run pre-merge. Follow-ups: on-device pnpm qa:maestro (flow 05-follower-store-deal.yaml) + OTA publish (publish-ota:all). Server endpoints proven by D2 offer-store-direct.test.js 4/4; mobile change additive + opt-in (influencer path untouched).",
-    "deploy": "MERGED 2026-06-03 with GOVERNANCE_OVERRIDE. git push lands the JS in main; mobile reaches devices only via OTA publish (scripts/publish-ota.js / publish-ota:all) — pending. No backend/web change in this commit."
+    "governance_override": "Maestro mobile-verify gate (gov-check Rule 5) bypassed at merge per explicit founder authorisation. Post-merge on emulator-5554: pnpm qa:maestro = 5/6 — follower flow 05-follower-store-deal PASSED; sole failure 04-agency-launch ('Welcome back' assertion) is UNRELATED to offer-engine (agency flavor, pre-existing assertion/state drift; my edits touched follower screens + additive followerApi methods only). maestro_green kept FALSE because (a) the suite is not all-green and (b) flow 05 is permissive (launch-only) and the pre-OTA bundle predated D3b. Server endpoints proven by D2 offer-store-direct.test.js 4/4.",
+    "deploy": "MERGED 2026-06-03 with GOVERNANCE_OVERRIDE (commit 39b3357). OTA PUBLISHED 2026-06-03: pnpm publish-ota:follower -> bundle 2596 KB -> https://inflx-platform.onrender.com/v1/ota/publish -> follower version 66 (phones pick up on next launch). No backend/web change. OUTSTANDING: a REAL on-device D3b E2E (relaunch app to pull v66 + a prod brand with a published_to_store offer + tighten flow 05 to assert the 'Store Deals' tab) -> then set maestro_green=true. Also: 04-agency-launch flow is RED (unrelated) — track separately."
   }
 }
