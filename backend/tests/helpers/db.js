@@ -60,6 +60,7 @@ const TRUNCATE_SQL = `
       wallet_transactions,
       contracts,
       campaign_offers,
+      brand_offers,
       brand_products,
       negotiation_turns,
       negotiations,

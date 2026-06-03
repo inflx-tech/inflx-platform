@@ -1,0 +1,45 @@
+{
+  "feature": "offer-engine",
+  "area": "backend-service+migration",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'ok pls proceed' after iterating the 3-channel distribution model (store-direct / conversion=commission+tracking / engagement=promotional), the in-wizard per-influencer attach flow, the 4-sub-contract plan, and reviewing all 5 mockups.",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING but DORMANT — migration 084 (brand_offers + additive nullable columns on campaign_influencers + store columns) and the /brands/me/offers CRUD service ship live; with zero brand_offers rows and no caller wiring, no existing flow changes. Activates only when Sub-contracts B/C/D land. Same dormant-ship pattern as referral-engine Contract 1.",
+  "notes": "Sub-contract A of 4 (Offer Engine feature). Backend-only spine: brand_offers library table, shared offerConfig.validator, brand CRUD API, and additive (dormant) attach + store columns. Step-5 gate satisfied: founder agreed spec + workflow + expected-outputs + impact + mockups. Implementation (Step 7) is the next explicit-go step; prod migrate + push surfaced separately per the production-impacting carve-out.",
+  "related": [
+    "_planned: features/offer-engine-library-ui (Sub-contract B — /dashboard/offers + shared <OfferBuilder/>)",
+    "_planned: features/offer-engine-campaign-attach (Sub-contract C — wizard per-influencer attach, goal-keyed; relaxes engagement-no-offer rule)",
+    "_planned: features/offer-engine-store-publish (Sub-contract D — resolveBusinessStore union + store-direct no-commission txn path + follower mobile)"
+  ],
+  "model_locked": "Standalone brand_offers library reusing offer.service.js offer_config_json shapes (discount/volume/bogo/bundle/free_gift) + 3-tier scope. Coexists with inline campaign discount builder (not a replacement). Snapshot offer config onto campaign_influencers at attach (not live link); per-influencer grain. 3 channels keyed by campaign goal: store-direct (no commission/tracking) / conversion (commission+tracking, allocation='commissioned') / engagement (promotional only, no commission/tracking, allocation='promotional'). Influencer distribution is campaign-mediated only; offer page = store toggle only. In-wizard flow (both goals): prompt 'attach an offer?' -> open library picker -> assign per influencer (same or different).",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect (2026-06-03) — reviewed all 5 mockups across 3 iteration rounds (initial -> 3-channel correction -> in-wizard per-influencer attach) and said 'ok pls proceed'. Mockups are feature-wide; they gate UI Sub-contracts B/C, which inherit this lock.",
+  "mockup_locked_at": "2026-06-03",
+  "implementation": {
+    "status": "code-complete, local QA green, NOT deployed",
+    "done_at": "2026-06-03",
+    "files": [
+      "backend/migrations/084_offer_engine.sql",
+      "backend/scripts/run-084.js",
+      "backend/src/services/offerConfig.validator.js",
+      "backend/src/controllers/brandOffer.controller.js",
+      "backend/src/routes/brandOffer.routes.js",
+      "backend/src/routes/index.js (mount under /brands/me)",
+      "backend/tests/helpers/db.js (brand_offers added to truncateAll)",
+      "backend/tests/brand-offer.test.js"
+    ],
+    "qa": "New jest suite brand-offer.test.js GREEN 11/11 on fresh DB (globalSetup re-applies all migrations incl. 084, so the migration SQL is validated end-to-end). ZERO REGRESSION proven by baseline: campaigns+pay-at-store = 44 failed/16 passed IDENTICALLY with and without these changes — the failures are pre-existing backend-test-debt (subscription_tiers CASCADE → campaign-create 500, project_test_harness_tier_cascade), not caused by this work. Full repo-root pnpm qa lane to be run at release time.",
+    "deploy_pending": "Production deploy is the next explicit-go step: apply migration via `node scripts/run-084.js` against Supabase prod, then `git push` (Render auto-deploys backend; no OTA/web). Surfaced, never silent."
+  },
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'pls proceed to deployment'.",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. Migration 084 applied to Supabase prod via `node scripts/run-084.js` (DATABASE_URL=.env.prod-backup): brand_offers created (12 cols), campaign_influencers gained allocation + brand_offer_id — sanity checks OK. git push -> Render auto-deploy (backend-only; no OTA/web). Evidence: brand-offer.test.js GREEN 11/11 on fresh DB; ZERO regression proven by baseline (campaigns+pay-at-store 44 failed/16 passed IDENTICAL with/without these edits — pre-existing subscription_tiers-CASCADE backend-test-debt, not a regression). DORMANT: zero brand_offers rows in prod + no caller wiring => no existing flow changes until Sub-contracts B/C/D land."
+  }
+}

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offer Engine — Mockups Index</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap');
+:root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;--ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--border:#E4E4E7;--conv:#7E22CE;--conv-pale:#F3E8FF;--info:#1D4ED8;--info-pale:#DBEAFE}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h3{font-family:'Outfit',system-ui,sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}
+.mockbar{background:var(--ink);color:var(--muted-3);font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:7px 28px;display:flex;gap:14px;align-items:center;letter-spacing:.3px}.mockbar b{color:#fff}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}
+.pill.store{background:var(--info-pale);color:var(--info)}.pill.infl{background:var(--conv-pale);color:var(--conv)}
+.page{padding:28px;max-width:1000px;margin:0 auto}
+.sec-h{display:flex;align-items:center;gap:8px;margin:22px 0 12px;font-family:'Outfit';font-size:13px;font-weight:700}.sec-h .pip{width:6px;height:6px;border-radius:50%;background:var(--yellow)}.sec-h .ct{font-family:'JetBrains Mono';font-size:10.5px;font-weight:800;color:var(--muted-2);background:var(--bg2);padding:2px 7px;border-radius:5px}
+.hero{background:linear-gradient(135deg,#FFFDEB,#FFF7CC);border:1px solid rgba(255,193,7,.4);border-radius:20px;padding:34px 32px;margin-bottom:24px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-40px;width:200px;height:200px;background:var(--yellow);border-radius:50%;opacity:.18}
+.hero h1{font-size:30px;font-weight:800;letter-spacing:-.6px;margin-bottom:8px;position:relative}
+.hero p{font-size:14px;color:var(--muted);max-width:680px;line-height:1.6;position:relative}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.screen-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:20px 22px;text-decoration:none;color:inherit;display:block;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:.15s}
+.screen-card:hover{border-color:var(--ink);transform:translateY(-2px)}
+.screen-card .num{font-family:'JetBrains Mono';font-size:11px;font-weight:800;color:var(--yellow-text);background:var(--yellow-pale);padding:3px 8px;border-radius:6px;display:inline-block;margin-bottom:10px}
+.screen-card h3{font-size:16px;font-weight:700;margin-bottom:6px}.screen-card p{font-size:12px;color:var(--muted);line-height:1.5}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:18px 0 14px;font-size:12.5px;font-weight:700}
+.flow .step{background:#fff;border:1px solid var(--border);border-radius:99px;padding:8px 15px}.flow .arr{color:var(--muted-3);font-weight:800}
+.flow .fork{background:var(--conv-pale);color:var(--conv);border-color:transparent}.flow .fork2{background:var(--info-pale);color:var(--info);border-color:transparent}
+.legend{display:flex;flex-direction:column;gap:8px;margin-top:6px}.legend span{font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.note{background:#FFFDEB;border:1px dashed var(--yellow);border-radius:12px;padding:12px 14px;font-size:11.5px;color:var(--yellow-text);line-height:1.55;margin-top:24px}.note b{color:var(--ink)}.note .tag{font-family:'JetBrains Mono';font-size:9px;font-weight:800;background:var(--ink);color:var(--yellow);padding:2px 6px;border-radius:4px;text-transform:uppercase;margin-right:6px}
+</style></head>
+<body>
+<div class="mockbar"><b>MOCKUP</b> · features/offer-engine/04-preview/mockups · <b>NOT production</b> — pixel study for review</div>
+<div class="page">
+  <div class="hero"><h1>Offer Engine</h1><p>A standalone place where a brand <b>designs reusable offers</b> against its product/service catalogue — independent of any campaign. Each finished offer can then be <b>published into the brand store</b> (every follower sees it, no influencer needed) and/or <b>attached to chosen influencers</b> to promote. The existing in-campaign discount builder stays <b>completely untouched</b>.</p></div>
+  <div class="sec-h"><span class="pip"></span>The 3 channels a library offer can flow through</div>
+  <div class="flow"><span class="step">Design offer</span><span class="arr">→</span><span class="step">Save to library</span><span class="arr">⤳</span><span class="step fork2">① Publish to Store</span><span class="arr">/</span><span class="step fork">② Conversion campaign</span><span class="arr">/</span><span class="step" style="background:#CFFAFE;color:#0E7490;border-color:transparent">③ Engagement campaign</span></div>
+  <div class="legend"><span><span class="pill store">① STORE</span> set on the offer page · all followers buy direct · no influencer · no commission · no tracking</span><span><span class="pill infl">② CONVERSION</span> attached to influencers inside a campaign · tracked link · commission per sale</span><span><span class="pill" style="background:#CFFAFE;color:#0E7490">③ ENGAGEMENT</span> allocated to campaign influencers · promotional only · <b>no commission, no tracking</b> · drives awareness to the store</span></div>
+  <div class="sec-h" style="margin-top:26px"><span class="pip"></span>Screens <span class="ct">4</span></div>
+  <div class="grid">
+    <a class="screen-card" href="01-offers-list.html"><span class="num">SCREEN 01</span><h3>Offer Library</h3><p>New <span class="mono">/dashboard/offers</span> page. Every offer the brand designed, with type, status, and where each is distributed (store + N influencers). Empty + populated states.</p></a>
+    <a class="screen-card" href="02-offer-builder.html"><span class="num">SCREEN 02</span><h3>Offer Builder</h3><p>Create / edit. Name → type (Discount / Volume / BOGO / Bundle / Free gift) → per-type config → scope → availing modes. Same field model as the campaign wizard.</p></a>
+    <a class="screen-card" href="03-distribute.html"><span class="num">SCREEN 03</span><h3>Distribution</h3><p>Store toggle lives on the offer page; influencer distribution happens <b>inside the campaign wizard</b>. Toggle Conversion ↔ Engagement to see how the same offer behaves (commission+tracking vs promotional-only).</p></a>
+    <a class="screen-card" href="04-store-preview.html"><span class="num">SCREEN 04</span><h3>Store Preview</h3><p>How a store-published offer renders to a follower in the mobile brand store — and the new <b>direct (no-influencer) buy</b> path it requires on the backend.</p></a>
+  </div>
+  <div class="note"><span class="tag">backend truth</span> Offer config reuses <b>offer.service.js</b> <span class="mono">offer_config_json</span>; products come from <b>brand_products</b>; store rendering goes through <b>resolveBusinessStore()</b>. The one net-new backend concept is a <b>store-direct (no campaign_influencer_id) transaction path</b> — see Screen 04.</div>
+</div>
+</body></html>

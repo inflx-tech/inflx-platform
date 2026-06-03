@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offer Builder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap');
+:root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-hover:#E0A800;--yellow-pale:#FFF7CC;--yellow-50:#FFFDEB;--yellow-text:#6B5A00;--ink:#0A0A0A;--ink-2:#1F1F22;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--muted-4:#D4D4D8;--border:#E4E4E7;--border-soft:#F4F4F5;--success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;--conv:#7E22CE;--conv-pale:#F3E8FF;--info:#1D4ED8;--info-pale:#DBEAFE}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+h1,h3,h4,h5{font-family:'Outfit',system-ui,sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}
+.mockbar{background:var(--ink);color:var(--muted-3);font-family:'JetBrains Mono',monospace;font-size:10.5px;padding:7px 28px;display:flex;gap:14px;align-items:center;letter-spacing:.3px}
+.mockbar a{color:var(--yellow);text-decoration:none;font-weight:700}.mockbar b{color:#fff}
+.topbar{height:64px;background:var(--ink);display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 28px;border-bottom:1px solid #2A2A2D}
+.logo{font-family:'Outfit';font-weight:800;font-size:18px;color:#fff;letter-spacing:-.5px}.logo b{color:var(--yellow)}
+.nav{display:flex;gap:4px;flex:1;overflow:hidden}
+.nav a{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;font-size:12.5px;font-weight:600;color:var(--muted-3);text-decoration:none;white-space:nowrap}
+.nav a:hover{color:#fff;background:#2A2A2D}.nav a.active{background:var(--yellow);color:var(--ink);font-weight:800}
+.topbar-r{display:flex;align-items:center;gap:12px}
+.bell{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted-3);font-size:16px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--yellow);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-weight:800;font-size:12px}
+.page{padding:28px;max-width:1180px;margin:0 auto}
+.page-h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px}
+.page-h h1{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:22px;max-width:640px}
+.btn{padding:9px 15px;border-radius:10px;font-size:12.5px;font-weight:700;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:inherit}
+.btn-ink{background:var(--ink);color:var(--yellow)}.btn-ink:hover{background:var(--ink-2)}
+.btn-yellow{background:var(--yellow);color:var(--ink)}.btn-ghost{background:#fff;border:1px solid var(--border);color:var(--ink)}.btn-ghost:hover{border-color:var(--ink)}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;display:inline-flex;align-items:center;gap:4px}
+.pill.draft{background:var(--bg2);color:var(--muted-2)}.pill.store{background:var(--info-pale);color:var(--info)}.pill.infl{background:var(--conv-pale);color:var(--conv)}.pill.type{background:var(--yellow-pale);color:var(--yellow-text)}
+.chip{padding:6px 12px;border-radius:99px;background:#fff;border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.chip:hover{border-color:var(--ink);color:var(--ink)}.chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow)}
+.f{margin-bottom:14px}
+.flbl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:6px}
+.inp{width:100%;font-size:13px;padding:10px 13px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--ink);outline:none;font-family:inherit}
+.inp:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.tog{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.tog button{padding:9px 16px;border:0;background:#fff;font-weight:800;cursor:pointer;font-size:13px}.tog button.act{background:var(--ink);color:var(--yellow)}
+.note{background:var(--yellow-50);border:1px dashed var(--yellow);border-radius:12px;padding:12px 14px;font-size:11.5px;color:var(--yellow-text);line-height:1.55;margin:14px 0}
+.note b{color:var(--ink)}.note .tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;background:var(--ink);color:var(--yellow);padding:2px 6px;border-radius:4px;text-transform:uppercase;margin-right:6px}
+.sw{width:44px;height:24px;background:var(--muted-3);border-radius:99px;position:relative;cursor:pointer;border:0;flex-shrink:0}
+.sw.on{background:var(--success)}.sw .dot{position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}.sw.on .dot{transform:translateX(20px)}
+.kebab{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:800;color:var(--muted-2)}
+.sec-h{display:flex;align-items:center;gap:8px;margin:22px 0 12px;font-family:'Outfit';font-size:13px;font-weight:700}.sec-h .pip{width:6px;height:6px;border-radius:50%;background:var(--yellow)}
+/* page specific */
+.wrap{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+.builder{background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.builder-h{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.builder-h h3{font-size:16px;font-weight:700}
+.builder-b{padding:20px}
+.typebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.tcard{flex:1;min-width:96px;border:1px solid var(--border);border-radius:12px;padding:12px 10px;text-align:center;cursor:pointer;background:#fff;transition:.12s}
+.tcard:hover{border-color:var(--ink)}.tcard.act{border-color:var(--ink);background:var(--ink);color:var(--yellow)}
+.tcard .e{font-size:20px;display:block;margin-bottom:5px}.tcard .t{font-size:11.5px;font-weight:800}
+.cfg{display:none;border-top:1px dashed var(--border);margin-top:18px;padding-top:18px}.cfg.show{display:block}
+.cfg h5{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row{display:flex;gap:10px;align-items:flex-end;margin-bottom:8px}
+.prodchip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:12px;font-weight:600;margin:0 6px 6px 0}.prodchip b{font-weight:800}.prodchip .x{color:var(--muted-3);cursor:pointer;font-weight:800}
+.addbtn{border:1px dashed var(--muted-4);background:#fff;color:var(--muted);border-radius:8px;padding:7px 12px;font-weight:700;font-size:12px;cursor:pointer}
+.tier{display:grid;grid-template-columns:1fr 1fr 34px;gap:10px;align-items:end;margin-bottom:8px}
+.side{position:sticky;top:20px;display:flex;flex-direction:column;gap:14px}
+.side .card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.side h4{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:10px}
+.preview-pill{background:var(--yellow-pale);border:1px solid var(--yellow);border-radius:10px;padding:11px 13px;font-size:13px;font-weight:700;color:var(--yellow-text)}
+.modes{display:flex;flex-direction:column;gap:9px}
+.mode{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600}
+.foot{padding:14px 20px;border-top:1px solid var(--border);background:var(--bg2);display:flex;justify-content:space-between;gap:8px}
+</style></head>
+<body>
+<div class="mockbar"><b>MOCKUP</b> · Screen 02 — Offer Builder · <a href="01-offers-list.html">← Library</a> · <a href="03-distribute.html">next: Distribute →</a></div>
+<div class="topbar">
+  <div class="logo">IN<b>FLX</b></div>
+  <nav class="nav"><a href="#">⌂ Dashboard</a><a href="#">⊟ Campaigns</a><a href="#">★ Influencers</a><a href="#">▤ Products</a><a href="#" class="active">◆ Offers</a><a href="#">₹ Conversions</a><a href="#">⚙ Settings</a></nav>
+  <div class="topbar-r"><div class="bell">◔</div><div class="avatar">BR</div></div>
+</div>
+<div class="page">
+  <div class="page-h"><div><h1>New offer</h1><div class="page-sub">Build the mechanic once. You'll choose where it goes (store / influencers) in the next step.</div></div></div>
+  <div class="note"><span class="tag">reuse</span> This builder is the <b>same field model</b> the campaign wizard already uses (<span class="mono">OFFER_TYPES, d_sub/d_val/d_scope, v_tiers, bogo_buy/get, bnd_prods/price, gift_offers</span>). Plan: extract it into one shared <span class="mono">&lt;OfferBuilder/&gt;</span> so the wizard and this page never drift. Click each type to see its fields.</div>
+  <div class="wrap">
+    <div class="builder">
+      <div class="builder-h"><h3>Offer details</h3><span class="pill draft">Draft — autosaved</span></div>
+      <div class="builder-b">
+        <div class="f"><label class="flbl">Offer name <span style="color:var(--muted-3)">(internal + shown on store)</span></label><input class="inp" value="Monsoon 20% Off — Footwear"></div>
+        <label class="flbl">Offer type</label>
+        <div class="typebar">
+          <div class="tcard act" data-t="discount" onclick="pick(this)"><span class="e">%</span><span class="t">Discount</span></div>
+          <div class="tcard" data-t="volume" onclick="pick(this)"><span class="e">≣</span><span class="t">Volume</span></div>
+          <div class="tcard" data-t="bogo" onclick="pick(this)"><span class="e">⇄</span><span class="t">BOGO</span></div>
+          <div class="tcard" data-t="bundle" onclick="pick(this)"><span class="e">▣</span><span class="t">Bundle</span></div>
+          <div class="tcard" data-t="free_gift" onclick="pick(this)"><span class="e">🎁</span><span class="t">Free gift</span></div>
+        </div>
+        <div class="cfg show" id="c-discount">
+          <h5>Discount value</h5>
+          <div class="row"><div class="tog"><button class="act">%</button><button>₹</button></div><div style="flex:1"><label class="flbl">Value</label><input class="inp mono" value="20"></div></div>
+          <label class="flbl" style="margin-top:8px">Applies to (scope)</label>
+          <div class="typebar" style="margin-bottom:12px"><button class="chip">Entire store</button><button class="chip act">A category</button><button class="chip">Specific products</button></div>
+          <div class="f"><label class="flbl">Category / section</label><input class="inp" value="Footwear"></div>
+        </div>
+        <div class="cfg" id="c-volume">
+          <h5>Volume tiers</h5>
+          <div class="tier"><div><label class="flbl">Min spend (₹)</label><input class="inp mono" value="2000"></div><div><label class="flbl">% off</label><input class="inp mono" value="5"></div><button class="kebab">✕</button></div>
+          <div class="tier"><div><label class="flbl">Min spend (₹)</label><input class="inp mono" value="5000"></div><div><label class="flbl">% off</label><input class="inp mono" value="10"></div><button class="kebab">✕</button></div>
+          <div class="tier"><div><label class="flbl">Min spend (₹)</label><input class="inp mono" value="10000"></div><div><label class="flbl">% off</label><input class="inp mono" value="15"></div><button class="kebab">✕</button></div>
+          <button class="addbtn">+ Add tier</button>
+          <label class="flbl" style="margin-top:14px">Scope</label>
+          <div class="typebar"><button class="chip act">Entire store</button><button class="chip">A category</button><button class="chip">Specific products</button></div>
+        </div>
+        <div class="cfg" id="c-bogo">
+          <h5>Buy one, get one</h5>
+          <div class="g2"><div><label class="flbl">Buy this</label><div class="prodchip"><b>Air Runner X</b> · ₹2,499 <span class="x">✕</span></div><button class="addbtn">+ Pick product</button></div><div><label class="flbl">Get this free</label><div class="prodchip"><b>Ankle Socks</b> · ₹199 <span class="x">✕</span></div><button class="addbtn">+ Pick product</button></div></div>
+        </div>
+        <div class="cfg" id="c-bundle">
+          <h5>Bundle products</h5>
+          <div><span class="prodchip"><b>Jacket</b> · ₹1,299 <span class="x">✕</span></span><span class="prodchip"><b>Tee</b> · ₹499 <span class="x">✕</span></span><span class="prodchip"><b>Cap</b> · ₹299 <span class="x">✕</span></span><button class="addbtn">+ Add product</button></div>
+          <div class="f" style="margin-top:14px;max-width:220px"><label class="flbl">Bundle price (₹)</label><input class="inp mono" value="1499"></div>
+          <div style="font-size:12px;color:var(--success-text);font-weight:700">Saves ₹598 vs individual (₹2,097)</div>
+        </div>
+        <div class="cfg" id="c-free_gift">
+          <h5>Free gift pairings</h5>
+          <div class="g2" style="margin-bottom:10px"><div><label class="flbl">When they buy</label><div class="prodchip"><b>Any Jacket</b> <span class="x">✕</span></div></div><div><label class="flbl">Gift them</label><div class="prodchip"><b>Canvas Tote</b> · ₹349 <span class="x">✕</span></div></div></div>
+          <button class="addbtn">+ Add gift pairing</button>
+        </div>
+      </div>
+      <div class="foot"><button class="btn btn-ghost">Cancel</button><div style="display:flex;gap:8px"><button class="btn btn-ghost">Save draft</button><button class="btn btn-ink">Save & distribute →</button></div></div>
+    </div>
+    <div class="side">
+      <div class="card"><h4>Live preview</h4><div class="preview-pill" id="pv">20% off on Footwear</div><div style="font-size:11px;color:var(--muted-2);margin-top:8px">This is the line followers & influencers will see.</div></div>
+      <div class="card"><h4>Availing modes</h4>
+        <div class="modes">
+          <div class="mode"><span>💸 Pay at store</span><button class="sw on"><span class="dot"></span></button></div>
+          <div class="mode"><span>🛒 Online order</span><button class="sw on"><span class="dot"></span></button></div>
+          <div class="mode"><span>📅 Pre-book</span><button class="sw"><span class="dot"></span></button></div>
+          <div class="mode"><span>✉ Enquiry</span><button class="sw"><span class="dot"></span></button></div>
+        </div>
+        <div style="font-size:10.5px;color:var(--muted-3);margin-top:10px">Mirrors <span class="mono">campaign_offers.availing_modes</span>. Volume/BOGO/Bundle/Free-gift only resolve on an itemised cart; pay-at-store on a free-form bill falls back to ₹0, exactly as the resolver does today.</div>
+      </div>
+    </div>
+  </div>
+  <div class="note"><span class="tag">saved as</span> On save: one <b>brand_offers</b> row — <span class="mono">offer_type='discount'</span>, <span class="mono">offer_config_json={sub_type:'pct',value:20,scope:'category',category:'Footwear',products:[]}</span> — byte-identical to <span class="mono">buildOfferConfig()</span>, so <span class="mono">resolveOfferDiscount()</span> consumes it with zero changes.</div>
+</div>
+<script>
+const PV={discount:'20% off on Footwear',volume:'Up to 15% off — spend ₹10k+',bogo:'Buy Air Runner X → Ankle Socks free',bundle:'Festive combo @ ₹1,499 (save ₹598)',free_gift:'Free Canvas Tote with any Jacket'};
+function pick(el){document.querySelectorAll('.tcard').forEach(c=>c.classList.remove('act'));el.classList.add('act');const t=el.dataset.t;document.querySelectorAll('.cfg').forEach(c=>c.classList.remove('show'));document.getElementById('c-'+t).classList.add('show');document.getElementById('pv').textContent=PV[t];}
+</script>
+</body></html>

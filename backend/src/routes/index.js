@@ -55,6 +55,9 @@ const referralAdminRoutes  = require('./referralAdmin.routes');
 const productVariantsRoutes = require('./productVariants.routes');
 const returnsRoutes         = require('./returns.routes');
 
+// Offer Engine — brand-side reusable offer library (Sub-contract A)
+const brandOfferRoutes      = require('./brandOffer.routes');
+
 // Fashion-2 — creator-curated lookbooks (outfit collections)
 const lookbooksRoutes       = require('./lookbooks.routes');
 
@@ -154,6 +157,9 @@ router.post('/internal/geocode-maps-url',         authenticate, geocodingCtrl.ge
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);
+
+// ── Offer Engine — brand-side reusable offer library (Sub-contract A) ────────
+router.use('/brands/me', brandOfferRoutes);
 router.use('/follower',  returnsRoutes.followerRouter);
 router.use('/admin',     returnsRoutes.adminRouter);
 
