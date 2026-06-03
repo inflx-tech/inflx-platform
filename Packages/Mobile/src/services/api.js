@@ -484,6 +484,9 @@ export const followerApi = {
   // Transactions
   payAtStore: (data) => api.post('/follower/pay-at-store', data),
   verifyPayAtStore: (data) => api.post('/follower/pay-at-store/verify', data),
+  // Offer Engine D3 — store-direct (brand-direct) buy: no influencer, no commission
+  storeOfferPay: (data) => api.post('/follower/store-offer/pay', data),
+  storeOfferVerify: (data) => api.post('/follower/store-offer/verify', data),
   prebook: (data) => api.post('/follower/prebook', data),
   prebookVerify: (data) => api.post('/follower/prebook/verify', data),
   getSlots: (productId, date) => api.get(`/follower/slots?offer_id=${encodeURIComponent(productId)}&date=${encodeURIComponent(date)}`),

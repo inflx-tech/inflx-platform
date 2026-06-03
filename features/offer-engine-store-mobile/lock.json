@@ -1,0 +1,31 @@
+{
+  "feature": "offer-engine-store-mobile",
+  "area": "mobile-follower",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'move to D3' + explicit choice to 'build now, GOVERNANCE_OVERRIDE the gate' for the mobile Maestro requirement.",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (mobile runtime via OTA). Follower app: 'Store Deals' tab rendering store_offers (D1) + store-direct buy via PayAtStore storeOffer mode -> D2 endpoints. Additive: influencer purchase path + existing tabs untouched. JS-only (OTA, no native rebuild).",
+  "notes": "Sub-contract D3b (follower mobile) — final Offer Engine slice. Mobile-governed: Maestro gate OVERRIDDEN at merge (GOVERNANCE_OVERRIDE) per founder authorisation; on-device pnpm qa:maestro + OTA publish (publish-ota:all) are immediate follow-ups. UI-governed gates satisfied (mockup_locked Screen 04 + 06-diff notes).",
+  "related": [
+    "features/offer-engine-store-publish (D1 — DEPLOYED), offer-engine-store-direct (D2 — DEPLOYED)",
+    "features/offer-engine-engagement-ui (D3a — DEPLOYED)",
+    "features/offer-engine (A) ... offer-engine-campaign-attach-ui (C-UI) — all DEPLOYED"
+  ],
+  "model_locked": "Follower app renders store_offers in a conditional 'Store Deals' tab; buy reuses PayAtStore in storeOffer mode -> /follower/store-offer/pay+verify (brand-direct, no influencer, no commission). Influencer path untouched.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect (2026-06-03) — Screen 04 (04-store-preview.html) reviewed/locked across the 3 mockup iteration rounds.",
+  "mockup_locked_at": "2026-06-03",
+  "release": {
+    "qa_all_green": false,
+    "maestro_green": false,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'build now, GOVERNANCE_OVERRIDE the gate'.",
+    "released_at": "2026-06-03",
+    "governance_override": "Maestro mobile-verify gate (gov-check Rule 5) bypassed at merge per explicit founder authorisation — mobile E2E not run pre-merge. Follow-ups: on-device pnpm qa:maestro (flow 05-follower-store-deal.yaml) + OTA publish (publish-ota:all). Server endpoints proven by D2 offer-store-direct.test.js 4/4; mobile change additive + opt-in (influencer path untouched).",
+    "deploy": "MERGED 2026-06-03 with GOVERNANCE_OVERRIDE. git push lands the JS in main; mobile reaches devices only via OTA publish (scripts/publish-ota.js / publish-ota:all) — pending. No backend/web change in this commit."
+  }
+}

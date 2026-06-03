@@ -42,6 +42,9 @@ export default function PayAtStoreScreen({ navigation, route }) {
     prebookBookingId,
     tokenPaid,
     atVenueDiscountPct,
+    // Offer Engine D3 — store-direct buy: { brand_id, brand_offer_id }. When set,
+    // this is a brand-direct purchase (no influencer/tracking, no commission).
+    storeOffer,
   } = route.params || {};
 
   // Wave 4 PR 4.3 dispatch — restaurants get the new design; other
@@ -101,19 +104,28 @@ export default function PayAtStoreScreen({ navigation, route }) {
     try {
       const trackingData = trackingParams || tracking || {};
 
-      // Step 1: Create order on backend (amounts in RUPEES)
-      // Backend re-computes discount + net independently using offer.service
-      // so we don't trust client values — we just send the bill.
-      const orderRes = await followerApi.payAtStore({
-        campaign_id: trackingData.cid || trackingData.campaign_id,
-        set_id: trackingData.sid || trackingData.set_id,
-        offer_id: trackingData.oid || trackingData.offer_id || offer?.id,
-        campaign_influencer_id: trackingData.iid || trackingData.campaign_influencer_id,
-        bill_amount: billRupees,
-        product_id: product?.id || null,
-        variant_id: product?.variant_id || null,    // fashion attribution
-        prebook_booking_id: prebookBookingId || null,   // Q2 flow link
-      });
+      // Step 1: Create order on backend (amounts in RUPEES). Backend re-computes
+      // discount + net independently — we just send the bill.
+      // Offer Engine D3: a store-direct buy goes through the brand-direct path
+      // (no influencer/tracking, no commission); otherwise the influencer path.
+      const orderRes = storeOffer
+        ? await followerApi.storeOfferPay({
+            brand_id: storeOffer.brand_id || brand?.id,
+            brand_offer_id: storeOffer.brand_offer_id,
+            bill_amount: billRupees,
+            product_id: product?.id || null,
+            variant_id: product?.variant_id || null,
+          })
+        : await followerApi.payAtStore({
+            campaign_id: trackingData.cid || trackingData.campaign_id,
+            set_id: trackingData.sid || trackingData.set_id,
+            offer_id: trackingData.oid || trackingData.offer_id || offer?.id,
+            campaign_influencer_id: trackingData.iid || trackingData.campaign_influencer_id,
+            bill_amount: billRupees,
+            product_id: product?.id || null,
+            variant_id: product?.variant_id || null,    // fashion attribution
+            prebook_booking_id: prebookBookingId || null,   // Q2 flow link
+          });
 
       if (!orderRes.success && !orderRes.data) {
         Alert.alert('Failed', orderRes.error?.message || 'Could not create order');
@@ -139,19 +151,19 @@ export default function PayAtStoreScreen({ navigation, route }) {
         return;
       }
 
-      // Step 3: Verify payment on backend
-      const verifyEndpoint = orderRes.data?.verify_endpoint || '/follower/pay-at-store/verify';
-      const verifyRes = await followerApi.verifyPayAtStore
-        ? followerApi.verifyPayAtStore({
-            razorpay_order_id: payResult.razorpay_order_id,
-            razorpay_payment_id: payResult.razorpay_payment_id,
-            razorpay_signature: payResult.razorpay_signature,
-          })
-        : { success: true, data: { transaction: { reference_code: 'INFLX-' + Date.now().toString(36).toUpperCase() } } };
+      // Step 3: Verify payment on backend — store-direct vs influencer path.
+      const verifyPayload = {
+        razorpay_order_id: payResult.razorpay_order_id,
+        razorpay_payment_id: payResult.razorpay_payment_id,
+        razorpay_signature: payResult.razorpay_signature,
+      };
+      const verifyRes = storeOffer
+        ? await followerApi.storeOfferVerify(verifyPayload)
+        : await followerApi.verifyPayAtStore(verifyPayload);
 
       // Step 4: Show receipt — all values in rupees.
       setReceipt({
-        reference: verifyRes.data?.transaction?.reference_code || 'INFLX-' + Date.now().toString(36).toUpperCase(),
+        reference: verifyRes.data?.reference_code || verifyRes.data?.transaction?.reference_code || 'INFLX-' + Date.now().toString(36).toUpperCase(),
         storeName,
         billAmount: billRupees,
         discount: discountRupees,

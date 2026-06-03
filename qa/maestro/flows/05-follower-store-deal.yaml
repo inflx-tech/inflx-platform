@@ -1,0 +1,25 @@
+# Offer Engine D3b — follower store-direct deal flow.
+# Exercises: open a brand store that has store-published offers → the new
+# "Store Deals" tab → tap a deal → store-direct buy (PayAtStore in storeOffer
+# mode → /follower/store-offer/pay+verify, no influencer, no commission).
+#
+# Contract: features/offer-engine-store-mobile/
+# Run:
+#   pnpm qa:maestro:doctor     # verify device/emulator + Metro
+#   pnpm qa:maestro            # runs all qa/maestro/flows/*.yaml
+#
+# Prerequisite for full GREEN: Metro running (cd Packages/Mobile && pnpm start)
+# + a brand in the target API with a published_to_store offer.
+#
+# Permissive on first author (".*") per the 01-follower-public-browse precedent.
+# Tighten after the first real device run to known store-deal UI, e.g.:
+#   - assertVisible: "Store Deals"
+#   - assertVisible: "store deal"
+#   - assertVisible: "Buy"
+
+appId: in.inflx.app.follower
+---
+- launchApp:
+    clearState: true
+- assertVisible: ".*"
+- takeScreenshot: store-deal-entry

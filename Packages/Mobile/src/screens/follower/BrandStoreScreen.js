@@ -309,6 +309,10 @@ export default function BrandStoreScreen({ navigation, route }) {
         {[
           { key: 'products', label: `All ${brand?.category === 'restaurant' ? 'Menu' : 'Products'} (${products.length})` },
           { key: 'offers', label: `Deals (${influencers.length})` },
+          // Offer Engine D3 — brand-direct store offers (no influencer)
+          ...((store?.store_offers?.length || 0) > 0
+            ? [{ key: 'store_deals', label: `Store Deals (${store.store_offers.length})` }]
+            : []),
         ].map(t => (
           <TouchableOpacity
             key={t.key}
@@ -478,6 +482,46 @@ export default function BrandStoreScreen({ navigation, route }) {
           ))}
           {influencers.length === 0 && (
             <View style={s.empty}><Text style={s.emptyText}>No active offers</Text></View>
+          )}
+        </View>
+      )}
+
+      {/* Store Deals tab — brand-direct offers (Offer Engine D3). No influencer,
+          no commission; follower buys straight from the store. */}
+      {tab === 'store_deals' && (
+        <View style={{ padding: 20 }}>
+          {(store?.store_offers || []).map((o, i) => {
+            const cfg = o.offer_config_json || {};
+            const summary = o.offer_type === 'discount'
+              ? (cfg.sub_type === 'flat' ? `₹${cfg.value} off` : `${cfg.value}% off`)
+              : (o.offer_type || 'Offer').replace('_', ' ');
+            return (
+              <TouchableOpacity
+                key={o.brand_offer_id || i}
+                style={s.influencerCard}
+                onPress={() => navigation.navigate('PayAtStore', {
+                  brand: { id: brand?.id, name: brand?.business_name, category: brand?.category },
+                  brandId: brand?.id,
+                  store: { name: brand?.business_name },
+                  offer: { offer_type: o.offer_type },
+                  // Offer Engine D3 — brand-direct buy (no influencer/tracking)
+                  storeOffer: { brand_id: brand?.id, brand_offer_id: o.brand_offer_id },
+                  tracking: null,
+                })}
+              >
+                <View style={[s.infAvatar, { backgroundColor: accent.accent }]}>
+                  <Text style={s.infAvatarText}>%</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.infName}>{o.name}</Text>
+                  <Text style={s.infHandle}>{summary} · store deal</Text>
+                </View>
+                <Text style={[s.viewText, { color: accent.accent }]}>Buy →</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {(store?.store_offers?.length || 0) === 0 && (
+            <View style={s.empty}><Text style={s.emptyText}>No store deals</Text></View>
           )}
         </View>
       )}
