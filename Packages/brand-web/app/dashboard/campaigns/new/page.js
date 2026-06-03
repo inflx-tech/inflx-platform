@@ -1032,11 +1032,13 @@ function NewCampaignPageInner() {
           const infPayload = {
             influencer_id: inf.influencer_id,
             posting_date: inf.post_date || null,
-            offer_type: needsOffer(s.goal) ? (inf.offer_type || null) : null,
-            // Offer Engine: when a saved library offer is attached, the backend
-            // snapshots its config from brand_offer_id (client config is ignored).
-            brand_offer_id: needsOffer(s.goal) ? (inf.brand_offer_id || null) : null,
-            offer_config_json: (inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
+            // Offer Engine: offers attach for conversion/hybrid AND engagement
+            // (engagement = promotional; backend sets allocation='promotional',
+            // no commission/coupon). When a saved library offer is attached the
+            // backend snapshots its config from brand_offer_id (client config ignored).
+            offer_type: (needsOffer(s.goal) || s.goal === 'engagement') ? (inf.offer_type || null) : null,
+            brand_offer_id: (needsOffer(s.goal) || s.goal === 'engagement') ? (inf.brand_offer_id || null) : null,
+            offer_config_json: ((needsOffer(s.goal) || s.goal === 'engagement') && inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
             influencer_budget: needsBudget(s.goal) ? (Number(inf.influencer_budget) || null) : null,
             commission_pct: needsCoupon(s.goal) ? (Number(inf.commission_pct) || null) : null,
             physical_delivery: inf.physical_delivery || false,
@@ -2129,10 +2131,10 @@ function NewCampaignPageInner() {
               </div>
             </div>
 
-            {needsOffer(cur.goal) && (
+            {(needsOffer(cur.goal) || cur.goal === 'engagement') && (
               <div className="te">
-                <h4>Offer for {inf.name || inf.handle}'s audience</h4>
-                <div className="sh">What their followers get when they use the coupon.</div>
+                <h4>{cur.goal === 'engagement' ? `Offer for ${inf.name || inf.handle} to promote (optional)` : `Offer for ${inf.name || inf.handle}'s audience`}</h4>
+                <div className="sh">{cur.goal === 'engagement' ? 'Promotional only — no commission, no coupon. Pick a saved offer for them to feature; followers buy it as a store deal.' : 'What their followers get when they use the coupon.'}</div>
                 {libOffers.length > 0 && (
                   <div style={{ marginBottom: 12 }}>
                     <label className="flbl">Use a saved offer</label>

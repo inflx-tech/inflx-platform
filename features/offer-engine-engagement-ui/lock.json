@@ -1,0 +1,29 @@
+{
+  "feature": "offer-engine-engagement-ui",
+  "area": "brand-web-ui",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-03) — 'move to D3' after D2 shipped; engagement-promotional model locked during design (3-channel model, Screen 03).",
+  "approved_at": "2026-06-03",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (brand-web → Vercel) but additive: the campaign wizard's per-influencer offer section now also shows for the engagement goal (optional, promotional — no commission/coupon) and sends brand_offer_id/offer for engagement. Conversion/hybrid unchanged; no backend/OTA (C-backend + D2 already live).",
+  "notes": "Sub-contract D, brand-web slice (D3a). The follower-mobile STORE DEAL render + store-direct buy is the sibling D3b (Mobile-governed: Maestro + OTA). UI-governed: mockup-lock + before/after-diff gates apply.",
+  "related": [
+    "features/offer-engine-campaign-attach (C-backend — engagement allocation, DEPLOYED)",
+    "features/offer-engine-campaign-attach-ui (C-UI — saved-offer picker, DEPLOYED)",
+    "features/offer-engine-store-publish (D1 — DEPLOYED), offer-engine-store-direct (D2 — DEPLOYED)",
+    "_planned: D3b follower-mobile STORE DEAL + buy (Mobile-governed)"
+  ],
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect (2026-06-03) — Screen 03 (engagement column) reviewed/locked across the 3 mockup iteration rounds.",
+  "mockup_locked_at": "2026-06-03",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-03) — explicit 'move to D3'.",
+    "released_at": "2026-06-03",
+    "deploy": "DEPLOYED 2026-06-03. brand-web ONLY (Vercel): campaign wizard offer step now shows for engagement goal (optional, promotional — no commission/coupon); invite payload sends brand_offer_id/offer for engagement -> C-backend allocation='promotional'. Evidence: next build GREEN (/dashboard/campaigns/new 28.3 kB); engagement attach proven server-side by C-backend offer-attach.test.js. Additive: conversion/hybrid byte-unchanged. No backend/OTA. Follower-mobile STORE DEAL render+buy = sibling D3b."
+  }
+}
