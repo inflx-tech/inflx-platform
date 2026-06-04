@@ -162,6 +162,30 @@ describe('regression — inline paths unchanged', () => {
   });
 });
 
+describe('engagement promoted-offers multi-select', () => {
+  it('M1: engagement + promoted_brand_offer_ids[] → 201, stores list, promotional', async () => {
+    const { token, cid, engSid, offerId } = await setup();
+    const offer2 = await createOffer(token);   // a second active library offer
+    const res = await invite(token, cid, engSid, { influencer_id: await makeInfluencer(), promoted_brand_offer_ids: [offerId, offer2] });
+    expect(res.status).toBe(201);
+    const ci = res.body.data.campaign_influencer;
+    expect((ci.promoted_brand_offer_ids || []).sort()).toEqual([offerId, offer2].sort());
+    expect(ci.allocation).toBe('promotional');
+    expect(ci.commission_pct).toBeNull();
+    expect(ci.coupon_code).toBeNull();
+  });
+
+  it('M2: a promoted id from another brand → 422', async () => {
+    const a = await setup();
+    const { token: tokenB, user: userB } = await createBrandUser();
+    await registerBrand(tokenB); await approve(userB.id);
+    const foreign = await createOffer(tokenB);
+    const res = await invite(a.token, a.cid, a.engSid, { influencer_id: await makeInfluencer(), promoted_brand_offer_ids: [a.offerId, foreign] });
+    expect(res.status).toBe(422);
+    expect(res.body.error.field).toBe('promoted_brand_offer_ids');
+  });
+});
+
 describe('updateInfluencer attach', () => {
   it('8: PATCH a draft CI with brand_offer_id → snapshot + allocation', async () => {
     const { token, cid, engSid, offerId } = await setup();

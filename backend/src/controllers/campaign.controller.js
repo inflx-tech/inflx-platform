@@ -790,6 +790,22 @@ async function resolveOfferAttachment({ brandId, goal, brand_offer_id, offer_typ
   return { effType, effConfig, brandOfferId, allocation };
 }
 
+// Offer Engine: validate the engagement "promoted offers" multi-select — every id
+// must belong to this brand and not be archived. Returns a de-duped uuid[] or null.
+async function validatePromotedOffers(brandId, ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return null;
+  const uniq = [...new Set(ids.filter(Boolean))];
+  if (uniq.length === 0) return null;
+  const { rows } = await db.query(
+    `SELECT id FROM brand_offers WHERE id = ANY($1::uuid[]) AND brand_id = $2 AND status <> 'archived'`,
+    [uniq, brandId]
+  );
+  if (rows.length !== uniq.length) {
+    throw new AppError('VALIDATION_ERROR', 'One or more selected offers are not in your library', 422, 'promoted_brand_offer_ids');
+  }
+  return uniq;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Invite influencer (handpick)
 // POST /campaigns/:id/sets/:sid/invite
@@ -807,6 +823,7 @@ const invite = asyncHandler(async (req, res) => {
     offer_type,
     offer_config_json,
     brand_offer_id,
+    promoted_brand_offer_ids,
     commission_pct,
     coupon_code: customCouponCode,
     physical_delivery,
@@ -824,6 +841,9 @@ const invite = asyncHandler(async (req, res) => {
   const { effType, effConfig, brandOfferId, allocation } = await resolveOfferAttachment({
     brandId: brand.id, goal, brand_offer_id, offer_type, offer_config_json,
   });
+  // Engagement multi-select: a list of offers the creator promotes (promotional).
+  const promotedIds = await validatePromotedOffers(brand.id, promoted_brand_offer_ids);
+  const finalAllocation = promotedIds ? 'promotional' : allocation;
 
   // Goal-conditional validation.
   if (goal === 'engagement') {
@@ -905,8 +925,8 @@ const invite = asyncHandler(async (req, res) => {
        (set_id, influencer_id, status, agreed_fee, posting_date, offer_expires_at,
         offer_type, offer_config_json, commission_pct, coupon_code,
         physical_delivery, delivery_address, influencer_budget, submission_deadline,
-        brand_offer_id, allocation)
-     VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        brand_offer_id, allocation, promoted_brand_offer_ids)
+     VALUES ($1, $2, 'invited', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
      RETURNING *`,
     [
       set.id,
@@ -923,7 +943,8 @@ const invite = asyncHandler(async (req, res) => {
       influencer_budget || null,
       submissionDeadline,
       brandOfferId,
-      allocation,
+      finalAllocation,
+      promotedIds,
     ]
   );
 
@@ -971,6 +992,7 @@ const updateInfluencer = asyncHandler(async (req, res) => {
     offer_type,
     offer_config_json,
     brand_offer_id,
+    promoted_brand_offer_ids,
     commission_pct,
     physical_delivery,
     delivery_address,
@@ -982,8 +1004,11 @@ const updateInfluencer = asyncHandler(async (req, res) => {
   const { effType, effConfig, brandOfferId, allocation } = await resolveOfferAttachment({
     brandId: brand.id, goal: set.goal, brand_offer_id, offer_type, offer_config_json,
   });
+  // Engagement multi-select promoted offers (promotional list).
+  const promotedIds = await validatePromotedOffers(brand.id, promoted_brand_offer_ids);
+  const finalAllocation = promotedIds ? 'promotional' : allocation;
   // Promotional (engagement) offers never carry a commission.
-  const effCommission = allocation === 'promotional' ? null : (commission_pct != null ? commission_pct : null);
+  const effCommission = finalAllocation === 'promotional' ? null : (commission_pct != null ? commission_pct : null);
 
   // Recalculate submission deadline
   let submissionDeadline = existing[0].submission_deadline;
@@ -1017,7 +1042,8 @@ const updateInfluencer = asyncHandler(async (req, res) => {
        submission_deadline = $9,
        offer_expires_at = $10,
        brand_offer_id = $11,
-       allocation = $12
+       allocation = $12,
+       promoted_brand_offer_ids = $13
      WHERE id = $1
      RETURNING *`,
     [
@@ -1032,7 +1058,8 @@ const updateInfluencer = asyncHandler(async (req, res) => {
       submissionDeadline,
       newOfferExpiresAt,
       brandOfferId,
-      allocation,
+      finalAllocation,
+      promotedIds,
     ]
   );
 

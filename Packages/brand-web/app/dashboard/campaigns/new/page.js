@@ -70,7 +70,8 @@ const mkInf = () => ({
   gift_offers: [{ main: null, gift: null }],
   commission_pct: '', physical_delivery: false,
   delivery_address: '', custom_code: '', edit_code: false,
-  brand_offer_id: null,   // Offer Engine: attach a saved library offer instead of authoring inline
+  brand_offer_id: null,   // Offer Engine: conversion/hybrid — one saved offer (snapshot)
+  promoted_offer_ids: [], // Offer Engine: engagement — multiple saved offers to promote
   backendId: null,
 });
 const mkGroup = () => ({
@@ -591,6 +592,7 @@ function NewCampaignPageInner() {
               influencer_budget: ci.influencer_budget != null ? String(ci.influencer_budget) : '',
               offer_type: ci.offer_type || '',
               brand_offer_id: ci.brand_offer_id || null,
+              promoted_offer_ids: ci.promoted_brand_offer_ids || [],
               commission_pct: ci.commission_pct != null ? String(ci.commission_pct) : '',
               physical_delivery: ci.physical_delivery || false,
               delivery_address: ci.delivery_address || '',
@@ -1032,13 +1034,14 @@ function NewCampaignPageInner() {
           const infPayload = {
             influencer_id: inf.influencer_id,
             posting_date: inf.post_date || null,
-            // Offer Engine: offers attach for conversion/hybrid AND engagement
-            // (engagement = promotional; backend sets allocation='promotional',
-            // no commission/coupon). When a saved library offer is attached the
-            // backend snapshots its config from brand_offer_id (client config ignored).
-            offer_type: (needsOffer(s.goal) || s.goal === 'engagement') ? (inf.offer_type || null) : null,
-            brand_offer_id: (needsOffer(s.goal) || s.goal === 'engagement') ? (inf.brand_offer_id || null) : null,
-            offer_config_json: ((needsOffer(s.goal) || s.goal === 'engagement') && inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
+            // Offer Engine: conversion/hybrid attach ONE offer (snapshot via
+            // brand_offer_id, commissioned). Engagement promotes a LIST of offers
+            // (promoted_brand_offer_ids, promotional — backend sets allocation,
+            // no commission/coupon).
+            offer_type: needsOffer(s.goal) ? (inf.offer_type || null) : null,
+            brand_offer_id: needsOffer(s.goal) ? (inf.brand_offer_id || null) : null,
+            offer_config_json: (needsOffer(s.goal) && inf.offer_type && !inf.brand_offer_id) ? buildOfferConfig(inf) : null,
+            promoted_brand_offer_ids: s.goal === 'engagement' ? (inf.promoted_offer_ids || []) : null,
             influencer_budget: needsBudget(s.goal) ? (Number(inf.influencer_budget) || null) : null,
             commission_pct: needsCoupon(s.goal) ? (Number(inf.commission_pct) || null) : null,
             physical_delivery: inf.physical_delivery || false,
@@ -2135,31 +2138,60 @@ function NewCampaignPageInner() {
               <div className="te">
                 <h4>{cur.goal === 'engagement' ? `Offer for ${inf.name || inf.handle} to promote (optional)` : `Offer for ${inf.name || inf.handle}'s audience`}</h4>
                 <div className="sh">{cur.goal === 'engagement' ? 'Promotional only — no commission, no coupon. Pick a saved offer for them to feature; followers buy it as a store deal.' : 'What their followers get when they use the coupon.'}</div>
-                {libOffers.length > 0 && (
-                  <div style={{ marginBottom: 12 }}>
-                    <label className="flbl">Use a saved offer</label>
-                    <select className="inp" value={inf.brand_offer_id || ''} onChange={e => {
-                      const o = libOffers.find(x => x.id === e.target.value);
-                      if (o) { updateInf(activeSet, ai, { brand_offer_id: o.id, offer_type: OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type }); markTouched(`inf_${activeSet}_${ai}_ot`); }
-                      else { updateInf(activeSet, ai, { brand_offer_id: null }); }
-                    }}>
-                      <option value="">— Author inline below —</option>
-                      {libOffers.map(o => <option key={o.id} value={o.id}>{o.name} ({OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type})</option>)}
-                    </select>
-                    <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 5 }}>From your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library. Editing a saved offer later won’t change this campaign (snapshotted on attach).</div>
-                  </div>
-                )}
-                {inf.brand_offer_id ? (
-                  <div style={{ background: '#D1FAE5', color: '#047857', border: '1px solid #6EE7B7', borderRadius: 10, padding: '10px 13px', fontSize: 12.5, fontWeight: 700 }}>
-                    ✓ Using saved offer: {(libOffers.find(o => o.id === inf.brand_offer_id) || {}).name || 'saved offer'}
-                  </div>
+                {cur.goal === 'engagement' ? (
+                  /* Engagement = promotional: pick ANY number of saved offers to feature. */
+                  libOffers.length > 0 ? (
+                    <div>
+                      <label className="flbl">Offers to promote (select any)</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {libOffers.map(o => {
+                          const sel = (inf.promoted_offer_ids || []).includes(o.id);
+                          return (
+                            <div key={o.id} className={`fmt-chip ${sel ? 'sel' : ''}`} style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                              onClick={() => {
+                                const list = inf.promoted_offer_ids || [];
+                                updateInf(activeSet, ai, { promoted_offer_ids: sel ? list.filter(x => x !== o.id) : [...list, o.id] });
+                              }}>
+                              <span>{o.name} <span style={{ opacity: .6 }}>({OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type})</span></span>
+                              <span>{sel ? '✓' : '+'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 6 }}>{(inf.promoted_offer_ids || []).length} selected · they feature these; followers buy them as store deals. Manage in your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library.</div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--muted-2)' }}>No active saved offers yet — create some in your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library to let {inf.name || 'this creator'} promote them.</div>
+                  )
                 ) : (
                   <>
-                    <div className="oc-types">
-                      {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${inf.offer_type === ot ? 'sel' : ''}`} onClick={() => { onInfChg('offer_type', ot); markTouched(`inf_${activeSet}_${ai}_ot`); }}>{ot}</div>)}
-                    </div>
-                    {showErr(`inf_${activeSet}_${ai}_ot`, infErr.offer_type) && <div className="field-err" style={{ marginBottom: 10 }}>{infErr.offer_type}</div>}
-                    {renderOfferConfig(inf, false)}
+                    {libOffers.length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        <label className="flbl">Use a saved offer</label>
+                        <select className="inp" value={inf.brand_offer_id || ''} onChange={e => {
+                          const o = libOffers.find(x => x.id === e.target.value);
+                          if (o) { updateInf(activeSet, ai, { brand_offer_id: o.id, offer_type: OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type }); markTouched(`inf_${activeSet}_${ai}_ot`); }
+                          else { updateInf(activeSet, ai, { brand_offer_id: null }); }
+                        }}>
+                          <option value="">— Author inline below —</option>
+                          {libOffers.map(o => <option key={o.id} value={o.id}>{o.name} ({OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type})</option>)}
+                        </select>
+                        <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 5 }}>From your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library. Editing a saved offer later won’t change this campaign (snapshotted on attach).</div>
+                      </div>
+                    )}
+                    {inf.brand_offer_id ? (
+                      <div style={{ background: '#D1FAE5', color: '#047857', border: '1px solid #6EE7B7', borderRadius: 10, padding: '10px 13px', fontSize: 12.5, fontWeight: 700 }}>
+                        ✓ Using saved offer: {(libOffers.find(o => o.id === inf.brand_offer_id) || {}).name || 'saved offer'}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="oc-types">
+                          {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${inf.offer_type === ot ? 'sel' : ''}`} onClick={() => { onInfChg('offer_type', ot); markTouched(`inf_${activeSet}_${ai}_ot`); }}>{ot}</div>)}
+                        </div>
+                        {showErr(`inf_${activeSet}_${ai}_ot`, infErr.offer_type) && <div className="field-err" style={{ marginBottom: 10 }}>{infErr.offer_type}</div>}
+                        {renderOfferConfig(inf, false)}
+                      </>
+                    )}
                   </>
                 )}
               </div>

@@ -1,0 +1,27 @@
+{
+  "feature": "offer-engine-engagement-multi",
+  "area": "brand-web-ui+backend+migration",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-04) — 'in engagement flow it should be multi select instead of single'.",
+  "approved_at": "2026-06-04",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (migration 086 + backend -> Render + brand-web -> Vercel) but additive: new nullable campaign_influencers.promoted_brand_offer_ids uuid[]; engagement offer step becomes multi-select; conversion/hybrid single-offer path byte-unchanged. No OTA.",
+  "notes": "Engagement multi-select promoted offers. A creator can feature multiple saved offers (promotional, no commission/coupon). Conversion/hybrid stay single (brand_offer_id snapshot). Backend invite/updateInfluencer validate + store the array, force allocation='promotional'.",
+  "related": [
+    "features/offer-engine-campaign-attach (C-backend), offer-engine-campaign-attach-ui (C-UI), offer-engine-engagement-ui (D3a) — DEPLOYED",
+    "follower-side rendering of promoted offers — downstream (offers buyable via store-publish/store-direct already)"
+  ],
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect — Screen 03 (engagement attach) locked during design; this refines the engagement picker to multi-select.",
+  "mockup_locked_at": "2026-06-04",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-04) — multi-select request implies ship.",
+    "released_at": "2026-06-04",
+    "deploy": "DEPLOYED 2026-06-04. Migration 086 applied to Supabase prod via run-086.js (campaign_influencers.promoted_brand_offer_ids uuid[]). backend (Render): invite/updateInfluencer accept+validate+store the array, allocation='promotional'. brand-web (Vercel): engagement offer step multi-select checklist. Evidence: offer-attach.test.js 11/11 GREEN (M1 list stored promotional, M2 foreign id 422); next build GREEN (/dashboard/campaigns/new). Additive — conversion single-offer path unchanged; campaigns.test.js at pre-existing tier-seed baseline. No OTA."
+  }
+}
