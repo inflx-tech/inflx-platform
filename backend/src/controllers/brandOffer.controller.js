@@ -48,7 +48,9 @@ const listOffers = asyncHandler(async (req, res) => {
   if (req.query.q)      { params.push(`%${req.query.q}%`); where.push(`name ILIKE $${params.length}`); }
 
   const { rows } = await db.query(
-    `SELECT ${RETURNING} FROM brand_offers
+    `SELECT ${RETURNING},
+            (SELECT count(*)::int FROM campaign_influencers ci WHERE ci.brand_offer_id = brand_offers.id) AS attached_count
+       FROM brand_offers
       WHERE ${where.join(' AND ')}
       ORDER BY created_at DESC`,
     params

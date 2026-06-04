@@ -1,0 +1,27 @@
+{
+  "feature": "offer-engine-publish-ui",
+  "area": "brand-web-ui+backend-read",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Chat-architect (2026-06-04) — 'check all agreed mocks, fix all issues' after functional testing surfaced the missing publish-to-store control.",
+  "approved_at": "2026-06-04",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (brand-web -> Vercel + additive read-only attached_count on listOffers -> Render) but additive. Closes the publish-to-store toggle + distribution badges gap vs the locked mockups (Screen 01 + Screen 03 Channel I). No migration/OTA.",
+  "notes": "Gap-fix found during functional testing: D1 shipped the publish-to-store backend but the brand UI toggle + Screen-01 distribution badges were never built. This adds them. UI-governed: mockup-lock (Screen 01 + 03, already locked) + before/after-diff.",
+  "related": [
+    "features/offer-engine-library-ui (B), offer-engine-store-publish (D1), offer-engine-store-direct (D2) — DEPLOYED",
+    "Screen 04 mobile STORE DEAL ribbons — separate mobile follow-up"
+  ],
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Chat-architect — Screen 01 (offers-list) + Screen 03 (distribute) reviewed/locked during the design phase; this fix implements their already-agreed elements.",
+  "mockup_locked_at": "2026-06-04",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder via Chat-architect (2026-06-04) — 'fix all issues'.",
+    "released_at": "2026-06-04",
+    "deploy": "DEPLOYED 2026-06-04. brand-web (Vercel): publish-to-store toggle (row + dialog w/ dates) + In-store/N-influencers badges + subtitle copy fix. backend (Render): listOffers returns attached_count (read-only). Evidence: next build GREEN (/dashboard/offers compiles); brand-offer.test.js + offer-store-publish.test.js 15/15 GREEN. Additive — existing offer CRUD + store flows unchanged. No migration/OTA."
+  }
+}

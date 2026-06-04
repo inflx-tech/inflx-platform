@@ -47,20 +47,37 @@ export default function OffersPage() {
     (!q || o.name.toLowerCase().includes(q.toLowerCase()))
   ), [offers, tab, typeFilter, q]);
 
-  const openNew = () => setModal({ editingId: null, draft: emptyDraft() });
-  const openEdit = (o) => setModal({ editingId: o.id, draft: draftFromOffer(o) });
+  const fmtDate = (d) => (d ? String(d).slice(0, 10) : '');
+  const openNew = () => setModal({ editingId: null, draft: emptyDraft(), published_to_store: false, store_starts_at: '', store_ends_at: '' });
+  const openEdit = (o) => setModal({ editingId: o.id, draft: draftFromOffer(o), published_to_store: !!o.published_to_store, store_starts_at: fmtDate(o.store_starts_at), store_ends_at: fmtDate(o.store_ends_at) });
+
+  // One-click publish/unpublish from a row (works on any saved offer).
+  async function togglePublish(o) {
+    const res = await brandApi.updateOffer(o.id, { published_to_store: !o.published_to_store });
+    if (res.success) { showToast(!o.published_to_store ? 'Published to store' : 'Removed from store'); load(); }
+    else showToast(res.error?.message || 'Update failed', 'err');
+  }
 
   async function save(activate) {
     const payload = buildOfferConfig(modal.draft);
     if (!payload.name) { showToast('Offer name is required', 'err'); return; }
     setSaving(true);
     try {
+      // Distribution (publish-to-store) fields — sent on the offer-update call.
+      const dist = {
+        published_to_store: !!modal.published_to_store,
+        store_starts_at: modal.store_starts_at || null,
+        store_ends_at: modal.store_ends_at || null,
+      };
       let res;
       if (modal.editingId) {
-        res = await brandApi.updateOffer(modal.editingId, { ...payload, status: activate ? 'active' : undefined });
+        res = await brandApi.updateOffer(modal.editingId, { ...payload, ...dist, status: activate ? 'active' : undefined });
       } else {
         res = await brandApi.createOffer(payload);
-        if (res.success && activate) res = await brandApi.updateOffer(res.data.offer.id, { status: 'active' });
+        // createOffer doesn't accept distribution/status — apply them in a follow-up patch.
+        if (res.success && (activate || dist.published_to_store)) {
+          res = await brandApi.updateOffer(res.data.offer.id, { ...dist, status: activate ? 'active' : undefined });
+        }
       }
       if (!res.success) {
         const e = res.error || {};
@@ -88,7 +105,7 @@ export default function OffersPage() {
       <div className="hdr">
         <div>
           <h1>Offers</h1>
-          <div className="sub">Design reusable offers on your products & services. Attach them to influencers in a campaign or (soon) publish to your store — without re-authoring discounts each time.</div>
+          <div className="sub">Design reusable offers on your products & services. Publish them to your store, or attach them to influencers in a campaign — without re-authoring discounts each time.</div>
         </div>
         <button className="btn btn-ink" onClick={openNew}>+ New offer</button>
       </div>
@@ -136,9 +153,16 @@ export default function OffersPage() {
                     <div className="o-tags">
                       <span className="pill type">{TYPE_LABEL[o.offer_type]}</span>
                       <span className={`pill ${o.status}`}>{o.status}</span>
+                      {o.published_to_store && <span className="pill store">◧ In store</span>}
+                      {o.attached_count > 0 && <span className="pill infl">★ {o.attached_count} influencer{o.attached_count > 1 ? 's' : ''}</span>}
                     </div>
                   </div>
                   <div className="o-act">
+                    {o.status === 'active' && (
+                      <button className={`btn btn-sm ${o.published_to_store ? 'btn-ghost' : 'btn-yellow'}`} onClick={() => togglePublish(o)}>
+                        {o.published_to_store ? '◧ In store ✓' : '◧ Publish to store'}
+                      </button>
+                    )}
                     <button className="btn btn-ghost btn-sm" onClick={() => openEdit(o)}>Edit</button>
                     {o.status !== 'active' && o.status !== 'archived' && <button className="btn btn-yellow btn-sm" onClick={() => setStatus(o, 'active')}>Activate</button>}
                     {o.status !== 'archived' && <button className="btn btn-ghost btn-sm" onClick={() => setStatus(o, 'archived')}>Archive</button>}
@@ -156,6 +180,25 @@ export default function OffersPage() {
             <div className="modal-h"><h3>{modal.editingId ? 'Edit offer' : 'New offer'}</h3><button className="modal-x" onClick={() => !saving && setModal(null)}>×</button></div>
             <div className="modal-b">
               <OfferBuilder draft={modal.draft} setDraft={(d) => setModal(m => ({ ...m, draft: d }))} products={products} sections={sections} />
+
+              <div className="dist-sec">
+                <div className="dist-row">
+                  <div>
+                    <div className="dist-title">◧ Publish to store</div>
+                    <div className="dist-sub">Every follower sees this in your store and can buy it directly — no influencer, no commission.</div>
+                  </div>
+                  <button type="button" className={`sw ${modal.published_to_store ? 'on' : ''}`} onClick={() => setModal(m => ({ ...m, published_to_store: !m.published_to_store }))}><span className="dot" /></button>
+                </div>
+                {modal.published_to_store && (
+                  <>
+                    <div className="dist-dates">
+                      <div><label className="flbl2">Start date (optional)</label><input type="date" className="inp" value={modal.store_starts_at} onChange={e => setModal(m => ({ ...m, store_starts_at: e.target.value }))} /></div>
+                      <div><label className="flbl2">End date (optional)</label><input type="date" className="inp" value={modal.store_ends_at} onChange={e => setModal(m => ({ ...m, store_ends_at: e.target.value }))} /></div>
+                    </div>
+                    {!modal.editingId && <div className="dist-note">New offers save as a draft — a store offer only goes live once it's <b>Active</b>. Use "Save &amp; activate".</div>}
+                  </>
+                )}
+              </div>
             </div>
             <div className="modal-f">
               <button className="btn btn-ghost" onClick={() => setModal(null)} disabled={saving}>Cancel</button>
@@ -212,6 +255,19 @@ const CSS = `
 .ofl .pill.draft{background:var(--bg2);color:var(--muted-2)}
 .ofl .pill.active{background:var(--success-pale);color:var(--success-text)}
 .ofl .pill.archived{background:var(--bg2);color:var(--muted-3)}
+.ofl .pill.store{background:#DBEAFE;color:#1D4ED8}
+.ofl .pill.infl{background:#F3E8FF;color:#7E22CE}
+.ofl .sw{width:44px;height:24px;background:var(--muted-3);border-radius:99px;position:relative;cursor:pointer;border:0;flex-shrink:0}
+.ofl .sw.on{background:#10B981}
+.ofl .sw .dot{position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform .15s}
+.ofl .sw.on .dot{transform:translateX(20px)}
+.ofl .dist-sec{margin-top:18px;border-top:1px dashed var(--border);padding-top:16px}
+.ofl .dist-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.ofl .dist-title{font-family:'Outfit',sans-serif;font-size:14px;font-weight:700}
+.ofl .dist-sub{font-size:11.5px;color:var(--muted);margin-top:3px;max-width:420px;line-height:1.5}
+.ofl .dist-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.ofl .flbl2{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:6px}
+.ofl .dist-note{font-size:11px;color:var(--yellow-text);background:var(--yellow-pale);border-radius:8px;padding:8px 11px;margin-top:10px}
 .ofl .empty{background:linear-gradient(135deg,#FFFDEB,#FFF7CC);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;position:relative;overflow:hidden;margin-top:14px}
 .ofl .empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
 .ofl .empty .em{font-size:46px;margin-bottom:10px;position:relative}
