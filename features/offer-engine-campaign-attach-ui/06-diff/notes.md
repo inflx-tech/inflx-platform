@@ -24,3 +24,17 @@ new` compiles, 28.2 kB).
 - `next build` GREEN; wizard route compiles with the picker.
 - Server side proven by C-backend `offer-attach.test.js` (9/9): invite/update with `brand_offer_id` → snapshot + `commissioned` allocation.
 - Live Playwright pixel-capture not run in this authoring environment; a Vercel preview renders the real wizard step for final visual sign-off. Inline-authoring path is byte-unchanged (additive conditional block).
+
+## Coexist correction (2026-06-04)
+Founder feedback: the first cut made the conversion offer step an **either/or** —
+the "Use a saved offer" dropdown led, and picking a saved offer **hid** the
+original build-from-products creator (felt like the existing flow was removed).
+That violated "don't disturb the conversion flow; only ADD a saved-offer option".
+
+**Fixed:** the original inline creator (offer-type chips + product-based config)
+is now **always present and primary** in the conversion/hybrid offer step. The
+saved-offer picker is a clearly-optional shortcut above it ("Use a saved offer
+(optional)" / default "— Build a new offer below —"). Selecting a saved offer
+**dims** the builder (does NOT remove it) with a note + a one-click "Build a new
+one instead" to revert. Engagement multi-select unchanged. `next build` GREEN;
+submit/validation logic unchanged (brand_offer_id overrides inline as before).

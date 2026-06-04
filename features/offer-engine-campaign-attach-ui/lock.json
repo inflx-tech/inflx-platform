@@ -24,6 +24,7 @@
     "released": true,
     "released_by": "founder via Chat-architect (2026-06-03) — explicit 'pls deploy' (C-UI).",
     "released_at": "2026-06-03",
+    "deploy_fix_2026-06-04": "COEXIST FIX (commit pending): first cut hid the original build-from-products creator when a saved offer was picked (either/or) — violated 'don't disturb conversion flow'. Corrected: inline creator always present + primary; saved-offer picker is an optional shortcut that only DIMS (never removes) the builder. brand-web only, next build GREEN. See 06-diff/notes.md 'Coexist correction'.",
     "deploy": "DEPLOYED 2026-06-03. brand-web ONLY (Vercel): campaigns/new/page.js gains a 'Use a saved offer' picker on the handpick per-influencer offer step (conversion/hybrid) + brand_offer_id in invite/update payload + draft hydration + OFFER_KEY_TO_LABEL + active-offers load. git push -> Vercel auto-deploy. No backend/OTA (C-backend already live). Evidence: next build GREEN (/dashboard/campaigns/new compiles, 28.2 kB); server side proven by C-backend offer-attach.test.js 9/9. Additive: picker only shows when active offers exist; inline authoring path byte-unchanged. Engagement-promotional UI + open-group group offers deferred to D."
   }
 }

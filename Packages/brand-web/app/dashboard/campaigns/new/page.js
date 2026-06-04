@@ -2165,33 +2165,40 @@ function NewCampaignPageInner() {
                   )
                 ) : (
                   <>
+                    {/* OPTIONAL shortcut — pick a saved offer from the library. This is
+                        an ADDITION; the build-from-products creator below is the
+                        original flow and stays fully available + unchanged. */}
                     {libOffers.length > 0 && (
-                      <div style={{ marginBottom: 12 }}>
-                        <label className="flbl">Use a saved offer</label>
+                      <div style={{ marginBottom: 14 }}>
+                        <label className="flbl">Use a saved offer (optional)</label>
                         <select className="inp" value={inf.brand_offer_id || ''} onChange={e => {
                           const o = libOffers.find(x => x.id === e.target.value);
-                          if (o) { updateInf(activeSet, ai, { brand_offer_id: o.id, offer_type: OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type }); markTouched(`inf_${activeSet}_${ai}_ot`); }
-                          else { updateInf(activeSet, ai, { brand_offer_id: null }); }
+                          if (o) updateInf(activeSet, ai, { brand_offer_id: o.id, offer_type: OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type });
+                          else updateInf(activeSet, ai, { brand_offer_id: null });
+                          markTouched(`inf_${activeSet}_${ai}_ot`);
                         }}>
-                          <option value="">— Author inline below —</option>
+                          <option value="">— Build a new offer below —</option>
                           {libOffers.map(o => <option key={o.id} value={o.id}>{o.name} ({OFFER_KEY_TO_LABEL[o.offer_type] || o.offer_type})</option>)}
                         </select>
-                        <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 5 }}>From your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library. Editing a saved offer later won’t change this campaign (snapshotted on attach).</div>
+                        {inf.brand_offer_id ? (
+                          <div style={{ background: '#D1FAE5', color: '#047857', border: '1px solid #6EE7B7', borderRadius: 10, padding: '10px 13px', fontSize: 12, fontWeight: 600, marginTop: 8 }}>
+                            ✓ Using saved offer: <b>{(libOffers.find(o => o.id === inf.brand_offer_id) || {}).name || 'saved offer'}</b> — the builder below is ignored for {inf.name || 'this influencer'}. <span style={{ textDecoration: 'underline', cursor: 'pointer' }} onClick={() => updateInf(activeSet, ai, { brand_offer_id: null })}>Build a new one instead</span>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 11, color: 'var(--muted-2)', marginTop: 5 }}>Pick one from your <a href="/dashboard/offers" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'underline' }}>Offers</a> library, or build a new offer below. (Saved offers are snapshotted on attach.)</div>
+                        )}
                       </div>
                     )}
-                    {inf.brand_offer_id ? (
-                      <div style={{ background: '#D1FAE5', color: '#047857', border: '1px solid #6EE7B7', borderRadius: 10, padding: '10px 13px', fontSize: 12.5, fontWeight: 700 }}>
-                        ✓ Using saved offer: {(libOffers.find(o => o.id === inf.brand_offer_id) || {}).name || 'saved offer'}
+
+                    {/* ORIGINAL build-from-products offer creator — unchanged, always
+                        present. Dimmed (not removed) while a saved offer overrides it. */}
+                    <div style={inf.brand_offer_id ? { opacity: .45, pointerEvents: 'none' } : null}>
+                      <div className="oc-types">
+                        {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${inf.offer_type === ot ? 'sel' : ''}`} onClick={() => { onInfChg('offer_type', ot); markTouched(`inf_${activeSet}_${ai}_ot`); }}>{ot}</div>)}
                       </div>
-                    ) : (
-                      <>
-                        <div className="oc-types">
-                          {OFFER_TYPES.map(ot => <div key={ot} className={`fmt-chip ${inf.offer_type === ot ? 'sel' : ''}`} onClick={() => { onInfChg('offer_type', ot); markTouched(`inf_${activeSet}_${ai}_ot`); }}>{ot}</div>)}
-                        </div>
-                        {showErr(`inf_${activeSet}_${ai}_ot`, infErr.offer_type) && <div className="field-err" style={{ marginBottom: 10 }}>{infErr.offer_type}</div>}
-                        {renderOfferConfig(inf, false)}
-                      </>
-                    )}
+                      {showErr(`inf_${activeSet}_${ai}_ot`, infErr.offer_type) && <div className="field-err" style={{ marginBottom: 10 }}>{infErr.offer_type}</div>}
+                      {renderOfferConfig(inf, false)}
+                    </div>
                   </>
                 )}
               </div>
