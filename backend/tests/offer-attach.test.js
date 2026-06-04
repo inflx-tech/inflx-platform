@@ -186,6 +186,30 @@ describe('engagement promoted-offers multi-select', () => {
   });
 });
 
+describe('offer attachments (where it is used)', () => {
+  it('A1: lists the influencer + campaign an offer is attached to', async () => {
+    const { token, cid, convSid, offerId } = await setup();
+    await invite(token, cid, convSid, { influencer_id: await makeInfluencer(), brand_offer_id: offerId });
+    const res = await request(app).get(`/v1/brands/me/offers/${offerId}/attachments`).set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.attachments).toHaveLength(1);
+    const a = res.body.data.attachments[0];
+    expect(a.campaign_id).toBe(cid);
+    expect(a.campaign_name).toBeDefined();
+    expect(a.influencer_name).toBeDefined();
+    expect(a.allocation).toBe('commissioned');
+  });
+
+  it('A2: includes engagement promoted attachments too', async () => {
+    const { token, cid, engSid, offerId } = await setup();
+    await invite(token, cid, engSid, { influencer_id: await makeInfluencer(), promoted_brand_offer_ids: [offerId] });
+    const res = await request(app).get(`/v1/brands/me/offers/${offerId}/attachments`).set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.attachments).toHaveLength(1);
+    expect(res.body.data.attachments[0].allocation).toBe('promotional');
+  });
+});
+
 describe('updateInfluencer attach', () => {
   it('8: PATCH a draft CI with brand_offer_id → snapshot + allocation', async () => {
     const { token, cid, engSid, offerId } = await setup();

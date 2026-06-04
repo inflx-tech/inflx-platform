@@ -151,6 +151,7 @@ export const brandApi = {
   deleteProduct: (id) => api.delete(`/brands/me/products/${id}`),
   // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────
   getOffers:   (params) => api.get(`/brands/me/offers${params ? '?' + new URLSearchParams(params) : ''}`),
+  getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),
   createOffer: (data) => api.post('/brands/me/offers', data),
   updateOffer: (id, data) => api.patch(`/brands/me/offers/${id}`, data),
   deleteOffer: (id) => api.delete(`/brands/me/offers/${id}`),

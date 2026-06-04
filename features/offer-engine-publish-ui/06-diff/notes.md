@@ -21,3 +21,12 @@ control; no distribution badges; subtitle said "(soon) publish to your store").
   (the mobile "Store Deals" tab shipped in D3b/OTA v66).
 - Live Playwright pixel-capture not run here; structural before/after vs the
   locked Screen 01 + Screen 03 mockups; build green; backend suites 15/15.
+
+## Follow-up (2026-06-04): "where it's used" drill-down
+Founder asked: clicking an offer should list the influencers it's attached to +
+which campaign. Added: click the offer row → a detail modal listing each
+attachment (influencer name/handle · campaign + set · type · status). New
+read-only endpoint `GET /brands/me/offers/:id/attachments` (brand-scoped, covers
+BOTH conversion `brand_offer_id` and engagement `promoted_brand_offer_ids`); the
+`attached_count` badge now also counts promoted attachments. offer-attach.test.js
+A1/A2 GREEN (24/24); next build GREEN. No migration.

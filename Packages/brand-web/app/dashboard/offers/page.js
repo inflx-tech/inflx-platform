@@ -25,6 +25,7 @@ export default function OffersPage() {
   const [modal, setModal] = useState(null);       // { editingId|null, draft }
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
+  const [detail, setDetail] = useState(null);     // { offer, attachments, loading } — "where it's used"
 
   const showToast = useCallback((msg, type = 'ok') => {
     setToast({ msg, type });
@@ -50,6 +51,13 @@ export default function OffersPage() {
   const fmtDate = (d) => (d ? String(d).slice(0, 10) : '');
   const openNew = () => setModal({ editingId: null, draft: emptyDraft(), published_to_store: false, store_starts_at: '', store_ends_at: '' });
   const openEdit = (o) => setModal({ editingId: o.id, draft: draftFromOffer(o), published_to_store: !!o.published_to_store, store_starts_at: fmtDate(o.store_starts_at), store_ends_at: fmtDate(o.store_ends_at) });
+
+  // Click an offer → see where it's used (influencers + campaigns).
+  async function openDetail(o) {
+    setDetail({ offer: o, attachments: [], loading: true });
+    const res = await brandApi.getOfferAttachments(o.id);
+    setDetail({ offer: o, attachments: res.success ? (res.data?.attachments || []) : [], loading: false });
+  }
 
   // One-click publish/unpublish from a row (works on any saved offer).
   async function togglePublish(o) {
@@ -147,14 +155,14 @@ export default function OffersPage() {
               {visible.map(o => (
                 <div key={o.id} className="offer-row" style={o.status === 'archived' ? { opacity: .62 } : null}>
                   <div className="o-ico">{TYPE_ICON[o.offer_type] || '◆'}</div>
-                  <div className="o-main">
+                  <div className="o-main" style={{ cursor: 'pointer' }} onClick={() => openDetail(o)} title="View where this offer is used">
                     <h4>{o.name}</h4>
                     <div className="o-desc">{previewLine(draftFromOffer(o))}</div>
                     <div className="o-tags">
                       <span className="pill type">{TYPE_LABEL[o.offer_type]}</span>
                       <span className={`pill ${o.status}`}>{o.status}</span>
                       {o.published_to_store && <span className="pill store">◧ In store</span>}
-                      {o.attached_count > 0 && <span className="pill infl">★ {o.attached_count} influencer{o.attached_count > 1 ? 's' : ''}</span>}
+                      {o.attached_count > 0 && <span className="pill infl">★ {o.attached_count} influencer{o.attached_count > 1 ? 's' : ''} →</span>}
                     </div>
                   </div>
                   <div className="o-act">
@@ -207,6 +215,42 @@ export default function OffersPage() {
                 <button className="btn btn-ink" onClick={() => save(true)} disabled={saving}>Save &amp; activate</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {detail && (
+        <div className="modal-bg" onClick={() => setDetail(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-h"><h3>{detail.offer.name}</h3><button className="modal-x" onClick={() => setDetail(null)}>×</button></div>
+            <div className="modal-b">
+              <div className="o-tags" style={{ marginBottom: 16 }}>
+                <span className="pill type">{TYPE_LABEL[detail.offer.offer_type]}</span>
+                <span className={`pill ${detail.offer.status}`}>{detail.offer.status}</span>
+                {detail.offer.published_to_store && <span className="pill store">◧ In store</span>}
+              </div>
+              <div className="lbl2">Where it's used — influencers & campaigns</div>
+              {detail.loading ? <div className="spin">Loading…</div> : (
+                detail.attachments.length === 0 ? (
+                  <div className="empty-soft">Not attached to any influencer yet. {detail.offer.published_to_store ? 'It is currently live in your store.' : 'Publish it to your store, or attach it to influencers in a campaign.'}</div>
+                ) : (
+                  <table className="atbl">
+                    <thead><tr><th>Influencer</th><th>Campaign</th><th>Type</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {detail.attachments.map(a => (
+                        <tr key={a.campaign_influencer_id}>
+                          <td><b>{a.influencer_name}</b><div className="sub2">@{a.instagram_handle}</div></td>
+                          <td>{a.campaign_name}<div className="sub2">set: {a.set_name} · {a.campaign_status}</div></td>
+                          <td><span className={`pill ${a.allocation === 'promotional' ? 'infl' : 'type'}`}>{a.goal}</span></td>
+                          <td><span className="pill draft" style={{ textTransform: 'capitalize' }}>{a.status}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )
+              )}
+            </div>
+            <div className="modal-f"><span style={{ fontSize: 11.5, color: 'var(--muted-2)' }}>{detail.attachments.length} influencer attachment{detail.attachments.length === 1 ? '' : 's'}</span><button className="btn btn-ink" onClick={() => setDetail(null)}>Close</button></div>
           </div>
         </div>
       )}
@@ -268,6 +312,11 @@ const CSS = `
 .ofl .dist-dates{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
 .ofl .flbl2{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:6px}
 .ofl .dist-note{font-size:11px;color:var(--yellow-text);background:var(--yellow-pale);border-radius:8px;padding:8px 11px;margin-top:10px}
+.ofl .lbl2{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:8px}
+.ofl .atbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.ofl .atbl th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted-2);padding:6px 8px;border-bottom:1px solid var(--border)}
+.ofl .atbl td{padding:9px 8px;border-bottom:1px solid var(--bg2);vertical-align:top}
+.ofl .sub2{font-size:10.5px;color:var(--muted-2);margin-top:2px}
 .ofl .empty{background:linear-gradient(135deg,#FFFDEB,#FFF7CC);border:1px solid rgba(255,193,7,.4);border-radius:18px;padding:48px 32px;text-align:center;position:relative;overflow:hidden;margin-top:14px}
 .ofl .empty::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:var(--yellow);border-radius:50%;opacity:.18}
 .ofl .empty .em{font-size:46px;margin-bottom:10px;position:relative}

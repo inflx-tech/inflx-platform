@@ -22,6 +22,7 @@
     "released": true,
     "released_by": "founder via Chat-architect (2026-06-04) — 'fix all issues'.",
     "released_at": "2026-06-04",
-    "deploy": "DEPLOYED 2026-06-04. brand-web (Vercel): publish-to-store toggle (row + dialog w/ dates) + In-store/N-influencers badges + subtitle copy fix. backend (Render): listOffers returns attached_count (read-only). Evidence: next build GREEN (/dashboard/offers compiles); brand-offer.test.js + offer-store-publish.test.js 15/15 GREEN. Additive — existing offer CRUD + store flows unchanged. No migration/OTA."
+    "deploy": "DEPLOYED 2026-06-04. brand-web (Vercel): publish-to-store toggle (row + dialog w/ dates) + In-store/N-influencers badges + subtitle copy fix. backend (Render): listOffers returns attached_count (read-only). Evidence: next build GREEN (/dashboard/offers compiles); brand-offer.test.js + offer-store-publish.test.js 15/15 GREEN. Additive — existing offer CRUD + store flows unchanged. No migration/OTA.",
+    "deploy_followup_2026-06-04": "WHERE-IT'S-USED DRILL-DOWN (commit pending): clicking an offer opens a detail modal listing each attachment (influencer + campaign + set + type + status). New read-only endpoint GET /brands/me/offers/:id/attachments (covers conversion brand_offer_id + engagement promoted_brand_offer_ids); attached_count now also counts promoted. offer-attach.test.js A1/A2 GREEN (24/24); next build GREEN. brand-web + backend (Render). No migration/OTA."
   }
 }

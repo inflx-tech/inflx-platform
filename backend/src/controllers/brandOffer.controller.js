@@ -49,7 +49,9 @@ const listOffers = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT ${RETURNING},
-            (SELECT count(*)::int FROM campaign_influencers ci WHERE ci.brand_offer_id = brand_offers.id) AS attached_count
+            (SELECT count(*)::int FROM campaign_influencers ci
+              WHERE ci.brand_offer_id = brand_offers.id
+                 OR brand_offers.id = ANY(ci.promoted_brand_offer_ids)) AS attached_count
        FROM brand_offers
       WHERE ${where.join(' AND ')}
       ORDER BY created_at DESC`,
@@ -115,6 +117,38 @@ const getOffer = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
   return success(res, { offer: rows[0] });
+});
+
+// ── GET /brands/me/offers/:id/attachments ────────────────────────────────────
+// Where this offer is used: each influencer it's attached to + the campaign.
+// Covers BOTH attach styles — conversion single (brand_offer_id) and engagement
+// promoted (promoted_brand_offer_ids array).
+const getOfferAttachments = asyncHandler(async (req, res) => {
+  const brandId = await getBrandIdByUserId(req.user.sub);
+  if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const { rows: own } = await db.query(
+    `SELECT id FROM brand_offers WHERE id = $1 AND brand_id = $2`,
+    [req.params.id, brandId]
+  );
+  if (!own[0]) throw new AppError('NOT_FOUND', 'Offer not found', 404);
+
+  const { rows } = await db.query(
+    `SELECT ci.id AS campaign_influencer_id, ci.status, ci.allocation,
+            i.instagram_handle, u.name AS influencer_name,
+            c.id AS campaign_id, c.name AS campaign_name, c.status AS campaign_status,
+            cs.name AS set_name, cs.goal
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c      ON c.id  = cs.campaign_id
+       JOIN influencers i    ON i.id  = ci.influencer_id
+       JOIN users u          ON u.id  = i.user_id
+      WHERE c.brand_id = $2
+        AND (ci.brand_offer_id = $1 OR $1 = ANY(ci.promoted_brand_offer_ids))
+      ORDER BY c.created_at DESC, u.name`,
+    [req.params.id, brandId]
+  );
+  return success(res, { attachments: rows });
 });
 
 // ── PATCH /brands/me/offers/:id ──────────────────────────────────────────────
@@ -206,6 +240,7 @@ module.exports = {
   listOffers,
   createOffer,
   getOffer,
+  getOfferAttachments,
   updateOffer,
   archiveOffer,
 };

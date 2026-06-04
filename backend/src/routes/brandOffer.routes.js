@@ -20,9 +20,10 @@ const router = Router();
 router.use(authenticate);
 router.use(requireRole('brand'));
 
-router.get(   '/offers',     ctrl.listOffers);
-router.post(  '/offers',     ctrl.createOffer);
-router.get(   '/offers/:id', ctrl.getOffer);
+router.get(   '/offers',                 ctrl.listOffers);
+router.post(  '/offers',                 ctrl.createOffer);
+router.get(   '/offers/:id/attachments', ctrl.getOfferAttachments);
+router.get(   '/offers/:id',             ctrl.getOffer);
 router.patch( '/offers/:id', ctrl.updateOffer);
 router.delete('/offers/:id', ctrl.archiveOffer);
 
