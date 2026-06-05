@@ -12,10 +12,9 @@
  */
 
 export const FEATURE_FLAGS = {
-  SECTION_ENGINE_HOME: false,
+  SECTION_ENGINE_HOME: true,
   // Creator Store + Creator's Category render from the section engine when on.
-  // Default false (existing layouts).
-  SECTION_ENGINE_CREATOR: false,
+  SECTION_ENGINE_CREATOR: true,
   // Category screen (per-vertical) from GET /v1/follower/section/category/:key.
   SECTION_ENGINE_CATEGORY: false,
   // Offers tab from GET /v1/follower/section/offers.

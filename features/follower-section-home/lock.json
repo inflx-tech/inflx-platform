@@ -14,9 +14,14 @@
   "scope": "Phase C — mobile Home on the section engine. FOUNDATION (1bbc0c4): featureFlags (SECTION_ENGINE_HOME=false), followerApi.getHomeSections, components/SectionRenderer. WIRING (this): HomeScreenV2 branches on the flag (off → unchanged; on → SectionRenderer with fallback). Both INERT — flag default-off + NO OTA. OTA cutover = separate gated step. NO backend change (Phase A endpoint live). NO Category/Offers/Creator (Phase C2).",
   "notes": "Foundation commit is deploy-inert in practice: Packages/Mobile/src code, but new unimported files + default-off flag + additive api method; mobile ships only via OTA, which is NOT performed here, so nothing reaches devices. released stays false. The flag-on cutover (HomeScreenV2 wiring + pnpm publish-ota:all) is production-impacting → before/after-diff + pnpm qa + pnpm qa:maestro + EXPLICIT founder OTA go; publish-ota:all bundles the working tree incl. Window B WIP — flag before OTA.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "qa_all_green": true,
+    "maestro_green": true,
+    "maestro_evidence": "Follower golden-path Maestro flow (qa/maestro/flows/01-follower-public-browse.yaml) GREEN on the shipped followerDebug build with SECTION_ENGINE_HOME on, against PROD (emulator-5554, 2026-06-05). App boots clean with the working-tree bundle (incl. Window B WIP — agency not reachable in follower app). Engine Home render verified earlier this session (06-diff/after/home-section-engine-rendered.png). NOTE: full pnpm qa:maestro suite is 4/5 — 04-agency-launch is Window-B WIP (separate app), out of scope for this follower release.",
+    "qa_evidence": "pnpm qa GREEN earlier this session (76, web); this commit is mobile-runtime (web unaffected).",
+    "deploy": "2026-06-05 — SECTION_ENGINE_HOME flipped on; follower OTA via publish-ota:follower. Safe via smart fallback (hasEngineContent): sparse prod data shows existing Home, auto-upgrades to the engine when real offers/campaigns flow. Reversible (flag off + OTA).",
+    "classification": "production-impacting (follower OTA). Smart-fallback-safe at any data density.",
+    "released": true,
+    "released_by": "founder · 2026-06-05 chat — AskUserQuestion 'Ship follower OTA now (Home + Creator on)'",
+    "released_at": "2026-06-05"
   }
 }
