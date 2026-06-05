@@ -1,0 +1,17 @@
+{
+  "feature": "listing-mobile-seller",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "notes": "STUB from 2026-06-05 listing audit. Order 7, DEFERRED/optional. Greenfield RN. Mobile-governed (Maestro gate). Build only if mobile-seller listing is desired. No implementation until locked.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

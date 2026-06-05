@@ -139,6 +139,10 @@ export const adminApi = {
   updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
   deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
 
+  // Dish Review Queue (flywheel) — custom names sellers typed
+  listDishQueue:      () => api.get('/admin/master-dishes/queue'),
+  resolveDishQueue:   (id, data) => api.patch(`/admin/master-dishes/queue/${id}`, data),
+
   bulkUploadInfluencers: async (file) => {
     const token = getToken();
     const formData = new FormData();

@@ -1,0 +1,79 @@
+<!-- preview-size: 960x720 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dish search — typeahead + custom add</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8 font-sans text-gray-900">
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center gap-3 mb-1">
+    <button class="text-xs text-gray-500">← Back to choices</button>
+    <h2 class="text-xl font-bold flex-1">Add dishes</h2>
+    <span class="text-xs text-gray-500">2 added</span>
+  </div>
+  <p class="text-xs text-gray-400 mb-4">Search by name, or browse the catalogue below. We keep your wording.</p>
+
+  <!-- NEW: search box -->
+  <div class="relative mb-5">
+    <input value="Perugu Vada" class="w-full rounded-xl border-2 border-orange-400 px-4 py-3 text-sm shadow-sm outline-none"
+           placeholder="Search or type a dish…">
+    <span class="absolute right-4 top-3.5 text-gray-300 text-sm">🔎</span>
+
+    <!-- dropdown -->
+    <div class="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+      <div class="px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-gray-400 bg-gray-50">Did you mean</div>
+      <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-orange-50 text-left">
+        <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-lg">🍲</div>
+        <div class="flex-1">
+          <div class="text-sm font-semibold">Dahi Vada</div>
+          <div class="text-[11px] text-gray-400">Tiffins · looks similar</div>
+        </div>
+        <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">86% match</span>
+      </button>
+      <div class="border-t border-gray-100"></div>
+      <button class="w-full flex items-center gap-3 px-3 py-3 hover:bg-orange-50 text-left bg-orange-50/40">
+        <div class="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center text-lg text-orange-600">＋</div>
+        <div class="flex-1">
+          <div class="text-sm font-bold text-orange-700">Add “Perugu Vada” as your own dish</div>
+          <div class="text-[11px] text-gray-400">Keeps your exact name — customers near you search this</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- existing browse (still works) -->
+  <div class="opacity-100">
+    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Cuisine</div>
+    <div class="flex gap-2 flex-wrap mb-3">
+      <span class="px-3 py-1.5 rounded-full text-xs font-bold border-2 border-orange-500 bg-orange-50 text-orange-700">South Indian</span>
+      <span class="px-3 py-1.5 rounded-full text-xs font-bold border-2 border-gray-200 text-gray-500">North Indian</span>
+      <span class="px-3 py-1.5 rounded-full text-xs font-bold border-2 border-gray-200 text-gray-500">Chinese</span>
+    </div>
+    <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Category</div>
+    <div class="flex gap-2 flex-wrap mb-4">
+      <span class="px-3 py-1 rounded-lg text-[11px] font-semibold bg-gray-800 text-white">Tiffins</span>
+      <span class="px-3 py-1 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-600">Main Course</span>
+      <span class="px-3 py-1 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-600">Beverages</span>
+    </div>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="rounded-xl border-2 border-gray-200 bg-white overflow-hidden">
+        <div class="aspect-[4/3] bg-gray-100 flex items-center justify-center text-3xl">🍛</div>
+        <div class="p-2.5"><div class="text-xs font-bold truncate">Idli (2 pcs)</div><div class="text-[10px] text-gray-500 mt-0.5">Suggested ₹35–50</div></div>
+      </div>
+      <div class="rounded-xl border-2 border-gray-200 bg-white overflow-hidden">
+        <div class="aspect-[4/3] bg-gray-100 flex items-center justify-center text-3xl">🥞</div>
+        <div class="p-2.5"><div class="text-xs font-bold truncate">Masala Dosa</div><div class="text-[10px] text-gray-500 mt-0.5">Suggested ₹70–90</div></div>
+      </div>
+      <div class="rounded-xl border-2 border-gray-200 bg-gray-50 overflow-hidden opacity-60">
+        <div class="aspect-[4/3] bg-gray-100 flex items-center justify-center text-3xl">☕</div>
+        <div class="p-2.5"><div class="text-xs font-bold truncate">Filter Coffee</div><div class="text-[10px] text-amber-600 font-semibold mt-0.5">Already on menu — ₹30</div></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="mt-6 text-[11px] text-gray-400 italic">NEW vs today: the search box + fuzzy match + “add as your own” are new. The cuisine→category browse below is the existing behaviour, unchanged.</p>
+</div>
+</body>
+</html>

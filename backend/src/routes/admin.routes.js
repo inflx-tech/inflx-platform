@@ -6,6 +6,7 @@ const ctrl = require('../controllers/admin.controller');
 const verificationCtrl = require('../controllers/creatorVerification.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
 const masterDishCtrl = require('../controllers/adminMasterDish.controller');
+const dishQueueCtrl = require('../controllers/adminDishQueue.controller');
 const escrowFeeTiersCtrl = require('../controllers/escrowFeeTiers.controller');
 
 const router = Router();
@@ -108,6 +109,10 @@ router.post('/creator-invitations/:id/expire',       authenticate, requireAdminR
 // ── Master dishes CRUD (restaurant catalogue admin tool) ─────────────────────
 router.get   ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.listMasterDishes);
 router.get   ('/master-dishes/cuisines',  authenticate, requireAdminRole('reviewer'), masterDishCtrl.listCuisines);
+// Dish Review Queue (flywheel) — registered before '/master-dishes/:id' so the
+// two-segment '/queue' paths aren't shadowed by the single-segment ':id' route.
+router.get   ('/master-dishes/queue',     authenticate, requireAdminRole('reviewer'), dishQueueCtrl.listQueue);
+router.patch ('/master-dishes/queue/:id', authenticate, requireAdminRole('reviewer'), dishQueueCtrl.resolveQueueItem);
 router.post  ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.createMasterDish);
 router.patch ('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.updateMasterDish);
 router.delete('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.deleteMasterDish);

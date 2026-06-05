@@ -1,0 +1,17 @@
+{
+  "feature": "listing-verticals-fanout",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "notes": "STUB from 2026-06-05 listing audit. Order 6 of 6. Likely SPLITS into per-vertical contracts (jewellery / footwear / flowers-gifting / pet) at lock. Pet shop is dual-mode. Live-pets IN/OUT decision pending. No implementation until locked.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

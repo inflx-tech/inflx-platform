@@ -1,0 +1,59 @@
+<!-- preview-size: 960x720 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Custom dish added — live + pending review</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8 font-sans text-gray-900">
+<div class="max-w-3xl mx-auto">
+  <h2 class="text-xl font-bold mb-1">Added dishes</h2>
+  <p class="text-xs text-gray-400 mb-4">Set your prices. Custom dishes go live right away — our team links them to the catalogue later. Your name is never changed.</p>
+
+  <div class="space-y-2">
+    <!-- canonical dish -->
+    <div class="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+      <div class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-xl">🥞</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-bold truncate">Masala Dosa</div>
+        <div class="text-[10px] text-gray-500">Tiffins</div>
+      </div>
+      <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+        <span class="px-2 text-xs text-gray-500 bg-gray-50 border-r border-gray-200">₹</span>
+        <input value="80" class="w-20 px-2 py-1 text-xs font-semibold outline-none">
+      </div>
+      <button class="text-red-400 text-xs font-semibold">Remove</button>
+    </div>
+
+    <!-- custom dish — verbatim name + pending chip -->
+    <div class="bg-white border-2 border-orange-200 rounded-xl p-3 flex items-center gap-3">
+      <div class="w-14 h-14 rounded-lg bg-gray-100 flex items-center justify-center text-xl">🍲</div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <div class="text-sm font-bold truncate">Perugu Vada</div>
+          <span class="text-[9px] font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full whitespace-nowrap">NEW · pending review</span>
+        </div>
+        <div class="text-[10px] text-gray-500">Tiffins · your own dish</div>
+      </div>
+      <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+        <span class="px-2 text-xs text-gray-500 bg-gray-50 border-r border-gray-200">₹</span>
+        <input value="50" class="w-20 px-2 py-1 text-xs font-semibold outline-none">
+      </div>
+      <button class="text-red-400 text-xs font-semibold">Remove</button>
+    </div>
+  </div>
+
+  <div class="mt-4 bg-green-50 border border-green-200 rounded-xl p-3 text-xs text-green-800">
+    ✓ Both dishes are <b>live now</b>. “Perugu Vada” shows to customers with your exact name — it’s queued for our team to link to the catalogue so search finds it everywhere.
+  </div>
+
+  <div class="mt-6 flex items-center gap-3">
+    <button class="bg-orange-500 text-white text-sm font-bold rounded-xl px-5 py-2.5">Publish menu</button>
+    <span class="text-xs text-gray-400">Listing 64% complete · add photos to reach 100%</span>
+  </div>
+
+  <p class="mt-6 text-[11px] text-gray-400 italic">Key behaviour: the custom name is stored verbatim (display_name) with no canonical link yet (master_dish_id = null), and a pending_dishes row is created. Nothing blocks go-live.</p>
+</div>
+</body>
+</html>

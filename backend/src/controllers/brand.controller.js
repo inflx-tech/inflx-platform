@@ -4,6 +4,7 @@ const db   = require('../config/db');
 const notificationService = require('../services/notification.service');
 const entitlementsService = require('../services/entitlements.service');
 const { loadSchema, clearSchemaCache } = require('../services/schema.service');
+const dishFlywheel = require('../services/dishFlywheel.service');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -389,11 +390,11 @@ const createProduct = asyncHandler(async (req, res) => {
     variants_json, image_url, sku,
     is_bookable, stock,
     availability_json, booking_config_json,
-    master_vehicle_id, master_service_id,
+    master_vehicle_id, master_service_id, master_dish_id,
   } = req.body;
 
   // For master-catalogue activations, skip schema validation (name/image come from master)
-  const isMasterActivation = master_vehicle_id != null || master_service_id != null;
+  const isMasterActivation = master_vehicle_id != null || master_service_id != null || master_dish_id != null;
   if (!isMasterActivation) {
     const validationErrors2 = validateProductFields(schema, req.body);
     if (validationErrors2.length > 0) {
@@ -408,8 +409,8 @@ const createProduct = asyncHandler(async (req, res) => {
        (brand_id, name, description, price, category_key, section,
         veg_flag, duration_mins, variants_json, image_url, sku,
         is_active, is_bookable, stock, availability_json, booking_config_json,
-        master_vehicle_id, master_service_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17)
+        master_vehicle_id, master_service_id, master_dish_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18)
      RETURNING *`,
     [
       brand.id,
@@ -429,10 +430,55 @@ const createProduct = asyncHandler(async (req, res) => {
       booking_config_json ? JSON.stringify(booking_config_json) : '{}',
       master_vehicle_id ? parseInt(master_vehicle_id, 10) : null,
       master_service_id ? parseInt(master_service_id, 10) : null,
+      master_dish_id ? parseInt(master_dish_id, 10) : null,
     ]
   );
 
-  return success(res, { product: rows[0] }, 201);
+  const product = rows[0];
+
+  // Restaurant custom-dish flywheel: a dish typed without a canonical link
+  // (master_dish_id null) is captured into the review queue. Best-effort —
+  // a queue-capture failure must NEVER block the listing from going live.
+  if ((brand.category || '').toLowerCase() === 'restaurant' && product.master_dish_id == null) {
+    try {
+      await dishFlywheel.capturePendingDish(db, {
+        brand_id: brand.id,
+        brand_product_id: product.id,
+        raw_name: product.name,
+        section: product.section,
+      });
+    } catch (e) {
+      console.error('[dishFlywheel] capture failed (non-fatal):', e.message);
+    }
+  }
+
+  return success(res, { product }, 201);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /brands/me/dishes/search?q=  — restaurant dish typeahead (fuzzy)
+// Returns canonical matches (>= 0.30 similarity) + allow_custom so the seller
+// can always add their own wording. Non-restaurant verticals get an empty,
+// custom-only response. Never blocks.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const searchDishes = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const q = (req.query.q || '').trim();
+  if ((brand.category || '').toLowerCase() !== 'restaurant' || q.length < 2) {
+    return success(res, { matches: [], allow_custom: q.length > 0 });
+  }
+
+  let matches = [];
+  try {
+    matches = await dishFlywheel.searchMasterDishes(db, q, brand.id);
+  } catch (e) {
+    // pg_trgm/unaccent missing or query error → degrade to no suggestions.
+    console.error('[dishFlywheel] search failed, degrading:', e.message);
+  }
+  return success(res, { matches, allow_custom: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1019,7 +1065,7 @@ const getTemplateColumns = asyncHandler(async (req, res) => {
 
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
-  getCategorySchema, getMasterCatalogue,
+  getCategorySchema, getMasterCatalogue, searchDishes,
   listProducts, createProduct, updateProduct, deleteProduct,
   listBrandOrders, listAllTransactions, getPublicProfile, storePreview,
   getListingConfig, getQualityScore, getListingPreview,

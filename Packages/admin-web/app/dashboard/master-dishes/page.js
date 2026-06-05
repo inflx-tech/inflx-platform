@@ -67,6 +67,10 @@ export default function MasterDishesPage() {
 
   const [toast, setToast] = useState('');
 
+  // Catalogue | Review Queue tab
+  const [view, setView] = useState('catalogue');
+  const [queueCount, setQueueCount] = useState(0);
+
   const sectionOptions = useMemo(() => {
     if (!cuisineFilter) return [];
     const c = cuisines.find(x => x.cuisine === cuisineFilter);
@@ -197,6 +201,19 @@ export default function MasterDishesPage() {
         </button>
       </div>
 
+      {/* Tabs: Catalogue | Review Queue */}
+      <div className="flex gap-1 mb-4 border-b border-border">
+        {[['catalogue', 'Catalogue'], ['queue', 'Review Queue']].map(([key, label]) => (
+          <button key={key} onClick={() => setView(key)}
+            className={`px-4 py-2 text-xs font-bold rounded-t-lg -mb-px border-b-2 ${view === key ? 'border-navy text-navy' : 'border-transparent text-t3 hover:text-t2'}`}>
+            {label}{key === 'queue' && queueCount > 0 ? ` (${queueCount})` : ''}
+          </button>
+        ))}
+      </div>
+
+      {view === 'queue' && <DishReviewQueue onCountChange={setQueueCount} />}
+
+      {view === 'catalogue' && (<>
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-border p-4 mb-4 flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[150px]">
@@ -319,6 +336,7 @@ export default function MasterDishesPage() {
           </div>
         </div>
       )}
+      </>)}
 
       {/* ═══ Edit / Create modal ═══ */}
       {editing && (
@@ -467,6 +485,125 @@ function FormField({ label, required, hint, children }) {
       </label>
       {children}
       {hint && <p className="text-[10px] text-t3 mt-1 italic">{hint}</p>}
+    </div>
+  );
+}
+
+/**
+ * DishReviewQueue — the flywheel inbound surface. Lists custom dish names
+ * sellers typed (grouped by normalized name) and lets admin resolve each as
+ * alias / promote / reject. Promote reuses the master_dishes create path.
+ */
+function DishReviewQueue({ onCountChange }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState(null);
+  const [toast, setToast] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await adminApi.listDishQueue();
+    setLoading(false);
+    if (res.success) {
+      const list = res.data?.items || [];
+      setItems(list);
+      onCountChange?.(list.length);
+    }
+  }, [onCountChange]);
+
+  useEffect(() => { load(); }, [load]);
+
+  function flash(m) { setToast(m); setTimeout(() => setToast(''), 2800); }
+
+  async function resolve(item, action) {
+    const body = { action };
+    if (action === 'alias') {
+      if (!item.suggested) return;
+      body.master_dish_id = item.suggested.master_dish_id;
+    }
+    if (action === 'promote') {
+      const cuisine = window.prompt(`Promote "${item.raw_name}" — which cuisine?`, '');
+      if (!cuisine) return;
+      const section = window.prompt('Section?', item.section || '');
+      if (!section) return;
+      body.cuisine = cuisine;
+      body.section = section;
+    }
+    setBusyId(item.id);
+    const res = await adminApi.resolveDishQueue(item.id, body);
+    setBusyId(null);
+    if (res.success) {
+      flash(
+        action === 'alias'
+          ? `Linked — ${res.data?.linked_listings || 0} listings now point to ${item.suggested?.name}`
+          : action === 'promote'
+            ? `Promoted "${item.raw_name}" to the catalogue`
+            : `Rejected "${item.raw_name}"`
+      );
+      await load();
+    } else {
+      flash(res.error?.message || 'Action failed');
+    }
+  }
+
+  if (loading) return <div className="p-12 text-center text-sm text-t3">Loading queue…</div>;
+  if (!items.length) {
+    return (
+      <div className="bg-white rounded-2xl border border-border p-12 text-center">
+        <p className="text-3xl mb-2">✅</p>
+        <p className="text-sm font-bold text-t2 mb-1">Queue is clear</p>
+        <p className="text-xs text-t3">Custom dish names sellers type will appear here for review.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="grid grid-cols-12 px-5 py-2.5 bg-surface2 text-[10px] font-bold uppercase tracking-wider text-t3">
+        <div className="col-span-3">Custom name</div>
+        <div className="col-span-2">Reach</div>
+        <div className="col-span-3">Suggested match</div>
+        <div className="col-span-4 text-right">Action</div>
+      </div>
+      {items.map(item => (
+        <div key={item.id}
+          className={`grid grid-cols-12 items-center px-5 py-4 border-t border-border ${item.auto_promote_candidate ? 'bg-orange-pale/40' : ''}`}>
+          <div className="col-span-3">
+            <div className="text-sm font-bold text-t1 flex items-center gap-2">
+              {item.raw_name}
+              {item.auto_promote_candidate && (
+                <span className="text-[9px] font-bold text-orange px-1.5 py-0.5 rounded-full bg-orange-pale">auto-promote candidate</span>
+              )}
+            </div>
+            <div className="text-[10px] text-t3">{item.section || '—'}</div>
+          </div>
+          <div className="col-span-2">
+            <span className="text-[10px] font-bold text-navy bg-navy-pale px-2 py-1 rounded-full">
+              seen at {item.restaurant_count} restaurant{item.restaurant_count === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="col-span-3">
+            {item.suggested
+              ? <div className="text-sm text-t2">{item.suggested.name}{' '}
+                  <span className="text-[10px] font-bold text-green bg-green-pale px-1.5 py-0.5 rounded-full">{Math.round(item.suggested.score * 100)}%</span>
+                </div>
+              : <span className="text-sm text-t3 italic">no close match</span>}
+          </div>
+          <div className="col-span-4 flex justify-end gap-2">
+            {item.suggested && (
+              <button disabled={busyId === item.id} onClick={() => resolve(item, 'alias')}
+                className="text-xs font-bold text-white bg-navy rounded-lg px-3 py-1.5 disabled:opacity-50">Link as alias</button>
+            )}
+            <button disabled={busyId === item.id} onClick={() => resolve(item, 'promote')}
+              className="text-xs font-bold text-navy border border-navy/30 rounded-lg px-3 py-1.5 disabled:opacity-50">Promote</button>
+            <button disabled={busyId === item.id} onClick={() => resolve(item, 'reject')}
+              className="text-xs font-semibold text-t3 border border-border rounded-lg px-3 py-1.5 disabled:opacity-50">Reject</button>
+          </div>
+        </div>
+      ))}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-t1 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-lg z-50">{toast}</div>
+      )}
     </div>
   );
 }
