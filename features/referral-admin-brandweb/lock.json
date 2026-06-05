@@ -17,11 +17,11 @@
   ],
   "model_locked": "Same 4 referral admin pages + REFERRALS nav, ported from admin-web/dashboard to brand-web/admin (the live admin). Same backend, same locked designs. Frontend-only.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "deploy": "Not yet — pending implementation + qa green + diff + explicit deploy go."
+    "qa_all_green": "isolated-green",
+    "released": true,
+    "released_by": "founder via Code-builder (2026-06-01) — explicit go: 'Yes — push (fixes the 404s)'.",
+    "released_at": "2026-06-01",
+    "deploy": "DEPLOYED. git push 354f4c6..108675c (ONLY the 4 referral page components + this contract; verified the unpushed set contained no parallel files) -> Vercel brand-web. Fixes a half-state where origin already had the REFERRALS nav (swept into a parallel-window commit) but not the pages -> /admin/referrals/* now resolve instead of 404. No backend, no migration. Verification: brand-web next build compiled all 4 /admin/referrals/* routes; admin nav-sweep + role-gate Playwright specs GREEN (28, exercise the layout.js nav). NOTE: full `pnpm qa` showed 3 reds, ALL in dish-queue.spec.ts — an untracked spec testing an uncommitted parallel-window master-dishes/page.js change; NOT this contract, not in origin/main, not in this commit. Classified as parallel-window in-flight work per failure taxonomy."
   },
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-06-01) — designs identical to the already-approved referral-admin-controls + referral-agency-admin mockups (approved twice); this contract only changes WHICH admin app they live in. Port approved: 'Yes — port to /admin'.",
