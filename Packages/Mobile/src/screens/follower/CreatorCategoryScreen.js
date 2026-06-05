@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
 import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer from '../../components/SectionRenderer';
+import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 import { followerApi } from '../../services/api';
 
 /**
@@ -47,7 +47,7 @@ export default function CreatorCategoryScreen({ route, navigation }) {
       .catch(() => { if (alive) setSections(null); });
     return () => { alive = false; };
   }, [influencer.instagram_handle, category]);
-  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && Array.isArray(sections) && sections.length > 0;
+  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && hasEngineContent(sections);
 
   // Distinct partner businesses the creator promotes in this category.
   const brandsMap = {};

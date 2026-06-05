@@ -33,7 +33,7 @@ const P = {
 import { followerApi } from '../../services/api';
 import { OfferPill } from '../../components/restaurant';
 import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer from '../../components/SectionRenderer';
+import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 
 const CATEGORY_LABELS = {
   restaurant:      'Restaurants',
@@ -196,7 +196,7 @@ export default function InfluencerStoreScreen({ route, navigation }) {
 
   // Phase C2: render shelves from the section engine when on + populated;
   // otherwise the existing category-grid + hot-picks body (safe fallback).
-  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && Array.isArray(sections) && sections.length > 0;
+  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && hasEngineContent(sections);
 
   return (
     <ScrollView

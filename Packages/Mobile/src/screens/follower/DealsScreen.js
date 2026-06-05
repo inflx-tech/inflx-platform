@@ -15,7 +15,7 @@ import { followerApi } from '../../services/api';
 import ProductCard from '../../components/cards/ProductCard';
 import { buildTracking } from '../../utils/tracking';
 import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer from '../../components/SectionRenderer';
+import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 
 /**
  * DealsScreen — single-feed deals browser with brand-category tabs.
@@ -64,7 +64,7 @@ export default function DealsScreen({ navigation }) {
       .catch(() => { if (alive) setSections(null); });
     return () => { alive = false; };
   }, []);
-  const sectionsActive = isEnabled('SECTION_ENGINE_OFFERS') && Array.isArray(sections) && sections.length > 0;
+  const sectionsActive = isEnabled('SECTION_ENGINE_OFFERS') && hasEngineContent(sections);
 
   const fetchDeals = useCallback(async (currentTab) => {
     try {

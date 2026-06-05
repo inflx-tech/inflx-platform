@@ -21,7 +21,7 @@ import ProductCard from '../../components/cards/ProductCard';
 import { followerApi } from '../../services/api';
 import { buildTrackingFromOffer } from '../../utils/tracking';
 import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer from '../../components/SectionRenderer';
+import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -83,7 +83,7 @@ export default function CategoryListScreen({ route, navigation }) {
       .catch(() => { if (alive) setSections(null); });
     return () => { alive = false; };
   }, [superCategory]);
-  const sectionsActive = isEnabled('SECTION_ENGINE_CATEGORY') && Array.isArray(sections) && sections.length > 0;
+  const sectionsActive = isEnabled('SECTION_ENGINE_CATEGORY') && hasEngineContent(sections);
 
   useEffect(() => {
     async function load() {

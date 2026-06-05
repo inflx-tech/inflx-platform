@@ -13,7 +13,7 @@ import { followerApi } from '../../services/api';
 import { buildTracking } from '../../utils/tracking';
 import useLocation from '../../hooks/useLocation';
 import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer from '../../components/SectionRenderer';
+import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 
 /**
  * HomeScreenV2 — Creator Vibe (cream/terracotta) products-first feed. (Flow 52.1)
@@ -104,7 +104,7 @@ export default function HomeScreenV2({ navigation }) {
 
   // Phase C: render from the section engine when the flag is on AND the backend
   // returned shelves; otherwise the hardcoded path below (safe fallback).
-  const sectionsActive = isEnabled('SECTION_ENGINE_HOME') && Array.isArray(sections) && sections.length > 0;
+  const sectionsActive = isEnabled('SECTION_ENGINE_HOME') && hasEngineContent(sections);
 
   return (
     <ScrollView

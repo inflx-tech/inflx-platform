@@ -1,5 +1,19 @@
 # 06-diff — Follower Home on the Section Engine (Phase C)
 
+## ACTIVATION READINESS (2026-06-03) — SectionRenderer polish + smart fallback
+Two data-independent changes that make flipping any section flag SAFE + FAITHFUL:
+1. **Smart fallback** — exported `hasEngineContent(sections)`; every wired screen
+   now activates the engine only when the payload has a REAL data shelf
+   (offers/products/brands/creators with items), not just nav/chips. So with
+   sparse prod data the screen shows its EXISTING body; once real offers/campaigns
+   flow, it auto-upgrades to the engine. No "bare screen" risk at cutover.
+2. **SectionRenderer** gained `controls` (sticky chip rows from config), `hero`
+   (config.hero — Offers' Today's-Best-Deal), and 2-col `grid` (config.grid —
+   All Offers) renderers, so Offers/Category render faithfully (not rails-only).
+
+Flags remain OFF (inert). This makes the engine cutover safe to flip whenever
+real data exists. Chip selection interactivity is a follow-up polish.
+
 ## Commits so far — no visual change on devices yet
 
 **Foundation commit (1bbc0c4):** featureFlags (default off) + getHomeSections +
