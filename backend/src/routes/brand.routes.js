@@ -76,6 +76,10 @@ router.get('/me/listing-preview',   authenticate, requireRole('brand'), ctrl.get
 // Master catalogue — pre-seeded vehicles/services for car_rental and salon
 router.get('/me/master-catalogue',  authenticate, requireRole('brand'), ctrl.getMasterCatalogue);
 
+// Dish typeahead search (restaurant) — fuzzy match of master_dishes + aliases.
+// MUST stay above the admin '/:id' catch-all at the bottom of this file.
+router.get('/me/dishes/search',     authenticate, requireRole('brand'), ctrl.searchDishes);
+
 // Excel bulk upload
 router.get('/me/listing-template/download',  authenticate, requireRole('brand'), ctrl.downloadListingTemplate);
 router.get('/me/listing-template/columns',   authenticate, requireRole('brand'), ctrl.getTemplateColumns);

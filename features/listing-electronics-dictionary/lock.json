@@ -1,0 +1,17 @@
+{
+  "feature": "listing-electronics-dictionary",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": false,
+  "notes": "STUB from 2026-06-05 listing audit. Order 4 of 6. India-only. Open-Icecat seed + flywheel (#1). Launch on model-search; barcode scan is a flywheel-grown accelerator. No implementation until locked.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

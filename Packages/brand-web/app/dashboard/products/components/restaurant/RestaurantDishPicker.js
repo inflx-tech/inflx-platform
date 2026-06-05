@@ -54,6 +54,30 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   // Image-swap state for inline edit on added items
   const [swapTargetIdx, setSwapTargetIdx] = useState(null);
 
+  // Dish search (typeahead + custom add)
+  const [searchQ, setSearchQ] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+
+  // Debounced fuzzy search against master_dishes (+ aliases)
+  useEffect(() => {
+    const q = searchQ.trim();
+    if (q.length < 2) { setSearchResults([]); return; }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await brandApi.get(`/brands/me/dishes/search?q=${encodeURIComponent(q)}`);
+        if (!cancelled && res.success) setSearchResults(res.data?.matches || []);
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [searchQ]);
+
   // ── Load master_dishes when entering Individual path ─────────────────────
   useEffect(() => {
     if (path !== 'individual' || masterItems.length > 0) return;
@@ -131,6 +155,39 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
 
   function isAddedFromMaster(masterRow) {
     return wizardItems.some(item => item._master_row?.id === masterRow.id);
+  }
+
+  // Add a canonical dish picked from the fuzzy-search dropdown. Carries
+  // _master_row so publishDriver maps master_dish_id (links to the catalogue).
+  function handleAddFromSearch(match) {
+    if (match.is_activated) return;
+    onItemAdd({
+      _master_row: { id: match.id, name: match.name, section: match.section },
+      name: match.name,
+      price: 0,
+      image_url: null,
+      description: null,
+      section: match.section,
+    });
+    setSearchQ('');
+    setSearchResults([]);
+  }
+
+  // Add the seller's own wording verbatim. No _master_row → master_dish_id
+  // stays null → backend captures it into the review queue (goes live anyway).
+  function handleAddCustom() {
+    const nm = searchQ.trim();
+    if (!nm) return;
+    onItemAdd({
+      name: nm,
+      price: 0,
+      image_url: null,
+      description: null,
+      section: activeSection || sectionsForCuisine[0] || null,
+      _custom: true,
+    });
+    setSearchQ('');
+    setSearchResults([]);
   }
 
   function handleSwapImage(picked) {
@@ -282,6 +339,42 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
         <span className="text-xs text-gray-500">{wizardItems.length} added</span>
       </div>
 
+      {/* Dish search — typeahead + add-your-own */}
+      <div className="relative">
+        <input
+          type="text"
+          value={searchQ}
+          onChange={e => setSearchQ(e.target.value)}
+          placeholder="Search or type a dish…"
+          className="w-full rounded-xl border-2 border-gray-200 focus:border-orange-400 px-4 py-2.5 text-sm outline-none transition-colors" />
+        {searchQ.trim().length >= 2 && (
+          <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+            {searching && <div className="px-3 py-2 text-xs text-gray-400">Searching…</div>}
+            {!searching && searchResults.length > 0 && (
+              <>
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-400 bg-gray-50">Did you mean</div>
+                {searchResults.map(m => (
+                  <button key={m.id} type="button" disabled={m.is_activated}
+                    onClick={() => handleAddFromSearch(m)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left ${m.is_activated ? 'opacity-50 cursor-not-allowed' : 'hover:bg-orange-50'}`}>
+                    <span className="flex-1 text-sm font-semibold text-gray-900">{m.name}</span>
+                    <span className="text-[10px] text-gray-400">{m.section}</span>
+                    {m.is_activated
+                      ? <span className="text-[10px] text-amber-600 font-semibold">on menu</span>
+                      : <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{Math.round((m.score || 0) * 100)}%</span>}
+                  </button>
+                ))}
+              </>
+            )}
+            <button type="button" onClick={handleAddCustom}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-orange-50 bg-orange-50/40 border-t border-gray-100">
+              <span className="text-orange-600 text-lg leading-none">＋</span>
+              <span className="flex-1 text-sm font-bold text-orange-700">Add &ldquo;{searchQ.trim()}&rdquo; as your own dish</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Cuisine top-nav */}
       <div>
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Cuisine</div>
@@ -378,7 +471,12 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
                     : <div className="w-full h-full flex items-center justify-center text-xl">🍽️</div>}
                 </button>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-gray-900 truncate">{item.name}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-bold text-gray-900 truncate">{item.name}</div>
+                    {!item._master_row && (
+                      <span className="text-[9px] font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full whitespace-nowrap">NEW · pending review</span>
+                    )}
+                  </div>
                   <div className="text-[10px] text-gray-500">{item.section || item._master_row?.section}</div>
                 </div>
                 <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">

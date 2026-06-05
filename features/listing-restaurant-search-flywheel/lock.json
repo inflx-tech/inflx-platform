@@ -1,0 +1,20 @@
+{
+  "feature": "listing-restaurant-search-flywheel",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, standing autonomy)",
+  "approved_at": "2026-06-05",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated → chat-architect)",
+  "mockup_locked_at": "2026-06-05",
+  "notes": "Step-5 LOCKED 2026-06-05. Open questions resolved in 05-impact.md: PROMOTE_THRESHOLD=5 flag-only; search above browse; admin queue = tab in existing /admin/master-dishes; suggestion cutoff sim>=0.30. Implementation (Step 7) authorised. DB migration 087 + Render/Vercel deploy are PRODUCTION-IMPACTING — surface for explicit founder go before applying to prod; do NOT auto-deploy.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
