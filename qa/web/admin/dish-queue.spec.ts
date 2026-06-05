@@ -46,15 +46,21 @@ async function stubApis(page: any, opts: { patchSucceeds?: boolean } = {}) {
 
   await page.route('**/auth/refresh', (r: Route) =>
     json(r, { success: true, data: { access_token: 'qa-admin' } }));
+  await page.route('**/admin/stats', (r: Route) =>
+    json(r, { success: true, data: { pending_approvals: { brands: 0, influencers: 0 } } }));
 
-  // Catalogue tab APIs (generic — registered FIRST so the specifics below win).
-  await page.route('**/admin/master-dishes**', (r: Route) =>
+  // API calls carry the /v1 prefix (backend port 3001); the PAGE is on 3002 with
+  // NO /v1. Scope every stub to /v1 so we don't hijack the page navigation itself
+  // (without /v1 the glob matched localhost:3002/admin/master-dishes and served
+  // raw JSON instead of the React page). Generic catalogue list registered FIRST
+  // so the specifics below take precedence.
+  await page.route('**/v1/admin/master-dishes**', (r: Route) =>
     json(r, { success: true, data: { items: [] }, meta: { total: 0, limit: 50 } }));
-  await page.route('**/admin/master-dishes/cuisines', (r: Route) =>
+  await page.route('**/v1/admin/master-dishes/cuisines', (r: Route) =>
     json(r, { success: true, data: { cuisines: [] } }));
 
   // Queue tab API — GET lists, PATCH resolves.
-  await page.route('**/admin/master-dishes/queue**', (r: Route) => {
+  await page.route('**/v1/admin/master-dishes/queue**', (r: Route) => {
     if (r.request().method() === 'PATCH') {
       captured.patchBody = r.request().postDataJSON();
       return patchSucceeds
