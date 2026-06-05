@@ -1,5 +1,19 @@
 # 06-diff — Admin Section Manager (Phase B)
 
+## PACKAGE CORRECTION (2026-06-05)
+The Section Manager UI was first built in `Packages/admin-web` — but the LIVE
+admin (inflx.in/admin) is served by **`Packages/brand-web/app/admin/`**
+(admin-web is a separate legacy app). Ported the page + nav + api to brand-web:
+- `Packages/brand-web/app/admin/sections/page.js` (identical logic; verified
+  compiling via the earlier admin-web `next build`).
+- `Packages/brand-web/app/admin/layout.js` — nav item "App Sections" under CONTENT
+  (route `/admin/sections`).
+- `Packages/brand-web/lib/api.js` — `api.put` + `sectionApi`.
+Backend endpoints unchanged (already live). The admin-web copy is left as-is
+(harmless, unused). Memory: [[project_admin_is_brandweb]].
+
+---
+
 ## What shipped
 - **Backend** (admin-only, `requireAnyAdminRole`):
   `GET /v1/admin/sections/:screen?scope_type=&scope_value=`,

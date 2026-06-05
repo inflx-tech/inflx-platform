@@ -12,7 +12,7 @@
   "mockup_locked_by": "founder · 2026-06-01 — admin Section Manager designed + locked in SECTION-CATALOG.md + the comprehensive mockups",
   "mockup_locked_at": "2026-06-01",
   "scope": "Phase B — Admin Section Manager. Backend admin endpoints (GET/PUT/DELETE /admin/sections, requireAnyAdminRole) over Phase A's section_config + admin-web /dashboard/sections page (screen tabs, scope, per-shelf toggle/count/reorder/type, Publish). No migration, no mobile.",
-  "notes": "Production-impacting (backend/src → Render; admin-web app+lib → Vercel) but admin-only + additive + no migration + no OTA + no Window-B coupling. Build + verify (pnpm qa GREEN + admin API tests + next build) then surface for EXPLICIT founder go before push. released stays false until pushed.",
+  "notes": "Production-impacting (backend/src → Render; admin-web app+lib → Vercel) but admin-only + additive + no migration + no OTA + no Window-B coupling. Build + verify (pnpm qa GREEN + admin API tests + next build) then surface for EXPLICIT founder go before push. released stays false until pushed. [2026-06-05] UI ported to Packages/brand-web/app/admin/ (the live admin); admin-web was the wrong package.",
   "release": {
     "qa_all_green": true,
     "qa_evidence": "pnpm qa GREEN — 76 passed (qa/reports/2026-06-02T11-03-32-266Z), zero web regression. Backend admin-sections + section-engine tests 19/19 green (isolated DB). admin-web `next build` compiled — /dashboard/sections route built (5.06 kB).",

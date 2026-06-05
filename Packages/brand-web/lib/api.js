@@ -105,8 +105,20 @@ async function request(method, path, body) {
 export const api = {
   get: (p) => request('GET', p, null),
   post: (p, b) => request('POST', p, b),
+  put: (p, b) => request('PUT', p, b),
   patch: (p, b) => request('PATCH', p, b),
   delete: (p) => request('DELETE', p, null),
+};
+
+// Section Manager admin API (Creator Vibe Phase B — /admin/sections/*)
+export const sectionApi = {
+  getSections: (screen, scopeType = 'global', scopeValue = '') => {
+    const q = new URLSearchParams({ scope_type: scopeType });
+    if (scopeValue) q.set('scope_value', scopeValue);
+    return api.get(`/admin/sections/${screen}?${q.toString()}`);
+  },
+  saveSections: (screen, payload) => api.put(`/admin/sections/${screen}`, payload),
+  deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
 };
 
 export const authApi = {
@@ -463,6 +475,10 @@ export const adminApi = {
   updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
   deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
 
+  // Dish Review Queue (flywheel) — custom names sellers typed
+  listDishQueue:      () => api.get('/admin/master-dishes/queue'),
+  resolveDishQueue:   (id, data) => api.patch(`/admin/master-dishes/queue/${id}`, data),
+
   // Creator verification queue (claimed → verified / rejected / reset).
   // Backed by /v1/admin/creator-verifications/* — admin queue surfaces
   // creator_profiles rows in 'claimed' state (either auto-claimed from a
@@ -562,6 +578,31 @@ export const marketingApi = {
   // Maintenance: re-cache all profile pictures to R2. Superadmin only.
   // Returns { ok, skipped, failed, by_type: { creator: {...}, brand: {...} } }
   backfillProfilePics: (payload = {}) => api.post('/admin/marketing/backfill-profile-pics', payload),
+};
+
+// Referral admin API (/admin/referrals/* + /admin/agencies) — Referrals section
+export const referralApi = {
+  getSettings:    () => api.get('/admin/referrals/settings'),
+  updateSettings: (data) => api.patch('/admin/referrals/settings', data),
+  listEdges: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/referrals/edges?${q.toString()}`);
+  },
+  createEdge: (data) => api.post('/admin/referrals/edges', data),
+  updateEdge: (id, data) => api.patch(`/admin/referrals/edges/${id}`, data),
+  listLedger: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/referrals/ledger?${q.toString()}`);
+  },
+  getSummary: () => api.get('/admin/referrals/summary'),
+  listAgencies: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/agencies?${q.toString()}`);
+  },
+  updateAgencyStatus: (id, data) => api.patch(`/admin/agencies/${id}/status`, data),
 };
 
 // (getStoredUser is already exported near the top of this file — duplicate
