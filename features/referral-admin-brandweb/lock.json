@@ -1,0 +1,29 @@
+{
+  "feature": "referral-admin-brandweb",
+  "area": "brand-web-admin (port)",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-01) — 'I didn't find any referrals tab in admin' → confirmed the referral admin UI was built in the wrong app (admin-web/dashboard) instead of the live admin (brand-web/admin); founder chose 'Yes — port to /admin'.",
+  "approved_at": "2026-06-01",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — Vercel brand-web only. No backend, no migration, no OTA. Frontend port of already-deployed referral admin pages into the live admin.",
+  "notes": "Correction/port contract. UI-governed (brand-web): mockup-lock + before/after-diff ENFORCED. Mockups REUSED from referral-admin-controls (Settings/Relationships/Earnings) + referral-agency-admin (Agencies) — designs already founder-approved + locked in those contracts; copied into 04-preview/mockups here. mockup_locked=true on that basis + the explicit port approval. No new backend.",
+  "related": [
+    "features/referral-admin-controls (built the pages in the WRONG admin app)",
+    "features/referral-agency-admin (Agencies page, also admin-web)",
+    "backend endpoints /admin/referrals/* + /admin/agencies (already live, app-agnostic)"
+  ],
+  "model_locked": "Same 4 referral admin pages + REFERRALS nav, ported from admin-web/dashboard to brand-web/admin (the live admin). Same backend, same locked designs. Frontend-only.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Not yet — pending implementation + qa green + diff + explicit deploy go."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-01) — designs identical to the already-approved referral-admin-controls + referral-agency-admin mockups (approved twice); this contract only changes WHICH admin app they live in. Port approved: 'Yes — port to /admin'.",
+  "mockup_locked_at": "2026-06-01"
+}
