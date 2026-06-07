@@ -159,10 +159,17 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
   if (Object.keys(brandPatch).length > 0) {
     try {
       const next = { ...(brand?.listing_data || {}), ...brandPatch };
-      await brandApi.patch('/brands/me', { listing_data: next });
-      brandUpdated = true;
+      const res = await brandApi.patch('/brands/me', { listing_data: next });
+      // The brand-web API client RESOLVES on non-2xx (returns {success:false})
+      // instead of throwing — so we MUST inspect the envelope, not just the
+      // absence of a throw, or a rejected save is counted as a success.
+      if (res && (res.ok === true || res.success === true)) {
+        brandUpdated = true;
+      } else {
+        errors.push(`Brand profile didn't save: ${res?.error?.message || 'Unknown error'}`);
+      }
     } catch (err) {
-      errors.push(`Brand profile update failed: ${err.message || err}`);
+      errors.push(`Brand profile didn't save: ${err.message || err}`);
     }
   }
 
@@ -189,6 +196,12 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
 
     try {
       const productRes = await brandApi.post('/brands/me/products', payload);
+      // Honest-save: the API client resolves on non-2xx (returns
+      // {success:false}) — a rejected POST must NOT be counted as created.
+      if (!productRes || !(productRes.ok === true || productRes.success === true)) {
+        errors.push(`"${payload.name}" didn't save: ${productRes?.error?.message || 'Unknown error'}`);
+        continue;
+      }
       productsCreated += 1;
 
       // Fashion-1: if the item carries `_variants`, write them via the
@@ -199,14 +212,13 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
       const variants = Array.isArray(item?._variants) ? item._variants : null;
       const newProductId = productRes?.data?.product?.id || productRes?.data?.id || productRes?.product?.id;
       if (variants && variants.length > 0 && newProductId) {
-        try {
-          await brandApi.post(`/brands/me/products/${newProductId}/variants`, { variants });
-        } catch (varErr) {
-          errors.push(`Variants for "${payload.name}" failed: ${varErr.message || varErr}`);
+        const varRes = await brandApi.post(`/brands/me/products/${newProductId}/variants`, { variants });
+        if (!varRes || !(varRes.ok === true || varRes.success === true)) {
+          errors.push(`Variants for "${payload.name}" didn't save: ${varRes?.error?.message || 'Unknown error'}`);
         }
       }
     } catch (err) {
-      errors.push(`Product "${payload.name}" failed: ${err.message || err}`);
+      errors.push(`"${payload.name}" didn't save: ${err.message || err}`);
     }
   }
 

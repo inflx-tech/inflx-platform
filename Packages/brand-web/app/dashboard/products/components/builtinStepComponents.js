@@ -227,6 +227,10 @@ export function done({ step, publishResult, template, scoreData }) {
   const tips = step.boost_tips || [];
   const created = publishResult?.products_created || 0;
   const noun = template?.product_noun_plural?.toLowerCase() || 'listings';
+  // Honest-save: publishDriver collects the REAL reasons any save failed.
+  // Never claim "You're live" when saves were rejected by the server.
+  const errors = Array.isArray(publishResult?.errors) ? publishResult.errors : [];
+  const hasErrors = errors.length > 0;
 
   // Three next-action cards — primary follow-ups after publish.
   // The yellow card is the recommended path (campaign first); the other
@@ -240,20 +244,46 @@ export function done({ step, publishResult, template, scoreData }) {
   return (
     <div className="py-2 space-y-6">
       <div className="text-center space-y-3">
-        <div className="w-16 h-16 rounded-full bg-teal-pale mx-auto flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00B894"
-               strokeWidth="2.5" strokeLinecap="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
+        {hasErrors ? (
+          <div className="w-16 h-16 rounded-full bg-red-100 mx-auto flex items-center justify-center text-3xl text-red-600">!</div>
+        ) : (
+          <div className="w-16 h-16 rounded-full bg-teal-pale mx-auto flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00B894"
+                 strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        )}
         <div>
-          <div className="font-display text-2xl font-extrabold text-ink-1 tracking-tight">{step.title || 'You\'re live on INFLX 🎉'}</div>
-          {step.subtitle && <div className="text-sm text-ink-3 mt-1">{step.subtitle}</div>}
+          <div className="font-display text-2xl font-extrabold text-ink-1 tracking-tight">
+            {hasErrors
+              ? (created > 0 ? 'Almost there — some items didn\'t save' : 'We couldn\'t save your listing yet')
+              : (step.title || 'You\'re live on INFLX 🎉')}
+          </div>
+          {!hasErrors && step.subtitle && <div className="text-sm text-ink-3 mt-1">{step.subtitle}</div>}
           <div className="text-xs text-ink-3 mt-2 font-mono uppercase tracking-wider">
-            {created > 0 ? `Published · +${created} ${noun}` : 'Brand profile updated'}
+            {created > 0 ? `Published · +${created} ${noun}` : (hasErrors ? `0 ${noun} saved` : 'Brand profile updated')}
           </div>
         </div>
       </div>
+
+      {hasErrors && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-left">
+          <div className="font-mono text-[10px] font-bold text-red-700 uppercase tracking-wider mb-2">
+            {errors.length} {errors.length === 1 ? 'item' : 'items'} need attention
+          </div>
+          <ul className="space-y-1.5 mb-3">
+            {errors.slice(0, 8).map((e, i) => (
+              <li key={i} className="text-xs text-red-800 flex gap-2"><span>•</span><span>{e}</span></li>
+            ))}
+            {errors.length > 8 && <li className="text-xs text-red-700">…and {errors.length - 8} more</li>}
+          </ul>
+          <a href="/dashboard/products"
+             className="inline-block px-4 py-2 rounded-lg text-xs font-bold bg-yellow hover:bg-yellow-deep text-ink-1">
+            Back to my listing — fix &amp; try again
+          </a>
+        </div>
+      )}
 
       {/* Quality score with ring, tier, and Path-to-next-tier checklist.
           Single card per Wave 2.1 — combines what the mockup splits into
@@ -263,7 +293,8 @@ export function done({ step, publishResult, template, scoreData }) {
         <QualityScore scoreData={scoreData} template={template} />
       )}
 
-      {/* 3 next-action cards */}
+      {/* 3 next-action cards — hidden when nothing saved (would be misleading) */}
+      {!(hasErrors && created === 0) && (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {NEXT_ACTIONS.map(a => {
           const accentBg = a.accent === 'yellow'
@@ -285,8 +316,9 @@ export function done({ step, publishResult, template, scoreData }) {
           );
         })}
       </div>
+      )}
 
-      {tips.length > 0 && (
+      {!hasErrors && tips.length > 0 && (
         <div className="bg-paper-surface border border-line-soft rounded-xl p-4">
           <div className="font-mono text-[10px] font-bold text-ink-3 uppercase tracking-wider mb-2">Boost your listing</div>
           <ul className="space-y-1.5">

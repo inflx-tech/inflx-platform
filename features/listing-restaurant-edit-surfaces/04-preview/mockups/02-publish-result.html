@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mockup — Honest publish result (no more fake "You're live")</title>
+<style>
+  :root { --yellow:#FFB800; --ink:#1c1917; --ink2:#57534e; --green:#16a34a; --red:#dc2626; --line:#ececec; }
+  * { box-sizing:border-box; font-family:'Outfit','Segoe UI',system-ui,sans-serif; }
+  body { background:#fafafa; margin:0; padding:32px; color:var(--ink); }
+  .row { display:flex; gap:24px; max-width:920px; margin:0 auto; flex-wrap:wrap; justify-content:center; }
+  .panel { flex:1; min-width:330px; background:#fff; border:1px solid var(--line); border-radius:18px; padding:30px 26px; text-align:center; }
+  .tag { font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--ink2); margin-bottom:14px; }
+  .ic { width:62px; height:62px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:30px; margin:0 auto 14px; }
+  .ic.ok { background:#dcfce7; } .ic.warn { background:#fee2e2; }
+  h2 { font-size:21px; margin:0 0 6px; }
+  .muted { color:var(--ink2); font-size:13.5px; margin:0 0 14px; }
+  .list { text-align:left; background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:12px 14px; font-size:13px; color:#7f1d1d; margin:14px 0; }
+  .list b { color:var(--red); }
+  .okline { display:inline-block; background:#dcfce7; color:#166534; font-weight:700; font-size:12px; padding:4px 10px; border-radius:8px; }
+  .btn { display:inline-block; margin-top:8px; background:var(--yellow); font-weight:700; font-size:14px; padding:11px 20px; border-radius:11px; border:none; }
+  .btn.ghost { background:#fff; border:1.5px solid var(--line); }
+  .caption { text-align:center; max-width:920px; margin:22px auto 0; font-size:12.5px; color:var(--ink2); background:#fff; border:1px dashed #d6d3d1; border-radius:12px; padding:14px 18px; }
+</style>
+</head>
+<body>
+<div class="row">
+  <!-- LEFT: all saved -->
+  <div class="panel">
+    <div class="tag">When everything saves</div>
+    <div class="ic ok">✓</div>
+    <h2>You're live!</h2>
+    <p class="muted">Your restaurant is discoverable.</p>
+    <div class="okline">PUBLISHED · 10 dishes saved</div>
+  </div>
+
+  <!-- RIGHT: honest failure -->
+  <div class="panel">
+    <div class="tag">When some saves fail</div>
+    <div class="ic warn">!</div>
+    <h2>Almost there — some items didn't save</h2>
+    <p class="muted">Your profile saved, but the menu couldn't be saved yet:</p>
+    <div class="list">
+      <b>Account under review.</b> Your menu will be saveable once an admin approves you (usually within 24h). Your setup is kept — just tap <b>Publish</b> again after approval. <br/><br/>
+      <span style="font-size:12px;color:#991b1b;">(0 of 18 dishes saved · 18 blocked)</span>
+    </div>
+    <button class="btn ghost">Save my progress</button>
+    <button class="btn">Try publishing again</button>
+  </div>
+</div>
+
+<div class="caption">
+  <b>The fix:</b> today the app shows “You're live · +18 MENU” even when the server <b>rejected</b> every save (a silent-failure bug — it counts rejections as successes). After the fix, the publish screen tells the truth: it shows the real number saved, names the real reason for any failure (e.g. “account under review”, validation), and never claims “live” when nothing saved. <b>This protects every brand, every vertical — not just restaurants.</b> Paired with “build-while-pending,” the pending case disappears entirely (the menu just saves and goes live on approval).
+</div>
+</body>
+</html>

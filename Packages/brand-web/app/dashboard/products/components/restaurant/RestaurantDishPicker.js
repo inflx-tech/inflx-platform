@@ -146,8 +146,8 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
     onItemAdd({
       _master_row: masterRow,
       name: masterRow.name,
-      price: suggested,
-      image_url: masterRow.default_image_url,
+      price: suggested, // master mid-range as an editable hint; owner confirms/changes
+      image_url: null,  // blank — the owner adds their OWN photo (no stock/dummy image)
       description: masterRow.default_description,
       section: masterRow.section,
     });
@@ -462,13 +462,18 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
             Added dishes ({wizardItems.length})
           </div>
           <div className="space-y-2">
-            {wizardItems.map((item, idx) => (
+            {wizardItems.map((item, idx) => {
+              const needsPhoto = !item.image_url;
+              const needsPrice = item.price == null || Number(item.price) <= 0;
+              return (
               <div key={idx} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+                {/* Photo: owner's own — blank starts as an "Add photo" prompt, never a stock image */}
                 <button type="button" onClick={() => setSwapTargetIdx(idx)}
-                  className="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 hover:ring-2 hover:ring-orange-300">
+                  title={needsPhoto ? 'Add your own photo' : 'Change photo'}
+                  className={`w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 flex flex-col items-center justify-center ${needsPhoto ? 'bg-stone-50 border-[1.5px] border-dashed border-stone-300 text-stone-400' : 'bg-gray-100 hover:ring-2 hover:ring-orange-300'}`}>
                   {item.image_url
                     ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-xl">🍽️</div>}
+                    : <><span className="text-lg leading-none">📷</span><span className="text-[8px] font-bold mt-0.5">ADD PHOTO</span></>}
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
@@ -478,17 +483,23 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
                     )}
                   </div>
                   <div className="text-[10px] text-gray-500">{item.section || item._master_row?.section}</div>
+                  {(needsPhoto || needsPrice) && (
+                    <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                      {needsPhoto && needsPrice ? '⚠ Add your photo & price' : needsPhoto ? '📷 Add your own photo' : '⚠ Set your price'}
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                <div className={`flex items-center border rounded-lg overflow-hidden ${needsPrice ? 'border-yellow bg-yellow-50' : 'border-gray-200'}`}>
                   <span className="px-2 text-xs text-gray-500 bg-gray-50 border-r border-gray-200">₹</span>
-                  <input type="number" value={item.price ?? ''}
+                  <input type="number" value={item.price ?? ''} placeholder="0"
                     onChange={e => onItemFieldChange(idx, 'price', e.target.value === '' ? null : Number(e.target.value))}
-                    className="w-20 px-2 py-1 text-xs font-semibold outline-none" />
+                    className="w-20 px-2 py-1 text-xs font-semibold outline-none bg-transparent" />
                 </div>
                 <button type="button" onClick={() => onItemRemove(idx)}
                   className="text-red-400 hover:text-red-600 text-xs font-semibold">Remove</button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
