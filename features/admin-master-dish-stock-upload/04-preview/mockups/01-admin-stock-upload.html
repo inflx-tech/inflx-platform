@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mockup — Admin master-dish stock image upload</title>
+<style>
+  *{box-sizing:border-box;font-family:'Outfit','Segoe UI',system-ui,sans-serif;}
+  body{background:#f3f4f6;margin:0;padding:32px;color:#111827;}
+  .modal{max-width:480px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;}
+  h2{font-size:18px;margin:0 0 16px;}
+  .lbl{font-size:12px;font-weight:700;color:#374151;margin-bottom:4px;}
+  .hint{font-size:11px;color:#9ca3af;margin-bottom:8px;}
+  .row{display:flex;gap:12px;align-items:flex-start;}
+  .thumb{width:64px;height:64px;border-radius:10px;background:#f3f4f6;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;}
+  .thumb img{width:100%;height:100%;object-fit:cover;}
+  .up{display:inline-block;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb;cursor:pointer;}
+  .inp{width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:12px;margin-top:8px;}
+  .field{margin-bottom:16px;}
+  .name{border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;width:100%;}
+  .note{margin-top:18px;font-size:12px;color:#6b7280;background:#f9fafb;border:1px dashed #d1d5db;border-radius:10px;padding:12px;}
+</style></head><body>
+<div class="modal">
+  <h2>Edit master dish</h2>
+  <div class="field"><div class="lbl">Name</div><input class="name" value="Masala Dosa"/></div>
+  <div class="field">
+    <div class="lbl">Stock image</div>
+    <div class="hint">Upload a free stock image, or paste a stable URL. Brands swap to their own photo when listing.</div>
+    <div class="row">
+      <div class="thumb"><img src="https://images.unsplash.com/photo-1630383249896-424e482df921?w=140&q=60" alt=""/></div>
+      <div style="flex:1;">
+        <label class="up">⬆ Upload stock image</label>
+        <input class="inp" placeholder="…or paste a stable URL (https://images.unsplash.com/...)"/>
+      </div>
+    </div>
+  </div>
+  <div class="note"><b>New:</b> admin uploads the catalogue stock image as a <b>file</b> (was paste-only). It stores a <b>permanent</b> URL (re-sign-on-read), shows a preview, and appears in the seller's dish picker. Paste-a-URL still works as a fallback.</div>
+</div></body></html>

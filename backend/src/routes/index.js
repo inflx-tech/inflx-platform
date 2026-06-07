@@ -148,6 +148,7 @@ router.get('/business/:brand_id',                 authenticateOptional, follower
 // brand covers, admin stock). Re-signs the real R2 URL on each view; only brand
 // media assets are reachable (never contracts/KYC). See mediaAsset.controller.
 router.get('/media/assets/:id',                   mediaAssetCtrl.serveAsset);
+router.get('/media/stock/*',                      mediaAssetCtrl.serveStockImage);
 router.get('/category/:category_key',             authenticateOptional, followerCtrl.getCategoryStore);
 
 // ── Listing Engine — category stores with inline products ────────────────────

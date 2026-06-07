@@ -20,6 +20,7 @@ const db = require('../config/db');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const mediaService = require('../services/media.service');
 
 const VALID_FIELDS = [
   'cuisine', 'section', 'name',
@@ -182,10 +183,33 @@ const deleteMasterDish = asyncHandler(async (req, res) => {
   return success(res, { deleted: id });
 });
 
+// ── POST /admin/master-dishes/stock-upload-url ───────────────────────────────
+// Admin uploads a free stock image for the dish catalogue. Returns a presigned
+// PUT URL (client uploads the file to R2 directly) + the PERMANENT public_url to
+// store in master_dishes.default_image_url. Served via /v1/media/stock/* (re-sign
+// on read) so it never expires.
+const getStockUploadUrl = asyncHandler(async (req, res) => {
+  const { file_name, file_type, file_size_bytes } = req.body || {};
+  let result;
+  try {
+    result = await mediaService.generateStockUploadUrl({ file_name, file_type, file_size_bytes });
+  } catch (err) {
+    throw new AppError('VALIDATION_ERROR', err.message, 422);
+  }
+  const base = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3001}`;
+  return success(res, {
+    upload_url: result.url,
+    method: result.method || 'PUT',
+    key: result.key,
+    public_url: `${base}/v1/media/${result.key}`, // key starts with 'stock/...'
+  });
+});
+
 module.exports = {
   listMasterDishes,
   listCuisines,
   createMasterDish,
   updateMasterDish,
   deleteMasterDish,
+  getStockUploadUrl,
 };

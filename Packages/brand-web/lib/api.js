@@ -387,6 +387,45 @@ export async function uploadFileToGallery(file, { title, description, tags }) {
   return { asset: created.data.asset };
 }
 
+// Admin uploads a free stock image for a master dish. Gets a presigned URL,
+// PUTs the file to R2 (or mock-POST), and returns the PERMANENT public_url to
+// store in master_dishes.default_image_url. No gallery row (stock is not a
+// brand asset). Mirrors uploadFileToGallery's transport.
+export async function uploadAdminStockImage(file) {
+  if (!file) return { error: { message: 'No file provided' } };
+  const presign = await adminApi.stockUploadUrl({
+    file_name: file.name,
+    file_type: file.type || 'application/octet-stream',
+    file_size_bytes: file.size,
+  });
+  if (!(presign.success || presign.ok)) return { error: presign.error || { message: 'Upload URL failed' } };
+  const { upload_url, method, key, public_url } = presign.data;
+  try {
+    if ((method || 'PUT') === 'PUT') {
+      const putRes = await fetch(upload_url, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+      if (!putRes.ok) return { error: { message: `R2 upload failed (${putRes.status})` } };
+    } else {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('key', key);
+      const token = getToken();
+      const postRes = await fetch(upload_url, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (!postRes.ok) return { error: { message: `Mock upload failed (${postRes.status})` } };
+    }
+  } catch (err) {
+    return { error: { message: `Upload failed: ${err.message}` } };
+  }
+  return { public_url };
+}
+
 export const deliverableApi = {
   get: (id) => api.get(`/deliverables/${id}`),
   getMediaUrl: (id) => api.get(`/deliverables/${id}/media-url`),
@@ -474,6 +513,7 @@ export const adminApi = {
   createMasterDish:   (data) => api.post('/admin/master-dishes', data),
   updateMasterDish:   (id, data) => api.patch(`/admin/master-dishes/${id}`, data),
   deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
+  stockUploadUrl:     (meta) => api.post('/admin/master-dishes/stock-upload-url', meta),
 
   // Dish Review Queue (flywheel) — custom names sellers typed
   listDishQueue:      () => api.get('/admin/master-dishes/queue'),

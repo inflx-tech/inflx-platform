@@ -113,6 +113,7 @@ router.get   ('/master-dishes/cuisines',  authenticate, requireAdminRole('review
 // two-segment '/queue' paths aren't shadowed by the single-segment ':id' route.
 router.get   ('/master-dishes/queue',     authenticate, requireAdminRole('reviewer'), dishQueueCtrl.listQueue);
 router.patch ('/master-dishes/queue/:id', authenticate, requireAdminRole('reviewer'), dishQueueCtrl.resolveQueueItem);
+router.post  ('/master-dishes/stock-upload-url', authenticate, requireAdminRole('reviewer'), masterDishCtrl.getStockUploadUrl);
 router.post  ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.createMasterDish);
 router.patch ('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.updateMasterDish);
 router.delete('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.deleteMasterDish);

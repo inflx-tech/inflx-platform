@@ -309,6 +309,17 @@ const serveAsset = asyncHandler(async (req, res) => {
   return res.redirect(302, url);
 });
 
+// GET /v1/media/stock/*  (PUBLIC — no auth)
+// Re-signs an admin stock image (master-dish catalogue) and 302-redirects.
+// PREFIX-GUARDED: only keys under `stock/` are reachable (no traversal), so this
+// can never reach brand assets or contracts/KYC.
+const serveStockImage = asyncHandler(async (req, res) => {
+  const sub = req.params[0] || '';
+  if (!sub || sub.includes('..')) throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  const url = await mediaService.generateAssetDownloadUrl(`stock/${sub}`);
+  return res.redirect(302, url);
+});
+
 // ─── Internals ──────────────────────────────────────────────────────────────
 
 // A STABLE, permanent URL for an asset — points at the public re-sign endpoint
@@ -331,6 +342,7 @@ module.exports = {
   listAssets,
   getDownloadUrl,
   serveAsset,
+  serveStockImage,
   updateAsset,
   deleteAsset,
   listBrandContracts,

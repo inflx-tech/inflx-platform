@@ -1,0 +1,23 @@
+{
+  "feature": "admin-master-dish-stock-upload",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-07 'Build admin file-upload now')",
+  "approved_at": "2026-06-07",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated → chat-architect, 2026-06-07)",
+  "mockup_locked_at": "2026-06-07",
+  "notes": "Admin uploads free stock images for master dishes (was paste-only). Backend: mediaService.generateStockUploadUrl (presigned PUT under stock/dishes/ key) + admin POST /admin/master-dishes/stock-upload-url (reviewer) returning presigned URL + permanent public_url + public prefix-guarded GET /v1/media/stock/* (re-sign+302, never private files). brand-web: uploadAdminStockImage helper + upload button + preview in the master-dishes edit modal (paste-URL fallback kept). Rides on listing-stable-image-urls. NO migration. UI-governed (brand-web) → mockup_locked + 06-diff set. Render + Vercel deploys production-impacting — founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-07 'Build admin file-upload now')",
+    "released_at": "2026-06-07",
+    "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN (2026-06-07).",
+    "deploy": "2026-06-07 — Render backend (stock upload-url + public /v1/media/stock/* serve) + Vercel brand-web (admin master-dishes upload button + preview). Auto-deploy on push. Reversible by revert. Founder go: 'Build admin file-upload now'.",
+    "classification": "production-impacting (Render backend + Vercel brand-web). No migration."
+  }
+}

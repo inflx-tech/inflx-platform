@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { adminApi } from '../../../lib/api';
+import { adminApi, uploadAdminStockImage } from '../../../lib/api';
 
 /**
  * Master Dishes admin CRUD page.
@@ -54,6 +54,8 @@ export default function MasterDishesPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [stockUploading, setStockUploading] = useState(false);
+  const [stockErr, setStockErr] = useState(null);
 
   // Edit/create modal
   const [editing, setEditing] = useState(null);   // null | 'new' | <dish object>
@@ -383,12 +385,36 @@ export default function MasterDishesPage() {
                   className="w-full border border-border rounded-lg px-3 py-2 text-sm font-semibold" />
               </FormField>
 
-              <FormField label="Default image URL"
-                hint="Brands can swap to their own. Use a stable URL (Unsplash IDs work well).">
-                <input type="url" value={form.default_image_url}
-                  onChange={e => setForm({ ...form, default_image_url: e.target.value })}
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full border border-border rounded-lg px-3 py-2 text-xs" />
+              <FormField label="Stock image"
+                hint="Upload a free stock image, or paste a stable URL. Brands swap to their own photo when listing.">
+                <div className="flex items-start gap-3">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 border border-border flex items-center justify-center flex-shrink-0">
+                    {form.default_image_url
+                      ? <img src={form.default_image_url} alt="" className="w-full h-full object-cover" />
+                      : <span className="text-xl text-gray-300">🍽️</span>}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <label className={`inline-block text-xs font-semibold px-3 py-1.5 rounded-lg border cursor-pointer ${stockUploading ? 'opacity-50 pointer-events-none' : 'bg-gray-50 hover:bg-gray-100 border-border'}`}>
+                      {stockUploading ? 'Uploading…' : '⬆ Upload stock image'}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0];
+                          e.target.value = '';
+                          if (!file) return;
+                          setStockUploading(true); setStockErr(null);
+                          const res = await uploadAdminStockImage(file);
+                          setStockUploading(false);
+                          if (res.error) { setStockErr(res.error.message || 'Upload failed'); return; }
+                          setForm(f => ({ ...f, default_image_url: res.public_url }));
+                        }} />
+                    </label>
+                    {stockErr && <div className="text-[11px] text-red-600">{stockErr}</div>}
+                    <input type="url" value={form.default_image_url}
+                      onChange={e => setForm({ ...form, default_image_url: e.target.value })}
+                      placeholder="…or paste a stable URL (https://images.unsplash.com/...)"
+                      className="w-full border border-border rounded-lg px-3 py-2 text-xs" />
+                  </div>
+                </div>
               </FormField>
 
               <div className="grid grid-cols-2 gap-3">

@@ -74,6 +74,24 @@ async function generateAssetDownloadUrl(key) {
   return storageService.generateDownloadUrl(key);
 }
 
+// Admin-managed master-dish STOCK images live under a platform `stock/` prefix
+// (not brand-scoped). Served via the public, prefix-guarded /v1/media/stock/*
+// re-sign route — permanent URLs, same as brand uploads.
+function buildStockKey(originalFilename) {
+  const safe = String(originalFilename || 'file')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+    .slice(-80);
+  const uid = crypto.randomBytes(8).toString('hex');
+  return `stock/dishes/${Date.now()}_${uid}_${safe}`;
+}
+
+async function generateStockUploadUrl({ file_name, file_type, file_size_bytes }) {
+  assertFileMeta({ file_name, file_type, file_size_bytes });
+  const key = buildStockKey(file_name);
+  const { url, method } = await storageService.generateUploadUrl(key, file_type);
+  return { url, method, key };
+}
+
 module.exports = {
   MAX_BYTES,
   ALLOWED_MIMES,
@@ -83,4 +101,5 @@ module.exports = {
   buildAssetKey,
   generateAssetUploadUrl,
   generateAssetDownloadUrl,
+  generateStockUploadUrl,
 };
