@@ -1,0 +1,23 @@
+{
+  "feature": "listing-restaurant-menu-cuisines",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-07 chat: 'your flow is ok. pls implement')",
+  "approved_at": "2026-06-07",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated → chat-architect, 2026-06-07 — confirmed Cuisine→Section→Dish flow + 'pls implement')",
+  "mockup_locked_at": "2026-06-07",
+  "notes": "Follow-up to listing-restaurant-edit-surfaces, from founder dogfood 2026-06-07. (A) Location mock-off: GEOCODING_MOCK becomes opt-in (default OFF) so prod runs the real short-link path instead of faking Vijayawada/'MOCK MODE'. (B/C) Add-menu cuisines: RestaurantDishPicker reads saved cuisines from brand.listing_data (fixes 'No dishes available (none)'), inline 'Add cuisine' in the menu surface (persists to listing_data.cuisines via PATCH /brands/me), cuisine-picker empty state. Flow Cuisine -> Section -> Dish; business setup stays its own door. No migration. UI-governed (brand-web) + backend one-liner. Render + Vercel deploys PRODUCTION-IMPACTING -> founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-07 'pls implement')",
+    "released_at": "2026-06-07",
+    "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN (2026-06-07).",
+    "deploy": "2026-06-07 — Render backend (geocoding mock opt-in) + Vercel brand-web (RestaurantDishPicker: saved-cuisine load, inline Add-cuisine, cuisine-picker empty state) auto-deploy on push to main. Reversible by revert. Founder go: 2026-06-07 'pls implement'. Caveat: if prod Render has an explicit GEOCODING_MOCK=true env var, it must be removed (operator) — code flip fixes the default-unset case.",
+    "classification": "production-impacting (Render backend + Vercel brand-web). No migration."
+  }
+}

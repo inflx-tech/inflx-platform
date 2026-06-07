@@ -38,11 +38,23 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Brand's selected cuisines from step 1's brand_basics step
-  const brandCuisines = useMemo(
-    () => Array.isArray(wizardState.cuisines) ? wizardState.cuisines : [],
-    [wizardState.cuisines]
-  );
+  // Cuisines added inline via the "Add cuisine" control (this session).
+  const [addedCuisines, setAddedCuisines] = useState([]);
+  const [savingCuisine, setSavingCuisine] = useState(false);
+  const [showAddCuisine, setShowAddCuisine] = useState(false);
+
+  // The brand's cuisines. Seed from the in-session wizard value, ELSE from the
+  // SAVED profile (brand.listing_data.cuisines) — so re-opening just to add menu
+  // shows the brand's cuisines instead of "none". Union with cuisines added
+  // inline this session. (Founder report 2026-06-07: add-menu showed "no dishes"
+  // because saved cuisines were never loaded here.)
+  const brandCuisines = useMemo(() => {
+    const fromState = Array.isArray(wizardState.cuisines) && wizardState.cuisines.length
+      ? wizardState.cuisines : null;
+    const fromSaved = Array.isArray(brand?.listing_data?.cuisines)
+      ? brand.listing_data.cuisines : [];
+    return Array.from(new Set([...(fromState || fromSaved), ...addedCuisines]));
+  }, [wizardState.cuisines, brand, addedCuisines]);
 
   const [activeCuisine, setActiveCuisine] = useState(null);
   const [activeSection, setActiveSection] = useState(null);
@@ -106,6 +118,31 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   const cuisinesAvailable = useMemo(() => {
     return brandCuisines.filter(c => masterItems.some(d => d.cuisine === c));
   }, [brandCuisines, masterItems]);
+
+  // Cuisines our catalogue offers that the brand hasn't added yet — for the
+  // inline "Add cuisine" control. Cuisine management lives WITH the menu (a
+  // frequent activity), not behind "Edit business setup" (rare).
+  const addableCuisines = useMemo(() => {
+    const all = Array.from(new Set(masterItems.map(d => d.cuisine).filter(Boolean))).sort();
+    return all.filter(c => !brandCuisines.includes(c));
+  }, [masterItems, brandCuisines]);
+
+  // Add a cuisine inline: reflect locally (its dishes are already loaded in
+  // masterItems) AND persist to the brand profile so it sticks. Non-blocking —
+  // a failed PATCH still shows the cuisine for this session.
+  async function handleAddCuisine(c) {
+    if (!c || brandCuisines.includes(c)) return;
+    setAddedCuisines(prev => Array.from(new Set([...prev, c])));
+    setActiveCuisine(c);
+    setShowAddCuisine(false);
+    setSavingCuisine(true);
+    try {
+      const nextCuisines = Array.from(new Set([...brandCuisines, c]));
+      const merged = { ...(brand?.listing_data || {}), cuisines: nextCuisines };
+      await brandApi.patch('/brands/me', { listing_data: merged });
+    } catch { /* local state still reflects it */ }
+    finally { setSavingCuisine(false); }
+  }
 
   // Auto-select first cuisine on load
   useEffect(() => {
@@ -319,13 +356,27 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
     return (
       <div className="space-y-4">
         <button type="button" onClick={() => setPath(null)} className="text-xs text-gray-500 hover:text-gray-700">← Back</button>
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-700">
-          No dishes available yet for the cuisines you picked
-          ({brandCuisines.join(', ') || 'none'}).
-          {' '}Use Bulk Upload, or go back to step 1 and add a cuisine like South Indian / North Indian / Chinese.
+        <div className="bg-white border border-gray-200 rounded-xl p-5 text-center">
+          <div className="text-3xl mb-2">🍽️</div>
+          <div className="text-sm font-bold text-gray-900 mb-1">Pick a cuisine to start your menu</div>
+          <div className="text-xs text-gray-500 mb-4">
+            Choose a cuisine and we&rsquo;ll show popular dishes to add. You can add more cuisines anytime —
+            no need to touch your business setup.
+          </div>
+          <div className="flex gap-2 flex-wrap justify-center">
+            {addableCuisines.length === 0 && (
+              <span className="text-xs text-gray-400">Loading cuisines…</span>
+            )}
+            {addableCuisines.map(c => (
+              <button key={c} type="button" disabled={savingCuisine} onClick={() => handleAddCuisine(c)}
+                className="px-3 py-1.5 rounded-full text-xs font-bold border-2 border-gray-200 text-gray-600 hover:border-orange-400 hover:text-orange-600 disabled:opacity-50">
+                ＋ {c}
+              </button>
+            ))}
+          </div>
         </div>
         <button type="button" onClick={() => setPath('bulk')}
-          className="text-xs text-orange-600 hover:underline">Switch to Bulk Upload →</button>
+          className="text-xs text-orange-600 hover:underline">Or switch to Bulk Upload →</button>
       </div>
     );
   }
@@ -375,10 +426,10 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
         )}
       </div>
 
-      {/* Cuisine top-nav */}
+      {/* Cuisine top-nav — your cuisines + add a new one inline (no business-setup trip) */}
       <div>
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">Cuisine</div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
           {cuisinesAvailable.map(c => (
             <button key={c} type="button" onClick={() => setActiveCuisine(c)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all
@@ -388,6 +439,24 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
               {c}
             </button>
           ))}
+          {addableCuisines.length > 0 && (
+            <div className="relative">
+              <button type="button" onClick={() => setShowAddCuisine(v => !v)} disabled={savingCuisine}
+                className="px-3 py-1.5 rounded-full text-xs font-bold border-2 border-dashed border-gray-300 text-gray-500 hover:border-orange-400 hover:text-orange-600 disabled:opacity-50">
+                ＋ Add cuisine
+              </button>
+              {showAddCuisine && (
+                <div className="absolute z-20 left-0 mt-1 w-44 max-h-60 overflow-auto bg-white border border-gray-200 rounded-xl shadow-lg p-1">
+                  {addableCuisines.map(c => (
+                    <button key={c} type="button" onClick={() => handleAddCuisine(c)}
+                      className="w-full text-left px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-orange-50 rounded-lg">
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

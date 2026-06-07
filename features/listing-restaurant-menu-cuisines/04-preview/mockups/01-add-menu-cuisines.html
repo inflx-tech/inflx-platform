@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mockup — Add Menu with cuisines (Cuisine → Section → Dish)</title>
+<style>
+  :root{--y:#FFB800;--ink:#1c1917;--ink2:#57534e;--ink3:#a8a29e;--line:#ececec;--orange:#ea580c;}
+  *{box-sizing:border-box;font-family:'Outfit','Segoe UI',system-ui,sans-serif;}
+  body{background:#fafafa;margin:0;padding:28px;color:var(--ink);}
+  .wrap{max-width:680px;margin:0 auto;}
+  h1{text-align:center;font-size:24px;margin:0 0 2px;}
+  .sub{text-align:center;color:var(--ink2);font-size:13px;margin:0 0 16px;}
+  .lbl{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin:16px 2px 8px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .chip{padding:7px 14px;border-radius:999px;font-size:12px;font-weight:700;border:2px solid var(--line);color:var(--ink2);background:#fff;}
+  .chip.on{border-color:var(--orange);background:#fff7ed;color:var(--orange);}
+  .chip.add{border-style:dashed;border-color:#d6d3d1;color:var(--ink3);}
+  .sec{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;background:#f5f5f4;color:var(--ink2);}
+  .sec.on{background:#292524;color:#fff;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;}
+  .dish{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center;}
+  .ph{width:46px;height:46px;border-radius:10px;background:#f5f5f4;border:1.5px dashed #d6d3d1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#a8a29e;flex:none;}
+  .ph .c{font-size:15px;}.ph .t{font-size:7px;font-weight:700;}
+  .dn{font-size:13px;font-weight:700;}.dp{font-size:11px;color:var(--ink3);}
+  .addbtn{margin-left:auto;background:var(--y);border:none;font-weight:700;font-size:12px;padding:6px 12px;border-radius:9px;}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:6px;}
+  .pop{display:inline-block;margin-top:6px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.08);}
+  .pop button{display:block;width:150px;text-align:left;padding:6px 10px;font-size:12px;font-weight:600;color:var(--ink2);background:none;border:none;border-radius:8px;}
+  .pop button:hover{background:#fff7ed;}
+  .empty{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;text-align:center;margin-top:6px;}
+  .note{margin-top:22px;background:#fff;border:1px dashed #d6d3d1;border-radius:12px;padding:14px;font-size:12.5px;color:var(--ink2);}
+  .note b{color:var(--ink);}
+</style></head>
+<body><div class="wrap">
+  <h1>➕ Add dishes</h1>
+  <p class="sub">Cuisine → Section → Dish · all in the menu (no business-setup trip)</p>
+
+  <div class="lbl">Cuisine</div>
+  <div class="row">
+    <span class="chip on">South Indian</span>
+    <span class="chip">North Indian</span>
+    <span class="chip">Chinese</span>
+    <span class="chip add">＋ Add cuisine</span>
+  </div>
+  <div class="pop">
+    <button>Biryani</button><button>Continental</button><button>Desserts</button><button>Mughlai</button>
+  </div>
+
+  <div class="lbl">Category (section)</div>
+  <div class="row">
+    <span class="sec on">Main Course</span><span class="sec">Starters</span><span class="sec">Breads</span><span class="sec">Desserts</span>
+  </div>
+
+  <div class="lbl">Dishes — tap to add (blank photo, your price)</div>
+  <div class="grid">
+    <div class="dish"><div class="ph"><span class="c">📷</span><span class="t">ADD</span></div><div><div class="dn">Masala Dosa</div><div class="dp">Main Course</div></div><button class="addbtn">Add</button></div>
+    <div class="dish"><div class="ph"><span class="c">📷</span><span class="t">ADD</span></div><div><div class="dn">Idli Sambar</div><div class="dp">Main Course</div></div><button class="addbtn">Add</button></div>
+  </div>
+
+  <div class="lbl">Empty state (brand with no cuisines yet) — a picker, not a dead-end</div>
+  <div class="empty">
+    <div style="font-size:26px;">🍽️</div>
+    <div style="font-weight:700;font-size:14px;margin:4px 0;">Pick a cuisine to start your menu</div>
+    <div style="font-size:12px;color:#a8a29e;margin-bottom:12px;">Add more anytime — no need to touch your business setup.</div>
+    <div class="row" style="justify-content:center;">
+      <span class="chip add">＋ South Indian</span><span class="chip add">＋ North Indian</span><span class="chip add">＋ Chinese</span><span class="chip add">＋ Biryani</span>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>What changes:</b> a returning brand’s <b>saved cuisines load automatically</b> (fixes “No dishes available… (none)”). Cuisine management moves <b>into the menu</b> — pick or <b>➕ Add cuisine</b> inline (persists to your profile), then Section → Dish. The rare stuff (hours, cost-for-two, location, photos) stays behind <b>Edit business setup</b>. Separately, <b>Location stops faking Vijayawada</b> — your pasted share link resolves to your real area.
+  </div>
+</div></body></html>

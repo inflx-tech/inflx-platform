@@ -24,7 +24,11 @@ const asyncHandler = require('../utils/asyncHandler');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 
-const GEOCODING_MOCK = String(process.env.GEOCODING_MOCK || '').toLowerCase() !== 'false';
+// Mock is OPT-IN (default OFF). Production must run the REAL path (short-link
+// expansion → coords from the pasted link); the old opt-out default left prod
+// returning a hard-coded Vijayawada for every restaurant (founder report
+// 2026-06-07). Local dev/tests that want the fixed mock set GEOCODING_MOCK=true.
+const GEOCODING_MOCK = String(process.env.GEOCODING_MOCK || '').toLowerCase() === 'true';
 const GOOGLE_KEY     = process.env.GOOGLE_GEOCODING_API_KEY || '';
 
 // 30-day in-process cache (Map<urlHash, response>). Survives until restart;
