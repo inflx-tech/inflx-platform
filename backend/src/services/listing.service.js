@@ -197,18 +197,35 @@ async function calculateQualityScore(brandId, categoryKey) {
   const rules = getQualityRules(categoryKey);
   if (!rules.length) return { score: 0, max: 0, breakdown: [], suggestions: [] };
 
-  // Fetch brand profile
-  // city lives on `users` (brand registration does
-  // `UPDATE users SET city` — `brands` has no city column). Join to
-  // resolve it; result shape (business_name, city, category) is
-  // unchanged so quality-rule scoring behaviour is preserved.
+  // Fetch brand profile.
+  // Bug fix (2026-06-07, founder dogfood): the wizard writes profile fields
+  // (restaurant_description, cuisines, vibes, cost_for_two, google_maps_url,
+  // hours_json, cover_image_url, accepts_table_booking, photos[]) into
+  // `brands.listing_data` JSONB — NOT typed columns. The scorer previously
+  // selected only business_name/city/category, so every brand-scope `field`
+  // rule read `undefined` → earned:false → 0/100 even on a fully-filled
+  // profile. We now select listing_data and merge it with the few typed
+  // identity columns so field-rules resolve wherever the value is stored.
+  // city lives on `users` (brands has no city column).
   const { rows: [brand] } = await db.query(
-    `SELECT b.business_name, u.city, b.category
+    `SELECT b.business_name, b.listing_data, u.city, b.category
        FROM brands b JOIN users u ON u.id = b.user_id
       WHERE b.id = $1`,
     [brandId]
   );
   if (!brand) return { score: 0, max: 0, breakdown: [], suggestions: [] };
+
+  const listingData = brand.listing_data || {};
+  const profile = {
+    ...listingData,
+    business_name: brand.business_name,
+    city: brand.city,
+    category: brand.category,
+  };
+
+  // Brand GALLERY photos live in listing_data.photos[] (distinct from per-dish
+  // image_url). `type:photos scope:brand` rules count these.
+  const galleryPhotoCount = Array.isArray(listingData.photos) ? listingData.photos.length : 0;
 
   // Fetch product count
   const { rows: [{ count: productCount }] } = await db.query(
@@ -216,12 +233,16 @@ async function calculateQualityScore(brandId, categoryKey) {
     [brandId]
   );
 
-  // Fetch photo count (products with image_url)
-  const { rows: [{ count: photoCount }] } = await db.query(
+  // Fetch DISH photo count (products with their own image_url) — for the
+  // `scope:item_photos` rule (% of dishes with a photo).
+  const { rows: [{ count: productPhotoCount }] } = await db.query(
     `SELECT COUNT(*)::int AS count FROM brand_products
      WHERE brand_id = $1 AND is_active = true AND image_url IS NOT NULL AND image_url != ''`,
     [brandId]
   );
+
+  const hasValue = (v) =>
+    v != null && v !== '' && !(Array.isArray(v) && v.length === 0);
 
   let score = 0;
   let max = 0;
@@ -230,37 +251,29 @@ async function calculateQualityScore(brandId, categoryKey) {
 
   for (const rule of rules) {
     max += rule.points;
+    let earned = false;
 
-    if (rule.field) {
-      // Field-based rule — check brand profile has this field (or listing_data future)
-      const hasField = brand[rule.field] != null && brand[rule.field] !== '';
-      if (hasField) {
-        score += rule.points;
-        breakdown.push({ label: rule.label, points: rule.points, earned: true });
-      } else {
-        breakdown.push({ label: rule.label, points: rule.points, earned: false });
-        suggestions.push(`Add ${rule.label.toLowerCase()} to earn +${rule.points} points`);
-      }
+    if (rule.type === 'photos') {
+      // Brand gallery photos.
+      earned = galleryPhotoCount >= (rule.min || 0);
+      if (!earned) suggestions.push(`Upload ${Math.max(0, (rule.min || 0) - galleryPhotoCount)} more gallery photos to earn +${rule.points} points`);
     } else if (rule.items) {
-      // Item count rule — check product count meets minimum
-      const met = productCount >= (rule.min || 0);
-      if (met) {
-        score += rule.points;
-        breakdown.push({ label: rule.label, points: rule.points, earned: true });
-      } else {
-        breakdown.push({ label: rule.label, points: rule.points, earned: false });
-        suggestions.push(`Add ${(rule.min || 0) - productCount} more ${rule.items === 'menu_item' ? 'menu items' : 'products'} to earn +${rule.points} points`);
-      }
-    } else if (rule.type === 'photos') {
-      const met = photoCount >= (rule.min || 0);
-      if (met) {
-        score += rule.points;
-        breakdown.push({ label: rule.label, points: rule.points, earned: true });
-      } else {
-        breakdown.push({ label: rule.label, points: rule.points, earned: false });
-        suggestions.push(`Upload ${(rule.min || 0) - photoCount} more photos to earn +${rule.points} points`);
-      }
+      // Menu/product count.
+      earned = productCount >= (rule.min || 0);
+      if (!earned) suggestions.push(`Add ${Math.max(0, (rule.min || 0) - productCount)} more ${rule.items === 'menu_item' ? 'menu items' : 'menu items'} to earn +${rule.points} points`);
+    } else if (rule.scope === 'item_photos' && rule.min_pct != null) {
+      // % of dishes that have their own photo.
+      const pct = productCount > 0 ? productPhotoCount / productCount : 0;
+      earned = productCount > 0 && pct >= rule.min_pct;
+      if (!earned) suggestions.push(`Add photos to more dishes (${Math.round(rule.min_pct * 100)}% needed) to earn +${rule.points} points`);
+    } else if (rule.field) {
+      // Brand-scope profile field — read from the merged listing_data + typed profile.
+      earned = hasValue(profile[rule.field]);
+      if (!earned) suggestions.push(`Add ${rule.label.toLowerCase()} to earn +${rule.points} points`);
     }
+
+    if (earned) score += rule.points;
+    breakdown.push({ label: rule.label, points: rule.points, earned });
   }
 
   // Normalise to 0-100

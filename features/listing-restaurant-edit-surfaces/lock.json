@@ -1,0 +1,18 @@
+{
+  "feature": "listing-restaurant-edit-surfaces",
+  "spec_version": "0.1.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-07 chat: 'check and implement all proposed changes' + AskUserQuestion decisions)",
+  "approved_at": "2026-06-07",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "notes": "Step-5 LOCKED 2026-06-07 (founder-delegated). Restaurant-listing fixes from founder dogfood. ROOT CAUSE (verified in code): founder listed while brand status='pending' → requireApproved (auth.js:140) returned 403 on every POST /me/products (route brand.routes.js:90) → 18 dishes rejected. The brand-web API client (lib/api.js:97) RETURNS error envelopes instead of throwing, and publishDriver.js:191-192 increments products_created on any resolved response → counted 18 rejections as successes → false '+18 MENU / You're live'. Profile PATCH /me (no requireApproved) DID save, so Quality Score 0 is a SEPARATE read bug (listing.service.calculateQualityScore selects only business_name/city/category, never listing_data where the wizard saves). DECISIONS (founder AskUserQuestion 2026-06-07): location = free short-link expansion now, paid Google Geocoding later; pending brands = build-while-pending + auto-go-live on approval (drop requireApproved on products write, WITH a follower-visibility guard so pending brands stay hidden). WAVE PLAN — Wave 1 (backend-only, no mockup, this commit): fix calculateQualityScore to read listing_data (+ correct gallery-vs-dish photo scope). Founder is now APPROVED, so their re-list already persists; quality-score fix makes the score real. Wave 2 (brand-web, NEEDS mockup_locked + 06-diff): silent-failure honesty in lib/api.js+publishDriver, build-while-pending gate removal + visibility guard, blank dish photos, per-dish price/photo capture, two-door Manage Menu / Edit Profile, geocoding short-link. brand-web deploy PRODUCTION-IMPACTING (Vercel) + backend deploy (Render) — explicit founder go.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
