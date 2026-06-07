@@ -1,0 +1,34 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mockup — Restaurant: add your own item under a category</title>
+<style>
+  *{box-sizing:border-box;font-family:'Outfit','Segoe UI',system-ui,sans-serif;}
+  body{background:#fafafa;margin:0;padding:28px;color:#1c1917;}
+  .wrap{max-width:680px;margin:0 auto;}
+  .lbl{font-size:10px;font-weight:700;color:#a8a29e;text-transform:uppercase;letter-spacing:.5px;margin:14px 2px 8px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{padding:7px 14px;border-radius:999px;font-size:12px;font-weight:700;border:2px solid #ececec;color:#57534e;background:#fff;}
+  .chip.on{border-color:#ea580c;background:#fff7ed;color:#ea580c;}
+  .sec{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;background:#f5f5f4;color:#57534e;}
+  .sec.on{background:#292524;color:#fff;}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:6px;}
+  .dish{border:2px solid #ececec;border-radius:12px;overflow:hidden;background:#fff;}
+  .dish img{width:100%;height:88px;object-fit:cover;display:block;}
+  .dish .n{font-size:12px;font-weight:700;padding:8px 8px 2px;}
+  .dish .p{font-size:10px;color:#a8a29e;padding:0 8px 8px;}
+  .add{border:2px dashed #fdba74;border-radius:12px;background:#fff7ed66;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#ea580c;min-height:130px;text-align:center;padding:10px;}
+  .add .plus{font-size:22px;}.add .t{font-size:11px;font-weight:700;margin-top:6px;}.add .h{font-size:9px;color:#fb923c;margin-top:4px;}
+  .note{margin-top:22px;background:#fff;border:1px dashed #d6d3d1;border-radius:12px;padding:14px;font-size:12.5px;color:#57534e;}
+</style></head><body><div class="wrap">
+  <div class="lbl">Cuisine</div>
+  <div class="row"><span class="chip on">North Indian</span><span class="chip">South Indian</span><span class="chip">Chinese</span><span class="chip" style="border-style:dashed;">＋ Add cuisine</span></div>
+  <div class="lbl">Category</div>
+  <div class="row"><span class="sec on">Breads</span><span class="sec">Curries</span><span class="sec">Rice</span><span class="sec">Starters</span></div>
+  <div class="lbl">Dishes — tap to add</div>
+  <div class="grid">
+    <div class="dish"><img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=200&q=60"/><div class="n">Naan</div><div class="p">Suggested ₹40–70</div></div>
+    <div class="dish"><img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=200&q=60"/><div class="n">Garlic Naan</div><div class="p">Suggested ₹50–90</div></div>
+    <!-- THE NEW TILE -->
+    <div class="add"><div class="plus">＋</div><div class="t">Add your own<br/>Breads item</div><div class="h">not in the list?</div></div>
+  </div>
+  <div class="note"><b>The fix:</b> the category grid now ends with <b>“➕ Add your own Breads item”</b>. Click it → type the dish name + price → it’s added under the current cuisine + category (goes live + into the admin review queue). No more hunting for the search box when your item isn’t in the dictionary.</div>
+</div></body></html>

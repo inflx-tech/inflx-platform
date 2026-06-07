@@ -43,6 +43,11 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   const [savingCuisine, setSavingCuisine] = useState(false);
   const [showAddCuisine, setShowAddCuisine] = useState(false);
 
+  // Inline "add your own item under this category" (custom dish not in the dictionary).
+  const [showCustomTile, setShowCustomTile] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [customPrice, setCustomPrice] = useState('');
+
   // The brand's cuisines. Seed from the in-session wizard value, ELSE from the
   // SAVED profile (brand.listing_data.cuisines) — so re-opening just to add menu
   // shows the brand's cuisines instead of "none". Union with cuisines added
@@ -231,6 +236,23 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
     if (swapTargetIdx == null || picked.length === 0) return;
     onItemFieldChange(swapTargetIdx, 'image_url', picked[0].download_url);
     setSwapTargetIdx(null);
+  }
+
+  // Add the seller's own unique item UNDER the currently-open cuisine + category
+  // (not in the dictionary). master_dish_id stays null → goes live + into the
+  // admin review queue (flywheel), exactly like the search-box custom add.
+  function handleAddCustomInSection() {
+    const nm = customName.trim();
+    if (!nm) return;
+    onItemAdd({
+      name: nm,
+      price: customPrice === '' ? 0 : Number(customPrice),
+      image_url: null,
+      description: null,
+      section: activeSection || sectionsForCuisine[0] || null,
+      _custom: true,
+    });
+    setCustomName(''); setCustomPrice(''); setShowCustomTile(false);
   }
 
   // ── Excel handlers (mirrors layout's pattern) ────────────────────────────
@@ -519,8 +541,37 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
             </button>
           );
         })}
-        {dishesForSection.length === 0 && (
-          <div className="col-span-full py-6 text-center text-sm text-gray-400">No dishes in this section.</div>
+        {/* Add your own unique item under this category (not in the dictionary) */}
+        {activeSection && (
+          <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50/40 flex flex-col items-center justify-center p-3 min-h-[140px]">
+            {!showCustomTile ? (
+              <button type="button" onClick={() => setShowCustomTile(true)} className="text-center text-orange-600 hover:text-orange-700">
+                <div className="text-2xl leading-none">＋</div>
+                <div className="text-[11px] font-bold mt-1.5">Add your own<br />{activeSection} item</div>
+                <div className="text-[9px] text-orange-400 mt-1">not in the list?</div>
+              </button>
+            ) : (
+              <div className="w-full space-y-2">
+                <input value={customName} autoFocus onChange={e => setCustomName(e.target.value)}
+                  placeholder={`New ${activeSection} dish`}
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400" />
+                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                  <span className="px-2 text-xs text-gray-500 bg-gray-50 border-r border-gray-200">₹</span>
+                  <input type="number" value={customPrice} onChange={e => setCustomPrice(e.target.value)}
+                    placeholder="price" className="w-full px-2 py-1.5 text-xs outline-none" />
+                </div>
+                <div className="flex gap-1">
+                  <button type="button" onClick={handleAddCustomInSection} disabled={!customName.trim()}
+                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold py-1.5 rounded-lg disabled:opacity-50">Add</button>
+                  <button type="button" onClick={() => { setShowCustomTile(false); setCustomName(''); setCustomPrice(''); }}
+                    className="px-2 text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {dishesForSection.length === 0 && !activeSection && (
+          <div className="col-span-full py-6 text-center text-sm text-gray-400">Pick a category above.</div>
         )}
       </div>
 

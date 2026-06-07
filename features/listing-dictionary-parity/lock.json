@@ -1,0 +1,23 @@
+{
+  "feature": "listing-dictionary-parity",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-07 'pls go and build it')",
+  "approved_at": "2026-06-07",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated → chat-architect, 2026-06-07)",
+  "mockup_locked_at": "2026-06-07",
+  "notes": "brand-web only, no backend. (1) Restaurant RestaurantDishPicker: inline '+ Add your own {Category} item' tile in the dish grid -> custom dish under active cuisine+section (master_dish_id null -> live + review queue). (2) Admin master-dishes: flat table -> Cuisine chips -> Category chips -> item grid drill-down (parity with restaurant), per-item Edit/image (reuses the shipped upload modal), '+ Add item under {Category}' tile (openCreate pre-fills cuisine+section). Reuses existing data + handlers. NO backend, NO migration. UI-governed -> mockup_locked + 06-diff set. Vercel deploy production-impacting -> founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-07 'pls go and build it')",
+    "released_at": "2026-06-07",
+    "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN (2026-06-07).",
+    "deploy": "2026-06-07 — Vercel brand-web only (RestaurantDishPicker custom-item tile + admin master-dishes drill-down). Auto-deploys on push. Reversible by revert. Founder go: 'pls go and build it'. No backend, no migration.",
+    "classification": "production-impacting (Vercel brand-web). No backend."
+  }
+}

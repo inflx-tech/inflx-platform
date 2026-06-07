@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mockup — Admin master-dishes drill-down (parity)</title>
+<style>
+  *{box-sizing:border-box;font-family:'Outfit','Segoe UI',system-ui,sans-serif;}
+  body{background:#f3f4f6;margin:0;padding:28px;color:#0f172a;}
+  .wrap{max-width:760px;margin:0 auto;}
+  h2{font-size:16px;margin:0 0 12px;}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px;margin-bottom:14px;}
+  .lbl{font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+  .chip{padding:7px 12px;border-radius:999px;font-size:12px;font-weight:700;border:2px solid #e5e7eb;color:#64748b;background:#fff;}
+  .chip.on{border-color:#1e3a8a;background:#eff6ff;color:#1e3a8a;}
+  .sec{padding:5px 12px;border-radius:8px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569;}
+  .sec.on{background:#1e3a8a;color:#fff;}
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+  .it{border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff;}
+  .it .ph{height:74px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;position:relative;}
+  .it .ph img{width:100%;height:100%;object-fit:cover;}
+  .it .badge{position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;background:#1e3a8a;color:#fff;padding:1px 6px;border-radius:999px;}
+  .it .n{font-size:11px;font-weight:700;padding:6px 8px 1px;}
+  .it .m{font-size:9px;color:#94a3b8;padding:0 8px 6px;}
+  .it .act{display:flex;border-top:1px solid #e5e7eb;font-size:10px;font-weight:600;}
+  .it .act a{flex:1;text-align:center;padding:5px;color:#1e3a8a;}
+  .add{border:2px dashed #cbd5e1;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#64748b;min-height:150px;text-align:center;}
+  .add .plus{font-size:22px;}.add .t{font-size:11px;font-weight:700;margin-top:6px;}
+  .noimg{text-align:center;color:#94a3b8;}.noimg .e{font-size:20px;}.noimg .x{font-size:8px;font-weight:600;}
+  .note{font-size:12.5px;color:#475569;background:#fff;border:1px dashed #cbd5e1;border-radius:12px;padding:14px;}
+</style></head><body><div class="wrap">
+  <h2>🍽️ Master dishes — Catalogue</h2>
+  <div class="card">
+    <div class="lbl">Cuisine</div>
+    <div class="row"><span class="chip">All</span><span class="chip on">North Indian (24)</span><span class="chip">South Indian (18)</span><span class="chip">Chinese (12)</span><span class="chip" style="border-style:dashed;">＋ Add cuisine / dish</span></div>
+    <div class="lbl">Category</div>
+    <div class="row"><span class="sec">All</span><span class="sec on">Breads</span><span class="sec">Curries</span><span class="sec">Rice</span><span class="sec">Starters</span></div>
+  </div>
+  <div class="grid">
+    <div class="it"><div class="ph"><img src="https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?w=160&q=60"/><span class="badge">12</span></div><div class="n">Naan</div><div class="m">North Indian · Breads · ₹40–70</div><div class="act"><a>Edit / image</a><a style="color:#dc2626;">Delete</a></div></div>
+    <div class="it"><div class="ph"><div class="noimg"><div class="e">🍽️</div><div class="x">No image — click to add</div></div><span class="badge">3</span></div><div class="n">Tandoori Roti</div><div class="m">North Indian · Breads · ₹30–70</div><div class="act"><a>Edit / image</a><a style="color:#dc2626;">Delete</a></div></div>
+    <div class="it"><div class="ph"><img src="https://images.unsplash.com/photo-1601050690597-df0568f70950?w=160&q=60"/><span class="badge">8</span></div><div class="n">Garlic Naan</div><div class="m">North Indian · Breads · ₹50–90</div><div class="act"><a>Edit / image</a><a style="color:#dc2626;">Delete</a></div></div>
+    <div class="add"><div class="plus">＋</div><div class="t">Add item<br/>under Breads</div></div>
+  </div>
+  <div style="height:14px;"></div>
+  <div class="note"><b>Parity:</b> admin now navigates the dictionary as <b>Cuisine → Category → Items</b> — the same shape restaurants see. Each item shows its stock image (or “No image — click to add”) + how many restaurants use it; click → edit modal with the <b>⬆ Upload stock image</b> button. “➕ Add item under Breads” pre-fills the cuisine + category.</div>
+</div></body></html>

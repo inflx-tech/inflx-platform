@@ -216,111 +216,95 @@ export default function MasterDishesPage() {
       {view === 'queue' && <DishReviewQueue onCountChange={setQueueCount} />}
 
       {view === 'catalogue' && (<>
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-border p-4 mb-4 flex flex-wrap gap-3 items-end">
-        <div className="flex-1 min-w-[150px]">
-          <label className="block text-[10px] font-bold text-t3 uppercase tracking-wider mb-1">Cuisine</label>
-          <select value={cuisineFilter} onChange={e => setCuisineFilter(e.target.value)}
-            className="w-full border border-border rounded-lg px-3 py-2 text-xs">
-            <option value="">All ({cuisines.reduce((s, c) => s + c.dish_count, 0)})</option>
+      {/* Dictionary drill-down — Cuisine → Category → Items (same shape restaurants see) */}
+      <div className="bg-white rounded-2xl border border-border p-4 mb-4 space-y-3">
+        <div>
+          <div className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-1.5">Cuisine</div>
+          <div className="flex gap-2 flex-wrap items-center">
+            <button onClick={() => { setCuisineFilter(''); setSectionFilter(''); }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 ${!cuisineFilter ? 'border-navy bg-navy-pale text-navy' : 'border-border text-t3 hover:border-t3'}`}>
+              All
+            </button>
             {cuisines.map(c => (
-              <option key={c.cuisine} value={c.cuisine}>{c.cuisine} ({c.dish_count})</option>
+              <button key={c.cuisine} onClick={() => { setCuisineFilter(c.cuisine); setSectionFilter(''); }}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 ${cuisineFilter === c.cuisine ? 'border-navy bg-navy-pale text-navy' : 'border-border text-t3 hover:border-t3'}`}>
+                {c.cuisine} <span className="opacity-60">({c.dish_count})</span>
+              </button>
             ))}
-          </select>
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          <label className="block text-[10px] font-bold text-t3 uppercase tracking-wider mb-1">Section</label>
-          <select value={sectionFilter} onChange={e => setSectionFilter(e.target.value)}
-            disabled={!cuisineFilter}
-            className="w-full border border-border rounded-lg px-3 py-2 text-xs disabled:bg-surface2 disabled:text-t3">
-            <option value="">All sections</option>
-            {sectionOptions.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-[10px] font-bold text-t3 uppercase tracking-wider mb-1">Search by name</label>
-          <div className="flex gap-2">
-            <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') setSearch(searchInput); }}
-              placeholder="e.g. Idli, Biryani"
-              className="flex-1 border border-border rounded-lg px-3 py-2 text-xs" />
-            <button onClick={() => setSearch(searchInput)}
-              className="px-3 py-2 bg-surface2 hover:bg-navy-pale text-t2 text-xs font-bold rounded-lg">Go</button>
-            {(search || searchInput) && (
-              <button onClick={() => { setSearchInput(''); setSearch(''); }}
-                className="px-3 py-2 text-t3 hover:text-t1 text-xs">Clear</button>
-            )}
+            <button onClick={openCreate}
+              className="px-3 py-1.5 rounded-full text-xs font-bold border-2 border-dashed border-border text-t3 hover:border-navy hover:text-navy">
+              ＋ Add cuisine / dish
+            </button>
           </div>
+        </div>
+        {cuisineFilter && sectionOptions.length > 0 && (
+          <div>
+            <div className="text-[10px] font-bold text-t3 uppercase tracking-wider mb-1.5">Category</div>
+            <div className="flex gap-2 flex-wrap">
+              <button onClick={() => setSectionFilter('')}
+                className={`px-3 py-1 rounded-lg text-[11px] font-semibold ${!sectionFilter ? 'bg-navy text-white' : 'bg-surface2 text-t2 hover:bg-navy-pale'}`}>All</button>
+              {sectionOptions.map(s => (
+                <button key={s} onClick={() => setSectionFilter(s)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-semibold ${sectionFilter === s ? 'bg-navy text-white' : 'bg-surface2 text-t2 hover:bg-navy-pale'}`}>{s}</button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="flex gap-2 max-w-sm">
+          <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') setSearch(searchInput); }}
+            placeholder="Search by name (e.g. Idli, Biryani)"
+            className="flex-1 border border-border rounded-lg px-3 py-2 text-xs" />
+          <button onClick={() => setSearch(searchInput)}
+            className="px-3 py-2 bg-surface2 hover:bg-navy-pale text-t2 text-xs font-bold rounded-lg">Go</button>
+          {(search || searchInput) && (
+            <button onClick={() => { setSearchInput(''); setSearch(''); }}
+              className="px-3 py-2 text-t3 hover:text-t1 text-xs">Clear</button>
+          )}
         </div>
       </div>
 
-      {/* List */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-sm text-t3">Loading dishes…</div>
-        ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-3xl mb-2">🍽️</p>
-            <p className="text-sm font-bold text-t2 mb-1">No dishes match the filters</p>
-            <p className="text-xs text-t3 mb-3">Adjust filters or add a new one</p>
-            <button onClick={openCreate} className="px-4 py-2 bg-navy text-white text-xs font-bold rounded-xl">
-              + Add Dish
-            </button>
-          </div>
-        ) : (
-          <table className="w-full">
-            <thead className="bg-surface2 text-[10px] font-bold uppercase tracking-wider text-t3">
-              <tr>
-                <th className="px-4 py-2 text-left">Photo</th>
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Cuisine · Section</th>
-                <th className="px-4 py-2 text-left">Suggested Price</th>
-                <th className="px-4 py-2 text-left">Activations</th>
-                <th className="px-4 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(d => (
-                <tr key={d.id} className="border-t border-border hover:bg-surface2/30">
-                  <td className="px-4 py-2.5">
-                    <div className="w-12 h-12 rounded-lg bg-surface2 overflow-hidden flex items-center justify-center">
-                      {d.default_image_url
-                        ? <img src={d.default_image_url} alt={d.name} className="w-full h-full object-cover" />
-                        : <span className="text-lg">🍽️</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="text-sm font-bold text-t1">{d.name}</div>
-                    {d.default_description && (
-                      <div className="text-[10px] text-t3 mt-0.5 max-w-md truncate">{d.default_description}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="text-xs font-semibold text-t2">{d.cuisine}</div>
-                    <div className="text-[10px] text-t3 mt-0.5">{d.section}</div>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <PriceRange min={d.suggested_price_min} max={d.suggested_price_max} />
-                  </td>
-                  <td className="px-4 py-2.5">
+      {/* Item grid — click a dish to edit / upload its stock image */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-border p-12 text-center text-sm text-t3">Loading dishes…</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {items.map(d => (
+            <div key={d.id} className="rounded-xl border border-border bg-white overflow-hidden flex flex-col">
+              <button onClick={() => openEdit(d)} className="text-left block">
+                <div className="aspect-[4/3] bg-surface2 relative overflow-hidden flex items-center justify-center">
+                  {d.default_image_url
+                    ? <img src={d.default_image_url} alt={d.name} className="w-full h-full object-cover" />
+                    : <div className="text-center text-t3"><div className="text-2xl">🍽️</div><div className="text-[9px] font-semibold mt-1">No image — click to add</div></div>}
+                  <div className="absolute top-1 right-1">
                     <StatusBadge count={d.activated_count} color={d.activated_count >= 5 ? 'orange' : 'navy'} />
-                  </td>
-                  <td className="px-4 py-2.5 text-right">
-                    <button onClick={() => openEdit(d)}
-                      className="px-2.5 py-1 text-navy hover:bg-navy-pale text-xs font-semibold rounded mr-1">
-                      Edit
-                    </button>
-                    <button onClick={() => setDeleting(d)}
-                      className="px-2.5 py-1 text-red hover:bg-red-pale text-xs font-semibold rounded">
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  </div>
+                </div>
+                <div className="p-2.5">
+                  <div className="text-xs font-bold text-t1 truncate">{d.name}</div>
+                  <div className="text-[10px] text-t3 mt-0.5">{d.cuisine} · {d.section}</div>
+                  <div className="mt-1"><PriceRange min={d.suggested_price_min} max={d.suggested_price_max} /></div>
+                </div>
+              </button>
+              <div className="mt-auto flex border-t border-border text-[11px] font-semibold">
+                <button onClick={() => openEdit(d)} className="flex-1 py-1.5 text-navy hover:bg-navy-pale">Edit / image</button>
+                <button onClick={() => setDeleting(d)} className="px-3 py-1.5 text-red hover:bg-red-pale border-l border-border">Delete</button>
+              </div>
+            </div>
+          ))}
+          {/* Add an item under the current category */}
+          <button onClick={openCreate}
+            className="rounded-xl border-2 border-dashed border-border bg-white hover:border-navy hover:text-navy text-t3 flex flex-col items-center justify-center min-h-[160px] p-3">
+            <div className="text-2xl leading-none">＋</div>
+            <div className="text-[11px] font-bold mt-1.5 text-center">
+              Add item{sectionFilter ? <><br />under {sectionFilter}</> : cuisineFilter ? <><br />to {cuisineFilter}</> : ''}
+            </div>
+          </button>
+          {items.length === 0 && (
+            <div className="col-span-full py-8 text-center text-sm text-t3">No dishes here yet — add the first one.</div>
+          )}
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
