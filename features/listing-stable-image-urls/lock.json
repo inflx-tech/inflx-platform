@@ -1,0 +1,20 @@
+{
+  "feature": "listing-stable-image-urls",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-07 'pls proceed')",
+  "approved_at": "2026-06-07",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Backend-only foundation fix. Uploaded images broke after ~1h: the brand media gallery returned a 1-hour signed R2 URL stored as-is into image_url and read with no re-signing. The R2 bucket also holds private contracts/KYC, so a public bucket is unsafe; instead we mirror the avatar/contract pattern (store key, re-sign on read) via a public GET /v1/media/assets/:id that 302-redirects to a fresh signed URL, and _enrich now returns a STABLE URL as download_url so the existing uploader stores a permanent link (no frontend change). Fixes the seller 'upload your own photo' flow + unblocks admin stock-image upload. NO migration. Backend-only → no mockup/06-diff gate. Production-impacting (Render) — surface for founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-07 'pls proceed')",
+    "released_at": "2026-06-07",
+    "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN (2026-06-07); no media-asset test asserted the old signed download_url.",
+    "deploy": "2026-06-07 — Render backend: new public GET /v1/media/assets/:id (re-sign + 302) + _enrich returns stable download_url. Auto-deploys on push. Reversible by revert. Founder go: 'pls proceed'.",
+    "classification": "production-impacting (Render backend; new public route + download_url shape). No migration, no frontend change."
+  }
+}

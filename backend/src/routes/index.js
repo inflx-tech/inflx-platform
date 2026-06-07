@@ -71,6 +71,7 @@ const { authenticateOptional, authenticate } = require('../middleware/auth');
 // Wave 1 (Dining) — geocoding for the restaurant listing wizard's
 // google_maps_link field type
 const geocodingCtrl     = require('../controllers/geocoding.controller');
+const mediaAssetCtrl    = require('../controllers/mediaAsset.controller');
 
 // Phase A6 — public subscription tier catalog (no auth)
 const subscriptionCtrl  = require('../controllers/subscription.controller');
@@ -142,6 +143,11 @@ router.get('/store/:influencer_handle/products', authenticateOptional, followerC
 router.get('/store/:influencer_handle',           authenticateOptional, followerCtrl.getInfluencerStore);
 router.get('/business/:brand_id/store',            authenticateOptional, followerCtrl.getBusinessStore);
 router.get('/business/:brand_id',                 authenticateOptional, followerCtrl.getBusinessStore);
+
+// Public media re-sign endpoint — stable URLs for uploaded images (dish photos,
+// brand covers, admin stock). Re-signs the real R2 URL on each view; only brand
+// media assets are reachable (never contracts/KYC). See mediaAsset.controller.
+router.get('/media/assets/:id',                   mediaAssetCtrl.serveAsset);
 router.get('/category/:category_key',             authenticateOptional, followerCtrl.getCategoryStore);
 
 // ── Listing Engine — category stores with inline products ────────────────────

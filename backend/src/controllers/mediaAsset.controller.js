@@ -291,11 +291,37 @@ const listInfluencerContracts = asyncHandler(async (req, res) => {
   return success(res, { contracts: rows });
 });
 
+// GET /v1/media/assets/:id  (PUBLIC — no auth)
+// Re-signs the asset's R2 key on every view and 302-redirects to it. This is
+// what makes uploaded images PERMANENT: callers store the stable URL below
+// (which never changes), and the real (short-lived) signed R2 URL is minted
+// fresh on each request. Public so an <img> in the follower app can load it
+// with no token. SAFE: only brand media assets are reachable (keyed by DB id;
+// their file_r2_key is always under brands/<id>/assets/ — contracts/KYC are NOT
+// media assets and have no row here, so this path can never expose them).
+const serveAsset = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT file_r2_key FROM brand_media_assets WHERE id = $1',
+    [req.params.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Asset not found', 404);
+  const url = await mediaService.generateAssetDownloadUrl(rows[0].file_r2_key);
+  return res.redirect(302, url);
+});
+
 // ─── Internals ──────────────────────────────────────────────────────────────
 
+// A STABLE, permanent URL for an asset — points at the public re-sign endpoint
+// above. Storing THIS (instead of a 1-hour signed R2 URL) is what stops uploaded
+// images (dish photos, brand covers, admin stock images) from breaking after an
+// hour. Bug fix 2026-06-07: the gallery previously stored the raw signed URL.
+function stableAssetUrl(id) {
+  const base = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3001}`;
+  return `${base}/v1/media/assets/${id}`;
+}
+
 async function _enrich(row) {
-  const download_url = await mediaService.generateAssetDownloadUrl(row.file_r2_key);
-  return { ...row, download_url };
+  return { ...row, download_url: stableAssetUrl(row.id) };
 }
 
 module.exports = {
@@ -304,6 +330,7 @@ module.exports = {
   createAsset,
   listAssets,
   getDownloadUrl,
+  serveAsset,
   updateAsset,
   deleteAsset,
   listBrandContracts,
