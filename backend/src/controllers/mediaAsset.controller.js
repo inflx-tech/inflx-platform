@@ -306,6 +306,10 @@ const serveAsset = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Asset not found', 404);
   const url = await mediaService.generateAssetDownloadUrl(rows[0].file_r2_key);
+  // helmet defaults CORP to same-origin, which blocks an <img> on the frontend
+  // (inflx.in) from loading this cross-origin backend URL. Mark it loadable
+  // cross-origin (it's a public image).
+  res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   return res.redirect(302, url);
 });
 
@@ -317,6 +321,7 @@ const serveStockImage = asyncHandler(async (req, res) => {
   const sub = req.params[0] || '';
   if (!sub || sub.includes('..')) throw new AppError('NOT_FOUND', 'Asset not found', 404);
   const url = await mediaService.generateAssetDownloadUrl(`stock/${sub}`);
+  res.set('Cross-Origin-Resource-Policy', 'cross-origin'); // public image — loadable cross-origin
   return res.redirect(302, url);
 });
 

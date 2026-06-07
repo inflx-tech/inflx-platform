@@ -15,6 +15,7 @@
     "released_at": "2026-06-07",
     "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN (2026-06-07); no media-asset test asserted the old signed download_url.",
     "deploy": "2026-06-07 — Render backend: new public GET /v1/media/assets/:id (re-sign + 302) + _enrich returns stable download_url. Auto-deploys on push. Reversible by revert. Founder go: 'pls proceed'.",
-    "classification": "production-impacting (Render backend; new public route + download_url shape). No migration, no frontend change."
+    "classification": "production-impacting (Render backend; new public route + download_url shape). No migration, no frontend change.",
+    "followup_2026-06-07": "DEFECT FIX: helmet defaults Cross-Origin-Resource-Policy=same-origin on the serve responses, which blocked the frontend <img> (inflx.in) from loading these cross-origin backend URLs → all gallery/admin images appeared broken after cutover (founder report). Fix: serveAsset + serveStockImage set CORP=cross-origin before the 302. Verified endpoints 302 to valid signed R2 URLs; no frontend CSP. Render redeploy."
   }
 }
