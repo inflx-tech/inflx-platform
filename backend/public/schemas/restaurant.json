@@ -303,7 +303,7 @@
       "name": "wizard_state.name",
       "price": "wizard_state.price",
       "master_dish_id": "master_row.id",
-      "category": "wizard_state.section",
+      "section": "wizard_state.section",
       "description": "wizard_state.description",
       "image_url": "wizard_state.image_url",
       "variants_json": {
