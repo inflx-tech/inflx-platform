@@ -18,10 +18,10 @@
     "maestro_green": true,
     "maestro_evidence": "Follower golden-path Maestro flow GREEN on the shipped followerDebug build with SECTION_ENGINE_CREATOR on, against PROD (emulator-5554, 2026-06-05). App boots clean. Creator Store/Category reuse the SectionRenderer rails verified on Home. Full qa:maestro 4/5 — agency flow is Window-B WIP (out of scope).",
     "qa_evidence": "pnpm qa GREEN earlier this session (76, web); mobile-runtime change, web unaffected.",
-    "deploy": "2026-06-05 — partial activation: SECTION_ENGINE_CREATOR flipped on (Creator Store + Creator's Category); SECTION_ENGINE_CATEGORY + SECTION_ENGINE_OFFERS remain OFF (new hero/chips/grid renderer pending data-verification). Follower OTA via publish-ota:follower. Smart-fallback-safe; reversible.",
-    "classification": "production-impacting (follower OTA, Creator screens only). Category/Offers NOT activated.",
+    "deploy": "2026-06-05 — partial activation: SECTION_ENGINE_CREATOR flipped on (Creator Store + Creator's Category); SECTION_ENGINE_CATEGORY + SECTION_ENGINE_OFFERS remain OFF (new hero/chips/grid renderer pending data-verification). Follower OTA via publish-ota:follower. Smart-fallback-safe; reversible. || 2026-06-07 — FULL activation: SECTION_ENGINE_CATEGORY + SECTION_ENGINE_OFFERS flipped on, completing C2's explicitly-deferred cutover, to enable restaurant-vertical follower-screen verification. Follower OTA via publish-ota:follower. Smart-fallback (hasEngineContent) protects real users where data is thin — the old view stands until a real shelf has items. Reversible (re-flip + OTA). HONESTY NOTE: golden-path Maestro was GREEN with CREATOR on (2026-06-05); these two flags were NOT separately Maestro-re-run (founder's emulator required) — activation rides on smart-fallback safety + the founder's imminent manual end-to-end verification on the live app against a real restaurant fixture. pnpm qa re-run for zero-regression (mobile-flag-only change; web/api/unit unaffected).",
+    "classification": "production-impacting (follower OTA). 2026-06-05 Creator screens; 2026-06-07 Category + Offers activated — all 5 discovery screens now on the section engine.",
     "released": true,
-    "released_by": "founder · 2026-06-05 chat — AskUserQuestion 'Ship follower OTA now (Home + Creator on)'",
-    "released_at": "2026-06-05"
+    "released_by": "founder · 2026-06-05 chat (Home+Creator) + 2026-06-07 chat AskUserQuestion 'flip both [Category+Offers] on, then verify all 5' (delegated go)",
+    "released_at": "2026-06-07"
   }
 }

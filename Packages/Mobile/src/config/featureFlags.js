@@ -16,9 +16,9 @@ export const FEATURE_FLAGS = {
   // Creator Store + Creator's Category render from the section engine when on.
   SECTION_ENGINE_CREATOR: true,
   // Category screen (per-vertical) from GET /v1/follower/section/category/:key.
-  SECTION_ENGINE_CATEGORY: false,
+  SECTION_ENGINE_CATEGORY: true,
   // Offers tab from GET /v1/follower/section/offers.
-  SECTION_ENGINE_OFFERS: false,
+  SECTION_ENGINE_OFFERS: true,
 };
 
 export function isEnabled(flag) {
