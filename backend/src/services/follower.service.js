@@ -324,8 +324,12 @@ async function getBrandRatings(brandIds) {
 }
 
 async function resolveBusinessStore(brandId, viaInfluencerId = null) {
+  // Visibility guard (paired with build-while-pending): a brand that has not
+  // been admin-approved must NOT be reachable by followers, even though it may
+  // have built its listing while pending. Unapproved → treated as not found.
   const { rows: brandRows } = await db.query(
-    `SELECT b.*, u.name, u.city FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+    `SELECT b.*, u.name, u.city FROM brands b JOIN users u ON u.id = b.user_id
+      WHERE b.id = $1 AND u.status = 'approved'`,
     [brandId]
   );
   if (!brandRows[0]) return null;

@@ -83,11 +83,17 @@ router.get('/me/dishes/search',     authenticate, requireRole('brand'), ctrl.sea
 // Excel bulk upload
 router.get('/me/listing-template/download',  authenticate, requireRole('brand'), ctrl.downloadListingTemplate);
 router.get('/me/listing-template/columns',   authenticate, requireRole('brand'), ctrl.getTemplateColumns);
-router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'), requireApproved, upload.single('file'), ctrl.bulkUploadProducts);
+// Build-while-pending (founder decision 2026-06-07): pending brands may build
+// their listing (products) before approval; they stay INVISIBLE to followers
+// (resolveBusinessStore guards on users.status='approved'; category/shelf paths
+// require the active campaign chain, which remains approval-gated) and go live
+// automatically on approval. requireApproved removed from product writes below;
+// quota still applies. Campaigns/offers stay requireApproved-gated.
+router.post('/me/products/bulk-upload',      authenticate, requireRole('brand'), upload.single('file'), ctrl.bulkUploadProducts);
 
 // Brand products — full CRUD with category-aware validation
 router.get('/me/products',        authenticate, requireRole('brand'), ctrl.listProducts);
-router.post('/me/products',       authenticate, requireRole('brand'), requireApproved, checkQuota('createProduct'), ctrl.createProduct);
+router.post('/me/products',       authenticate, requireRole('brand'), checkQuota('createProduct'), ctrl.createProduct);
 
 // ── Phase A6 — Subscription / billing (brand self-service) ────────────────────
 router.get('/me/subscription',          authenticate, requireRole('brand'), subCtrl.getSubscription);

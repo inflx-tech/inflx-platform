@@ -12,9 +12,19 @@
   "mockup_locked_at": "2026-06-07",
   "notes": "Step-5 LOCKED 2026-06-07 (founder-delegated). Restaurant-listing fixes from founder dogfood. ROOT CAUSE (verified in code): founder listed while brand status='pending' → requireApproved (auth.js:140) returned 403 on every POST /me/products (route brand.routes.js:90) → 18 dishes rejected. The brand-web API client (lib/api.js:97) RETURNS error envelopes instead of throwing, and publishDriver.js:191-192 increments products_created on any resolved response → counted 18 rejections as successes → false '+18 MENU / You're live'. Profile PATCH /me (no requireApproved) DID save, so Quality Score 0 is a SEPARATE read bug (listing.service.calculateQualityScore selects only business_name/city/category, never listing_data where the wizard saves). DECISIONS (founder AskUserQuestion 2026-06-07): location = free short-link expansion now, paid Google Geocoding later; pending brands = build-while-pending + auto-go-live on approval (drop requireApproved on products write, WITH a follower-visibility guard so pending brands stay hidden). WAVE PLAN — Wave 1 (backend-only, no mockup, this commit): fix calculateQualityScore to read listing_data (+ correct gallery-vs-dish photo scope). Founder is now APPROVED, so their re-list already persists; quality-score fix makes the score real. Wave 2 (brand-web, NEEDS mockup_locked + 06-diff): silent-failure honesty in lib/api.js+publishDriver, build-while-pending gate removal + visibility guard, blank dish photos, per-dish price/photo capture, two-door Manage Menu / Edit Profile, geocoding short-link. brand-web deploy PRODUCTION-IMPACTING (Vercel) + backend deploy (Render) — explicit founder go.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-07 chat)",
+    "released_at": "2026-06-07",
+    "shipped": [
+      "Wave 1 — quality-score reads listing_data (Render, commit ab189bb)",
+      "Wave 2a — dish section persists, restaurant.json storage_format (Render, 2b7837f) + one-time prod backfill 21 dishes",
+      "Wave 2b — blank dish photos + per-dish capture + honest publish (Vercel brand-web, 703c09b)",
+      "Wave 2c — build-while-pending (requireApproved off product writes + resolveBusinessStore approval guard) + free Maps short-link location (Render)"
+    ],
+    "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN on each wave (2026-06-07).",
+    "deploy": "2026-06-07 — Render backend (quality-score, section, build-while-pending+guard, geocoding short-link) auto-deploys on push to main; Vercel brand-web (Wave 2b dish UX + honest publish) auto-deploys; one-time prod backfill of 21 dish sections already run via scripts/backfill-dish-section.js (ENV_FILE=.env.prod-backup). Reversible by revert; backfill is idempotent. Founder go: 2026-06-07 chat (per-wave AskUserQuestion + 'continue to fix').",
+    "classification": "production-impacting (Render backend + Vercel brand-web). Build-while-pending paired with a follower-visibility guard so pending brands stay hidden until approved.",
+    "deferred": "Paid Google Geocoding auto-address (founder: 'paid later'). 2 custom dishes (no master link) need manual section."
   }
 }

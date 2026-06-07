@@ -82,6 +82,25 @@ function isShortLink(url) {
   return /^https?:\/\/(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(url || '');
 }
 
+// Follow a Google short link (maps.app.goo.gl / goo.gl/maps) to its full URL so
+// the coordinate regex can read it — FREE (no Google API key). Fast-fail on
+// timeout/error so the wizard never hangs; the caller degrades to the
+// "paste the full URL" message. (Founder decision 2026-06-07: free path now.)
+async function expandShortLink(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    try {
+      const resp = await fetch(url, { method: 'GET', redirect: 'follow', signal: controller.signal });
+      return resp && resp.url ? resp.url : null; // final URL after redirects
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch {
+    return null;
+  }
+}
+
 // ── Mock — fixed Vijayawada coords ────────────────────────────────────────────
 function mockResponse(url) {
   return {
@@ -139,20 +158,22 @@ const geocodeMapsUrl = asyncHandler(async (req, res) => {
   const cached = cacheGet(google_maps_url);
   if (cached) return success(res, cached);
 
-  if (isShortLink(google_maps_url)) {
-    // Shapes 3/4 — short links. We could follow the redirect via fetch but
-    // that's a separate HTTP call + error surface; defer to a later wave.
-    return success(res, {
-      verified: false,
-      reason: 'Short links (maps.app.goo.gl, goo.gl/maps) — open the link in Maps and copy the full URL from the browser.',
-    });
+  // Short links (the default "Share" link from the Maps app) carry no
+  // coordinates in the URL text — follow the redirect to the full URL first.
+  let effectiveUrl = google_maps_url;
+  if (isShortLink(effectiveUrl)) {
+    const expanded = await expandShortLink(effectiveUrl);
+    if (expanded) effectiveUrl = expanded;
   }
 
-  const coords = extractLatLngFromUrl(google_maps_url);
+  const coords = extractLatLngFromUrl(effectiveUrl);
   if (!coords) {
+    const couldNotExpand = isShortLink(google_maps_url) && effectiveUrl === google_maps_url;
     return success(res, {
       verified: false,
-      reason: 'Could not find coordinates in this URL. Open your restaurant on Google Maps → copy the URL from the address bar.',
+      reason: couldNotExpand
+        ? 'Could not open that short link automatically. Open it in Google Maps and copy the full URL from the address bar.'
+        : 'Could not find coordinates in this URL. Open your restaurant on Google Maps → copy the URL from the address bar.',
     });
   }
 
