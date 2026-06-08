@@ -22,6 +22,7 @@
     "classification": "production-impacting (Render backend deployed on push; migration 092 + brand backfill applied to prod). No app change in Contract 1.",
     "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T08-44-30-214Z/QA-REPORT.md). node --check PASS on all 8 touched backend files.",
     "deploy": "Render backend deployed on push (deda3ec). Migration 092 applied to prod (run-092 — followers location columns present). Backfill step (a) applied: copy latitude→lat → Aveen food paradise now lat 16.491549/lng 80.662491 (1/12 brands).",
-    "followup": "Backfill step (b) — forward-geocode the remaining 11 brands (only Chaitanya has a map URL; rest have none) — was SKIPPED: GOOGLE_GEOCODING_API_KEY is not in .env.prod-backup (only in Render). To resolve them: either add the key to the run env and re-run backfill --apply, OR re-save each brand in the live wizard (Render has the key → updateMe forward-geocodes), OR enter coords manually. Tracked for founder."
+    "followup": "Backfill step (b) — forward-geocode the remaining 11 brands (only Chaitanya has a map URL; rest have none) — was SKIPPED: GOOGLE_GEOCODING_API_KEY is not in .env.prod-backup (only in Render). To resolve them: either add the key to the run env and re-run backfill --apply, OR re-save each brand in the live wizard (Render has the key → updateMe forward-geocodes), OR enter coords manually. Tracked for founder.",
+    "diagnostic_2026_06_08": "Prod area_name returned null for all coords → added GET /v1/internal/geocode-health (secret-safe) to determine whether the Render GOOGLE_GEOCODING_API_KEY is unset vs rejected by Google."
   }
 }

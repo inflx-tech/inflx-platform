@@ -188,10 +188,30 @@ async function resolveMapsUrl(url, opts = {}) {
   return result;
 }
 
+// Diagnostic: is the Render Google Geocoding key actually working? Returns the
+// raw Google status + error_message (NOT the key value) so we can tell "key not
+// set" vs "key rejected (REQUEST_DENIED / billing / API not enabled)" remotely.
+async function geocodeHealth() {
+  const base = { key_present: !!GOOGLE_KEY, mock: GEOCODING_MOCK };
+  if (GEOCODING_MOCK) return { ...base, note: 'mock mode on' };
+  if (!GOOGLE_KEY) return { ...base, reason: 'GOOGLE_GEOCODING_API_KEY not set in env' };
+  try {
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=16.5062,80.648&key=${GOOGLE_KEY}`);
+    const data = await res.json().catch(() => ({}));
+    const get = (t) => data.results?.[0]?.address_components?.find(c => c.types?.includes(t))?.long_name || null;
+    return {
+      ...base, http: res.status, google_status: data.status || null,
+      error_message: data.error_message || null,
+      sample_locality: get('sublocality_level_1') || get('locality') || null,
+    };
+  } catch (e) { return { ...base, fetch_error: e.message }; }
+}
+
 module.exports = {
   resolveMapsUrl,
   reverseGeocode,
   forwardGeocode,
+  geocodeHealth,
   extractLatLngFromUrl,
   extractPlaceName,
   isShortLink,

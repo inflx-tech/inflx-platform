@@ -25,4 +25,9 @@ const geocodeMapsUrl = asyncHandler(async (req, res) => {
   return success(res, result);
 });
 
-module.exports = { geocodeMapsUrl };
+// GET /v1/internal/geocode-health — secret-safe diagnostic (no key value returned).
+const geocodeHealth = asyncHandler(async (req, res) => {
+  return success(res, await geocoding.geocodeHealth());
+});
+
+module.exports = { geocodeMapsUrl, geocodeHealth };

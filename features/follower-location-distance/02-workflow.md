@@ -32,3 +32,8 @@ city soft-boost fallback, feed still works.
 distance returned on the live category endpoint when lat/lng passed; mobile shows km +
 area name. Migration **092** (run-092.js) + brand backfill (backfill-brand-coords.js,
 dry-run → --apply) — both founder go.
+
+## Diagnostic (2026-06-08)
+GET /v1/internal/geocode-health — secret-safe (no key value) check of the Render
+Google Geocoding key: returns google_status + error_message so we can tell
+"key not set" vs "key rejected" remotely. Added because prod area_name came back null.

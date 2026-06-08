@@ -161,6 +161,7 @@ router.get('/subscription-tiers', subscriptionCtrl.listTiers);
 // Authenticated: any logged-in user (brand on web). Mock mode in dev returns
 // fixed Vijayawada coords; prod hits Google Geocoding API.
 router.post('/internal/geocode-maps-url',         authenticate, geocodingCtrl.geocodeMapsUrl);
+router.get('/internal/geocode-health',            geocodingCtrl.geocodeHealth);
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);
