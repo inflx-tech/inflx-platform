@@ -15,6 +15,7 @@
     "released_at": "2026-06-07",
     "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN. Rules verified against PROD read-only: dining returns Chaitanya+2 brands, 8 dishes, Sagar — all offer-independent.",
     "deploy": "2026-06-07 — Render backend (3 listing-driven rules in sectionRules.service.js) auto-deploys on push; prod section_config re-pointed via run-088.js (ENV_FILE=.env.prod-backup). Reversible (revert + re-point). Founder go: 'pls start and build'.",
-    "classification": "production-impacting (Render backend + prod section_config UPDATE). No schema change, no app change."
+    "classification": "production-impacting (Render backend + prod section_config UPDATE). No schema change, no app change.",
+    "followup_089_2026-06-08": "After 088, the follower app STILL showed nothing: mobile HomeScreenV2 renders the section engine only when hasEngineContent()=true (a DATA shelf has items), and hasEngineContent ignores nav_tiles. Home's data shelves were all offer-gated+empty → Home fell back to the old screen and HID the browse-by-category tiles → the Eat tile was unreachable. Fix = migration 089: re-point Home's 'Top Eats' (pos5)→businesses_in_category(dining) + 'Trending Dishes' (pos6)→products_in_category(dining,enabled) + 'Top Fashion' (pos8)→businesses_in_category(shopping). Verified LIVE: home now returns 3 brands + 8 products + 7 tiles → hasEngineContent true. Applied to prod via run-089. No code/app change."
   }
 }
