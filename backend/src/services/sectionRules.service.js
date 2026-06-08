@@ -517,6 +517,109 @@ async function creatorsInCategory(ctx) {
   return rows.map(mapCreatorItem);
 }
 
+// ── LISTING-DRIVEN discovery (offer-independent) ─────────────────────────────
+// "What you list is what you see": an approved business + its products + the
+// creators who picked them are discoverable BY CATEGORY without any campaign or
+// offer. Offers remain an overlay (deals shelves, discount badges), not a gate.
+
+function mapListedProductItem(r) {
+  return {
+    entity_type: 'product',
+    id: r.id,
+    name: r.name,
+    price: r.price != null ? parseFloat(r.price) : null,
+    image_url: r.image_url,
+    section: r.section,
+    veg_flag: r.veg_flag,
+    description: r.description,
+    discount_value: null,           // no offer in listing-driven mode
+    brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category, city: r.brand_city },
+    via_creator: null,
+    tracking: null,
+  };
+}
+
+// Approved brands in a category that have a live menu. No offer required.
+async function businessesInCategory(ctx) {
+  const { city, limit = 8, categoryKey } = ctx;
+  const cats = categoryFilter(categoryKey);
+  const params = [];
+  let p = 0;
+  const catIdx = cats ? ++p : null;
+  if (cats) params.push(cats);
+  const cityIdx = city ? ++p : null;
+  if (city) params.push(city);
+  const limIdx = ++p; params.push(limit);
+  const sql = `
+    SELECT b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
+           u_b.city AS brand_city,
+           (SELECT COUNT(*) FROM follower_transactions ft
+              WHERE ft.brand_id = b.id AND ft.created_at >= now() - interval '30 days')::int AS score
+      FROM brands b
+      JOIN users u_b ON u_b.id = b.user_id
+     WHERE u_b.status = 'approved'
+       AND EXISTS (SELECT 1 FROM brand_products bp WHERE bp.brand_id = b.id AND bp.is_active = true)
+       ${cats ? `AND b.category = ANY($${catIdx})` : ''}
+     ORDER BY ${cityBoost(city, cityIdx)} score DESC, b.business_name ASC
+     LIMIT $${limIdx}`;
+  const { rows } = await db.query(sql, params);
+  return rows.map(mapBrandItem);
+}
+
+// Active products from approved brands in a category. No offer required.
+async function productsInCategory(ctx) {
+  const { city, limit = 8, categoryKey } = ctx;
+  const cats = categoryFilter(categoryKey);
+  const params = [];
+  let p = 0;
+  const catIdx = cats ? ++p : null;
+  if (cats) params.push(cats);
+  const cityIdx = city ? ++p : null;
+  if (city) params.push(city);
+  const limIdx = ++p; params.push(limit);
+  const sql = `
+    SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
+           bp.created_at,
+           b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
+           u_b.city AS brand_city
+      FROM brand_products bp
+      JOIN brands b   ON b.id = bp.brand_id
+      JOIN users u_b  ON u_b.id = b.user_id
+     WHERE u_b.status = 'approved' AND bp.is_active = true
+       ${cats ? `AND b.category = ANY($${catIdx})` : ''}
+     ORDER BY ${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST
+     LIMIT $${limIdx}`;
+  const { rows } = await db.query(sql, params);
+  return rows.map(mapListedProductItem);
+}
+
+// Creators who PICKED products (influencer_product_notes) in a category. No live
+// offer required — picks express what a creator promotes regardless of campaigns.
+async function creatorsInCategoryListing(ctx) {
+  const { limit = 8, categoryKey } = ctx;
+  const cats = categoryFilter(categoryKey);
+  const params = [];
+  let p = 0;
+  const catIdx = cats ? ++p : null;
+  if (cats) params.push(cats);
+  const limIdx = ++p; params.push(limit);
+  const sql = `
+    SELECT DISTINCT i.id AS influencer_id, i.instagram_handle AS handle,
+           i.followers_count, i.profile_image_url AS profile_pic_url, u_i.name AS influencer_name
+      FROM influencers i
+      JOIN users u_i ON u_i.id = i.user_id
+      JOIN influencer_product_notes ipn ON ipn.influencer_id = i.id
+      JOIN brand_products bp ON bp.id = ipn.product_id AND bp.is_active = true
+      JOIN brands b  ON b.id = bp.brand_id
+      JOIN users u_b ON u_b.id = b.user_id
+     WHERE u_b.status = 'approved'
+       ${cats ? `AND b.category = ANY($${catIdx})` : ''}
+     ORDER BY i.followers_count DESC NULLS LAST
+     LIMIT $${limIdx}`;
+  const { rows } = await db.query(sql, params);
+  return rows.map(mapCreatorItem);
+}
+
 // ── nav / static / disabled ─────────────────────────────────────────────────
 
 async function navVerticals(ctx) {
@@ -553,6 +656,10 @@ const RULES = {
   // creators
   stories,
   creators_in_category: creatorsInCategory,
+  // listing-driven discovery (offer-independent)
+  businesses_in_category: businessesInCategory,
+  products_in_category: productsInCategory,
+  creators_in_category_listing: creatorsInCategoryListing,
   // nav / static / disabled
   nav_verticals: navVerticals,
   static: staticRule,

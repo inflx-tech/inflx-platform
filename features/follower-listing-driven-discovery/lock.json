@@ -1,0 +1,20 @@
+{
+  "feature": "follower-listing-driven-discovery",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-07 'pls start and build')",
+  "approved_at": "2026-06-07",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Backend + section_config data. Makes follower Category discovery LISTING-DRIVEN (approved businesses + products + creators-who-picked, by category, offer-independent) — fixes the dogfood finding that a listed restaurant with no offer was invisible. 3 new offer-independent rules in sectionRules.service.js (businesses_in_category, products_in_category, creators_in_category_listing) + migration 088 re-points the Category shelves (top_creators, popular/all_businesses, trending_items); Best-deals shelf stays offer-based. City = soft boost. No schema change, no app change (mobile already renders brands/products/creators). Backend-only → no mockup/06-diff gate. Production-impacting (Render backend + prod section_config UPDATE via run-088) — surface for founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-07 'pls start and build')",
+    "released_at": "2026-06-07",
+    "qa_evidence": "pnpm qa GREEN 79/79 + C1 GREEN. Rules verified against PROD read-only: dining returns Chaitanya+2 brands, 8 dishes, Sagar — all offer-independent.",
+    "deploy": "2026-06-07 — Render backend (3 listing-driven rules in sectionRules.service.js) auto-deploys on push; prod section_config re-pointed via run-088.js (ENV_FILE=.env.prod-backup). Reversible (revert + re-point). Founder go: 'pls start and build'.",
+    "classification": "production-impacting (Render backend + prod section_config UPDATE). No schema change, no app change."
+  }
+}
