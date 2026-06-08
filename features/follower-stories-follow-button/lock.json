@@ -1,0 +1,32 @@
+{
+  "feature": "follower-stories-follow-button",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (2026-06-08 chat — 'login follower can see followed + popular influencers with a small follow button below the circle')",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Founder request; workflow-prediction.md records the design (brown +Follow pill under non-followed circles).",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (2026-06-08 chat — follow-from-carousel approved)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_follow": "+ Follow pill under each non-followed circle for a logged-in follower; optimistic → Following; uses existing followerApi.follow (POST /followers/follows).",
+    "D2_set": "Carousel set/order/location already correct via creators_listing (followed-first, popular by followers, city soft-boost from follower.user_city). No backend change.",
+    "D3_offers_later": "'popular with top offers' enrichment depends on the Phase-3 offer-source fix (shelves read brand_offers, not campaign_offers)."
+  },
+  "notes": "Mobile-only, OTA. Additive Follow affordance on the Home Stories carousel. StoryCircle/StoryRail/SectionRenderer gain additive props (showFollow/onFollow/canFollow), off by default; HomeScreenV2 passes canFollow from login state. Uses existing follow API + is_followed from creators_listing. Builds on follower-home-stories-listing.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 (Ship-OTA-now cadence; explicit request)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (follower OTA — Home Stories Follow affordance).",
+    "maestro_green": false,
+    "maestro_note": "Maestro founder-side. Founder to device-smoke. Metro bundle clean.",
+    "governance_override": "released=true pushed with GOVERNANCE_OVERRIDE (gov-check Rule 5) — Maestro founder-side; founder Ship-OTA-now cadence + explicit request 2026-06-08; smart-fallback = web qa GREEN + clean metro bundle.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T06-56-07-844Z/QA-REPORT.md). Babel 3/3 PASS. Mobile-only → web unaffected. Additive props → other screens unaffected.",
+    "deploy": { "ota_follower": { "version": 72, "prev_version": 71, "trigger": "pnpm publish-ota:follower" }, "render_vercel": "no-op (mobile-only)" }
+  }
+}

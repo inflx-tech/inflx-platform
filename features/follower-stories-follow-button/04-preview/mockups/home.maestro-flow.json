@@ -1,0 +1,5 @@
+{
+  "flow": "qa/maestro/flows/01-follower-public-browse.yaml",
+  "screenshot": "home",
+  "note": "After-capture for the Stories Follow button: the follower public-browse flow lands on Home; its 'home' screenshot shows the Stories carousel with +Follow / Following buttons under the creator circles (logged-in). Founder-side (emulator/APK)."
+}

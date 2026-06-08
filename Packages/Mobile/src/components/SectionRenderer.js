@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { creatorVibe as C, fonts } from '../theme/tokens';
 import NewOfferCard from './cards/NewOfferCard';
+import { followerApi } from '../services/api';
 import {
   ShelfHeader, StoryRail, CategoryRail,
   ShelfBrandCard, ShelfBrandListRow, ShelfProductCard, DealCard, FeatureCard,
@@ -157,7 +158,7 @@ export function hasEngineContent(sections) {
 
 // ── per-shelf render ──────────────────────────────────────────────────────────
 
-function renderSection(section, navigation) {
+function renderSection(section, navigation, canFollow) {
   if (!section || !Array.isArray(section.items)) return null;
   const sub = section.config?.sub;
   const count = section.items.length;
@@ -178,10 +179,13 @@ function renderSection(section, navigation) {
           <ShelfHeader title={section.title} sub={sub} count={count} tag="creators" />
           <StoryRail
             items={section.items.map(s => ({
-              id: s.id, handle: s.handle, name: s.name, avatar: s.avatar, has_live_deal: s.has_live_deal,
+              id: s.id, handle: s.handle, name: s.name, avatar: s.avatar,
+              has_live_deal: s.has_live_deal, followers_count: s.followers_count, is_followed: s.is_followed,
             }))}
             onPressStory={(story) => navigation.navigate('InfluencerStore', { handle: story.handle })}
             onPressMore={() => navigation.navigate('Find')}
+            showFollow={canFollow}
+            onFollow={(story) => { if (story?.id) followerApi.follow(story.id).catch(() => {}); }}
           />
         </View>
       );
@@ -275,12 +279,12 @@ function renderSection(section, navigation) {
   }
 }
 
-export default function SectionRenderer({ sections, navigation }) {
+export default function SectionRenderer({ sections, navigation, canFollow }) {
   if (!Array.isArray(sections)) return null;
   return (
     <View>
       {sections.map((section, i) => (
-        <View key={section.key || i}>{renderSection(section, navigation)}</View>
+        <View key={section.key || i}>{renderSection(section, navigation, canFollow)}</View>
       ))}
     </View>
   );

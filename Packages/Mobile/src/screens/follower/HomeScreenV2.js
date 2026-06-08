@@ -40,14 +40,19 @@ export default function HomeScreenV2({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [userInitial, setUserInitial] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { latitude, longitude } = useLocation();
   const loc = { latitude, longitude };
 
-  // Real follower initial for the header avatar (no fabrication — falls back to a
-  // person glyph when unknown). Avatar → Profile tab.
+  // Real follower initial for the header avatar + login state for the Stories
+  // "Follow" buttons (shown only for a logged-in follower). No fabrication.
   useEffect(() => {
-    AsyncStorage.getItem('inflx_user')
-      .then(s => { try { const u = s && JSON.parse(s); const n = u?.name || u?.full_name; if (n) setUserInitial(String(n).trim()[0].toUpperCase()); } catch (_) {} })
+    AsyncStorage.multiGet(['inflx_user', 'inflx_token'])
+      .then(pairs => {
+        const map = Object.fromEntries(pairs);
+        setIsLoggedIn(!!map['inflx_token']);
+        try { const u = map['inflx_user'] && JSON.parse(map['inflx_user']); const n = u?.name || u?.full_name; if (n) setUserInitial(String(n).trim()[0].toUpperCase()); } catch (_) {}
+      })
       .catch(() => {});
   }, []);
 
@@ -152,7 +157,7 @@ export default function HomeScreenV2({ navigation }) {
       </View>
 
       {sectionsActive ? (
-        <SectionRenderer sections={sections} navigation={navigation} />
+        <SectionRenderer sections={sections} navigation={navigation} canFollow={isLoggedIn} />
       ) : (
       <>
       {/* Influencer stories */}
