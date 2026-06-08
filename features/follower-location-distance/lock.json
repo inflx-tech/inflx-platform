@@ -1,0 +1,12 @@
+{
+  "feature": "follower-location-distance",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Build-ready spec (founder requested 2026-06-08; Google Geocoding key set in Render). 4 layers: (1) brand coords persistence — fix updateMe to use robust geocoding (short-link expand) + write canonical lat/lng (verified: location.service.extractLatLng returns null for short links; Chaitanya all geo cols null; duplicate latitude/longitude vs lat/lng columns; distance uses lat/lng). (2) follower location capture — migration 090 (followers += last_lat/last_lng/area_name/location_updated_at) + POST /follower/location (reverse-geocode area name) + mobile GPS. (3) distance ranking — Haversine in businesses_in_category/products_in_category, thread lat/lng through sectionEngine ctx, return distance_km. (4) mobile render 'X km away' + area-name header. Influencers ranked by city (sufficient). Cost: Geocoding API only (free device GPS + free Haversine). Deferred from this window (memory edge) — next window builds end-to-end. No implementation until approved=true.",
+  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null }
+}
