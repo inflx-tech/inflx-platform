@@ -29,6 +29,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
+const geocoding = require('../services/geocoding.service');
 
 // ── Helper: get follower row or throw ────────────────────────────────────────
 
@@ -1040,34 +1041,71 @@ async function resolveFollowerContext(req) {
   const follower = req.user?.sub
     ? await getFollowerByUserId(req.user.sub).catch(() => null)
     : null;
+  // Coordinates for distance ranking: prefer the request (device/selected area
+  // passed as ?lat&lng), else the follower's stored last known location.
+  const qLat = parseFloat(req.query.lat);
+  const qLng = parseFloat(req.query.lng);
+  const lat = Number.isFinite(qLat) ? qLat : (follower?.last_lat != null ? Number(follower.last_lat) : null);
+  const lng = Number.isFinite(qLng) ? qLng : (follower?.last_lng != null ? Number(follower.last_lng) : null);
   return {
     followerId: follower?.id || null,
     city: follower?.user_city || req.query.city || null,
+    lat, lng,
   };
 }
 
+// POST /v1/follower/location  { lat, lng } — store device/selected location +
+// reverse-geocode the area name (throttled: skip the geocode when the follower
+// hasn't moved much and the area name is still fresh). Returns { area_name }.
+const updateLocation = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'follower not found', 404);
+  const lat = parseFloat(req.body.lat);
+  const lng = parseFloat(req.body.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    throw new AppError('VALIDATION_ERROR', 'valid lat/lng required', 422, 'lat');
+  }
+
+  // Throttle: reuse the stored area name unless we moved > ~400 m or it's stale.
+  let areaName = follower.area_name || null;
+  const movedFar = follower.last_lat == null || follower.last_lng == null ||
+    Math.abs(Number(follower.last_lat) - lat) > 0.004 || Math.abs(Number(follower.last_lng) - lng) > 0.004;
+  const stale = !follower.location_updated_at ||
+    (Date.now() - new Date(follower.location_updated_at).getTime()) > 24 * 60 * 60 * 1000;
+  if (!areaName || movedFar || stale) {
+    const geo = await geocoding.reverseGeocode(lat, lng);
+    if (geo && (geo.locality || geo.city)) areaName = geo.locality || geo.city;
+  }
+
+  await db.query(
+    `UPDATE followers SET last_lat=$2, last_lng=$3, area_name=$4, location_updated_at=now() WHERE id=$1`,
+    [follower.id, lat, lng, areaName]
+  );
+  return success(res, { area_name: areaName, lat, lng });
+});
+
 // GET /v1/follower/home
 const getHomeSections = asyncHandler(async (req, res) => {
-  const { followerId, city } = await resolveFollowerContext(req);
-  const data = await sectionEngine.buildSections({ screen: 'home', city, followerId });
+  const { followerId, city, lat, lng } = await resolveFollowerContext(req);
+  const data = await sectionEngine.buildSections({ screen: 'home', city, followerId, lat, lng });
   return success(res, data);
 });
 
 // GET /v1/follower/section/category/:key
 const getCategorySections = asyncHandler(async (req, res) => {
-  const { followerId, city } = await resolveFollowerContext(req);
+  const { followerId, city, lat, lng } = await resolveFollowerContext(req);
   const key = req.params.key;
   const data = await sectionEngine.buildSections({
     screen: 'category', scopeType: 'vertical', scopeValue: key,
-    categoryKey: key, city, followerId,
+    categoryKey: key, city, followerId, lat, lng,
   });
   return success(res, data);
 });
 
 // GET /v1/follower/section/offers
 const getOffersSections = asyncHandler(async (req, res) => {
-  const { followerId, city } = await resolveFollowerContext(req);
-  const data = await sectionEngine.buildSections({ screen: 'offers', city, followerId });
+  const { followerId, city, lat, lng } = await resolveFollowerContext(req);
+  const data = await sectionEngine.buildSections({ screen: 'offers', city, followerId, lat, lng });
   return success(res, data);
 });
 
@@ -1115,6 +1153,7 @@ module.exports = {
   getStories,
   getCategories,
   getCategoryStores,
+  updateLocation,
   getHomeSections,
   getCategorySections,
   getOffersSections,

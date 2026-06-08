@@ -101,7 +101,8 @@ async function resolveInfluencerByHandle(handle) {
  */
 async function buildSections(opts) {
   const { screen, scopeType = 'global', scopeValue = null,
-          city = null, followerId = null, categoryKey = null, influencer = null } = opts;
+          city = null, followerId = null, categoryKey = null, influencer = null,
+          lat = null, lng = null } = opts;
 
   const [rows, followedIds] = await Promise.all([
     loadConfig(screen, scopeType, scopeValue),
@@ -123,6 +124,7 @@ async function buildSections(opts) {
       limit: row.item_limit || 8,
       windowDays: cfg.window_days || 7,
       config: cfg,
+      lat, lng,   // follower coords → distance ranking (listing rules)
     };
 
     // Personalized rules (depend on this follower's graph / the creator) must
@@ -130,6 +132,9 @@ async function buildSections(opts) {
     const key = JSON.stringify([
       screen, scopeType, scopeValue, sectionKey(row), row.rule, ctx.itemType,
       ctx.categoryKey, ctx.limit, city, followerId, influencer?.id || null,
+      // round coords to ~100m so nearby followers share a cache entry
+      lat != null ? Math.round(lat * 1000) / 1000 : null,
+      lng != null ? Math.round(lng * 1000) / 1000 : null,
     ]);
 
     let items = [];

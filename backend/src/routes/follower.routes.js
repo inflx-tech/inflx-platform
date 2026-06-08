@@ -18,6 +18,9 @@ router.get('/me',        authenticate, requireRole('follower'), ctrl.getMe);
 router.post('/follows',              ...followerAuth, ctrl.followInfluencer);
 router.delete('/follows/:influencer_id', ...followerAuth, ctrl.unfollowInfluencer);
 
+// ── Location (auth required) — device/selected coords + reverse-geocoded area ──
+router.post('/location', ...followerAuth, ctrl.updateLocation);
+
 // ── Addresses (auth required) ────────────────────────────────────────────────
 router.post('/addresses',     ...followerAuth, ctrl.createAddress);
 router.get('/addresses',      ...followerAuth, ctrl.listAddresses);

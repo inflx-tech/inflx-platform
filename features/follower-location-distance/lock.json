@@ -1,12 +1,26 @@
 {
   "feature": "follower-location-distance",
-  "spec_version": "0.1.0",
-  "status": "draft",
-  "approved": false,
-  "approved_by": null,
-  "approved_at": null,
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'start building'; standing autonomy delegates the lock decision)",
+  "approved_at": "2026-06-08",
   "preview_reviewed": false,
   "impact_reviewed": true,
-  "notes": "Build-ready spec (founder requested 2026-06-08; Google Geocoding key set in Render). 4 layers: (1) brand coords persistence — fix updateMe to use robust geocoding (short-link expand) + write canonical lat/lng (verified: location.service.extractLatLng returns null for short links; Chaitanya all geo cols null; duplicate latitude/longitude vs lat/lng columns; distance uses lat/lng). (2) follower location capture — migration 090 (followers += last_lat/last_lng/area_name/location_updated_at) + POST /follower/location (reverse-geocode area name) + mobile GPS. (3) distance ranking — Haversine in businesses_in_category/products_in_category, thread lat/lng through sectionEngine ctx, return distance_km. (4) mobile render 'X km away' + area-name header. Influencers ranked by city (sufficient). Cost: Geocoding API only (free device GPS + free Haversine). Deferred from this window (memory edge) — next window builds end-to-end. No implementation until approved=true.",
-  "release": { "qa_all_green": false, "released": false, "released_by": null, "released_at": null }
+  "decisions": {
+    "D1_sequencing": "OTA-first (founder AskUserQuestion 2026-06-08): Contract 1 = backend (Layers 1+3 + location endpoint + migration 092 + backfill); Contract 2 = mobile render (X km away + area name, OTA); Contract 3 = auto device-GPS (native APK, deferred — no geolocation dep today).",
+    "D2_migration": "Followers location columns = migration 092 (090 home-stories + 091 greeting consumed earlier this session).",
+    "D3_missing_coords": "Forward-geocode by name automatically; backfill reports each (low-confidence flagged) for founder verify/correct in admin.",
+    "D4_canonical_cols": "Write canonical lat/lng (distance index + rules read these); keep legacy latitude/longitude synced. Drop legacy later in its own migration."
+  },
+  "notes": "VERIFIED 2026-06-08 vs code+prod. Contract 1 (this release, backend): geocoding.service.resolveMapsUrl (short-link expand + coord regex + forward-geocode by name — the missing case for Chaitanya's place URL); brand.controller.updateMe writes canonical lat/lng + locality/formatted_address (was extractLatLng → null for short links → 0 brands had coords); migration 092 (followers += last_lat/last_lng/area_name/location_updated_at); POST /follower/location (throttled reverse-geocode); Haversine dist_km in businesses_in_category + products_in_category (degrade to city-boost); resolveFollowerContext threads ?lat&lng or stored coords through the engine; backfill-brand-coords.js (copy latitude→lat [fixes Aveen food paradise] + geocode the rest). Backend-only → no mockup/06-diff gate (Contract 2 mobile carries those). Production-impacting: Render backend + migration 092 + brand backfill — founder go.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting (Render backend auto-deploys on push; migration 092 via run-092 + brand backfill via backfill-brand-coords.js --apply — both prod, founder go). No app change in Contract 1.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T08-44-30-214Z/QA-REPORT.md). node --check PASS on all 8 touched backend files. Backend additive + safe pre-migration (updateLocation has no caller until Contract 2; resolveFollowerContext degrades to city-boost without coords).",
+    "pending_prod_go": "1) run-092 (followers location columns). 2) backfill-brand-coords.js --apply (copy latitude→lat fixes Aveen food paradise; forward-geocode the rest — needs GOOGLE_GEOCODING_API_KEY in the run env for step b). Surfaced for explicit founder go."
+  }
 }

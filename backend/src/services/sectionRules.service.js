@@ -104,6 +104,7 @@ function mapBrandItem(r) {
     name: r.brand_name,
     category: r.brand_category,
     city: r.brand_city,
+    distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : undefined,
     score: r.score != null ? Number(r.score) : undefined,
     // A brand tile attributes to the creator who surfaced it when reached via one.
     tracking: r.handle
@@ -137,6 +138,15 @@ function categoryFilter(categoryKey) {
   const cats = categoryKey && CATEGORY_MAP[categoryKey];
   return cats && cats.length ? cats : null;
 }
+
+// Haversine great-circle distance in km from ($latIdx,$lngIdx) to (latCol,lngCol).
+// No PostGIS — pure SQL; LEAST/GREATEST clamp guards acos domain errors.
+function haversineKm(latIdx, lngIdx, latCol = 'b.lat', lngCol = 'b.lng') {
+  return `(6371 * acos(LEAST(1, GREATEST(-1, ` +
+    `cos(radians($${latIdx})) * cos(radians(${latCol})) * cos(radians(${lngCol}) - radians($${lngIdx})) + ` +
+    `sin(radians($${latIdx})) * sin(radians(${latCol}))))))`;
+}
+const hasCoords = (ctx) => Number.isFinite(ctx?.lat) && Number.isFinite(ctx?.lng);
 
 // ── OFFER rules ─────────────────────────────────────────────────────────────
 
@@ -533,6 +543,7 @@ function mapListedProductItem(r) {
     veg_flag: r.veg_flag,
     description: r.description,
     discount_value: null,           // no offer in listing-driven mode
+    distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : null,
     brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category, city: r.brand_city },
     via_creator: null,
     tracking: null,
@@ -542,17 +553,30 @@ function mapListedProductItem(r) {
 // Approved brands in a category that have a live menu. No offer required.
 async function businessesInCategory(ctx) {
   const { city, limit = 8, categoryKey } = ctx;
+  const geo = hasCoords(ctx);
   const cats = categoryFilter(categoryKey);
   const params = [];
   let p = 0;
   const catIdx = cats ? ++p : null;
   if (cats) params.push(cats);
-  const cityIdx = city ? ++p : null;
-  if (city) params.push(city);
+  // city soft-boost only when NOT distance-ranking
+  const cityIdx = (city && !geo) ? ++p : null;
+  if (city && !geo) params.push(city);
+  let latIdx, lngIdx;
+  if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
   const limIdx = ++p; params.push(limit);
+
+  const distExpr = geo
+    ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN ${haversineKm(latIdx, lngIdx)} END`
+    : `NULL::numeric`;
+  const orderBy = geo
+    ? `dist_km ASC NULLS LAST, score DESC, b.business_name ASC`
+    : `${cityBoost(city, cityIdx)} score DESC, b.business_name ASC`;
+
   const sql = `
     SELECT b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
+           ${distExpr} AS dist_km,
            (SELECT COUNT(*) FROM follower_transactions ft
               WHERE ft.brand_id = b.id AND ft.created_at >= now() - interval '30 days')::int AS score
       FROM brands b
@@ -560,7 +584,7 @@ async function businessesInCategory(ctx) {
      WHERE u_b.status = 'approved'
        AND EXISTS (SELECT 1 FROM brand_products bp WHERE bp.brand_id = b.id AND bp.is_active = true)
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
-     ORDER BY ${cityBoost(city, cityIdx)} score DESC, b.business_name ASC
+     ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
   return rows.map(mapBrandItem);
@@ -569,25 +593,37 @@ async function businessesInCategory(ctx) {
 // Active products from approved brands in a category. No offer required.
 async function productsInCategory(ctx) {
   const { city, limit = 8, categoryKey } = ctx;
+  const geo = hasCoords(ctx);
   const cats = categoryFilter(categoryKey);
   const params = [];
   let p = 0;
   const catIdx = cats ? ++p : null;
   if (cats) params.push(cats);
-  const cityIdx = city ? ++p : null;
-  if (city) params.push(city);
+  const cityIdx = (city && !geo) ? ++p : null;
+  if (city && !geo) params.push(city);
+  let latIdx, lngIdx;
+  if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
   const limIdx = ++p; params.push(limit);
+
+  const distExpr = geo
+    ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN ${haversineKm(latIdx, lngIdx)} END`
+    : `NULL::numeric`;
+  const orderBy = geo
+    ? `dist_km ASC NULLS LAST, bp.created_at DESC NULLS LAST`
+    : `${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST`;
+
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.created_at,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
-           u_b.city AS brand_city
+           u_b.city AS brand_city,
+           ${distExpr} AS dist_km
       FROM brand_products bp
       JOIN brands b   ON b.id = bp.brand_id
       JOIN users u_b  ON u_b.id = b.user_id
      WHERE u_b.status = 'approved' AND bp.is_active = true
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
-     ORDER BY ${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST
+     ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
   return rows.map(mapListedProductItem);

@@ -137,6 +137,7 @@ const getMe = asyncHandler(async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const locationService = require('../services/location.service');
+const geocoding = require('../services/geocoding.service');
 
 const updateMe = asyncHandler(async (req, res) => {
   const brand = await getBrandByUserId(req.user.sub);
@@ -169,8 +170,9 @@ const updateMe = asyncHandler(async (req, res) => {
     }
   }
 
-  // Whitelist of updatable fields
-  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'latitude', 'longitude', 'listing_data', 'cover_image_url'];
+  // Whitelist of updatable fields. lat/lng are the CANONICAL distance columns
+  // (mig 051 index + discovery rules read these); latitude/longitude are legacy.
+  const allowed = ['business_name', 'category', 'gstin', 'address_line', 'pincode', 'logo_url', 'lat', 'lng', 'latitude', 'longitude', 'locality', 'formatted_address', 'listing_data', 'cover_image_url'];
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -185,23 +187,30 @@ const updateMe = asyncHandler(async (req, res) => {
     updates.cover_image_url = req.body.listing_data.cover_image_url;
   }
 
-  // Auto-extract lat/lng from Google Maps URL if provided
-  if (req.body.google_maps_url) {
-    const coords = locationService.extractLatLng(req.body.google_maps_url);
-    if (coords) {
-      updates.latitude = coords.latitude;
-      updates.longitude = coords.longitude;
+  // Resolve coordinates from a Google Maps URL (robust: short-link expand +
+  // coord regex + forward-geocode by name). Writes the CANONICAL lat/lng (what
+  // distance ranking reads) + locality/formatted_address, and keeps the legacy
+  // latitude/longitude in sync. Replaces the old extractLatLng (which returned
+  // null for the founder's maps.app.goo.gl share links → all brands had no coords).
+  const mapsUrl = req.body.google_maps_url || req.body.listing_data?.google_maps_url;
+  if (mapsUrl) {
+    const r = await geocoding.resolveMapsUrl(mapsUrl, {
+      name: req.body.business_name || brand.business_name,
+      city: req.body.city || null,
+    });
+    if (r && r.verified && r.lat != null && r.lng != null) {
+      updates.lat = r.lat; updates.lng = r.lng;
+      updates.latitude = r.lat; updates.longitude = r.lng; // sync legacy columns
+      if (r.locality) updates.locality = r.locality;
+      if (r.formatted_address) updates.formatted_address = r.formatted_address;
     }
   }
 
-  // If listing_data has google_maps_url, extract from there too
-  if (req.body.listing_data?.google_maps_url) {
-    const coords = locationService.extractLatLng(req.body.listing_data.google_maps_url);
-    if (coords) {
-      updates.latitude = coords.latitude;
-      updates.longitude = coords.longitude;
-    }
-  }
+  // Keep lat/lng <-> latitude/longitude consistent for manual (non-URL) entry.
+  if (updates.lat == null && updates.latitude != null) { updates.lat = updates.latitude; }
+  if (updates.lng == null && updates.longitude != null) { updates.lng = updates.longitude; }
+  if (updates.latitude == null && updates.lat != null) { updates.latitude = updates.lat; }
+  if (updates.longitude == null && updates.lng != null) { updates.longitude = updates.lng; }
 
   if (Object.keys(updates).length === 0) {
     throw new AppError('VALIDATION_ERROR', 'No valid fields provided to update', 422);

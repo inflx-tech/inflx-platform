@@ -1,5 +1,12 @@
 # Workflow — Follower location + distance
 
+> SEQUENCING (corrected 2026-06-08, founder-approved OTA-first): **Contract 1 =
+> backend** (Layer 1 brand coords + Layer 3 distance + the location endpoint +
+> migration **092** + backfill) — built now. **Layer 4 mobile render = Contract 2
+> (OTA).** **Auto device-GPS = Layer 3-mobile/APK, deferred to the next native
+> build** (no geolocation dep today). Until the APK, coords come from the existing
+> area-switcher / stored follower location, so distance still works via OTA.
+
 ## Brand side (Layer 1)
 1. Brand saves listing with a Google Maps link (often a short `maps.app.goo.gl`).
 2. `updateMe` → `geocoding.service.resolveMapsUrl(url)` (expand short link → coords →
@@ -23,4 +30,5 @@ city soft-boost fallback, feed still works.
 ## Verify
 `pnpm qa` green; prod read-only checks that `brands.lat/lng` populate after re-save;
 distance returned on the live category endpoint when lat/lng passed; mobile shows km +
-area name. Migration 090 + backfill via run-090.js (founder go).
+area name. Migration **092** (run-092.js) + brand backfill (backfill-brand-coords.js,
+dry-run → --apply) — both founder go.
