@@ -1,0 +1,32 @@
+{
+  "feature": "follower-address-geocode",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'take best user friendly decision based on available Geocoding API')",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Decision recorded: enforce + verify + current-location using the Geocoding API (Places Autocomplete = separate API, out of scope).",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; reuses AddressScreen + adds verify/current-location controls)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_geocoding_only": "Use the available Geocoding API (not Places API). Verify-on-demand + enforce-on-save + use-current-location — not live Places Autocomplete.",
+    "D2_enforce": "createAddress rejects 422 when the address can't be located; no null-coord saves.",
+    "D3_no_migration": "follower_addresses.lat/lng already added (093). OTA + backend only; no APK (GPS native already in runtime-3 APK)."
+  },
+  "notes": "Makes added addresses Google-locatable: GET /follower/geocode verify + createAddress 422-enforce + AddressScreen verify/current-location/block. Builds on follower-location-switcher + follower-location-distance (093 coords).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 (delegated decision + Ship-now cadence)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (Render backend + follower OTA runtime 3). No migration, no APK rebuild.",
+    "maestro_green": false,
+    "maestro_note": "Maestro founder-side; founder device-smoke (add real address → verify ✓ → saves; junk → blocked). Metro bundle clean.",
+    "governance_override": "released=true touches Mobile/src → GOVERNANCE_OVERRIDE (gov-check Rule 5). Maestro founder-side; founder delegated decision + Ship-now 2026-06-08; smart-fallback = web qa GREEN.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T15-34-20-507Z/QA-REPORT.md). node --check (backend) + babel 2/2 PASS.",
+    "deploy": { "render_backend": { "trigger": "git push origin main", "note": "geocode verify endpoint + createAddress enforce" }, "ota_follower": { "trigger": "pnpm publish-ota:follower", "runtime": 3 } }
+  }
+}

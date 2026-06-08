@@ -225,14 +225,20 @@ const createAddress = asyncHandler(async (req, res) => {
     );
   }
 
-  // Geocode the typed address → lat/lng so selecting it repositions the feed.
-  // Prefer client-sent coords (e.g. "use current location" → add); else forward-geocode.
+  // Address must be Google-locatable: prefer client-sent coords (e.g. "use current
+  // location"), else forward-geocode the typed text. ENFORCED — an address Google
+  // can't locate is rejected (no silent null-coord save).
   let lat = Number.isFinite(parseFloat(req.body.lat)) ? parseFloat(req.body.lat) : null;
   let lng = Number.isFinite(parseFloat(req.body.lng)) ? parseFloat(req.body.lng) : null;
   if (lat == null || lng == null) {
     const query = [line1, line2, city, pincode].filter(Boolean).join(', ');
     const geo = await geocoding.forwardGeocode(query);
     if (geo && geo.lat != null) { lat = geo.lat; lng = geo.lng; }
+  }
+  if (lat == null || lng == null) {
+    throw new AppError('VALIDATION_ERROR',
+      "We couldn't locate that address. Add area / city / pincode, or use 'Current location'.",
+      422, 'line1');
   }
 
   const { rows } = await db.query(
@@ -1106,6 +1112,22 @@ const reverseGeocode = asyncHandler(async (req, res) => {
   return success(res, { area_name: (geo && (geo.locality || geo.city)) || null, city: geo?.city || null });
 });
 
+// GET /v1/follower/geocode?q=... → verify/locate a typed address (forward
+// geocode). { found, lat, lng, formatted_address, area_name }. Powers the
+// AddressScreen "✓ Located" feedback before save.
+const geocodeQuery = asyncHandler(async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) throw new AppError('VALIDATION_ERROR', 'q required', 422, 'q');
+  const geo = await geocoding.forwardGeocode(q);
+  if (!geo || geo.lat == null) return success(res, { found: false });
+  return success(res, {
+    found: true, lat: geo.lat, lng: geo.lng,
+    formatted_address: geo.formatted_address || null,
+    area_name: geo.locality || geo.city || null,
+    city: geo.city || null,
+  });
+});
+
 // GET /v1/follower/home
 const getHomeSections = asyncHandler(async (req, res) => {
   const { followerId, city, lat, lng } = await resolveFollowerContext(req);
@@ -1182,6 +1204,7 @@ module.exports = {
   getCategoryStores,
   updateLocation,
   reverseGeocode,
+  geocodeQuery,
   getHomeSections,
   getCategorySections,
   getOffersSections,
