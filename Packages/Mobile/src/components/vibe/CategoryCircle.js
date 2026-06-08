@@ -11,17 +11,17 @@ import { creatorVibe as C, fonts } from '../../theme/tokens';
  * Item shape (section-engine nav): { key, label, icon, deal_count? }.
  */
 
-export function CategoryCircle({ category, onPress }) {
+export function CategoryCircle({ category, active, onPress }) {
   if (!category) return null;
   return (
     <TouchableOpacity style={styles.cat} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.tile}>
+      <View style={[styles.tile, active && styles.tileActive]}>
         <Text style={styles.icon}>{category.icon || '•'}</Text>
         {category.deal_count > 0 && (
           <View style={styles.count}><Text style={styles.countTxt}>{category.deal_count}</Text></View>
         )}
       </View>
-      <Text style={styles.label} numberOfLines={1}>{category.label}</Text>
+      <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>{category.label}</Text>
     </TouchableOpacity>
   );
 }
@@ -48,8 +48,10 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 6 }, shadowRadius: 10, elevation: 2,
   },
+  tileActive: { backgroundColor: C.brown, borderColor: C.brown },
   icon: { fontSize: 25 },
   label: { fontSize: 10.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
+  labelActive: { color: C.brown },
   count: {
     position: 'absolute', top: -4, right: -4,
     minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4,

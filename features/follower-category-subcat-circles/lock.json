@@ -1,0 +1,31 @@
+{
+  "feature": "follower-category-subcat-circles",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (2026-06-08 chat — explicit request: sub-category selector as round circles, not pills)",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Founder design revision (round circles); workflow-prediction.md records the deviation from the locked pill mockup.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (2026-06-08 chat — round-circle sub-cat carousel approved as a revision to category-comprehensive.html)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_circles": "Sub-category selector = round-circle carousel (reuses Home's category-circle language) instead of the locked mockup's pill chips. Founder-requested deviation. Active = brown tile + brown label.",
+    "D2_icons": "Each sub-type circle gets the category-accent icon; 'All' uses the super-category icon. Sub-types remain real (payload-derived)."
+  },
+  "notes": "Founder design revision on top of Phase 2. Mobile-only, OTA. Additive CategoryCircle.active prop + CategoryListScreen sub-cat bar swapped pills→circles. Filtering unchanged.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 (Ship-OTA-now cadence; explicit request)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (follower OTA — Category sub-cat selector).",
+    "maestro_green": false,
+    "maestro_note": "Maestro founder-side (emulator). Founder to device-smoke. Metro bundle clean.",
+    "governance_override": "released=true pushed with GOVERNANCE_OVERRIDE (gov-check Rule 5) — Maestro founder-side; founder Ship-OTA-now cadence; smart-fallback = web qa GREEN + clean metro bundle.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T06-35-00-971Z/QA-REPORT.md). Babel 2/2 PASS. Mobile-only → web unaffected. Additive component change → other screens unaffected.",
+    "deploy": "follower OTA via pnpm publish-ota:follower (version recorded after publish). Render/Vercel no-op."
+  }
+}

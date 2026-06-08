@@ -1,0 +1,5 @@
+{
+  "flow": "qa/maestro/flows/01-follower-public-browse.yaml",
+  "screenshot": "category",
+  "note": "After-capture for the sub-cat round-circle revision: the follower public-browse flow opens the Eat Category screen; its 'category' screenshot shows the round-circle sub-category carousel. Founder-side (emulator/APK). Design = founder revision (round circles) recorded in workflow-prediction.md."
+}

@@ -22,6 +22,7 @@ import { followerApi } from '../../services/api';
 import { buildTrackingFromOffer } from '../../utils/tracking';
 import { isEnabled } from '../../config/featureFlags';
 import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
+import { CategoryCircle } from '../../components/vibe';
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -121,11 +122,11 @@ export default function CategoryListScreen({ route, navigation }) {
   // (brand.category across the brand/product shelves), mapped to a label. "All"
   // first. No fabrication — a chip appears only if such listings exist.
   const subcats = useMemo(() => {
-    const labels = [];
-    const seen = new Set();
+    const out = [{ label: 'All', icon: icon || '🧭' }];
+    const seen = new Set(['All']);
     const add = (key) => {
       const l = subcatLabel(key);
-      if (l && !seen.has(l)) { seen.add(l); labels.push(l); }
+      if (l && !seen.has(l)) { seen.add(l); out.push({ label: l, icon: getBusinessAccentLight(key).icon }); }
     };
     if (Array.isArray(sections)) {
       for (const sec of sections) {
@@ -134,8 +135,8 @@ export default function CategoryListScreen({ route, navigation }) {
         else if (sec.type === 'products') sec.items.forEach(it => add(it.brand?.category));
       }
     }
-    return ['All', ...labels];
-  }, [sections]);
+    return out;
+  }, [sections, icon]);
 
   // Drop the empty subcat_chips shelf (the screen renders the real bar) and
   // filter brand/product shelves to the active sub-category (client-side).
@@ -368,19 +369,17 @@ export default function CategoryListScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Sticky sub-category bar (real sub-types present in the category) */}
+      {/* Sticky sub-category bar — round-circle carousel of real sub-types */}
       {showSubBar && (
         <View style={s.subbar}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.subbarInner}>
             {subcats.map(sc => (
-              <TouchableOpacity
-                key={sc}
-                style={[s.subchip, activeSubCat === sc && s.subchipOn]}
-                onPress={() => setActiveSubCat(sc)}
-                activeOpacity={0.8}
-              >
-                <Text style={[s.subchipTxt, activeSubCat === sc && s.subchipTxtOn]}>{sc}</Text>
-              </TouchableOpacity>
+              <CategoryCircle
+                key={sc.label}
+                category={sc}
+                active={activeSubCat === sc.label}
+                onPress={() => setActiveSubCat(sc.label)}
+              />
             ))}
           </ScrollView>
         </View>
@@ -433,7 +432,7 @@ const s = StyleSheet.create({
     backgroundColor: P.bg,
     borderBottomWidth: 1, borderBottomColor: P.border,
   },
-  subbarInner: { gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  subbarInner: { gap: 14, paddingHorizontal: 16, paddingVertical: 10 },
   subchip: {
     paddingHorizontal: 14, paddingVertical: 7, borderRadius: 30,
     backgroundColor: P.white, borderWidth: 1, borderColor: P.border,
