@@ -1088,6 +1088,11 @@ const updateLocation = asyncHandler(async (req, res) => {
 const getHomeSections = asyncHandler(async (req, res) => {
   const { followerId, city, lat, lng } = await resolveFollowerContext(req);
   const data = await sectionEngine.buildSections({ screen: 'home', city, followerId, lat, lng });
+  // Area name for the Home header — works logged-out (cached reverse-geocode).
+  if (Number.isFinite(lat) && Number.isFinite(lng)) {
+    const geo = await geocoding.reverseGeocode(lat, lng);
+    data.area_name = (geo && (geo.locality || geo.city)) || null;
+  }
   return success(res, data);
 });
 

@@ -25,7 +25,7 @@ import APP_ROLE from '../config/appRole';
 // Bump this EVERY time we change native code (new library, gradle change,
 // native module added/removed). OTA bundles published against a different
 // runtime won't load — user will keep using the bundle baked into their APK.
-export const NATIVE_RUNTIME = '2';
+export const NATIVE_RUNTIME = '3';
 
 const STORE_KEY_APPLIED_VERSION = 'inflx_ota_applied_version';
 const STORE_KEY_PENDING_VERSION = 'inflx_ota_pending_version';

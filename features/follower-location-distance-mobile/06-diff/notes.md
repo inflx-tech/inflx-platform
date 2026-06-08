@@ -30,3 +30,12 @@
 
 ## Release
 **production-impacting** (follower OTA). Maestro founder-side (recorded override).
+
+## FIX 2026-06-08 (founder device test)
+- **Home feed was pinned to the first render's coords** — `HomeScreenV2.loadData`
+  was `useCallback(…, [])` closing over the initial (default) `loc`, so it never
+  re-fetched when GPS resolved a moment later. Fix: deps → `[latitude, longitude]`.
+- **Area name now works logged-out** — `HomeScreenV2` reads `area_name` from the
+  `getHomeSections` response (backend reverse-geocodes when coords are present),
+  instead of only the authed location POST. Header shows the real area for anonymous
+  browsers too.

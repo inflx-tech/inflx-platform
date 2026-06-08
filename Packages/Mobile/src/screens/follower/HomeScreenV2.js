@@ -66,6 +66,7 @@ export default function HomeScreenV2({ navigation }) {
         try {
           const secRes = await followerApi.getHomeSections(loc);
           const secs = secRes?.data?.sections || [];
+          if (secRes?.data?.area_name) setAreaName(secRes.data.area_name); // works logged-out
           if (secs.length) {
             setSections(secs);
             setLoading(false);
@@ -99,7 +100,8 @@ export default function HomeScreenV2({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+    // Re-fetch when the resolved location changes (GPS resolves after first render).
+  }, [latitude, longitude]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

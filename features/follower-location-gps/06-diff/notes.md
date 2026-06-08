@@ -26,3 +26,12 @@
   (geolocation.js, useLocation.js).
 - `pnpm qa`: GREEN (mobile-only; web unaffected).
 - Activation/APK smoke = founder, recorded at the released flip.
+
+## FIX 2026-06-08 (founder device test — GPS was not active)
+Founder installed the fresh APK in a different city but still saw "Vijayawada" +
+Vijayawada-relative distance. Root cause: **NATIVE_RUNTIME was not bumped** when the
+geolocation native module was added — so the new APK fetched the latest OTA bundle
+(v74, pre-GPS, tagged runtime "2") and ran THAT instead of its baked-in GPS bundle.
+Fix: `otaUpdater.js` NATIVE_RUNTIME '2' → '3'. The runtime-3 APK no longer accepts
+the runtime-2 bundle → runs its baked GPS JS; a runtime-3 OTA (v75) is published for
+future updates. Requires the APK rebuild (this contract's activation step).

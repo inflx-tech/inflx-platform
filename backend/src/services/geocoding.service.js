@@ -95,14 +95,21 @@ function addressParts(top) {
 // ── Google Geocoding API ──────────────────────────────────────────────────────
 // Reverse: coords → address (used for follower area name + brand address parts).
 async function reverseGeocode(lat, lng) {
-  if (!GOOGLE_KEY || lat == null || lng == null) return null;
+  if (lat == null || lng == null) return null;
   if (GEOCODING_MOCK) return { ...addressParts({}), locality: 'MG Road', city: 'Vijayawada', state: 'Andhra Pradesh', formatted_address: 'MG Road, Vijayawada' };
+  if (!GOOGLE_KEY) return null;
+  // Cache by ~100m-rounded coords so repeated home loads from one spot are free.
+  const key = `rev:${Number(lat).toFixed(3)},${Number(lng).toFixed(3)}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
   try {
     const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_KEY}`);
     if (!res.ok) return null;
     const data = await res.json();
     if (data.status !== 'OK' || !data.results?.length) return null;
-    return addressParts(data.results[0]);
+    const parts = addressParts(data.results[0]);
+    cacheSet(key, parts);
+    return parts;
   } catch (err) { console.error('[geocoding] reverseGeocode failed:', err.message); return null; }
 }
 
