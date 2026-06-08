@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>follower-card-foundation — component gallery (Phase 0 kit spec)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Palette mirrors creatorVibe tokens (theme/tokens.js) + home-comprehensive.html */
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F4EFE6;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:linear-gradient(160deg,#e9dfcf,#d6cab6);color:var(--ink);padding:36px 26px 80px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:30px;text-align:center;margin-bottom:6px;}
+  .lede{text-align:center;color:#5e5040;font-weight:500;font-size:13px;margin-bottom:30px;}
+  .grid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;max-width:1100px;margin:0 auto;}
+  .panel{background:var(--bg);border-radius:20px;padding:18px;box-shadow:0 24px 50px -24px rgba(50,30,12,.5);width:330px;}
+  .panel h3{font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--brown);margin-bottom:4px;}
+  .panel .note{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:14px;}
+  .row{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px;}
+
+  /* shelf header */
+  .sh{display:flex;justify-content:space-between;align-items:flex-end;padding:2px 0 11px;}
+  .sh h4{font-size:16px;font-weight:800;}
+  .sh .sub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .cnt{font-size:9px;font-weight:800;color:var(--brown);background:var(--soft);border:1px solid var(--line);padding:3px 8px;border-radius:20px;}
+  .tt{font-size:8px;font-weight:800;letter-spacing:.5px;color:#fff;background:var(--brown);padding:3px 8px;border-radius:20px;}
+  .tt.p{background:var(--green);}.tt.o{background:var(--offer);}
+
+  /* story */
+  .ring{padding:2.5px;border-radius:50%;background:linear-gradient(135deg,var(--ring1),var(--ring2));}
+  .avl{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:27px;background:#ecdfc9;border:3px solid var(--bg);}
+  .st{display:flex;flex-direction:column;align-items:center;gap:7px;width:72px;}
+  .st .nm{font-size:10.5px;font-weight:700;}
+  .st .lv{font-size:8px;font-weight:800;color:var(--offer);}
+
+  /* category */
+  .cat{display:flex;flex-direction:column;align-items:center;gap:8px;width:64px;}
+  .ci{width:60px;height:60px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:25px;background:var(--card);box-shadow:0 8px 18px -8px rgba(80,50,25,.35);border:1px solid var(--line);}
+  .cat .lbl{font-size:10.5px;font-weight:700;}
+
+  /* feature */
+  .feat{flex:0 0 188px;height:158px;border-radius:22px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;}
+  .feat .chip{align-self:flex-start;font-size:9px;font-weight:800;letter-spacing:.5px;color:var(--brown);background:rgba(255,255,255,.7);padding:4px 9px;border-radius:20px;}
+  .feat h5{font-family:'Fraunces',serif;font-size:19px;font-weight:600;line-height:1.08;max-width:108px;}
+  .feat .by{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:#4a3a2a;background:rgba(255,255,255,.82);padding:4px 10px 4px 4px;border-radius:20px;align-self:flex-start;}
+  .feat .by .a{width:18px;height:18px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:9px;}
+  .feat .em{position:absolute;right:-8px;bottom:-10px;font-size:72px;opacity:.92;}
+
+  /* deal */
+  .deal{flex:0 0 182px;border-radius:18px;overflow:hidden;background:var(--card);border:1px solid var(--line);box-shadow:0 14px 28px -18px rgba(70,45,22,.55);}
+  .dh{height:78px;position:relative;display:flex;align-items:flex-end;padding:10px;color:#fff;}
+  .dh .big{font-family:'Fraunces',serif;font-size:23px;font-weight:600;line-height:.98;}
+  .dh .em{position:absolute;right:9px;top:7px;font-size:36px;opacity:.9;}
+  .clk{position:absolute;top:9px;left:9px;background:rgba(20,12,6,.8);color:#fff;font-size:8.5px;font-weight:800;padding:3px 8px;border-radius:20px;}
+  .db{padding:10px 12px 12px;}
+  .vc{display:inline-flex;align-items:center;gap:5px;margin-top:6px;font-size:9px;font-weight:800;color:#5e4631;background:var(--soft);padding:3px 9px 3px 3px;border-radius:20px;}
+  .vc .a{width:15px;height:15px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:8px;}
+
+  /* card (product/brand) */
+  .card{background:var(--card);border-radius:18px;border:1px solid var(--line);box-shadow:0 14px 28px -18px rgba(70,45,22,.55);overflow:hidden;}
+  .img{display:flex;align-items:center;justify-content:center;font-size:42px;position:relative;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}
+  .heart{position:absolute;top:9px;right:9px;width:27px;height:27px;border-radius:50%;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;font-size:13px;color:#c34;}
+  .ob{position:absolute;left:9px;bottom:9px;background:var(--offer);color:#fff;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:20px;}
+  .rank{position:absolute;top:9px;left:9px;background:var(--brown);color:#fff;font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;}
+  .tag{font-size:9px;font-weight:800;letter-spacing:.6px;color:var(--brown);}
+  .fw8{font-weight:800;}.fs11{font-size:11px;}.fs12{font-size:12px;}.fs13{font-size:13px;}.muted{color:var(--muted);}
+  .strike{text-decoration:line-through;color:var(--muted);font-size:10px;}
+  .omit{font-size:9px;color:var(--offer);font-weight:700;margin-top:8px;border-top:1px dashed var(--line);padding-top:6px;}
+</style>
+</head>
+<body>
+<h1>Phase 0 — follower card kit</h1>
+<p class="lede">The mockup card vocabulary extracted from the comprehensive screens. The RN <code>components/vibe/</code> kit renders these. Gradients via the OTA-safe Gradient primitive; brand rating/distance omitted (no backing data).</p>
+
+<div class="grid">
+
+  <div class="panel">
+    <h3>ShelfHeader</h3><div class="note">title (serif) · sub · count · type tag</div>
+    <div class="sh"><div><h4>Top Eats in Vijayawada</h4><div class="sub">top food brands by engagement</div></div><div style="display:flex;gap:5px"><span class="tt">BRANDS</span><span class="cnt">8</span></div></div>
+    <div class="sh"><div><h4>Trending Dishes</h4><div class="sub">top-selling items</div></div><div style="display:flex;gap:5px"><span class="tt p">PRODUCTS</span><span class="cnt">8</span></div></div>
+    <div class="sh"><div><h4>Best Eat Deals</h4><div class="sub">by conversions</div></div><div style="display:flex;gap:5px"><span class="tt o">OFFERS</span><span class="cnt">6</span></div></div>
+  </div>
+
+  <div class="panel">
+    <h3>StoryCircle / StoryRail</h3><div class="note">gradient ring · avatar · @handle · ● LIVE</div>
+    <div class="row">
+      <div class="st"><div class="ring"><div class="avl">👩🏻‍🍳</div></div><span class="nm">@MamaPizza</span><span class="lv">● LIVE</span></div>
+      <div class="st"><div class="ring"><div class="avl">🧔🏻</div></div><span class="nm">@StyleMaster</span></div>
+      <div class="st"><div class="ring"><div class="avl">💁🏻‍♀️</div></div><span class="nm">@GlowRituals</span><span class="lv">● LIVE</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>CategoryCircle / CategoryRail</h3><div class="note">round tile · emoji · label</div>
+    <div class="row">
+      <div class="cat"><div class="ci">🍽️</div><span class="lbl">Eat</span></div>
+      <div class="cat"><div class="ci">🛍️</div><span class="lbl">Shop</span></div>
+      <div class="cat"><div class="ci">✨</div><span class="lbl">Groom</span></div>
+      <div class="cat"><div class="ci">💪</div><span class="lbl">Stay Fit</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>FeatureCard ("What's Hot")</h3><div class="note">gradient · chip · serif title · via pill · emoji</div>
+    <div class="row">
+      <div class="feat" style="background:linear-gradient(140deg,#f7e3c2,#e9b877)"><span class="chip">FOOD</span><h5>Must-Try Cheese Burst</h5><span class="by"><span class="a">👩🏻‍🍳</span>via @MamaPizza</span><span class="em">🍕</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>DealCard</h3><div class="note">gradient header · discount · via chip · optional clock</div>
+    <div class="row">
+      <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#e8a85c,#c87a3c)"><div class="big">20%<br>OFF</div><span class="em">🍕</span></div><div class="db"><div class="fw8 fs12">Signature Pizza</div><div class="muted fs11">Mama's Pizza</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+      <div class="deal"><div class="dh" style="background:linear-gradient(135deg,#c79bb3,#9c6f8a)"><div class="clk">⏳ 4h left</div><div class="big">30%<br>OFF</div><span class="em">👟</span></div><div class="db"><div class="fw8 fs12">Street Sneakers</div><div class="muted fs11">MODA</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>ShelfProductCard</h3><div class="note">image hero · heart · offer badge · name · brand · ₹price · rank</div>
+    <div class="row">
+      <div class="card" style="flex:0 0 154px"><div class="img g1" style="height:104px">🍕<div class="rank">#1</div><div class="heart">♡</div><div class="ob">20% OFF</div></div><div style="padding:10px 11px 12px"><div class="fw8 fs12">Cheese Burst Pizza</div><div class="muted fs11">Mama's Pizza</div><div class="fw8 fs13" style="margin-top:4px">₹399 <span class="strike">₹499</span></div></div></div>
+      <div class="card" style="flex:0 0 154px"><div class="img g5" style="height:104px">🍝<div class="heart">♡</div></div><div style="padding:10px 11px 12px"><div class="fw8 fs12">Creamy Alfredo</div><div class="muted fs11">Spice Route</div><div class="fw8 fs13" style="margin-top:4px">₹329</div></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>ShelfBrandCard</h3><div class="note">image hero · name · cuisine/category</div>
+    <div class="row">
+      <div class="card" style="flex:0 0 162px"><div class="img g1" style="height:104px">🍕<div class="heart">♡</div></div><div style="padding:10px 11px 12px"><div class="fw8 fs13">Mama's Pizza</div><div class="muted fs11">Italian · Pizzas</div></div></div>
+    </div>
+    <div class="omit">⚠ Mockup shows "★ 4.5 · 1.2 km" — OMITTED in build: no rating/distance in the brand item shape (backend-first). Re-added when reviews/geo are wired.</div>
+  </div>
+
+</div>
+</body>
+</html>

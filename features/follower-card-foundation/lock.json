@@ -1,0 +1,28 @@
+{
+  "feature": "follower-card-foundation",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'proceed as per the given phases...start with phase 0'; standing autonomy delegates lock + design decisions)",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "04-preview/mockups/component-gallery.html extracts the agreed card vocabulary from the comprehensive Creator-Vibe mockups (home/category/offers/creator-store *-comprehensive.html) into one review page; workflow-prediction.md states the honest divergences.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; the comprehensive Creator-Vibe HTML mockups ARE the locked design per NEXT-WINDOW-PROMPT §8 — gallery mirrors them)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_gradient": "OTA-safe pure-JS Gradient primitive (stacked interpolated View slices) instead of react-native-linear-gradient — bare RN 0.73.6 has no gradient/SVG/Expo lib and a native dep would break the OTA-only rebuild. Precedent: Flow-52 D1 (serif font OTA fallback).",
+    "D2_brand_rating": "ShelfBrandCard OMITS the mockup's ★rating + distance — mapBrandItem returns neither (backend-first / no-fabrication). Re-added in a later explicit data step when reviews/geo are wired.",
+    "D3_inert": "Phase 0 wires into NO screen — kit ships nothing until Phase 1 (Home) imports it. released stays false; OTA happens with Home."
+  },
+  "notes": "Phase 0 of the screen-by-screen follower-app rebuild (design/wave4-creator-vibe/NEXT-WINDOW-PROMPT.md). Builds the mockup-accurate shared card kit (components/vibe/) every discovery screen reuses: Gradient, ShelfHeader, StoryCircle/Rail, CategoryCircle/Rail, FeatureCard, DealCard, ShelfProductCard, ShelfBrandCard, ViaCreatorChip, RankBadge. Consumes the EXISTING section-engine item shapes — no backend/migration/endpoint/data change. New files only; no existing module edited. UI-governed path (Packages/Mobile/src/components) so mockup_locked + 06-diff/notes.md are set to satisfy gov-check Rules 3+4; Rule 5 (Maestro) not triggered (released:false).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "deploy-inert (new unimported component files; git push changes nothing in production — no screen renders them, no OTA needed). Bundled visibly with Phase 1 (Home) OTA.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T04-49-44-609Z/QA-REPORT.md). Mobile babel transform 12/12 PASS via module:@react-native/babel-preset. Mobile-only + unimported → web/api suite unaffected = zero regression. released stays false (inert); OTA happens with Phase 1 (Home)."
+  }
+}
