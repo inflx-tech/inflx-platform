@@ -41,9 +41,9 @@ export default function LocationSheet({ visible, onClose, navigation }) {
       sublabel: [a.line1, a.city].filter(Boolean).join(', '),
       source: 'address',
       address_id: a.id,
-      // latitude/longitude flow through when geocoding lands; null today.
-      latitude: a.latitude || null,
-      longitude: a.longitude || null,
+      // geocoded on save (migration 093 / createAddress forward-geocode).
+      latitude: a.lat != null ? a.lat : a.latitude,
+      longitude: a.lng != null ? a.lng : a.longitude,
     });
     onClose();
   }

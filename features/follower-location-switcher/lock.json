@@ -1,0 +1,32 @@
+{
+  "feature": "follower-location-switcher",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'pls implement this' — header location switcher)",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Reuses the existing Swiggy-style LocationSheet/LocationHeader (Path C-1); workflow-prediction.md records the activation + real-GPS/geocoded-address upgrade.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; LocationSheet design already built — this wires it real)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_single_source": "LocationContext is the single feed-location source (Home + Category read it); useCurrentLocation = real GPS + reverse-geocoded label; auto-detect on cold start unless a saved address is chosen.",
+    "D2_address_coords": "follower_addresses += lat/lng (migration 093); createAddress forward-geocodes on save → saved addresses can reposition the feed.",
+    "D3_no_apk": "OTA-only — no APK rebuild (GPS native already in the v75/runtime-3 APK). OTA tagged runtime 3."
+  },
+  "notes": "Header location switcher: auto-detect current location → nearby feed; tap header → current / add address / saved addresses → feed re-ranks to that area. Backend: migration 093 + createAddress geocode + public reverse-geocode endpoint. Mobile: LocationContext real GPS, LocationSheet lat/lng fix, Home/Category use useAppLocation + tappable header. Builds on the location/distance feature (Contracts 1-3).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 ('pls implement this' + Ship-now cadence)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (Render backend + migration 093 + follower OTA runtime 3). No APK rebuild.",
+    "maestro_green": false,
+    "maestro_note": "Maestro founder-side; founder device-smoke (tap header → switch area → feed follows). Metro bundle clean.",
+    "governance_override": "released=true touches Mobile/src → GOVERNANCE_OVERRIDE (gov-check Rule 5). Maestro founder-side; founder explicit request + Ship-now cadence 2026-06-08; smart-fallback = web qa GREEN 79/79 (flake re-run confirmed) + clean metro bundle.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T15-07-05-082Z/QA-REPORT.md). First run had 6 unrelated auth-invariant 60s timeouts (backend slowness flake); re-run GREEN 46.8s. babel 5/5 + node --check PASS.",
+    "deploy": { "render_backend": { "trigger": "git push origin main" }, "migration_093": { "trigger": "ENV_FILE=.env.prod-backup node scripts/run-093.js" }, "ota_follower": { "trigger": "pnpm publish-ota:follower", "runtime": 3 } }
+  }
+}

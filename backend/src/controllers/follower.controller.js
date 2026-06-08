@@ -225,11 +225,21 @@ const createAddress = asyncHandler(async (req, res) => {
     );
   }
 
+  // Geocode the typed address → lat/lng so selecting it repositions the feed.
+  // Prefer client-sent coords (e.g. "use current location" → add); else forward-geocode.
+  let lat = Number.isFinite(parseFloat(req.body.lat)) ? parseFloat(req.body.lat) : null;
+  let lng = Number.isFinite(parseFloat(req.body.lng)) ? parseFloat(req.body.lng) : null;
+  if (lat == null || lng == null) {
+    const query = [line1, line2, city, pincode].filter(Boolean).join(', ');
+    const geo = await geocoding.forwardGeocode(query);
+    if (geo && geo.lat != null) { lat = geo.lat; lng = geo.lng; }
+  }
+
   const { rows } = await db.query(
-    `INSERT INTO follower_addresses (follower_id, label, line1, line2, city, pincode, is_default)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO follower_addresses (follower_id, label, line1, line2, city, pincode, is_default, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      RETURNING *`,
-    [follower.id, label || null, line1, line2 || null, city || null, pincode || null, !!is_default]
+    [follower.id, label || null, line1, line2 || null, city || null, pincode || null, !!is_default, lat, lng]
   );
 
   if (is_default) {
@@ -1084,6 +1094,18 @@ const updateLocation = asyncHandler(async (req, res) => {
   return success(res, { area_name: areaName, lat, lng });
 });
 
+// GET /v1/follower/reverse-geocode?lat&lng → { area_name } (public; for the
+// location switcher's "current location" label). Cached reverse-geocode.
+const reverseGeocode = asyncHandler(async (req, res) => {
+  const lat = parseFloat(req.query.lat);
+  const lng = parseFloat(req.query.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new AppError('VALIDATION_ERROR', 'lat/lng required', 422, 'lat');
+  }
+  const geo = await geocoding.reverseGeocode(lat, lng);
+  return success(res, { area_name: (geo && (geo.locality || geo.city)) || null, city: geo?.city || null });
+});
+
 // GET /v1/follower/home
 const getHomeSections = asyncHandler(async (req, res) => {
   const { followerId, city, lat, lng } = await resolveFollowerContext(req);
@@ -1159,6 +1181,7 @@ module.exports = {
   getCategories,
   getCategoryStores,
   updateLocation,
+  reverseGeocode,
   getHomeSections,
   getCategorySections,
   getOffersSections,

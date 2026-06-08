@@ -11,7 +11,8 @@ import InfluencerStoryRow from '../../components/InfluencerStoryRow';
 import CategoryGrid from '../../components/CategoryGrid';
 import { followerApi } from '../../services/api';
 import { buildTracking } from '../../utils/tracking';
-import useLocation from '../../hooks/useLocation';
+import { useAppLocation } from '../../contexts/LocationContext';
+import LocationSheet from '../../components/LocationSheet';
 import { isEnabled } from '../../config/featureFlags';
 import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -42,7 +43,9 @@ export default function HomeScreenV2({ navigation }) {
   const [userInitial, setUserInitial] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [areaName, setAreaName] = useState(null);
-  const { latitude, longitude } = useLocation();
+  const [locOpen, setLocOpen] = useState(false);
+  const { location } = useAppLocation();
+  const { latitude, longitude } = location;
   const loc = { latitude, longitude };
 
   // Real follower initial for the header avatar + login state for the Stories
@@ -150,12 +153,12 @@ export default function HomeScreenV2({ navigation }) {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.brown} />}
     >
-      {/* Header — location · bell · profile avatar */}
+      {/* Header — location (tap to switch) · bell · profile avatar */}
       <View style={styles.header}>
-        <View style={styles.loc}>
+        <TouchableOpacity style={styles.loc} onPress={() => setLocOpen(true)} activeOpacity={0.7}>
           <Text style={styles.locLabel}>📍 DISCOVER IN</Text>
-          <Text style={styles.locCity}>{areaName || 'Vijayawada'} <Text style={styles.locArrow}>▾</Text></Text>
-        </View>
+          <Text style={styles.locCity} numberOfLines={1}>{location.label || areaName || 'Vijayawada'} <Text style={styles.locArrow}>▾</Text></Text>
+        </TouchableOpacity>
         <View style={styles.headerBtns}>
           <TouchableOpacity style={styles.iconBtn}>
             <Text style={{ fontSize: 16 }}>🔔</Text>
@@ -165,6 +168,8 @@ export default function HomeScreenV2({ navigation }) {
           </TouchableOpacity>
         </View>
       </View>
+
+      <LocationSheet visible={locOpen} onClose={() => setLocOpen(false)} navigation={navigation} />
 
       {/* Greeting (admin-editable via the home 'header' shelf) */}
       <View style={styles.greetWrap}>

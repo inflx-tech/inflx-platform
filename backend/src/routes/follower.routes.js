@@ -20,6 +20,8 @@ router.delete('/follows/:influencer_id', ...followerAuth, ctrl.unfollowInfluence
 
 // ── Location (auth required) — device/selected coords + reverse-geocoded area ──
 router.post('/location', ...followerAuth, ctrl.updateLocation);
+// Public reverse-geocode (location switcher "current location" label).
+router.get('/reverse-geocode', authenticateOptional, ctrl.reverseGeocode);
 
 // ── Addresses (auth required) ────────────────────────────────────────────────
 router.post('/addresses',     ...followerAuth, ctrl.createAddress);

@@ -464,6 +464,8 @@ export const followerApi = {
 
   // Location — store device/selected coords; returns reverse-geocoded { area_name }.
   updateLocation: (lat, lng) => api.post('/follower/location', { lat, lng }),
+  // Public reverse-geocode for the location switcher's "current location" label.
+  reverseGeocode: (lat, lng) => api.get(`/follower/reverse-geocode?lat=${lat}&lng=${lng}`),
 
   // Follow
   follow: (id) => api.post('/followers/follows', { influencer_id: id }),

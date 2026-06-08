@@ -23,7 +23,8 @@ import { buildTrackingFromOffer } from '../../utils/tracking';
 import { isEnabled } from '../../config/featureFlags';
 import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 import { CategoryCircle } from '../../components/vibe';
-import useLocation from '../../hooks/useLocation';
+import { useAppLocation } from '../../contexts/LocationContext';
+import LocationSheet from '../../components/LocationSheet';
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -88,7 +89,9 @@ export default function CategoryListScreen({ route, navigation }) {
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [sections, setSections] = useState(null); // section-engine payload (flag on)
 
-  const { latitude, longitude } = useLocation();
+  const { location } = useAppLocation();
+  const { latitude, longitude } = location;
+  const [locOpen, setLocOpen] = useState(false);
   const isDining = superCategory === 'dining' || superCategory === 'eat';
 
   // Section engine (Phase C2): when on, render the category from
@@ -380,14 +383,15 @@ export default function CategoryListScreen({ route, navigation }) {
         <TouchableOpacity style={s.ib} onPress={() => navigation.goBack()}>
           <Text style={s.ibTxt}>←</Text>
         </TouchableOpacity>
-        <View style={s.ttl}>
+        <TouchableOpacity style={s.ttl} onPress={() => setLocOpen(true)} activeOpacity={0.7}>
           <Text style={s.t1} numberOfLines={1}>{icon} {label}</Text>
-          <Text style={s.t2} numberOfLines={1}>📍 Vijayawada · {stores.length} places</Text>
-        </View>
+          <Text style={s.t2} numberOfLines={1}>📍 {location.label || 'Vijayawada'} · {stores.length} places ▾</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={s.ib} onPress={() => navigation.navigate('Find')}>
           <Text style={s.ibTxt}>🔍</Text>
         </TouchableOpacity>
       </View>
+      <LocationSheet visible={locOpen} onClose={() => setLocOpen(false)} navigation={navigation} />
 
       {/* Sticky sub-category bar — round-circle carousel of real sub-types */}
       {showSubBar && (
