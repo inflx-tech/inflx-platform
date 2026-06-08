@@ -27,6 +27,6 @@
     "maestro_note": "Maestro founder-side; founder device-smoke (tap header → switch area → feed follows). Metro bundle clean.",
     "governance_override": "released=true touches Mobile/src → GOVERNANCE_OVERRIDE (gov-check Rule 5). Maestro founder-side; founder explicit request + Ship-now cadence 2026-06-08; smart-fallback = web qa GREEN 79/79 (flake re-run confirmed) + clean metro bundle.",
     "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T15-07-05-082Z/QA-REPORT.md). First run had 6 unrelated auth-invariant 60s timeouts (backend slowness flake); re-run GREEN 46.8s. babel 5/5 + node --check PASS.",
-    "deploy": { "render_backend": { "trigger": "git push origin main" }, "migration_093": { "trigger": "ENV_FILE=.env.prod-backup node scripts/run-093.js" }, "ota_follower": { "trigger": "pnpm publish-ota:follower", "runtime": 3 } }
+    "deploy": { "render_backend": "deployed on push (0b62c05)", "migration_093": "applied to prod (follower_addresses lat/lng present)", "ota_follower": { "version": 77, "runtime": 3, "note": "v76 consumed by a failed publish during Render redeploy; v77 = location switcher. No APK rebuild." }, "verify": "prod reverse-geocode returned real localities (Christurajupuram, Sitanagaram) — Google geocoding live." }
   }
 }
