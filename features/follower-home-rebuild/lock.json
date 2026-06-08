@@ -1,0 +1,31 @@
+{
+  "feature": "follower-home-rebuild",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'pls proceed to phase 1'; standing autonomy delegates lock + design decisions)",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Locked mockup = design/wave4-creator-vibe/home-comprehensive.html (founder-iterated, NEXT-WINDOW-PROMPT §0.3). workflow-prediction.md states the build mapping + honest divergences.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; the comprehensive Creator-Vibe HTML mockups ARE the locked design per NEXT-WINDOW-PROMPT §8)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_eat_repoint": "Eat/dining nav tile → CategoryList{superCategory:'dining'} (the agreed section-engine Category screen) instead of legacy DiningHome. Applied in both SectionRenderer.navigateCategory and the HomeScreenV2 fallback.",
+    "D2_bell_count": "No notification count badge — no unread-count endpoint exists (backend-first / no-fabrication). Bell is an icon button (parity with current Home).",
+    "D3_shared_renderer": "SectionRenderer (shared by 6 engine screens) upgraded to the components/vibe kit now — consistent card upgrade across all; per-screen bespoke chrome refined in later phases. All nav targets preserved except the Eat re-point.",
+    "D4_empty_offers": "Offer-gated shelves stay empty (offer-source gap, Phase 3) — render nothing, no fake deals."
+  },
+  "notes": "Phase 1 of the follower-app rebuild. Rebuilds Home to home-comprehensive.html: header (location + profile avatar + bell) + serif greeting + search-filter; SectionRenderer rendered via the Phase-0 components/vibe kit; Eat re-pointed to the agreed Category screen. No backend/migration/endpoint/data change — consumes the live listing-driven { sections } payload (083/088/089). 4-ID chain passed through untouched. Builds on features/follower-card-foundation (Phase 0).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting (follower OTA — Home + shared SectionRenderer ship to the live app). Surfaced for explicit founder go; released flips true only after go + Maestro attest (or recorded GOVERNANCE_OVERRIDE). OTA: pnpm publish-ota:follower (follower OTA v68 → next).",
+    "maestro_green": false,
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T05-20-53-343Z/QA-REPORT.md). Babel transform 2/2 PASS (module:@react-native/babel-preset). One prior run had 6 transient failures in B1b W4 admin-auth invariants (backend session/warmup) — environmental, not from this mobile-only change; deterministic GREEN on re-run. Web/api suite cannot be regressed by a follower-mobile change = zero regression.",
+    "deploy": null
+  }
+}

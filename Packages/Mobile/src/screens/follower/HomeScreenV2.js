@@ -14,6 +14,7 @@ import { buildTracking } from '../../utils/tracking';
 import useLocation from '../../hooks/useLocation';
 import { isEnabled } from '../../config/featureFlags';
 import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * HomeScreenV2 — Creator Vibe (cream/terracotta) products-first feed. (Flow 52.1)
@@ -38,8 +39,17 @@ export default function HomeScreenV2({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
+  const [userInitial, setUserInitial] = useState(null);
   const { latitude, longitude } = useLocation();
   const loc = { latitude, longitude };
+
+  // Real follower initial for the header avatar (no fabrication — falls back to a
+  // person glyph when unknown). Avatar → Profile tab.
+  useEffect(() => {
+    AsyncStorage.getItem('inflx_user')
+      .then(s => { try { const u = s && JSON.parse(s); const n = u?.name || u?.full_name; if (n) setUserInitial(String(n).trim()[0].toUpperCase()); } catch (_) {} })
+      .catch(() => {});
+  }, []);
 
   const loadData = useCallback(async (pageNum = 1, refresh = false) => {
     try {
@@ -111,21 +121,35 @@ export default function HomeScreenV2({ navigation }) {
       style={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.brown} />}
     >
-      {/* Header */}
+      {/* Header — location · bell · profile avatar */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerSub}>📍 Deals near you</Text>
-          <Text style={styles.headerTitle}>Vijayawada <Text style={styles.headerArrow}>▼</Text></Text>
+        <View style={styles.loc}>
+          <Text style={styles.locLabel}>📍 DISCOVER IN</Text>
+          <Text style={styles.locCity}>Vijayawada <Text style={styles.locArrow}>▾</Text></Text>
         </View>
-        <TouchableOpacity style={styles.bellBtn}>
-          <Text style={{ fontSize: 14 }}>🔔</Text>
-        </TouchableOpacity>
+        <View style={styles.headerBtns}>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Text style={{ fontSize: 16 }}>🔔</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.avatar} onPress={() => navigation.navigate('ProfileTab')} activeOpacity={0.8}>
+            <Text style={styles.avatarTxt}>{userInitial || '🙂'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Search bar */}
-      <TouchableOpacity style={styles.search} onPress={() => navigation.navigate('Find')}>
-        <Text style={styles.searchText}>🔍 Search products, stores, services...</Text>
-      </TouchableOpacity>
+      {/* Greeting */}
+      <View style={styles.greetWrap}>
+        <Text style={styles.greet}>Hey, what's good today?</Text>
+        <Text style={styles.greetSub}>Shop · Support · Stay Inspired</Text>
+      </View>
+
+      {/* Search bar + filter */}
+      <View style={styles.searchRow}>
+        <TouchableOpacity style={styles.search} onPress={() => navigation.navigate('Find')} activeOpacity={0.8}>
+          <Text style={styles.searchText}>🔍  Search creators, products, stores…</Text>
+          <View style={styles.filterBtn}><Text style={styles.filterTxt}>⊕</Text></View>
+        </TouchableOpacity>
+      </View>
 
       {sectionsActive ? (
         <SectionRenderer sections={sections} navigation={navigation} />
@@ -147,13 +171,10 @@ export default function HomeScreenV2({ navigation }) {
         onPressCategory={(cat) => {
           if (cat.key === 'all') {
             navigation.navigate('Find');
-          } else if (cat.key === 'eat') {
-            // Wave 4: dining redesign — eat routes to the new DiningHomeScreen
-            // (light theme, restaurant component library). Other supercategories
-            // continue to use the legacy CategoryList until they get their own
-            // redesigned home in a later wave.
-            navigation.navigate('DiningHome');
           } else {
+            // Phase 1 re-point: Eat (and every vertical) → the agreed Category
+            // screen (CategoryList renders the section engine), NOT the legacy
+            // DiningHome vibe-tiles screen.
             navigation.navigate('CategoryList', { superCategory: cat.key, label: cat.label, icon: cat.icon });
           }
         }}
@@ -332,56 +353,75 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 50,
-    paddingBottom: 8,
+    paddingHorizontal: 18,
+    paddingTop: 52,
+    paddingBottom: 2,
   },
-  headerSub: {
-    fontSize: 9,
+  loc: {},
+  locLabel: {
+    fontSize: 10,
     color: C.muted,
     fontWeight: '700',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
     fontFamily: fonts.sansSemiBold,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+  locCity: {
+    fontSize: 15,
+    fontWeight: '800',
     color: C.ink,
-    fontFamily: fonts.serifDisplay,
+    fontFamily: fonts.sansBold,
+    marginTop: 1,
   },
-  headerArrow: {
-    fontSize: 11,
-    color: C.brown,
-  },
-  bellBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  locArrow: { fontSize: 12, color: C.brown },
+  headerBtns: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  iconBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.line,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: C.soft,
+    borderWidth: 1,
+    borderColor: C.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarTxt: { fontSize: 16, fontWeight: '800', color: C.brown, fontFamily: fonts.displayBlack },
+  greetWrap: { paddingHorizontal: 18, paddingTop: 10, paddingBottom: 2 },
+  greet: { fontSize: 25, fontWeight: '600', color: C.ink, lineHeight: 28, fontFamily: fonts.serifDisplay },
+  greetSub: { fontSize: 12, fontWeight: '600', color: C.muted, marginTop: 3, fontFamily: fonts.sansSemiBold },
+  searchRow: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 },
   search: {
-    marginHorizontal: 16,
-    marginBottom: 12,
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.line,
-    borderRadius: 24,
-    padding: 12,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingLeft: 16,
+    paddingRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 8 }, shadowRadius: 14, elevation: 1,
   },
   searchText: {
-    fontSize: 12.5,
+    flex: 1,
+    fontSize: 13,
     color: C.muted,
-    fontFamily: fonts.sansRegular,
+    fontFamily: fonts.sansMedium,
   },
+  filterBtn: {
+    width: 28, height: 28, borderRadius: 9,
+    backgroundColor: C.brown, alignItems: 'center', justifyContent: 'center',
+  },
+  filterTxt: { fontSize: 14, color: '#fff', fontWeight: '800' },
   section: {
     flexDirection: 'row',
     alignItems: 'center',

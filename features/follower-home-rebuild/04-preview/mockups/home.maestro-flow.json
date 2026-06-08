@@ -1,0 +1,5 @@
+{
+  "flow": "qa/maestro/flows/01-follower-public-browse.yaml",
+  "screenshot": "home",
+  "note": "After-capture for the Home rebuild: the follower public-browse Maestro flow lands on Home; its 'home' screenshot is the real-build 'after' panel paired against design/wave4-creator-vibe/home-comprehensive.html. Founder-side (emulator/APK). Source mockup is the canonical home-comprehensive.html referenced in workflow-prediction.md."
+}
