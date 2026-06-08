@@ -1,0 +1,29 @@
+{
+  "feature": "follower-location-gps",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'build the code now (ships next APK)')",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "No new visual — reuses Contract 2's distance/area render; Contract 3 swaps the coord source to real device GPS. workflow-prediction.md records this.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; non-visual native change — distance/area UI already locked in Contract 2)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_native_not_ota": "Real device GPS = native APK build, NOT OTA. released stays false until the founder builds + installs the APK.",
+    "D2_ota_safe_guard": "geolocation import is guarded (try/require + runtime check) so the JS is safe even if it rides an OTA before the APK — current users fall back to the default location.",
+    "D3_auto_wire": "useLocation upgrades to real GPS when the module is present → Home + Category + the location POST get real coords automatically (no per-screen change)."
+  },
+  "notes": "Contract 3 of the location/distance feature. Adds @react-native-community/geolocation (native) + utils/geolocation.js (OTA-safe loader + Android permission) + useLocation upgrade (default → real GPS when available). No backend change. Builds on follower-location-distance (C1) + follower-location-distance-mobile (C2).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting — NATIVE APK (not OTA). Code committed + OTA-safe; activates only after the founder builds + installs a new follower APK (npm install → android:follower → install). Flip released=true with APK smoke evidence (+ Maestro/override on the Mobile release).",
+    "qa_evidence": "Babel transform 2/2 PASS (geolocation.js, useLocation.js). pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T11-59-28-109Z/QA-REPORT.md). Web unaffected (mobile-only). NOT OTA-published (released:false) — ships in the APK.",
+    "pending_apk": "Founder: npm install in Packages/Mobile → build follower APK (autolinking picks up the geolocation module; manifest already has ACCESS_FINE/COARSE_LOCATION) → install → smoke (permission prompt + real-distance) → flip released=true."
+  }
+}
