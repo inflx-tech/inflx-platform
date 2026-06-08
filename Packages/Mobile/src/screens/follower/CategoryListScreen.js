@@ -121,9 +121,27 @@ export default function CategoryListScreen({ route, navigation }) {
   // Sub-category chips = the REAL distinct sub-types present in the live payload
   // (brand.category across the brand/product shelves), mapped to a label. "All"
   // first. No fabrication — a chip appears only if such listings exist.
+  // Admin-curated chip labels from the subcat_chips shelf (config.chips), if set.
+  const adminChips = useMemo(() => {
+    const sc = Array.isArray(sections) ? sections.find(s => s.shelf_key === 'subcat_chips') : null;
+    const chips = sc?.config?.chips;
+    return Array.isArray(chips) && chips.length ? chips : null;
+  }, [sections]);
+
+  // Map a curated label back to an icon (best-effort), for the round circles.
+  const iconForLabel = (label) => {
+    const key = Object.keys(SUBCAT_LABEL).find(k => SUBCAT_LABEL[k] === label);
+    return key ? getBusinessAccentLight(key).icon : '🏷️';
+  };
+
   const subcats = useMemo(() => {
     const out = [{ label: 'All', icon: icon || '🧭' }];
     const seen = new Set(['All']);
+    // Admin-curated chips win (display); else derive real sub-types from the payload.
+    if (adminChips) {
+      adminChips.forEach(l => { if (l && !seen.has(l)) { seen.add(l); out.push({ label: l, icon: iconForLabel(l) }); } });
+      return out;
+    }
     const add = (key) => {
       const l = subcatLabel(key);
       if (l && !seen.has(l)) { seen.add(l); out.push({ label: l, icon: getBusinessAccentLight(key).icon }); }
@@ -136,7 +154,7 @@ export default function CategoryListScreen({ route, navigation }) {
       }
     }
     return out;
-  }, [sections, icon]);
+  }, [sections, icon, adminChips]);
 
   // Drop the empty subcat_chips shelf (the screen renders the real bar) and
   // filter brand/product shelves to the active sub-category (client-side).

@@ -273,6 +273,19 @@ export default function SectionsPage() {
                 {/* Config editor (v2) */}
                 {isOpen && (
                   <div className="px-3 pb-3 pt-1 border-t border-gray-100 flex flex-col gap-2">
+                    {/* Greeting/tagline — the home 'header' shelf (admin-editable greeting). */}
+                    {(s.shelf_key === 'header' || cfg.greeting != null || cfg.tagline != null) && (
+                      <>
+                        <label className="text-[11px] font-semibold text-gray-600">Greeting (Home header)
+                          <input value={cfg.greeting || ''} onChange={e => patchConfig(id, 'greeting', e.target.value)}
+                            className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hey, what's good today?" />
+                        </label>
+                        <label className="text-[11px] font-semibold text-gray-600">Tagline
+                          <input value={cfg.tagline || ''} onChange={e => patchConfig(id, 'tagline', e.target.value)}
+                            className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Shop · Support · Stay Inspired" />
+                        </label>
+                      </>
+                    )}
                     <label className="text-[11px] font-semibold text-gray-600">Caption (sub)
                       <input value={cfg.sub || ''} onChange={e => patchConfig(id, 'sub', e.target.value)}
                         className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="small grey line under the title" />

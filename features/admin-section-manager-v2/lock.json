@@ -22,9 +22,12 @@
     "released": true,
     "released_by": "aveen — chat 2026-06-08 'start building' (Part A — brand-web admin)",
     "released_at": "2026-06-08",
-    "classification": "production-impacting (Vercel — brand-web admin auto-deploys on push). Part A shipped: no migration, no OTA. Part B (greeting + admin-curated chips) PENDING — migration 091 + follower OTA, surfaced for go.",
-    "part_b_pending": "Greeting admin-editable (home 'header' shelf, migration 091 + app read) + admin-curated sub-cat chips (config + app read). Cross-surface (migration + OTA). Not in this release.",
-    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T07-07-22-601Z/QA-REPORT.md). JSX parse/transform OK. Admin nav-sweep + role-gate specs unaffected. Backend unchanged (existing /admin/sections supports title/config/insert/scope).",
-    "deploy": { "vercel_brand_web": { "trigger": "git push origin main", "note": "auto-deploys brand-web admin (Part A: rename/config/add/scope)" }, "render": "no-op (no backend change)", "ota": "none (Part A)" }
+    "classification": "production-impacting. Part A: Vercel brand-web admin. Part B: migration 091 (home 'header' shelf) + follower OTA (app reads greeting + admin-curated chips).",
+    "part_b_done": "Greeting admin-editable via home 'header' shelf (migration 091 + HomeScreenV2 reads config.greeting/tagline + admin friendly fields) + admin-curated sub-cat chips (CategoryListScreen prefers subcat_chips config.chips, else real-derived; filtering by label-match — chips with no matching listing filter to empty, disclosed).",
+    "maestro_green": false,
+    "maestro_note": "Part B touches Mobile/src (HomeScreenV2, CategoryListScreen). Maestro founder-side; founder to device-smoke greeting + chips. Metro bundle clean.",
+    "governance_override": "Part B push touches Mobile/src with released=true → GOVERNANCE_OVERRIDE (gov-check Rule 5). Reason: Maestro founder-side; founder 'start building' + Ship-OTA-now cadence 2026-06-08; smart-fallback = web qa GREEN + clean metro bundle.",
+    "qa_evidence": "pnpm qa GREEN — Part A 79/79 (qa/reports/2026-06-08T07-07-22-601Z/); Part B 79/79 (qa/reports/2026-06-08T07-12-02-459Z/) + babel 3/3 PASS (HomeScreenV2, CategoryListScreen, admin page). C1 GREEN both.",
+    "deploy": { "vercel_brand_web": { "trigger": "git push origin main", "note": "Part A: rename/config/add/scope + Part B: header greeting fields" }, "render": "no-op (no backend/src change; migration only)", "migration_091": { "trigger": "ENV_FILE=.env.prod-backup node scripts/run-091.js", "note": "inserts home 'header' shelf (greeting/tagline); idempotent ON CONFLICT DO NOTHING" }, "ota_follower": { "version": 73, "prev_version": 72, "trigger": "pnpm publish-ota:follower", "note": "Part B app reads greeting + admin-curated chips" } }
   }
 }

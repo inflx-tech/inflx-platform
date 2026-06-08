@@ -121,6 +121,14 @@ export default function HomeScreenV2({ navigation }) {
   // returned shelves; otherwise the hardcoded path below (safe fallback).
   const sectionsActive = isEnabled('SECTION_ENGINE_HOME') && hasEngineContent(sections);
 
+  // Admin-editable greeting/tagline from the home 'header' shelf (section_config),
+  // falling back to the defaults when absent. Contract: admin-section-manager-v2.
+  const headerShelf = Array.isArray(sections)
+    ? sections.find(s => s.shelf_key === 'header' || s.key === 'header')
+    : null;
+  const greeting = headerShelf?.config?.greeting || "Hey, what's good today?";
+  const tagline = headerShelf?.config?.tagline || 'Shop · Support · Stay Inspired';
+
   return (
     <ScrollView
       style={styles.container}
@@ -142,10 +150,10 @@ export default function HomeScreenV2({ navigation }) {
         </View>
       </View>
 
-      {/* Greeting */}
+      {/* Greeting (admin-editable via the home 'header' shelf) */}
       <View style={styles.greetWrap}>
-        <Text style={styles.greet}>Hey, what's good today?</Text>
-        <Text style={styles.greetSub}>Shop · Support · Stay Inspired</Text>
+        <Text style={styles.greet}>{greeting}</Text>
+        <Text style={styles.greetSub}>{tagline}</Text>
       </View>
 
       {/* Search bar + filter */}
