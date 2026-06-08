@@ -26,6 +26,6 @@
     "maestro_note": "Maestro founder-side (emulator). Founder to device-smoke. Metro bundle clean.",
     "governance_override": "released=true pushed with GOVERNANCE_OVERRIDE (gov-check Rule 5) — Maestro founder-side; founder Ship-OTA-now cadence; smart-fallback = web qa GREEN + clean metro bundle.",
     "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T06-35-00-971Z/QA-REPORT.md). Babel 2/2 PASS. Mobile-only → web unaffected. Additive component change → other screens unaffected.",
-    "deploy": "follower OTA via pnpm publish-ota:follower (version recorded after publish). Render/Vercel no-op."
+    "deploy": { "ota_follower": { "version": 71, "prev_version": 70, "bundle_size_kb": 2625, "trigger": "pnpm publish-ota:follower" }, "render_vercel": "no-op (mobile-only)" }
   }
 }
