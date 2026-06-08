@@ -19,13 +19,19 @@
   },
   "notes": "Phase 1 of the follower-app rebuild. Rebuilds Home to home-comprehensive.html: header (location + profile avatar + bell) + serif greeting + search-filter; SectionRenderer rendered via the Phase-0 components/vibe kit; Eat re-pointed to the agreed Category screen. No backend/migration/endpoint/data change — consumes the live listing-driven { sections } payload (083/088/089). 4-ID chain passed through untouched. Builds on features/follower-card-foundation (Phase 0).",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
-    "classification": "production-impacting (follower OTA — Home + shared SectionRenderer ship to the live app). Surfaced for explicit founder go; released flips true only after go + Maestro attest (or recorded GOVERNANCE_OVERRIDE). OTA: pnpm publish-ota:follower (follower OTA v68 → next).",
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 'Ship OTA now' (AskUserQuestion explicit go)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (follower OTA — Home + shared SectionRenderer ship to the live app).",
     "maestro_green": false,
-    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T05-20-53-343Z/QA-REPORT.md). Babel transform 2/2 PASS (module:@react-native/babel-preset). One prior run had 6 transient failures in B1b W4 admin-auth invariants (backend session/warmup) — environmental, not from this mobile-only change; deterministic GREEN on re-run. Web/api suite cannot be regressed by a follower-mobile change = zero regression.",
-    "deploy": null
+    "maestro_note": "Maestro not run by chat-architect (Maestro = founder-side Android emulator/ADB; not available in this window). Founder authorized OTA + a recorded GOVERNANCE_OVERRIDE for the released flip (chosen option: 'Ship OTA now'). Founder to smoke Home on device/APK. Metro bundle built end-to-end (2621 KB) — full-app compile clean.",
+    "governance_override": "released=true pushed with GOVERNANCE_OVERRIDE (gov-check Rule 5) — reason: Phase 1 Home follower OTA v69; Maestro is founder-side; founder authorized OTA + override in chat 2026-06-08; web qa GREEN + metro bundle clean as smart-fallback evidence.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T05-20-53-343Z/QA-REPORT.md). Babel transform 2/2 PASS (module:@react-native/babel-preset). Metro production bundle built clean (2621 KB, 7 assets) → the new components/vibe kit integrates app-wide. One prior run had 6 transient failures in B1b W4 admin-auth invariants (backend session/warmup) — environmental, not from this mobile-only change; deterministic GREEN on re-run. Web/api suite cannot be regressed by a follower-mobile change = zero regression.",
+    "deploy": {
+      "render_backend":   { "note": "auto-redeploy on push; no-op (no backend/src change)", "trigger": "git push origin main" },
+      "vercel_brand_web": { "note": "auto-redeploy on push; no-op (mobile-only change)", "trigger": "git push origin main" },
+      "ota_follower":     { "version": 69, "prev_version": 68, "bundle_size_kb": 2621, "trigger": "pnpm publish-ota:follower", "scope": "Home rebuild + shared SectionRenderer vibe-card upgrade (also lifts Category/Offers/Creator/SchemaDetail cards). Includes Phase-0 components/vibe kit." }
+    }
   }
 }
