@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Image,
@@ -63,11 +63,27 @@ const CATEGORY_EMOJI = {
   wedding_planner:'💒',
 };
 
+// schema key → sub-category chip label. Fashion variants collapse to one chip;
+// unknown keys humanize. Used to derive the REAL sub-cat bar from live listings.
+const SUBCAT_LABEL = {
+  restaurant: 'Restaurants', bakery: 'Bakery',
+  fashion: 'Fashion', fashion_walkin: 'Fashion', fashion_online: 'Fashion',
+  footwear: 'Footwear', jewellery: 'Jewellery', electronics: 'Electronics',
+  furniture: 'Furniture', florist: 'Florist', packaged_food: 'Packaged',
+  grocery: 'Grocery', salon: 'Salons', beauty: 'Beauty', home_beauty: 'Home Beauty',
+  car_rental: 'Cars', bike_rental: 'Bikes', function_hall: 'Halls',
+  wedding_planner: 'Weddings',
+};
+function subcatLabel(key) {
+  if (!key) return null;
+  return SUBCAT_LABEL[key] || String(key).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export default function CategoryListScreen({ route, navigation }) {
   const { superCategory, subCategory, label, icon } = route.params || {};
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeSort, setActiveSort] = useState('deals');
+  const [activeSubCat, setActiveSubCat] = useState('All');
   const [sections, setSections] = useState(null); // section-engine payload (flag on)
 
   const isDining = superCategory === 'dining' || superCategory === 'eat';
@@ -101,12 +117,41 @@ export default function CategoryListScreen({ route, navigation }) {
     load();
   }, [superCategory, subCategory]);
 
-  const sortFilters = [
-    { key: 'deals',    label: '✓ With Deals' },
-    { key: 'nearest',  label: '📍 Nearest' },
-    { key: 'discount', label: '💰 Highest Discount' },
-    { key: 'rated',    label: '⭐ Top Rated' },
-  ];
+  // Sub-category chips = the REAL distinct sub-types present in the live payload
+  // (brand.category across the brand/product shelves), mapped to a label. "All"
+  // first. No fabrication — a chip appears only if such listings exist.
+  const subcats = useMemo(() => {
+    const labels = [];
+    const seen = new Set();
+    const add = (key) => {
+      const l = subcatLabel(key);
+      if (l && !seen.has(l)) { seen.add(l); labels.push(l); }
+    };
+    if (Array.isArray(sections)) {
+      for (const sec of sections) {
+        if (!Array.isArray(sec.items)) continue;
+        if (sec.type === 'brands') sec.items.forEach(it => add(it.category));
+        else if (sec.type === 'products') sec.items.forEach(it => add(it.brand?.category));
+      }
+    }
+    return ['All', ...labels];
+  }, [sections]);
+
+  // Drop the empty subcat_chips shelf (the screen renders the real bar) and
+  // filter brand/product shelves to the active sub-category (client-side).
+  const filteredSections = useMemo(() => {
+    if (!Array.isArray(sections)) return sections;
+    return sections
+      .filter(sec => sec.shelf_key !== 'subcat_chips')
+      .map(sec => {
+        if (activeSubCat === 'All' || !Array.isArray(sec.items)) return sec;
+        if (sec.type === 'brands')
+          return { ...sec, items: sec.items.filter(it => subcatLabel(it.category) === activeSubCat) };
+        if (sec.type === 'products')
+          return { ...sec, items: sec.items.filter(it => subcatLabel(it.brand?.category) === activeSubCat) };
+        return sec;
+      });
+  }, [sections, activeSubCat]);
 
   // ── Render helpers ──────────────────────────────────────────────────────
 
@@ -305,57 +350,67 @@ export default function CategoryListScreen({ route, navigation }) {
 
   // ── Render ──────────────────────────────────────────────────────────────
 
+  const showSubBar = sectionsActive && subcats.length > 1;
+
   return (
-    <ScrollView style={s.container}>
+    <View style={s.container}>
+      {/* Compact header — back · title + place count · search */}
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={s.backText}>←</Text>
+        <TouchableOpacity style={s.ib} onPress={() => navigation.goBack()}>
+          <Text style={s.ibTxt}>←</Text>
         </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.headerTitle}>{icon} {label}</Text>
-          <Text style={s.headerSub}>{stores.length} stores near Vijayawada</Text>
+        <View style={s.ttl}>
+          <Text style={s.t1} numberOfLines={1}>{icon} {label}</Text>
+          <Text style={s.t2} numberOfLines={1}>📍 Vijayawada · {stores.length} places</Text>
         </View>
+        <TouchableOpacity style={s.ib} onPress={() => navigation.navigate('Find')}>
+          <Text style={s.ibTxt}>🔍</Text>
+        </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={s.search}>
-        <Text style={s.searchText}>🔍 Search {label?.toLowerCase()} stores...</Text>
-      </TouchableOpacity>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.pills}>
-        {sortFilters.map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[s.pill, activeSort === f.key && s.pillActive]}
-            onPress={() => setActiveSort(f.key)}
-          >
-            <Text style={[s.pillText, activeSort === f.key && s.pillTextActive]}>{f.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
-
-      {sectionsActive ? (
-        <SectionRenderer sections={sections} navigation={navigation} />
-      ) : (
-      <>
-      {/* Layout dispatch */}
-      {isDining
-        ? stores.map(renderDiningCard)
-        : stores.map(renderInlineProductStore)}
-
-      {!loading && stores.length === 0 && (
-        <View style={s.empty}>
-          <Text style={s.emptyIcon}>🏪</Text>
-          <Text style={s.emptyTitle}>No stores found</Text>
-          <Text style={s.emptyText}>Check back later for stores in this category</Text>
+      {/* Sticky sub-category bar (real sub-types present in the category) */}
+      {showSubBar && (
+        <View style={s.subbar}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.subbarInner}>
+            {subcats.map(sc => (
+              <TouchableOpacity
+                key={sc}
+                style={[s.subchip, activeSubCat === sc && s.subchipOn]}
+                onPress={() => setActiveSubCat(sc)}
+                activeOpacity={0.8}
+              >
+                <Text style={[s.subchipTxt, activeSubCat === sc && s.subchipTxtOn]}>{sc}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       )}
-      </>
-      )}
 
-      <View style={{ height: 80 }} />
-    </ScrollView>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+        {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
+
+        {sectionsActive ? (
+          <SectionRenderer sections={filteredSections} navigation={navigation} />
+        ) : (
+        <>
+        {/* Layout dispatch (legacy fallback on engine error/empty) */}
+        {isDining
+          ? stores.map(renderDiningCard)
+          : stores.map(renderInlineProductStore)}
+
+        {!loading && stores.length === 0 && (
+          <View style={s.empty}>
+            <Text style={s.emptyIcon}>🏪</Text>
+            <Text style={s.emptyTitle}>No stores found</Text>
+            <Text style={s.emptyText}>Check back later for stores in this category</Text>
+          </View>
+        )}
+        </>
+        )}
+
+        <View style={{ height: 80 }} />
+      </ScrollView>
+    </View>
   );
 }
 
@@ -363,15 +418,29 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingTop: 50, paddingHorizontal: 20, paddingBottom: 12,
+    paddingTop: 50, paddingHorizontal: 16, paddingBottom: 8,
   },
-  backBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: P.white,
-    borderWidth: 1, borderColor: P.border,
+  ib: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: P.white, borderWidth: 1, borderColor: P.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  backText: { fontSize: 14, color: P.ink },
+  ibTxt: { fontSize: 15, color: P.ink },
+  ttl: { flex: 1 },
+  t1: { fontSize: 19, fontWeight: '600', color: P.ink, fontFamily: fonts.serifDisplay },
+  t2: { fontSize: 10, color: P.muted, fontWeight: '600', marginTop: 2, fontFamily: fonts.sansSemiBold },
+  subbar: {
+    backgroundColor: P.bg,
+    borderBottomWidth: 1, borderBottomColor: P.border,
+  },
+  subbarInner: { gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  subchip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 30,
+    backgroundColor: P.white, borderWidth: 1, borderColor: P.border,
+  },
+  subchipOn: { backgroundColor: C.brown, borderColor: C.brown },
+  subchipTxt: { fontSize: 11.5, fontWeight: '700', color: '#5E5345', fontFamily: fonts.sansBold },
+  subchipTxtOn: { color: '#fff' },
   headerTitle: { fontSize: 18, fontWeight: '600', color: P.ink, fontFamily: fonts.serifDisplay },
   headerSub: { fontSize: 10, color: P.muted },
   search: {

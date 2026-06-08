@@ -4,7 +4,7 @@ import { creatorVibe as C, fonts } from '../theme/tokens';
 import NewOfferCard from './cards/NewOfferCard';
 import {
   ShelfHeader, StoryRail, CategoryRail,
-  ShelfBrandCard, ShelfProductCard, DealCard, FeatureCard,
+  ShelfBrandCard, ShelfBrandListRow, ShelfProductCard, DealCard, FeatureCard,
 } from './vibe';
 
 /**
@@ -198,6 +198,17 @@ function renderSection(section, navigation) {
       );
 
     case 'brands':
+      // config.main_list (Category "All Businesses") → full-width list; else a rail.
+      if (section.config?.main_list) {
+        return (
+          <View>
+            <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" />
+            {section.items.map((item, i) => (
+              <ShelfBrandListRow key={item.id || i} brand={item} onPress={() => goToBrand(navigation, item)} />
+            ))}
+          </View>
+        );
+      }
       return (
         <View>
           <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" />

@@ -21,6 +21,7 @@ export { default as FeatureCard }      from './FeatureCard';
 export { default as DealCard }         from './DealCard';
 export { default as ShelfProductCard } from './ShelfProductCard';
 export { default as ShelfBrandCard }   from './ShelfBrandCard';
+export { default as ShelfBrandListRow } from './ShelfBrandListRow';
 export { default as ViaCreatorChip }   from './ViaCreatorChip';
 export { default as RankBadge }        from './RankBadge';
 export { gradientFor, emojiFor, RING } from './palette';

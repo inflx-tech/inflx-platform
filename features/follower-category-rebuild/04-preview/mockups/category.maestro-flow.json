@@ -1,0 +1,5 @@
+{
+  "flow": "qa/maestro/flows/01-follower-public-browse.yaml",
+  "screenshot": "category",
+  "note": "After-capture for the Category rebuild: the follower public-browse Maestro flow taps Eat and lands on the Category screen; its 'category' screenshot is the real-build 'after' panel paired against design/wave4-creator-vibe/category-comprehensive.html (Eat phone panel). Founder-side (emulator/APK)."
+}

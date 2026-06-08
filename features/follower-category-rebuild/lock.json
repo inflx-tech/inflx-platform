@@ -1,0 +1,32 @@
+{
+  "feature": "follower-category-rebuild",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'ok move to phase 2'; standing autonomy delegates lock + design decisions)",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Locked mockup = design/wave4-creator-vibe/category-comprehensive.html (Eat/Shop/Groom panels). workflow-prediction.md states the build mapping + honest divergences.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; the comprehensive Creator-Vibe HTML mockups ARE the locked design per NEXT-WINDOW-PROMPT §8)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_subcat_real": "Sub-cat chips wired to the REAL distinct sub-types present in the live payload (client-derived brand.category → label), not the mockup's fixed Restaurants/Cafes/Street-Food/Bakery — finer types need the frozen drill-down taxonomy (roadmap #2). 'All' default; tapping filters brand shelves + all-list client-side.",
+    "D2_main_list": "all_businesses (config.main_list) renders as a full-width list of new vibe/ShelfBrandListRow (was a brand rail).",
+    "D3_filter_display": "filter_bar rendered as display chips only — functional sort across engine shelves deferred (disclosed in 06-diff).",
+    "D4_no_backend": "OTA-only; no migration / section_config / endpoint change. subcat_chips shelf suppressed in the screen (real bar rendered instead).",
+    "D5_story_followers": "StoryCircle gains an additive follower-count line (Category creator circles); Home stories still show ● LIVE."
+  },
+  "notes": "Phase 2 of the follower-app rebuild. Rebuilds Category to category-comprehensive.html: compact header, sticky real sub-cat chips (interim real sub-type wiring), vibe-card shelves, full-width All-Businesses list. Client-side only + 2 component additions (ShelfBrandListRow, StoryCircle follower line) + SectionRenderer main_list branch. No backend/migration/data change. Builds on Phase 0 (vibe) + Phase 1 (Home + shared SectionRenderer).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "classification": "production-impacting (follower OTA — Category + shared SectionRenderer/vibe ship live). Surfaced for explicit founder go; released flips true only after go + Maestro attest (or recorded GOVERNANCE_OVERRIDE). OTA: pnpm publish-ota:follower (follower OTA v69 → next).",
+    "maestro_green": false,
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T05-44-29-226Z/QA-REPORT.md). Babel transform 5/5 PASS (module:@react-native/babel-preset). Mobile-only → web/api suite unaffected = zero regression. Component changes additive → Home + other engine screens unaffected.",
+    "deploy": null
+  }
+}

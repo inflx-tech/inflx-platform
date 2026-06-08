@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { creatorVibe as C, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts, fmtNum } from '../../theme/tokens';
 import Gradient from './Gradient';
 import { RING } from './palette';
 
@@ -15,8 +15,10 @@ import { RING } from './palette';
 
 export function StoryCircle({ story, onPress }) {
   if (!story) return null;
-  const { handle, name, avatar, has_live_deal } = story;
+  const { handle, name, avatar, has_live_deal, followers_count } = story;
   const label = handle ? `@${handle}` : name;
+  // ● LIVE wins; else show follower reach when present (Category creator circles).
+  const meta = has_live_deal ? null : (followers_count > 0 ? fmtNum(followers_count) : null);
   return (
     <TouchableOpacity style={styles.st} onPress={onPress} activeOpacity={0.85}>
       <Gradient colors={RING} direction="diagonal" style={styles.ring}>
@@ -26,7 +28,7 @@ export function StoryCircle({ story, onPress }) {
         </View>
       </Gradient>
       <Text style={styles.name} numberOfLines={1}>{label}</Text>
-      {has_live_deal ? <Text style={styles.live}>● LIVE</Text> : null}
+      {has_live_deal ? <Text style={styles.live}>● LIVE</Text> : (meta ? <Text style={styles.meta}>{meta}</Text> : null)}
     </TouchableOpacity>
   );
 }
@@ -73,6 +75,7 @@ const styles = StyleSheet.create({
   avatarTxt: { fontSize: 24, fontWeight: '800', color: C.brownDark, fontFamily: fonts.displayBlack },
   name: { fontSize: 10.5, fontWeight: '700', color: C.ink, textAlign: 'center', fontFamily: fonts.sansBold },
   live: { fontSize: 8, fontWeight: '800', color: C.offer, fontFamily: fonts.monoBold },
+  meta: { fontSize: 9, fontWeight: '700', color: C.muted, fontFamily: fonts.monoMedium },
   more: {
     width: RING_SIZE, height: RING_SIZE, borderRadius: RING_SIZE / 2,
     borderWidth: 1.5, borderStyle: 'dashed', borderColor: C.muted,
