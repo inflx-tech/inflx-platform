@@ -1,0 +1,20 @@
+{
+  "feature": "follower-home-stories-listing",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'sagar joshi should appear in HOME creator carousel' + 'implement'); standing autonomy delegates the lock decision",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Backend + section_config. Makes Home 'Stories' listing/activity-driven (creators_listing rule: followed OR live-offer OR picks on approved-brand active products; has_live_deal=real live offer) + migration 090 re-points home/stories. Fixes the empty Home stories carousel (verified vs prod: 0 campaign_offers + 0 follows → old offer-gated rule returned 0; Sagar has 9 picks + 5 contracted-active campaigns). Backend-only → no mockup/06-diff gate (same class as follower-listing-driven-discovery). Production-impacting (Render backend + run-090 prod section_config) — surface for founder go. No app change.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen (delegated, 2026-06-08 'implement' — Sagar must appear on Home)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (Render backend rule auto-deploys on push + prod section_config UPDATE via run-090). No schema change, no app change.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T06-30-15-481Z/QA-REPORT.md). Prod read-only dry-run of creators_listing returned 2 creators (rikitafashion 320k, sagartravel 120k), has_live_deal=false both (no fake LIVE). Web suite unaffected (backend rule).",
+    "deploy": "Render backend (creators_listing rule) auto-deploys on push. Prod section_config re-pointed via run-090 (ENV_FILE=.env.prod-backup). Reversible (rule→stories). No OTA (app already renders the creators shelf)."
+  }
+}

@@ -620,6 +620,46 @@ async function creatorsInCategoryListing(ctx) {
   return rows.map(mapCreatorItem);
 }
 
+// Home "Stories" — listing/activity-driven (offer-independent). A creator shows
+// when: the follower follows them, OR they have a live offer, OR they have picks
+// (influencer_product_notes) on active products of approved brands. has_live_deal
+// drives the ● LIVE ring; followers_count shows otherwise. This is the offer-
+// independent twin of `stories` (which was offer/follow-gated → empty when there
+// are no campaign_offers, e.g. set-level offer intent not yet materialized).
+async function creatorsListing(ctx) {
+  const { city, followedIds, limit = 12 } = ctx;
+  const params = [];
+  let p = 0;
+  const followArr = followedIds && followedIds.size ? Array.from(followedIds) : [];
+  const followIdx = ++p; params.push(followArr);
+  const cityIdx = city ? ++p : null;
+  if (city) params.push(city);
+  const limIdx = ++p; params.push(limit);
+  const picksExists = `
+    SELECT 1 FROM influencer_product_notes ipn
+      JOIN brand_products bp ON bp.id = ipn.product_id AND bp.is_active = true
+      JOIN brands b  ON b.id = bp.brand_id
+      JOIN users ub  ON ub.id = b.user_id
+     WHERE ipn.influencer_id = i.id AND ub.status = 'approved'`;
+  const sql = `
+    SELECT i.id AS influencer_id, i.instagram_handle AS handle,
+           i.followers_count, i.profile_image_url AS profile_pic_url,
+           u_i.name AS influencer_name,
+           (i.id = ANY($${followIdx})) AS is_followed,
+           EXISTS (${liveOfferExistsForInfluencer('i.id')}) AS has_live_deal
+      FROM influencers i
+      JOIN users u_i ON u_i.id = i.user_id
+     WHERE i.id = ANY($${followIdx})
+        OR EXISTS (${liveOfferExistsForInfluencer('i.id')})
+        OR EXISTS (${picksExists})
+     ORDER BY (i.id = ANY($${followIdx})) DESC,
+              ${city ? `CASE WHEN LOWER(u_i.city)=LOWER($${cityIdx}) THEN 0 ELSE 1 END,` : ''}
+              i.followers_count DESC NULLS LAST
+     LIMIT $${limIdx}`;
+  const { rows } = await db.query(sql, params);
+  return rows.map(r => ({ ...mapCreatorItem(r), is_followed: r.is_followed === true, has_live_deal: r.has_live_deal === true }));
+}
+
 // ── nav / static / disabled ─────────────────────────────────────────────────
 
 async function navVerticals(ctx) {
@@ -655,6 +695,7 @@ const RULES = {
   creator_brands: creatorBrands,
   // creators
   stories,
+  creators_listing: creatorsListing,
   creators_in_category: creatorsInCategory,
   // listing-driven discovery (offer-independent)
   businesses_in_category: businessesInCategory,
