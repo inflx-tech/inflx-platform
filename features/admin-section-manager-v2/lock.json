@@ -1,0 +1,30 @@
+{
+  "feature": "admin-section-manager-v2",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (2026-06-08 chat — 'start building' the admin controls: rename/config/add/scope + greeting/chips)",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Design = the Admin Section Manager panels in the comprehensive mockups (city selector, vertical tabs, Add Section, edit ▾ on chip/filter rows). workflow-prediction.md maps Part A to them.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; admin mockup panels in *-comprehensive.html are the locked design)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_partA_ui_only": "Part A (rename, config editor, Add Section, scope) is brand-web UI only — backend /admin/sections already supports title/config_json/insert/scope. Vercel auto-deploy, no migration, no OTA.",
+    "D2_partB_later": "Part B = greeting admin-editable (home 'header' shelf, migration 091 + app read) + admin-curated sub-cat chips (config + app read). Cross-surface (migration + OTA), built + shipped after Part A.",
+    "D3_json_safety": "Advanced raw-JSON config editor validates before apply; backend validateShelf re-checks on save; engine swallows broken shelves."
+  },
+  "notes": "Extends admin-section-manager. Part A: Packages/brand-web/app/admin/sections/page.js gains scope selector, inline title rename, config editor (caption/chip-filter labels/nav-vertical labels+icons/advanced JSON), and ＋ Add Section presets. UI-governed (brand-web/app) → mockup_locked + 06-diff set; Maestro Rule 5 not triggered (not Mobile/src). Part B tracked here, shipped next.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 'start building' (Part A — brand-web admin)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (Vercel — brand-web admin auto-deploys on push). Part A shipped: no migration, no OTA. Part B (greeting + admin-curated chips) PENDING — migration 091 + follower OTA, surfaced for go.",
+    "part_b_pending": "Greeting admin-editable (home 'header' shelf, migration 091 + app read) + admin-curated sub-cat chips (config + app read). Cross-surface (migration + OTA). Not in this release.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T07-07-22-601Z/QA-REPORT.md). JSX parse/transform OK. Admin nav-sweep + role-gate specs unaffected. Backend unchanged (existing /admin/sections supports title/config/insert/scope).",
+    "deploy": { "vercel_brand_web": { "trigger": "git push origin main", "note": "auto-deploys brand-web admin (Part A: rename/config/add/scope)" }, "render": "no-op (no backend change)", "ota": "none (Part A)" }
+  }
+}
