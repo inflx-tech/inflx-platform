@@ -27,6 +27,6 @@
     "maestro_note": "Maestro founder-side; founder device-smoke (add real address → verify ✓ → saves; junk → blocked). Metro bundle clean.",
     "governance_override": "released=true touches Mobile/src → GOVERNANCE_OVERRIDE (gov-check Rule 5). Maestro founder-side; founder delegated decision + Ship-now 2026-06-08; smart-fallback = web qa GREEN.",
     "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T15-34-20-507Z/QA-REPORT.md). node --check (backend) + babel 2/2 PASS.",
-    "deploy": { "render_backend": { "trigger": "git push origin main", "note": "geocode verify endpoint + createAddress enforce" }, "ota_follower": { "trigger": "pnpm publish-ota:follower", "runtime": 3 } }
+    "deploy": { "render_backend": "deployed on push (565bc25); geocode endpoint verified live (q='Benz Circle, Vijayawada' → found, 'Benz Circle')", "ota_follower": { "version": 78, "runtime": 3 } }
   }
 }
