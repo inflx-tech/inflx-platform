@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
+import { fmtDistance } from './palette';
 
 /**
  * ShelfBrandListRow — full-width brand row for the Category "All Businesses" list
@@ -14,12 +15,13 @@ import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tok
  *
  * Props: brand { id, name, category, city, image_url?, cuisines? }, onPress.
  */
-export default function ShelfBrandListRow({ brand, onPress }) {
+export default function ShelfBrandListRow({ brand, distanceKm, onPress }) {
   if (!brand) return null;
   const cfg = getBusinessAccentLight(brand.category);
   const meta = Array.isArray(brand.cuisines) && brand.cuisines.length
     ? brand.cuisines.slice(0, 3).join(' · ')
     : (brand.category ? String(brand.category).replace(/_/g, ' ') : '');
+  const dist = fmtDistance(distanceKm != null ? distanceKm : brand.distance_km);
 
   return (
     <TouchableOpacity style={styles.row} activeOpacity={0.85} onPress={onPress}>
@@ -31,7 +33,9 @@ export default function ShelfBrandListRow({ brand, onPress }) {
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>{brand.name}</Text>
         {meta ? <Text style={styles.meta} numberOfLines={1}>{meta}</Text> : null}
-        {brand.city ? <Text style={styles.city} numberOfLines={1}>{brand.city}</Text> : null}
+        <Text style={styles.city} numberOfLines={1}>
+          {dist ? `📍 ${dist}` : (brand.city || '')}
+        </Text>
       </View>
       <Text style={styles.chev}>{'›'}</Text>
     </TouchableOpacity>

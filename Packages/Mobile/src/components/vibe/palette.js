@@ -29,3 +29,11 @@ export function emojiFor(category) {
 
 // Story ring (creator-vibe signature) — coral → amber.
 export const RING = [C.ring1, C.ring2];
+
+// "X km away" / "Nm away" from a numeric km distance (null/invalid → null).
+export function fmtDistance(km) {
+  const n = Number(km);
+  if (!Number.isFinite(n) || n < 0) return null;
+  if (n < 1) return `${Math.round(n * 1000)} m away`;
+  return `${n.toFixed(1)} km away`;
+}

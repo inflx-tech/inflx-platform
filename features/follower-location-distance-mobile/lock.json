@@ -1,0 +1,32 @@
+{
+  "feature": "follower-location-distance-mobile",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'run migration and start contract 2')",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Distance render maps to the mockups' card distance + area header; workflow-prediction.md records the honest divergences (rating omitted; coords = selected/default until Contract 3 GPS).",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; comprehensive mockups show card distance + area header)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_render_only": "Contract 2 = mobile render of Contract 1's distance_km + area_name. OTA-only; no backend change.",
+    "D2_coords_source": "Coords from useLocation (Vijayawada default) today; auto device-GPS = Contract 3 (APK). Aveen food paradise (backfilled) shows real distance now.",
+    "D3_offer_distance": "Offer/deal cards don't show distance yet (offer rules don't compute it) — later with the offer-source fix."
+  },
+  "notes": "Mobile render for the location/distance feature: fmtDistance + distanceKm on ShelfBrandCard/ShelfProductCard/ShelfBrandListRow + SectionRenderer pass-through; CategoryListScreen sends coords; HomeScreenV2 posts location → area-name header; api.updateLocation. Additive props → other screens unaffected. Builds on follower-location-distance (Contract 1, released).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 (Ship-OTA-now cadence; 'start contract 2')",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (follower OTA — distance render + area header).",
+    "maestro_green": false,
+    "maestro_note": "Maestro founder-side. Founder to device-smoke Home/Category distances + area name. Metro bundle clean.",
+    "governance_override": "released=true on a Mobile/src change → GOVERNANCE_OVERRIDE (gov-check Rule 5). Reason: Maestro founder-side; founder Ship-OTA-now cadence + 'start contract 2' 2026-06-08; smart-fallback = web qa GREEN + clean metro bundle.",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-08T11-33-43-600Z/QA-REPORT.md). Babel 8/8 PASS. Mobile-only → web unaffected; additive props → other screens unaffected.",
+    "deploy": { "ota_follower": { "version": 74, "prev_version": 73, "trigger": "pnpm publish-ota:follower" }, "render_vercel": "no-op (mobile-only)" }
+  }
+}

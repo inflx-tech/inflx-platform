@@ -1,0 +1,5 @@
+{
+  "flow": "qa/maestro/flows/01-follower-public-browse.yaml",
+  "screenshot": "home",
+  "note": "After-capture for distance render: the follower public-browse flow lands on Home (distance on cards + area header) and taps into Category (distance on lists). Founder-side (emulator/APK)."
+}

@@ -462,6 +462,9 @@ export const followerApi = {
     return api.get(`/business/${brandId}/store${qs}`);
   },
 
+  // Location — store device/selected coords; returns reverse-geocoded { area_name }.
+  updateLocation: (lat, lng) => api.post('/follower/location', { lat, lng }),
+
   // Follow
   follow: (id) => api.post('/followers/follows', { influencer_id: id }),
   unfollow: (id) => api.delete(`/followers/follows/${id}`),

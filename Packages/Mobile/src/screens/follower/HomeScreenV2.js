@@ -41,6 +41,7 @@ export default function HomeScreenV2({ navigation }) {
   const [page, setPage] = useState(1);
   const [userInitial, setUserInitial] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [areaName, setAreaName] = useState(null);
   const { latitude, longitude } = useLocation();
   const loc = { latitude, longitude };
 
@@ -102,6 +103,19 @@ export default function HomeScreenV2({ navigation }) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Store the follower's location + show the reverse-geocoded area name in the
+  // header (logged-in only — the endpoint is authed). Best-effort; the feed never
+  // depends on it. (Auto device-GPS lands with the next APK; coords are the
+  // selected/default location for now.)
+  useEffect(() => {
+    if (!isLoggedIn || !latitude || !longitude) return;
+    let alive = true;
+    followerApi.updateLocation(latitude, longitude)
+      .then(r => { if (alive && r?.data?.area_name) setAreaName(r.data.area_name); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [isLoggedIn, latitude, longitude]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     setPage(1);
@@ -138,7 +152,7 @@ export default function HomeScreenV2({ navigation }) {
       <View style={styles.header}>
         <View style={styles.loc}>
           <Text style={styles.locLabel}>📍 DISCOVER IN</Text>
-          <Text style={styles.locCity}>Vijayawada <Text style={styles.locArrow}>▾</Text></Text>
+          <Text style={styles.locCity}>{areaName || 'Vijayawada'} <Text style={styles.locArrow}>▾</Text></Text>
         </View>
         <View style={styles.headerBtns}>
           <TouchableOpacity style={styles.iconBtn}>

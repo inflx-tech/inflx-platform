@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { creatorVibe as C, fonts, fmtMoney, getBusinessAccentLight } from '../../theme/tokens';
 import RankBadge from './RankBadge';
+import { fmtDistance } from './palette';
 
 /**
  * ShelfProductCard — the product rail card from the comprehensive mockups
@@ -13,9 +14,10 @@ import RankBadge from './RankBadge';
  * Props: product { name, price, image_url }, brand { name, category },
  *        discountValue?, rank?, saved?, onPress, onHeart.
  */
-export default function ShelfProductCard({ product, brand, discountValue, rank, saved, onPress, onHeart }) {
+export default function ShelfProductCard({ product, brand, discountValue, rank, saved, distanceKm, onPress, onHeart }) {
   if (!product) return null;
   const cfg = getBusinessAccentLight(brand?.category);
+  const dist = fmtDistance(distanceKm);
   const mrp = Number(product.price) || 0;
   const pct = Number(discountValue) > 0 ? Number(discountValue) : 0;
   const price = pct > 0 ? Math.floor(mrp * (1 - pct / 100)) : mrp;
@@ -36,7 +38,11 @@ export default function ShelfProductCard({ product, brand, discountValue, rank, 
       </View>
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>{product.name}</Text>
-        {brand?.name ? <Text style={styles.brand} numberOfLines={1}>{brand.name}</Text> : null}
+        {brand?.name ? (
+          <Text style={styles.brand} numberOfLines={1}>
+            {brand.name}{dist ? ` · ${dist}` : ''}
+          </Text>
+        ) : (dist ? <Text style={styles.brand} numberOfLines={1}>{dist}</Text> : null)}
         {mrp > 0 && (
           <View style={styles.priceRow}>
             <Text style={styles.price}>{fmtMoney(price)}</Text>

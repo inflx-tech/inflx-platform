@@ -23,6 +23,7 @@ import { buildTrackingFromOffer } from '../../utils/tracking';
 import { isEnabled } from '../../config/featureFlags';
 import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
 import { CategoryCircle } from '../../components/vibe';
+import useLocation from '../../hooks/useLocation';
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -87,6 +88,7 @@ export default function CategoryListScreen({ route, navigation }) {
   const [activeSubCat, setActiveSubCat] = useState('All');
   const [sections, setSections] = useState(null); // section-engine payload (flag on)
 
+  const { latitude, longitude } = useLocation();
   const isDining = superCategory === 'dining' || superCategory === 'eat';
 
   // Section engine (Phase C2): when on, render the category from
@@ -95,11 +97,11 @@ export default function CategoryListScreen({ route, navigation }) {
   useEffect(() => {
     if (!isEnabled('SECTION_ENGINE_CATEGORY') || !superCategory) return;
     let alive = true;
-    followerApi.getCategorySections(superCategory)
+    followerApi.getCategorySections(superCategory, { latitude, longitude })
       .then(r => { if (alive) setSections(r?.data?.sections || []); })
       .catch(() => { if (alive) setSections(null); });
     return () => { alive = false; };
-  }, [superCategory]);
+  }, [superCategory, latitude, longitude]);
   const sectionsActive = isEnabled('SECTION_ENGINE_CATEGORY') && hasEngineContent(sections);
 
   useEffect(() => {

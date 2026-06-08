@@ -208,7 +208,7 @@ function renderSection(section, navigation, canFollow) {
           <View>
             <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" />
             {section.items.map((item, i) => (
-              <ShelfBrandListRow key={item.id || i} brand={item} onPress={() => goToBrand(navigation, item)} />
+              <ShelfBrandListRow key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => goToBrand(navigation, item)} />
             ))}
           </View>
         );
@@ -218,7 +218,7 @@ function renderSection(section, navigation, canFollow) {
           <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" />
           <Rail>
             {section.items.map((item, i) => (
-              <ShelfBrandCard key={item.id || i} brand={item} onPress={() => goToBrand(navigation, item)} />
+              <ShelfBrandCard key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => goToBrand(navigation, item)} />
             ))}
           </Rail>
         </View>
@@ -235,6 +235,7 @@ function renderSection(section, navigation, canFollow) {
                 product={item.product || item}
                 brand={item.brand}
                 discountValue={item.discount_value}
+                distanceKm={item.distance_km}
                 onPress={() => goToProduct(navigation, item)}
               />
             ))}
