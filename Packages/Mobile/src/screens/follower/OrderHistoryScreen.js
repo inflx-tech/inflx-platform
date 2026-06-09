@@ -61,9 +61,11 @@ function OrderTracker({ status }) {
     <View style={s.steps}>
       {STEPS.map((label, i) => (
         <View key={i} style={s.step}>
-          {i > 0 ? <View style={[s.bar, i <= idx && s.barFill]} /> : null}
-          <View style={[s.dot, i < idx && s.dotDone, i === idx && s.dotNow]}>
-            <Text style={s.dotTxt}>{i < idx ? '✓' : (i === idx ? '•' : '')}</Text>
+          <View style={s.stepTop}>
+            <View style={[s.connector, i === 0 && { opacity: 0 }, i <= idx && s.connectorFill]} />
+            <View style={[s.dot, i < idx && s.dotDone, i === idx && s.dotNow]}>
+              <Text style={s.dotTxt}>{i < idx ? '✓' : (i === idx ? '•' : '')}</Text>
+            </View>
           </View>
           <Text style={[s.slbl, i <= idx && s.slblAct]}>{label}</Text>
         </View>
@@ -193,13 +195,14 @@ const s = StyleSheet.create({
   tgTxt: { fontSize: 8, fontWeight: '800', color: '#fff', letterSpacing: 0.4, fontFamily: fonts.sansBold },
   track: { paddingHorizontal: 14, paddingBottom: 10 },
   steps: { flexDirection: 'row', alignItems: 'flex-start' },
-  step: { flex: 1, alignItems: 'center', gap: 4, position: 'relative' },
-  dot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.line, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  step: { flex: 1, alignItems: 'center', gap: 4 },
+  stepTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
+  connector: { flex: 1, height: 2, backgroundColor: C.line },
+  connectorFill: { backgroundColor: C.green || '#3F8A57' },
+  dot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.line, alignItems: 'center', justifyContent: 'center' },
   dotDone: { backgroundColor: C.green || '#3F8A57' },
   dotNow: { backgroundColor: C.brown },
   dotTxt: { fontSize: 8, color: '#fff', fontWeight: '800' },
-  bar: { position: 'absolute', top: 8, left: '-50%', width: '100%', height: 2, backgroundColor: C.line, zIndex: 1 },
-  barFill: { backgroundColor: C.green || '#3F8A57' },
   slbl: { fontSize: 7.5, fontWeight: '700', color: C.muted },
   slblAct: { color: C.ink },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 11, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: '#fdfbf7' },

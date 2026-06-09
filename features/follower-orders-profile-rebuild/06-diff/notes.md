@@ -16,3 +16,8 @@ Mockups: 04-preview/mockups/orders-comprehensive.html · orders-profile-comprehe
 ## Verification
 - Babel transform clean (both); backend app loads. Founder = on-device acceptance gate;
   Maestro waived via GOVERNANCE_OVERRIDE. Enquiry/Return tabs honest-empty until wired.
+
+## Fix 2026-06-09 — Orders tab crash (negative-percentage style)
+The order-tracker connector used `left: '-50%'` (absolute, negative percentage), which RN
+rejects → the Orders tab crashed on render. Reworked the tracker connector as a flex line
+(no absolute/negative positioning). No data/logic change.

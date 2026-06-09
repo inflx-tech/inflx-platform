@@ -32,3 +32,8 @@ Screen: `Packages/Mobile/src/screens/follower/DealsScreen.js`.
 - "Near Me" sort deferred (offers carry no distance yet).
 - Admin hero-PIN control (brand-web) deferred.
 - Store-direct deals (no creator) are omitted from the By-Creator view by design.
+
+## Fix 2026-06-09 — Offers filtered grid used the wrong card
+The chip-filtered grid rendered `NewOfferCard` (a full-width horizontal banner) inside a
+narrow grid cell → it collapsed into giant brown blocks showing only a letter + %.
+Swapped to the vibe `DealCard` (the proper gradient deal tile) in the flex-wrap grid.

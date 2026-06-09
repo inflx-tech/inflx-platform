@@ -6,7 +6,6 @@ import { creatorVibe as C, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { DealCard, ShelfHeader, Gradient } from '../../components/vibe';
 import { emojiFor } from '../../components/vibe/palette';
-import NewOfferCard from '../../components/cards/NewOfferCard';
 
 /**
  * DealsScreen (Offers tab) — rebuilt to design/wave4-creator-vibe/offers-comprehensive.html.
@@ -177,17 +176,7 @@ export default function DealsScreen({ navigation }) {
       <View>
         <ShelfHeader title={`${superCatLabel(chip)} Offers`} sub={`sorted by ${sort === 'ending' ? 'ending soon' : 'biggest discount'}`} count={filtered.length} tag="offers" />
         <View style={s.grid}>
-          {filtered.map((o, i) => (
-            <TouchableOpacity key={`${o.id}_${i}`} activeOpacity={0.85} style={s.gridCell} onPress={() => goToOffer(o)}>
-              <NewOfferCard
-                store={{ name: o.brand?.name, category: o.brand?.category }}
-                dealType="shop"
-                dealLabel={o.via_creator ? `via @${o.via_creator.handle}` : 'Deal'}
-                discountValue={discountVal(o) > 0 ? `${Math.round(discountVal(o))}%` : 'Offer'}
-                tags={[]}
-              />
-            </TouchableOpacity>
-          ))}
+          {filtered.map((o, i) => dealCard(o, i))}
         </View>
       </View>
     );
