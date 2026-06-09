@@ -1,0 +1,21 @@
+{
+  "feature": "follower-creator-store-rebuild",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('yes pls build creator store as we locked in mockups', 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (creator-store-comprehensive.html is the locked agreed design)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "UI-governed Mobile rebuild of the Creator Store (InfluencerStoreScreen) to creator-store-comprehensive.html: top bar + gradient-ring hero (3 counters + Follow/Share + bio) + My Store Collabs (distinct brands) + sticky category tabs (filter) + What {creator} Promotes + Top Picks (vibe DealCard rails), all from getStore(handle). Pure JS / OTA-safe; NATIVE_RUNTIME '3'. Syntax validated via project Babel; tokens/fonts confirmed. Maestro not runnable in sandbox → release via GOVERNANCE_OVERRIDE (founder-side emulator; founder = on-device acceptance gate). Release = OTA publish-ota:follower.",
+  "release": {
+    "qa_all_green": null,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

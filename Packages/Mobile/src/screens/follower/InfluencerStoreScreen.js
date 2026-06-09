@@ -1,446 +1,286 @@
 /**
- * InfluencerStoreScreen — Wave 4 PR 4.4 (mockup Flow 4.1).
+ * InfluencerStoreScreen (Creator Store) — rebuilt to
+ * design/wave4-creator-vibe/creator-store-comprehensive.html.
+ * Contract: features/follower-creator-store-rebuild.
  *
- * Full visual rewrite of the creator store landing. Previous layout was
- * a tab-filtered offer grid; new layout matches the mockup pattern:
+ * One template, every creator. Layout:
+ *   - top bar (← back · ↗ share)
+ *   - profile hero: gradient-ring avatar · @handle ✓ · role · 3 counters
+ *     (followers / collabs / picks) · Follow + Share · italic bio
+ *   - "My Store Collabs" — the brands this creator partners with (circles)
+ *   - sticky category tabs (the verticals they cover) → filter the picks
+ *   - "What {creator} Promotes" — their live picks (vibe DealCard rail)
+ *   - "Top Picks by {creator} 🔥" — best by discount, ranked
+ *   - Reels note (coming with the Reels feature)
  *
- *   - Ink hero header: large avatar, handle, counters (followers · picks
- *     · verified), Follow button, italic bio quote
- *   - Search bar (placeholder for now — Wave 5 ties to a search endpoint)
- *   - "Browse by category" 2-col grid — one card per category the creator
- *     has endorsed, with pick count and offer summary
- *   - "Hot picks" list — top 3-5 offers across all categories
- *
- * Data contract is unchanged: route.params.handle → followerApi.getStore.
- * The screen filters/aggregates the response client-side.
+ * Driven by followerApi.getStore(handle) → { influencer, offers }. Every pick tap
+ * carries the creator's 4-ID tracking straight through to the purchase screen.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, Image, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View, Text, ScrollView, TouchableOpacity, Image, StyleSheet, ActivityIndicator, RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
-
-// Flow 52.5 — Creator Vibe recolor shim. Hero overridden to terracotta below;
-// avatar/follow → warm amber, counters/bio → light on brown. Visual only —
-// getStore / follow-unfollow / offer aggregation / onPickPress dispatch / nav
-// all unchanged.
-const P = {
-  white: C.card, bg: C.screenBg,
-  border: C.line, ink: C.ink,
-  muted: C.muted, muted2: C.muted, muted4: C.line,
-  yellow: C.star, yellowPale: C.soft, yellowHover: C.brown,
-};
+import { creatorVibe as C, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
-import { OfferPill } from '../../components/restaurant';
-import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
+import { DealCard, ShelfHeader, Gradient } from '../../components/vibe';
+import { emojiFor } from '../../components/vibe/palette';
 
 const CATEGORY_LABELS = {
-  restaurant:      'Restaurants',
-  bakery:          'Bakery',
-  salon:           'Beauty',
-  car_rental:      'Car Rental',
-  bike_rental:     'Bike Rental',
-  fashion:         'Fashion',
-  fashion_walkin:  'Fashion',
-  fashion_online:  'Fashion',
-  florist:         'Florists',
-  packaged_food:   'Packaged food',
-  function_hall:   'Function halls',
-  wedding_planner: 'Wedding',
-  hotel_homestay:  'Hotels & Stays',
-  travel_packages: 'Travel',
-  gym_fitness:     'Gym & Fitness',
-  electronics:     'Electronics',
-  jewellery:       'Jewellery',
-  footwear:        'Footwear',
-  furniture:       'Furniture',
-  optical:         'Optical',
-  home_services:   'Home services',
-  photography:     'Photography',
-  pet_grooming:    'Pet care',
-  pet_shop:        'Pet shop',
-  flowers_gifting: 'Gifting',
-  grocery:         'Grocery',
-  hardware:        'Hardware',
-  clinic_doctor:   'Clinics',
-  dental_clinic:   'Dental',
-  laundry:         'Laundry',
-  legal_ca:        'Legal & CA',
-  coaching_center: 'Coaching',
-  diagnostic_lab:  'Diagnostic',
-  coworking_space: 'Coworking',
-  home_beauty:     'Home beauty',
-  pest_control:    'Pest control',
-  interior_design: 'Interior',
+  restaurant: 'Restaurants', bakery: 'Bakery', salon: 'Salon', car_rental: 'Car Rental',
+  bike_rental: 'Bike Rental', fashion: 'Fashion', fashion_walkin: 'Fashion', fashion_online: 'Fashion',
+  florist: 'Florists', packaged_food: 'Packaged food', electronics: 'Electronics', jewellery: 'Jewellery',
+  footwear: 'Footwear', furniture: 'Furniture', function_hall: 'Function halls', wedding_planner: 'Wedding',
 };
-
-function labelForCategory(key) {
-  return CATEGORY_LABELS[key] || (key ? key.replace(/_/g, ' ') : 'Other');
-}
+const labelFor = (k) => CATEGORY_LABELS[k] || (k ? String(k).replace(/_/g, ' ') : 'Other');
+const discountVal = (o) => Number(o?.discount_value ?? o?.discount?.value ?? 0) || 0;
 
 export default function InfluencerStoreScreen({ route, navigation }) {
   const { handle } = route.params || {};
-  const [store, setStore]         = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [store, setStore] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [isFollowing, setFollow]  = useState(false);
-  const [sections, setSections]   = useState(null); // section-engine payload (flag on)
+  const [isFollowing, setFollow] = useState(false);
+  const [tab, setTab] = useState('all');
 
   const fetchStore = useCallback(async () => {
     try {
-      // getStore still drives the hero header (avatar/handle/counters/bio).
       const res = await followerApi.getStore(handle);
       const data = res.data || res;
       setStore(data);
       if (data?.is_following != null) setFollow(!!data.is_following);
-
-      // Section engine (Phase C2): when on, also pull the config-driven shelves.
-      // On error/empty, the existing getStore body renders (no functional change).
-      if (isEnabled('SECTION_ENGINE_CREATOR')) {
-        try {
-          const secRes = await followerApi.getCreatorSections(handle);
-          setSections(secRes?.data?.sections || []);
-        } catch { setSections(null); }
-      }
     } catch (e) {
       console.warn('[CreatorStore] fetch failed', e?.message);
     }
   }, [handle]);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchStore().finally(() => setLoading(false));
-  }, [fetchStore]);
+  useEffect(() => { setLoading(true); fetchStore().finally(() => setLoading(false)); }, [fetchStore]);
+  const onRefresh = useCallback(async () => { setRefreshing(true); await fetchStore(); setRefreshing(false); }, [fetchStore]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchStore();
-    setRefreshing(false);
-  }, [fetchStore]);
+  const influencer = store?.influencer || {};
+  const offers = store?.offers || [];
 
   const onFollow = useCallback(async () => {
-    if (!store?.influencer?.id) return;
+    if (!influencer.id) return;
     try {
-      if (isFollowing) {
-        await followerApi.unfollow(store.influencer.id);
-        setFollow(false);
-      } else {
-        await followerApi.follow(store.influencer.id);
-        setFollow(true);
-      }
+      if (isFollowing) { await followerApi.unfollow(influencer.id); setFollow(false); }
+      else { await followerApi.follow(influencer.id); setFollow(true); }
     } catch {}
-  }, [isFollowing, store]);
+  }, [isFollowing, influencer.id]);
 
-  // Aggregate offers per category.
-  const offers = store?.offers || [];
-  const categories = useMemo(() => {
-    const map = {};
-    for (const o of offers) {
-      const k = o.brand_category || 'other';
-      if (!map[k]) map[k] = { key: k, picks: 0, with_offers: 0, max_discount: 0 };
-      map[k].picks += 1;
-      if (o.discount_value > 0) {
-        map[k].with_offers += 1;
-        if (o.discount_value > map[k].max_discount) map[k].max_discount = o.discount_value;
-      }
-    }
-    return Object.values(map).sort((a, b) => b.picks - a.picks);
+  // distinct partner brands (My Store Collabs)
+  const collabs = useMemo(() => {
+    const m = {};
+    offers.forEach(o => {
+      const id = o.brand_id; if (!id || m[id]) return;
+      m[id] = { id, name: o.brand_name, category: o.brand_category };
+    });
+    return Object.values(m);
   }, [offers]);
 
-  const hotPicks = useMemo(() => {
-    return [...offers]
-      .filter(o => o.discount_value > 0)
-      .sort((a, b) => (b.discount_value || 0) - (a.discount_value || 0))
-      .slice(0, 5);
+  // category tabs (verticals this creator covers)
+  const cats = useMemo(() => {
+    const seen = new Set(); const out = [];
+    offers.forEach(o => { const k = o.brand_category; if (k && !seen.has(k)) { seen.add(k); out.push(k); } });
+    return out;
   }, [offers]);
 
-  function onPickPress(offer) {
+  const visibleOffers = useMemo(
+    () => (tab === 'all' ? offers : offers.filter(o => o.brand_category === tab)),
+    [offers, tab]
+  );
+  const topPicks = useMemo(
+    () => [...visibleOffers].sort((a, b) => discountVal(b) - discountVal(a)).slice(0, 6),
+    [visibleOffers]
+  );
+
+  const onPickPress = useCallback((offer) => {
+    const tracking = {
+      campaign_id: offer.campaign_id, set_id: offer.set_id, offer_id: offer.offer_id,
+      campaign_influencer_id: offer.campaign_influencer_id,
+      influencer_id: influencer.id, influencer_handle: influencer.instagram_handle, influencer_name: influencer.name,
+    };
     const params = {
       offer: { id: offer.offer_id, offer_type: offer.offer_type, discount_value: offer.discount_value, availing_modes: offer.availing_modes },
       brand: { id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city },
-      tracking: { campaign_id: offer.campaign_id, set_id: offer.set_id, offer_id: offer.offer_id, campaign_influencer_id: offer.campaign_influencer_id, influencer_id: store?.influencer?.id, influencer_handle: store?.influencer?.instagram_handle, influencer_name: store?.influencer?.name },
-      influencer: store?.influencer,
+      influencer, tracking, trackingParams: tracking,
     };
-    // Route by primary mode
     const primary = (offer.availing_modes || [])[0];
-    if (primary === 'pay_at_store')   navigation.navigate('PayAtStore', params);
-    else if (primary === 'prebook')   navigation.navigate('PreBook', params);
-    else if (primary === 'enquiry')   navigation.navigate('Enquiry', params);
-    else navigation.navigate('BrandStore', { brandId: offer.brand_id, tracking: params.tracking });
-  }
+    if (primary === 'pay_at_store') navigation.navigate('PayAtStore', params);
+    else if (primary === 'prebook') navigation.navigate('PreBook', params);
+    else if (primary === 'enquiry') navigation.navigate('Enquiry', params);
+    else navigation.navigate('BrandStore', { brandId: offer.brand_id, tracking });
+  }, [navigation, influencer]);
 
-  function onCategoryPress(cat) {
-    // Flow 52.7 — deep-link into the creator-SCOPED category screen (mockup 4a):
-    // only this creator's partner businesses + picks in the tapped category.
-    // Runs on the offers we already loaded; no extra fetch.
-    navigation.navigate('CreatorCategory', {
-      influencer: store?.influencer,
-      offers,
-      category: cat.key,
-      label: labelForCategory(cat.key),
-    });
-  }
+  const dealCard = (o, i, rank) => (
+    <DealCard
+      key={`${o.offer_id || o.brand_id}_${i}`}
+      offer={o}
+      title={o.brand_name}
+      brand={labelFor(o.brand_category)}
+      category={o.brand_category}
+      rank={rank}
+      onPress={() => onPickPress(o)}
+    />
+  );
 
   if (loading) {
-    return (
-      <View style={[styles.root, styles.center]}>
-        <ActivityIndicator color={P.ink} />
-      </View>
-    );
+    return <View style={[s.root, s.center]}><ActivityIndicator size="large" color={C.brown} /></View>;
   }
 
-  const influencer = store?.influencer || {};
-  const followerCount = influencer.follower_count ?? store?.follower_count ?? null;
-  const initial = (influencer.name || influencer.instagram_handle || '?').charAt(0).toUpperCase();
-
-  // Phase C2: render shelves from the section engine when on + populated;
-  // otherwise the existing category-grid + hot-picks body (safe fallback).
-  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && hasEngineContent(sections);
+  const initial = (influencer.instagram_handle || influencer.name || '?').charAt(0).toUpperCase();
+  const role = influencer.bio_role || (cats.length ? cats.slice(0, 2).map(labelFor).join(' & ') + ' Creator' : 'Creator');
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={{ paddingBottom: 32 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.ink} />}
-    >
-      {/* ── Creator hero (ink bg) ───────────────────────────────────── */}
-      <SafeAreaView edges={['top']} style={styles.hero}>
-        <View style={styles.heroInner}>
-          <View style={styles.avatar}>
-            {influencer.profile_pic_url
-              ? <Image source={{ uri: influencer.profile_pic_url }} style={styles.avatarImg} />
-              : <Text style={styles.avatarText}>{initial}</Text>}
+    <View style={s.root}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brown} />}
+      >
+        <SafeAreaView edges={['top']}>
+          {/* top bar */}
+          <View style={s.topbar}>
+            <TouchableOpacity style={s.ib} onPress={() => navigation.goBack()}><Text style={s.ibTxt}>←</Text></TouchableOpacity>
+            <TouchableOpacity style={s.ib}><Text style={s.ibTxt}>↗</Text></TouchableOpacity>
           </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.heroHandle} numberOfLines={1}>
-              @{influencer.instagram_handle || influencer.name}
-            </Text>
-            <Text style={styles.heroCounters} numberOfLines={1}>
-              {followerCount != null ? `${fmtCount(followerCount)} · ` : ''}
-              {offers.length} picks{influencer.is_verified !== false ? ' · ✓ VERIFIED' : ''}
-            </Text>
+
+          {/* profile hero */}
+          <View style={s.prof}>
+            <Gradient colors={['#FF6A5F', '#FFB24C']} direction="diagonal" style={s.ring}>
+              <View style={s.avatar}>
+                {influencer.profile_image_url || influencer.profile_pic_url
+                  ? <Image source={{ uri: influencer.profile_image_url || influencer.profile_pic_url }} style={s.avatarImg} />
+                  : <Text style={s.avatarTxt}>{initial}</Text>}
+              </View>
+            </Gradient>
+            <View style={{ flex: 1 }}>
+              <Text style={s.handle} numberOfLines={1}>@{influencer.instagram_handle || influencer.name} <Text style={s.tick}>✔</Text></Text>
+              <Text style={s.role} numberOfLines={1}>{role}</Text>
+              <View style={s.counters}>
+                <Counter n={fmtCount(influencer.followers_count)} label="followers" />
+                <Counter n={collabs.length} label="collabs" />
+                <Counter n={offers.length} label="picks" />
+              </View>
+            </View>
           </View>
-          <Pressable onPress={onFollow}
-            style={[styles.followBtn, isFollowing && styles.followBtnActive]}>
-            <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextActive]}>
-              {isFollowing ? 'Following' : '+ Follow'}
-            </Text>
-          </Pressable>
-        </View>
-        {influencer.bio ? (
-          <Text style={styles.heroBio}>"{influencer.bio}"</Text>
-        ) : null}
-      </SafeAreaView>
 
-      {/* ── Search (placeholder) ────────────────────────────────────── */}
-      <View style={styles.searchBar}>
-        <Text style={styles.searchGlyph}>🔍</Text>
-        <Text style={styles.searchPlaceholder}>Search any offer — biryani, salon, suit…</Text>
-      </View>
+          <View style={s.pbtns}>
+            <TouchableOpacity style={[s.btn, isFollowing && s.btnOut]} onPress={onFollow}>
+              <Text style={[s.btnTxt, isFollowing && s.btnOutTxt]}>{isFollowing ? 'Following' : '+ Follow'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnOut]}><Text style={[s.btnTxt, s.btnOutTxt]}>↗ Share</Text></TouchableOpacity>
+          </View>
+          {influencer.bio ? <Text style={s.bio}>"{influencer.bio}"</Text> : null}
+        </SafeAreaView>
 
-      {sectionsActive ? (
-        <SectionRenderer sections={sections} navigation={navigation} />
-      ) : (
-      <>
-      {/* ── Category grid ───────────────────────────────────────────── */}
-      <SectionH title="Browse by category" />
-      {categories.length === 0 ? (
-        <Text style={styles.emptyMuted}>
-          @{influencer.instagram_handle || influencer.name} hasn't published any picks yet.
-        </Text>
-      ) : (
-        <View style={styles.catGrid}>
-          {categories.map(c => (
-            <CategoryCard key={c.key} data={c} onPress={() => onCategoryPress(c)} />
-          ))}
-        </View>
-      )}
+        {/* My Store Collabs */}
+        {collabs.length > 0 && (
+          <View>
+            <ShelfHeader title="My Store Collabs" sub="brands they partner with" count={collabs.length} tag="brands" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.collabRow}>
+              {collabs.map(b => (
+                <TouchableOpacity key={b.id} style={s.collab} activeOpacity={0.85}
+                  onPress={() => navigation.navigate('BrandStore', { brandId: b.id, brandName: b.name })}>
+                  <View style={s.collabAv}><Text style={s.collabEmoji}>{emojiFor(b.category)}</Text></View>
+                  <Text style={s.collabNm} numberOfLines={1}>{b.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-      {/* ── Hot picks ───────────────────────────────────────────────── */}
-      {hotPicks.length > 0 && (
-        <>
-          <SectionH title="🔥 Hot picks" subtitle={`${hotPicks.length} of ${offers.length}`} />
-          {hotPicks.map(o => (
-            <HotPickRow key={o.offer_id} offer={o} onPress={() => onPickPress(o)} />
-          ))}
-        </>
-      )}
-      </>
-      )}
-    </ScrollView>
-  );
-}
+        {/* category tabs */}
+        {cats.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
+            {['all', ...cats].map(k => (
+              <TouchableOpacity key={k} style={[s.chip, tab === k && s.chipOn]} onPress={() => setTab(k)}>
+                <Text style={[s.chipTxt, tab === k && s.chipTxtOn]}>{k === 'all' ? 'All' : labelFor(k)}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
-// ── Sub-components ──────────────────────────────────────────────────────────
+        {/* What {creator} Promotes */}
+        {visibleOffers.length > 0 ? (
+          <View>
+            <ShelfHeader title={`What @${influencer.instagram_handle || 'they'} Promotes`} sub="their live picks" count={visibleOffers.length} tag="offers" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+              {visibleOffers.map((o, i) => dealCard(o, i))}
+            </ScrollView>
+          </View>
+        ) : (
+          <Text style={s.empty}>@{influencer.instagram_handle || influencer.name} hasn't published any picks yet.</Text>
+        )}
 
-function SectionH({ title, subtitle }) {
-  return (
-    <View style={styles.sectionH}>
-      <Text style={styles.sectionTitle}>
-        {title}
-        {subtitle && <Text style={styles.sectionSubtitle}>{`  · ${subtitle}`}</Text>}
-      </Text>
+        {/* Top Picks 🔥 */}
+        {topPicks.length > 1 && (
+          <View>
+            <ShelfHeader title={`Top Picks 🔥`} sub="their best deals" count={topPicks.length} tag="offers" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+              {topPicks.map((o, i) => dealCard(o, i, i + 1))}
+            </ScrollView>
+          </View>
+        )}
+
+        <View style={s.note}><Text style={s.noteTxt}>🎬 Reels — coming with the Reels feature</Text></View>
+      </ScrollView>
     </View>
   );
 }
 
-function CategoryCard({ data, onPress }) {
-  const accent = getBusinessAccentLight(data.key);
+function Counter({ n, label }) {
   return (
-    <Pressable onPress={onPress} style={styles.catCard}>
-      <Text style={styles.catIcon}>{accent.icon}</Text>
-      <Text style={styles.catName}>{labelForCategory(data.key)}</Text>
-      <Text style={styles.catMeta}>
-        {data.picks} pick{data.picks !== 1 ? 's' : ''}
-        {data.with_offers > 0 ? ` · ${data.with_offers} with offers` : ''}
-      </Text>
-      {data.max_discount > 0 && (
-        <View style={styles.catOfferRow}>
-          <OfferPill label={`UP TO ${data.max_discount}% OFF`} size="sm" />
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-function HotPickRow({ offer, onPress }) {
-  const accent = getBusinessAccentLight(offer.brand_category);
-  return (
-    <Pressable onPress={onPress} style={styles.pickRow}>
-      <View style={[styles.pickIcon, { backgroundColor: accent.pale }]}>
-        <Text style={styles.pickIconGlyph}>{accent.icon}</Text>
-      </View>
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text style={styles.pickTitle} numberOfLines={1}>
-          {offer.brand_name} · {offer.discount_value || 0}% OFF
-        </Text>
-        <Text style={styles.pickMeta} numberOfLines={1}>
-          {labelForCategory(offer.brand_category)}{offer.brand_city ? ` · ${offer.brand_city}` : ''}
-        </Text>
-      </View>
-      <Text style={styles.pickChevron}>→</Text>
-    </Pressable>
+    <View style={s.counter}>
+      <Text style={s.counterN}>{n}</Text>
+      <Text style={s.counterL}>{label}</Text>
+    </View>
   );
 }
 
 function fmtCount(n) {
   const v = Number(n) || 0;
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000)     return `${(v / 1_000).toFixed(1)}K`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
   return String(v);
 }
 
-// ── Styles ──────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: P.bg },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.screenBg },
   center: { alignItems: 'center', justifyContent: 'center' },
-
-  hero: { backgroundColor: C.brown, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 20 },
-  heroInner: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: {
-    width: 64, height: 64, borderRadius: 32,
-    backgroundColor: P.yellow,
-    alignItems: 'center', justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 2, borderColor: P.white,
-  },
+  topbar: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2 },
+  ib: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  ibTxt: { fontSize: 16, color: C.ink },
+  prof: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingTop: 10 },
+  ring: { padding: 3, borderRadius: 44 },
+  avatar: { width: 76, height: 76, borderRadius: 38, backgroundColor: '#ecdfc9', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 3, borderColor: C.screenBg },
   avatarImg: { width: '100%', height: '100%' },
-  avatarText: {
-    fontFamily: fonts.displayBlack, fontSize: 28, color: P.ink,
-  },
-  heroHandle: {
-    fontFamily: fonts.displayBlack, fontSize: 19,
-    color: P.white, letterSpacing: -0.3,
-  },
-  heroCounters: {
-    fontFamily: fonts.monoMedium, fontSize: 11,
-    color: P.yellowPale, marginTop: 2, letterSpacing: 0.3,
-  },
-  followBtn: {
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 999, backgroundColor: P.yellow,
-  },
-  followBtnActive: { backgroundColor: 'transparent', borderWidth: 1, borderColor: P.yellow },
-  followBtnText: {
-    fontFamily: fonts.sansBold, fontSize: 12, color: P.ink,
-  },
-  followBtnTextActive: { color: P.yellow },
-  heroBio: {
-    fontFamily: fonts.sansMedium, fontSize: 13, fontStyle: 'italic',
-    color: P.yellowPale, marginTop: 14, lineHeight: 18,
-  },
-
-  searchBar: {
-    marginHorizontal: 16, marginTop: 14,
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: P.white,
-    borderColor: P.muted4, borderWidth: 1,
-    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
-  },
-  searchGlyph: { fontSize: 14 },
-  searchPlaceholder: {
-    fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted2,
-  },
-
-  sectionH: {
-    paddingHorizontal: 16, marginTop: 22, marginBottom: 10,
-  },
-  sectionTitle: {
-    fontFamily: fonts.displayBold, fontSize: 17,
-    color: P.ink, letterSpacing: -0.3,
-  },
-  sectionSubtitle: {
-    fontFamily: fonts.monoMedium, fontSize: 11, color: P.muted2,
-  },
-  emptyMuted: {
-    paddingHorizontal: 16, fontFamily: fonts.sansMedium,
-    fontSize: 12, color: P.muted,
-  },
-
-  catGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 8,
-    paddingHorizontal: 16,
-  },
-  catCard: {
-    flexBasis: '48.5%',
-    backgroundColor: P.white,
-    borderColor: P.border, borderWidth: 1,
-    borderRadius: 12, padding: 14, minHeight: 110,
-  },
-  catIcon: { fontSize: 26 },
-  catName: {
-    fontFamily: fonts.displayBold, fontSize: 14,
-    color: P.ink, marginTop: 8, letterSpacing: -0.1,
-  },
-  catMeta: {
-    fontFamily: fonts.sansMedium, fontSize: 11,
-    color: P.muted, marginTop: 2,
-  },
-  catOfferRow: { marginTop: 6 },
-
-  pickRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 12,
-    marginHorizontal: 16, marginBottom: 8,
-    backgroundColor: P.white,
-    borderColor: P.border, borderWidth: 1,
-    borderRadius: 10,
-  },
-  pickIcon: {
-    width: 44, height: 44, borderRadius: 8,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  pickIconGlyph: { fontSize: 22 },
-  pickTitle: {
-    fontFamily: fonts.sansBold, fontSize: 13, color: P.ink,
-  },
-  pickMeta: {
-    fontFamily: fonts.monoMedium, fontSize: 10,
-    color: P.muted, marginTop: 2,
-  },
-  pickChevron: {
-    fontFamily: fonts.displayBold, fontSize: 18, color: P.yellowHover,
-  },
+  avatarTxt: { fontFamily: fonts.displayBold, fontSize: 30, color: C.brown },
+  handle: { fontSize: 18, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
+  tick: { color: C.verify, fontSize: 13 },
+  role: { fontSize: 11, color: C.muted, fontWeight: '600', marginTop: 2, fontFamily: fonts.sansMedium },
+  counters: { flexDirection: 'row', gap: 16, marginTop: 8 },
+  counter: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  counterN: { fontSize: 14, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
+  counterL: { fontSize: 10, color: C.muted, fontWeight: '600', fontFamily: fonts.sansMedium },
+  pbtns: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingTop: 14 },
+  btn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 30, backgroundColor: C.brown },
+  btnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.brown },
+  btnTxt: { fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: fonts.sansBold },
+  btnOutTxt: { color: C.brown },
+  bio: { fontStyle: 'italic', fontSize: 12.5, color: '#5e4a37', fontWeight: '500', paddingHorizontal: 18, paddingTop: 12, lineHeight: 18, fontFamily: fonts.sansMedium },
+  collabRow: { paddingHorizontal: 16, paddingBottom: 4, gap: 14 },
+  collab: { width: 72, alignItems: 'center', gap: 6 },
+  collabAv: { width: 58, height: 58, borderRadius: 18, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  collabEmoji: { fontSize: 25 },
+  collabNm: { fontSize: 10, fontWeight: '700', color: C.ink, textAlign: 'center', fontFamily: fonts.sansSemiBold },
+  tabRow: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 8 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
+  chipOn: { backgroundColor: C.brown, borderColor: C.brown },
+  chipTxt: { fontSize: 11.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
+  chipTxtOn: { color: '#fff' },
+  rail: { paddingHorizontal: 16, paddingBottom: 6, gap: 12 },
+  empty: { paddingHorizontal: 18, paddingTop: 14, fontSize: 12, color: C.muted, fontFamily: fonts.sansMedium },
+  note: { marginHorizontal: 16, marginTop: 14, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 11 },
+  noteTxt: { fontSize: 11, fontWeight: '600', color: '#5e5345', fontFamily: fonts.sansMedium },
 });
