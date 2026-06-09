@@ -130,19 +130,23 @@ function channelOfAllocation(allocation) {
 // row carries ci.* (offer_type, offer_config_json, allocation, commission_pct,
 // brand_offer_id, offer_expires_at, influencer_id, id) + brand + creator + bo_name.
 function normalizeAssignment(row) {
-  const rawType = row.offer_type || null;
+  // offer_type on campaign_influencers is stored free-form and case varies in real
+  // data (e.g. 'Discount' as well as 'volume') — normalize case for classification.
+  const typeKey = row.offer_type ? String(row.offer_type).toLowerCase() : null;
   const cfg = row.offer_config_json && typeof row.offer_config_json === 'object' ? row.offer_config_json : {};
-  const isLibraryVocab = rawType ? LIBRARY_TYPES.has(rawType) && !LEGACY_TYPES.has(rawType) : false;
+  const isLibraryVocab = typeKey ? LIBRARY_TYPES.has(typeKey) : false;
+  const isLegacyVocab = typeKey ? LEGACY_TYPES.has(typeKey) : false;
 
-  // bogo/bundle/volume exist in BOTH vocabularies; for those the config shape decides.
-  // discount/free_gift are library-only; flat/percentage/prebook are legacy-only.
-  const useLibrary = rawType === 'discount' || rawType === 'free_gift'
+  // discount/free_gift are library-only; flat/percentage/prebook are legacy-only;
+  // bogo/bundle/volume exist in BOTH — for those the config shape decides.
+  const useLibrary = typeKey === 'discount' || typeKey === 'free_gift'
+    || (isLibraryVocab && !isLegacyVocab)
     || (isLibraryVocab && (cfg.sub_type != null || Array.isArray(cfg.tiers) || cfg.buy_product != null || cfg.offers != null));
 
-  const displayType = useLibrary ? mapBrandOfferType(rawType, cfg) : rawType;
+  const displayType = useLibrary ? mapBrandOfferType(typeKey, cfg) : typeKey;
   const discount = useLibrary
-    ? extractDiscount(rawType, cfg)
-    : extractLegacyDiscount(rawType, cfg, row.discount_value);
+    ? extractDiscount(typeKey, cfg)
+    : extractLegacyDiscount(typeKey, cfg, row.discount_value);
 
   const channel = channelOfAllocation(row.allocation);
   const tracked = channel === 'conversion' && !!row.handle;

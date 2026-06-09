@@ -117,6 +117,17 @@ describe('normalizeAssignment — the primary source (creator snapshot)', () => 
     expect(n.channel).toBe('conversion');
   });
 
+  test('case-insensitive offer_type — real prod data stores "Discount" (capital), value 0', () => {
+    const n = adapter.normalizeAssignment({
+      ...base, offer_type: 'Discount', offer_config_json: { value: 0, scope: 'products' },
+      brand_offer_id: null, bo_name: null, discount_value: '0',
+    });
+    expect(n.offer_type).toBe('percentage');        // 'Discount' → percentage
+    expect(n.discount).toEqual({ kind: 'pct', value: 0, label: '0% off' });
+    expect(n.channel).toBe('conversion');
+    expect(n.tracking).not.toBeNull();
+  });
+
   test('reads the SNAPSHOT config, not a later library edit (drift-safe)', () => {
     // offer_config_json here IS the snapshot; the adapter never re-reads bo config for
     // assignments → a library edit can't change this live attachment's number.

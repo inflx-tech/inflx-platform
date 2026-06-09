@@ -105,12 +105,18 @@ module.exports = {
   RETURN_WINDOW_DAYS: parseInt(process.env.RETURN_WINDOW_DAYS || '30', 10),
   OFFER_EXPIRY_HOURS: parseInt(process.env.OFFER_EXPIRY_HOURS || '48', 10),
 
-  // Section-engine offer source (D0 Workstream B / OR). When OFF (default) the
-  // follower offer shelves read ONLY legacy campaign_offers — today's behaviour.
-  // When ON, brandOffers.adapter unions the Offer Engine's brand_offers (3 channels)
-  // so the offer shelves surface real offers. Flipped by the OR contract after
-  // prod brand_offers data is confirmed. Default OFF = deploy-inert.
-  SECTION_ENGINE_OFFERS: process.env.SECTION_ENGINE_OFFERS === 'true',
+  // Section-engine offer source (D0 Workstream B / OR cutover). When ON, the follower
+  // offer shelves read brandOffers.adapter (offers from creator assignments +
+  // engagement showcase + store-direct) instead of the legacy (empty) campaign_offers.
+  // Default: ON in production (prod data validated 2026-06-09), OFF in test (so the
+  // existing section-engine suite keeps testing the legacy path), OFF in local dev.
+  // An explicit env value always wins → kill-switch = set SECTION_ENGINE_OFFERS=false.
+  SECTION_ENGINE_OFFERS: (() => {
+    if (process.env.SECTION_ENGINE_OFFERS != null) return process.env.SECTION_ENGINE_OFFERS === 'true';
+    if (process.env.NODE_ENV === 'test') return false;
+    return process.env.NODE_ENV === 'production'
+      || (process.env.DATABASE_URL || '').includes('supabase.com');
+  })(),
 
   ENABLE_CRONS: process.env.ENABLE_CRONS !== 'false',
   CRON_TIMEZONE: process.env.CRON_TIMEZONE || 'Asia/Kolkata',
