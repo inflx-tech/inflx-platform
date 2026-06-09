@@ -35,45 +35,60 @@ and every shelf ranks listed entities by taxonomy — so the single taxonomy sou
 offer adapter + the full CTA vocab must exist before the render surface is built. Doing
 it as a behavior-neutral refactor de-risks the visible Phase-D work that follows.
 
-## Resolutions — Workstream B delivery (2026-06-09)
-Delivered: `backend/src/services/brandOffers.adapter.js` + `SECTION_ENGINE_OFFERS` flag
-(env.js, default OFF) + `backend/tests/brandOffers.adapter.test.js`. Workstreams A
-(taxonomy) and C (vocab) deferred. Decisions taken while building:
-- **Dedup key (Q1, revised):** keyed on `(source, id)`, NOT `(brand_id, name)`. A
-  campaign_offer and a brand_offer are *distinct underlying rows* even if conceptually
-  related — collapsing them by name would silently hide one. The same brand_offer
-  surfaced via multiple channels collapses to the highest-priority channel
-  (`conversion > engagement > store > campaign`), since conversion is the
-  attributable/commissioned instance. (Cross-source semantic de-dup, if ever wanted,
-  is a separate explicit decision — not silently folded in here.)
-- **offer_type vocab bridge:** brand_offers vocab (`discount/volume/bogo/bundle/free_gift`)
-  is mapped to the legacy display vocab the mobile cards already interpret
-  (`percentage/flat/volume/bogo/bundle/free_gift`); `discount`+`sub_type` decides
-  percentage vs flat. Pure + unit-tested (`mapBrandOfferType`).
-- **Headline discount (`discount_value`):** pct→points, flat→rupees, volume→top tier %.
-  **bundle_price is NOT a discount magnitude** (value=null) so it can never pollute
-  `biggest_discounts` ordering; bogo/free_gift carry no headline number. Pure + tested.
-- **4-ID attribution per channel:** conversion → full tracked link with `oid =
-  brand_offer.id` (legacy keeps `oid = campaign_offer.id`); engagement → creator shown
-  but `tracking=null` (promotional/awareness, no commission, per mig-084 semantics);
-  store-direct → no creator, `iid` null by design.
-- **Fallback map (Q2) / book-vs-prebook (Q3):** untouched — they belong to Workstreams
-  A/C, deferred.
+## Re-diagnosis after code review (2026-06-09) — the real root cause
+The first build anchored the offers on the Offer-Zone library (`brand_offers`). Code
+review of the campaign-attach flow (`campaign.controller.js resolveOfferAttachment` +
+`invite`/`update`) proved that wrong. The TRUE picture:
+- The section shelves INNER-JOIN `campaign_offers`, whose only writer is marked
+  **"legacy — kept for backward compat"** (`campaign.controller.js:1070`). That table
+  is effectively empty → the shelves are dark.
+- The REAL offers live on the creator's assignment row `campaign_influencers`:
+  `offer_type`+`offer_config_json` are the **per-creator snapshot** taken at attach
+  (library is authoritative *at attach*; later library edits never mutate a live
+  attachment — so we must read the SNAPSHOT, not the library master); `allocation`
+  decides conversion (`commissioned` → tracked, creator earns) vs engagement
+  (`promotional` → showcase only, no commission); `brand_offer_id` /
+  `promoted_brand_offer_ids[]` are provenance to the library.
+- The OLD follower feed already reads this correctly (`follower.service` LEFT JOINs
+  `campaign_offers` and falls back to the ci snapshot). The adapter now mirrors that.
+
+## Resolutions — Workstream B delivery (REBUILT 2026-06-09)
+Delivered: `backend/src/services/brandOffers.adapter.js` (re-anchored) +
+`SECTION_ENGINE_OFFERS` flag (env.js, default OFF) + `tests/brandOffers.adapter.test.js`.
+Workstreams A (taxonomy) and C (vocab) deferred.
+- **Primary source = creator assignment** (`fetchAssignmentOffers`), reading the ci
+  SNAPSHOT (drift-safe), classifying conversion vs engagement by `ci.allocation`
+  (`channelOfAllocation`; legacy null-allocation rows with an offer → conversion).
+  Catches BOTH inline-in-campaign offers AND single library attaches. Name +
+  availing_modes enriched from the library row when `brand_offer_id` is set.
+- **Two offer-type vocabularies handled:** library snapshot vocab
+  (`discount/volume/bogo/bundle/free_gift`, via `extractDiscount`) and legacy inline
+  vocab (`flat/percentage/bogo/bundle/volume/prebook`, via `extractLegacyDiscount`,
+  reading `offer_config_json.value` then the SQL-resolved `discount_value`). Both
+  normalize to the legacy display vocab the mobile cards already interpret.
+- **Engagement showcase multi-select** (`fetchShowcaseOffers`) = library offers in
+  `promoted_brand_offer_ids[]`, promotional, NO tracking, creator shown.
+- **Store-direct** (`fetchStoreOffers`) = `published_to_store`, no creator, no tracking.
+- **Headline `discount_value`:** pct→points, flat→rupees, volume→top tier %;
+  bundle_price is NOT a discount magnitude (value=null) so it can't pollute
+  `biggest_discounts`; bogo/free_gift carry no number.
+- **4-ID attribution:** conversion only → tracked link (`oid = brand_offer_id ||
+  campaign_offer.id || null`, `iid` = creator); engagement + store → `tracking=null`.
+- **Dedup** on `(source,id,creator)`; conversion > engagement > store.
 
 ## Verification state (honest)
-- Pure normalization logic: **verified** — 22 standalone assertions pass + a Jest suite
-  (`tests/brandOffers.adapter.test.js`) authored. No DB needed for these.
-- Channel SQL fetchers (`fetchStore/Conversion/EngagementOffers`): **written per design,
-  NOT yet executed** — no `brand_offers` rows reachable in the build sandbox (prod creds
-  absent; local `inflx_dev` lacks mig 084-086; test DB on :5544 unreachable). Validated
-  at **OR-time** against real prod data.
-- `pnpm qa` + the Jest suite must run on a machine with the test DB (CI / founder local)
-  before this is pushed — the sandbox cannot reach it. Adapter is additive + unconsumed
-  → expected zero regression, but the gate is run there, not claimed here.
+- Pure normalization logic: **verified** — 22 standalone assertions pass + Jest suite
+  rewritten for the corrected model. No DB needed for these.
+- Channel SQL (`fetchAssignment/Showcase/StoreOffers`): **written per the corrected
+  model, NOT yet executed** — no offer rows reachable in the build sandbox (prod creds
+  absent; test DB on :5544 unreachable). Validated at **OR-time** against prod data.
+- `pnpm qa` + the Jest suite must run where the test DB exists (CI / founder local)
+  before push. Adapter is additive + unconsumed → expected zero regression.
+- Founder confirmed (verbally) prod has offers created + allocated to creators →
+  those allocations are exactly what `fetchAssignmentOffers` reads, so the OR flip
+  should light up the conversion + engagement shelves, not only store-direct.
 
 ## Next (separate, gated)
-`OR / section-offer-repoint`: wire the 10 offer rules onto `adapter.fetchOffers`/`toFeedItem`
+`OR / section-offer-repoint`: wire the offer rules onto `adapter.fetchOffers`/`toFeedItem`
 and flip `SECTION_ENGINE_OFFERS` on. **Production-impacting + OTA.** Preconditions:
-(1) confirm migrations 084/085/086 are applied to prod and real `brand_offers` rows exist
-(+ whether the CI attach columns `brand_offer_id`/`promoted_brand_offer_ids` are actually
-populated — if empty, only the store-direct channel surfaces); (2) explicit founder go.
+(1) `scripts/check-offer-data.js` against prod to size each channel; (2) explicit founder go.

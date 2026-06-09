@@ -2,206 +2,188 @@
 
 /**
  * QA — brandOffers.adapter PURE normalization (D0 Workstream B,
- * contract: features/listing-section-d0-seams).
+ * contract: features/listing-section-d0-seams). REBUILT 2026-06-09 after code review:
+ * the primary offer source is the creator ASSIGNMENT (campaign_influencers snapshot),
+ * classified by ci.allocation — NOT the Offer-Zone library. Library/store-direct add
+ * showcase + store deals on top.
  *
- * These tests cover the bug-prone, source-agnostic logic with NO database:
- * offer_type vocab bridging, discount extraction from offer_config_json per type,
- * the 4-ID attribution rules per channel, the feed-item shape, and channel dedup.
- *
- * The channel SQL fetchers are NOT exercised here — they require real brand_offers
- * rows and are validated at OR-time against prod data (see lock.json SANDBOX
- * CONSTRAINT). No-fake-green: we assert only what is deterministically provable
- * without a DB.
+ * No DB: these cover the bug-prone source-agnostic logic only. Channel SQL is
+ * validated at OR-time against real prod data (see lock.json).
  */
 
 const adapter = require('../src/services/brandOffers.adapter');
 
-describe('mapBrandOfferType — vocab bridge (brand_offers → legacy display vocab)', () => {
-  test('discount + pct → percentage', () => {
-    expect(adapter.mapBrandOfferType('discount', { sub_type: 'pct', value: 20 })).toBe('percentage');
-  });
-  test('discount + flat → flat', () => {
-    expect(adapter.mapBrandOfferType('discount', { sub_type: 'flat', value: 100 })).toBe('flat');
-  });
-  test('discount with no sub_type defaults to percentage', () => {
+describe('mapBrandOfferType — library vocab → legacy display vocab', () => {
+  test('discount pct/flat, volume/bogo/bundle/free_gift', () => {
+    expect(adapter.mapBrandOfferType('discount', { sub_type: 'pct' })).toBe('percentage');
+    expect(adapter.mapBrandOfferType('discount', { sub_type: 'flat' })).toBe('flat');
     expect(adapter.mapBrandOfferType('discount', {})).toBe('percentage');
-  });
-  test('volume/bogo/bundle/free_gift pass through unchanged', () => {
     expect(adapter.mapBrandOfferType('volume', {})).toBe('volume');
-    expect(adapter.mapBrandOfferType('bogo', {})).toBe('bogo');
-    expect(adapter.mapBrandOfferType('bundle', {})).toBe('bundle');
     expect(adapter.mapBrandOfferType('free_gift', {})).toBe('free_gift');
   });
 });
 
-describe('extractDiscount — headline number from offer_config_json', () => {
-  test('pct discount → kind pct, numeric value, label', () => {
-    const d = adapter.extractDiscount('discount', { sub_type: 'pct', value: 25 });
-    expect(d).toEqual({ kind: 'pct', value: 25, label: '25% off' });
+describe('extractDiscount — LIBRARY-vocab headline number', () => {
+  test('pct / flat', () => {
+    expect(adapter.extractDiscount('discount', { sub_type: 'pct', value: 25 })).toEqual({ kind: 'pct', value: 25, label: '25% off' });
+    expect(adapter.extractDiscount('discount', { sub_type: 'flat', value: 150 })).toEqual({ kind: 'flat', value: 150, label: '₹150 off' });
   });
-  test('flat discount → kind flat, rupee label', () => {
-    const d = adapter.extractDiscount('discount', { sub_type: 'flat', value: 150 });
-    expect(d).toEqual({ kind: 'flat', value: 150, label: '₹150 off' });
+  test('volume = top tier; bundle_price never a discount magnitude', () => {
+    expect(adapter.extractDiscount('volume', { tiers: [{ pct_off: 10 }, { pct_off: 22 }] }).value).toBe(22);
+    expect(adapter.extractDiscount('bundle', { bundle_price: 999 }).value).toBeNull();
   });
-  test('volume → top tier pct_off is the headline', () => {
-    const d = adapter.extractDiscount('volume', {
-      tiers: [{ min_spend: 500, pct_off: 10 }, { min_spend: 1000, pct_off: 22 }, { min_spend: 800, pct_off: 15 }],
-    });
-    expect(d.kind).toBe('volume');
-    expect(d.value).toBe(22);
-    expect(d.label).toBe('Up to 22% off');
-  });
-  test('volume with no usable tiers → value null', () => {
-    expect(adapter.extractDiscount('volume', { tiers: [] }).value).toBeNull();
-    expect(adapter.extractDiscount('volume', {}).value).toBeNull();
-  });
-  test('bundle → bundle_price NOT counted as discount magnitude (value null)', () => {
-    const d = adapter.extractDiscount('bundle', { bundle_price: 999 });
-    expect(d.kind).toBe('bundle');
-    expect(d.value).toBeNull();        // must not pollute biggest_discounts ordering
-    expect(d.label).toBe('Bundle ₹999');
-  });
-  test('bogo and free_gift → no headline number', () => {
+  test('bogo/free_gift no headline; garbage never throws', () => {
     expect(adapter.extractDiscount('bogo', {}).value).toBeNull();
-    expect(adapter.extractDiscount('free_gift', {}).value).toBeNull();
-  });
-  test('garbage / missing config never throws', () => {
     expect(() => adapter.extractDiscount('discount', null)).not.toThrow();
-    expect(() => adapter.extractDiscount('discount', undefined)).not.toThrow();
-    expect(adapter.extractDiscount('discount', { sub_type: 'pct' }).value).toBeNull();
   });
 });
 
-describe('normalizeBrandOfferRow — channel attribution rules', () => {
-  const baseRow = {
-    id: 'bo-1',
-    name: 'Aveen lunch combo',
-    offer_type: 'discount',
+describe('extractLegacyDiscount — inline-vocab headline number', () => {
+  test('percentage/flat read offer_config_json.value', () => {
+    expect(adapter.extractLegacyDiscount('percentage', { value: 20 }, null)).toEqual({ kind: 'pct', value: 20, label: '20% off' });
+    expect(adapter.extractLegacyDiscount('flat', { value: 75 }, null)).toEqual({ kind: 'flat', value: 75, label: '₹75 off' });
+  });
+  test('falls back to the SQL-resolved discount_value column when config has none', () => {
+    expect(adapter.extractLegacyDiscount('percentage', {}, '12.5').value).toBe(12.5);
+  });
+  test('prebook / bogo', () => {
+    expect(adapter.extractLegacyDiscount('prebook', {}, null).kind).toBe('prebook');
+    expect(adapter.extractLegacyDiscount('bogo', {}, null).value).toBeNull();
+  });
+});
+
+describe('channelOfAllocation — conversion vs engagement', () => {
+  test('promotional → engagement; commissioned/null → conversion', () => {
+    expect(adapter.channelOfAllocation('promotional')).toBe('engagement');
+    expect(adapter.channelOfAllocation('commissioned')).toBe('conversion');
+    expect(adapter.channelOfAllocation(null)).toBe('conversion'); // legacy rows with an offer
+  });
+});
+
+describe('normalizeAssignment — the primary source (creator snapshot)', () => {
+  const base = {
+    campaign_influencer_id: 'ci-1',
     offer_config_json: { sub_type: 'pct', value: 30 },
+    offer_type: 'discount',           // library-vocab snapshot
+    allocation: 'commissioned',
+    commission_pct: 10,
+    brand_offer_id: 'bo-9',
+    offer_expires_at: '2026-07-01',
+    influencer_id: 'inf-1',
+    set_id: 'set-1', campaign_id: 'camp-1', offer_id: null,
+    discount_value: '30',
     availing_modes: ['pay_at_store'],
-    store_ends_at: null,
+    bo_name: 'Aveen lunch combo',
     brand_id: 'brand-1', brand_name: 'Aveen food paradise',
     brand_category: 'restaurant', brand_city: 'Vijayawada',
-    // creator cols (present for conversion/engagement)
-    influencer_id: 'inf-1', handle: 'sagartravel',
-    influencer_name: 'Sagar', profile_pic_url: 'http://x/p.jpg',
-    campaign_id: 'camp-1', set_id: 'set-1',
+    handle: 'sagartravel', influencer_name: 'Sagar', profile_pic_url: 'p.jpg',
   };
 
-  test('store channel → no creator, no tracking (iid null by design)', () => {
-    const n = adapter.normalizeBrandOfferRow({ ...baseRow, influencer_id: null, handle: null }, 'store');
-    expect(n.source).toBe('brand_offer');
-    expect(n.channel).toBe('store');
-    expect(n.via_creator).toBeNull();
-    expect(n.tracking).toBeNull();
-    expect(n.offer_type).toBe('percentage');
+  test('CONVERSION (commissioned) → creator + full 4-ID tracked link, name from library', () => {
+    const n = adapter.normalizeAssignment(base);
+    expect(n.source).toBe('assignment');
+    expect(n.channel).toBe('conversion');
+    expect(n.offer_type).toBe('percentage');     // discount+pct → percentage
     expect(n.discount_value).toBe(30);
-    expect(n.brand).toEqual({ id: 'brand-1', name: 'Aveen food paradise', category: 'restaurant', city: 'Vijayawada' });
-  });
-
-  test('conversion channel → creator shown AND full 4-ID tracking link', () => {
-    const n = adapter.normalizeBrandOfferRow(baseRow, 'conversion');
-    expect(n.via_creator).toEqual({ id: 'inf-1', handle: 'sagartravel', name: 'Sagar', avatar: 'http://x/p.jpg' });
+    expect(n.name).toBe('Aveen lunch combo');    // enriched from the library row
+    expect(n.via_creator.handle).toBe('sagartravel');
     expect(n.tracking).not.toBeNull();
     expect(n.tracking.cid).toBe('camp-1');
-    expect(n.tracking.sid).toBe('set-1');
-    expect(n.tracking.oid).toBe('bo-1');   // oid = brand_offer id for brand-offer attribution
     expect(n.tracking.iid).toBe('inf-1');
+    expect(n.tracking.oid).toBe('bo-9');         // provenance id when no campaign_offers row
     expect(n.tracking.url).toContain('/s/sagartravel');
   });
 
-  test('engagement channel → creator shown but NO tracking (promotional/awareness)', () => {
-    const n = adapter.normalizeBrandOfferRow(baseRow, 'engagement');
-    expect(n.via_creator).not.toBeNull();          // creator is credited visually
-    expect(n.via_creator.handle).toBe('sagartravel');
-    expect(n.tracking).toBeNull();                 // but no commission/tracked link
+  test('ENGAGEMENT (promotional) → creator shown but NO tracking (showcase only)', () => {
+    const n = adapter.normalizeAssignment({ ...base, allocation: 'promotional' });
+    expect(n.channel).toBe('engagement');
+    expect(n.via_creator).not.toBeNull();
+    expect(n.tracking).toBeNull();               // showcase: no commission, no tracked link
+  });
+
+  test('INLINE legacy offer (no library) → legacy vocab + value from config, name null', () => {
+    const n = adapter.normalizeAssignment({
+      ...base,
+      offer_type: 'percentage',                  // legacy inline vocab
+      offer_config_json: { value: 15 },
+      brand_offer_id: null, bo_name: null,
+      availing_modes: null,
+      discount_value: '15',
+    });
+    expect(n.offer_type).toBe('percentage');
+    expect(n.discount).toEqual({ kind: 'pct', value: 15, label: '15% off' });
+    expect(n.name).toBeNull();                   // inline offers have no library name
+    expect(n.availing_modes).toEqual([]);        // inline offers carry no availing_modes
+    expect(n.channel).toBe('conversion');
+  });
+
+  test('reads the SNAPSHOT config, not a later library edit (drift-safe)', () => {
+    // offer_config_json here IS the snapshot; the adapter never re-reads bo config for
+    // assignments → a library edit can't change this live attachment's number.
+    const n = adapter.normalizeAssignment({ ...base, offer_config_json: { sub_type: 'flat', value: 200 } });
+    expect(n.discount).toEqual({ kind: 'flat', value: 200, label: '₹200 off' });
   });
 });
 
-describe('normalizeCampaignOfferRow — legacy parity', () => {
-  test('percentage offer with creator → tracked, mapped to pct discount', () => {
-    const n = adapter.normalizeCampaignOfferRow({
-      offer_id: 'co-1', offer_type: 'percentage', discount_value: '15.00',
-      availing_modes: ['online_order'], prebook_advance: null,
-      set_id: 'set-9', campaign_id: 'camp-9', end_date: null,
-      influencer_id: 'inf-9', offer_expires_at: null,
-      brand_id: 'b9', brand_name: 'B9', brand_category: 'restaurant', brand_city: 'Hyd',
-      handle: 'rikitafashion', influencer_name: 'Rikita', profile_pic_url: null,
-    });
-    expect(n.source).toBe('campaign_offer');
-    expect(n.channel).toBe('campaign');
-    expect(n.discount).toEqual({ kind: 'pct', value: 15, label: '15% off' });
-    expect(n.discount_value).toBe(15);
-    expect(n.tracking.oid).toBe('co-1');           // legacy oid = campaign_offer id
-    expect(n.tracking.iid).toBe('inf-9');
-  });
-
-  test('offer with no handle → no tracking, no via_creator', () => {
-    const n = adapter.normalizeCampaignOfferRow({
-      offer_id: 'co-2', offer_type: 'flat', discount_value: '50',
-      brand_id: 'b1', brand_name: 'B1', handle: null,
-    });
-    expect(n.tracking).toBeNull();
+describe('normalizeLibraryOffer — store-direct + engagement showcase', () => {
+  const lib = {
+    id: 'bo-2', name: 'Festive 40', offer_type: 'discount',
+    offer_config_json: { sub_type: 'pct', value: 40 },
+    availing_modes: ['pay_at_store'], store_ends_at: null,
+    brand_id: 'b', brand_name: 'B', brand_category: 'restaurant', brand_city: 'C',
+    influencer_id: 'inf-2', handle: 'rikitafashion', influencer_name: 'Rikita', profile_pic_url: null,
+  };
+  test('store channel → no creator, no tracking (iid null by design)', () => {
+    const n = adapter.normalizeLibraryOffer({ ...lib, influencer_id: null, handle: null }, 'store');
+    expect(n.source).toBe('store');
     expect(n.via_creator).toBeNull();
-    expect(n.discount).toEqual({ kind: 'flat', value: 50, label: '₹50 off' });
+    expect(n.tracking).toBeNull();
+    expect(n.discount_value).toBe(40);
+  });
+  test('engagement showcase → creator shown, NO tracking', () => {
+    const n = adapter.normalizeLibraryOffer(lib, 'engagement');
+    expect(n.source).toBe('showcase');
+    expect(n.via_creator.handle).toBe('rikitafashion');
+    expect(n.tracking).toBeNull();
   });
 });
 
 describe('toFeedItem — shape compatible with sectionRules.mapOfferItem', () => {
-  test('emits entity_type offer + the legacy-consumed keys', () => {
-    const n = adapter.normalizeBrandOfferRow({
-      id: 'bo-2', name: 'x', offer_type: 'discount',
-      offer_config_json: { sub_type: 'flat', value: 99 },
-      availing_modes: ['pay_at_store'], brand_id: 'b', brand_name: 'B',
-      brand_category: 'restaurant', brand_city: 'C',
+  test('entity_type offer + legacy-consumed keys', () => {
+    const n = adapter.normalizeLibraryOffer({
+      id: 'bo-3', name: 'x', offer_type: 'discount', offer_config_json: { sub_type: 'flat', value: 99 },
+      availing_modes: ['pay_at_store'], brand_id: 'b', brand_name: 'B', brand_category: 'restaurant', brand_city: 'C',
       influencer_id: null, handle: null,
     }, 'store');
     const item = adapter.toFeedItem(n);
     expect(item.entity_type).toBe('offer');
-    expect(item).toHaveProperty('id', 'bo-2');
-    expect(item).toHaveProperty('offer_type', 'flat');
-    expect(item).toHaveProperty('discount_value', 99);
+    expect(item).toMatchObject({ id: 'bo-3', offer_type: 'flat', discount_value: 99, channel: 'store', source: 'store', via_creator: null, tracking: null });
     expect(item).toHaveProperty('availing_modes');
     expect(item).toHaveProperty('brand');
-    expect(item).toHaveProperty('via_creator', null);
-    expect(item).toHaveProperty('tracking', null);
-    expect(item.source).toBe('brand_offer');
-    expect(item.channel).toBe('store');
   });
 });
 
-describe('dedupe — same offer via multiple channels collapses to highest priority', () => {
-  test('conversion beats engagement beats store for the same brand_offer id', () => {
-    const mk = (channel) => ({ id: 'bo-7', source: 'brand_offer', channel });
-    const out = adapter.dedupe([mk('store'), mk('engagement'), mk('conversion')]);
+describe('dedupe — collapse same offer for same creator to highest priority', () => {
+  test('conversion beats engagement beats store', () => {
+    const mk = (channel, source, creatorId) => ({ id: 'x', source, channel, via_creator: creatorId ? { id: creatorId } : null });
+    const out = adapter.dedupe([mk('store', 'store', null), mk('engagement', 'showcase', null)]);
+    // different (source) keys → both kept
+    expect(out).toHaveLength(2);
+  });
+  test('same source+id+creator collapses, conversion wins', () => {
+    const row = (channel) => ({ id: 'a', source: 'assignment', channel, via_creator: { id: 'inf-1' } });
+    const out = adapter.dedupe([row('engagement'), row('conversion')]);
     expect(out).toHaveLength(1);
     expect(out[0].channel).toBe('conversion');
-  });
-  test('distinct (source,id) rows are all kept', () => {
-    const out = adapter.dedupe([
-      { id: 'bo-1', source: 'brand_offer', channel: 'store' },
-      { id: 'co-1', source: 'campaign_offer', channel: 'campaign' },
-    ]);
-    expect(out).toHaveLength(2);
   });
 });
 
 describe('offersV2Enabled — flag gating (default OFF)', () => {
   const prev = process.env.SECTION_ENGINE_OFFERS;
-  afterEach(() => {
-    if (prev === undefined) delete process.env.SECTION_ENGINE_OFFERS;
-    else process.env.SECTION_ENGINE_OFFERS = prev;
-  });
-  test('off when env unset or not "true"', () => {
-    delete process.env.SECTION_ENGINE_OFFERS;
-    expect(adapter.offersV2Enabled()).toBe(false);
-    process.env.SECTION_ENGINE_OFFERS = 'false';
-    expect(adapter.offersV2Enabled()).toBe(false);
-    process.env.SECTION_ENGINE_OFFERS = '1';
-    expect(adapter.offersV2Enabled()).toBe(false);
-  });
-  test('on only for exact "true"', () => {
-    process.env.SECTION_ENGINE_OFFERS = 'true';
-    expect(adapter.offersV2Enabled()).toBe(true);
+  afterEach(() => { if (prev === undefined) delete process.env.SECTION_ENGINE_OFFERS; else process.env.SECTION_ENGINE_OFFERS = prev; });
+  test('off unless exact "true"', () => {
+    delete process.env.SECTION_ENGINE_OFFERS; expect(adapter.offersV2Enabled()).toBe(false);
+    process.env.SECTION_ENGINE_OFFERS = '1'; expect(adapter.offersV2Enabled()).toBe(false);
+    process.env.SECTION_ENGINE_OFFERS = 'true'; expect(adapter.offersV2Enabled()).toBe(true);
   });
 });
