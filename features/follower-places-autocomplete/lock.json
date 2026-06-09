@@ -27,6 +27,6 @@
     "maestro_note": "Maestro founder-side; founder device-smoke after enabling Places API (type area → suggestions → pick). Metro bundle clean.",
     "governance_override": "released=true touches Mobile/src → GOVERNANCE_OVERRIDE (gov-check Rule 5). Maestro founder-side; founder Phase-A decision + Ship-now 2026-06-08; smart-fallback = web qa GREEN (flake re-run confirmed).",
     "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-09T00-54-22-497Z/QA-REPORT.md). First run = recurring 6-auth-test 60s flake; re-run GREEN. node --check + babel 5/5 PASS.",
-    "deploy": { "render_backend": { "trigger": "git push origin main", "note": "Places proxy endpoints" }, "ota_follower": { "trigger": "pnpm publish-ota:follower", "runtime": 3 }, "prereq": "Enable Places API on the project/key; verify /internal/places-health." }
+    "deploy": { "render_backend": "deployed (143c47a); places endpoints live", "ota_follower": { "version": 79, "runtime": 3 }, "prereq_status": "places-health = REQUEST_DENIED ('API key not authorized to use this service') 2026-06-09 — founder must enable the legacy 'Places API' AND add it to the key's API restrictions (or unrestrict). Then /internal/places-health → places_status:OK." }
   }
 }
