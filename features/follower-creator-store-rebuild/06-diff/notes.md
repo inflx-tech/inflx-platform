@@ -23,6 +23,18 @@ Screen: `Packages/Mobile/src/screens/follower/InfluencerStoreScreen.js`.
 - Visual: founder verifies on device after OTA (no emulator in build env). Maestro waived
   via GOVERNANCE_OVERRIDE (founder-side emulator); founder is the on-device acceptance gate.
 
+## Fix 2026-06-09 — show PRODUCTS, not one card per offer
+First cut rendered one DealCard per offer (brand-level) → a creator's store showed e.g.
+"Chaitanya Food Court · 10% off" instead of the 6 promoted products, and the tap had no
+useful target (CI-snapshot offers carry offer_id=null). Fixed: "What Promotes" + "Top
+Picks" now FLATTEN each offer's `products[]` into individual `ShelfProductCard`s (deduped
+per product, best discount), showing product name + brand + discounted price. Tap → Product
+Detail with the parent offer + 4-ID tracking + via_store_influencer_id (store-context).
+
 ## Residual / follow-ups
 - Store-context purchase attribution (money slice) — separate.
 - Admin Creator-Store template (brand-web) — follow-up.
+- Business Page showing creator-coupon offers: by design those live in the CREATOR's
+  store; the open business page shows the brand's own store-published offers. Surfacing a
+  creator offer on the business page when entered VIA the creator (tracking context) is a
+  possible enhancement.

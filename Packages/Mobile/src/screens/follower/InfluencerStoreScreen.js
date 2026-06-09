@@ -24,7 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { creatorVibe as C, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
-import { DealCard, ShelfHeader, Gradient } from '../../components/vibe';
+import { DealCard, ShelfProductCard, ShelfHeader, Gradient } from '../../components/vibe';
 import { emojiFor } from '../../components/vibe/palette';
 
 const CATEGORY_LABELS = {
@@ -86,44 +86,66 @@ export default function InfluencerStoreScreen({ route, navigation }) {
     return out;
   }, [offers]);
 
-  const visibleOffers = useMemo(
-    () => (tab === 'all' ? offers : offers.filter(o => o.brand_category === tab)),
-    [offers, tab]
+  // Flatten each offer's products into individual PICK cards (the mockup's
+  // "What Promotes" = product cards, not one card per offer). Dedupe by product,
+  // keeping the best discount; carry the parent offer for discount + tracking.
+  const picks = useMemo(() => {
+    const m = {};
+    offers.forEach(o => {
+      (o.products || []).forEach(p => {
+        const pid = p.id || p.product_id;
+        if (!pid) return;
+        const dv = discountVal(o);
+        if (!m[pid] || dv > m[pid].discount_value) {
+          m[pid] = {
+            product: p,
+            brand: { id: o.brand_id, name: o.brand_name, category: o.brand_category, city: o.brand_city },
+            discount_value: dv,
+            offer: o,
+          };
+        }
+      });
+    });
+    return Object.values(m);
+  }, [offers]);
+
+  const visiblePicks = useMemo(
+    () => (tab === 'all' ? picks : picks.filter(p => p.brand.category === tab)),
+    [picks, tab]
   );
   const topPicks = useMemo(
-    () => [...visibleOffers].sort((a, b) => discountVal(b) - discountVal(a)).slice(0, 6),
-    [visibleOffers]
+    () => [...visiblePicks].filter(p => p.discount_value > 0).sort((a, b) => b.discount_value - a.discount_value).slice(0, 6),
+    [visiblePicks]
   );
 
-  const onPickPress = useCallback((offer) => {
+  const onPickPress = useCallback((pick) => {
+    const o = pick.offer;
     const tracking = {
-      campaign_id: offer.campaign_id, set_id: offer.set_id, offer_id: offer.offer_id,
-      campaign_influencer_id: offer.campaign_influencer_id,
+      campaign_id: o.campaign_id, set_id: o.set_id, offer_id: o.offer_id,
+      campaign_influencer_id: o.campaign_influencer_id,
       influencer_id: influencer.id, influencer_handle: influencer.instagram_handle, influencer_name: influencer.name,
     };
-    const params = {
-      offer: { id: offer.offer_id, offer_type: offer.offer_type, discount_value: offer.discount_value, availing_modes: offer.availing_modes },
-      brand: { id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city },
-      influencer, tracking, trackingParams: tracking,
-      // store-context: this purchase happened inside THIS creator's store.
+    navigation.navigate('ProductDetail', {
+      offer: { id: o.offer_id, offer_type: o.offer_type, discount_value: o.discount_value, availing_modes: o.availing_modes,
+               campaign_id: o.campaign_id, set_id: o.set_id, campaign_influencer_id: o.campaign_influencer_id },
+      brand: pick.brand,
+      store: { instagram_handle: influencer.instagram_handle, name: influencer.name },
+      influencer,
+      selectedProductId: pick.product.id || pick.product.product_id,
+      product: pick.product,
+      tracking, trackingParams: tracking,
+      // store-context: opened from inside THIS creator's store.
       via_store_influencer_id: influencer.id,
-    };
-    const primary = (offer.availing_modes || [])[0];
-    if (primary === 'pay_at_store') navigation.navigate('PayAtStore', params);
-    else if (primary === 'prebook') navigation.navigate('PreBook', params);
-    else if (primary === 'enquiry') navigation.navigate('Enquiry', params);
-    else navigation.navigate('BrandStore', { brandId: offer.brand_id, tracking });
+    });
   }, [navigation, influencer]);
 
-  const dealCard = (o, i, rank) => (
-    <DealCard
-      key={`${o.offer_id || o.brand_id}_${i}`}
-      offer={o}
-      title={o.brand_name}
-      brand={labelFor(o.brand_category)}
-      category={o.brand_category}
-      rank={rank}
-      onPress={() => onPickPress(o)}
+  const pickCard = (pk, i) => (
+    <ShelfProductCard
+      key={`${pk.product.id || pk.product.product_id}_${i}`}
+      product={pk.product}
+      brand={pk.brand}
+      discountValue={pk.discount_value || undefined}
+      onPress={() => onPickPress(pk)}
     />
   );
 
@@ -203,24 +225,24 @@ export default function InfluencerStoreScreen({ route, navigation }) {
           </ScrollView>
         )}
 
-        {/* What {creator} Promotes */}
-        {visibleOffers.length > 0 ? (
+        {/* What {creator} Promotes — individual product picks */}
+        {visiblePicks.length > 0 ? (
           <View>
-            <ShelfHeader title={`What @${influencer.instagram_handle || 'they'} Promotes`} sub="their live picks" count={visibleOffers.length} tag="offers" />
+            <ShelfHeader title={`What @${influencer.instagram_handle || 'they'} Promotes`} sub="their live picks" count={visiblePicks.length} tag="products" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
-              {visibleOffers.map((o, i) => dealCard(o, i))}
+              {visiblePicks.map((pk, i) => pickCard(pk, i))}
             </ScrollView>
           </View>
         ) : (
           <Text style={s.empty}>@{influencer.instagram_handle || influencer.name} hasn't published any picks yet.</Text>
         )}
 
-        {/* Top Picks 🔥 */}
+        {/* Top Picks 🔥 — best by discount */}
         {topPicks.length > 1 && (
           <View>
-            <ShelfHeader title={`Top Picks 🔥`} sub="their best deals" count={topPicks.length} tag="offers" />
+            <ShelfHeader title={`Top Picks 🔥`} sub="their best deals" count={topPicks.length} tag="products" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
-              {topPicks.map((o, i) => dealCard(o, i, i + 1))}
+              {topPicks.map((pk, i) => pickCard(pk, i))}
             </ScrollView>
           </View>
         )}
