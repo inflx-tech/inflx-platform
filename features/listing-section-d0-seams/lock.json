@@ -1,0 +1,17 @@
+{
+  "feature": "listing-section-d0-seams",
+  "spec_version": "0.2.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated lock — \"pls go\", 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Step-5 gate. D0 of the combined listing↔section merge program (plan: design/wave4-creator-vibe/COMBINED-IMPLEMENTATION-PLAN.md). STAGED DELIVERY (founder-agreed offers-first scope): this approval covers WORKSTREAM B ONLY — the brandOffers.adapter (normalized offer shape over brand_offers 3 channels + legacy campaign_offers, 4-ID preserved) + the SECTION_ENGINE_OFFERS flag (default OFF). Workstream A (taxonomy.service / kill both CATEGORY_MAPs) and Workstream C (availing-mode vocab 4→6) are DEFERRED to a later pass, NOT delivered here. Backend-only → UI-governed gates (mockup-lock/06-diff) do NOT apply; gov-check Rule 1 (approved contract) + Rule 2 (release evidence) only. SANDBOX CONSTRAINT: no brand_offers rows reachable in this environment (prod creds absent; local inflx_dev lacks mig 084-086) — adapter NORMALIZATION is pure-unit-tested; the channel SQL is written per design but validated at OR-time with real prod data, NOT claimed green here. The rule-wiring + flag-flip (consume adapter in the 10 offer rules + turn SECTION_ENGINE_OFFERS on) is the SEPARATE 'OR / section-offer-repoint' contract — PRODUCTION-IMPACTING + OTA, gated on (1) confirming mig 084-086 applied to prod + real offer rows, (2) explicit founder go. THIS delivery (adapter additive + unconsumed, flag OFF) is DEPLOY-INERT to followers.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

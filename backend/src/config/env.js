@@ -105,6 +105,13 @@ module.exports = {
   RETURN_WINDOW_DAYS: parseInt(process.env.RETURN_WINDOW_DAYS || '30', 10),
   OFFER_EXPIRY_HOURS: parseInt(process.env.OFFER_EXPIRY_HOURS || '48', 10),
 
+  // Section-engine offer source (D0 Workstream B / OR). When OFF (default) the
+  // follower offer shelves read ONLY legacy campaign_offers — today's behaviour.
+  // When ON, brandOffers.adapter unions the Offer Engine's brand_offers (3 channels)
+  // so the offer shelves surface real offers. Flipped by the OR contract after
+  // prod brand_offers data is confirmed. Default OFF = deploy-inert.
+  SECTION_ENGINE_OFFERS: process.env.SECTION_ENGINE_OFFERS === 'true',
+
   ENABLE_CRONS: process.env.ENABLE_CRONS !== 'false',
   CRON_TIMEZONE: process.env.CRON_TIMEZONE || 'Asia/Kolkata',
   CATEGORY_BENCHMARK_ER: parseFloat(process.env.CATEGORY_BENCHMARK_ER || '3.8'),
