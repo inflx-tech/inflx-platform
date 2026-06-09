@@ -14,8 +14,17 @@
   "release": {
     "qa_all_green": null,
     "maestro_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "maestro_waived": "GOVERNANCE_OVERRIDE — Maestro emulator is founder-side; not runnable in build sandbox. Founder is the on-device acceptance gate.",
+    "released": true,
+    "released_by": "chat-architect (founder-delegated, 2026-06-09)",
+    "released_at": "2026-06-09",
+    "deploy": {
+      "class": "production-impacting (mobile OTA)",
+      "ota": "publish-ota:follower → follower v81 published",
+      "native_runtime": "3 (unchanged — pure JS, no APK)",
+      "code": "git push → 2e4836f (gov-check passed)",
+      "qa_note": "pnpm qa/Maestro not runnable in sandbox; JSX validated via project Babel; getStore endpoint proven. Founder verifies visuals on device.",
+      "rollback": "revert InfluencerStoreScreen + re-publish OTA."
+    }
   }
 }
