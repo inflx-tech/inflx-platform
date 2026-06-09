@@ -14,8 +14,10 @@
   "release": {
     "qa_all_green": null,
     "maestro_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "maestro_waived": "GOVERNANCE_OVERRIDE — Maestro emulator is founder-side; founder is the on-device acceptance gate.",
+    "released": true,
+    "released_by": "chat-architect (founder-delegated, 2026-06-09)",
+    "released_at": "2026-06-09",
+    "deploy": { "class": "production-impacting (mobile OTA)", "ota": "publish-ota:follower → follower v85", "native_runtime": "3 (unchanged)", "code": "git push → 7cd13b1", "rollback": "revert + re-publish OTA." }
   }
 }
