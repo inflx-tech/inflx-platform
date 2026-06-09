@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Product Detail (food + fashion) + Admin template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--soft:#F1ECE3;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1200px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}.head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{background:rgba(255,255,255,.6);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;}
+  .stage{display:flex;gap:42px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1220px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+  .phone{width:344px;height:792px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .phero{height:236px;position:relative;display:flex;align-items:center;justify-content:center;font-size:96px;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  .hic{position:absolute;top:44px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;font-size:16px;color:#3b332a;box-shadow:0 3px 8px rgba(0,0,0,.12);}
+  .hic.l{left:16px;}.hic.r1{right:60px;}.hic.r2{right:16px;}
+  .pbadge{position:absolute;top:54px;right:16px;background:var(--offer);color:#fff;font-size:11px;font-weight:800;padding:5px 11px;border-radius:20px;box-shadow:0 5px 12px -3px rgba(217,83,30,.55);}
+  .pbadge.tl{top:auto;bottom:14px;left:16px;right:auto;}
+  .body{padding:16px 18px 0;}
+  .ptitle{font-family:'Fraunces',serif;font-size:21px;font-weight:600;line-height:1.1;max-width:230px;}
+  .rrow{margin-top:6px;display:flex;align-items:center;gap:6px;}
+  .stars{color:var(--star);font-size:12px;}
+  .brandline{font-size:12px;color:var(--muted);font-weight:600;margin-top:4px;}
+  .prow{display:flex;align-items:baseline;gap:10px;margin-top:12px;padding-top:13px;border-top:1px solid var(--line);}
+  .pf{font-family:'Fraunces',serif;font-size:27px;font-weight:600;}
+  .pm{font-size:14px;color:#b8a98f;text-decoration:line-through;}
+  .save{font-size:11.5px;font-weight:800;color:var(--green);margin-top:3px;}
+  .note{margin-top:13px;background:var(--soft);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:flex-start;}
+  .note .a{width:32px;height:32px;border-radius:50%;background:#e0caa3;display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 32px;}
+  .note .att{font-size:11px;font-weight:800;color:var(--brown);}
+  .note .q{font-size:12px;color:#5e4a37;font-style:italic;margin-top:2px;line-height:1.4;}
+  .sec{font-size:13px;font-weight:800;margin-top:18px;}
+  .addon{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line);}
+  .addon .al{font-size:13px;font-weight:700;}.addon .ap{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px;}
+  .toggle{width:44px;height:25px;border-radius:30px;background:#d8cebd;position:relative;flex:0 0 auto;}
+  .toggle.on{background:var(--brown);}
+  .toggle::after{content:'';position:absolute;width:19px;height:19px;border-radius:50%;background:#fff;top:3px;left:3px;}.toggle.on::after{left:22px;}
+  .sizes{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .size{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#5e5345;}
+  .size.on{border-color:var(--brown);background:var(--soft);color:var(--brown);}
+  .desc{font-size:12.5px;color:#5a4e40;line-height:1.55;margin-top:8px;}
+  .more{display:flex;gap:12px;overflow-x:auto;margin-top:10px;padding-bottom:4px;}
+  .more::-webkit-scrollbar{display:none;}
+  .mc{flex:0 0 124px;}
+  .mc .mi{height:90px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:34px;border:1px solid var(--line);}
+  .mc .mn{font-size:11.5px;font-weight:800;margin-top:6px;}.mc .mp{font-size:12px;font-weight:800;margin-top:1px;}.muted{color:var(--muted);}
+  .dnote{margin-top:14px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:10.5px;font-weight:600;color:#5e5345;}
+  .stickybar{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);padding:11px 14px 8px;display:flex;align-items:center;gap:12px;}
+  .stickybar .sp{flex:1;}.stickybar .sp b{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}.stickybar .sp span{display:block;font-size:10px;color:var(--muted);font-weight:600;}
+  .cta{background:var(--brown);color:#fff;font-size:14px;font-weight:800;padding:14px 22px;border-radius:14px;box-shadow:0 10px 20px -8px rgba(110,58,36,.6);display:flex;gap:8px;align-items:center;}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:8px 6px 14px;}
+  .nav .it{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .it.on{color:var(--brown);}.nav .it .ic{font-size:18px;}
+  .reels{width:50px;height:50px;border-radius:17px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;margin-top:-20px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7px;font-weight:800;}
+  /* admin */
+  .admin{width:520px;background:#fff;border-radius:22px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .ahd{padding:18px 20px;border-bottom:1px solid #efeae0;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .ahd .t{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+  .ahd .t small{display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .pub{background:var(--brown);color:#fff;font-size:12px;font-weight:800;padding:9px 16px;border-radius:10px;}
+  .banner2{margin:14px 16px 2px;background:#fbf3ec;border:1px solid #e7d6c8;border-radius:12px;padding:11px 13px;font-size:11.5px;font-weight:700;color:#5e4631;}
+  .rows{padding:10px 14px 12px;display:flex;flex-direction:column;gap:8px;}
+  .row{display:flex;align-items:center;gap:11px;border:1px solid #eee7da;border-radius:13px;padding:11px 12px;background:#fff;}
+  .row.off{opacity:.5;background:#faf8f3;}
+  .grip{color:#c9bda8;font-size:15px;}.rmain{flex:1;}
+  .rname{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .rsub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .rtag{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:#fff;background:var(--brown);padding:3px 7px;border-radius:20px;}
+  .rtag.fix{background:#8a8275;}.rtag.brand{background:#3a2616;}.rtag.cond{background:#b07d3a;}.rtag.soon{background:#b9a98f;}
+  .tog{width:38px;height:22px;border-radius:30px;background:var(--brown);position:relative;flex:0 0 auto;}
+  .tog.off{background:#d8cebd;}.tog::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:19px;}.tog.off::after{left:3px;}
+  .lock{font-size:14px;color:#b9a98f;}
+  .afoot{padding:12px 20px;border-top:1px solid #efeae0;font-size:10.5px;color:var(--muted);font-weight:600;background:#fbf8f2;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Product Detail — food + fashion <span class="spark">✦</span></h1>
+  <p>A food item (with add-ons) + a fashion item (no add-ons) + the admin template. Conditional blocks shown honestly.</p>
+  <div class="legend"><span>📱 follower sees this</span><span>🏪 brand owns content + add-ons</span><span>⚙️ admin owns the block template</span><span>CTA = business-driven</span></div>
+</div>
+<div class="stage">
+
+  <!-- ===== FOOD ===== -->
+  <div class="col"><div class="cap">📱 Food item · with add-ons<span>Order Online → Add to Cart</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="scroll">
+        <div class="phero g1">🍕<div class="hic l">←</div><div class="hic r1">♡</div><div class="hic r2">↗</div><div class="pbadge">20% OFF</div></div>
+        <div class="body">
+          <div class="ptitle">Mama's Signature Large Pizza</div>
+          <div class="rrow"><span class="stars">★★★★★</span> <span class="fs12 fw8" style="font-size:12px;font-weight:800">4.8</span> <span class="muted" style="font-size:11px">(1.2K reviews)</span></div>
+          <div class="brandline">from Mama's Pizza · Vijayawada ›</div>
+          <div class="prow"><span class="pf">₹399</span><span class="pm">₹469</span></div>
+          <div class="save">You save ₹70</div>
+          <div class="note"><div class="a">🧔🏻</div><div><div class="att">@StyleMasterBen's take</div><div class="q">"Best pizza in Vijayawada — the cheese burst is unreal. Don't skip it."</div></div></div>
+          <div class="sec">Customize</div>
+          <div class="addon"><div><div class="al">Add Avocado</div><div class="ap">+ ₹49</div></div><div class="toggle on"></div></div>
+          <div class="addon"><div><div class="al">Extra Cheese</div><div class="ap">+ ₹39</div></div><div class="toggle"></div></div>
+          <div class="addon" style="border-bottom:none"><div><div class="al">Make it a Combo</div><div class="ap">+ ₹99 · drink &amp; fries</div></div><div class="toggle"></div></div>
+          <div class="sec">Details</div>
+          <div class="desc">Hand-tossed sourdough base, loaded mozzarella, fresh basil and house tomato sauce. Serves 2–3.</div>
+          <div class="sec">More from Mama's Pizza</div>
+          <div class="more">
+            <div class="mc"><div class="mi g5">🍝</div><div class="mn">Creamy Alfredo</div><div class="mp">₹329</div></div>
+            <div class="mc"><div class="mi g6">🧁</div><div class="mn">Choco Lava</div><div class="mp">₹129</div></div>
+            <div class="mc"><div class="mi g1">🍕</div><div class="mn">Pepperoni</div><div class="mp">₹449</div></div>
+          </div>
+          <div class="dnote">🎬 Creator reels for this item — coming with Reels (52.8) · 🏷️ creator code (BEN20) — pending a code field</div>
+          <div style="height:14px"></div>
+        </div>
+      </div>
+      <div class="stickybar"><div class="sp"><b>₹448</b><span>incl. 1 add-on</span></div><div class="cta">🛒 Add to Cart</div></div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== FASHION ===== -->
+  <div class="col"><div class="cap">📱 Fashion item · no add-ons<span>size variant · Add to Cart</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="scroll">
+        <div class="phero g4">👟<div class="hic l">←</div><div class="hic r1">♡</div><div class="hic r2">↗</div><div class="pbadge">30% OFF</div></div>
+        <div class="body">
+          <div class="ptitle">MODA Street Sneakers</div>
+          <div class="rrow"><span class="stars">★★★★☆</span> <span style="font-size:12px;font-weight:800">4.4</span> <span class="muted" style="font-size:11px">(610 reviews)</span></div>
+          <div class="brandline">from MODA · Vijayawada ›</div>
+          <div class="prow"><span class="pf">₹1,299</span><span class="pm">₹1,899</span></div>
+          <div class="save">You save ₹600</div>
+          <div class="note"><div class="a">🧔🏻</div><div><div class="att">@StyleMasterBen's take</div><div class="q">"My everyday pair — goes with everything, runs true to size."</div></div></div>
+          <div class="sec">Select Size</div>
+          <div class="sizes"><div class="size">6</div><div class="size">7</div><div class="size on">8</div><div class="size">9</div><div class="size">10</div></div>
+          <div class="sec">Details</div>
+          <div class="desc">Breathable knit upper, cushioned sole, unisex. Ships in 3–5 days · 7-day returns.</div>
+          <div class="sec">More from MODA</div>
+          <div class="more">
+            <div class="mc"><div class="mi g3" style="background:linear-gradient(135deg,#e9d4c0,#c9a37e)">⌚</div><div class="mn">Minimal Watch</div><div class="mp">₹2,499</div></div>
+            <div class="mc"><div class="mi g6">👜</div><div class="mn">Tote Bag</div><div class="mp">₹899</div></div>
+            <div class="mc"><div class="mi g4">👕</div><div class="mn">Summer Tee</div><div class="mp">₹699</div></div>
+          </div>
+          <div class="dnote">⚙️ No "Customize" block here — MODA defined no add-ons. Size is a brand variant. Reels/code deferred.</div>
+          <div style="height:14px"></div>
+        </div>
+      </div>
+      <div class="stickybar"><div class="sp"><b>₹1,299</b><span>size 8 · free returns</span></div><div class="cta">🛒 Add to Cart</div></div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN ===== -->
+  <div class="col"><div class="cap">⚙️ Admin — Product Detail Template<span>blocks · conditional · deferred</span></div>
+    <div class="admin">
+      <div class="ahd"><div class="t">Product Detail · Template<small>blocks &amp; order · content from the brand</small></div><span class="pub">Publish</span></div>
+      <div class="banner2">🏪 Brand owns the image, price, description, add-ons &amp; variants. You own which blocks show + order. Conditional blocks appear only when their data exists.</div>
+      <div class="rows">
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Hero image + badge <span class="rtag fix">FIXED</span></div><div class="rsub">product photo · discount badge from offer</div></div><span class="lock">🔒</span></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Title · rating · price <span class="rtag fix">FIXED</span></div><div class="rsub">MRP strike + "you save" from offer math</div></div><span class="lock">🔒</span></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Endorsed by @creator <span class="rtag">CREATOR</span></div><div class="rsub">the creator's note on this pick</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Customize / Variants <span class="rtag cond">CONDITIONAL</span></div><div class="rsub">add-ons (food) or size/colour (fashion) — shows only if the brand defined them</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Details <span class="rtag brand">BRAND CONTENT</span></div><div class="rsub">product description</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">More from {brand} <span class="rtag">PLATFORM</span></div><div class="rsub">other products from this brand</div></div><div class="tog"></div></div>
+        <div class="row off"><span class="grip">⠿</span><div class="rmain"><div class="rname">Creator reels for this item <span class="rtag soon">SOON · 52.8</span></div><div class="rsub">enables when Reels ships</div></div><div class="tog off"></div></div>
+        <div class="row off"><span class="grip">⠿</span><div class="rmain"><div class="rname">Creator discount code <span class="rtag soon">NEEDS FIELD</span></div><div class="rsub">e.g. BEN20 — pending a creator-code field</div></div><div class="tog off"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Sticky CTA <span class="rtag fix">SCHEMA</span></div><div class="rsub">Add to Cart / Buy / Book / Enquire — from availing_modes</div></div><span class="lock">🔒</span></div>
+      </div>
+      <div class="afoot">💡 Add-ons/variants are brand-defined → the Customize block auto-hides when none. Reels + creator-code are deferred. CTA is always business-driven; attribution flows on every action.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

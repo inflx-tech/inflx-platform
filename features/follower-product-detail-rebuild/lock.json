@@ -1,0 +1,15 @@
+{
+  "feature": "follower-product-detail-rebuild",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('Yes, build it' — Product Detail, 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (product-comprehensive.html is the locked agreed design)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Product Detail rebuild to product-comprehensive.html: rating row + hero icons + conditional Customize(add-ons)/Variants(size) + running-total sticky bar; preserves schema-driven CTA dispatch + price math + more-from-brand. Conditional blocks hide when brand defined none. Pure JS / OTA-safe; NATIVE_RUNTIME '3'. Babel-validated. Maestro waived via GOVERNANCE_OVERRIDE.",
+  "release": { "qa_all_green": null, "maestro_green": false, "released": false, "released_by": null, "released_at": null }
+}

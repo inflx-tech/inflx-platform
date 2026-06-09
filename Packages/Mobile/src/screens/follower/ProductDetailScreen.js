@@ -142,6 +142,8 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [products, setProducts] = useState(previewProduct ? [previewProduct] : []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedAddons, setSelectedAddons] = useState({}); // conditional Customize (food add-ons)
+  const [selectedSize, setSelectedSize] = useState(null);     // conditional Variants (fashion size)
 
   // Per-business accent: WAYFINDING tints only (hero / card image bg). Chrome,
   // CTAs, prices stay ink + yellow per the F0 design language.
@@ -203,6 +205,26 @@ export default function ProductDetailScreen({ navigation, route }) {
     }
   }
 
+  // ── Conditional Customize / Variants (brand-defined; auto-hidden when absent) ──
+  const variantsJson = (() => {
+    const v = selected?.variants_json;
+    if (!v) return {};
+    if (typeof v === 'string') { try { return JSON.parse(v); } catch { return {}; } }
+    return v;
+  })();
+  const addons = Array.isArray(selected?.addons) ? selected.addons
+    : (Array.isArray(variantsJson.addons) ? variantsJson.addons : []);
+  const sizes = Array.isArray(variantsJson.sizes) ? variantsJson.sizes
+    : (Array.isArray(variantsJson.options) ? variantsJson.options : []);
+  const addonPrice = (a) => parseFloat(a?.price ?? a?.amount ?? 0) || 0;
+  const addonsTotal = addons.reduce((sum, a, i) => sum + (selectedAddons[i] ? addonPrice(a) : 0), 0);
+  const addonsCount = Object.values(selectedAddons).filter(Boolean).length;
+  const runningTotal = parseFloat((finalPrice + addonsTotal).toFixed(2));
+
+  // rating (per-product when present, else the brand's) — shown only if real
+  const ratingVal = selected?.rating ?? brand?.avg_rating ?? brand?.rating ?? null;
+  const reviewCount = selected?.review_count ?? brand?.review_count ?? null;
+
   // ── CTA list from availing_modes — category-aware ─────────────────────
   // For restaurants/salons/cars we use category-specific verbs (Book a Table,
   // Pay at Restaurant, Reserve Car) instead of generic ones (Book Slot,
@@ -232,6 +254,8 @@ export default function ProductDetailScreen({ navigation, route }) {
       influencer,
       product: selected,
       products: [selected],
+      selected_addons: addons.filter((_, i) => selectedAddons[i]),
+      selected_size: selectedSize,
       tracking: trk,
       trackingParams: trk,
     };
@@ -262,6 +286,11 @@ export default function ProductDetailScreen({ navigation, route }) {
         <TouchableOpacity style={styles.backFloating} onPress={() => navigation.goBack()}>
           <Text style={styles.backFloatingText}>←</Text>
         </TouchableOpacity>
+        {/* ♡ + share (visual) */}
+        <View style={styles.heroIconsRight}>
+          <View style={styles.heroIcon}><Text style={styles.heroIconGlyph}>♡</Text></View>
+          <View style={styles.heroIcon}><Text style={styles.heroIconGlyph}>↗</Text></View>
+        </View>
 
         {/* Hero image */}
         <View style={[styles.hero, { backgroundColor: accentPale }]}>
@@ -280,6 +309,14 @@ export default function ProductDetailScreen({ navigation, route }) {
         {/* Title + brand + creator note */}
         <View style={styles.body}>
           <Text style={styles.productName}>{selected.name}</Text>
+
+          {ratingVal != null ? (
+            <View style={styles.ratingRow}>
+              <Text style={styles.ratingStars}>★</Text>
+              <Text style={styles.ratingVal}>{Number(ratingVal).toFixed(1)}</Text>
+              {reviewCount != null ? <Text style={styles.ratingCount}>({reviewCount} reviews)</Text> : null}
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={styles.brandRow}
@@ -321,6 +358,47 @@ export default function ProductDetailScreen({ navigation, route }) {
               <Text style={[styles.savings, { color: P.successText }]}>You save {fmtRupees(savings)}</Text>
             ) : null}
           </View>
+
+          {/* Customize — food add-ons (conditional, brand-defined) */}
+          {addons.length > 0 ? (
+            <View style={styles.customizeBlock}>
+              <Text style={styles.blockTitle}>Customize</Text>
+              {addons.map((a, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.addonRow}
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedAddons(s => ({ ...s, [i]: !s[i] }))}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.addonName}>{a.name || a.label}</Text>
+                    <Text style={styles.addonPrice}>+ {fmtRupees(addonPrice(a))}{a.note ? ` · ${a.note}` : ''}</Text>
+                  </View>
+                  <View style={[styles.toggle, selectedAddons[i] && styles.toggleOn]}>
+                    <View style={[styles.toggleKnob, selectedAddons[i] && styles.toggleKnobOn]} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+
+          {/* Variants — size/options (conditional, brand-defined) */}
+          {sizes.length > 0 ? (
+            <View style={styles.customizeBlock}>
+              <Text style={styles.blockTitle}>Select Size</Text>
+              <View style={styles.sizeRow}>
+                {sizes.map((sz, i) => {
+                  const label = typeof sz === 'string' ? sz : (sz.label || sz.value || sz.size);
+                  const on = selectedSize === label;
+                  return (
+                    <TouchableOpacity key={i} style={[styles.sizeChip, on && styles.sizeChipOn]} onPress={() => setSelectedSize(label)}>
+                      <Text style={[styles.sizeChipTxt, on && styles.sizeChipTxtOn]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
 
           {/* Description */}
           {selected.description ? (
@@ -388,8 +466,10 @@ export default function ProductDetailScreen({ navigation, route }) {
       {/* Sticky primary CTA */}
       <View style={styles.footer}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.footerPrice}>{fmtRupees(finalPrice)}</Text>
-          <Text style={styles.footerName} numberOfLines={1}>{selected.name}</Text>
+          <Text style={styles.footerPrice}>{fmtRupees(runningTotal)}</Text>
+          <Text style={styles.footerName} numberOfLines={1}>
+            {addonsCount > 0 ? `incl. ${addonsCount} add-on${addonsCount > 1 ? 's' : ''}` : (selectedSize ? `size ${selectedSize}` : selected.name)}
+          </Text>
         </View>
         <TouchableOpacity
           style={[styles.primaryCta, { backgroundColor: C.brown }]}
@@ -428,8 +508,31 @@ const styles = StyleSheet.create({
   },
   heroBadgeText: { fontFamily: fonts.monoBold, fontSize: 12, color: P.yellow },
 
+  heroIconsRight: { position: 'absolute', top: 44, right: 16, zIndex: 10, flexDirection: 'row', gap: 8 },
+  heroIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.92)', alignItems: 'center', justifyContent: 'center' },
+  heroIconGlyph: { fontSize: 16, color: P.ink },
+
   body: { padding: 20 },
   productName: { fontFamily: fonts.serifDisplay, fontWeight: '600', fontSize: 22, color: P.ink, marginBottom: 6 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
+  ratingStars: { fontSize: 12, color: C.star },
+  ratingVal: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink },
+  ratingCount: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted },
+
+  customizeBlock: { marginTop: 18, paddingTop: 16, borderTopWidth: 1, borderTopColor: P.border },
+  blockTitle: { fontFamily: fonts.displayBold, fontSize: 13, color: P.ink, marginBottom: 8 },
+  addonRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: P.border },
+  addonName: { fontFamily: fonts.sansBold, fontSize: 13, color: P.ink },
+  addonPrice: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 1 },
+  toggle: { width: 44, height: 25, borderRadius: 30, backgroundColor: '#d8cebd', justifyContent: 'center' },
+  toggleOn: { backgroundColor: C.brown },
+  toggleKnob: { width: 19, height: 19, borderRadius: 10, backgroundColor: '#fff', marginLeft: 3 },
+  toggleKnobOn: { marginLeft: 22 },
+  sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  sizeChip: { minWidth: 42, height: 42, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1.5, borderColor: P.border, alignItems: 'center', justifyContent: 'center' },
+  sizeChipOn: { borderColor: C.brown, backgroundColor: C.soft },
+  sizeChipTxt: { fontFamily: fonts.sansBold, fontSize: 13, color: P.muted },
+  sizeChipTxtOn: { color: C.brown },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandLine: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, flexShrink: 1 },
   brandChevron: { fontSize: 16, fontWeight: '300' },
