@@ -23,6 +23,11 @@
       "order": "apply migration 095 on prod -> seed fashion -> git push (endpoints have data before deploy)",
       "validation": "local inflx_dev full pass; backend app loads; engine logic + GIN filter verified",
       "rollback": "revert routes/service commit; migration objects inert if unused"
+    },
+    "ship2": {
+      "class": "brand-web UI (Vercel auto-deploy on push). UI-governed; mockup_locked + 06-diff present.",
+      "what": "Drill-once-batch-add seller wizard at /dashboard/products/listing — listingApi (getTree/getNodeFacets/batchCreate) in lib/api.js + new isolated page.js. Rides the live Ship-1 APIs. Babel-parse OK; Next build not runnable in sandbox → founder is on-web gate.",
+      "reachable": "/dashboard/products/listing (fashion)"
     }
   }
 }

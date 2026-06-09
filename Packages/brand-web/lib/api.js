@@ -121,6 +121,14 @@ export const sectionApi = {
   deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
 };
 
+// Drill-down listing engine (contract: listing-drilldown-taxonomy-engine).
+// Tree + per-leaf facets (public read) + drill-once batch-add (brand).
+export const listingApi = {
+  getTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
+  getNodeFacets: (nodeId) => api.get(`/listing/nodes/${nodeId}/facets`),
+  batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
+};
+
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
   verifyOtp: (phone, otp, name) => api.post('/auth/verify-otp', { phone, otp, role: 'brand', ...(name && { name }) }),
