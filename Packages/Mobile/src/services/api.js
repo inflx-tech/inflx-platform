@@ -300,6 +300,12 @@ export const influencerApi = {
   // Store preview — see what followers see
   getMyStorePreview: () => api.get('/influencers/me/store-preview'),
 
+  // Store stocking — shelve products from contracted brands (contract-gated server-side)
+  getStockable:    () => api.get('/influencers/me/store/stockable'),
+  getMyStoreItems: () => api.get('/influencers/me/store/items'),
+  stockItem:       (data) => api.post('/influencers/me/store/items', data),
+  unstockItem:     (id) => api.delete(`/influencers/me/store/items/${id}`),
+
   // Transaction feed — see all follower purchases
   getMyTransactions: (page = 1, campaignId = null) => {
     const p = [`page=${page}`];

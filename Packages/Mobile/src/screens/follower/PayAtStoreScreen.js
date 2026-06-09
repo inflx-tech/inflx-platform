@@ -34,6 +34,8 @@ import RestaurantBillScreen from './RestaurantBillScreen';
 export default function PayAtStoreScreen({ navigation, route }) {
   const {
     offer, store, trackingParams, brand, tracking, influencer, product, prefillAmount,
+    via_store_influencer_id,                    // store-context: bought in this creator's store
+
     // Q2 flow — when launched from a prebook booking ("Pay Balance via INFLX"),
     // these params come pre-filled. PayAtStoreScreen branches its UX:
     //   · token banner ("you already paid ₹100")
@@ -125,6 +127,7 @@ export default function PayAtStoreScreen({ navigation, route }) {
             product_id: product?.id || null,
             variant_id: product?.variant_id || null,    // fashion attribution
             prebook_booking_id: prebookBookingId || null,   // Q2 flow link
+            via_store_influencer_id: via_store_influencer_id || null,  // store-context
           });
 
       if (!orderRes.success && !orderRes.data) {

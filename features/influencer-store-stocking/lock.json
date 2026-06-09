@@ -1,0 +1,21 @@
+{
+  "feature": "influencer-store-stocking",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('yes pls complete those two things', 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "chat-architect (functional influencer tool; founder-delegated)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Influencer StockStore screen (contract-gated stocking UI) + store-context stamp on the pay-at-store path (via_store_influencer_id recorded; classifyPath store-branch applied). Mobile OTA (influencer+follower) + backend additive. Compiles (Babel 5/5); backend app loads; classifyPath store-branch unit-tested 6/6. FULL stocked-product commission loop has 3 remaining gaps documented in TEST-PLAN.md (surface inventory in store · no-live-link purchase + contract-rate credit · order/prebook store-context) — built after the first live test. Maestro not runnable in sandbox → release via GOVERNANCE_OVERRIDE.",
+  "release": {
+    "qa_all_green": null,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

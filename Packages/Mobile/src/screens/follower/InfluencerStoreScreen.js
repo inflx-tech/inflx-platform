@@ -105,6 +105,8 @@ export default function InfluencerStoreScreen({ route, navigation }) {
       offer: { id: offer.offer_id, offer_type: offer.offer_type, discount_value: offer.discount_value, availing_modes: offer.availing_modes },
       brand: { id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city },
       influencer, tracking, trackingParams: tracking,
+      // store-context: this purchase happened inside THIS creator's store.
+      via_store_influencer_id: influencer.id,
     };
     const primary = (offer.availing_modes || [])[0];
     if (primary === 'pay_at_store') navigation.navigate('PayAtStore', params);

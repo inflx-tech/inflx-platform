@@ -78,6 +78,12 @@ export default function MyStoreScreen({ navigation }) {
           <Text style={s.title}>My Store</Text>
           <Text style={s.subtitle}>This is what followers see</Text>
         </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('StockStore')}
+          style={{ backgroundColor: P.yellow, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20 }}
+        >
+          <Text style={{ fontSize: 12, fontWeight: '800', color: P.ink, fontFamily: fonts.sansBold }}>+ Stock</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Profile card */}

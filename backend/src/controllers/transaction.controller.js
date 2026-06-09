@@ -219,6 +219,7 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     offer_id, campaign_id, set_id, campaign_influencer_id, bill_amount,
     product_id, variant_id,
     prebook_booking_id,                         // Q2 flow — balance-pay against an existing prebook
+    via_store_influencer_id,                    // store-context: bought inside this creator's store
   } = req.body;
 
   if (!bill_amount || parseFloat(bill_amount) <= 0) {
@@ -301,6 +302,11 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     campaignInfluencerId:  campaign_influencer_id,
     brandCategory:         record.brand_category,
     netAmount,
+    // Store-context (dormant until the app sends via_store_influencer_id): when the
+    // follower bought inside this creator's store and genuinely stocked the product,
+    // classifyPath makes store the winning touch (store > live-link > window > direct).
+    storeInfluencerId:     via_store_influencer_id || null,
+    productId:             product_id || null,
   });
   const platformFee = l3.fee_amount;
   const brandNet    = parseFloat((netAmount - influencerCommission - platformFee).toFixed(2));
@@ -325,6 +331,8 @@ const initiatePayAtStore = asyncHandler(async (req, res) => {
     l3_category_key:  l3.category_key,
     l3_source:        l3.source,
     l3_influencer_id: l3.influencer_id,
+    // store-context stamp — recorded on the txn in verify (analytics + attribution)
+    via_store_influencer_id: (l3.store_context && via_store_influencer_id) ? via_store_influencer_id : null,
   });
 
   return success(res, {
@@ -386,8 +394,8 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
           variant_id, offer_type, prebook_booking_id,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, marketplace_fee_amount, brand_net,
-          status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pay_at_store',$11,$12,$13,$14,$15,$16,'completed',$17,$18,$19)
+          status, coupon_code_used, return_window_ends_at, razorpay_payment_id, via_store_influencer_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pay_at_store',$11,$12,$13,$14,$15,$16,'completed',$17,$18,$19,$20)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
@@ -395,7 +403,7 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
         meta.variant_id || null, meta.offer_type || null, meta.prebook_booking_id || null,
         txGross, meta.discount_amount, netAmount,
         meta.influencer_commission, meta.platform_fee, meta.brand_net,
-        couponCode, returnWindowEndsAt, razorpay_payment_id,
+        couponCode, returnWindowEndsAt, razorpay_payment_id, meta.via_store_influencer_id || null,
       ]
     );
     transactionId = txRows[0].id;
