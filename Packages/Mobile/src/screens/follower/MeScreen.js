@@ -127,8 +127,8 @@ function MeInner({ navigation }) {
         <Text style={s.logoutTxt}>LOG OUT</Text>
       </TouchableOpacity>
 
-      {/* v92 build tag — temporary, to confirm which OTA bundle is actually running */}
-      <Text style={s.build}>INFLX · build v92</Text>
+      {/* build tag — temporary, to confirm which OTA bundle is actually running */}
+      <Text style={s.build}>INFLX · build v93</Text>
     </ScrollView>
   );
 }

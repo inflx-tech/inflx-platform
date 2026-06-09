@@ -109,29 +109,16 @@ function OffersStack() {
   );
 }
 
-// v92 NATIVE-CRASH PROBE — bare placeholder for the Orders tab.
-// Zero dependencies (only View/Text). If tapping Orders still crashes with THIS
-// as the screen, the fault is the tab/native-stack mount itself, not the Orders
-// screen content. If it renders, the crash was inside OrderHistoryScreen and the
-// "build v92" tag also proves the device is on the new bundle.
-function OrdersProbe() {
-  return (
-    <View style={{ flex: 1, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <Text style={{ fontSize: 22, fontWeight: '700', color: '#1C1A17' }}>Orders probe</Text>
-      <Text style={{ fontSize: 14, color: '#8A8275', marginTop: 8, textAlign: 'center' }}>
-        build v92 — if you can read this, the Orders tab itself works.
-      </Text>
-    </View>
-  );
-}
-
 // 🛍️ Orders — order/booking history (was MY STUFF; Saved moves to Profile).
+// NOTE: do NOT register "OrderDetail" here — SHARED_SCREENS already provides it.
+// A duplicate route name in a native-stack navigator corrupts react-native-screens'
+// native container and hard-crashes (uncatchable) the instant this stack mounts —
+// this was the long-standing "INFLX keeps stopping" crash on the Orders tab.
 function OrdersStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OrdersHome" component={OrdersProbe} />
+      <Stack.Screen name="OrdersHome" component={OrderHistoryScreen} />
       <Stack.Screen name="OrderHistory" component={OrderHistoryScreen} />
-      <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );
