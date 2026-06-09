@@ -1,0 +1,25 @@
+{
+  "feature": "influencer-store-foundation",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chose 'Yes — start with backend foundation', 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Backend-only first slice of the Creator Store / commission build: stocking table (mig 094) + influencerStore service/controller/routes + dormant store-context column + hijack-proof resolveStoreContext. Backend-only → UI-governed gates (mockup-lock/06-diff) N/A; gov-check Rule 1 + Rule 2 only. Additive + DORMANT (no caller writes inventory, no txn reads the column) → zero live-money-flow change. Money-path ATTRIBUTION WIRING is a SEPARATE next slice (classifyPath store branch + transaction threading + touch endpoint). Modules load clean; contract-gate + anti-hijack validated read-only on live prod data; mig 094 applied to prod. pnpm qa not runnable in sandbox (test DB :5544) — additive/dormant.",
+  "release": {
+    "qa_all_green": null,
+    "released": true,
+    "released_by": "chat-architect (founder-delegated: 'you code, I test', 2026-06-09)",
+    "released_at": "2026-06-09",
+    "deploy": {
+      "class": "production-impacting (backend/src + migration 094) — additive + DORMANT",
+      "migration": "094_influencer_store.sql — APPLIED to prod (verified: table + column present)",
+      "push": "git push → Render auto-deploy",
+      "ota_required": false,
+      "qa_note": "pnpm qa not runnable in sandbox; modules load clean; contract-gate/stockable/anti-hijack validated read-only on live prod data. Endpoints dormant (no client calls them yet).",
+      "rollback": "revert backend commit; table+column harmless to leave."
+    }
+  }
+}

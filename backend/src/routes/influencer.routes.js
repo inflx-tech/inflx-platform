@@ -7,6 +7,7 @@ const offerCtrl = require('../controllers/offer.controller');
 const withdrawalCtrl = require('../controllers/withdrawal.controller');
 const mediaCtrl = require('../controllers/mediaAsset.controller');
 const analyticsCtrl = require('../controllers/creatorAnalytics.controller');
+const storeCtrl = require('../controllers/influencerStore.controller');
 const { requireAnyAdminRole } = require('../middleware/auth');
 
 const router = Router();
@@ -51,6 +52,13 @@ router.get('/me/campaigns/:campaign_influencer_id/products', authenticate, requi
 
 // ── Store preview — influencer sees their store as followers see it ───────────
 router.get('/me/store-preview', authenticate, requireRole('influencer'), ctrl.storePreview);
+
+// ── Influencer storefront stocking (contract: influencer-store-foundation) ────
+// Shelve products from contracted brands (contract-gate enforced in the service).
+router.get('/me/store/items',        authenticate, requireRole('influencer'), storeCtrl.listMyStore);
+router.get('/me/store/stockable',    authenticate, requireRole('influencer'), storeCtrl.listStockable);
+router.post('/me/store/items',       authenticate, requireRole('influencer'), storeCtrl.stockItem);
+router.delete('/me/store/items/:id', authenticate, requireRole('influencer'), storeCtrl.unstockItem);
 
 // ── Aggregate contracts list for the My Contracts gallery screen ─────────────
 router.get('/me/contracts', authenticate, requireRole('influencer'), mediaCtrl.listInfluencerContracts);
