@@ -11,5 +11,5 @@
   "preview_reviewed": true,
   "impact_reviewed": true,
   "notes": "Product Detail rebuild to product-comprehensive.html: rating row + hero icons + conditional Customize(add-ons)/Variants(size) + running-total sticky bar; preserves schema-driven CTA dispatch + price math + more-from-brand. Conditional blocks hide when brand defined none. Pure JS / OTA-safe; NATIVE_RUNTIME '3'. Babel-validated. Maestro waived via GOVERNANCE_OVERRIDE.",
-  "release": { "qa_all_green": null, "maestro_green": false, "released": false, "released_by": null, "released_at": null }
+  "release": { "qa_all_green": null, "maestro_green": false, "maestro_waived": "GOVERNANCE_OVERRIDE — founder-side emulator; founder is on-device gate", "released": true, "released_by": "chat-architect (founder-delegated, 2026-06-09)", "released_at": "2026-06-09", "deploy": { "class": "mobile OTA", "ota": "publish-ota:follower → follower v86", "native_runtime": "3", "code": "git push → 71b6112", "rollback": "revert + re-publish" } }
 }
