@@ -1,0 +1,27 @@
+{
+  "feature": "follower-offers-screen-rebuild",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (chose 'Rebuild the Offers screen', 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (offers-comprehensive.html is the locked agreed design)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "UI-governed Mobile rebuild of the Offers tab (DealsScreen) to offers-comprehensive.html: header + super-category chips + sort/filter pills + 3 views (All=hero+rails, chip=grid, By-Creator=grouped), over the live adapter-powered offers data. Pure JS / OTA-safe; NATIVE_RUNTIME unchanged ('3'). Syntax validated via project Babel. Maestro not runnable in the build sandbox → release via GOVERNANCE_OVERRIDE (founder-side emulator is the standing pattern; founder is the on-device acceptance gate). Release = OTA publish-ota:follower.",
+  "release": {
+    "qa_all_green": null,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": {
+      "class": "production-impacting (mobile OTA)",
+      "ota": "publish-ota:follower",
+      "native_runtime": "3 (unchanged — pure JS)",
+      "qa_note": "pnpm qa / Maestro not runnable in sandbox; syntax validated via Babel; offers data verified live; founder verifies visuals on device. Maestro waived via GOVERNANCE_OVERRIDE at push."
+    }
+  }
+}

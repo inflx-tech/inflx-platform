@@ -1,269 +1,344 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, ActivityIndicator } from 'react-native';
-import { creatorVibe as C, fonts, spacing } from '../../theme/tokens';
-
-// Flow 52.2 — Creator Vibe recolor shim (loaders/refresh → brown). Visual only;
-// fetchDeals / handleSave / renderItem / navigation all unchanged.
-const P = {
-  white: C.card, card: C.card, bg: C.screenBg, bg2: C.soft,
-  border: C.line, ink: C.ink,
-  muted: C.muted, muted2: C.muted, muted3: C.muted,
-  yellow: C.brown, yellowText: C.brown, yellowPale: C.soft,
-  success: C.verify, danger: C.offer,
-};
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator,
+} from 'react-native';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
-import ProductCard from '../../components/cards/ProductCard';
-import { buildTracking } from '../../utils/tracking';
-import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
+import { DealCard, ShelfHeader, Gradient } from '../../components/vibe';
+import { emojiFor } from '../../components/vibe/palette';
+import NewOfferCard from '../../components/cards/NewOfferCard';
 
 /**
- * DealsScreen — single-feed deals browser with brand-category tabs.
+ * DealsScreen (Offers tab) — rebuilt to design/wave4-creator-vibe/offers-comprehensive.html.
+ * Contract: features/follower-offers-screen-rebuild.
  *
- * Previous version had four content-type tabs (products / store_deals /
- * services / ending_soon) that didn't match what the backend understood.
- * Backend `category` param is a brand-category bucket (dining / shopping /
- * booking) per CATEGORY_MAP in follower.service.js. Frontend was passing
- * the tab key as category → backend treated it as undefined → all tabs
- * returned the same data, rendered with different (mostly mis-shaped)
- * card components. Confusing for the user.
+ * One screen, three behaviours over the live offers data
+ * (GET /v1/follower/section/offers, already powered by brandOffers.adapter):
+ *   • All + a non-creator sort  → hero "Today's Best Deal" + per-super-category rails
+ *   • a super-category chip      → filtered 2-col grid, sorted
+ *   • "By Creator" sort          → offers grouped under each backing creator
  *
- * This version aligns the tabs with the backend's actual category buckets:
- *   • All       — no filter
- *   • Dining    — restaurant / bakery
- *   • Shopping  — fashion / florist / packaged_food
- *   • Booking   — salon / car_rental / function_hall / wedding_planner
- *
- * Card type is uniform (ProductCard). Card tap routes to ProductDetail for
- * non-car_rental, CarDetail for car_rental — matching the rest of the
- * follower app (HomeScreenV2 + InfluencerStoreScreen + CategoryListScreen).
+ * Every card carries its 4-ID tracking (item.tracking) straight through on tap.
+ * Pure-JS / OTA-safe (vibe kit gradients). Degrades to an empty state, never throws.
  */
 
-const TABS = [
-  { key: 'all',      label: 'All',      icon: '🏷️' },
-  { key: 'dining',   label: 'Dining',   icon: '🍽️' },
-  { key: 'shopping', label: 'Shopping', icon: '🛍️' },
-  { key: 'booking',  label: 'Booking',  icon: '📅' },
+// super-category chips (mockup: All · Eat · Shop · Groom · Travel)
+const SUPERCATS = [
+  { key: 'all',    label: 'All',    icon: '' },
+  { key: 'eat',    label: 'Eat',    icon: '🍽️' },
+  { key: 'shop',   label: 'Shop',   icon: '🛍️' },
+  { key: 'groom',  label: 'Groom',  icon: '✨' },
+  { key: 'travel', label: 'Travel', icon: '✈️' },
 ];
 
+const SORTS = [
+  { key: 'discount', label: 'Best Discount' },
+  { key: 'ending',   label: 'Ending Soon' },
+  { key: 'creator',  label: 'By Creator' },
+];
+
+// brand.category → super-category bucket (mirrors backend CATEGORY_MAP groupings)
+const CAT_MAP = {
+  eat:    ['restaurant', 'bakery', 'grocery', 'packaged_food', 'meals'],
+  shop:   ['fashion', 'fashion_walkin', 'fashion_online', 'florist', 'flowers_gifting',
+           'electronics', 'jewellery', 'footwear', 'furniture'],
+  groom:  ['salon'],
+  travel: ['car_rental', 'bike_rental'],
+};
+function superCatOf(category) {
+  const c = String(category || '').toLowerCase();
+  for (const key of Object.keys(CAT_MAP)) if (CAT_MAP[key].includes(c)) return key;
+  return null;
+}
+function superCatLabel(key) {
+  return (SUPERCATS.find(s => s.key === key) || {}).label || 'More';
+}
+
+const discountVal = (o) => Number(o?.discount_value ?? o?.discount?.value ?? 0) || 0;
+
 export default function DealsScreen({ navigation }) {
-  const [tab, setTab] = useState('all');
-  const [deals, setDeals] = useState([]);
+  const [sections, setSections] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [sections, setSections] = useState(null); // section-engine payload (flag on)
+  const [chip, setChip] = useState('all');
+  const [sort, setSort] = useState('discount');
 
-  // Section engine (Phase C2): when on, render the Offers screen from
-  // GET /v1/follower/section/offers via <SectionRenderer>. Inert + falls back to
-  // the existing deals grid on error/empty. Default off → existing behavior.
-  useEffect(() => {
-    if (!isEnabled('SECTION_ENGINE_OFFERS')) return;
-    let alive = true;
-    followerApi.getOffersSections()
-      .then(r => { if (alive) setSections(r?.data?.sections || []); })
-      .catch(() => { if (alive) setSections(null); });
-    return () => { alive = false; };
-  }, []);
-  const sectionsActive = isEnabled('SECTION_ENGINE_OFFERS') && hasEngineContent(sections);
-
-  const fetchDeals = useCallback(async (currentTab) => {
+  const load = useCallback(async () => {
     try {
-      const res = await followerApi.getDeals(currentTab, 1);
-      const data = res.data || res;
-      setDeals(data.deals || []);
+      const r = await followerApi.getOffersSections();
+      setSections(r?.data?.sections || r?.sections || []);
     } catch (e) {
-      console.error('[DealsScreen] Error:', e.message);
+      console.error('[DealsScreen] load error:', e.message);
+      setSections([]);
     }
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchDeals(tab).finally(() => setLoading(false));
-  }, [tab, fetchDeals]);
+  useEffect(() => { setLoading(true); load().finally(() => setLoading(false)); }, [load]);
+  const onRefresh = useCallback(async () => { setRefreshing(true); await load(); setRefreshing(false); }, [load]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await fetchDeals(tab);
-    setRefreshing(false);
-  }, [tab, fetchDeals]);
+  // Flatten every offer item across the offer shelves into one deduped list.
+  const offers = useMemo(() => {
+    const out = [];
+    const seen = new Set();
+    (sections || []).forEach(sec => {
+      if (!['offers', 'mixed'].includes(sec.type) || !Array.isArray(sec.items)) return;
+      sec.items.forEach(it => {
+        const id = `${it.source || ''}:${it.id}`;
+        if (it.id && !seen.has(id)) { seen.add(id); out.push(it); }
+      });
+    });
+    return out;
+  }, [sections]);
 
-  const handleSave = useCallback(async (item) => {
-    try {
-      if (item.is_saved) {
-        await followerApi.unsaveOffer(item.offer?.id || item.offer_id);
-      } else {
-        await followerApi.saveOffer(item.offer?.id || item.offer_id, item.influencer?.id);
-      }
-      setDeals(prev => prev.map(d =>
-        (d.offer?.id || d.offer_id) === (item.offer?.id || item.offer_id)
-          ? { ...d, is_saved: !d.is_saved } : d
-      ));
-    } catch (e) {
-      console.error('[DealsScreen] Save error:', e.message);
+  const areaName = offers[0]?.brand?.city || null;
+
+  const sortFn = useCallback((a, b) => {
+    if (sort === 'ending') {
+      const ea = a.offer_expires_at ? new Date(a.offer_expires_at).getTime() : Infinity;
+      const eb = b.offer_expires_at ? new Date(b.offer_expires_at).getTime() : Infinity;
+      return ea - eb;
     }
-  }, []);
+    return discountVal(b) - discountVal(a); // default: biggest discount
+  }, [sort]);
 
-  const renderItem = useCallback(({ item, index }) => {
-    const product = item.product || item;
-    const brand = item.brand || { name: item.brand_name, category: item.brand_category, city: item.brand_city };
-    const category = brand.category;
-    const isCarRental = category === 'car_rental' || category === 'bike_rental';
+  const goToOffer = useCallback((item) => {
+    navigation.navigate('ProductDetail', {
+      offer: {
+        id: item.tracking?.oid || item.id,
+        offer_type: item.offer_type,
+        discount_value: item.discount_value,
+        availing_modes: item.availing_modes,
+      },
+      brand: item.brand
+        ? { id: item.brand.id, name: item.brand.name, category: item.brand.category, locality: item.brand.city }
+        : null,
+      store: item.via_creator ? { instagram_handle: item.via_creator.handle, name: item.via_creator.name } : null,
+      influencer: item.via_creator || null,
+      tracking: item.tracking || null,
+      trackingParams: item.tracking || null,
+    });
+  }, [navigation]);
 
+  const dealCard = (item, i) => (
+    <DealCard
+      key={`${item.id}_${i}`}
+      offer={item}
+      title={item.brand?.name}
+      brand={String(item.brand?.category || '').replace(/_/g, ' ')}
+      category={item.brand?.category}
+      creator={item.via_creator}
+      onPress={() => goToOffer(item)}
+    />
+  );
+
+  // ── body builders ───────────────────────────────────────────────────────────
+  const renderAll = () => {
+    const sorted = [...offers].sort(sortFn);
+    const hero = sorted[0];
+    // group into super-category rails (in SUPERCATS order, skipping 'all')
+    const byCat = {};
+    sorted.forEach(o => { const k = superCatOf(o.brand?.category) || 'more'; (byCat[k] = byCat[k] || []).push(o); });
+    const railKeys = SUPERCATS.filter(s => s.key !== 'all' && byCat[s.key]?.length).map(s => s.key)
+      .concat(byCat.more?.length ? ['more'] : []);
     return (
-      <View style={[s.gridItem, index % 2 === 0 && { marginRight: 5 }, index % 2 === 1 && { marginLeft: 5 }]}>
-        <ProductCard
-          product={product}
-          brand={brand}
-          discount={item.discount || (item.offer?.discount_value ? { type: item.offer?.offer_type || 'percentage', value: item.offer.discount_value } : null)}
-          influencer={item.influencer}
-          isSaved={item.is_saved}
-          onPressHeart={() => handleSave(item)}
-          onPress={() => {
-            if (isCarRental) {
-              const specs = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {});
-              navigation.navigate('CarDetail', {
-                vehicle: { name: product.name, specs: specs.specs || {}, location: brand.city, distance: '1.2 km' },
-                pricing: { day_rate: product.price, ...specs },
-                discount: item.offer?.discount_value ? { value: item.offer.discount_value, influencer_name: item.influencer?.name } : null,
-                tracking: item.tracking,
-              });
-            } else {
-              // Product tap → single-product detail. The offer in the deal
-              // row carries discount + availing_modes, so the detail screen
-              // can surface the right CTA stack.
-              navigation.navigate('ProductDetail', {
-                offer: item.offer || { id: item.tracking?.offer_id, offer_type: item.offer_type, discount_value: item.discount_value, availing_modes: item.availing_modes },
-                brand,
-                store: { instagram_handle: item.influencer?.handle || item.influencer?.instagram_handle, name: item.influencer?.name },
-                influencer: item.influencer,
-                selectedProductId: product.id,
-                product,
-                tracking: buildTracking(item),
-                trackingParams: buildTracking(item),
-              });
-            }
-          }}
-          onPressBrand={() => navigation.navigate('BrandStore', {
-            brandId: brand.id || item.brand_id,
-            brandName: brand.name,
-            tracking: buildTracking(item),
-          })}
-        />
+      <>
+        {hero ? (
+          <View style={s.heroWrap}>
+            <TouchableOpacity activeOpacity={0.92} onPress={() => goToOffer(hero)}>
+              <Gradient colors={['#8a4f2d', '#6e3a24']} direction="diagonal" style={s.hero}>
+                <Text style={s.heroLbl}>⚡ TODAY'S BEST DEAL</Text>
+                <Text style={s.heroTitle} numberOfLines={2}>{hero.brand?.name || 'Top deal'}</Text>
+                <Text style={s.heroVia}>
+                  {hero.via_creator ? `via @${hero.via_creator.handle} · ` : ''}
+                  {discountVal(hero) > 0 ? `${Math.round(discountVal(hero))}% off` : 'Tap to view'}
+                </Text>
+                <Text style={s.heroEmoji}>{emojiFor(hero.brand?.category)}</Text>
+                <View style={s.heroGrab}><Text style={s.heroGrabTxt}>Grab →</Text></View>
+              </Gradient>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {railKeys.map(k => (
+          <View key={k}>
+            <ShelfHeader title={`${superCatLabel(k)} Offers`} sub="top deals" count={byCat[k].length} tag="offers" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+              {byCat[k].map((o, i) => dealCard(o, i))}
+            </ScrollView>
+          </View>
+        ))}
+      </>
+    );
+  };
+
+  const renderGrid = () => {
+    const filtered = offers.filter(o => superCatOf(o.brand?.category) === chip).sort(sortFn);
+    if (!filtered.length) return <Empty />;
+    return (
+      <View>
+        <ShelfHeader title={`${superCatLabel(chip)} Offers`} sub={`sorted by ${sort === 'ending' ? 'ending soon' : 'biggest discount'}`} count={filtered.length} tag="offers" />
+        <View style={s.grid}>
+          {filtered.map((o, i) => (
+            <TouchableOpacity key={`${o.id}_${i}`} activeOpacity={0.85} style={s.gridCell} onPress={() => goToOffer(o)}>
+              <NewOfferCard
+                store={{ name: o.brand?.name, category: o.brand?.category }}
+                dealType="shop"
+                dealLabel={o.via_creator ? `via @${o.via_creator.handle}` : 'Deal'}
+                discountValue={discountVal(o) > 0 ? `${Math.round(discountVal(o))}%` : 'Offer'}
+                tags={[]}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     );
-  }, [handleSave, navigation]);
+  };
 
-  // "Today's Best Deal" hero — the loaded deal with the highest discount.
-  // Pure client-side derivation from data already fetched (no new endpoint).
-  const bestDeal = React.useMemo(() => {
-    let best = null, max = 0;
-    for (const d of deals) {
-      const v = Number(d.offer?.discount_value ?? d.discount_value ?? d.discount?.value ?? 0);
-      if (v > max) { max = v; best = d; }
-    }
-    return best;
-  }, [deals]);
-
-  const renderHero = () => {
-    if (!bestDeal) return null;
-    const b = bestDeal.brand || { name: bestDeal.brand_name, id: bestDeal.brand_id };
-    const v = Number(bestDeal.offer?.discount_value ?? bestDeal.discount_value ?? bestDeal.discount?.value ?? 0);
+  const renderByCreator = () => {
+    const scoped = chip === 'all' ? offers : offers.filter(o => superCatOf(o.brand?.category) === chip);
+    const groups = {};
+    scoped.forEach(o => {
+      if (!o.via_creator?.id) return; // store-direct deals have no creator → omitted from this view
+      const g = groups[o.via_creator.id] || (groups[o.via_creator.id] = { creator: o.via_creator, items: [] });
+      g.items.push(o);
+    });
+    const list = Object.values(groups).sort((a, b) => b.items.length - a.items.length);
+    if (!list.length) return <Empty text="No creator-backed deals here yet." />;
     return (
-      <TouchableOpacity
-        style={s.hero}
-        activeOpacity={0.9}
-        onPress={() => navigation.navigate('BrandStore', {
-          brandId: b.id || bestDeal.brand_id,
-          brandName: b.name,
-          tracking: buildTracking(bestDeal),
-        })}
-      >
-        <Text style={s.heroLabel}>⚡ TODAY'S BEST DEAL</Text>
-        <Text style={s.heroTitle} numberOfLines={2}>{v > 0 ? `${v}% off` : 'Top pick'} at {b.name}</Text>
-        {bestDeal.influencer?.name ? (
-          <Text style={s.heroVia}>via @{bestDeal.influencer.name}</Text>
-        ) : null}
-      </TouchableOpacity>
+      <>
+        {list.map(g => (
+          <View key={g.creator.id}>
+            <TouchableOpacity
+              style={s.cgrp} activeOpacity={0.85}
+              onPress={() => navigation.navigate('InfluencerStore', { handle: g.creator.handle })}
+            >
+              <View style={s.ring}>
+                <View style={s.avatar}><Text style={s.avatarTxt}>{g.creator.handle ? g.creator.handle[0].toUpperCase() : '★'}</Text></View>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cName}>@{g.creator.handle}</Text>
+                <Text style={s.cMeta}>{g.items.length} live deal{g.items.length > 1 ? 's' : ''}</Text>
+              </View>
+              <Text style={s.cView}>View →</Text>
+            </TouchableOpacity>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+              {g.items.sort(sortFn).map((o, i) => dealCard(o, i))}
+            </ScrollView>
+          </View>
+        ))}
+      </>
     );
+  };
+
+  const body = () => {
+    if (!offers.length) return <Empty />;
+    if (sort === 'creator') return renderByCreator();
+    if (chip !== 'all') return renderGrid();
+    return renderAll();
   };
 
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <Text style={s.title}>Offers</Text>
-        <Text style={s.subtitle}>Creator-backed deals near you</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={s.title}>Offers</Text>
+          <Text style={s.subtitle}>📍 best deals{areaName ? ` in ${areaName}` : ' near you'}</Text>
+        </View>
+        <TouchableOpacity style={s.searchBtn} onPress={() => navigation.navigate('Find')}>
+          <Text style={{ fontSize: 15 }}>🔍</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
-        {TABS.map(t => (
-          <TouchableOpacity
-            key={t.key}
-            style={[s.tabPill, tab === t.key && s.tabPillActive]}
-            onPress={() => { setTab(t.key); setDeals([]); }}
-          >
-            <Text style={[s.tabText, tab === t.key && s.tabTextActive]}>{t.icon} {t.label}</Text>
+      {/* sticky super-category chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+        {SUPERCATS.map(sc => (
+          <TouchableOpacity key={sc.key} style={[s.chip, chip === sc.key && s.chipOn]} onPress={() => setChip(sc.key)}>
+            <Text style={[s.chipTxt, chip === sc.key && s.chipTxtOn]}>{sc.icon ? `${sc.icon} ` : ''}{sc.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {sectionsActive ? (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: 100 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} />}
-        >
-          <SectionRenderer sections={sections} navigation={navigation} />
-        </ScrollView>
-      ) : loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color={P.yellow} /></View>
+      {/* sort / filter pills */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.pillRow}>
+        {SORTS.map(so => (
+          <TouchableOpacity key={so.key} style={[s.pill, sort === so.key && s.pillOn]} onPress={() => setSort(so.key)}>
+            <Text style={[s.pillTxt, sort === so.key && s.pillTxtOn]}>{so.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {loading ? (
+        <View style={s.center}><ActivityIndicator size="large" color={C.brown} /></View>
       ) : (
-        <FlatList
-          data={deals}
-          keyExtractor={(item, idx) => `${item.offer?.id || item.offer_id || idx}_${item.product?.id || idx}`}
-          numColumns={2}
-          renderItem={renderItem}
-          ListHeaderComponent={renderHero}
-          contentContainerStyle={{ padding: 20, paddingTop: 10, paddingBottom: 100, gap: 10 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={P.yellow} />}
-          ListEmptyComponent={
-            <View style={s.empty}>
-              <Text style={{ fontSize: 40, marginBottom: 10 }}>🏷️</Text>
-              <Text style={s.emptyTitle}>No deals in this category yet</Text>
-              <Text style={s.emptyText}>Try a different tab or check back later.</Text>
-            </View>
-          }
-        />
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 110 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brown} />}
+        >
+          {body()}
+          <View style={{ height: 20 }} />
+        </ScrollView>
       )}
     </View>
   );
 }
 
+function Empty({ text }) {
+  return (
+    <View style={s.empty}>
+      <Text style={{ fontSize: 40, marginBottom: 10 }}>🏷️</Text>
+      <Text style={s.emptyTitle}>No deals here yet</Text>
+      <Text style={s.emptyText}>{text || 'Pull to refresh or try another filter.'}</Text>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: P.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: C.screenBg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
   header: {
-    paddingHorizontal: 20, paddingTop: 50, paddingBottom: 8,
-    backgroundColor: P.bg,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 18, paddingTop: 50, paddingBottom: 6, backgroundColor: C.screenBg,
   },
   title: { fontSize: 22, fontWeight: '600', color: C.ink, fontFamily: fonts.serifDisplay },
   subtitle: { fontSize: 11, color: C.muted, fontWeight: '600', marginTop: 2, fontFamily: fonts.sansMedium },
-  hero: { backgroundColor: C.brown, borderRadius: 18, padding: 16, marginBottom: 14 },
-  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5, fontFamily: fonts.sansBold },
-  heroTitle: { fontSize: 20, fontWeight: '600', color: '#fff', marginTop: 4, fontFamily: fonts.serifDisplay },
-  heroVia: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.92)', marginTop: 6, fontFamily: fonts.sansSemiBold },
-  tabRow: {
-    paddingHorizontal: 20, paddingBottom: 12, gap: 6,
+  searchBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: C.card,
+    borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center',
   },
-  tabPill: {
-    paddingHorizontal: 14, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1.5, borderColor: P.border,
+  chipRow: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 8 },
+  chip: {
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8,
+    borderWidth: 1, borderColor: C.line, backgroundColor: C.card,
   },
-  tabPillActive: {
-    borderColor: C.brown, backgroundColor: C.brown,
+  chipOn: { backgroundColor: C.brown, borderColor: C.brown },
+  chipTxt: { fontSize: 12, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
+  chipTxtOn: { color: '#fff' },
+  pillRow: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8, gap: 7 },
+  pill: {
+    paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, marginRight: 7,
+    borderWidth: 1, borderColor: C.line, backgroundColor: C.card,
   },
-  tabText: { fontSize: 11, fontWeight: '700', color: P.muted, fontFamily: fonts.sansSemiBold },
-  tabTextActive: { color: '#fff' },
-  gridItem: { flex: 1 },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: P.ink, marginBottom: 4 },
-  emptyText: { fontSize: 12, color: P.muted, textAlign: 'center' },
+  pillOn: { backgroundColor: C.brown, borderColor: C.brown },
+  pillTxt: { fontSize: 11, fontWeight: '700', color: C.muted, fontFamily: fonts.sansSemiBold },
+  pillTxtOn: { color: '#fff' },
+  rail: { paddingHorizontal: 16, paddingBottom: 6, gap: 12 },
+  heroWrap: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2 },
+  hero: { borderRadius: 20, padding: 16, minHeight: 110, justifyContent: 'center', overflow: 'hidden' },
+  heroLbl: { fontSize: 9.5, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.6, fontFamily: fonts.sansBold },
+  heroTitle: { fontSize: 22, fontWeight: '600', color: '#fff', marginTop: 6, maxWidth: 210, fontFamily: fonts.serifDisplay },
+  heroVia: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.92)', marginTop: 8, fontFamily: fonts.sansSemiBold },
+  heroEmoji: { position: 'absolute', right: -4, top: -6, fontSize: 78, opacity: 0.16 },
+  heroGrab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+  heroGrabTxt: { color: C.brown, fontSize: 11.5, fontWeight: '800', fontFamily: fonts.sansBold },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
+  gridCell: { width: '47%' },
+  cgrp: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  ring: { padding: 2, borderRadius: 26, backgroundColor: C.brown },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#ecdfc9', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.screenBg },
+  avatarTxt: { fontSize: 18, fontWeight: '800', color: C.brown, fontFamily: fonts.sansBold },
+  cName: { fontSize: 13.5, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
+  cMeta: { fontSize: 10, color: C.muted, fontWeight: '600', marginTop: 1, fontFamily: fonts.sansMedium },
+  cView: { fontSize: 11, fontWeight: '800', color: C.brown, fontFamily: fonts.sansBold },
+  empty: { alignItems: 'center', paddingTop: 70, paddingHorizontal: 30 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.ink, marginBottom: 4 },
+  emptyText: { fontSize: 12, color: C.muted, textAlign: 'center' },
 });
