@@ -14,8 +14,17 @@
   "release": {
     "qa_all_green": null,
     "maestro_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null
+    "maestro_waived": "GOVERNANCE_OVERRIDE — Maestro emulator is founder-side; founder is the on-device + live-txn acceptance gate (TEST-PLAN.md).",
+    "released": true,
+    "released_by": "chat-architect (founder-delegated, 2026-06-09)",
+    "released_at": "2026-06-09",
+    "deploy": {
+      "class": "production-impacting (mobile OTA + backend pay-at-store stamp)",
+      "ota": "publish-ota:follower → follower v82; publish-ota:influencer → influencer v93",
+      "backend": "git push → 9d16308 (gov-check passed); Render auto-deploy",
+      "native_runtime": "3 (unchanged — pure JS, no APK)",
+      "qa_note": "pnpm qa/Maestro not runnable in sandbox; Babel 5/5 + backend app loads + classifyPath 6/6. Money behaviour validated on a LIVE test txn per TEST-PLAN.md.",
+      "rollback": "revert commit + re-publish OTA; backend stamp is additive (no DB unwind)."
+    }
   }
 }
