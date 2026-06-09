@@ -218,7 +218,13 @@ export default function InfluencerStoreScreen({ route, navigation }) {
         {cats.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
             {['all', ...cats].map(k => (
-              <TouchableOpacity key={k} style={[s.chip, tab === k && s.chipOn]} onPress={() => setTab(k)}>
+              <TouchableOpacity
+                key={k}
+                style={[s.chip, tab === k && s.chipOn]}
+                onPress={() => k === 'all'
+                  ? setTab('all')
+                  : navigation.navigate('CreatorCategory', { influencer, offers, category: k, label: labelFor(k) })}
+              >
                 <Text style={[s.chipTxt, tab === k && s.chipTxtOn]}>{k === 'all' ? 'All' : labelFor(k)}</Text>
               </TouchableOpacity>
             ))}

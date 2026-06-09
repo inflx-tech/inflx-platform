@@ -1,0 +1,21 @@
+{
+  "feature": "follower-creator-category-rebuild",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('Yes, build it' — Creator's Category, 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (creator-category-comprehensive.html is the locked agreed design)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Screen #5. Rebuild CreatorCategoryScreen to creator-category-comprehensive.html: header {Creator}·{Category} + curated-by, sub-type chips (product sections), Partner brands, 2-col product Picks grid + Top rail; products (not offer cards); tap → ProductDetail + 4-ID + via_store_influencer_id. Creator Store category tabs navigate here. Pure JS / OTA-safe; NATIVE_RUNTIME '3'. Babel-validated. Maestro waived via GOVERNANCE_OVERRIDE.",
+  "release": {
+    "qa_all_green": null,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

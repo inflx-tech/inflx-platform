@@ -1,162 +1,167 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { creatorVibe as C, fonts, getBusinessAccentLight } from '../../theme/tokens';
-import { isEnabled } from '../../config/featureFlags';
-import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
-import { followerApi } from '../../services/api';
+import { creatorVibe as C, fonts } from '../../theme/tokens';
+import { ShelfProductCard, ShelfHeader } from '../../components/vibe';
+import { emojiFor } from '../../components/vibe/palette';
 
 /**
- * CreatorCategoryScreen — Flow 52.7 (mockup screen 4a).
+ * CreatorCategoryScreen — rebuilt to creator-category-comprehensive.html.
+ * Contract: features/follower-creator-category-rebuild.
  *
- * Creator-SCOPED category view: tapping a category inside a creator's store
- * lands here, showing ONLY what that creator promotes in that category —
- * their partner businesses + their picks. Distinct from the global
- * CategoryListScreen (everyone's stores).
+ * The same creator drilled into ONE vertical: header "{Creator} · {Category}" +
+ * curated-by line, sticky sub-type chips (product types within the vertical),
+ * Partner Brands, a 2-col "{Creator}'s Picks in {Category}" grid, and a
+ * "{Creator}'s Top in {Category} 🔥" rail. Runs on the creator's offers passed
+ * from the Creator Store (filtered to the tapped vertical) — no new fetch.
  *
- * Runs entirely on data the Creator Store (`getStore`) already returns: the
- * influencer + their offers. We receive them via route params and filter to
- * the tapped category client-side — NO new endpoint, NO backend change.
- *
- * Route params: { influencer, offers, category, label }
- *   - influencer : the creator object from getStore
- *   - offers     : the creator's full offer list (filtered here by category)
- *   - category   : raw brand_category key (e.g. 'restaurant', 'fashion')
- *   - label      : display label (e.g. 'Restaurants')
- *
- * Offer dispatch + 4-ID tracking mirror InfluencerStoreScreen.onPickPress so
- * commission attribution is identical.
+ * Route params: { influencer, offers, category, label }.
+ * Every pick tap carries the creator's 4-ID tracking + store-context.
  */
+
+const discountVal = (o) => Number(o?.discount_value ?? o?.discount?.value ?? 0) || 0;
 
 export default function CreatorCategoryScreen({ route, navigation }) {
   const { influencer = {}, offers = [], category, label } = route.params || {};
+  const [sub, setSub] = useState('all');
 
-  const catOffers = (offers || []).filter(o => (o.brand_category || 'other') === category);
-
-  // Section engine (Phase C2): when on, render shelves from the backend instead
-  // of the param-filtered offers. Inert + fallback to the param body on
-  // error/empty. Default off → existing behavior.
-  const [sections, setSections] = useState(null);
-  useEffect(() => {
-    if (!isEnabled('SECTION_ENGINE_CREATOR')) return;
-    const handle = influencer.instagram_handle;
-    if (!handle || !category) return;
-    let alive = true;
-    followerApi.getCreatorCategorySections(handle, category)
-      .then(r => { if (alive) setSections(r?.data?.sections || []); })
-      .catch(() => { if (alive) setSections(null); });
-    return () => { alive = false; };
-  }, [influencer.instagram_handle, category]);
-  const sectionsActive = isEnabled('SECTION_ENGINE_CREATOR') && hasEngineContent(sections);
-
-  // Distinct partner businesses the creator promotes in this category.
-  const brandsMap = {};
-  for (const o of catOffers) {
-    const id = o.brand_id || o.brand_name;
-    if (id && !brandsMap[id]) {
-      brandsMap[id] = { id: o.brand_id, name: o.brand_name, city: o.brand_city, category: o.brand_category };
-    }
-  }
-  const partners = Object.values(brandsMap);
-
-  const accent = getBusinessAccentLight(category);
   const firstName = (influencer.name || influencer.instagram_handle || 'Creator').split(' ')[0];
+  const catOffers = useMemo(() => (offers || []).filter(o => (o.brand_category || 'other') === category), [offers, category]);
 
-  function trackingFor(offer) {
-    return {
-      campaign_id: offer.campaign_id,
-      set_id: offer.set_id,
-      offer_id: offer.offer_id,
-      campaign_influencer_id: offer.campaign_influencer_id,
-      influencer_id: influencer.id,
-      influencer_handle: influencer.instagram_handle,
-      influencer_name: influencer.name,
-    };
-  }
+  // distinct partner brands in this vertical
+  const partners = useMemo(() => {
+    const m = {};
+    catOffers.forEach(o => { const id = o.brand_id; if (id && !m[id]) m[id] = { id, name: o.brand_name, category: o.brand_category }; });
+    return Object.values(m);
+  }, [catOffers]);
 
-  // Route by primary availing mode — identical dispatch to the Creator Store.
-  function dispatchOffer(offer) {
-    const params = {
-      offer: { id: offer.offer_id, offer_type: offer.offer_type, discount_value: offer.discount_value, availing_modes: offer.availing_modes },
-      brand: { id: offer.brand_id, name: offer.brand_name, category: offer.brand_category, city: offer.brand_city },
-      tracking: trackingFor(offer),
-      influencer,
-    };
-    const primary = (offer.availing_modes || [])[0];
-    if (primary === 'pay_at_store')    navigation.navigate('PayAtStore', params);
-    else if (primary === 'prebook')    navigation.navigate('PreBook', params);
-    else if (primary === 'enquiry')    navigation.navigate('Enquiry', params);
-    else navigation.navigate('BrandStore', { brandId: offer.brand_id, tracking: params.tracking });
-  }
-
-  function openBrand(b, viaOffer) {
-    navigation.navigate('BrandStore', {
-      brandId: b.id,
-      brandName: b.name,
-      tracking: viaOffer ? trackingFor(viaOffer) : { influencer_id: influencer.id, influencer_handle: influencer.instagram_handle, influencer_name: influencer.name },
+  // flatten offers → product picks (dedupe per product, best discount)
+  const picks = useMemo(() => {
+    const m = {};
+    catOffers.forEach(o => {
+      (o.products || []).forEach(p => {
+        const pid = p.id || p.product_id; if (!pid) return;
+        const dv = discountVal(o);
+        if (!m[pid] || dv > m[pid].discount_value) {
+          m[pid] = { product: p, brand: { id: o.brand_id, name: o.brand_name, category: o.brand_category, city: o.brand_city }, discount_value: dv, section: p.section || null, offer: o };
+        }
+      });
     });
-  }
+    return Object.values(m);
+  }, [catOffers]);
+
+  // sub-type chips from product sections (e.g. Breads / Rice / Biryani)
+  const subTypes = useMemo(() => {
+    const seen = new Set(); const out = [];
+    picks.forEach(p => { const sct = p.section; if (sct && !seen.has(sct)) { seen.add(sct); out.push(sct); } });
+    return out;
+  }, [picks]);
+
+  const visiblePicks = useMemo(
+    () => (sub === 'all' ? picks : picks.filter(p => p.section === sub)),
+    [picks, sub]
+  );
+  const topPicks = useMemo(
+    () => [...visiblePicks].filter(p => p.discount_value > 0).sort((a, b) => b.discount_value - a.discount_value).slice(0, 6),
+    [visiblePicks]
+  );
+
+  const onPick = (pk) => {
+    const o = pk.offer;
+    const tracking = {
+      campaign_id: o.campaign_id, set_id: o.set_id, offer_id: o.offer_id,
+      campaign_influencer_id: o.campaign_influencer_id,
+      influencer_id: influencer.id, influencer_handle: influencer.instagram_handle, influencer_name: influencer.name,
+    };
+    navigation.navigate('ProductDetail', {
+      offer: { id: o.offer_id, offer_type: o.offer_type, discount_value: o.discount_value, availing_modes: o.availing_modes,
+               campaign_id: o.campaign_id, set_id: o.set_id, campaign_influencer_id: o.campaign_influencer_id },
+      brand: pk.brand,
+      store: { instagram_handle: influencer.instagram_handle, name: influencer.name },
+      influencer, selectedProductId: pk.product.id || pk.product.product_id, product: pk.product,
+      tracking, trackingParams: tracking,
+      via_store_influencer_id: influencer.id,
+    });
+  };
+
+  const openBrand = (b) => navigation.navigate('BrandStore', { brandId: b.id, brandName: b.name });
 
   return (
     <View style={s.root}>
       <SafeAreaView edges={['top']} style={s.header}>
-        <Pressable style={s.backBtn} onPress={() => navigation.goBack()}>
-          <Text style={s.backText}>←</Text>
-        </Pressable>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={s.title} numberOfLines={1}>{accent.icon} {firstName} · {label}</Text>
+        <TouchableOpacity style={s.ib} onPress={() => navigation.goBack()}><Text style={s.ibTxt}>←</Text></TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={s.title} numberOfLines={1}>{firstName} · {label}</Text>
           <Text style={s.sub} numberOfLines={1}>curated by @{influencer.instagram_handle || influencer.name}</Text>
         </View>
+        <TouchableOpacity style={s.ib} onPress={() => navigation.navigate('Find')}><Text style={s.ibTxt}>🔍</Text></TouchableOpacity>
       </SafeAreaView>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {sectionsActive ? (
-        <SectionRenderer sections={sections} navigation={navigation} />
-        ) : (
-        <>
-        {/* Partner businesses */}
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+        {/* sub-type chips */}
+        {subTypes.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
+            {['all', ...subTypes].map(k => (
+              <TouchableOpacity key={k} style={[s.chip, sub === k && s.chipOn]} onPress={() => setSub(k)}>
+                <Text style={[s.chipTxt, sub === k && s.chipTxtOn]}>{k === 'all' ? 'All' : k}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {/* Partner brands */}
         {partners.length > 0 && (
-          <>
-            <Text style={s.sectionH}>Partner {label}</Text>
+          <View>
+            <ShelfHeader title={`Partner ${label}`} sub={`brands @${influencer.instagram_handle || 'they'} collab with`} count={partners.length} tag="brands" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.partnerRow}>
-              {partners.map((b, i) => (
-                <Pressable key={b.id || i} style={s.partnerCell} onPress={() => openBrand(b, catOffers.find(o => (o.brand_id || o.brand_name) === (b.id || b.name)))}>
-                  <View style={[s.partnerAvatar, { backgroundColor: accent.pale }]}>
-                    <Text style={s.partnerIcon}>{accent.icon}</Text>
-                  </View>
-                  <Text style={s.partnerName} numberOfLines={1}>{b.name}</Text>
-                </Pressable>
+              {partners.map(b => (
+                <TouchableOpacity key={b.id} style={s.partner} onPress={() => openBrand(b)}>
+                  <View style={s.partnerAv}><Text style={{ fontSize: 25 }}>{emojiFor(b.category)}</Text></View>
+                  <Text style={s.partnerNm} numberOfLines={1}>{b.name}</Text>
+                </TouchableOpacity>
               ))}
             </ScrollView>
-          </>
+          </View>
         )}
 
         {/* Picks grid */}
-        <Text style={s.sectionH}>{firstName}'s picks in {label}</Text>
-        {catOffers.length === 0 ? (
+        <ShelfHeader title={`${firstName}'s Picks in ${label}`} sub="everything they promote here" count={visiblePicks.length} tag="products" />
+        {visiblePicks.length === 0 ? (
           <Text style={s.empty}>No picks in this category yet.</Text>
         ) : (
           <View style={s.grid}>
-            {catOffers.map((o, i) => (
-              <Pressable key={o.offer_id || i} style={s.card} onPress={() => dispatchOffer(o)}>
-                <View style={[s.cardHero, { backgroundColor: accent.pale }]}>
-                  <Text style={s.cardEmoji}>{accent.icon}</Text>
-                  {o.discount_value > 0 ? (
-                    <View style={s.badge}>
-                      <Text style={s.badgeText}>{o.discount_value}% OFF</Text>
-                    </View>
-                  ) : null}
-                </View>
-                <View style={s.cardBody}>
-                  <Text style={s.cardName} numberOfLines={1}>{o.brand_name}</Text>
-                  {o.brand_city ? <Text style={s.cardMeta} numberOfLines={1}>{o.brand_city}</Text> : null}
-                </View>
-              </Pressable>
+            {visiblePicks.map((pk, i) => (
+              <ShelfProductCard
+                key={`${pk.product.id || pk.product.product_id}_${i}`}
+                product={pk.product}
+                brand={pk.brand}
+                discountValue={pk.discount_value || undefined}
+                onPress={() => onPick(pk)}
+              />
             ))}
           </View>
         )}
-        </>
+
+        {/* Top in {category} */}
+        {topPicks.length > 1 && (
+          <View>
+            <ShelfHeader title={`${firstName}'s Top in ${label} 🔥`} sub="their best here" count={topPicks.length} tag="products" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}>
+              {topPicks.map((pk, i) => (
+                <ShelfProductCard
+                  key={`top_${pk.product.id || pk.product.product_id}_${i}`}
+                  product={pk.product}
+                  brand={pk.brand}
+                  discountValue={pk.discount_value || undefined}
+                  rank={i + 1}
+                  onPress={() => onPick(pk)}
+                />
+              ))}
+            </ScrollView>
+          </View>
         )}
+
+        <View style={s.note}><Text style={s.noteTxt}>🎬 {firstName}'s reels in {label} — coming with the Reels feature</Text></View>
       </ScrollView>
     </View>
   );
@@ -164,55 +169,23 @@ export default function CreatorCategoryScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: C.screenBg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12,
-    backgroundColor: C.screenBg,
-  },
-  backBtn: {
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: C.card, borderWidth: 1, borderColor: C.line,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  backText: { fontSize: 16, color: C.ink },
-  title: { fontFamily: fonts.serifDisplay, fontWeight: '600', fontSize: 18, color: C.ink },
-  sub: { fontFamily: fonts.sansMedium, fontSize: 11, color: C.muted, marginTop: 1 },
-
-  sectionH: {
-    fontFamily: fonts.sansBold, fontSize: 15.5, fontWeight: '800', color: C.ink,
-    paddingHorizontal: 16, marginTop: 18, marginBottom: 10,
-  },
-  partnerRow: { paddingHorizontal: 16, gap: 14 },
-  partnerCell: { width: 74, alignItems: 'center', gap: 6 },
-  partnerAvatar: {
-    width: 60, height: 60, borderRadius: 30,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  partnerIcon: { fontSize: 26 },
-  partnerName: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: C.ink, textAlign: 'center' },
-
-  grid: {
-    flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: 16, gap: 12,
-  },
-  card: {
-    width: '47%',
-    backgroundColor: C.card,
-    borderRadius: 16, borderWidth: 1, borderColor: C.line,
-    overflow: 'hidden',
-  },
-  cardHero: {
-    height: 96, alignItems: 'center', justifyContent: 'center', position: 'relative',
-  },
-  cardEmoji: { fontSize: 40 },
-  badge: {
-    position: 'absolute', top: 8, left: 8,
-    backgroundColor: C.offer, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999,
-  },
-  badgeText: { fontFamily: fonts.sansBold, fontSize: 9, fontWeight: '800', color: '#fff' },
-  cardBody: { padding: 10 },
-  cardName: { fontFamily: fonts.sansBold, fontSize: 12.5, fontWeight: '800', color: C.ink },
-  cardMeta: { fontFamily: fonts.sansMedium, fontSize: 10, color: C.muted, marginTop: 2 },
-
+  header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, backgroundColor: C.screenBg },
+  ib: { width: 34, height: 34, borderRadius: 17, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  ibTxt: { fontSize: 15, color: C.ink },
+  title: { fontFamily: fonts.serifDisplay, fontWeight: '600', fontSize: 18, color: C.ink, textAlign: 'center' },
+  sub: { fontFamily: fonts.sansMedium, fontSize: 10, color: C.muted, marginTop: 2, textAlign: 'center' },
+  chipRow: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4, gap: 8 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
+  chipOn: { backgroundColor: C.brown, borderColor: C.brown },
+  chipTxt: { fontSize: 11.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
+  chipTxtOn: { color: '#fff' },
+  partnerRow: { paddingHorizontal: 16, paddingBottom: 4, gap: 14 },
+  partner: { width: 74, alignItems: 'center', gap: 6 },
+  partnerAv: { width: 60, height: 60, borderRadius: 18, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },
+  partnerNm: { fontSize: 10, fontWeight: '700', color: C.ink, textAlign: 'center', fontFamily: fonts.sansSemiBold },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: 16, gap: 12 },
+  rail: { paddingHorizontal: 16, paddingBottom: 6, gap: 12 },
   empty: { fontFamily: fonts.sansMedium, fontSize: 12, color: C.muted, paddingHorizontal: 16 },
+  note: { marginHorizontal: 16, marginTop: 14, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 11 },
+  noteTxt: { fontSize: 11, fontWeight: '600', color: '#5e5345', fontFamily: fonts.sansMedium },
 });
