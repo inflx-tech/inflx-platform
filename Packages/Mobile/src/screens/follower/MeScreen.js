@@ -6,6 +6,7 @@ import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { AuthContext } from '../../../App';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 /**
  * MeScreen (Profile) — rebuilt to orders-profile-comprehensive.html.
@@ -16,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * flow preserved; counts + wallet from existing follower endpoints.
  */
 
-export default function MeScreen({ navigation }) {
+function MeInner({ navigation }) {
   const { setRole } = useContext(AuthContext);
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState({ orders: null, following: null, saved: null });
@@ -127,6 +128,10 @@ export default function MeScreen({ navigation }) {
       </TouchableOpacity>
     </ScrollView>
   );
+}
+
+export default function MeScreen(props) {
+  return <ErrorBoundary screen="Profile"><MeInner {...props} /></ErrorBoundary>;
 }
 
 function getInitials(name) {

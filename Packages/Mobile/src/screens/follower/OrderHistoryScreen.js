@@ -5,6 +5,10 @@ import {
 import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
 import { emojiFor } from '../../components/vibe/palette';
 import { followerApi } from '../../services/api';
+import ErrorBoundary from '../../components/ErrorBoundary';
+
+// crash-proof emoji (getBusinessAccentLight may not be null-safe for every input)
+const safeEmoji = (c) => { try { return emojiFor(c) || '🛍️'; } catch { return '🛍️'; } };
 
 /**
  * OrderHistoryScreen (Orders) — rebuilt to orders-comprehensive.html.
@@ -81,7 +85,7 @@ function Card({ item, navigation }) {
   return (
     <View style={s.card}>
       <View style={s.cardHead}>
-        <View style={s.lg}><Text style={{ fontSize: 22 }}>{emojiFor(item.brand_category)}</Text></View>
+        <View style={s.lg}><Text style={{ fontSize: 22 }}>{safeEmoji(item.brand_category)}</Text></View>
         <View style={{ flex: 1 }}>
           <Text style={s.nm} numberOfLines={1}>{item.brand_name}</Text>
           <Text style={s.it} numberOfLines={1}>
@@ -117,7 +121,7 @@ function Card({ item, navigation }) {
   );
 }
 
-export default function OrderHistoryScreen({ navigation }) {
+function OrdersInner({ navigation }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -175,6 +179,10 @@ export default function OrderHistoryScreen({ navigation }) {
       )}
     </View>
   );
+}
+
+export default function OrderHistoryScreen(props) {
+  return <ErrorBoundary screen="Orders"><OrdersInner {...props} /></ErrorBoundary>;
 }
 
 const s = StyleSheet.create({
