@@ -13,7 +13,9 @@
  * (cheaper). Failures return [] / null (never throw) so the UI degrades cleanly.
  */
 
-const GOOGLE_KEY = process.env.GOOGLE_GEOCODING_API_KEY || '';
+// Prefer a dedicated Places key (GOOGLE_PLACES_API_KEY); fall back to the geocoding
+// key. Lets Places use its own key + restrictions, separate from Geocoding.
+const GOOGLE_KEY = process.env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_GEOCODING_API_KEY || '';
 const GEOCODING_MOCK = String(process.env.GEOCODING_MOCK || '').toLowerCase() === 'true';
 
 async function autocomplete(input, opts = {}) {
