@@ -43,6 +43,7 @@ import OrderDetailScreen from '../screens/follower/OrderDetailScreen';
 import EnquiryScreen from '../screens/follower/EnquiryScreen';
 import OrderHistoryScreen from '../screens/follower/OrderHistoryScreen';
 import AddressScreen from '../screens/follower/AddressScreen';
+import LocationSearchScreen from '../screens/follower/LocationSearchScreen';
 // Fashion-1b + Fashion-2 — returns + lookbooks
 import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
 import LookbookDetailScreen from '../screens/follower/LookbookDetailScreen';
@@ -68,6 +69,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     <Stack.Screen name="Enquiry" component={EnquiryScreen} />
     <Stack.Screen name="Address" component={AddressScreen} />
+    <Stack.Screen name="LocationSearch" component={LocationSearchScreen} />
     <Stack.Screen name="Find" component={FindScreen} />
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
     <Stack.Screen name="CreatorCategory" component={CreatorCategoryScreen} />

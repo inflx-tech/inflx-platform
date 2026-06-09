@@ -15,6 +15,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const geocoding   = require('../services/geocoding.service');
+const places      = require('../services/places.service');
 
 const geocodeMapsUrl = asyncHandler(async (req, res) => {
   const { google_maps_url, name, city } = req.body || {};
@@ -30,4 +31,9 @@ const geocodeHealth = asyncHandler(async (req, res) => {
   return success(res, await geocoding.geocodeHealth());
 });
 
-module.exports = { geocodeMapsUrl, geocodeHealth };
+// GET /v1/internal/places-health — is the Places API usable on this key?
+const placesHealth = asyncHandler(async (req, res) => {
+  return success(res, await places.placesHealth());
+});
+
+module.exports = { geocodeMapsUrl, geocodeHealth, placesHealth };

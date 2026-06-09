@@ -468,6 +468,15 @@ export const followerApi = {
   reverseGeocode: (lat, lng) => api.get(`/follower/reverse-geocode?lat=${lat}&lng=${lng}`),
   // Forward-geocode (verify/locate a typed address before saving it).
   geocodeAddress: (q) => api.get(`/follower/geocode?q=${encodeURIComponent(q)}`),
+  // Places Autocomplete + Details (Swiggy-style area search).
+  placesAutocomplete: (q, { session, lat, lng } = {}) => {
+    const p = [`q=${encodeURIComponent(q)}`];
+    if (session) p.push(`session=${encodeURIComponent(session)}`);
+    if (lat != null && lng != null) p.push(`lat=${lat}`, `lng=${lng}`);
+    return api.get(`/follower/places/autocomplete?${p.join('&')}`);
+  },
+  placeDetails: (placeId, session) =>
+    api.get(`/follower/places/details?place_id=${encodeURIComponent(placeId)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
 
   // Follow
   follow: (id) => api.post('/followers/follows', { influencer_id: id }),

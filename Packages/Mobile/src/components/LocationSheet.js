@@ -65,13 +65,22 @@ export default function LocationSheet({ visible, onClose, navigation }) {
           </Pressable>
         </View>
 
+        {/* Search bar → live Places autocomplete screen */}
+        <Pressable
+          style={styles.searchBar}
+          onPress={() => { onClose(); navigation?.navigate?.('LocationSearch'); }}
+        >
+          <Text style={styles.searchIcon}>🔍</Text>
+          <Text style={styles.searchPlaceholder}>Search an area or address</Text>
+        </Pressable>
+
         <ScrollView contentContainerStyle={{ paddingBottom: 28 }}>
           {/* Actions */}
           <Pressable onPress={pickCurrent} style={styles.action}>
             <Text style={styles.actionGlyph}>📍</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.actionLabel}>Use current location</Text>
-              <Text style={styles.actionSub}>Approximate · GPS coming soon</Text>
+              <Text style={styles.actionSub}>Detect with GPS</Text>
             </View>
             {location.source === 'current' && <Text style={styles.tick}>✓</Text>}
           </Pressable>
@@ -124,6 +133,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18, paddingTop: 8, maxHeight: '82%',
   },
   grip: { width: 36, height: 4, borderRadius: 2, backgroundColor: lightColors.border2, alignSelf: 'center', marginBottom: 10 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: lightColors.bg2, borderWidth: 1, borderColor: lightColors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8 },
+  searchIcon: { fontSize: 14 },
+  searchPlaceholder: { fontSize: 14, color: lightColors.muted, fontFamily: fonts.body },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   title: { fontFamily: fonts.displayBold, fontSize: 18, color: lightColors.ink, letterSpacing: -0.3 },
   close: { fontSize: 16, color: lightColors.muted },

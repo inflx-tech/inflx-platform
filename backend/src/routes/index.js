@@ -162,6 +162,7 @@ router.get('/subscription-tiers', subscriptionCtrl.listTiers);
 // fixed Vijayawada coords; prod hits Google Geocoding API.
 router.post('/internal/geocode-maps-url',         authenticate, geocodingCtrl.geocodeMapsUrl);
 router.get('/internal/geocode-health',            geocodingCtrl.geocodeHealth);
+router.get('/internal/places-health',             geocodingCtrl.placesHealth);
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);

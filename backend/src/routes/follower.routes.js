@@ -24,6 +24,9 @@ router.post('/location', ...followerAuth, ctrl.updateLocation);
 router.get('/reverse-geocode', authenticateOptional, ctrl.reverseGeocode);
 // Public forward-geocode (verify/locate a typed address before save).
 router.get('/geocode', authenticateOptional, ctrl.geocodeQuery);
+// Places Autocomplete + Details proxy (Swiggy-style area search).
+router.get('/places/autocomplete', authenticateOptional, ctrl.placesAutocomplete);
+router.get('/places/details', authenticateOptional, ctrl.placeDetails);
 
 // ── Addresses (auth required) ────────────────────────────────────────────────
 router.post('/addresses',     ...followerAuth, ctrl.createAddress);

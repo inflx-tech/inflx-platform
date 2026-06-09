@@ -30,6 +30,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
 const geocoding = require('../services/geocoding.service');
+const places = require('../services/places.service');
 
 // ── Helper: get follower row or throw ────────────────────────────────────────
 
@@ -1128,6 +1129,27 @@ const geocodeQuery = asyncHandler(async (req, res) => {
   });
 });
 
+// GET /v1/follower/places/autocomplete?q=&session=&lat=&lng= → predictions[]
+const placesAutocomplete = asyncHandler(async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return success(res, { predictions: [] });
+  const lat = parseFloat(req.query.lat); const lng = parseFloat(req.query.lng);
+  const predictions = await places.autocomplete(q, {
+    sessiontoken: req.query.session || null,
+    lat: Number.isFinite(lat) ? lat : null, lng: Number.isFinite(lng) ? lng : null,
+  });
+  return success(res, { predictions });
+});
+
+// GET /v1/follower/places/details?place_id=&session= → { lat, lng, ... }
+const placeDetails = asyncHandler(async (req, res) => {
+  const placeId = (req.query.place_id || '').trim();
+  if (!placeId) throw new AppError('VALIDATION_ERROR', 'place_id required', 422, 'place_id');
+  const d = await places.details(placeId, { sessiontoken: req.query.session || null });
+  if (!d) throw new AppError('NOT_FOUND', 'place not found', 404);
+  return success(res, d);
+});
+
 // GET /v1/follower/home
 const getHomeSections = asyncHandler(async (req, res) => {
   const { followerId, city, lat, lng } = await resolveFollowerContext(req);
@@ -1205,6 +1227,8 @@ module.exports = {
   updateLocation,
   reverseGeocode,
   geocodeQuery,
+  placesAutocomplete,
+  placeDetails,
   getHomeSections,
   getCategorySections,
   getOffersSections,

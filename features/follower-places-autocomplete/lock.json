@@ -1,0 +1,32 @@
+{
+  "feature": "follower-places-autocomplete",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "aveen (delegated → chat-architect, 2026-06-08 'Phase A now (autocomplete, OTA), map later')",
+  "approved_at": "2026-06-08",
+  "preview_reviewed": true,
+  "preview_reviewed_note": "Swiggy 'Select Your Location' search screenshots; workflow-prediction.md maps Phase A (search) + records Phase B (map/pin, APK) as deferred.",
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (delegated, 2026-06-08; Swiggy autocomplete reference approved)",
+  "mockup_locked_at": "2026-06-08",
+  "decisions": {
+    "D1_places_api": "Type-ahead needs the Places API (Autocomplete + Details) — Geocoding alone can't. Server-side proxy keeps the key secret; uses GOOGLE_GEOCODING_API_KEY (Places API must be enabled + in the key's restrictions).",
+    "D2_phaseA_ota": "Phase A = autocomplete search only (OTA, no APK). Phase B = map + draggable pin (Maps SDK + react-native-maps → APK) deferred.",
+    "D3_no_request_address": "Dropped the Swiggy 'Request Address' option per founder."
+  },
+  "notes": "Swiggy-style area search: backend Places proxy (autocomplete/details/health) + LocationSearchScreen (debounced predictions → pick → coords → feed re-ranks) + LocationSheet search bar + recent-searched. Builds on follower-location-switcher. No migration, OTA (runtime 3).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "aveen — chat 2026-06-08 (Phase A decision + Ship-now cadence)",
+    "released_at": "2026-06-08",
+    "classification": "production-impacting (Render backend + follower OTA runtime 3). No migration, no APK. Prereq: founder enables Places API.",
+    "maestro_green": false,
+    "maestro_note": "Maestro founder-side; founder device-smoke after enabling Places API (type area → suggestions → pick). Metro bundle clean.",
+    "governance_override": "released=true touches Mobile/src → GOVERNANCE_OVERRIDE (gov-check Rule 5). Maestro founder-side; founder Phase-A decision + Ship-now 2026-06-08; smart-fallback = web qa GREEN (flake re-run confirmed).",
+    "qa_evidence": "pnpm qa GREEN — 79 passed, C1 GREEN (qa/reports/2026-06-09T00-54-22-497Z/QA-REPORT.md). First run = recurring 6-auth-test 60s flake; re-run GREEN. node --check + babel 5/5 PASS.",
+    "deploy": { "render_backend": { "trigger": "git push origin main", "note": "Places proxy endpoints" }, "ota_follower": { "trigger": "pnpm publish-ota:follower", "runtime": 3 }, "prereq": "Enable Places API on the project/key; verify /internal/places-health." }
+  }
+}
