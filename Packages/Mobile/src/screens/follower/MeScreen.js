@@ -126,6 +126,9 @@ function MeInner({ navigation }) {
       <TouchableOpacity style={s.logout} onPress={handleLogout}>
         <Text style={s.logoutTxt}>LOG OUT</Text>
       </TouchableOpacity>
+
+      {/* v92 build tag — temporary, to confirm which OTA bundle is actually running */}
+      <Text style={s.build}>INFLX · build v92</Text>
     </ScrollView>
   );
 }
@@ -170,4 +173,5 @@ const s = StyleSheet.create({
   msub: { fontSize: 9.5, color: C.muted, fontWeight: '600', fontFamily: fonts.sansMedium },
   logout: { marginHorizontal: 16, marginTop: 14, borderWidth: 1.5, borderColor: C.offer, borderRadius: 14, paddingVertical: 13, alignItems: 'center', backgroundColor: C.card },
   logoutTxt: { fontSize: 13, fontWeight: '800', color: C.offer, letterSpacing: 0.3, fontFamily: fonts.displayBold },
+  build: { textAlign: 'center', color: C.muted, fontSize: 10, fontWeight: '700', marginTop: 16, letterSpacing: 0.5 },
 });
