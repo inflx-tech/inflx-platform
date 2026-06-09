@@ -20,6 +20,7 @@
 
 const db = require('../config/db');
 const paymentConfigSvc = require('./paymentConfig.service');
+const influencerStore = require('./influencerStore.service');
 
 let _tierCache     = null;
 let _tierCacheTime = 0;
@@ -338,7 +339,19 @@ function bustCategoryCache() {
  * @param {string} args.brandId
  * @param {string|null} args.campaignInfluencerId
  */
-async function classifyPath(client, { followerId, brandId, campaignInfluencerId }) {
+async function classifyPath(client, { followerId, brandId, campaignInfluencerId, storeInfluencerId, productId }) {
+  // 1. STORE CONTEXT (highest priority — "store beats window"). Hijack-proof:
+  //    resolveStoreContext only returns the influencer when the product is
+  //    ACTIVELY stocked by them AND they're still contracted with the brand.
+  //    Maps to the strongest influencer fee tier (influencer_direct = path_b).
+  //    DORMANT until a purchase path threads storeInfluencerId through.
+  if (storeInfluencerId && productId) {
+    const inf = await influencerStore.resolveStoreContext(
+      { influencerId: storeInfluencerId, productId, brandId }, client
+    );
+    if (inf) return { path: 'influencer_direct', influencer_id: inf, store_context: true };
+  }
+  // 2. LIVE LINK — this transaction carries an active campaign_influencer_id.
   if (campaignInfluencerId) {
     const { rows } = await client.query(
       `SELECT influencer_id FROM campaign_influencers WHERE id = $1`,
@@ -381,9 +394,12 @@ async function classifyPath(client, { followerId, brandId, campaignInfluencerId 
  * }
  */
 async function computeL3OnFollowerTxn(args) {
-  const { client, brandId, followerId, campaignInfluencerId, brandCategory, netAmount } = args;
+  const { client, brandId, followerId, campaignInfluencerId, brandCategory, netAmount,
+          storeInfluencerId = null, productId = null } = args;
   const amt = parseFloat(netAmount) || 0;
-  const { path, influencer_id } = await classifyPath(client, { followerId, brandId, campaignInfluencerId });
+  const { path, influencer_id } = await classifyPath(client, {
+    followerId, brandId, campaignInfluencerId, storeInfluencerId, productId,
+  });
 
   const categoryKey = _normalizeCategoryKey(brandCategory);
   const categories  = await _loadCategories();

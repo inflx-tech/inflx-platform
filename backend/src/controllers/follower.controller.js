@@ -88,6 +88,42 @@ const getMe = asyncHandler(async (req, res) => {
   return success(res, { follower, addresses });
 });
 
+// ── POST /follower/touch ──────────────────────────────────────────────────────
+// Attribution "touch": a logged-in follower tapped an influencer's link or entered
+// their store. Opens/refreshes the 30-day brand-scoped attribution window for
+// (this follower, this influencer, this brand) — the "click-opens-window" path for
+// known app users (anonymous web clicks still fall back to purchase-opens).
+// Body: { brand_id, influencer_id? , handle? }. Refreshes an active window if one
+// exists, else inserts one.
+const recordTouch = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found. Please register first.', 404);
+
+  let { influencer_id, handle, brand_id } = req.body || {};
+  if (!brand_id) throw new AppError('VALIDATION_ERROR', 'brand_id is required', 422, 'brand_id');
+  if (!influencer_id && handle) {
+    const { rows } = await db.query(
+      `SELECT id FROM influencers WHERE LOWER(instagram_handle) = LOWER($1) LIMIT 1`, [handle]
+    );
+    influencer_id = rows[0]?.id || null;
+  }
+  if (!influencer_id) throw new AppError('VALIDATION_ERROR', 'influencer_id or handle is required', 422, 'influencer_id');
+
+  const upd = await db.query(
+    `UPDATE attribution_clicks SET expires_at = now() + interval '30 days'
+      WHERE follower_id = $1 AND influencer_id = $2 AND brand_id = $3 AND expires_at > now()`,
+    [follower.id, influencer_id, brand_id]
+  );
+  if (upd.rowCount === 0) {
+    await db.query(
+      `INSERT INTO attribution_clicks (follower_id, influencer_id, brand_id, expires_at)
+       VALUES ($1, $2, $3, now() + interval '30 days')`,
+      [follower.id, influencer_id, brand_id]
+    );
+  }
+  return success(res, { touched: true });
+});
+
 // ── POST /follower/follows ────────────────────────────────────────────────────
 
 const followInfluencer = asyncHandler(async (req, res) => {
@@ -1208,6 +1244,7 @@ module.exports = {
   search,
   register,
   getMe,
+  recordTouch,
   followInfluencer,
   unfollowInfluencer,
   getInfluencerStore,

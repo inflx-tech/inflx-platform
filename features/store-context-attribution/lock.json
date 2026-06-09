@@ -1,0 +1,25 @@
+{
+  "feature": "store-context-attribution",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated: 'pls proceed' with the attribution-wiring slice, 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "preview_reviewed": false,
+  "impact_reviewed": true,
+  "notes": "Slice 2 of Creator Store / commission build. Backend-only decision logic: classifyPath store branch (store > live-link > window > direct, hijack-proof via resolveStoreContext) + computeL3 passthrough + POST /follower/touch (click-opens-window for logged-in followers). DORMANT — no caller passes storeInfluencerId; touch uncalled by any client. Money path byte-identical until the NEXT slice threads store-context through purchases + credits the store creator (validated on a live test txn, not blind-deployed). Decision logic unit-tested 6/6 (stubbed client); app loads clean. Backend-only → mockup/diff gates N/A; gov-check Rule 1 + Rule 2 only.",
+  "release": {
+    "qa_all_green": null,
+    "released": true,
+    "released_by": "chat-architect (founder-delegated, 2026-06-09)",
+    "released_at": "2026-06-09",
+    "deploy": {
+      "class": "production-impacting (backend/src) — additive + DORMANT",
+      "push": "git push → Render auto-deploy",
+      "ota_required": false,
+      "migration_required": "none",
+      "qa_note": "pnpm qa not runnable in sandbox; classifyPath store-branch unit-tested 6/6 (store>link>window>direct + hijack-proof); full app loads clean. Dormant (no caller passes storeInfluencerId; touch uncalled).",
+      "rollback": "revert commit; no DB state."
+    }
+  }
+}

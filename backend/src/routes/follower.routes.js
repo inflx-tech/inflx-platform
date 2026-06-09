@@ -14,6 +14,9 @@ const followerAuth = [authenticate, requireRole('follower')];
 router.post('/register', authenticate, requireRole('follower'), ctrl.register);
 router.get('/me',        authenticate, requireRole('follower'), ctrl.getMe);
 
+// ── Attribution touch (auth required) — click/store-entry opens the window ────
+router.post('/touch',                ...followerAuth, ctrl.recordTouch);
+
 // ── Follow / unfollow (auth required) ────────────────────────────────────────
 router.post('/follows',              ...followerAuth, ctrl.followInfluencer);
 router.delete('/follows/:influencer_id', ...followerAuth, ctrl.unfollowInfluencer);
