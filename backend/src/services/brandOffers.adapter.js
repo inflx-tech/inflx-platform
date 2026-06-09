@@ -198,6 +198,55 @@ function normalizeLibraryOffer(row, channel) {
   };
 }
 
+// ── PURE: rank a normalized offer list for a given shelf rule → feed items ────────
+// Ordering/scope per rule. ctx: { categoryKeys?:string[], followedIds?:Set|array,
+// influencerId?:uuid, limit?:number }. Count-based rules (engagement/conversions/
+// picks) DEGRADE to discount-then-recency here — the adapter does not yet compute
+// per-offer click/txn counts for assignment-sourced offers (documented; refined later).
+function rankForRule(ruleKey, items, ctx = {}) {
+  const limit = ctx.limit || 8;
+  const followed = ctx.followedIds instanceof Set
+    ? ctx.followedIds
+    : new Set(Array.isArray(ctx.followedIds) ? ctx.followedIds : []);
+  let list = Array.isArray(items) ? items.slice() : [];
+
+  // category scope (brand.category ∈ categoryKeys)
+  if (Array.isArray(ctx.categoryKeys) && ctx.categoryKeys.length) {
+    const cats = new Set(ctx.categoryKeys);
+    list = list.filter(n => n.brand && cats.has(n.brand.category));
+  }
+
+  const byDiscountDesc = (a, b) => (b.discount_value ?? -Infinity) - (a.discount_value ?? -Infinity);
+
+  switch (ruleKey) {
+    case 'follow_graph':
+      list = list.filter(n => n.via_creator && followed.has(n.via_creator.id));
+      break;
+    case 'creator_promotes':
+    case 'creator_top_picks':
+      list = list.filter(n => n.via_creator && n.via_creator.id === ctx.influencerId);
+      if (ruleKey === 'creator_top_picks') list.sort(byDiscountDesc);
+      break;
+    case 'biggest_discounts':
+      list.sort(byDiscountDesc);
+      break;
+    case 'ending_soon':
+      list = list.filter(n => n.offer_expires_at)
+        .sort((a, b) => new Date(a.offer_expires_at) - new Date(b.offer_expires_at));
+      break;
+    case 'top_by_engagement':
+    case 'top_by_conversions':
+    case 'top_picks':
+      list.sort(byDiscountDesc); // degraded proxy until per-offer counts are wired
+      break;
+    case 'newest':
+    case 'all_offers':
+    default:
+      break; // input order = recency from SQL
+  }
+  return list.slice(0, limit).map(toFeedItem);
+}
+
 // ── PURE: normalized offer → the feed-item shape sectionRules.mapOfferItem emits ──
 function toFeedItem(n) {
   return {
@@ -359,6 +408,7 @@ module.exports = {
   fetchStoreOffers,
   toFeedItem,
   offersV2Enabled,
+  rankForRule,
   // pure helpers (unit-tested)
   mapBrandOfferType,
   extractDiscount,

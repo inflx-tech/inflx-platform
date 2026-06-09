@@ -28,6 +28,21 @@
 
 const db = require('../config/db');
 const { buildTracking } = require('../utils/tracking');
+const offerAdapter = require('./brandOffers.adapter');
+
+// OR cutover (contract: listing-section-d0-seams / section-offer-repoint): when
+// SECTION_ENGINE_OFFERS is ON, offer shelves read the brandOffers.adapter (offers
+// from the creator assignment + engagement showcase + store-direct) instead of the
+// legacy campaign_offers SQL below. OFF (default) = unchanged legacy behaviour.
+async function offersViaAdapter(ruleKey, ctx) {
+  const items = await offerAdapter.fetchOffers({ limit: 200 });
+  return offerAdapter.rankForRule(ruleKey, items, {
+    categoryKeys: categoryFilter(ctx.categoryKey),
+    followedIds: ctx.followedIds,
+    influencerId: ctx.influencer && ctx.influencer.id,
+    limit: ctx.limit || 8,
+  });
+}
 
 // Category → brand.category schema keys (mirrors follower.service CATEGORY_MAP).
 const CATEGORY_MAP = {
@@ -152,6 +167,7 @@ const hasCoords = (ctx) => Number.isFinite(ctx?.lat) && Number.isFinite(ctx?.lng
 
 // Engagement = recent clicks (link_clicks) + recent conversions (txns) on the offer.
 async function topByEngagementOffers(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('top_by_engagement', ctx);
   const { city, limit = 8, windowDays = 7, categoryKey } = ctx;
   const params = [];
   let p = 0;
@@ -183,6 +199,7 @@ async function topByEngagementOffers(ctx) {
 }
 
 async function topByConversionsOffers(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('top_by_conversions', ctx);
   const { city, limit = 8, windowDays = 30, categoryKey } = ctx;
   const params = [];
   let p = 0;
@@ -210,6 +227,7 @@ async function topByConversionsOffers(ctx) {
 
 // Most-bought + most-saved this week (offer-level — mixed shelf).
 async function topPicks(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('top_picks', ctx);
   const { city, limit = 8, windowDays = 7 } = ctx;
   const params = [];
   let p = 0;
@@ -235,6 +253,7 @@ async function topPicks(ctx) {
 }
 
 async function newest(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('newest', ctx);
   const { city, limit = 8, windowDays = 7 } = ctx;
   const params = [];
   let p = 0;
@@ -252,6 +271,7 @@ async function newest(ctx) {
 }
 
 async function followGraph(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('follow_graph', ctx);
   const { followedIds, limit = 8 } = ctx;
   const ids = followedIds && followedIds.size ? Array.from(followedIds) : null;
   if (!ids) return []; // anonymous / follows nobody → empty (honest, not faked)
@@ -266,6 +286,7 @@ async function followGraph(ctx) {
 }
 
 async function biggestDiscounts(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('biggest_discounts', ctx);
   const { city, limit = 8 } = ctx;
   const params = [];
   let p = 0;
@@ -283,6 +304,7 @@ async function biggestDiscounts(ctx) {
 }
 
 async function endingSoon(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('ending_soon', ctx);
   const { city, limit = 8 } = ctx;
   const params = [];
   let p = 0;
@@ -302,6 +324,7 @@ async function endingSoon(ctx) {
 }
 
 async function allOffers(ctx) {
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('all_offers', ctx);
   const { city, limit = 30, categoryKey } = ctx;
   const params = [];
   let p = 0;
@@ -326,6 +349,7 @@ async function allOffers(ctx) {
 async function creatorPromotes(ctx) {
   const { influencer, limit = 8, categoryKey } = ctx;
   if (!influencer) return [];
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('creator_promotes', ctx);
   const params = [influencer.id];
   let p = 1;
   const cats = categoryFilter(categoryKey);
@@ -346,6 +370,7 @@ async function creatorPromotes(ctx) {
 async function creatorTopPicks(ctx) {
   const { influencer, limit = 8, categoryKey, windowDays = 30 } = ctx;
   if (!influencer) return [];
+  if (offerAdapter.offersV2Enabled()) return offersViaAdapter('creator_top_picks', ctx);
   const params = [influencer.id];
   let p = 1;
   const cats = categoryFilter(categoryKey);

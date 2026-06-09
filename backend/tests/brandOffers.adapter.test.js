@@ -178,6 +178,47 @@ describe('dedupe — collapse same offer for same creator to highest priority', 
   });
 });
 
+describe('rankForRule — shelf ordering/scope over a normalized list', () => {
+  const mk = (o) => ({
+    entity_type: 'offer', id: o.id,
+    brand: { id: o.bid || 'b1', category: o.cat || 'restaurant' },
+    discount_value: o.dv ?? null, offer_expires_at: o.exp || null,
+    via_creator: o.cr ? { id: o.cr } : null,
+  });
+  const items = [
+    mk({ id: '1', dv: 10, cr: 'inf-A' }),
+    mk({ id: '2', dv: 40, cr: 'inf-B' }),
+    mk({ id: '3', dv: null, exp: '2026-07-01' }),
+    mk({ id: '4', dv: 25, cat: 'fashion_walkin' }),
+  ];
+  test('biggest_discounts → discount desc', () => {
+    const r = adapter.rankForRule('biggest_discounts', items, { limit: 10 });
+    expect(r.map(x => x.id)).toEqual(['2', '4', '1', '3']);
+  });
+  test('category scope filters by brand.category', () => {
+    const r = adapter.rankForRule('all_offers', items, { categoryKeys: ['restaurant', 'bakery'], limit: 10 });
+    expect(r.find(x => x.id === '4')).toBeUndefined();
+    expect(r).toHaveLength(3);
+  });
+  test('ending_soon keeps only items with an expiry', () => {
+    const r = adapter.rankForRule('ending_soon', items, { limit: 10 });
+    expect(r.map(x => x.id)).toEqual(['3']);
+  });
+  test('follow_graph keeps only followed creators', () => {
+    const r = adapter.rankForRule('follow_graph', items, { followedIds: new Set(['inf-B']), limit: 10 });
+    expect(r.map(x => x.id)).toEqual(['2']);
+  });
+  test('creator_promotes keeps only that creator', () => {
+    const r = adapter.rankForRule('creator_promotes', items, { influencerId: 'inf-A', limit: 10 });
+    expect(r.map(x => x.id)).toEqual(['1']);
+  });
+  test('limit applied + returns feed items', () => {
+    const r = adapter.rankForRule('all_offers', items, { limit: 2 });
+    expect(r).toHaveLength(2);
+    expect(r[0].entity_type).toBe('offer');
+  });
+});
+
 describe('offersV2Enabled — flag gating (default OFF)', () => {
   const prev = process.env.SECTION_ENGINE_OFFERS;
   afterEach(() => { if (prev === undefined) delete process.env.SECTION_ENGINE_OFFERS; else process.env.SECTION_ENGINE_OFFERS = prev; });
