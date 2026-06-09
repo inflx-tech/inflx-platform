@@ -12,6 +12,15 @@
     "qa_all_green": false,
     "released": false,
     "released_by": null,
-    "released_at": null
+    "released_at": null,
+    "deploy": {
+      "class": "production-impacting",
+      "runbook": "features/listing-section-d0-seams/07-deploy-runbook.md",
+      "ota_required": false,
+      "migration_required": "conditional (084-086 only if not already on prod; check via scripts/check-offer-data.js)",
+      "switch": "env SECTION_ENGINE_OFFERS=true on Render (instant kill-switch = false)",
+      "status": "code complete + committed local (4 commits), NOT pushed; sandbox cannot run pnpm qa / push / migrate / reach prod — founder executes the runbook on their machine, then tests on mobile",
+      "verified": "pure normalization + ranking unit-tested (no DB); DB reads validated at deploy-time by runbook STEP 1 + STEP 7"
+    }
   }
 }
