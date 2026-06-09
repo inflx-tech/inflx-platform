@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offer Mechanics — card + product-page UI (all 5 offer types)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--soft:#F1ECE3;--green:#3F8A57;--gold:#B98A2E;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1180px;margin:0 auto 22px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:34px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:20px;color:var(--brown);}
+  .head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;max-width:760px;margin-left:auto;margin-right:auto;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{font-size:11px;font-weight:800;padding:6px 12px;border-radius:30px;color:#fff;display:inline-flex;gap:6px;align-items:center;}
+  .legend .mode{background:transparent;border:1px dashed #b9a98c;color:#6a5a47;font-weight:700;}
+  .secbar{max-width:1180px;margin:34px auto 16px;display:flex;align-items:center;gap:12px;}
+  .secbar h2{font-family:'Fraunces',serif;font-weight:600;font-size:22px;color:#2a1d14;white-space:nowrap;}
+  .secbar .ln{flex:1;height:1px;background:#c7b9a2;}
+  .secbar .note{font-size:12px;color:#6a5a47;font-weight:600;}
+
+  /* ---------- CARD ROW ---------- */
+  .cards{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+  @media(max-width:1080px){.cards{grid-template-columns:repeat(2,1fr);} }
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 34px -22px rgba(70,45,22,.55);position:relative;}
+  .pcard .img{height:118px;position:relative;display:flex;align-items:flex-end;padding:10px;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g2{background:linear-gradient(135deg,#f0c9b0,#d98a63);}.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  /* offer badge = top-left ribbon, color-coded per type */
+  .obadge{position:absolute;top:10px;left:10px;font-size:9.5px;font-weight:800;letter-spacing:.3px;color:#fff;padding:5px 9px;border-radius:9px;box-shadow:0 5px 12px -4px rgba(0,0,0,.35);display:flex;align-items:center;gap:4px;line-height:1;}
+  .ob-disc{background:var(--offer);}.ob-vol{background:var(--gold);}.ob-bogo{background:var(--brown);}.ob-bundle{background:#6d4ea3;}.ob-gift{background:var(--green);}
+  .osub{position:absolute;top:10px;right:10px;font-size:8.5px;font-weight:800;color:#2a1d14;background:rgba(255,255,255,.92);padding:4px 7px;border-radius:8px;}
+  .emoji{font-size:30px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.18));}
+  .pbody{padding:11px 12px 13px;}
+  .brand{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .pname{font-size:13.5px;font-weight:800;margin-top:2px;font-family:'Fraunces',serif;}
+  .prow{display:flex;align-items:center;gap:7px;margin-top:7px;}
+  .price{font-size:14px;font-weight:800;}
+  .strike{font-size:11px;color:var(--muted);text-decoration:line-through;}
+  .save{font-size:9px;font-weight:800;color:var(--green);background:rgba(63,138,87,.12);padding:2px 6px;border-radius:7px;}
+  .mechline{margin-top:8px;font-size:9.5px;font-weight:700;color:#6a5a47;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:5px 8px;display:flex;align-items:center;gap:5px;}
+  .vc{display:inline-flex;align-items:center;gap:5px;font-size:8.5px;font-weight:800;color:#5e4631;margin-top:8px;}
+  .vc .a{width:14px;height:14px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:7px;}
+
+  /* ---------- PRODUCT PAGE PHONES ---------- */
+  .stage{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1200px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap b{display:block;font-family:'Plus Jakarta Sans';font-size:10.5px;font-weight:700;color:#fff;padding:3px 9px;border-radius:20px;margin:5px auto 0;width:fit-content;}
+  .phone{width:330px;height:712px;background:var(--bg);border-radius:42px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:116px;height:24px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .sb{display:flex;justify-content:space-between;align-items:center;padding:13px 22px 4px;font-size:12px;font-weight:700;flex:0 0 auto;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .hero{height:150px;display:flex;align-items:flex-end;justify-content:space-between;padding:12px;position:relative;}
+  .hemoji{font-size:50px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.2));}
+  .back{position:absolute;top:12px;left:12px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .pd{padding:14px 16px 8px;}
+  .pd .b{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .pd h3{font-family:'Fraunces',serif;font-size:22px;font-weight:600;margin-top:2px;}
+  .rating{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;font-weight:700;color:#6a5a47;}
+  .rating .st{color:var(--star);}
+  .pdrow{display:flex;align-items:center;gap:9px;margin-top:10px;}
+  .pdrow .pr{font-size:21px;font-weight:800;}
+  .pdrow .sk{font-size:13px;color:var(--muted);text-decoration:line-through;}
+  .pdrow .pc{font-size:10px;font-weight:800;color:var(--green);background:rgba(63,138,87,.12);padding:3px 8px;border-radius:8px;}
+
+  /* OFFER BLOCK — the new component */
+  .oblock{margin:14px 16px 0;border-radius:16px;border:1.5px solid;overflow:hidden;}
+  .ob-head{display:flex;align-items:center;gap:9px;padding:11px 13px;}
+  .ob-ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;flex:0 0 30px;}
+  .ob-ttl{font-size:13px;font-weight:800;}
+  .ob-sub{font-size:10px;font-weight:600;color:#6a5a47;margin-top:1px;}
+  .ob-body{padding:0 13px 12px;}
+  /* tints per type */
+  .t-disc{border-color:rgba(217,83,30,.4);background:rgba(217,83,30,.05);}.t-disc .ob-ic{background:var(--offer);}
+  .t-vol{border-color:rgba(185,138,46,.45);background:rgba(185,138,46,.06);}.t-vol .ob-ic{background:var(--gold);}
+  .t-bogo{border-color:rgba(139,74,47,.4);background:rgba(139,74,47,.05);}.t-bogo .ob-ic{background:var(--brown);}
+  .t-bundle{border-color:rgba(109,78,163,.4);background:rgba(109,78,163,.05);}.t-bundle .ob-ic{background:#6d4ea3;}
+  .t-gift{border-color:rgba(63,138,87,.42);background:rgba(63,138,87,.05);}.t-gift .ob-ic{background:var(--green);}
+
+  /* volume tier ladder */
+  .tier{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:11px;background:#fff;border:1px solid var(--line);margin-top:7px;}
+  .tier.on{border-color:var(--gold);background:rgba(185,138,46,.1);}
+  .tier.done{opacity:.6;}
+  .tier .tk{width:18px;height:18px;border-radius:50%;background:var(--line);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 18px;}
+  .tier.on .tk,.tier.done .tk{background:var(--gold);}
+  .tier .tt{font-size:11px;font-weight:700;flex:1;}
+  .tier .tp{font-size:12px;font-weight:800;color:var(--gold);}
+  .progress{margin-top:9px;font-size:10px;font-weight:700;color:#6a5a47;}
+  .pbar{height:6px;border-radius:6px;background:var(--line);margin-top:5px;overflow:hidden;}
+  .pbar i{display:block;height:100%;background:var(--gold);}
+
+  /* bogo / gift item rows */
+  .pair{display:flex;align-items:center;gap:8px;margin-top:9px;}
+  .pitem{flex:1;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:7px 9px;}
+  .pitem .pe{font-size:20px;}
+  .pitem .pn{font-size:10.5px;font-weight:800;line-height:1.2;}
+  .pitem .pp{font-size:9.5px;font-weight:700;color:var(--muted);}
+  .pitem .free{font-size:9.5px;font-weight:800;color:var(--green);}
+  .plus{font-size:16px;font-weight:800;color:var(--muted);}
+  .freechip{font-size:8px;font-weight:800;color:#fff;background:var(--green);padding:2px 6px;border-radius:6px;margin-left:auto;}
+
+  /* bundle list */
+  .bitem{display:flex;align-items:center;gap:9px;padding:7px 2px;border-bottom:1px dashed var(--line);}
+  .bitem:last-child{border-bottom:0;}
+  .bitem .be{font-size:18px;}
+  .bitem .bn{font-size:11px;font-weight:700;flex:1;}
+  .bitem .bp{font-size:11px;font-weight:700;color:var(--muted);}
+  .bsum{display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding-top:10px;border-top:1.5px solid var(--line);}
+  .bsum .bl{font-size:11px;font-weight:700;color:#6a5a47;}
+  .bsum .bv{display:flex;align-items:baseline;gap:7px;}
+  .bsum .bnow{font-size:17px;font-weight:800;color:#6d4ea3;}
+  .bsum .bwas{font-size:12px;color:var(--muted);text-decoration:line-through;}
+
+  .obcta{margin-top:11px;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--brown);color:#fff;font-size:12px;font-weight:800;padding:11px;border-radius:12px;}
+  .obnote{margin-top:8px;font-size:9.5px;font-weight:600;color:#6a5a47;display:flex;gap:6px;align-items:flex-start;line-height:1.35;}
+  .obnote .d{color:var(--green);}
+
+  /* sticky running total */
+  .sticky{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px 16px;box-shadow:0 -12px 26px -16px rgba(70,45,22,.4);}
+  .slines{font-size:10px;}
+  .sline{display:flex;justify-content:space-between;padding:2px 0;color:#5e5040;font-weight:600;}
+  .sline.free{color:var(--green);font-weight:800;}
+  .sline.disc{color:var(--offer);font-weight:800;}
+  .stot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:8px;border-top:1px solid var(--line);}
+  .stot .l{font-size:11px;font-weight:700;color:#6a5a47;}
+  .stot .v{font-size:18px;font-weight:800;}
+  .addbtn{margin-top:9px;background:var(--brown);color:#fff;text-align:center;font-size:13px;font-weight:800;padding:12px;border-radius:13px;}
+  /* dual CTA — order online OR pay at store */
+  .ctarow{display:flex;gap:8px;margin-top:9px;}
+  .ctarow > div{flex:1;text-align:center;font-size:12px;font-weight:800;padding:12px 6px;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:5px;}
+  .cta-online{background:var(--brown);color:#fff;}
+  .cta-store{background:#fff;border:1.5px solid var(--brown);color:var(--brown);}
+  .ctahint{margin-top:7px;font-size:9px;font-weight:700;color:#6a5a47;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;}
+
+  /* cart/order line note panel */
+  .panel{width:360px;background:#fff;border-radius:20px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .panel .ph{padding:16px 18px;border-bottom:1px solid #efeae0;font-family:'Fraunces',serif;font-size:18px;font-weight:600;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .panel .pb{padding:14px 18px;font-size:12px;color:#4a3a2a;line-height:1.5;}
+  .lrow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f2ece2;font-size:12px;}
+  .lrow:last-of-type{border-bottom:0;}
+  .lrow .ln2{font-weight:700;display:flex;align-items:center;gap:7px;}
+  .ltag{font-size:8px;font-weight:800;color:#fff;padding:2px 6px;border-radius:6px;}
+  .lprice{font-weight:800;}
+  .lfree{color:var(--green);}
+  . ruleg{margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Offer Mechanics — card + product-page UI <span class="spark">✦</span></h1>
+  <p>One shared module renders every offer type the pricing engine already supports — on the <b>card</b> (shelf/feed) and on the <b>product page</b> — then composes the cart and labels the order. Below: how each of the 5 types looks on both surfaces. Numbers shown are illustrative; every value maps to <code>resolveOfferDiscount()</code> output.</p>
+  <div class="legend">
+    <span style="background:var(--offer)">% / ₹ DISCOUNT</span>
+    <span style="background:var(--gold)">VOLUME</span>
+    <span style="background:var(--brown)">BOGO</span>
+    <span style="background:#6d4ea3">BUNDLE</span>
+    <span style="background:var(--green)">FREE GIFT</span>
+    <span class="mode">🟢 Discount &amp; Volume = any bill (walk-in or online)</span>
+    <span class="mode">🏪 BOGO / Bundle / Gift = pick the items, then pay in-store OR online (show deal QR at counter)</span>
+  </div>
+</div>
+
+<!-- ============================ CARDS ============================ -->
+<div class="secbar"><h2>1 · On the card</h2><div class="ln"></div><div class="note">compact badge + one mechanic line — same card grid as today, additive</div></div>
+<div class="cards">
+
+  <!-- discount -->
+  <div class="pcard">
+    <div class="img g1"><div class="obadge ob-disc">⏷ 20% OFF</div><span class="emoji">🍕</span></div>
+    <div class="pbody">
+      <div class="brand">Mama's Pizza</div>
+      <div class="pname">Signature Pizza</div>
+      <div class="prow"><span class="price">₹399</span><span class="strike">₹499</span><span class="save">SAVE ₹100</span></div>
+      <div class="mechline">⏷ 20% off — applied at checkout</div>
+      <div class="vc"><span class="a">🧔🏻</span> via @StyleMaster</div>
+    </div>
+  </div>
+
+  <!-- volume -->
+  <div class="pcard">
+    <div class="img g5"><div class="obadge ob-vol">▲ UP TO 25% OFF</div><span class="emoji">🛍️</span></div>
+    <div class="pbody">
+      <div class="brand">Fresh Mart</div>
+      <div class="pname">Grocery Basket</div>
+      <div class="prow"><span class="price">₹250</span></div>
+      <div class="mechline">▲ Buy more, save more · 3 tiers</div>
+      <div class="vc"><span class="a">👩🏻</span> via @DailyDeals</div>
+    </div>
+  </div>
+
+  <!-- bogo -->
+  <div class="pcard">
+    <div class="img g2"><div class="obadge ob-bogo">🎁 BUY 1 GET 1</div><span class="osub">+1 FREE</span><span class="emoji">🧋</span></div>
+    <div class="pbody">
+      <div class="brand">Brew Lab</div>
+      <div class="pname">Bubble Tea</div>
+      <div class="prow"><span class="price">₹180</span></div>
+      <div class="mechline">🎁 Buy 1 → get 1 Bubble Tea free</div>
+      <div class="vc"><span class="a">🧑🏻</span> via @SipSquad</div>
+    </div>
+  </div>
+
+  <!-- bundle -->
+  <div class="pcard">
+    <div class="img g6"><div class="obadge ob-bundle">📦 BUNDLE ₹699</div><span class="osub">SAVE ₹148</span><span class="emoji">💄</span></div>
+    <div class="pbody">
+      <div class="brand">Glow Co</div>
+      <div class="pname">Glow Kit (3 items)</div>
+      <div class="prow"><span class="price">₹699</span><span class="strike">₹847</span><span class="save">SAVE ₹148</span></div>
+      <div class="mechline">📦 3 items for ₹699 — add all</div>
+      <div class="vc"><span class="a">💁🏻‍♀️</span> via @GlowRituals</div>
+    </div>
+  </div>
+
+  <!-- free gift -->
+  <div class="pcard">
+    <div class="img g3"><div class="obadge ob-gift">🎀 FREE GIFT</div><span class="emoji">👟</span></div>
+    <div class="pbody">
+      <div class="brand">MODA</div>
+      <div class="pname">Street Sneakers</div>
+      <div class="prow"><span class="price">₹1,299</span></div>
+      <div class="mechline">🎀 Free Socks with this pair</div>
+      <div class="vc"><span class="a">🧔🏻</span> via @StyleMaster</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================ PRODUCT PAGES ============================ -->
+<div class="secbar"><h2>2 · On the product page — the Offer Block</h2><div class="ln"></div><div class="note">type-specific block above the buy bar; sticky running-total shows the composed cart</div></div>
+<div class="stage">
+
+  <!-- ===== VOLUME (tier ladder) ===== -->
+  <div class="col"><div class="cap">Volume — tier ladder<b style="background:var(--gold)">▲ VOLUME · in-store or online</b></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="scroll" style="padding-bottom:230px">
+        <div class="hero g5"><div class="back">‹</div><span class="hemoji">🛍️</span></div>
+        <div class="pd">
+          <div class="b">Fresh Mart · Grocery</div><h3>Grocery Basket</h3>
+          <div class="rating"><span class="st">★★★★☆</span> 4.5 · 220 orders</div>
+          <div class="pdrow"><span class="pr">₹250</span><span class="pc">per basket</span></div>
+        </div>
+        <div class="oblock t-vol">
+          <div class="ob-head"><div class="ob-ic">▲</div><div><div class="ob-ttl">Buy more, save more</div><div class="ob-sub">Discount grows with your cart total</div></div></div>
+          <div class="ob-body">
+            <div class="tier done"><div class="tk">✓</div><div class="tt">Spend ₹500</div><div class="tp">10% off</div></div>
+            <div class="tier on"><div class="tk">●</div><div class="tt">Spend ₹1,000 — you're here</div><div class="tp">15% off</div></div>
+            <div class="tier"><div class="tk">3</div><div class="tt">Spend ₹2,000</div><div class="tp">25% off</div></div>
+            <div class="progress">Add ₹1,000 more to unlock <b>25% off</b>
+              <div class="pbar"><i style="width:50%"></i></div>
+            </div>
+            <div class="obnote"><span class="d">●</span><span>Current tier applied automatically at checkout — 15% off your eligible items.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky">
+        <div class="slines">
+          <div class="sline">Subtotal (4 items)<span>₹1,000</span></div>
+          <div class="sline disc">Volume offer · 15% off<span>− ₹150</span></div>
+        </div>
+        <div class="stot"><span class="l">Total</span><span class="v">₹850</span></div>
+        <div class="ctarow"><div class="cta-online">🛒 Order online</div><div class="cta-store">🏪 Pay at store</div></div>
+        <div class="ctahint">🟢 15% applies on a walk-in bill too</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BOGO ===== -->
+  <div class="col"><div class="cap">BOGO — buy 1, get 1 free<b style="background:var(--brown)">🎁 BOGO · in-store or online</b></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="scroll" style="padding-bottom:250px">
+        <div class="hero g2"><div class="back">‹</div><span class="hemoji">🧋</span></div>
+        <div class="pd">
+          <div class="b">Brew Lab · Beverages</div><h3>Bubble Tea</h3>
+          <div class="rating"><span class="st">★★★★★</span> 4.8 · 540 orders</div>
+          <div class="pdrow"><span class="pr">₹180</span></div>
+        </div>
+        <div class="oblock t-bogo">
+          <div class="ob-head"><div class="ob-ic">🎁</div><div><div class="ob-ttl">Buy 1, Get 1 Free</div><div class="ob-sub">We'll add the free one for you</div></div></div>
+          <div class="ob-body">
+            <div class="pair">
+              <div class="pitem"><span class="pe">🧋</span><div><div class="pn">Bubble Tea</div><div class="pp">₹180 · you buy</div></div></div>
+              <span class="plus">→</span>
+              <div class="pitem"><span class="pe">🧋</span><div><div class="pn">Bubble Tea</div><div class="free">₹0 · free</div></div><span class="freechip">FREE</span></div>
+            </div>
+            <div class="obnote"><span class="d">✓</span><span>Tap "Get the deal" and the free Bubble Tea is added to your cart at ₹0 — quantity matched to what you buy.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky">
+        <div class="slines">
+          <div class="sline">Bubble Tea × 1<span>₹180</span></div>
+          <div class="sline free">Bubble Tea × 1 · BOGO free<span>₹0</span></div>
+        </div>
+        <div class="stot"><span class="l">Total · 2 items</span><span class="v">₹180</span></div>
+        <div class="ctarow"><div class="cta-online">🛒 Order online</div><div class="cta-store">🏪 Pay at store</div></div>
+        <div class="ctahint">🏪 Show the deal QR at the counter to get your free one</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BUNDLE ===== -->
+  <div class="col"><div class="cap">Bundle — set price for the group<b style="background:#6d4ea3">📦 BUNDLE · in-store or online</b></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="scroll" style="padding-bottom:235px">
+        <div class="hero g6"><div class="back">‹</div><span class="hemoji">💄</span></div>
+        <div class="pd">
+          <div class="b">Glow Co · Beauty</div><h3>Glow Kit</h3>
+          <div class="rating"><span class="st">★★★★☆</span> 4.6 · 90 orders</div>
+          <div class="pdrow"><span class="pr">₹699</span><span class="sk">₹847</span><span class="pc">save ₹148</span></div>
+        </div>
+        <div class="oblock t-bundle">
+          <div class="ob-head"><div class="ob-ic">📦</div><div><div class="ob-ttl">Bundle &amp; save</div><div class="ob-sub">Get all 3 together for one price</div></div></div>
+          <div class="ob-body">
+            <div class="bitem"><span class="be">💄</span><span class="bn">Matte Lipstick</span><span class="bp">₹349</span></div>
+            <div class="bitem"><span class="be">🧴</span><span class="bn">Glow Serum</span><span class="bp">₹299</span></div>
+            <div class="bitem"><span class="be">✨</span><span class="bn">Highlighter</span><span class="bp">₹199</span></div>
+            <div class="bsum"><span class="bl">Bundle price</span><span class="bv"><span class="bnow">₹699</span><span class="bwas">₹847</span></span></div>
+            <div class="obnote"><span class="d">✓</span><span>All 3 items get added together — the ₹148 saving applies only when the full set is in your cart.</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="sticky">
+        <div class="slines">
+          <div class="sline">Glow Kit · 3 items<span>₹847</span></div>
+          <div class="sline disc">Bundle price<span>− ₹148</span></div>
+        </div>
+        <div class="stot"><span class="l">Total</span><span class="v">₹699</span></div>
+        <div class="ctarow"><div class="cta-online">🛒 Order online</div><div class="cta-store">🏪 Pay at store</div></div>
+        <div class="ctahint">🏪 Show the deal QR at the counter for the bundle price</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DISCOUNT + FREE GIFT (shorter, stacked in one phone) ===== -->
+  <div class="col"><div class="cap">Discount &amp; Free Gift<b style="background:var(--offer)">⏷ DISCOUNT · any mode</b></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="scroll" style="padding-bottom:18px">
+        <div class="hero g1"><div class="back">‹</div><span class="hemoji">🍕</span></div>
+        <div class="pd">
+          <div class="b">Mama's Pizza · Food</div><h3>Signature Pizza</h3>
+          <div class="rating"><span class="st">★★★★★</span> 4.9 · 1.2k orders</div>
+          <div class="pdrow"><span class="pr">₹399</span><span class="sk">₹499</span><span class="pc">20% off</span></div>
+        </div>
+        <div class="oblock t-disc">
+          <div class="ob-head"><div class="ob-ic">⏷</div><div><div class="ob-ttl">20% off your order</div><div class="ob-sub">Works in-store and online</div></div></div>
+          <div class="ob-body">
+            <div class="obnote"><span class="d">✓</span><span>Simple discounts need no cart — they also apply to a walk-in <b>pay-at-store</b> bill. Shown live on the buy bar.</span></div>
+          </div>
+        </div>
+
+        <div class="oblock t-gift" style="margin-top:14px">
+          <div class="ob-head"><div class="ob-ic">🎀</div><div><div class="ob-ttl">Free gift with this item</div><div class="ob-sub">Added automatically when you buy</div></div></div>
+          <div class="ob-body">
+            <div class="pair">
+              <div class="pitem"><span class="pe">🍕</span><div><div class="pn">Signature Pizza</div><div class="pp">₹399 · you buy</div></div></div>
+              <span class="plus">+</span>
+              <div class="pitem"><span class="pe">🥤</span><div><div class="pn">Soft Drink</div><div class="free">₹0 · gift</div></div><span class="freechip">FREE</span></div>
+            </div>
+            <div class="obnote"><span class="d">✓</span><span>The gift is added to your cart at ₹0 — you're never charged for it.</span></div>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================ CART + ORDER LINES ============================ -->
+<div class="secbar"><h2>3 · How it carries through — cart &amp; order lines</h2><div class="ln"></div><div class="note">composeCart() builds these lines; the Orders screen labels free / bundle / gift</div></div>
+<div class="stage">
+  <div class="col"><div class="cap">In the cart (composed)</div>
+    <div class="panel">
+      <div class="ph">Cart — auto-composed lines<small style="display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:#8a8275;margin-top:2px">free / bundle / gift lines added by the engine's adjustments</small></div>
+      <div class="pb">
+        <div class="lrow"><span class="ln2"><span class="ltag" style="background:var(--brown)">BUY</span>Bubble Tea × 1</span><span class="lprice">₹180</span></div>
+        <div class="lrow"><span class="ln2"><span class="ltag" style="background:var(--green)">FREE</span>Bubble Tea × 1 · BOGO</span><span class="lprice lfree">₹0</span></div>
+        <div class="lrow"><span class="ln2"><span class="ltag" style="background:#6d4ea3">BUNDLE</span>Glow Kit · 3 items</span><span class="lprice">₹699</span></div>
+        <div class="lrow"><span class="ln2"><span class="ltag" style="background:var(--green)">GIFT</span>Soft Drink × 1</span><span class="lprice lfree">₹0</span></div>
+        <div class="lrow"><span class="ln2" style="color:var(--offer)">Discount (20% off pizza)</span><span class="lprice" style="color:var(--offer)">− ₹100</span></div>
+        <div class="lrow" style="border-top:1.5px solid var(--line);margin-top:4px;padding-top:10px"><span class="ln2" style="font-size:13px">Total</span><span class="lprice" style="font-size:16px">₹1,478</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col"><div class="cap">In the order (Orders screen)</div>
+    <div class="panel">
+      <div class="ph">Order #INF-2291<small style="display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:#8a8275;margin-top:2px">orderLines() renders the same labels in history</small></div>
+      <div class="pb">
+        <div class="lrow"><span class="ln2">🧋 Bubble Tea</span><span class="lprice">₹180</span></div>
+        <div class="lrow"><span class="ln2">🧋 Bubble Tea <span class="ltag" style="background:var(--green)">BOGO FREE</span></span><span class="lprice lfree">₹0</span></div>
+        <div class="lrow"><span class="ln2">📦 Glow Kit <span class="ltag" style="background:#6d4ea3">BUNDLE</span></span><span class="lprice">₹699</span></div>
+        <div class="lrow"><span class="ln2">🥤 Soft Drink <span class="ltag" style="background:var(--green)">GIFT</span></span><span class="lprice lfree">₹0</span></div>
+        <div class="lrow"><span class="ln2" style="color:var(--green);font-weight:800">You saved</span><span class="lprice" style="color:var(--green)">₹248</span></div>
+        <div class="lrow" style="border-top:1.5px solid var(--line);margin-top:4px;padding-top:10px"><span class="ln2" style="font-size:13px">Paid</span><span class="lprice" style="font-size:16px">₹1,478</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

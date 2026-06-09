@@ -18,6 +18,8 @@ const P = {
   successText: C.brown,
 };
 import { followerApi } from '../../services/api';
+import OfferBlock from '../../components/OfferBlock';
+import { composeCart } from '../../utils/offerMechanics';
 
 /**
  * ProductDetailScreen — single-product detail page reached from any product
@@ -247,13 +249,23 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   function dispatchCta(cta) {
     if (!selected) return;
+    // Compose the cart for offer-type mechanics: BOGO adds the free item, bundle
+    // adds all set products, free_gift adds the gift. Discount/Volume → just the
+    // picked item. The SERVER re-prices authoritatively (resolveOfferDiscount).
+    const composed = composeCart(offer, {
+      id: selected.id,
+      name: selected.name,
+      price: parseFloat(selected.price || finalPrice || 0),
+      quantity: 1,
+    });
     const params = {
       offer,
       brand,
       store: store || { name: brand?.name, instagram_handle: handle },
       influencer,
       product: selected,
-      products: [selected],
+      products: composed.items.length ? composed.items : [selected],
+      offer_composed: composed,   // { items, note, freeIds } — checkout can show free lines
       selected_addons: addons.filter((_, i) => selectedAddons[i]),
       selected_size: selectedSize,
       tracking: trk,
@@ -358,6 +370,9 @@ export default function ProductDetailScreen({ navigation, route }) {
               <Text style={[styles.savings, { color: P.successText }]}>You save {fmtRupees(savings)}</Text>
             ) : null}
           </View>
+
+          {/* Offer mechanics — type-specific block (discount / volume / bogo / bundle / gift) */}
+          <OfferBlock offer={offer} />
 
           {/* Customize — food add-ons (conditional, brand-defined) */}
           {addons.length > 0 ? (

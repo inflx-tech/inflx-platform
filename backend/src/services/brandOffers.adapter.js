@@ -118,6 +118,45 @@ function extractLegacyDiscount(offerType, cfg, dvCol) {
   }
 }
 
+// ── PURE: follower-safe product ref + offer config for the product-page OfferBlock ──
+// The client needs the raw mechanic shape (tiers / buy-get / bundle products / gift
+// pairs) to render the type-specific block and to compose the cart. We pass only a
+// sanitized subset of offer_config_json — never internal fields. Additive: clients
+// that ignore `config` are unaffected; pricing stays authoritative server-side.
+function pickProductRef(p) {
+  if (!p) return null;
+  if (typeof p === 'string') return { id: p };
+  const id = p.id || p.product_id;
+  if (!id) return null;
+  const ref = { id };
+  if (p.name != null) ref.name = p.name;
+  if (p.price != null && Number.isFinite(Number(p.price))) ref.price = Number(p.price);
+  return ref;
+}
+function extractConfig(cfg) {
+  const c = cfg && typeof cfg === 'object' ? cfg : {};
+  const out = {};
+  if (c.sub_type != null) out.sub_type = c.sub_type;
+  if (c.value != null && Number.isFinite(Number(c.value))) out.value = Number(c.value);
+  if (c.scope != null) out.scope = c.scope;
+  if (c.category != null) out.category = c.category;
+  if (Array.isArray(c.tiers)) {
+    out.tiers = c.tiers
+      .map(t => ({ min_spend: Number(t.min_spend) || 0, pct_off: Number(t.pct_off) || 0 }))
+      .sort((a, b) => a.min_spend - b.min_spend);
+  }
+  if (c.buy_product) out.buy_product = pickProductRef(c.buy_product);
+  if (c.get_product) out.get_product = pickProductRef(c.get_product);
+  if (Array.isArray(c.products)) out.products = c.products.map(pickProductRef).filter(Boolean);
+  if (c.bundle_price != null && Number.isFinite(Number(c.bundle_price))) out.bundle_price = Number(c.bundle_price);
+  if (Array.isArray(c.offers)) {
+    out.offers = c.offers
+      .map(o => ({ main: pickProductRef(o && o.main), gift: pickProductRef(o && o.gift) }))
+      .filter(o => o.main && o.gift);
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 // ── PURE: classify a creator assignment's offer ───────────────────────────────────
 // Engagement (showcase) iff allocation='promotional'. Everything else with an offer
 // is conversion (commissioned/tracked) — incl. legacy rows where allocation is null
@@ -160,6 +199,7 @@ function normalizeAssignment(row) {
     offer_type: displayType,
     discount,
     discount_value: discount.value,
+    config: extractConfig(cfg),               // mechanic shape for the product-page OfferBlock
     availing_modes: row.availing_modes || [], // from the library row when present; inline offers carry none
     offer_expires_at: row.offer_expires_at || null,
     via_creator: row.handle
@@ -193,6 +233,7 @@ function normalizeLibraryOffer(row, channel) {
     offer_type: displayType,
     discount,
     discount_value: discount.value,
+    config: extractConfig(cfg),
     availing_modes: row.availing_modes || [],
     offer_expires_at: row.store_ends_at || null,
     via_creator: hasCreator
@@ -259,6 +300,7 @@ function toFeedItem(n) {
     offer_type: n.offer_type,
     discount_value: n.discount_value,
     discount: n.discount,
+    config: n.config || null,
     availing_modes: n.availing_modes || [],
     offer_expires_at: n.offer_expires_at,
     brand: n.brand,
@@ -416,6 +458,7 @@ module.exports = {
   // pure helpers (unit-tested)
   mapBrandOfferType,
   extractDiscount,
+  extractConfig,
   extractLegacyDiscount,
   channelOfAllocation,
   normalizeAssignment,

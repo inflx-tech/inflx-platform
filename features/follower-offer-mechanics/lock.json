@@ -1,0 +1,30 @@
+{
+  "feature": "follower-offer-mechanics",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('yes mockups matched, now start implement' + 'Build first', 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (offer-mechanics-comprehensive.html — card + product-page, dual CTA online/pay-at-store)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Ship 1 (display + compose + additive backend config). The 5 offer mechanics are ALREADY priced server-side by offer.service.resolveOfferDiscount, called by BOTH placeOrder (online, line ~1107) and the pay-at-store paths — verified. So this ship is mostly client + one additive backend field: (1) brandOffers.adapter now carries a sanitized `config` (tiers/buy-get/bundle products/gift pairs) on each feed item so the product page can render the type-specific block + know which items to compose [gated by SECTION_ENGINE_OFFERS, already ON in prod; additive — consumers ignore the new field]; (2) src/utils/offerMechanics.js (offerKind/offerMeta/composeCart/orderLines/bundleSavings); (3) src/components/OfferBlock.js (per-type product-page block from the locked mockup); (4) ProductDetailScreen renders OfferBlock + dispatchCta now composes the cart (BOGO adds free item, bundle adds the set, free_gift adds the gift) so the existing checkout carries the right items and the server prices them. Dual CTA (online / pay-at-store) already flows from offer.availing_modes. PROD DATA: only discount + volume offers exist today (verified: 26 discount + 1 volume on campaign_influencers, 3 volume + 1 discount store) → those are testable now; BOGO/bundle/free_gift are built + dormant until the founder creates such offers via campaigns / Offer Zone (founder's stated plan). DEFERRED to Ship 2: checkout discount-line + free-item display in OnlineOrder/PayAtStore, orderLines wiring into OrderDetail (helper built, not yet wired). No charging-behavior change for live data (discount/volume compose = the single item, as before).",
+  "release": {
+    "qa_all_green": null,
+    "maestro_green": false,
+    "maestro_waived": "GOVERNANCE_OVERRIDE — founder-side emulator; founder is on-device gate",
+    "released": true,
+    "released_by": "chat-architect (founder-delegated, 2026-06-09)",
+    "released_at": "2026-06-09",
+    "deploy": {
+      "class": "additive backend (offer feed `config` field) + follower OTA (OfferBlock + composeCart)",
+      "backend": "git push → Render redeploy; adapter change additive + gated (SECTION_ENGINE_OFFERS on)",
+      "ota": "publish-ota:follower",
+      "native_runtime": "3",
+      "validation": "Babel transforms OK (3 client files); backend app + adapter load OK; extractConfig unit-checked for all 5 types; pnpm qa not runnable in sandbox (qa_all_green=null)",
+      "rollback": "revert + re-publish; kill-switch SECTION_ENGINE_OFFERS=false reverts the feed field"
+    }
+  }
+}
