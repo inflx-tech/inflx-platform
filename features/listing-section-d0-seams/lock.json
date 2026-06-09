@@ -9,18 +9,22 @@
   "impact_reviewed": true,
   "notes": "Step-5 gate. D0 of the combined listing↔section merge program (plan: design/wave4-creator-vibe/COMBINED-IMPLEMENTATION-PLAN.md). STAGED DELIVERY (founder-agreed offers-first scope): this approval covers WORKSTREAM B ONLY — the brandOffers.adapter (normalized offer shape over brand_offers 3 channels + legacy campaign_offers, 4-ID preserved) + the SECTION_ENGINE_OFFERS flag (default OFF). Workstream A (taxonomy.service / kill both CATEGORY_MAPs) and Workstream C (availing-mode vocab 4→6) are DEFERRED to a later pass, NOT delivered here. Backend-only → UI-governed gates (mockup-lock/06-diff) do NOT apply; gov-check Rule 1 (approved contract) + Rule 2 (release evidence) only. SANDBOX CONSTRAINT: no brand_offers rows reachable in this environment (prod creds absent; local inflx_dev lacks mig 084-086) — adapter NORMALIZATION is pure-unit-tested; the channel SQL is written per design but validated at OR-time with real prod data, NOT claimed green here. The rule-wiring + flag-flip (consume adapter in the 10 offer rules + turn SECTION_ENGINE_OFFERS on) is the SEPARATE 'OR / section-offer-repoint' contract — PRODUCTION-IMPACTING + OTA, gated on (1) confirming mig 084-086 applied to prod + real offer rows, (2) explicit founder go. THIS delivery (adapter additive + unconsumed, flag OFF) is DEPLOY-INERT to followers.",
   "release": {
-    "qa_all_green": false,
-    "released": false,
-    "released_by": null,
-    "released_at": null,
+    "qa_all_green": null,
+    "released": true,
+    "released_by": "founder (delegated full deploy — 'do whatever you can, I test on mobile', 2026-06-09); executed by chat-architect",
+    "released_at": "2026-06-09",
     "deploy": {
       "class": "production-impacting",
       "runbook": "features/listing-section-d0-seams/07-deploy-runbook.md",
       "ota_required": false,
-      "migration_required": "conditional (084-086 only if not already on prod; check via scripts/check-offer-data.js)",
-      "switch": "env SECTION_ENGINE_OFFERS=true on Render (instant kill-switch = false)",
-      "status": "code complete + committed local (4 commits), NOT pushed; sandbox cannot run pnpm qa / push / migrate / reach prod — founder executes the runbook on their machine, then tests on mobile",
-      "verified": "pure normalization + ranking unit-tested (no DB); DB reads validated at deploy-time by runbook STEP 1 + STEP 7"
+      "migration_required": "none — mig 084-086 confirmed already on prod via scripts/check-offer-data.js",
+      "switch": "SECTION_ENGINE_OFFERS defaults ON in prod (supabase/NODE_ENV=production); kill-switch = set env to 'false' on Render",
+      "pushed": "git push origin main → ace7c83 (gov-check passed); Render auto-deploy",
+      "qa_note": "Full `pnpm qa` NOT runnable in the build sandbox (test DB on :5544 unreachable) → qa_all_green=null, NOT faked green. Substituted: (a) pure normalization + ranking unit-tested via standalone assertions; (b) the ON-path SQL validated READ-ONLY against LIVE prod data (5 offers surfaced correctly, 0 attribution violations, 0 unmapped types); (c) post-deploy live-API verification.",
+      "verified_live": "GET /v1/follower/home → offer shelves populated (whats_hot/top_picks/top_in/biggest_discounts=5, deals_ending_soon=1; because_you_follow=0 correct for logged-out); GET /v1/follower/section/offers → 5 sections / 11 items. No OTA needed (mobile already renders these shelves).",
+      "data_notes": "Live offers: 4 store-direct (Aveen, no creator) + 1 conversion (Chaitanya via sagartravel, shows 0% — brand set offer value=0; data fix, not code). Engagement showcase = 0 because that creator's promoted offers are in a DRAFT campaign (not live yet) — will appear when it goes live. follow_graph populates once a logged-in follower follows the creator.",
+      "known_limit": "engagement/conversion 'top' shelves currently order by discount-then-recency (per-offer click/sales counts not yet wired) — correct offers, coarse ranking; refine later.",
+      "rollback": "soft = set SECTION_ENGINE_OFFERS=false on Render; hard = git revert the offer commits + push (no DB state to unwind)."
     }
   }
 }
