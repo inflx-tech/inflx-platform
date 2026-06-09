@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Business Page (restaurant + salon) + Admin template</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F4EFE6;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1240px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}.head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{background:rgba(255,255,255,.6);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;}
+  .stage{display:flex;gap:42px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1260px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+  .phone{width:344px;height:792px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .sbf{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:15px 22px 0;font-size:12.5px;font-weight:700;color:#fff;z-index:50;}
+  .sbf .i{display:flex;gap:6px;font-size:11px;}
+  /* restaurant photo hero */
+  .bhero{height:210px;position:relative;display:flex;align-items:flex-end;padding:14px;color:#fff;}
+  .bhero::after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,12,6,.72),rgba(20,12,6,.05));}
+  .bhero>*{position:relative;z-index:2;}
+  .hicons{position:absolute;top:42px;left:14px;right:14px;display:flex;justify-content:space-between;z-index:3;}
+  .hic{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:15px;color:#3b332a;}
+  .dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:3;}
+  .dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);}.dots i.on{background:#fff;width:16px;border-radius:6px;}
+  .hbiz{display:flex;gap:11px;align-items:flex-end;}
+  .blogo{width:54px;height:54px;border-radius:15px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;border:2px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.25);}
+  .bname{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+  .bmeta{font-size:10.5px;opacity:.92;margin-top:1px;}
+  /* standard banner (salon) */
+  .banner{height:110px;position:relative;display:flex;align-items:center;justify-content:center;}
+  .banner .be{font-size:42px;opacity:.4;}
+  .banner .blogo2{position:absolute;bottom:-20px;left:18px;width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:26px;border:3px solid var(--bg);}
+  .binfo{padding:8px 18px 2px;}
+  .binfo .row1{display:flex;align-items:center;gap:6px;}
+  .binfo .nm{font-family:'Fraunces',serif;font-size:19px;font-weight:600;}
+  .tick{color:var(--verify);font-size:13px;}
+  .openpill{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:800;color:var(--green);background:rgba(63,138,87,.12);border:1px solid rgba(63,138,87,.3);padding:2px 8px;border-radius:10px;margin-left:auto;}
+  .binfo .m{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:3px;}
+  .abar{display:flex;gap:10px;padding:12px 18px 4px;}
+  .abtn{flex:1;text-align:center;font-size:13px;font-weight:800;padding:11px;border-radius:30px;background:var(--brown);color:#fff;box-shadow:0 8px 16px -8px rgba(110,58,36,.6);}
+  .abtn.out{background:transparent;border:1.5px solid var(--brown);color:var(--brown);box-shadow:none;}
+  .sh{display:flex;justify-content:space-between;align-items:flex-end;padding:16px 16px 9px;}
+  .sh h4{font-size:14px;font-weight:800;}.sh .more{color:var(--brown);font-size:12px;font-weight:800;}
+  .hsc{display:flex;gap:12px;overflow-x:auto;padding:2px 16px 4px;}
+  .hsc::-webkit-scrollbar{display:none;}
+  .crc{display:flex;flex-direction:column;align-items:center;gap:5px;width:64px;flex:0 0 auto;}
+  .ring{padding:2px;border-radius:50%;background:linear-gradient(135deg,var(--ring1),var(--ring2));}
+  .cav{width:50px;height:50px;border-radius:50%;background:#ecdfc9;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--bg);}
+  .crc .nm{font-size:9px;font-weight:700;text-align:center;}
+  .trustline{margin:8px 16px 2px;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:11px;font-weight:700;color:#5e5345;}
+  .chips{display:flex;gap:7px;padding:8px 16px 2px;flex-wrap:wrap;}
+  .chip{font-size:10px;font-weight:800;color:var(--brown);border:1px solid rgba(139,74,47,.35);border-radius:10px;padding:5px 10px;}
+  .pickstrip{margin:10px 16px 2px;background:#fbf3ec;border:1px solid #e7d6c8;border-radius:14px;padding:11px 12px;}
+  .pickstrip .ph{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:#5e4631;margin-bottom:8px;}
+  .pickstrip .pa{width:20px;height:20px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:11px;}
+  .tabs{display:flex;border-bottom:1px solid var(--line);padding:0 6px;margin-top:12px;position:sticky;top:0;background:var(--bg);z-index:20;}
+  .tab{flex:1;text-align:center;padding:11px 0;font-size:12px;font-weight:800;color:var(--muted);border-bottom:2px solid transparent;}
+  .tab.on{color:var(--brown);border-bottom-color:var(--brown);}
+  .secttl{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:14px 16px 8px;}
+  .mrow{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;margin:0 16px 10px;box-shadow:0 10px 22px -16px rgba(70,45,22,.5);}
+  .mrow .mi{width:72px;height:72px;border-radius:12px;flex:0 0 72px;display:flex;align-items:center;justify-content:center;font-size:30px;position:relative;}
+  .mrow .mn{font-size:13.5px;font-weight:800;}
+  .mrow .md{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px;}
+  .mrow .mb{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+  .add{font-size:11px;font-weight:800;color:#fff;background:var(--brown);padding:5px 14px;border-radius:30px;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g2{background:linear-gradient(135deg,#f0c9b0,#d98a63);}.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  .stars{color:var(--star);font-size:11px;}.fs11{font-size:11px;}.fs12{font-size:12px;}.fw8{font-weight:800;}.muted{color:var(--muted);}
+  .ctabar{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);padding:10px 12px 8px;}
+  .ctalbl{font-size:8.5px;font-weight:800;color:var(--muted);letter-spacing:.5px;padding-left:2px;}
+  .ctabtns{display:flex;gap:8px;margin-top:6px;}
+  .cbtn{flex:1;text-align:center;font-size:11px;font-weight:800;padding:11px 4px;border-radius:14px;line-height:1.15;background:transparent;border:1.5px solid var(--brown);color:var(--brown);}
+  .cbtn.fill{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:8px 6px 14px;}
+  .nav .it{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .it.on{color:var(--brown);}.nav .it .ic{font-size:18px;}
+  .reels{width:50px;height:50px;border-radius:17px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;margin-top:-20px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7px;font-weight:800;}
+  /* admin */
+  .admin{width:520px;background:#fff;border-radius:22px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .ahd{padding:18px 20px;border-bottom:1px solid #efeae0;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .ahd .t{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+  .ahd .t small{display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .pub{background:var(--brown);color:#fff;font-size:12px;font-weight:800;padding:9px 16px;border-radius:10px;}
+  .banner2{margin:14px 16px 2px;background:#fbf3ec;border:1px solid #e7d6c8;border-radius:12px;padding:11px 13px;font-size:11.5px;font-weight:700;color:#5e4631;}
+  .lrow{margin:10px 16px 2px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #eee7da;border-radius:12px;padding:10px 12px;}
+  .lrow .lt{font-size:12px;font-weight:800;}.lrow .ls{font-size:10px;color:var(--muted);font-weight:600;}
+  .sel{font-size:10px;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:#fbf8f2;color:#4a3a2a;margin-left:auto;}
+  .rows{padding:8px 14px 12px;display:flex;flex-direction:column;gap:8px;}
+  .row{display:flex;align-items:center;gap:11px;border:1px solid #eee7da;border-radius:13px;padding:11px 12px;background:#fff;}
+  .grip{color:#c9bda8;font-size:15px;}.rmain{flex:1;}
+  .rname{font-size:13px;font-weight:800;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .rsub{font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;}
+  .rtag{font-size:7.5px;font-weight:800;letter-spacing:.4px;color:#fff;background:var(--brown);padding:3px 7px;border-radius:20px;}
+  .rtag.fix{background:#8a8275;}.rtag.brand{background:#3a2616;}.rtag.pin{background:var(--green);}
+  .tog{width:38px;height:22px;border-radius:30px;background:var(--brown);position:relative;flex:0 0 auto;}
+  .tog.off{background:#d8cebd;}.tog::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:19px;}.tog.off::after{left:3px;}
+  .lock{font-size:14px;color:#b9a98f;}
+  .afoot{padding:12px 20px;border-top:1px solid #efeae0;font-size:10.5px;color:var(--muted);font-weight:600;background:#fbf8f2;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Business Page — template + brand content <span class="spark">✦</span></h1>
+  <p>Restaurant variant + salon/store variant + the admin block template.</p>
+  <div class="legend"><span>📱 follower sees this</span><span>🏪 brand owns the content (menu/info)</span><span>⚙️ admin owns the template (which blocks)</span></div>
+</div>
+<div class="stage">
+
+  <!-- ===== RESTAURANT ===== -->
+  <div class="col"><div class="cap">📱 Restaurant variant<span>photo hero + sub-tabs + 3-mode CTA</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="scroll">
+        <div class="sbf"><span>9:41</span><span class="i">📶 🔋</span></div>
+        <div class="bhero g1"><div class="hicons"><div class="hic">←</div><div class="hic">↗</div></div><div class="hbiz"><div class="blogo">🍕</div><div><div class="bname">Mama's Pizza</div><div class="bmeta">Italian · Pizzas · ★ 4.5 (1.2K)</div></div></div><div class="dots"><i class="on"></i><i></i><i></i></div></div>
+        <div class="binfo"><div class="row1"><span class="nm" style="font-family:'Plus Jakarta Sans';font-size:13px;font-weight:800;color:var(--muted)">📍 1.2 km · ₹400 for two · 🛵 30 min</span><span class="openpill">● Open till 11pm</span></div></div>
+        <div class="abar"><div class="abtn">+ Follow</div><div class="abtn out">🧭 Directions</div></div>
+        <div class="sh"><div><h4>Mama's × Creators</h4></div><span class="more">View All</span></div>
+        <div class="hsc">
+          <div class="crc"><div class="ring"><div class="cav">🧔🏻</div></div><span class="nm">@StyleMaster</span></div>
+          <div class="crc"><div class="ring"><div class="cav">👩🏽</div></div><span class="nm">@FoodieFarah</span></div>
+          <div class="crc"><div class="ring"><div class="cav">🧔🏽</div></div><span class="nm">@TasteTrail</span></div>
+          <div class="crc"><div class="ring"><div class="cav">🧑🏻</div></div><span class="nm">@VFoodLover</span></div>
+        </div>
+        <div class="trustline">✅ 4 creators trusted to collab with Mama's Pizza</div>
+        <div class="pickstrip"><div class="ph"><span class="pa">🧔🏻</span>Ben's picks here · you came via @StyleMaster</div><div style="font-size:11px;color:#6a5644;font-weight:600">Signature Pizza · Choco Lava — tap to see his notes</div></div>
+        <div class="tabs"><div class="tab">Overview</div><div class="tab on">Menu</div><div class="tab">Reviews</div><div class="tab">Photos</div></div>
+        <div class="secttl">Popular</div>
+        <div class="mrow"><div class="mi g1">🍕</div><div style="flex:1"><div class="mn">Signature Large Pizza</div><div class="md">Loaded cheese, fresh basil, hand-tossed</div><div class="mb"><span class="fw8 fs12">₹399 <span class="stars">★4.8</span></span><span class="add">＋ Add</span></div></div></div>
+        <div class="mrow"><div class="mi g5">🍝</div><div style="flex:1"><div class="mn">Creamy Alfredo Pasta</div><div class="md">White sauce, mushrooms, parmesan</div><div class="mb"><span class="fw8 fs12">₹329 <span class="stars">★4.5</span></span><span class="add">＋ Add</span></div></div></div>
+        <div class="mrow"><div class="mi g6">🧁</div><div style="flex:1"><div class="mn">Choco Lava Cake</div><div class="md">Molten centre, vanilla scoop</div><div class="mb"><span class="fw8 fs12">₹129 <span class="stars">★4.9</span></span><span class="add">＋ Add</span></div></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="ctabar"><div class="ctalbl">FOOD · 3 WAYS TO ORDER</div><div class="ctabtns"><div class="cbtn">🍽️ Pay at<br>Restaurant</div><div class="cbtn">📅 Pre-book<br>Table</div><div class="cbtn fill">🛵 Order<br>Online</div></div></div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== SALON ===== -->
+  <div class="col"><div class="cap">📱 Salon / Store variant<span>standard layout + 2-mode CTA</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="scroll">
+        <div class="sbf" style="color:#3b332a"><span>9:41</span><span class="i">📶 🔋</span></div>
+        <div class="banner" style="background:linear-gradient(135deg,#efe0ec,#d8bcd0)"><div class="hicons"><div class="hic">←</div><div class="hic">↗</div></div><span class="be">💇</span><div class="blogo2" style="background:#7E22CE;color:#fff">💇</div></div>
+        <div class="binfo" style="padding-top:26px"><div class="row1"><span class="nm">Glow Studio</span><span class="tick">✔</span><span class="openpill">● Open till 9pm</span></div><div class="m">Salon · Spa · Skin · ★ 4.7 (640) · 0.9 km</div></div>
+        <div class="abar"><div class="abtn">+ Follow</div><div class="abtn out">🧭 Directions</div></div>
+        <div class="sh"><div><h4>Glow Studio × Creators</h4></div><span class="more">View All</span></div>
+        <div class="hsc">
+          <div class="crc"><div class="ring"><div class="cav">💁🏻‍♀️</div></div><span class="nm">@GlowRituals</span></div>
+          <div class="crc"><div class="ring"><div class="cav">💇🏻‍♀️</div></div><span class="nm">@SnipByZoya</span></div>
+          <div class="crc"><div class="ring"><div class="cav">💅</div></div><span class="nm">@NailNanda</span></div>
+        </div>
+        <div class="trustline">✅ 3 creators trusted to collab with Glow Studio</div>
+        <div class="chips"><span class="chip">💸 Pay at salon</span><span class="chip">✕ Free cancellation</span><span class="chip">🏠 Home service</span></div>
+        <div class="tabs"><div class="tab on">Services</div><div class="tab">Deals</div></div>
+        <div class="secttl">Popular Services</div>
+        <div class="mrow"><div class="mi g6">💆</div><div style="flex:1"><div class="mn">Spa &amp; Facial Combo</div><div class="md">60 min · deep cleanse + massage</div><div class="mb"><span class="fw8 fs12">₹1,499 <span class="stars">★4.8</span></span><span class="add">Book</span></div></div></div>
+        <div class="mrow"><div class="mi g3">✂️</div><div style="flex:1"><div class="mn">Haircut + Styling</div><div class="md">Wash, cut, blow-dry</div><div class="mb"><span class="fw8 fs12">₹599 <span class="stars">★4.6</span></span><span class="add">Book</span></div></div></div>
+        <div class="mrow"><div class="mi g5">💅</div><div style="flex:1"><div class="mn">Gel Manicure</div><div class="md">Long-lasting, 12+ shades</div><div class="mb"><span class="fw8 fs12">₹799 <span class="stars">★4.7</span></span><span class="add">Book</span></div></div></div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="ctabar"><div class="ctalbl">SALON · 2 WAYS</div><div class="ctabtns"><div class="cbtn">💸 Pay at<br>Store</div><div class="cbtn fill">📅 Book<br>Appointment</div></div></div>
+      <div class="nav"><div class="it on"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN ===== -->
+  <div class="col"><div class="cap">⚙️ Admin — Business Page Template<span>which blocks show + order</span></div>
+    <div class="admin">
+      <div class="ahd"><div class="t">Business Page · Template<small>blocks &amp; order · content comes from each brand</small></div><span class="pub">Publish</span></div>
+      <div class="banner2">🏪 Each brand fills these blocks from <b>their own listing</b> (menu, photos, info, offers). You control <b>which blocks appear + order</b>. Layout auto-switches by category.</div>
+      <div class="lrow"><span class="lock">🔀</span><div><div class="lt">Layout</div><div class="ls">restaurant → photo hero + Menu/Reviews/Photos · others → standard</div></div><span class="sel">Auto by category ▾</span></div>
+      <div class="rows">
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Hero <span class="rtag fix">FIXED</span></div><div class="rsub">cover · logo · name · rating · open status</div></div><span class="lock">🔒</span></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Action bar <span class="rtag fix">FIXED</span></div><div class="rsub">Follow · Directions / Share</div></div><span class="lock">🔒</span></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">{Business} × Creators + trust line <span class="rtag pin">PINNED</span></div><div class="rsub">the platform differentiator — kept on</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Creator Picks here <span class="rtag">CONTEXTUAL</span></div><div class="rsub">shows only when arrived via a creator</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Trust chips <span class="rtag">SCHEMA</span></div><div class="rsub">Pay-at-store · Free-cancel · Home-service (from listing)</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Menu / Products <span class="rtag brand">BRAND CONTENT</span></div><div class="rsub">the brand's catalog + sections · default tab <span class="sel">Menu ▾</span></div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Offers / Deals tab <span class="rtag">PLATFORM</span></div><div class="rsub">live offers here + via creator</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Info <span class="rtag brand">BRAND CONTENT</span></div><div class="rsub">hours · location · amenities</div></div><div class="tog"></div></div>
+        <div class="row"><span class="grip">⠿</span><div class="rmain"><div class="rname">Sticky CTA <span class="rtag fix">SCHEMA</span></div><div class="rsub">auto from availing_modes — Pay / Book / Order / Enquire</div></div><span class="lock">🔒</span></div>
+      </div>
+      <div class="afoot">💡 Restaurant gets the photo hero + sub-tabs; salon/store get the standard layout — auto by category. CTA is always business-driven (no universal cart). Creator row + every CTA carry 4-ID attribution.</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

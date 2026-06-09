@@ -1,0 +1,21 @@
+{
+  "feature": "follower-business-page-restaurant",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('focus only on restaurant', schema-driven per-vertical, 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (business-comprehensive.html is the locked agreed design)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Restaurant variant focused pass on RestaurantDetailScreen: additive action bar (Follow toggle + Directions) + '{Business} × Creators' circle row + trust line (store.influencers). Checkout/menu/CTA untouched (CTA already schema-driven from restaurant.json availing_modes/card_config/actions). Business Page is per-vertical + schema-driven — other verticals built as listings land. Pure JS / OTA-safe; NATIVE_RUNTIME '3'. Babel-validated. Maestro waived via GOVERNANCE_OVERRIDE.",
+  "release": {
+    "qa_all_green": null,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -60,6 +60,7 @@ const PARTY_LABELS = { single: '🧍 Single', duo: '👥 For 2', trio: '👨‍�
 
 export default function RestaurantDetailScreen({ store, navigation, tracking }) {
   const [tab, setTab] = useState('overview');
+  const [following, setFollowing] = useState(false);
   const [section, setSection] = useState(null);
   const [photoIdx, setPhotoIdx] = useState(0);
   const [mealStore, setMealStore] = useState(null);
@@ -68,6 +69,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
   const products  = store?.products || [];
   const creator   = store?.creator || null;
   const picks     = store?.creator_picks || [];
+  const influencers = store?.influencers || []; // brands × creators (collab row + trust line)
   const ld        = brand.listing_data || {};
 
   const cuisines    = brand.cuisines || ld.cuisines || [];
@@ -282,7 +284,44 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
           )}
 
           <AmenityChips brandData={{ ...brand, ...ld }} />
+
+          {/* Action bar — Follow + Directions (mockup) */}
+          <View style={styles.actionBar}>
+            <Pressable style={[styles.abtn, following && styles.abtnOut]} onPress={() => setFollowing(f => !f)}>
+              <Text style={[styles.abtnTxt, following && styles.abtnOutTxt]}>{following ? 'Following' : '+ Follow'}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.abtn, styles.abtnOut]}
+              onPress={() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${brand.business_name || ''} ${locality || brand.city || ''}`)}`)}
+            >
+              <Text style={[styles.abtnTxt, styles.abtnOutTxt]}>🧭 Directions</Text>
+            </Pressable>
+          </View>
         </View>
+
+        {/* ── {Business} × Creators + trust line (platform differentiator) ── */}
+        {influencers.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.collabTitle}>{brand.business_name} × Creators</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.collabRow}>
+              {influencers.map((inf, i) => (
+                <Pressable
+                  key={inf.influencer_id || i}
+                  style={styles.collabCell}
+                  onPress={() => inf.instagram_handle && navigation.navigate('InfluencerStore', { handle: inf.instagram_handle })}
+                >
+                  <View style={styles.collabRing}>
+                    <View style={styles.collabAv}><Text style={styles.collabAvTxt}>{(inf.name || inf.instagram_handle || '?')[0].toUpperCase()}</Text></View>
+                  </View>
+                  <Text style={styles.collabNm} numberOfLines={1}>@{inf.instagram_handle}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <View style={styles.trustLine}>
+              <Text style={styles.trustLineTxt}>✅ {influencers.length} creator{influencers.length > 1 ? 's' : ''} trusted to collab with {brand.business_name}</Text>
+            </View>
+          </View>
+        )}
 
         {/* ── Sagar's Table strip ─────────────────────────────────────── */}
         {creator && picks.length > 0 && (
@@ -951,6 +990,22 @@ const styles = StyleSheet.create({
   paginationText: { color: lightColors.white, fontFamily: fonts.monoBold, fontSize: 10 },
 
   section: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+  // action bar (Follow + Directions)
+  actionBar: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  abtn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 30, backgroundColor: C.brown },
+  abtnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.brown },
+  abtnTxt: { fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: fonts.sansBold },
+  abtnOutTxt: { color: C.brown },
+  // {Business} × Creators row + trust line
+  collabTitle: { fontSize: 14, fontWeight: '800', color: C.ink, marginBottom: 10, fontFamily: fonts.displayBold },
+  collabRow: { gap: 14, paddingBottom: 2 },
+  collabCell: { width: 64, alignItems: 'center', gap: 5 },
+  collabRing: { padding: 2, borderRadius: 28, backgroundColor: C.brown },
+  collabAv: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ecdfc9', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.screenBg },
+  collabAvTxt: { fontSize: 18, fontWeight: '800', color: C.brown, fontFamily: fonts.sansBold },
+  collabNm: { fontSize: 9, fontWeight: '700', color: C.ink, textAlign: 'center', fontFamily: fonts.sansSemiBold },
+  trustLine: { marginTop: 10, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
+  trustLineTxt: { fontSize: 11, fontWeight: '700', color: '#5e5345', fontFamily: fonts.sansSemiBold },
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   brandName: {
