@@ -1,199 +1,220 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, RefreshControl,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { creatorVibe as Cv, fmtMoney, fmtRupees } from '../../theme/tokens';
-
-// Flow 52.D — Creator Vibe recolor shim. Legacy navy/teal `colors` → creatorVibe.
-// Visual only; order-history fetch/refresh + status render + nav unchanged.
-const colors = {
-  navy: Cv.brown, navyDeep: Cv.brownDark, navyMid: Cv.brown, navyPale: Cv.soft,
-  orange: Cv.brown, orangeDeep: Cv.brownDark, orangePale: Cv.soft,
-  gold: Cv.star, goldPale: Cv.soft, teal: Cv.brown, tealDeep: Cv.brown, tealPale: Cv.soft,
-  red: Cv.offer, redPale: Cv.soft, purple: Cv.brown, purplePale: Cv.soft,
-  bg: Cv.screenBg, surface: Cv.card, surface2: Cv.soft, border: Cv.line, border2: Cv.line,
-  t1: Cv.ink, t2: Cv.muted, t3: Cv.muted, white: Cv.card, black: Cv.ink,
-};
+import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
+import { emojiFor } from '../../components/vibe/palette';
 import { followerApi } from '../../services/api';
 
-const STATUS_CONFIG = {
-  pending:    { label: 'Pending',    bg: colors.orange + '18', color: colors.orange },
-  confirmed:  { label: 'Confirmed',  bg: colors.teal + '18',   color: colors.teal },
-  dispatched: { label: 'Dispatched', bg: colors.navy + '18',   color: colors.navy },
-  delivered:  { label: 'Delivered',  bg: colors.teal + '18',   color: colors.teal },
-  cancelled:  { label: 'Cancelled',  bg: colors.red + '18',    color: colors.red },
-  completed:  { label: 'Completed',  bg: colors.teal + '18',   color: colors.teal },
-  booked:     { label: 'Booked',     bg: colors.navy + '18',   color: colors.navy },
-  paid:       { label: 'Paid',       bg: colors.teal + '18',   color: colors.teal },
+/**
+ * OrderHistoryScreen (Orders) — rebuilt to orders-comprehensive.html.
+ * Contract: features/follower-orders-rebuild.
+ *
+ * One inbox for every transaction type, driven by GET /follower/activity:
+ *   Order (live tracker) · Booking/Rental (date/ref) · Pay-at-store (amount+savings)
+ *   · Enquiry · Return — each keeps its "via @creator" 4-ID attribution.
+ * Tabs: Active · Orders · Bookings · Visits · Enquiries · Returns · History.
+ */
+
+const TABS = [
+  { key: 'active',    label: 'Active' },
+  { key: 'order',     label: 'Orders' },
+  { key: 'booking',   label: 'Bookings' },
+  { key: 'pay_at_store', label: 'Visits' },
+  { key: 'enquiry',   label: 'Enquiries' },
+  { key: 'return',    label: 'Returns' },
+  { key: 'history',   label: 'History' },
+];
+
+const TAG = {
+  order:        { label: 'ORDER',        color: C.brown },
+  booking:      { label: 'BOOKING',      color: C.verify },
+  pay_at_store: { label: 'PAY-AT-STORE', color: C.green || '#3F8A57' },
+  enquiry:      { label: 'ENQUIRY',      color: C.muted },
+  return:       { label: 'RETURN',       color: C.offer },
 };
 
-const TYPE_LABELS = {
-  pay_at_store: 'Pay at Store',
-  online_order: 'Online Order',
-  online:       'Online Order',
-  prebook:      'Pre-booking',
-};
+// order tracker steps from status
+const STEPS = ['Placed', 'Prepared', 'On the way', 'Delivered'];
+const STEP_INDEX = { pending: 0, confirmed: 1, dispatched: 2, delivered: 3, completed: 3 };
+const isDone = (status) => ['delivered', 'completed', 'cancelled'].includes(String(status || '').toLowerCase());
+const isActive = (it) => !isDone(it.status);
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
-function OrderCard({ order, onPress }) {
-  const status = STATUS_CONFIG[order.order_status || order.status] || STATUS_CONFIG.pending;
-  const type = order.transaction_type || order.order_type || 'online_order';
-  const typeLabel = TYPE_LABELS[type] || type.replace(/_/g, ' ');
-
+function ViaCreator({ via }) {
+  if (!via?.handle) return null;
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.cardTop}>
+    <View style={s.vc}>
+      <View style={s.vcAv}><Text style={s.vcAvTxt}>{(via.name || via.handle)[0].toUpperCase()}</Text></View>
+      <Text style={s.vcTxt}>via @{via.handle}</Text>
+    </View>
+  );
+}
+
+function OrderTracker({ status }) {
+  const idx = STEP_INDEX[String(status || '').toLowerCase()] ?? 0;
+  return (
+    <View style={s.steps}>
+      {STEPS.map((label, i) => (
+        <View key={i} style={s.step}>
+          {i > 0 ? <View style={[s.bar, i <= idx && s.barFill]} /> : null}
+          <View style={[s.dot, i < idx && s.dotDone, i === idx && s.dotNow]}>
+            <Text style={s.dotTxt}>{i < idx ? '✓' : (i === idx ? '•' : '')}</Text>
+          </View>
+          <Text style={[s.slbl, i <= idx && s.slblAct]}>{label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Card({ item, navigation }) {
+  const tag = TAG[item.kind] || TAG.order;
+  const isOrder = item.kind === 'order';
+  const isBooking = item.kind === 'booking';
+  return (
+    <View style={s.card}>
+      <View style={s.cardHead}>
+        <View style={s.lg}><Text style={{ fontSize: 22 }}>{emojiFor(item.brand_category)}</Text></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.brandName}>{order.brand_name || 'Order'}</Text>
-          <Text style={styles.orderId}>#{(order.id || '').slice(-8).toUpperCase()}</Text>
+          <Text style={s.nm} numberOfLines={1}>{item.brand_name}</Text>
+          <Text style={s.it} numberOfLines={1}>
+            {isBooking && item.booking_date ? `${item.booking_type || 'Booking'} · ${fmtDate(item.booking_date)}` : `${TAG[item.kind]?.label || ''} · ${fmtDate(item.created_at)}`}
+          </Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
-          <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
-        </View>
+        <View style={[s.tg, { backgroundColor: tag.color }]}><Text style={s.tgTxt}>{tag.label}</Text></View>
       </View>
 
-      <View style={styles.cardBottom}>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Type</Text>
-          <Text style={styles.metaVal}>{typeLabel}</Text>
+      {isOrder && isActive(item) ? <View style={s.track}><OrderTracker status={item.status} /></View> : null}
+
+      <View style={s.foot}>
+        <View style={{ flex: 1 }}>
+          <Text style={s.amt}>
+            {item.net_amount != null ? fmtRupees(item.net_amount) : '—'}
+            {item.savings > 0 ? <Text style={s.saved}>  · saved {fmtRupees(item.savings)}</Text> : null}
+          </Text>
+          <ViaCreator via={item.via_creator} />
         </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Amount</Text>
-          <Text style={styles.metaValAmount}>{fmtRupees(order.net_amount || 0)}</Text>
-        </View>
-        <View style={styles.metaItem}>
-          <Text style={styles.metaLabel}>Date</Text>
-          <Text style={styles.metaVal}>{formatDate(order.purchased_at || order.created_at)}</Text>
+        <View style={s.actions}>
+          {item.order_id ? (
+            <TouchableOpacity style={s.btn} onPress={() => navigation.navigate('OrderDetail', { orderId: item.order_id })}>
+              <Text style={s.btnTxt}>{isActive(item) ? 'Track →' : 'View'}</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={[s.btn, s.btnOut]} onPress={() => navigation.navigate('BrandStore', { brandName: item.brand_name })}>
+              <Text style={[s.btnTxt, s.btnOutTxt]}>View</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 export default function OrderHistoryScreen({ navigation }) {
-  const [orders, setOrders]     = useState([]);
-  const [loading, setLoading]   = useState(true);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError]       = useState(null);
+  const [tab, setTab] = useState('active');
 
-  const fetchOrders = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
-
+  const load = useCallback(async () => {
     try {
-      const res = await followerApi.getOrders();
-      if (res.success) {
-        setOrders(res.data?.orders || []);
-      } else {
-        setError(res.error?.message || 'Failed to load orders');
-      }
+      const res = await followerApi.getActivity();
+      setItems((res.data || res)?.items || []);
     } catch (e) {
-      setError('Something went wrong');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+      console.error('[Orders] Error:', e.message);
+      setItems([]);
+    } finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { setLoading(true); load(); }, [load]);
+  const onRefresh = useCallback(() => { setRefreshing(true); load(); }, [load]);
 
-  function handlePress(order) {
-    navigation.navigate('OrderDetail', { orderId: order.id });
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={colors.navy} />
-      </View>
-    );
-  }
+  const visible = useMemo(() => {
+    if (tab === 'active') return items.filter(isActive);
+    if (tab === 'history') return items.filter(it => isDone(it.status));
+    return items.filter(it => it.kind === tab);
+  }, [items, tab]);
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Order History</Text>
-        <Text style={styles.sub}>{orders.length} order{orders.length !== 1 ? 's' : ''}</Text>
-      </View>
-
-      {error ? (
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => fetchOrders()}>
-            <Text style={styles.retryBtnText}>Retry</Text>
+    <View style={s.container}>
+      <Text style={s.title}>Orders</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabRow}>
+        {TABS.map(t => (
+          <TouchableOpacity key={t.key} style={[s.tab, tab === t.key && s.tabOn]} onPress={() => setTab(t.key)}>
+            <Text style={[s.tabTxt, tab === t.key && s.tabTxtOn]}>{t.label}</Text>
           </TouchableOpacity>
-        </View>
-      ) : orders.length === 0 ? (
-        <View style={styles.centerContent}>
-          <Text style={styles.emptyIcon}>📦</Text>
-          <Text style={styles.emptyTitle}>No orders yet</Text>
-          <Text style={styles.emptySub}>Your order history will appear here once you make a purchase.</Text>
-        </View>
+        ))}
+      </ScrollView>
+
+      {loading ? (
+        <View style={s.center}><ActivityIndicator size="large" color={C.brown} /></View>
       ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <OrderCard order={item} onPress={() => handlePress(item)} />
-          )}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => fetchOrders(true)}
-              colors={[colors.navy]}
-              tintColor={colors.navy}
-            />
-          }
-        />
+        <ScrollView
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 110 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.brown} />}
+        >
+          {visible.length === 0 ? (
+            <View style={s.empty}>
+              <Text style={{ fontSize: 40, marginBottom: 10 }}>🧾</Text>
+              <Text style={s.emptyTitle}>Nothing here yet</Text>
+              <Text style={s.emptyText}>
+                {tab === 'enquiry' || tab === 'return'
+                  ? 'This will show up once you have one.'
+                  : 'Your orders, bookings and visits will appear here.'}
+              </Text>
+            </View>
+          ) : visible.map((it, i) => <Card key={it.id || i} item={it} navigation={navigation} />)}
+        </ScrollView>
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  sub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4 },
-  list: { padding: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
-  brandName: { fontSize: 15, fontWeight: '700', color: colors.t1 },
-  orderId: { fontSize: 11, color: colors.t3, fontFamily: 'monospace', marginTop: 2 },
-  statusBadge: { borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between' },
-  metaItem: {},
-  metaLabel: { fontSize: 10, color: colors.t3, fontWeight: '600', marginBottom: 2, textTransform: 'uppercase' },
-  metaVal: { fontSize: 13, color: colors.t1, fontWeight: '600' },
-  metaValAmount: { fontSize: 13, color: colors.navy, fontWeight: '800' },
-  centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  errorText: { fontSize: 14, color: colors.red, textAlign: 'center', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.surface2, borderRadius: 12 },
-  retryBtnText: { fontSize: 14, fontWeight: '600', color: colors.navy },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.t1, marginBottom: 8 },
-  emptySub: { fontSize: 13, color: colors.t3, textAlign: 'center', lineHeight: 20 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.screenBg },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
+  title: { fontSize: 23, fontWeight: '600', color: C.ink, paddingHorizontal: 18, paddingTop: 50, fontFamily: fonts.serifDisplay },
+  tabRow: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, gap: 7 },
+  tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 30, marginRight: 7, borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
+  tabOn: { backgroundColor: C.brown, borderColor: C.brown },
+  tabTxt: { fontSize: 11.5, fontWeight: '800', color: C.ink, fontFamily: fonts.sansBold },
+  tabTxtOn: { color: '#fff' },
+  card: { marginHorizontal: 16, marginBottom: 11, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 16, overflow: 'hidden' },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12 },
+  lg: { width: 44, height: 44, borderRadius: 12, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  nm: { fontSize: 13, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
+  it: { fontSize: 10, color: C.muted, fontWeight: '600', marginTop: 1, fontFamily: fonts.sansMedium },
+  tg: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, alignSelf: 'flex-start' },
+  tgTxt: { fontSize: 8, fontWeight: '800', color: '#fff', letterSpacing: 0.4, fontFamily: fonts.sansBold },
+  track: { paddingHorizontal: 14, paddingBottom: 10 },
+  steps: { flexDirection: 'row', alignItems: 'flex-start' },
+  step: { flex: 1, alignItems: 'center', gap: 4, position: 'relative' },
+  dot: { width: 17, height: 17, borderRadius: 9, backgroundColor: C.line, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  dotDone: { backgroundColor: C.green || '#3F8A57' },
+  dotNow: { backgroundColor: C.brown },
+  dotTxt: { fontSize: 8, color: '#fff', fontWeight: '800' },
+  bar: { position: 'absolute', top: 8, left: '-50%', width: '100%', height: 2, backgroundColor: C.line, zIndex: 1 },
+  barFill: { backgroundColor: C.green || '#3F8A57' },
+  slbl: { fontSize: 7.5, fontWeight: '700', color: C.muted },
+  slblAct: { color: C.ink },
+  foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 11, borderTopWidth: 1, borderTopColor: C.line, backgroundColor: '#fdfbf7' },
+  amt: { fontSize: 13, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
+  saved: { fontSize: 10, color: C.muted, fontWeight: '600' },
+  actions: { flexDirection: 'row', gap: 7 },
+  btn: { backgroundColor: C.brown, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 30 },
+  btnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.brown },
+  btnTxt: { fontSize: 10.5, fontWeight: '800', color: '#fff', fontFamily: fonts.sansBold },
+  btnOutTxt: { color: C.brown },
+  vc: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: C.soft, alignSelf: 'flex-start', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, paddingLeft: 3, marginTop: 5 },
+  vcAv: { width: 15, height: 15, borderRadius: 8, backgroundColor: '#e6cfa6', alignItems: 'center', justifyContent: 'center' },
+  vcAvTxt: { fontSize: 8, fontWeight: '800', color: C.brown },
+  vcTxt: { fontSize: 9, fontWeight: '800', color: '#5e4631' },
+  empty: { alignItems: 'center', paddingTop: 70, paddingHorizontal: 30 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.ink, marginBottom: 4 },
+  emptyText: { fontSize: 12, color: C.muted, textAlign: 'center' },
 });

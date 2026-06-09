@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Orders (all transaction types)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--soft:#F1ECE3;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1080px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}.head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:14px;}
+  .legend span{font-size:11px;font-weight:700;padding:5px 11px;border-radius:30px;color:#fff;}
+  .stage{display:flex;gap:42px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1100px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+  .phone{width:344px;height:812px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .sb{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:12.5px;font-weight:700;flex:0 0 auto;}
+  .sb .i{display:flex;gap:6px;font-size:11px;}
+  .ptitle{font-family:'Fraunces',serif;font-size:23px;font-weight:600;padding:6px 18px 2px;}
+  .tabs{display:flex;gap:7px;overflow-x:auto;padding:9px 16px 4px;position:sticky;top:0;background:var(--bg);z-index:20;}
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{flex:0 0 auto;font-size:11.5px;font-weight:800;padding:8px 14px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .tab.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding-bottom:12px;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .secttl{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:14px 18px 6px;}
+  .oc{margin:0 16px 11px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 26px -18px rgba(70,45,22,.5);}
+  .oh{display:flex;align-items:center;gap:11px;padding:11px 12px;}
+  .lg{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:23px;flex:0 0 44px;}
+  .nm{font-size:13px;font-weight:800;}
+  .it{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px;}
+  .tg{margin-left:auto;font-size:8px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:20px;color:#fff;flex:0 0 auto;align-self:flex-start;}
+  .tg.order{background:var(--brown);}.tg.book{background:var(--verify);}.tg.pay{background:var(--green);}.tg.enq{background:#8a8275;}.tg.ret{background:var(--offer);}
+  .track{padding:2px 14px 10px;}
+  .steps{display:flex;align-items:center;}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;}
+  .dot{width:17px;height:17px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;z-index:2;}
+  .dot.done{background:var(--green);}.dot.now{background:var(--brown);}
+  .bar{position:absolute;top:8px;left:-50%;width:100%;height:2px;background:var(--line);z-index:1;}.bar.fill{background:var(--green);}
+  .slbl{font-size:7.5px;font-weight:700;color:var(--muted);}.slbl.act{color:var(--ink);}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;padding:0 12px 10px;}
+  .mch{font-size:9.5px;font-weight:700;color:#5e5345;background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:4px 9px;}
+  .ofoot{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--line);background:#fdfbf7;}
+  .amt{font-size:13px;font-weight:800;}
+  .btn{font-size:10.5px;font-weight:800;color:#fff;background:var(--brown);padding:7px 14px;border-radius:30px;}
+  .btn.out{background:transparent;border:1.5px solid var(--brown);color:var(--brown);}
+  .btn.g{background:transparent;border:1.5px solid var(--line);color:var(--muted);}
+  .vc{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;color:#5e4631;background:var(--soft);padding:3px 8px 3px 3px;border-radius:20px;}
+  .vc .a{width:15px;height:15px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:8px;}
+  .qr{width:48px;height:48px;border-radius:9px;background:repeating-conic-gradient(#2a241c 0 25%,#fff 0 50%) 0/12px 12px;flex:0 0 48px;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g2{background:linear-gradient(135deg,#f0c9b0,#d98a63);}.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}.g4{background:linear-gradient(135deg,#dcd2c2,#b8a98f);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}.gb{background:linear-gradient(135deg,#cfe0ef,#9fc0dd);}
+  .fs10{font-size:10px;}.fs11{font-size:11px;}.fw8{font-weight:800;}.muted{color:var(--muted);}
+  .status{font-size:9px;font-weight:800;padding:3px 9px;border-radius:20px;}
+  .st-green{color:var(--green);background:rgba(63,138,87,.12);border:1px solid rgba(63,138,87,.3);}
+  .st-blue{color:var(--verify);background:rgba(45,156,219,.1);border:1px solid rgba(45,156,219,.3);}
+  .st-grey{color:var(--muted);background:var(--soft);border:1px solid var(--line);}
+  .st-off{color:var(--offer);background:rgba(217,83,30,.1);border:1px solid rgba(217,83,30,.3);}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:8px 6px 14px;}
+  .nav .ix{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .ix.on{color:var(--brown);}.nav .ix .ic{font-size:18px;}
+  .reels{width:50px;height:50px;border-radius:17px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;margin-top:-20px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7px;font-weight:800;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Orders — every transaction type <span class="spark">✦</span></h1>
+  <p>One inbox for everything a follower does: orders · bookings · pay-at-store · enquiries · returns.</p>
+  <div class="legend"><span style="background:var(--brown)">ORDER</span><span style="background:var(--verify)">BOOKING</span><span style="background:var(--green)">PAY-AT-STORE</span><span style="background:#8a8275">ENQUIRY</span><span style="background:var(--offer)">RETURN</span></div>
+</div>
+<div class="stage">
+
+  <!-- ===== ACTIVE ===== -->
+  <div class="col"><div class="cap">🛍️ Orders · Active<span>everything in progress, all types</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="ptitle">Orders</div>
+      <div class="scroll">
+        <div class="tabs"><div class="tab on">Active</div><div class="tab">Orders</div><div class="tab">Bookings</div><div class="tab">Visits</div><div class="tab">Enquiries</div><div class="tab">Returns</div></div>
+
+        <div class="secttl">Delivery in progress</div>
+        <div class="oc">
+          <div class="oh"><div class="lg g1">🍕</div><div><div class="nm">Mama's Pizza</div><div class="it">Signature Pizza + 1 add-on</div></div><span class="tg order">ORDER</span></div>
+          <div class="track"><div class="steps">
+            <div class="step"><div class="dot done">✓</div><div class="slbl act">Placed</div></div>
+            <div class="step"><div class="bar fill"></div><div class="dot done">✓</div><div class="slbl act">Prepared</div></div>
+            <div class="step"><div class="bar fill"></div><div class="dot now">🛵</div><div class="slbl act">On the way</div></div>
+            <div class="step"><div class="bar"></div><div class="dot"></div><div class="slbl">Delivered</div></div>
+          </div></div>
+          <div class="ofoot"><div><div class="amt">₹448 · ETA 18 min</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div><div class="btn">Track →</div></div>
+        </div>
+
+        <div class="secttl">Upcoming bookings</div>
+        <div class="oc">
+          <div class="oh"><div class="lg g5">🍽️</div><div><div class="nm">Spice Route</div><div class="it">Table for 4</div></div><span class="tg book">BOOKING</span></div>
+          <div class="meta"><span class="mch">📅 Today · 8:30 PM</span><span class="mch">🎟️ Ref SR-2291</span><span class="status st-blue">● Confirmed</span></div>
+          <div class="ofoot"><div style="display:flex;align-items:center;gap:10px"><div class="qr"></div><div class="fs10 muted">Show at entry</div></div><div style="display:flex;gap:7px"><div class="btn g">Cancel</div><div class="btn out">Directions</div></div></div>
+        </div>
+        <div class="oc">
+          <div class="oh"><div class="lg g6">💇</div><div><div class="nm">Glow Studio</div><div class="it">Spa &amp; Facial · 60 min</div></div><span class="tg book">BOOKING</span></div>
+          <div class="meta"><span class="mch">📅 Sat 12 Jun · 4:00 PM</span><span class="mch">🎟️ GS-4821</span><span class="status st-blue">● Confirmed</span></div>
+          <div class="ofoot"><span class="vc"><span class="a">💁🏻‍♀️</span>via @GlowRituals</span><div style="display:flex;gap:7px"><div class="btn g">Reschedule</div><div class="btn out">Directions</div></div></div>
+        </div>
+        <div class="oc">
+          <div class="oh"><div class="lg gb">🚗</div><div><div class="nm">DriveEasy Rentals</div><div class="it">Swift · self-drive</div></div><span class="tg book">RENTAL</span></div>
+          <div class="meta"><span class="mch">🟢 Pickup Fri 11, 9 AM</span><span class="mch">🔴 Return Sun 13, 6 PM</span><span class="status st-blue">● Confirmed</span></div>
+          <div class="ofoot"><div class="amt">₹3,600</div><div style="display:flex;gap:7px"><div class="btn g">Cancel</div><div class="btn out">Details</div></div></div>
+        </div>
+
+        <div class="secttl">Enquiries</div>
+        <div class="oc">
+          <div class="oh"><div class="lg g4">🏛️</div><div><div class="nm">Grand Vista Hall</div><div class="it">Wedding · 300 pax · 14 Dec</div></div><span class="tg enq">ENQUIRY</span></div>
+          <div class="meta"><span class="mch">📨 Sent 2 days ago</span><span class="status st-green">● Replied · quote ready</span></div>
+          <div class="ofoot"><span class="vc"><span class="a">💍</span>via @EventsByMeera</span><div class="btn">View reply →</div></div>
+        </div>
+
+        <div class="secttl">Returns in progress</div>
+        <div class="oc">
+          <div class="oh"><div class="lg g3">👟</div><div><div class="nm">MODA</div><div class="it">Street Sneakers · size 8</div></div><span class="tg ret">RETURN</span></div>
+          <div class="meta"><span class="mch">↩️ Reason: size issue</span><span class="status st-off">● Pickup scheduled · Thu</span></div>
+          <div class="ofoot"><div class="amt">Refund ₹1,299</div><div class="btn out">Track return</div></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="ix"><span class="ic">🏠</span>Home</div><div class="ix"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="ix on"><span class="ic">🛍️</span>Orders</div><div class="ix"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== HISTORY ===== -->
+  <div class="col"><div class="cap">🛍️ Orders · History<span>completed, all types · reorder / rate / invoice</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="ptitle">Orders</div>
+      <div class="scroll">
+        <div class="tabs"><div class="tab">Active</div><div class="tab">Orders</div><div class="tab">Bookings</div><div class="tab">Visits</div><div class="tab">Enquiries</div><div class="tab on">History</div></div>
+
+        <div class="secttl">June</div>
+        <div class="oc">
+          <div class="oh"><div class="lg g5">🍝</div><div><div class="nm">Spice Route</div><div class="it">Alfredo Pasta · 8 Jun</div></div><span class="tg order">ORDER</span></div>
+          <div class="ofoot"><div><div class="amt">₹329</div><span class="status st-grey">Delivered</span></div><div style="display:flex;gap:7px"><div class="btn out">Rate</div><div class="btn">Reorder</div></div></div>
+        </div>
+        <div class="oc">
+          <div class="oh"><div class="lg g1">🍕</div><div><div class="nm">Mama's Pizza</div><div class="it">Paid at restaurant · 6 Jun</div></div><span class="tg pay">PAY-AT-STORE</span></div>
+          <div class="ofoot"><div><div class="amt">₹820 <span class="fs10 muted">· saved ₹164</span></div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div><div style="display:flex;gap:7px"><div class="btn g">Invoice</div><div class="btn out">Rate</div></div></div>
+        </div>
+        <div class="oc">
+          <div class="oh"><div class="lg g6">✂️</div><div><div class="nm">The Cut Room</div><div class="it">Haircut + Style · 4 Jun</div></div><span class="tg book">BOOKING</span></div>
+          <div class="ofoot"><div><div class="amt">₹599</div><span class="status st-grey">Completed</span></div><div style="display:flex;gap:7px"><div class="btn out">Rate</div><div class="btn">Rebook</div></div></div>
+        </div>
+
+        <div class="secttl">May</div>
+        <div class="oc">
+          <div class="oh"><div class="lg g3">👟</div><div><div class="nm">MODA</div><div class="it">Canvas Shoes · 28 May</div></div><span class="tg ret">RETURN</span></div>
+          <div class="ofoot"><div><div class="amt">₹999 refunded</div><span class="status st-green">● Refunded to wallet</span></div><div class="btn g">Invoice</div></div>
+        </div>
+        <div class="oc">
+          <div class="oh"><div class="lg gb">🏍️</div><div><div class="nm">DriveEasy Rentals</div><div class="it">Activa · 2-day · 20 May</div></div><span class="tg book">RENTAL</span></div>
+          <div class="ofoot"><div><div class="amt">₹900</div><span class="status st-grey">Completed</span></div><div class="btn">Rebook</div></div>
+        </div>
+        <div class="oc">
+          <div class="oh"><div class="lg g4">📱</div><div><div class="nm">TechNest</div><div class="it">Enquiry: iPhone trade-in · 18 May</div></div><span class="tg enq">ENQUIRY</span></div>
+          <div class="ofoot"><span class="status st-grey">Closed</span><div class="btn out">View thread</div></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="nav"><div class="ix"><span class="ic">🏠</span>Home</div><div class="ix"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="ix on"><span class="ic">🛍️</span>Orders</div><div class="ix"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== TYPES NOTE ===== -->
+  <div class="col"><div class="cap">📋 What Orders covers<span>one inbox, five transaction types</span></div>
+    <div style="width:380px;background:#fff;border-radius:20px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden">
+      <div style="padding:18px 20px;border-bottom:1px solid #efeae0;font-family:'Fraunces',serif;font-size:19px;font-weight:600;background:linear-gradient(180deg,#fbf8f2,#fff)">Every way a follower transacts<small style="display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:#8a8275;margin-top:2px">tabs: Active · Orders · Bookings · Visits · Enquiries · Returns · History</small></div>
+      <div style="padding:16px 20px;font-size:12.5px;color:#4a3a2a;line-height:1.5">
+        <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f2ece2"><span style="background:var(--brown);color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:20px;height:fit-content">ORDER</span><div><b>Online orders</b> — food / fashion delivery. Live tracker → Track, Reorder, Invoice.</div></div>
+        <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f2ece2"><span style="background:var(--verify);color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:20px;height:fit-content">BOOKING</span><div><b>Bookings &amp; rentals</b> — tables, salon/service slots, car &amp; bike rentals. Date/time + QR/ref → Reschedule, Cancel, Directions, Rebook.</div></div>
+        <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f2ece2"><span style="background:var(--green);color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:20px;height:fit-content">PAY-AT-STORE</span><div><b>In-venue payments</b> — paid-at-restaurant/salon/store. Amount + savings + invoice → Rate.</div></div>
+        <div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f2ece2"><span style="background:#8a8275;color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:20px;height:fit-content">ENQUIRY</span><div><b>Enquiries / leads</b> — halls, wedding planners, big-ticket. Status: Sent → Replied → Closed → View thread.</div></div>
+        <div style="display:flex;gap:10px;padding:9px 0"><span style="background:var(--offer);color:#fff;font-size:8px;font-weight:800;padding:3px 8px;border-radius:20px;height:fit-content">RETURN</span><div><b>Returns &amp; refunds</b> — fashion returns. Status: Requested → Pickup → Refunded (to wallet).</div></div>
+        <p style="margin-top:12px;color:#6a5644;font-weight:600">Each maps to a real record (orders · bookings · follower_transactions · enquiry_leads · returns) and keeps the original <b>4-ID creator attribution</b>. All ✅ buildable from existing data.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

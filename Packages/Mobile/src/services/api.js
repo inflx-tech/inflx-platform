@@ -521,6 +521,7 @@ export const followerApi = {
   verifyOrder: (data) => api.post('/follower/orders/verify', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),
   getOrders: () => api.get('/follower/orders'),
+  getActivity: () => api.get('/follower/activity'),
 
   // Addresses
   getAddresses: () => api.get('/followers/addresses'),

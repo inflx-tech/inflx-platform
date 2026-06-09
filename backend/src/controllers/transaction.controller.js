@@ -1323,6 +1323,64 @@ const listOrders = asyncHandler(async (req, res) => {
   return success(res, { orders: rows });
 });
 
+// ── GET /follower/activity ────────────────────────────────────────────────────
+// Unified inbox feed for the Orders screen: every follower_transaction (online
+// order · pay-at-store · prebook/booking) with brand, the via-creator (4-ID
+// attribution), savings, order-tracker status, and booking date/ref. Read-only.
+// Enquiries + returns are separate feeds (not yet unioned here) — surfaced when wired.
+const listActivity = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const { rows } = await db.query(
+    `SELECT ft.id, ft.transaction_type, ft.net_amount, ft.discount_amount,
+            ft.status AS txn_status, ft.created_at, ft.campaign_influencer_id,
+            ft.via_store_influencer_id,
+            b.business_name AS brand_name, b.category AS brand_category,
+            i.instagram_handle AS via_handle, u_i.name AS via_name,
+            fo.id AS order_id, fo.order_status,
+            fb.id AS booking_id, fb.booking_date, fb.pickup_date, fb.booking_type
+       FROM follower_transactions ft
+       JOIN brands b ON b.id = ft.brand_id
+       LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+       LEFT JOIN influencers i ON i.id = ci.influencer_id
+       LEFT JOIN users u_i ON u_i.id = i.user_id
+       LEFT JOIN follower_orders fo ON fo.transaction_id = ft.id
+       LEFT JOIN follower_bookings fb ON fb.transaction_id = ft.id
+      WHERE ft.follower_id = $1
+      ORDER BY ft.created_at DESC
+      LIMIT 100`,
+    [follower.id]
+  );
+
+  // Normalize to inbox items (kind drives the card + tab on the client).
+  const items = rows.map(r => {
+    const kind = r.booking_id ? 'booking'
+      : r.transaction_type === 'online_order' ? 'order'
+      : r.transaction_type === 'pay_at_store' ? 'pay_at_store'
+      : r.transaction_type === 'prebook' ? 'booking'
+      : 'order';
+    return {
+      id: r.id,
+      kind,
+      transaction_type: r.transaction_type,
+      brand_name: r.brand_name,
+      brand_category: r.brand_category,
+      net_amount: r.net_amount != null ? parseFloat(r.net_amount) : null,
+      savings: r.discount_amount != null ? parseFloat(r.discount_amount) : 0,
+      status: r.order_status || r.txn_status || null,
+      created_at: r.created_at,
+      order_id: r.order_id || null,
+      booking_id: r.booking_id || null,
+      booking_date: r.booking_date || r.pickup_date || null,
+      booking_type: r.booking_type || null,
+      via_creator: r.via_handle ? { handle: r.via_handle, name: r.via_name } : null,
+    };
+  });
+
+  return success(res, { items });
+});
+
 // ── GET /follower/orders/:id ──────────────────────────────────────────────────
 
 const getOrder = asyncHandler(async (req, res) => {
@@ -1419,6 +1477,7 @@ module.exports = {
   placeOrder,
   verifyOrder,
   listOrders,
+  listActivity,
   getOrder,
   updateOrderStatus,
 };

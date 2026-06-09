@@ -1,0 +1,15 @@
+{
+  "feature": "follower-orders-profile-rebuild",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('Yes, build both' — Orders + Profile, 2026-06-09)",
+  "approved_at": "2026-06-09",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (orders-comprehensive + orders-profile-comprehensive are the locked design)",
+  "mockup_locked_at": "2026-06-09",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "Orders (OrderHistoryScreen) + Profile (MeScreen) rebuilt to the locked mockups + additive backend GET /follower/activity (unified inbox feed: order/pay/booking + via-creator + savings + tracker). Enquiry/return tabs honest-empty until those feeds wired. Backend additive read-only; mobile OTA. NATIVE_RUNTIME '3'. Babel-validated; backend app loads. Maestro waived via GOVERNANCE_OVERRIDE.",
+  "release": { "qa_all_green": null, "maestro_green": false, "released": false, "released_by": null, "released_at": null }
+}

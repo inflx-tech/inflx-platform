@@ -32,6 +32,7 @@ router.post('/prebook-daterange/verify', ...followerAuth, ctrl.verifyPrebookDate
 router.post('/orders',        ...followerAuth, ctrl.placeOrder);
 router.post('/orders/verify', ...followerAuth, ctrl.verifyOrder);
 router.get('/orders',         ...followerAuth, ctrl.listOrders);
+router.get('/activity',       ...followerAuth, ctrl.listActivity);
 router.get('/orders/:id',     ...followerAuth, ctrl.getOrder);
 
 // Brand-side order status update

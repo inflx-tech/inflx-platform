@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Vibe — Orders + Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F7F3EC;--card:#FFFFFF;--brown:#8B4A2F;--brown2:#6E3A24;--ink:#1C1A17;--muted:#8A8275;--line:#ECE6DC;--offer:#D9531E;--star:#F2A93B;--verify:#2D9CDB;--ring1:#FF6A5F;--ring2:#FFB24C;--soft:#F1ECE3;--green:#3F8A57;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:'Plus Jakarta Sans',sans-serif;background:radial-gradient(1100px 600px at 10% -5%,#efe3d2 0%,transparent 55%),radial-gradient(1000px 700px at 100% 0%,#e8ddcd 0%,transparent 55%),linear-gradient(160deg,#e9dfcf 0%,#d6cab6 100%);color:var(--ink);min-height:100vh;padding:44px 24px 90px;}
+  .head{max-width:1080px;margin:0 auto 28px;text-align:center;}
+  .head h1{font-family:'Fraunces',serif;font-weight:600;font-size:36px;color:#2a1d14;display:flex;align-items:center;justify-content:center;gap:12px;}
+  .head .spark{font-size:22px;color:var(--brown);}.head p{color:#5e5040;margin-top:8px;font-size:14px;font-weight:500;}
+  .legend{display:inline-flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .legend span{background:rgba(255,255,255,.6);border:1px solid rgba(139,74,47,.18);color:#5b4733;font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:30px;}
+  .stage{display:flex;gap:42px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1100px;margin:0 auto;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .col .cap{font-family:'Fraunces',serif;font-size:17px;font-weight:600;color:#2a1d14;text-align:center;}
+  .col .cap span{font-family:'Plus Jakarta Sans';font-size:11.5px;font-weight:600;color:#6a5a47;display:block;margin-top:2px;}
+  .phone{width:344px;height:792px;background:var(--bg);border-radius:44px;box-shadow:0 46px 84px -24px rgba(50,30,12,.5),0 0 0 11px #14110d,0 0 0 13px #2a241c;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#14110d;border-radius:0 0 16px 16px;z-index:60;}
+  .sb{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-size:12.5px;font-weight:700;flex:0 0 auto;}
+  .sb .i{display:flex;gap:6px;font-size:11px;}
+  .scroll{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding-bottom:14px;}
+  .scroll::-webkit-scrollbar{width:0;}
+  .ptitle{font-family:'Fraunces',serif;font-size:23px;font-weight:600;padding:8px 18px 2px;}
+  .tabs{display:flex;gap:8px;padding:10px 16px 6px;}
+  .tab{font-size:12px;font-weight:800;padding:8px 16px;border-radius:30px;background:var(--card);border:1px solid var(--line);color:#5e5345;}
+  .tab.on{background:var(--brown);color:#fff;border-color:var(--brown);}
+  .secttl{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:14px 18px 6px;}
+  /* order cards */
+  .ocard{margin:0 16px 12px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 26px -18px rgba(70,45,22,.5);}
+  .oh{display:flex;align-items:center;gap:11px;padding:12px;}
+  .oh .lg{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex:0 0 46px;}
+  .oh .nm{font-size:13.5px;font-weight:800;}
+  .oh .it{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:1px;}
+  .opill{margin-left:auto;font-size:9px;font-weight:800;padding:4px 9px;border-radius:20px;}
+  .opill.live{color:var(--green);background:rgba(63,138,87,.12);border:1px solid rgba(63,138,87,.3);}
+  .opill.done{color:var(--muted);background:var(--soft);border:1px solid var(--line);}
+  .opill.book{color:var(--verify);background:rgba(45,156,219,.1);border:1px solid rgba(45,156,219,.3);}
+  /* progress tracker */
+  .track{padding:4px 14px 12px;}
+  .steps{display:flex;align-items:center;}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;}
+  .dot{width:18px;height:18px;border-radius:50%;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;z-index:2;}
+  .dot.done{background:var(--green);}.dot.now{background:var(--brown);}
+  .bar{position:absolute;top:9px;left:-50%;width:100%;height:2px;background:var(--line);z-index:1;}
+  .bar.fill{background:var(--green);}
+  .slbl{font-size:8px;font-weight:700;color:var(--muted);}
+  .slbl.act{color:var(--ink);}
+  .ofoot{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-top:1px solid var(--line);background:#fdfbf7;}
+  .ofoot .amt{font-size:13px;font-weight:800;}
+  .obtn{font-size:11px;font-weight:800;color:#fff;background:var(--brown);padding:7px 16px;border-radius:30px;}
+  .obtn.out{background:transparent;border:1.5px solid var(--brown);color:var(--brown);}
+  .vc{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;color:#5e4631;background:var(--soft);padding:3px 8px 3px 3px;border-radius:20px;}
+  .vc .a{width:15px;height:15px;border-radius:50%;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:8px;}
+  .qr{width:54px;height:54px;border-radius:10px;background:repeating-conic-gradient(#2a241c 0 25%,#fff 0 50%) 0/14px 14px;flex:0 0 54px;}
+  /* profile */
+  .pcard{margin:8px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 26px -18px rgba(70,45,22,.5);}
+  .pav{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#f0d6b0,#d9a86e);display:flex;align-items:center;justify-content:center;font-size:26px;flex:0 0 58px;}
+  .pn{font-size:17px;font-weight:800;}.pp{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px;font-family:'Plus Jakarta Sans'}
+  .pcity{font-size:9.5px;font-weight:800;color:var(--brown);background:var(--soft);border:1px solid var(--line);padding:2px 8px;border-radius:20px;margin-top:5px;display:inline-block;}
+  .pedit{margin-left:auto;font-size:16px;color:var(--muted);}
+  .stats{display:flex;margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .stat{flex:1;text-align:center;padding:13px 0;border-right:1px solid var(--line);}
+  .stat:last-child{border-right:none;}
+  .stat b{font-size:17px;font-weight:800;}.stat span{display:block;font-size:9.5px;color:var(--muted);font-weight:700;margin-top:1px;}
+  .wallet{margin:12px 16px 0;background:linear-gradient(120deg,#8a4f2d,#6e3a24);color:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;}
+  .wallet .wb{font-family:'Fraunces',serif;font-size:22px;font-weight:600;}
+  .wallet .wl{font-size:10px;opacity:.85;}
+  .wallet .wa{margin-left:auto;font-size:18px;}
+  .wallet .we{position:absolute;right:-4px;bottom:-8px;font-size:56px;opacity:.16;}
+  .refer{margin:12px 16px 0;background:#fbf3ec;border:1px dashed var(--brown);border-radius:14px;padding:13px;display:flex;align-items:center;gap:11px;}
+  .refer .ri{font-size:24px;}.refer .rt{font-size:12.5px;font-weight:800;}.refer .rs{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px;}
+  .refer .rb{margin-left:auto;font-size:11px;font-weight:800;color:#fff;background:var(--brown);padding:7px 14px;border-radius:30px;}
+  .menu{margin:14px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+  .mrow{display:flex;align-items:center;gap:13px;padding:13px 14px;border-bottom:1px solid var(--soft);}
+  .mrow:last-child{border-bottom:none;}
+  .mic{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .mlbl{font-size:13.5px;font-weight:700;}.msub{font-size:9.5px;color:var(--muted);font-weight:600;}
+  .mch{margin-left:auto;color:#c9bda8;font-size:16px;}
+  .logout{margin:14px 16px 0;border:1.5px solid var(--offer);color:var(--offer);border-radius:14px;padding:13px;text-align:center;font-size:13px;font-weight:800;}
+  .g1{background:linear-gradient(135deg,#f3d9a8,#e8a85c);}.g3{background:linear-gradient(135deg,#e9d4c0,#c9a37e);}.g5{background:linear-gradient(135deg,#f5e0c2,#e9b97a);}.g6{background:linear-gradient(135deg,#e3d2dd,#c79bb3);}
+  .nav{flex:0 0 auto;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding:8px 6px 14px;}
+  .nav .it{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:700;color:#9c9081;flex:1;}
+  .nav .it.on{color:var(--brown);}.nav .it .ic{font-size:18px;}
+  .reels{width:50px;height:50px;border-radius:17px;background:linear-gradient(145deg,#9a5736,#6e3a24);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:19px;margin-top:-20px;box-shadow:0 10px 22px -6px rgba(110,58,36,.7);flex:0 0 auto;}
+  .reels .rl{font-size:7px;font-weight:800;}
+  .fw8{font-weight:800;}.muted{color:var(--muted);}.fs11{font-size:11px;}
+  /* control note */
+  .ctl{width:420px;background:#fff;border-radius:20px;border:1px solid #e7e2d8;box-shadow:0 40px 80px -30px rgba(50,30,12,.45);overflow:hidden;}
+  .ctlh{padding:18px 20px;border-bottom:1px solid #efeae0;font-family:'Fraunces',serif;font-size:19px;font-weight:600;background:linear-gradient(180deg,#fbf8f2,#fff);}
+  .ctlh small{display:block;font-family:'Plus Jakarta Sans';font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;}
+  .ctlb{padding:16px 20px;font-size:12.5px;color:#4a3a2a;line-height:1.6;}
+  .ctlb b{color:#2a1d14;}
+  .ctlb .k{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:1px 7px;font-size:11px;font-weight:700;color:var(--brown);}
+  .ctlb ul{margin:8px 0 14px 2px;list-style:none;}
+  .ctlb li{padding:6px 0;border-bottom:1px solid #f2ece2;display:flex;gap:8px;}
+  .ctlb li b{flex:0 0 92px;}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1><span class="spark">✦</span> Orders + Profile — the last two tabs <span class="spark">✦</span></h1>
+  <p>Mostly the follower's own data — little admin merchandising (noted on the right).</p>
+  <div class="legend"><span>🛍️ Orders</span><span>👤 Profile</span><span>📍 user-data screens</span><span>Refer &amp; Earn ties to your referral model</span></div>
+</div>
+<div class="stage">
+
+  <!-- ===== ORDERS ===== -->
+  <div class="col"><div class="cap">🛍️ Orders<span>active · bookings · past</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="ptitle">Orders</div>
+      <div class="tabs"><div class="tab on">Active</div><div class="tab">Bookings</div><div class="tab">Past</div></div>
+
+      <div class="secttl">In progress</div>
+      <div class="ocard">
+        <div class="oh"><div class="lg g1">🍕</div><div><div class="nm">Mama's Pizza</div><div class="it">Signature Pizza + 1 add-on</div></div><span class="opill live">● On the way</span></div>
+        <div class="track"><div class="steps">
+          <div class="step"><div class="dot done">✓</div><div class="slbl act">Placed</div></div>
+          <div class="step"><div class="bar fill"></div><div class="dot done">✓</div><div class="slbl act">Prepared</div></div>
+          <div class="step"><div class="bar fill"></div><div class="dot now">🛵</div><div class="slbl act">On the way</div></div>
+          <div class="step"><div class="bar"></div><div class="dot"></div><div class="slbl">Delivered</div></div>
+        </div></div>
+        <div class="ofoot"><div><div class="amt">₹448</div><span class="vc"><span class="a">🧔🏻</span>via @StyleMaster</span></div><div class="obtn">Track →</div></div>
+      </div>
+
+      <div class="secttl">Upcoming booking</div>
+      <div class="ocard">
+        <div class="oh"><div class="lg g6">💇</div><div><div class="nm">Glow Studio</div><div class="it">Spa &amp; Facial · Sat 12 Jun, 4:00 PM</div></div><span class="opill book">● Confirmed</span></div>
+        <div class="ofoot"><div style="display:flex;align-items:center;gap:10px"><div class="qr"></div><div><div class="fs11 fw8">Ref · GS4821</div><div class="fs11 muted">Show at salon</div></div></div><div class="obtn out">Directions</div></div>
+      </div>
+
+      <div class="secttl">Earlier</div>
+      <div class="ocard">
+        <div class="oh"><div class="lg g5">🍝</div><div><div class="nm">Spice Route</div><div class="it">Alfredo Pasta · 8 Jun</div></div><span class="opill done">Delivered</span></div>
+        <div class="ofoot"><div class="amt">₹329</div><div style="display:flex;gap:8px"><div class="obtn out">Rate</div><div class="obtn">Reorder</div></div></div>
+      </div>
+      <div class="ocard">
+        <div class="oh"><div class="lg g3">👟</div><div><div class="nm">MODA</div><div class="it">Street Sneakers · 2 Jun</div></div><span class="opill done">Delivered</span></div>
+        <div class="ofoot"><div class="amt">₹1,299</div><div style="display:flex;gap:8px"><div class="obtn out">Return</div><div class="obtn">Reorder</div></div></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="nav"><div class="it"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it on"><span class="ic">🛍️</span>Orders</div><div class="it"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== PROFILE ===== -->
+  <div class="col"><div class="cap">👤 Profile<span>account · wallet · refer &amp; earn</span></div>
+    <div class="phone"><div class="notch"></div>
+      <div class="sb"><span>9:41</span><span class="i">📶 🔋</span></div>
+      <div class="ptitle">Profile</div>
+      <div class="scroll">
+        <div class="pcard"><div class="pav">🙋‍♀️</div><div style="flex:1"><div class="pn">Aveen</div><div class="pp">+91 98••• ••210</div><span class="pcity">📍 VIJAYAWADA</span></div><span class="pedit">✎</span></div>
+
+        <div class="stats">
+          <div class="stat"><b>12</b><span>ORDERS</span></div>
+          <div class="stat"><b>8</b><span>FOLLOWING</span></div>
+          <div class="stat"><b>15</b><span>SAVED</span></div>
+        </div>
+
+        <div class="wallet"><div><div class="wl">INFLX Wallet · cashback from creator visits</div><div class="wb">₹240</div></div><span class="wa">›</span><span class="we">💰</span></div>
+
+        <div class="refer"><span class="ri">🎁</span><div><div class="rt">Refer &amp; Earn</div><div class="rs">Invite friends — you both earn wallet credit</div></div><span class="rb">Invite</span></div>
+
+        <div class="menu">
+          <div class="mrow"><div class="mic">📦</div><div><div class="mlbl">My Orders</div><div class="msub">history &amp; tracking</div></div><span class="mch">›</span></div>
+          <div class="mrow"><div class="mic">👥</div><div><div class="mlbl">Following</div><div class="msub">creators you follow</div></div><span class="mch">›</span></div>
+          <div class="mrow"><div class="mic">🔖</div><div><div class="mlbl">Saved Offers</div><div class="msub">bookmarked deals</div></div><span class="mch">›</span></div>
+          <div class="mrow"><div class="mic">📍</div><div><div class="mlbl">My Addresses</div><div class="msub">delivery addresses</div></div><span class="mch">›</span></div>
+          <div class="mrow"><div class="mic">↩️</div><div><div class="mlbl">Returns</div><div class="msub">requests &amp; status</div></div><span class="mch">›</span></div>
+          <div class="mrow"><div class="mic">⚙️</div><div><div class="mlbl">Settings &amp; Help</div><div class="msub">notifications · support</div></div><span class="mch">›</span></div>
+        </div>
+        <div class="logout">LOG OUT</div>
+        <div style="height:16px"></div>
+      </div>
+      <div class="nav"><div class="it"><span class="ic">🏠</span>Home</div><div class="it"><span class="ic">🏷️</span>Offers</div><div class="reels">🎬<span class="rl">Reels</span></div><div class="it"><span class="ic">🛍️</span>Orders</div><div class="it on"><span class="ic">👤</span>Profile</div></div>
+    </div>
+  </div>
+
+  <!-- ===== CONTROL NOTE ===== -->
+  <div class="col"><div class="cap">⚙️ Admin control here<span>minimal — these are user-data screens</span></div>
+    <div class="ctl">
+      <div class="ctlh">Orders &amp; Profile · control<small>mostly the follower's own data</small></div>
+      <div class="ctlb">
+        Unlike the discovery screens, these are driven by <b>the follower's own data</b> (their orders, bookings, wallet, saved, following). There are no merchandising shelves to configure — so <b>no Section Manager</b> here.
+        <p style="margin:10px 0 4px"><b>The few things admin / feature-flags control:</b></p>
+        <ul>
+          <li><b>Refer &amp; Earn</b> the promo banner copy + on/off (ties to your referral model)</li>
+          <li><b>Wallet</b> show/hide until the follower-wallet backend lands</li>
+          <li><b>Returns</b> show/hide per the returns feature flag</li>
+          <li><b>Menu rows</b> which optional rows appear (Wallet/Returns/Help)</li>
+        </ul>
+        <p><b>Everything else is data:</b> order status from the live order/booking record · tracking timeline from fulfilment · wallet balance from <span class="k">follower wallet</span> (scaffold) · stats counted from the user's records. Each "via @creator" keeps the 4-ID attribution from the original order.</p>
+        <p style="margin-top:10px;color:#8a7a63"><b>Note:</b> the order/booking/return <i>flow</i> screens (cart → pay → confirm, enquiry, search) already exist and were repainted in Flow 52 — linear flows, not section screens.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
