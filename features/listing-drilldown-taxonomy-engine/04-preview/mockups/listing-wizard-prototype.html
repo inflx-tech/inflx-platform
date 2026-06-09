@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INFLX · Drill-down Listing Wizard — Fashion + Furniture (one engine)</title>
+<style>
+  :root{
+    --bg:#FAFAFA; --paper:#FFFFFF; --ink:#0A0A0A; --ink2:#27272A; --mut:#71717A; --mut2:#A1A1AA;
+    --line:#E4E4E7; --soft:#F4F4F5; --yellow:#FFC107; --yellowPale:#FFF7CC; --yellowText:#6B5A00;
+    --ok:#10B981; --okPale:#D1FAE5; --info:#1D4ED8; --infoPale:#DBEAFE; --variant:#7E22CE; --variantPale:#F3E8FF;
+    --disc:#0E7490; --discPale:#CFFAFE;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:radial-gradient(900px 500px at 10% -5%,#fff7cc55 0%,transparent 55%),linear-gradient(160deg,#f0ede6,#e3ddd2);
+    color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start;min-height:100vh;padding:32px 16px 70px}
+  .wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+  .cap{font-size:13px;color:#5e5040;font-weight:600;max-width:392px;text-align:center;line-height:1.5}
+  .cap b{color:#2a1d14}
+  .device{width:392px;max-width:100%;background:var(--bg);border:1px solid var(--line);
+    border-radius:30px;overflow:hidden;display:flex;flex-direction:column;
+    height:820px;box-shadow:0 36px 90px rgba(60,40,15,.4)}
+  .top{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--paper);border-bottom:1px solid var(--line)}
+  .top .logo{font-weight:900;letter-spacing:.5px;font-size:16px}
+  .top .logo span{color:var(--yellowText);background:var(--yellow);padding:1px 5px;border-radius:5px}
+  .top .sub{font-size:11px;color:var(--mut);margin-left:auto;font-weight:600}
+  .back{background:var(--soft);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:6px 10px;font-size:13px;cursor:pointer;font-weight:600}
+  .screen{flex:1;overflow-y:auto;padding:16px}
+  .screen::-webkit-scrollbar{width:0}
+  h2{margin:2px 0 4px;font-size:20px;font-weight:800}
+  .hint{font-size:12px;color:var(--mut);line-height:1.5;margin:0 0 14px}
+  .note{background:var(--yellowPale);border:1px solid #efd87a;border-radius:12px;padding:10px 12px;font-size:11.5px;color:var(--yellowText);margin:12px 0;line-height:1.5}
+  .note b{color:#4a3d00}
+  .note.v{background:var(--variantPale);border-color:#d8b8f0;color:#5b2a8a}.note.v b{color:#42206a}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;cursor:pointer;transition:.15s}
+  .card:hover{border-color:var(--yellow);transform:translateY(-2px);box-shadow:0 12px 24px -16px rgba(60,40,15,.4)}
+  .card .ic{font-size:30px}
+  .card h3{margin:7px 0 2px;font-size:16px;font-weight:800}
+  .card p{margin:0;font-size:12px;color:var(--mut)}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);
+    background:var(--paper);color:var(--ink);font-size:13px;margin:0 7px 7px 0;cursor:pointer;user-select:none;font-weight:600}
+  .chip.sel{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chip.sel.var{background:var(--variant);border-color:var(--variant)}
+  .btn{display:block;width:100%;padding:13px;border:none;border-radius:13px;background:var(--yellow);color:var(--ink);font-size:15px;font-weight:800;cursor:pointer;margin-top:10px}
+  .btn:disabled{opacity:.4}
+  .btn.ghost{background:var(--paper);border:1px solid var(--line);color:var(--ink2)}
+  .btn.dark{background:var(--ink);color:#fff}
+  .toggle{display:flex;background:var(--soft);border-radius:12px;padding:4px;gap:4px;margin:6px 0 4px}
+  .toggle button{flex:1;border:none;background:none;color:var(--mut);padding:9px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:700}
+  .toggle button.on{background:var(--paper);color:var(--ink);box-shadow:0 2px 6px -2px rgba(0,0,0,.2)}
+  .toggle.yel button.on{background:var(--yellow)}
+  .crumb{font-size:12px;color:var(--mut);margin-bottom:12px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-weight:600}
+  .crumb span{cursor:pointer}.crumb span:hover{color:var(--ink)}
+  .crumb .cur{color:var(--ink);cursor:default}
+  .navrow{display:flex;justify-content:space-between;align-items:center;background:var(--paper);border:1px solid var(--line);
+    border-radius:12px;padding:14px;margin-bottom:8px;cursor:pointer}
+  .navrow:hover{border-color:var(--yellow)}
+  .navrow .a{font-size:18px;color:var(--mut2)}
+  .navrow .lf{font-size:11px;color:var(--mut);margin-top:2px}
+  .sec{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut);margin:18px 0 8px;font-weight:800}
+  label.fl{display:block;font-size:11px;color:var(--ink2);margin:12px 0 5px;font-weight:700}
+  label.fl .req{color:#d6334c}
+  label.fl .tag{font-size:9px;font-weight:800;padding:1px 6px;border-radius:5px;margin-left:5px;vertical-align:middle}
+  .tag.variant{background:var(--variantPale);color:var(--variant)}
+  .tag.disc{background:var(--discPale);color:var(--disc)}
+  .tag.attr{background:var(--infoPale);color:var(--info)}
+  input.tin,select.tin{width:100%;background:var(--paper);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px;font-size:13px}
+  input.tin:focus,select.tin:focus{outline:none;border-color:var(--yellow)}
+  .photo{height:92px;border:1.5px dashed var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;
+    color:var(--mut);font-size:12px;background:var(--soft);cursor:pointer;margin-bottom:4px;font-weight:600}
+  .dim{display:flex;gap:6px;align-items:center}.dim input{flex:1;text-align:center}.dim .xs{color:var(--mut2);font-size:12px}
+  .vrow{display:flex;align-items:center;gap:8px;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:7px 9px;margin:6px 0}
+  .vrow .vn{flex:1;font-size:12px;font-weight:700}
+  .vrow input{width:72px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:12px;text-align:right}
+  .vrow .vl{font-size:9px;color:var(--mut)}
+  .added{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:9px;margin-bottom:7px}
+  .added .th{width:42px;height:42px;border-radius:9px;background:var(--yellowPale);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+  .added .nm{font-size:13px;font-weight:800}
+  .added .sb{font-size:11px;color:var(--mut);margin-top:1px}
+  .x{color:#d6334c;background:none;border:none;font-size:18px;cursor:pointer;padding:0 4px}
+  .meter{height:9px;background:var(--soft);border-radius:99px;overflow:hidden;margin:8px 0}
+  .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--yellow),#ffd454)}
+  .pcard{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:10px;box-shadow:0 10px 22px -16px rgba(60,40,15,.4)}
+  .pcard .img{height:120px;background:var(--yellowPale);display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
+  .pcard .ob{position:absolute;top:9px;left:9px;font-size:9px;font-weight:800;background:var(--ink);color:#fff;padding:3px 8px;border-radius:7px}
+  .pcard .b{padding:11px}.pcard .b h4{margin:0 0 3px;font-size:14px;font-weight:800}
+  .pcard .sb{font-size:11px;color:var(--mut)}
+  .cta{display:inline-block;font-size:11px;font-weight:800;background:var(--yellow);color:var(--ink);padding:7px 13px;border-radius:9px;margin-top:8px}
+  .cta.dark{background:var(--ink);color:#fff}
+  .pill{font-size:10px;background:var(--soft);border:1px solid var(--line);color:var(--ink2);padding:3px 8px;border-radius:7px;display:inline-block;margin:3px 4px 0 0;font-weight:700}
+  .pill.v{background:var(--variantPale);border-color:#e2cdf4;color:var(--variant)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="device">
+    <div class="top">
+      <div class="logo">INFL<span>X</span></div>
+      <button class="back" id="back" style="display:none" onclick="goBack()">‹ Back</button>
+      <div class="sub" id="sub">Seller · Listing</div>
+    </div>
+    <div class="screen" id="screen"></div>
+  </div>
+  <div class="cap"><b>One drill-down engine, two verticals.</b> Pick Fashion or Furniture, choose Showcase or Sell, drill once to an item type, then batch-add. Subtypes (3-seater, 2-door, Queen) are <b>facets</b>, never folders.</div>
+</div>
+
+<script>
+/* =================== FACET TYPES ===================
+   t: select | multi | bool | dim | number | text
+   role: variant | descriptive | discovery | attr
+   req: 1 = required; showIf: [facetName, value] = conditional
+==================================================== */
+
+/* shared cross-cut facets (apply to every leaf of the vertical) */
+const XCUT_FASHION=[
+  {n:'Color',t:'multi',role:'variant',req:1,v:['Red','Blue','Black','White','Green','Yellow','Pink','Maroon','Beige','Multicolor']},
+  {n:'Brand',t:'text',role:'descriptive',req:0},
+];
+const XCUT_FURN=[
+  {n:'Material / Finish',t:'select',role:'descriptive',req:1,v:['Solid Wood','Engineered Wood','MDF','Metal','Fabric','Leather','Leatherette','Cane/Rattan','Glass','Marble']},
+  {n:'Color / Tone',t:'select',role:'descriptive',req:1,v:['Natural','Teak','Walnut','Oak','White','Black','Grey','Brown','Beige']},
+  {n:'Dimensions (L×W×H)',t:'dim',role:'descriptive',req:0},
+  {n:'Room',t:'multi',role:'discovery',req:0,v:['Living','Bedroom','Dining','Study/Office','Kids','Outdoor','Entryway']},
+  {n:'Brand',t:'text',role:'descriptive',req:0},
+  {n:'Warranty',t:'select',role:'attr',req:0,v:['No warranty','1 year','3 years','5 years','10 years']},
+  {n:'Assembly',t:'select',role:'attr',req:0,v:['Pre-assembled','DIY','Carpenter-assisted']},
+  {n:'Made to order',t:'bool',role:'attr',req:0},
+  {n:'Lead time',t:'text',role:'attr',req:0,showIf:['Made to order','Yes']},
+];
+
+const FASHION={
+  Women:{ Ethnic:{
+      'Saree':{__leaf:1,facets:[{n:'Fabric',t:'select',req:1,v:['Silk','Cotton','Georgette','Chiffon','Linen','Banarasi']},
+        {n:'Work',t:'select',req:0,v:['Plain','Zari','Embroidery','Print','Kundan']},
+        {n:'Occasion',t:'select',req:0,v:['Casual','Party','Festive','Wedding']},{n:'Blouse included',t:'bool',req:0}]},
+      'Kurta / Kurti':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['S','M','L','XL','XXL']},
+        {n:'Fabric',t:'select',req:0,v:['Cotton','Rayon','Silk','Georgette']},{n:'Sleeve',t:'select',req:0,v:['Sleeveless','Short','3/4','Full']}]},
+      'Lehenga':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['S','M','L','XL']},
+        {n:'Occasion',t:'select',req:0,v:['Festive','Wedding','Party']}]} },
+    Western:{
+      'Dress':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['XS','S','M','L','XL']},
+        {n:'Length',t:'select',req:0,v:['Mini','Knee','Midi','Maxi']},{n:'Occasion',t:'select',req:0,v:['Casual','Party','Formal']}]},
+      'Jeans':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['26','28','30','32','34','36']},
+        {n:'Fit',t:'select',req:0,v:['Skinny','Slim','Straight','Bootcut']},{n:'Wash',t:'select',req:0,v:['Light','Mid','Dark']}]},
+      'Top':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['XS','S','M','L','XL']},
+        {n:'Neck',t:'select',req:0,v:['Round','V','Collar','Boat']}]} } },
+  Men:{ Topwear:{
+      'Shirt':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['S','M','L','XL','XXL']},
+        {n:'Fit',t:'select',req:0,v:['Slim','Regular']},{n:'Pattern',t:'select',req:0,v:['Solid','Checks','Stripes','Printed']}]},
+      'T-Shirt':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['S','M','L','XL','XXL']},
+        {n:'Neck',t:'select',req:0,v:['Round','Polo','V']},{n:'Sleeve',t:'select',req:0,v:['Half','Full']}]} },
+    Bottomwear:{
+      'Jeans':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['30','32','34','36','38']},
+        {n:'Fit',t:'select',req:0,v:['Slim','Regular','Relaxed']}]} } },
+  Kids:{ Boys:{
+      'T-Shirt':{__leaf:1,facets:[{n:'Age',t:'multi',req:1,role:'variant',v:['2-3y','4-5y','6-7y','8-9y','10-12y']},
+        {n:'Sleeve',t:'select',req:0,v:['Half','Full']}]} },
+    Girls:{
+      'Frock':{__leaf:1,facets:[{n:'Age',t:'multi',req:1,role:'variant',v:['2-3y','4-5y','6-7y','8-9y']},
+        {n:'Occasion',t:'select',req:0,v:['Casual','Party']}]} } }
+};
+
+const FURN={
+  'Seating':{
+    'Sofa':{__leaf:1,facets:[{n:'Seater',t:'multi',req:1,role:'variant',v:['1 Seater','2 Seater','3 Seater','Sofa Set']},
+      {n:'Configuration',t:'select',req:0,v:['Straight','LHS','RHS','Corner','U-shape']},{n:'Storage',t:'bool',req:0},{n:'Recliner',t:'bool',req:0}]},
+    'Recliner':{__leaf:1,facets:[{n:'Seater',t:'multi',req:1,role:'variant',v:['1 Seater','2 Seater','3 Seater','Recliner Set']},
+      {n:'Mechanism',t:'select',req:0,v:['Manual','Motorized']}]},
+    'Office Chair':{__leaf:1,facets:[{n:'Type',t:'select',req:0,v:['Ergonomic','Executive','Mesh','Training','Guest']}]},
+    'Bean Bag':{__leaf:1,facets:[{n:'Size',t:'select',req:0,role:'variant',v:['XL','XXL','XXXL']},{n:'Filling',t:'select',req:0,v:['Filled','Cover only']}]} },
+  'Beds & Bedroom':{
+    'Bed':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['Single','Double','Queen','King']},
+      {n:'Storage',t:'select',req:0,v:['None','Box','Hydraulic','Drawer']}]},
+    'Wardrobe':{__leaf:1,facets:[{n:'Doors',t:'multi',req:1,role:'variant',v:['1 Door','2 Door','3 Door','4 Door','Sliding']},{n:'Mirror',t:'bool',req:0}]},
+    'Mattress':{__leaf:1,facets:[{n:'Size',t:'multi',req:1,role:'variant',v:['Single','Double','Queen','King']},
+      {n:'Type',t:'select',req:1,v:['Foam','Memory Foam','Spring','Latex','Coir']},
+      {n:'Feature',t:'multi',req:0,v:['Orthopaedic','Cooling','Flippable']}]} },
+  'Dining & Bar':{
+    'Dining Set':{__leaf:1,facets:[{n:'Seats',t:'select',req:1,role:'variant',v:['2 Seater','4 Seater','6 Seater','8 Seater']},
+      {n:'Shape',t:'select',req:0,v:['Rectangular','Round','Square','Oval']}]} },
+  'Tables & Storage':{
+    'TV & Media Unit':{__leaf:1,facets:[{n:'Suitable TV size',t:'text',req:0}]},
+    'Bookshelf':{__leaf:1,facets:[{n:'Tiers',t:'select',req:0,v:['2','3','4','5+']}]} }
+};
+
+/* =================== ROUTER =================== */
+let stack=[];
+function nav(fn){stack.push(fn);render();}
+function goBack(){if(stack.length>1){stack.pop();render();}}
+function render(){document.getElementById('back').style.display=stack.length>1?'block':'none';document.getElementById('screen').scrollTop=0;stack[stack.length-1]();}
+const S=document.getElementById('screen');
+const sub=t=>document.getElementById('sub').textContent=t;
+const esc=p=>JSON.stringify(p).replace(/"/g,'&quot;');
+
+/* =================== HOME =================== */
+function home(){
+  sub('Choose business');
+  S.innerHTML=`<h2>Set up your listing</h2>
+  <p class="hint">Two drill-down verticals run on the <b>same</b> engine — only the tree + facets differ.</p>
+  <div class="card" onclick="startShop('fashion')"><div class="ic">🛍️</div>
+    <h3>Fashion</h3><p>Segment → category → item · drill once, batch-add</p></div>
+  <div class="card" onclick="startShop('furniture')"><div class="ic">🛋️</div>
+    <h3>Furniture</h3><p>Family → item → facets · same engine, richer attributes</p></div>
+  <div class="note"><b>Restaurant &amp; Electronics</b> use the other model (a product dictionary) — already built for food. This prototype is the <b>drill-down</b> engine for Fashion + Furniture.</div>`;
+}
+
+/* =================== SHOP ENGINE =================== */
+let shopV, shopTree, shopXcut, shopMode='sell', shopItems={}, curPath=[];
+function startShop(v){
+  shopV=v; shopMode='sell';
+  if(v==='fashion'){shopTree=FASHION;shopXcut=XCUT_FASHION;} else {shopTree=FURN;shopXcut=XCUT_FURN;}
+  nav(modeSelect);
+}
+function modeSelect(){
+  sub((shopV==='fashion'?'Fashion':'Furniture')+' · Mode');
+  S.innerHTML=`<h2>How do you sell?</h2>
+  <p class="hint">This sets the customer's button and how much detail you fill — you can change it per item later.</p>
+  <div class="card" onclick="shopMode='showcase';nav(()=>shopBrowse([]))"><div class="ic">🏬</div>
+    <h3>Showcase <span style="font-size:11px;color:var(--mut);font-weight:600">(walk-in)</span></h3>
+    <p>Photo + price + "in store". Customer taps <b>Visit / WhatsApp</b>. One-piece OK, no size matrix. ${shopV==='furniture'?'Made-to-order &amp; Request-Quote friendly.':''}</p></div>
+  <div class="card" onclick="shopMode='sell';nav(()=>shopBrowse([]))"><div class="ic">🛒</div>
+    <h3>Sell <span style="font-size:11px;color:var(--mut);font-weight:600">(online)</span></h3>
+    <p>Full SKU: per-${shopV==='fashion'?'size':'variant'} price &amp; stock. Customer taps <b>Buy${shopV==='furniture'?' / EMI':''}</b>.</p></div>
+  <div class="note">Same tree + facets either way — <b>Showcase vs Sell</b> only changes the variant detail + the call-to-action.</div>`;
+}
+function nodeAt(path){let n=shopTree;for(const p of path)n=n[p];return n;}
+function isLeaf(n){return n&&n.__leaf;}
+function crumb(path){
+  let h=`<span onclick="jump(0)">${shopV==='fashion'?'Fashion':'Furniture'}</span>`;
+  path.forEach((p,i)=>h+=` › <span class="${i===path.length-1?'cur':''}" onclick="jump(${i+1})">${p}</span>`);
+  h+=` <span class="pill" style="margin-left:6px">${shopMode==='sell'?'Sell':'Showcase'}</span>`;
+  return `<div class="crumb">${h}</div>`;
+}
+function jump(i){curPath=curPath.slice(0,i);nav(()=>shopBrowse(curPath));}
+function shopBrowse(path){
+  curPath=path; sub((shopV==='fashion'?'Fashion':'Furniture')+' · Browse');
+  const node=nodeAt(path);
+  if(isLeaf(node))return shopLeaf(path);
+  const keys=Object.keys(node);
+  const top=path.length===0?(shopV==='fashion'?'Who do you sell for?':'Pick a family'):'Pick a category';
+  S.innerHTML=crumb(path)+`<h2>${top}</h2>
+  <p class="hint">Drill to the exact item type <b>once</b> — then batch-add many products under it without re-navigating.</p>
+  ${keys.map(k=>{const child=node[k];const leaf=isLeaf(child);
+    const cnt=leaf?(shopItems[path.concat(k).join('/')]||[]).length:0;
+    return `<div class="navrow" onclick="nav(()=>shopBrowse(${esc(path.concat(k))}))">
+      <div><div style="font-size:14px;font-weight:700">${k}</div>${leaf?`<div class="lf">item type${cnt?` · ${cnt} added`:''}</div>`:''}</div>
+      <div class="a">›</div></div>`}).join('')}
+  ${path.length===0&&shopV==='furniture'?`<div class="note"><b>Top axis = Family</b>, not Room. Room is a <b>discovery facet</b> you'll tick on each item — one item can show under many rooms but files in ONE home.</div>`:''}
+  ${path.length===1?`<div class="note v"><b>Variable depth.</b> Some branches are 2 levels, some 3 — a "leaf" is wherever the facets attach, not a fixed depth.</div>`:''}`;
+}
+
+function visibleFacets(facets, vals){
+  return facets.filter(f=>{
+    if(!f.showIf)return true;
+    const [dep,want]=f.showIf; return (vals[dep]||'')===want;
+  });
+}
+function shopLeaf(path){
+  const key=path.join('/'); const leaf=nodeAt(path);
+  sub('Batch-add · '+path[path.length-1]);
+  const facets=leaf.facets.concat(shopXcut);
+  const items=shopItems[key]||(shopItems[key]=[]);
+  const variantFacet=facets.find(f=>f.role==='variant');
+  S.innerHTML=crumb(path)+`<h2>Add ${path[path.length-1]}${path[path.length-1].endsWith('s')?'':'s'}</h2>
+  <p class="hint">You're <b>inside this item type</b>. Add as many as you like — photo + price + facets. No re-navigating.</p>
+  <div class="photo" onclick="this.innerHTML='📷  photo added'">＋ tap to add photo <span style="color:var(--mut2)">· the photo is the product</span></div>
+  <label class="fl">Product name <span class="req">*</span></label><input class="tin" id="f_name" placeholder="e.g. ${sampleName(path)}">
+  <label class="fl">${shopV==='furniture'?'Starting price (₹)':'Price (₹)'} <span class="req">*</span></label>
+  <input class="tin" id="f_price" type="number" placeholder="0" oninput="syncVariantPrices()">
+  <div id="facetWrap">${renderFacets(facets,{})}</div>
+  ${shopMode==='sell'&&variantFacet?`<div id="variantPrices"></div>`:''}
+  ${shopV==='furniture'?`<label class="fl">Customisable / Request a quote <span class="tag attr">attr</span></label>
+    <div class="toggle"><button class="on" id="rq_n" onclick="setRQ(0)">Fixed price</button><button id="rq_y" onclick="setRQ(1)">Request quote</button></div>
+    <input type="hidden" id="f_rq" value="0">`:''}
+  <button class="btn" onclick="addItem('${key}')">+ Add this item</button>
+  ${items.length?`<div class="sec">Added in this node (${items.length})</div>`:''}
+  ${items.map((it,i)=>`<div class="added"><div class="th">${shopV==='fashion'?'👗':'🛋️'}</div>
+    <div style="flex:1"><div class="nm">${it.name}</div><div class="sb">${shopV==='furniture'&&!it.rq?'from ':''}${it.rq?'Request quote':'₹'+it.price} · ${it.summary}</div></div>
+    <button class="x" onclick="delItem('${key}',${i})">×</button></div>`).join('')}
+  ${items.length?`<button class="btn ghost" onclick="nav(()=>shopBrowse(${esc(path.slice(0,-1))}))">‹ Pick another item type</button>
+  <button class="btn dark" onclick="shopPreview('${key}')">Preview in app</button>`:''}`;
+  if(shopMode==='sell'&&variantFacet)renderVariantPrices(variantFacet);
+}
+function sampleName(p){const m={'Saree':'Kanjivaram Silk Saree','Jeans':'Slim Fit Blue Jeans','Shirt':'Oxford Cotton Shirt','Sofa':'Oakwood 3-Seater Sofa','Bed':'Sheesham Storage Bed','Mattress':'Ortho Memory Foam','Wardrobe':'Sliding 3-Door Wardrobe','Dining Set':'Teak 6-Seater Dining Set'};return m[p[p.length-1]]||p[p.length-1];}
+
+function curVals(){ // read current facet values for conditional re-render
+  const vals={};
+  document.querySelectorAll('[data-facet]').forEach(el=>{vals[el.getAttribute('data-facet')]=el.value;});
+  document.querySelectorAll('[data-bool]').forEach(el=>{vals[el.getAttribute('data-bool')]=el.value;});
+  return vals;
+}
+function renderFacets(facets,vals){
+  return visibleFacets(facets,vals).map((f)=>facetField(f)).join('');
+}
+function tagFor(f){
+  if(f.role==='variant')return '<span class="tag variant">variant</span>';
+  if(f.role==='discovery')return '<span class="tag disc">discovery</span>';
+  if(f.role==='attr')return '<span class="tag attr">listing</span>';
+  return '';
+}
+function facetField(f){
+  const id='ff_'+f.n.replace(/[^a-z0-9]/gi,'');
+  const req=f.req?' <span class="req">*</span>':'';
+  const tag=tagFor(f);
+  if(f.t==='select')return `<label class="fl">${f.n}${req} ${tag}</label><select class="tin" data-facet="${f.n}" id="${id}" onchange="onFacetChange()">
+    <option value="">Select…</option>${f.v.map(o=>`<option>${o}</option>`).join('')}</select>`;
+  if(f.t==='text')return `<label class="fl">${f.n}${req} ${tag}</label><input class="tin" data-facet="${f.n}" id="${id}" placeholder="optional">`;
+  if(f.t==='number')return `<label class="fl">${f.n}${req} ${tag}</label><input class="tin" type="number" data-facet="${f.n}" id="${id}" placeholder="0">`;
+  if(f.t==='bool')return `<label class="fl">${f.n}${req} ${tag}</label>
+    <div class="toggle"><button class="on" id="${id}_n" onclick="setBool('${id}','${f.n}',0)">No</button>
+    <button id="${id}_y" onclick="setBool('${id}','${f.n}',1)">Yes</button></div><input type="hidden" data-bool="${f.n}" id="${id}" value="No">`;
+  if(f.t==='dim')return `<label class="fl">${f.n} (cm) ${tag}</label><div class="dim">
+    <input class="tin" id="${id}_l" placeholder="L"><span class="xs">×</span><input class="tin" id="${id}_w" placeholder="W"><span class="xs">×</span><input class="tin" id="${id}_h" placeholder="H"></div>`;
+  if(f.t==='multi')return `<label class="fl">${f.n}${req} ${tag}</label>
+    <div id="${id}" data-multi="${f.n}">${f.v.map(o=>`<span class="chip ${f.role==='variant'?'':''}" onclick="toggleChip(this,'${f.role||''}')">${o}</span>`).join('')}</div>`;
+  return '';
+}
+function toggleChip(el,role){el.classList.toggle('sel');if(role==='variant')el.classList.toggle('var');onFacetChange();}
+function setBool(id,name,y){document.getElementById(id).value=y?'Yes':'No';
+  document.getElementById(id+'_y').classList.toggle('on',!!y);document.getElementById(id+'_n').classList.toggle('on',!y);onFacetChange();}
+function setRQ(y){document.getElementById('f_rq').value=y?'1':'0';
+  document.getElementById('rq_y').classList.toggle('on',!!y);document.getElementById('rq_n').classList.toggle('on',!y);}
+/* re-render facet block to honor conditional showIf (e.g. Made-to-order → Lead time) */
+function onFacetChange(){
+  const path=curPath;const leaf=nodeAt(path);const facets=leaf.facets.concat(shopXcut);
+  const variantFacet=facets.find(f=>f.role==='variant');
+  // capture current values
+  const vals=curVals();
+  const multiSel={};document.querySelectorAll('[data-multi]').forEach(d=>{multiSel[d.getAttribute('data-multi')]=[...d.querySelectorAll('.chip.sel')].map(c=>c.textContent);});
+  document.getElementById('facetWrap').innerHTML=renderFacets(facets,vals);
+  // restore
+  Object.entries(vals).forEach(([k,v])=>{const el=document.querySelector(`[data-facet="${k}"]`);if(el)el.value=v;
+    const b=document.querySelector(`[data-bool="${k}"]`);if(b){b.value=v;const base=b.id;const yes=v==='Yes';const yb=document.getElementById(base+'_y'),nb=document.getElementById(base+'_n');if(yb)yb.classList.toggle('on',yes);if(nb)nb.classList.toggle('on',!yes);}});
+  Object.entries(multiSel).forEach(([k,arr])=>{const d=document.querySelector(`[data-multi="${k}"]`);if(d)d.querySelectorAll('.chip').forEach(c=>{if(arr.includes(c.textContent)){c.classList.add('sel');}});});
+  if(shopMode==='sell'&&variantFacet)renderVariantPrices(variantFacet);
+}
+function renderVariantPrices(vf){
+  const box=document.getElementById('variantPrices');if(!box)return;
+  const d=document.querySelector(`[data-multi="${vf.n}"]`);
+  const sel=d?[...d.querySelectorAll('.chip.sel')].map(c=>c.textContent):[];
+  if(!sel.length){box.innerHTML='';return;}
+  const base=document.getElementById('f_price')?.value||'';
+  box.innerHTML=`<label class="fl">Per-${vf.n} price &amp; stock <span class="tag variant">variant</span></label>`+
+    sel.map(s=>`<div class="vrow"><span class="vn">${s}</span>
+      <div><div class="vl">₹ price</div><input id="vp_${s.replace(/[^a-z0-9]/gi,'')}" value="${base}"></div>
+      <div><div class="vl">stock</div><input id="vs_${s.replace(/[^a-z0-9]/gi,'')}" placeholder="0"></div></div>`).join('');
+}
+function syncVariantPrices(){const leaf=nodeAt(curPath);const vf=leaf.facets.concat(shopXcut).find(f=>f.role==='variant');if(shopMode==='sell'&&vf)renderVariantPrices(vf);}
+
+function addItem(key){
+  const name=document.getElementById('f_name').value.trim();
+  const price=document.getElementById('f_price').value;
+  const rq=document.getElementById('f_rq')?document.getElementById('f_rq').value==='1':false;
+  if(!name){alert('Add a product name');return;}
+  if(!price&&!rq){alert('Add a price (or switch to Request quote)');return;}
+  const leaf=nodeAt(key.split('/'));const facets=visibleFacets(leaf.facets.concat(shopXcut),curVals());
+  let parts=[],missing=[];
+  facets.forEach((f)=>{const id='ff_'+f.n.replace(/[^a-z0-9]/gi,'');
+    if(f.t==='multi'){const d=document.querySelector(`[data-multi="${f.n}"]`);const selv=d?[...d.querySelectorAll('.chip.sel')].map(c=>c.textContent):[];
+      if(selv.length)parts.push({k:f.n,v:selv.join('/'),role:f.role}); else if(f.req)missing.push(f.n);}
+    else if(f.t==='dim'){const l=document.getElementById(id+'_l')?.value,w=document.getElementById(id+'_w')?.value,h=document.getElementById(id+'_h')?.value;if(l&&w&&h)parts.push({k:f.n,v:`${l}×${w}×${h}cm`});}
+    else{const el=document.getElementById(id);const val=el?el.value:'';
+      if(val&&val!=='No')parts.push({k:f.n,v:val,role:f.role}); else if(f.req&&val!=='No')missing.push(f.n);}
+  });
+  if(missing.length){alert('Required: '+missing.join(', '));return;}
+  const variantPart=parts.find(p=>p.role==='variant');
+  shopItems[key].push({name,price,rq,summary:parts.slice(0,3).map(p=>p.v).join(' · ')||'—',
+    variants:variantPart?variantPart.v.split('/'):[],parts});
+  render();
+}
+function delItem(key,i){shopItems[key].splice(i,1);render();}
+
+function shopPreview(key){
+  const path=key.split('/');const items=shopItems[key];
+  sub('Preview in app');
+  const sell=shopMode==='sell';
+  const cta=shopV==='fashion'?(sell?'Buy':'Visit / WhatsApp'):(sell?'Buy / EMI':'Enquire / Visit');
+  const filled=Math.min(100,40+items.length*12+20);
+  S.innerHTML=`<h2>How followers see these</h2>
+  <p class="hint">${path.join(' › ')} · ${shopMode==='sell'?'Sell':'Showcase'} · ${items.length} item(s)</p>
+  <div class="meter"><i style="width:${filled}%"></i></div>
+  <p class="hint">Listing ${filled}% complete · go live now, add photos to reach 100%</p>
+  ${items.map(it=>`<div class="pcard"><div class="img">${shopV==='fashion'?'👗':'🛋️'}${it.rq?'<span class="ob">REQUEST QUOTE</span>':''}</div>
+    <div class="b"><h4>${it.name}</h4>
+    <div class="sb">${it.summary}</div>
+    <div style="margin-top:5px">${it.variants.map(s=>`<span class="pill v">${s}</span>`).join('')}${it.parts.filter(p=>p.k==='Room').map(p=>p.v.split('/').map(r=>`<span class="pill">${r}</span>`).join('')).join('')}</div>
+    <div style="font-size:16px;font-weight:800;margin-top:7px">${it.rq?'Price on request':((shopV==='furniture'?'from ':'')+'₹'+it.price)}</div>
+    <span class="cta ${sell?'':'dark'}">${cta}</span></div></div>`).join('')}
+  <button class="btn" onclick="alert('🎉 Published to the followers app — these items are now discoverable + filterable by facet.')">Publish · Go live</button>
+  <button class="btn ghost" onclick="stack=[home];curPath=[];render()">Start over</button>
+  <div class="note"><b>Filterable for free:</b> every facet you filled (size, material, room, occasion…) becomes a follower-side filter — because they're stored as typed columns, not buried in text.</div>`;
+}
+
+/* boot */
+stack=[home];render();
+</script>
+</body>
+</html>

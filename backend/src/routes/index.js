@@ -64,6 +64,9 @@ const lookbooksRoutes       = require('./lookbooks.routes');
 // INFLX Meals — planned-meal marketplace (P1 vertical slice)
 const mealsRoutes           = require('./meals.routes');
 
+// Listing Engine — drill-down taxonomy (fashion/furniture): tree + facets + batch-add
+const listingRoutes         = require('./listing.routes');
+
 // Phase 4 — no-auth public store/category controllers
 const followerCtrl      = require('../controllers/follower.controller');
 const { authenticateOptional, authenticate } = require('../middleware/auth');
@@ -137,6 +140,10 @@ router.use('/notifications', notificationRoutes);
 
 // ── INFLX Meals — planned-meal marketplace (P1) ──────────────────────────────
 router.use('/meals', mealsRoutes);
+
+// ── Listing Engine — drill-down taxonomy tree + facets (public read) + batch-add ──
+router.use('/listing',   listingRoutes.publicRouter);
+router.use('/brands/me', listingRoutes.brandRouter);
 
 // ── Phase 4 — Public store endpoints (no auth required) ──────────────────────
 router.get('/store/:influencer_handle/products', authenticateOptional, followerCtrl.getStoreProducts);
