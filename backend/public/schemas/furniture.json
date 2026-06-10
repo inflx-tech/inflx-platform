@@ -90,8 +90,8 @@
     "show_sections": true,
     "cta_label": "Visit Store"
   },
-  "phase": 5,
-  "status": "coming_soon",
+  "phase": 1,
+  "status": "active",
   "super_category": "shop",
   "action_types": {
     "walkin_pay": {

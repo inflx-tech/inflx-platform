@@ -697,9 +697,11 @@ export default function ProductsPage() {
   }, []);
 
   // Drill-down verticals (fashion/furniture) list via the NEW tree+facets wizard,
-  // not the legacy flat ListingWizard — redirect there.
+  // not the legacy flat ListingWizard OR the legacy products CRUD. This redirect
+  // runs on mount and deliberately does NOT depend on the listing-engine flag —
+  // a drill-down vertical whose schema is still phase-gated (furniture was
+  // status=coming_soon) would otherwise fall back to the OLD flat products page.
   useEffect(() => {
-    if (useListingWizard !== true) return;
     // ?setup=1 → stay here to show store-setup (don't bounce to the product wizard).
     if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('setup') === '1') return;
     let cancelled = false;
@@ -708,7 +710,7 @@ export default function ProductsPage() {
       if (!cancelled && cat && DRILLDOWN_VERTICALS.has(cat)) router.replace('/dashboard/products/listing');
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [useListingWizard]);
+  }, []);
 
   const isMasterCatalogue = schema?.features?.master_catalogue === true;
   const category = catalogue?.category || (schema?.category_key);
