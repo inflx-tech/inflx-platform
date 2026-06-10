@@ -126,6 +126,7 @@ export const sectionApi = {
 export const listingApi = {
   getTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
   getNodeFacets: (nodeId) => api.get(`/listing/nodes/${nodeId}/facets`),
+  getBrands: (vertical, q) => api.get(`/listing/brands?vertical=${encodeURIComponent(vertical)}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
   batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
 };
 

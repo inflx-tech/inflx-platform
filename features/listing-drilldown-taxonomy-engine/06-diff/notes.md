@@ -30,7 +30,22 @@ APIs (Ship 1) existed but had no seller UI.
 - `pnpm qa` + Next build not runnable in sandbox → founder is the on-web gate.
   Reachable at **/dashboard/products/listing** after Vercel deploy.
 
+## Ship 2.2 — Brand · auto-SKU · per-colour variant pics · section progress
+- **Brand field** — `<input list>` + `<datalist>` fed by `listingApi.getBrands`
+  (popular seed + type-your-own). Sent as `brand`; backend stores it + captures
+  custom brands into the directory.
+- **SKU** — optional override field ("auto — leave blank"); the backend assigns
+  `CODE-####`; the saved-confirmation shows the returned SKUs.
+- **Per-colour variant card** — selecting colours (Color/Tone facet) renders one
+  card per colour: **its own photo upload** + **per-size stock** (sizes from the
+  Size facet). Sent as `variants:[{color,images,sizes:[{size,stock}]}]`; backend
+  derives variant sub-SKUs `CODE-####-CLR-SIZE`.
+- **Section progress** — per-leaf saved counts shown on the category grid
+  (`✓ N added`) and in the leaf header, for the "finish a section, move on" rhythm.
+- `listingApi.getBrands(vertical,q)` added to lib/api.js.
+- Parse-check OK (page 397 lines + api.js). Founder is on-web gate.
+
 ## Reachability / deferred
 - Direct route works; a nav button on the products page + a vertical switcher
-  (furniture) are a small follow-up (not done here to avoid editing the existing
-  page blind). Per-size price/stock matrix deferred (single price+stock in v1).
+  (furniture) are a small follow-up. Per-size *price* (vs stock) and the
+  registration-flow + admin return-window changes are the next ship.
