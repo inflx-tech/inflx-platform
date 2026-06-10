@@ -700,6 +700,8 @@ export default function ProductsPage() {
   // not the legacy flat ListingWizard — redirect there.
   useEffect(() => {
     if (useListingWizard !== true) return;
+    // ?setup=1 → stay here to show store-setup (don't bounce to the product wizard).
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('setup') === '1') return;
     let cancelled = false;
     brandApi.getSchema().then((res) => {
       const cat = res?.data?.schema?.category_key;

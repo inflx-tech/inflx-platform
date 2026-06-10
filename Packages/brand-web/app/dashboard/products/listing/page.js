@@ -189,7 +189,10 @@ export default function DrilldownListingPage() {
   return (
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
-      <h1>Add products — {vlabel}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
+        <h1>Add products — {vlabel}</h1>
+        <a href="/dashboard/products?setup=1" className="setuplink">⚙ Store setup</a>
+      </div>
       <div className="rule" />
       <div className="sub">Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.</div>
 
@@ -368,6 +371,8 @@ const CSS = `
 .lst h1{font-family:'Outfit',sans-serif;font-size:22px;font-weight:700;letter-spacing:-.3px;margin:0}
 .lst .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 10px}
 .lst .sub{font-size:12px;color:var(--muted2);max-width:680px}
+.lst .setuplink{font-size:12px;font-weight:700;color:var(--ink2);background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:7px 12px;text-decoration:none;white-space:nowrap}
+.lst .setuplink:hover{border-color:var(--yellow)}
 .lst .muted2{color:var(--muted3);font-weight:500}
 .lst .crumb{display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:12px;color:var(--muted2);margin:14px 0;font-weight:600}
 .lst .crumb b{color:var(--ink)} .lst .crumb a{color:var(--muted2);cursor:pointer} .lst .crumb a:hover{color:var(--ink)}

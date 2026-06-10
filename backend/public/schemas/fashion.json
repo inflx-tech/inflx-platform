@@ -8,7 +8,6 @@
   "card_type": "product",
   "phase": 1,
   "status": "active",
-
   "features": {
     "sections": true,
     "veg_flag": false,
@@ -21,7 +20,6 @@
     "master_catalogue": false,
     "returns": true
   },
-
   "sections": [
     "Tops",
     "Bottoms",
@@ -36,23 +34,44 @@
     "Bags",
     "Jewellery"
   ],
-
-  "availing_modes": ["walkin_pay", "online_order"],
+  "availing_modes": [
+    "walkin_pay",
+    "online_order"
+  ],
   "booking_type": null,
-
   "attributes_schema": {
     "section": {
       "key": "section",
       "type": "select",
       "label": "Category",
-      "options": ["Tops","Bottoms","Dresses","Ethnic Wear","Outerwear","Innerwear","Sportswear","Sleepwear","Accessories","Footwear","Bags","Jewellery"],
+      "options": [
+        "Tops",
+        "Bottoms",
+        "Dresses",
+        "Ethnic Wear",
+        "Outerwear",
+        "Innerwear",
+        "Sportswear",
+        "Sleepwear",
+        "Accessories",
+        "Footwear",
+        "Bags",
+        "Jewellery"
+      ],
       "required": true
     },
     "gender": {
       "key": "gender",
       "type": "select",
       "label": "For",
-      "options": ["Men","Women","Unisex","Kids","Boys","Girls"]
+      "options": [
+        "Men",
+        "Women",
+        "Unisex",
+        "Kids",
+        "Boys",
+        "Girls"
+      ]
     },
     "fabric": {
       "key": "fabric",
@@ -78,13 +97,29 @@
       "key": "occasion",
       "type": "multi_select",
       "label": "Occasion",
-      "options": ["Casual","Formal","Party","Wedding","Festive","Office","Workout","Beach","Lounge"]
+      "options": [
+        "Casual",
+        "Formal",
+        "Party",
+        "Wedding",
+        "Festive",
+        "Office",
+        "Workout",
+        "Beach",
+        "Lounge"
+      ]
     },
     "fit": {
       "key": "fit",
       "type": "select",
       "label": "Fit",
-      "options": ["Slim","Regular","Relaxed","Oversized","Tailored"]
+      "options": [
+        "Slim",
+        "Regular",
+        "Relaxed",
+        "Oversized",
+        "Tailored"
+      ]
     },
     "premium": {
       "key": "premium",
@@ -105,9 +140,7 @@
       "label": "Size & Color variants"
     }
   },
-
   "cart_scope": "brand",
-
   "listing_steps": [
     {
       "id": "brand_basics",
@@ -137,33 +170,6 @@
       "recommended_photos": 6
     },
     {
-      "id": "product_authoring",
-      "title": "Add inventory",
-      "subtitle": "Add items with sizes, colors, and stock. Toggle variants on any item — we'll generate the SKU grid for you.",
-      "component": "repeatable_items",
-      "writes_to": "listing",
-      "product_noun": "item",
-      "item_fields": [
-        { "key": "name", "type": "string", "label": "Item name", "required": true, "placeholder": "e.g. Cotton T-Shirt" },
-        { "key": "section", "type": "select", "label": "Category", "required": true,
-          "options": ["Tops","Bottoms","Dresses","Ethnic Wear","Outerwear","Innerwear","Sportswear","Sleepwear","Accessories","Footwear","Bags","Jewellery"] },
-        { "key": "price", "type": "number", "label": "Base price (₹)", "required": true, "placeholder": "499" },
-        { "key": "gender", "type": "select", "label": "For",
-          "options": ["Men","Women","Unisex","Kids","Boys","Girls"] },
-        { "key": "fabric", "type": "string", "label": "Fabric / Material",
-          "placeholder": "e.g. 100% Cotton" },
-        { "key": "description", "type": "string", "label": "Description",
-          "placeholder": "Short, descriptive line — what's this piece about" },
-        { "key": "fit", "type": "select", "label": "Fit",
-          "options": ["Slim","Regular","Relaxed","Oversized","Tailored"] },
-        { "key": "occasion", "type": "multi_select", "label": "Best for",
-          "options": ["Casual","Formal","Party","Wedding","Festive","Office","Workout","Beach","Lounge"] },
-        { "key": "return_policy_days", "type": "number", "label": "Return window (days)",
-          "min": 0, "max": 30, "placeholder": "7", "default": 7 },
-        { "key": "_variants", "type": "variant_matrix", "label": "Sizes & Colors (optional)" }
-      ]
-    },
-    {
       "id": "preview",
       "title": "Preview your store",
       "subtitle": "How followers will see this",
@@ -185,9 +191,7 @@
       ]
     }
   ],
-
   "fields": [],
-
   "product_config": {
     "enabled": true,
     "required": true,
@@ -211,20 +215,74 @@
     },
     "fields": [],
     "excel_columns": [
-      { "column": "Product Name", "field": "name", "required": true, "example": "Cotton T-Shirt" },
-      { "column": "Category", "field": "section", "required": true, "example": "Tops" },
-      { "column": "Base Price (₹)", "field": "price", "required": true, "example": "499" },
-      { "column": "Gender", "field": "gender", "required": false, "example": "Unisex" },
-      { "column": "Fabric", "field": "fabric", "required": false, "example": "100% Cotton" },
-      { "column": "Description", "field": "description", "required": false, "example": "Soft round-neck cotton tee" },
-      { "column": "Sizes (comma-separated)", "field": "sizes", "required": false, "example": "S, M, L, XL" },
-      { "column": "Colors (comma-separated)", "field": "colors", "required": false, "example": "Black, White, Navy" },
-      { "column": "Stock per Variant", "field": "stock_per_variant", "required": false, "example": "5" },
-      { "column": "Return Window (days)", "field": "return_policy_days", "required": false, "example": "7" },
-      { "column": "Image URL", "field": "image_url", "required": false, "example": "https://example.com/item.jpg" }
+      {
+        "column": "Product Name",
+        "field": "name",
+        "required": true,
+        "example": "Cotton T-Shirt"
+      },
+      {
+        "column": "Category",
+        "field": "section",
+        "required": true,
+        "example": "Tops"
+      },
+      {
+        "column": "Base Price (₹)",
+        "field": "price",
+        "required": true,
+        "example": "499"
+      },
+      {
+        "column": "Gender",
+        "field": "gender",
+        "required": false,
+        "example": "Unisex"
+      },
+      {
+        "column": "Fabric",
+        "field": "fabric",
+        "required": false,
+        "example": "100% Cotton"
+      },
+      {
+        "column": "Description",
+        "field": "description",
+        "required": false,
+        "example": "Soft round-neck cotton tee"
+      },
+      {
+        "column": "Sizes (comma-separated)",
+        "field": "sizes",
+        "required": false,
+        "example": "S, M, L, XL"
+      },
+      {
+        "column": "Colors (comma-separated)",
+        "field": "colors",
+        "required": false,
+        "example": "Black, White, Navy"
+      },
+      {
+        "column": "Stock per Variant",
+        "field": "stock_per_variant",
+        "required": false,
+        "example": "5"
+      },
+      {
+        "column": "Return Window (days)",
+        "field": "return_policy_days",
+        "required": false,
+        "example": "7"
+      },
+      {
+        "column": "Image URL",
+        "field": "image_url",
+        "required": false,
+        "example": "https://example.com/item.jpg"
+      }
     ]
   },
-
   "brand_config": {
     "fields": {
       "brand_description": {
@@ -236,31 +294,24 @@
       },
       "gender_focus": {
         "key": "gender_focus",
-        "type": "select",
-        "label": "Who do you dress?",
-        "options": ["Women","Men","Unisex","Kids","Family (all)"],
+        "type": "multi_select",
+        "label": "Who do you dress? (pick all that apply)",
+        "options": [
+          "Men",
+          "Women",
+          "Unisex",
+          "Kids"
+        ],
         "required": true
       },
       "offers_online_delivery": {
         "key": "offers_online_delivery",
         "type": "boolean",
-        "label": "I offer online delivery",
+        "label": "I deliver online (ships across India)",
         "default": false,
-        "follower_sync": { "text": "Online buyers reachable" }
-      },
-      "online_delivery_cities": {
-        "key": "online_delivery_cities",
-        "type": "multi_select",
-        "label": "Cities you ship to",
-        "options": ["Hyderabad","Bangalore","Chennai","Mumbai","Pune","Delhi","Kolkata","Vijayawada","Vizag","Guntur","Tirupati","Warangal","Karimnagar","Nellore","Coimbatore","Madurai","Trivandrum","Kochi","Mysore","Mangalore","Other (pan-India)"]
-      },
-      "shipping_fee_flat": {
-        "key": "shipping_fee_flat",
-        "type": "number",
-        "label": "Flat shipping fee (₹) — 0 for free shipping",
-        "min": 0,
-        "max": 500,
-        "default": 0
+        "follower_sync": {
+          "text": "Online buyers reachable"
+        }
       },
       "hours_json": {
         "key": "hours_json",
@@ -272,16 +323,36 @@
         "type": "multi_select",
         "label": "Store amenities",
         "options": [
-          "AC","Parking","Card Payment","UPI Payment","Trial Rooms","Tailor Available","Gift Wrapping","Home Delivery","Cash on Delivery","Bridal Consultation"
+          "AC",
+          "Parking",
+          "Card Payment",
+          "UPI Payment",
+          "Trial Rooms",
+          "Tailor Available",
+          "Gift Wrapping",
+          "Home Delivery",
+          "Cash on Delivery",
+          "Bridal Consultation"
         ]
       },
       "default_return_policy_days": {
         "key": "default_return_policy_days",
         "type": "number",
-        "label": "Default return window (days)",
+        "label": "Return window in days (optional — blank uses our standard)",
         "min": 0,
         "max": 30,
-        "default": 7
+        "default": 7,
+        "required": false
+      },
+      "ships_international": {
+        "key": "ships_international",
+        "type": "boolean",
+        "default": false,
+        "label": "I also ship internationally",
+        "show_if": {
+          "field": "offers_online_delivery",
+          "value": true
+        }
       }
     },
     "actions": [
@@ -290,8 +361,13 @@
         "action": "walkin_pay",
         "label": "Visit & Pay",
         "config": {
-          "fields": ["amount", "tip_amount"],
-          "payment_modes": ["full"],
+          "fields": [
+            "amount",
+            "tip_amount"
+          ],
+          "payment_modes": [
+            "full"
+          ],
           "endpoint": "/follower/pay-at-store"
         }
       },
@@ -309,19 +385,27 @@
         "kind": "contact",
         "action": "call",
         "label": "Call",
-        "source_fields": ["phone"]
+        "source_fields": [
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "whatsapp",
         "label": "Chat on WhatsApp",
-        "source_fields": ["whatsapp_phone"]
+        "source_fields": [
+          "whatsapp_phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "directions",
         "label": "Directions",
-        "source_fields": ["address_line", "latitude", "longitude"]
+        "source_fields": [
+          "address_line",
+          "latitude",
+          "longitude"
+        ]
       },
       {
         "kind": "contact",
@@ -336,20 +420,29 @@
       "gallery_recommended": 6
     }
   },
-
   "buyer_config": {
     "discovery_surface": "feed",
-    "filters": ["section", "gender", "occasion", "fit", "premium"],
-    "sort_options": ["distance", "price_low", "price_high", "newest", "trending"],
+    "filters": [
+      "section",
+      "gender",
+      "occasion",
+      "fit",
+      "premium"
+    ],
+    "sort_options": [
+      "distance",
+      "price_low",
+      "price_high",
+      "newest",
+      "trending"
+    ],
     "default_sort": "trending"
   },
-
   "card_config": {
     "accent": "#ec4899",
     "accent_dim": "rgba(236,72,153,0.10)",
     "icon": "👗",
     "card_type": "product",
-
     "cta_primary": {
       "label": "Shop Now",
       "action": "online_order",
@@ -358,21 +451,34 @@
       "fallback_label": "Visit & Pay"
     },
     "cta_secondary": null,
-
     "price_display": {
       "source": "price.amount",
       "unit": ""
     },
-
     "subtitle_template": "{section} · {brand_name}",
-
     "tags": [
-      { "source": "gender", "format": "{value}", "show_if": true },
-      { "source": "fit", "format": "{value}", "show_if": true },
-      { "source": "premium", "text": "✨ Premium", "show_if": true, "highlight": true },
-      { "source": "return_policy_days", "format": "{value}-day returns", "show_if": true }
+      {
+        "source": "gender",
+        "format": "{value}",
+        "show_if": true
+      },
+      {
+        "source": "fit",
+        "format": "{value}",
+        "show_if": true
+      },
+      {
+        "source": "premium",
+        "text": "✨ Premium",
+        "show_if": true,
+        "highlight": true
+      },
+      {
+        "source": "return_policy_days",
+        "format": "{value}-day returns",
+        "show_if": true
+      }
     ],
-
     "detail_sections": [
       {
         "type": "description",
@@ -388,7 +494,12 @@
       {
         "type": "spec_grid",
         "title": "Details",
-        "fields": ["fabric", "care_instructions", "fit", "gender"]
+        "fields": [
+          "fabric",
+          "care_instructions",
+          "fit",
+          "gender"
+        ]
       },
       {
         "type": "feature_chips",
@@ -408,7 +519,6 @@
       }
     ]
   },
-
   "action_types": {
     "walkin_pay": {
       "endpoint": "/follower/pay-at-store"
@@ -418,16 +528,62 @@
       "requires_variant_selection": true
     }
   },
-
   "quality_rules": [
-    { "field": "brand_description", "scope": "brand", "points": 5, "label": "Add a store description" },
-    { "field": "gender_focus", "scope": "brand", "points": 5, "label": "Set who you dress" },
-    { "field": "hours_json", "scope": "brand", "points": 5, "label": "Set store hours" },
-    { "field": "default_return_policy_days", "scope": "brand", "points": 5, "label": "Set return window" },
-    { "type": "photos", "scope": "brand", "min": 3, "points": 10, "label": "Add 3 store photos" },
-    { "type": "photos", "scope": "brand", "min": 6, "points": 5, "label": "Add 6+ photos for full gallery" },
-    { "items": "product", "min": 5, "points": 15, "label": "Add at least 5 items" },
-    { "items": "product", "min": 20, "points": 10, "label": "Add 20+ items for full collection" },
-    { "field": "offers_online_delivery", "scope": "brand", "points": 10, "label": "Enable online delivery (doubles reach)" }
+    {
+      "field": "brand_description",
+      "scope": "brand",
+      "points": 5,
+      "label": "Add a store description"
+    },
+    {
+      "field": "gender_focus",
+      "scope": "brand",
+      "points": 5,
+      "label": "Set who you dress"
+    },
+    {
+      "field": "hours_json",
+      "scope": "brand",
+      "points": 5,
+      "label": "Set store hours"
+    },
+    {
+      "field": "default_return_policy_days",
+      "scope": "brand",
+      "points": 5,
+      "label": "Set return window"
+    },
+    {
+      "type": "photos",
+      "scope": "brand",
+      "min": 3,
+      "points": 10,
+      "label": "Add 3 store photos"
+    },
+    {
+      "type": "photos",
+      "scope": "brand",
+      "min": 6,
+      "points": 5,
+      "label": "Add 6+ photos for full gallery"
+    },
+    {
+      "items": "product",
+      "min": 5,
+      "points": 15,
+      "label": "Add at least 5 items"
+    },
+    {
+      "items": "product",
+      "min": 20,
+      "points": 10,
+      "label": "Add 20+ items for full collection"
+    },
+    {
+      "field": "offers_online_delivery",
+      "scope": "brand",
+      "points": 10,
+      "label": "Enable online delivery (doubles reach)"
+    }
   ]
 }
