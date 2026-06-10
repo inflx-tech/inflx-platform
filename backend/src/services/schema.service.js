@@ -13,9 +13,17 @@ const path = require('path');
 
 const schemaCache = new Map();
 
+// Legacy category aliases → canonical schema. Fashion was unified (2026-06-09):
+// the old walk-in/online split is dropped (one listing, both CTAs). The legacy
+// fashion_walkin.json / fashion_online.json are broken stubs (undefined step
+// components) — map them to the good unified `fashion` schema so existing
+// fashion_walkin/online brands list correctly.
+const SCHEMA_ALIASES = { fashion_walkin: 'fashion', fashion_online: 'fashion' };
+
 function loadSchema(categoryKey) {
   if (!categoryKey) return null;
-  const key = categoryKey.toLowerCase().replace(/\s+/g, '_');
+  let key = categoryKey.toLowerCase().replace(/\s+/g, '_');
+  key = SCHEMA_ALIASES[key] || key;
   if (schemaCache.has(key)) return schemaCache.get(key);
 
   const filePath = path.join(__dirname, '../../public/schemas', `${key}.json`);

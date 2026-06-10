@@ -25,9 +25,16 @@
       "rollback": "revert routes/service commit; migration objects inert if unused"
     },
     "ship2": {
-      "class": "brand-web UI (Vercel auto-deploy on push). UI-governed; mockup_locked + 06-diff present.",
-      "what": "Drill-once-batch-add seller wizard at /dashboard/products/listing — listingApi (getTree/getNodeFacets/batchCreate) in lib/api.js + new isolated page.js. Rides the live Ship-1 APIs. Babel-parse OK; Next build not runnable in sandbox → founder is on-web gate.",
-      "reachable": "/dashboard/products/listing (fashion)"
+      "status": "IN PROGRESS — not yet released",
+      "done": "listingApi (getTree/getNodeFacets/batchCreate) added to brand-web lib/api.js (uncommitted).",
+      "todo": "drill-once-batch-add seller wizard page (rides live Ship-1 APIs); will be a proper UI-governed commit with 06-diff. Interrupted by the fashion_walkin schema bug below.",
+      "reachable": "TBD"
+    },
+    "fix_fashion_schema": {
+      "class": "PRODUCTION-IMPACTING backend (Render). Bug surfaced by founder 2026-06-09 (Charvitha Fashions).",
+      "bug": "Brand registered as fashion stored category='fashion_walkin' (legacy). loadSchema('fashion_walkin') returned fashion_walkin.json — a broken stub (3 steps, all component=undefined → 'Unknown step component' error; restaurant-style preview). fashion_online.json = 0 steps.",
+      "fix": "Alias legacy fashion_walkin/fashion_online → unified `fashion` schema in BOTH schema.service.loadSchema (powers GET /brands/me/schema = the wizard) and listing.service.loadSchema (excel/feed). Matches the locked unified-fashion decision (one listing, both CTAs). Fixes all such brands present+future, no data migration. Verified local: fashion_walkin→Fashion&Apparel 5 steps, 0 undefined components; restaurant unchanged; backend loads.",
+      "released_by": "chat-architect (founder-reported bug, 2026-06-09)"
     }
   }
 }

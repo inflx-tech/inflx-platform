@@ -15,9 +15,13 @@ const LISTING_ENGINE_PHASE = parseInt(process.env.LISTING_ENGINE_PHASE || '1', 1
 
 const schemaCache = new Map();
 
+// Legacy fashion sub-variants → unified `fashion` schema (see schema.service.js).
+const SCHEMA_ALIASES = { fashion_walkin: 'fashion', fashion_online: 'fashion' };
+
 function loadSchema(categoryKey) {
   if (!categoryKey) return null;
-  const key = categoryKey.toLowerCase().replace(/\s+/g, '_');
+  let key = categoryKey.toLowerCase().replace(/\s+/g, '_');
+  key = SCHEMA_ALIASES[key] || key;
   if (schemaCache.has(key)) return schemaCache.get(key);
 
   const filePath = path.join(__dirname, '../../public/schemas', `${key}.json`);
