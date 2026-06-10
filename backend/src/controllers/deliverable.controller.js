@@ -403,9 +403,23 @@ const confirmLive = asyncHandler(async (req, res) => {
       d.brand_id,
       d.campaign_id
     );
+
+    // 5. Arm T3's 30-day clock. The tranche-3 cron only releases entries in
+    //    status 'queued' with a triggered_at timestamp; without this hand-off
+    //    the final 50% never releases (contract:
+    //    features/backend-defect-tranche3-never-queued). Guarded by
+    //    status='locked' so a concurrent confirm-live can't double-arm it.
+    await client.query(
+      `UPDATE escrow_entries
+       SET status = 'queued', triggered_at = now()
+       WHERE campaign_influencer_id = $1
+         AND tranche_number = 3
+         AND status = 'locked'`,
+      [d.ci_id]
+    );
   });
 
-  // 5. Notify influencer when all deliverables on this contract are now live.
+  // 6. Notify influencer when all deliverables on this contract are now live.
   //    For engagement/hybrid → also mention the T2 payment that just released.
   //    For conversion-only → just confirm the live state (no tranche exists).
   if (liveCount === totalCount && totalCount > 0) {

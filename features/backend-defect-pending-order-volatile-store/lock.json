@@ -1,0 +1,27 @@
+{
+  "feature": "backend-defect-pending-order-volatile-store",
+  "area": "backend-service+controller+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-10) — explicit 'we fix phase A findings first' after Phase A report; carved defect D2 from Docs/PHASE_A_RESULTS.md; also root cause of founder's missing food order",
+  "approved_at": "2026-06-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render backend redeploy + migration 098 creates payment_pending_orders table). Happy-path behaviour unchanged; in-flight checkouts now survive deploys/restarts; failed verifies become retryable; unverified orders become support-visible.",
+  "fix": "transaction.service: in-memory pendingOrders Map → durable payment_pending_orders table; peek (getPendingOrder) + atomic claim inside the verify transaction (consumePendingOrder). All 5 verify paths in transaction.controller switched to peek-then-claim-in-tx.",
+  "related": ["features/backend-defect-tranche3-never-queued", "features/backend-defect-set-format-enum-validation"],
+  "result": "payment_pending_orders table (migration 098 + run-098.js prod runner); transaction.service createOrder/createMockOrder INSERT durable rows; getPendingOrder (peek) + consumePendingOrder (atomic claim inside the verify transaction); all 5 verify paths in transaction.controller switched to peek-then-claim-in-tx. Phase A S6.5: unverified order persists as an unconsumed row (was: zero trace); S6.3/S6.4/S6.8 all verify paths PASS.",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (1.4m). Phase A golden-journey driver 27 PASS / 0 FAIL. Crash-safety: claim is part of the business transaction (rollback → retryable); double-verify loses the claim race (rowCount 0 → throw → rollback). Deploy ordering: run-098 BEFORE the Render deploy that ships the new service code.",
+  "discipline": "Verify-twice: pendingOrders Map at transaction.service.js:27 was used by ALL verify paths in both mock AND live mode (live createOrder also stored meta in the Map) — prod deploys wiped in-flight checkouts. Wallet top-up excluded: live mode verifies against Razorpay API directly.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder explicit go (2026-06-10): 'Ok go and deploy'",
+    "released_at": "2026-06-10",
+    "deploy": "Migration 098 applied to prod via run-098.js BEFORE the code deploy. git push main → Render auto-deploy of backend. Backend-only; no OTA, no Vercel impact."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-10) — N/A backend-only fix, no UI.",
+  "mockup_locked_at": "2026-06-10"
+}

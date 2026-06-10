@@ -361,8 +361,9 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  // Consume mock order — returns the rupees amount plus meta we stashed.
-  const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  // Peek the pending order — returns the rupees amount plus meta we stashed.
+  // (Claimed atomically inside the withTransaction below.)
+  const { amountRupees: netAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
 
   // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
   // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
@@ -387,6 +388,10 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
   const txGross = meta.gross_for_txn != null ? meta.gross_for_txn : meta.bill_amount;
 
   await db.withTransaction(async (client) => {
+    // Claim the pending order atomically with the business rows below — a
+    // failed verify rolls the claim back (retryable); a concurrent double-
+    // verify loses this claim race and rolls back (no double spend).
+    await txService.consumePendingOrder(client, razorpay_order_id);
     // Create follower_transaction — all money columns in rupees
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
@@ -572,11 +577,15 @@ const verifyStoreOfferPay = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const { amountRupees: netAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
   const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
 
   let transactionId;
   await db.withTransaction(async (client) => {
+    // Claim the pending order atomically with the business rows below — a
+    // failed verify rolls the claim back (retryable); a concurrent double-
+    // verify loses this claim race and rolls back (no double spend).
+    await txService.consumePendingOrder(client, razorpay_order_id);
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id,
@@ -725,7 +734,7 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     }
   }
 
-  const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const { amountRupees: advanceAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
 
   // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
   // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
@@ -765,6 +774,10 @@ const verifyPrebook = asyncHandler(async (req, res) => {
   let transactionId, bookingId, referenceCode;
 
   await db.withTransaction(async (client) => {
+    // Claim the pending order atomically with the business rows below — a
+    // failed verify rolls the claim back (retryable); a concurrent double-
+    // verify loses this claim race and rolls back (no double spend).
+    await txService.consumePendingOrder(client, razorpay_order_id);
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
@@ -950,7 +963,7 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  const { amountRupees: advanceAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const { amountRupees: advanceAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
 
   // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
   // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
@@ -973,6 +986,10 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
   const productId = await resolveProductId(db, meta.offer_id, meta.product_id);
 
   await db.withTransaction(async (client) => {
+    // Claim the pending order atomically with the business rows below — a
+    // failed verify rolls the claim back (retryable); a concurrent double-
+    // verify loses this claim race and rolls back (no double spend).
+    await txService.consumePendingOrder(client, razorpay_order_id);
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
@@ -1188,7 +1205,7 @@ const verifyOrder = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
   }
 
-  const { amountRupees: netAmount, meta } = txService.consumeMockOrder(razorpay_order_id);
+  const { amountRupees: netAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
 
   // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
   // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
@@ -1227,6 +1244,10 @@ const verifyOrder = asyncHandler(async (req, res) => {
     : null;
 
   await db.withTransaction(async (client) => {
+    // Claim the pending order atomically with the business rows below — a
+    // failed verify rolls the claim back (retryable); a concurrent double-
+    // verify loses this claim race and rolls back (no double spend).
+    await txService.consumePendingOrder(client, razorpay_order_id);
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,

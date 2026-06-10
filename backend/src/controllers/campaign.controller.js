@@ -561,6 +561,26 @@ const getSets = asyncHandler(async (req, res) => {
   return success(res, { sets });
 });
 
+// Must match the deliverable_type enum — deliverables are auto-created from
+// formats_json at brand-sign, so an invalid type here would otherwise surface
+// as a deferred 500 at signing (contract:
+// features/backend-defect-set-format-enum-validation).
+const VALID_FORMAT_TYPES = ['reel', 'post', 'story', 'youtube_video', 'youtube_short'];
+function assertValidFormats(formatsJson) {
+  if (formatsJson == null) return;
+  if (!Array.isArray(formatsJson)) {
+    throw new AppError('VALIDATION_ERROR', 'formats_json must be an array', 422, 'formats_json');
+  }
+  for (const f of formatsJson) {
+    if (!f || !VALID_FORMAT_TYPES.includes(f.type)) {
+      throw new AppError('VALIDATION_ERROR', `formats_json type "${f && f.type}" is invalid — must be one of: ${VALID_FORMAT_TYPES.join(', ')}`, 422, 'formats_json');
+    }
+    if (f.count != null && (!Number.isInteger(Number(f.count)) || Number(f.count) < 1)) {
+      throw new AppError('VALIDATION_ERROR', 'formats_json count must be an integer >= 1', 422, 'formats_json');
+    }
+  }
+}
+
 const createSet = asyncHandler(async (req, res) => {
   const brand = await getBrandOrThrow(req.user.sub);
   const campaign = await getCampaignOrThrow(req.params.id, brand.id);
@@ -605,6 +625,8 @@ const createSet = asyncHandler(async (req, res) => {
   if (goal === 'engagement' && coupon_prefix) {
     throw new AppError('VALIDATION_ERROR', 'coupon_prefix must not be set for engagement goals', 422, 'coupon_prefix');
   }
+
+  assertValidFormats(formats_json);
 
   // Validate set budget against campaign total
   if (set_budget != null && campaign.total_budget != null) {
@@ -656,6 +678,8 @@ const updateSet = asyncHandler(async (req, res) => {
     'max_cap', 'window_start', 'window_end', 'brief', 'coupon_prefix',
     'formats_json', 'assets_json', 'open_group_filters',
   ];
+  if (req.body.formats_json !== undefined) assertValidFormats(req.body.formats_json);
+
   const updates = {};
   allowed.forEach(field => {
     if (req.body[field] !== undefined) {

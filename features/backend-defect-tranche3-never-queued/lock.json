@@ -1,0 +1,27 @@
+{
+  "feature": "backend-defect-tranche3-never-queued",
+  "area": "backend-controller+migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-10) — explicit 'we fix phase A findings first' after Phase A report; carved defect D1 from Docs/PHASE_A_RESULTS.md",
+  "approved_at": "2026-06-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render backend redeploy + migration 097 backfill). Migration is a data backfill only (no schema change): queues T3 escrow rows whose T2 already released. After deploy, stuck influencer final-50% tranches start their 30-day clocks from the real go-live date.",
+  "fix": "deliverable.controller.confirmLive: inside the same transaction as the T2 release, arm T3 (status locked→queued, triggered_at=now()) once all deliverables are live. Migration 097 backfills existing stuck rows with triggered_at = t2.released_at.",
+  "related": ["features/backend-defect-pending-order-volatile-store", "features/backend-defect-set-format-enum-validation"],
+  "result": "confirmLive arms T3 (locked→queued + triggered_at=now()) in the same transaction as the T2 release. Migration 097 backfill authored + run-097.js prod runner. Phase A journey run 5: S5.1 shows T3:queued post-live in the NATURAL flow; S7.2 'T3 auto-release E2E' PASS — unmodified cron released ₹1,212.50 and marked the campaign completed.",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (1.4m). Phase A golden-journey driver 27 PASS / 0 FAIL (backend/scripts/journey-phase-a.js run 3124859). Conversion-only contracts unaffected (no escrow rows → UPDATE matches nothing). Concurrent confirm-live double-arm prevented by status='locked' guard.",
+  "discipline": "Verify-twice: grep day_30_post_live + triggered_at across backend/src — only writer is processTrancheRelease at release time; cron requires queued+triggered_at; hand-off provably absent. Phase A S7.2 two-part test proved release path healthy once queued.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder explicit go (2026-06-10): 'Ok go and deploy'",
+    "released_at": "2026-06-10",
+    "deploy": "Migrations applied to prod via run-098.js then run-097.js (12 locked T3 found, 4 truly stuck → queued; 8 legitimately awaiting content-live, handled by the new code). git push main → Render auto-deploy of backend. Backend-only; no OTA, no Vercel impact."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-10) — N/A backend-only fix, no UI.",
+  "mockup_locked_at": "2026-06-10"
+}

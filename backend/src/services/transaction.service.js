@@ -23,8 +23,17 @@ function getRzp() {
   return _rzp;
 }
 
-// ── In-memory mock order store ─────────────────────────────────────────────────
-const pendingOrders = new Map();
+// ── Durable pending-order store (payment_pending_orders, migration 098) ─────
+// Was an in-memory Map: every backend restart/deploy wiped in-flight
+// checkouts, and a failed verify transaction consumed the order
+// irrecoverably (contract: features/backend-defect-pending-order-volatile-store).
+async function storePendingOrder(orderId, amountRupees, meta) {
+  await db.query(
+    `INSERT INTO payment_pending_orders (order_id, amount_rupees, meta)
+     VALUES ($1, $2, $3)`,
+    [orderId, amountRupees, JSON.stringify(meta || {})]
+  );
+}
 
 /**
  * Create a Razorpay order — real or mock depending on RAZORPAY_MOCK.
@@ -55,7 +64,7 @@ async function createOrder(amountRupees, meta = {}) {
   });
 
   // Store rupees internally (paise only existed on the Razorpay request)
-  pendingOrders.set(order.id, { amountRupees, meta });
+  await storePendingOrder(order.id, amountRupees, meta);
   console.log(`[RAZORPAY] Order created: ${order.id} \u20B9${amountRupees.toFixed(2)}`);
   return order.id;
 }
@@ -63,23 +72,46 @@ async function createOrder(amountRupees, meta = {}) {
 /**
  * Create a mock Razorpay order (dev mode). Amount is in RUPEES.
  */
-function createMockOrder(amountRupees, meta = {}) {
+async function createMockOrder(amountRupees, meta = {}) {
   const orderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
-  pendingOrders.set(orderId, { amountRupees, meta });
+  await storePendingOrder(orderId, amountRupees, meta);
   console.log(`[RAZORPAY MOCK] Order created: ${orderId} \u20B9${amountRupees.toFixed(2)}`);
   return orderId;
 }
 
 /**
- * Consume an order — works for both mock and real.
+ * Peek a pending order WITHOUT claiming it. Verify handlers read the amount/
+ * meta here, do their work inside a db.withTransaction, and claim the order
+ * as part of that transaction via consumePendingOrder — so a failed verify
+ * rolls the claim back and the order stays retryable.
  */
-function consumeMockOrder(orderId) {
-  const entry = pendingOrders.get(orderId);
-  if (!entry) {
-    throw new AppError('NOT_FOUND', 'Order not found or already processed', 404);
+async function getPendingOrder(orderId) {
+  const { rows } = await db.query(
+    `SELECT amount_rupees, meta, consumed_at FROM payment_pending_orders WHERE order_id = $1`,
+    [orderId]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Order not found', 404);
+  if (rows[0].consumed_at) {
+    throw new AppError('CONFLICT', 'Order already processed', 409);
   }
-  pendingOrders.delete(orderId);
-  return entry;
+  const meta = typeof rows[0].meta === 'string' ? JSON.parse(rows[0].meta) : (rows[0].meta || {});
+  return { amountRupees: parseFloat(rows[0].amount_rupees), meta };
+}
+
+/**
+ * Atomically claim a pending order inside the caller's transaction.
+ * 0 rows updated = a concurrent verify already claimed it → throw, which
+ * rolls back the caller's transaction (double-spend guard).
+ */
+async function consumePendingOrder(client, orderId) {
+  const { rowCount } = await client.query(
+    `UPDATE payment_pending_orders SET consumed_at = now()
+     WHERE order_id = $1 AND consumed_at IS NULL`,
+    [orderId]
+  );
+  if (rowCount !== 1) {
+    throw new AppError('CONFLICT', 'Order already processed', 409);
+  }
 }
 
 /**
@@ -191,7 +223,8 @@ async function creditInfluencerCommission(client, influencerId, commissionRupees
 module.exports = {
   createOrder,
   createMockOrder,
-  consumeMockOrder,
+  getPendingOrder,
+  consumePendingOrder,
   verifyPaymentSignature,
   validateTracking,
   calcPayAtStore,

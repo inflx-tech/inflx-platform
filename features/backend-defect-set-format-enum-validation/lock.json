@@ -1,0 +1,27 @@
+{
+  "feature": "backend-defect-set-format-enum-validation",
+  "area": "backend-controller",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-10) — explicit 'we fix phase A findings first' after Phase A report; carved defect D3 from Docs/PHASE_A_RESULTS.md (run-1 evidence)",
+  "approved_at": "2026-06-10",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Render backend redeploy). NO migration, NO schema change. Invalid formats_json now rejected with 422 at set create/update instead of a deferred 500 at brand countersign. Valid payloads unchanged.",
+  "fix": "campaign.controller createSet/updateSet: validate formats_json[].type against the deliverable_type enum (reel, post, story, youtube_video, youtube_short) and count as integer >= 1; 422 VALIDATION_ERROR naming the offending value.",
+  "related": ["features/backend-defect-tranche3-never-queued", "features/backend-defect-pending-order-volatile-store"],
+  "result": "assertValidFormats helper in campaign.controller validates formats_json[].type against the deliverable_type enum + integer count >= 1; wired into createSet and updateSet. Phase A S3.1b: type 'instagram_reel' now rejected 422 naming the value (was: 201 then deferred 500 at brand-sign).",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (1.4m). Phase A golden-journey driver 27 PASS / 0 FAIL — valid sets (S3.1) unchanged, full sign→T1→T2→T3 chain green.",
+  "discipline": "Phase A run-1: set created with type 'instagram_reel' → 500 at brand-sign three stages later. Fail-fast at the write boundary per platform validation convention.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder explicit go (2026-06-10): 'Ok go and deploy'",
+    "released_at": "2026-06-10",
+    "deploy": "git push main → Render auto-deploy of backend. Backend-only; no migration, no OTA, no Vercel impact."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-10) — N/A backend-only fix, no UI.",
+  "mockup_locked_at": "2026-06-10"
+}
