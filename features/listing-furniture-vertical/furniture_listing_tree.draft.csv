@@ -1,74 +1,74 @@
-family,item_type,variant_axis,notes
-Seating,Sofa,Seater,seater = variant
-Seating,Sectional Sofa,Configuration,L/U-shape = variant
-Seating,Sofa-cum-bed,Seater,convertible
-Seating,Loveseat,-,2-seat compact
-Seating,Recliner,Seater,
-Seating,Chaise Lounger,-,
-Seating,Settee / Bench,-,entryway/living
-Seating,Bean Bag,Size,XL/XXL/XXXL
-Seating,Accent / Arm Chair,-,Wing/Lounge/Slipper/Barrel styles = facet
-Seating,Rocking Chair,-,
-Seating,Office Chair,-,Ergonomic/Executive/Mesh = facet
-Seating,Gaming Chair,-,
-Seating,Dining Chair,-,sold singly or in sets
-Seating,Bar Stool / Chair,-,
-Seating,Ottoman,-,
-Seating,Stool / Pouffe,-,Foot/Seating/Pouffe = facet
-Seating,Folding Chair,-,
-Seating,Shoe Rack / Cabinet,-,Cabinet/Open/With-seat/Tilt-out = facet
-Tables & Storage,Coffee / Centre Table,-,Coffee/Nesting/Tea
-Tables & Storage,Side / Console Table,-,End/C-shaped/Console
-Tables & Storage,Nesting Table,-,
-Tables & Storage,TV & Media Unit,-,
-Tables & Storage,Cabinet / Sideboard,-,
-Tables & Storage,Display / Showcase Unit,-,
-Tables & Storage,Bookshelf / Bookcase,-,tiers = facet
-Tables & Storage,Wall Shelf,-,
-Tables & Storage,Crockery Unit,-,
-Tables & Storage,Chest of Drawers,-,drawers = facet
-Tables & Storage,Storage Cabinet,-,multipurpose
-Tables & Storage,Trunk / Blanket Box,-,
-Tables & Storage,Room Divider / Partition,-,panels = facet
-Beds & Bedroom,Bed,Size,Single/Double/Queen/King
-Beds & Bedroom,Bedside Table / Nightstand,-,
-Beds & Bedroom,Wardrobe,Doors,doors = variant
-Beds & Bedroom,Dressing Table,-,
-Beds & Bedroom,Mattress,Size,rich facet set
-Beds & Bedroom,Bedroom Set,-,bed + side tables combo
-Dining & Bar,Dining Set,Seats,seats = variant
-Dining & Bar,Dining Table,-,seats = facet (table only)
-Dining & Bar,Bar Unit,-,Cabinet/Trolley/Table/Stool-set = facet
-Dining & Bar,Bar Cabinet,-,
-Dining & Bar,Kitchen Trolley / Cabinet,-,
-Study & Office,Study Table,-,Writing/Computer/Hutch/Foldable = facet
-Study & Office,Office Desk / Table,-,
-Study & Office,Office Workstation,-,
-Study & Office,Office Cabinet,-,
-Study & Office,Filing Cabinet,-,
-Kids,Crib / Cradle,-,convertible = facet
-Kids,Bunk Bed,Configuration,Standard/L-shape/With-storage = facet
-Kids,Kids Bed,Size,
-Kids,Kids Study Table,-,
-Kids,Kids Wardrobe,Doors,
-Kids,Kids Storage,-,toy/book storage
-Kids,Kids Seating,-,chairs/beanbags
-Outdoor,Swing / Jhula,-,Single/Double/Hanging/Floor = facet
-Outdoor,Outdoor Table,-,
-Outdoor,Outdoor Seating,-,Chairs/Loungers/Sets = facet
-Outdoor,Lounger / Deck Chair,-,
-Outdoor,Garden Planter / Stand,-,
-Outdoor,Gazebo / Hammock,-,
-Pooja & Decor,Temple / Pooja Unit,-,Wall/Floor/Cabinet = facet
-Pooja & Decor,Wall Mirror,-,shape = facet
-Pooja & Decor,Decorative Mirror / Dressing Mirror,-,
-Pooja & Decor,Wall Art / Decor,-,
-Pooja & Decor,Coat / Wall Hook Rack,-,
-Accessories,Furniture Care Kit,-,Solid-wood/Fabric care
-Accessories,Massager / Massage Chair,-,wellness
-Accessories,Pillow,-,Sleeping/Body/Pregnancy/Wedge = facet
-Accessories,Mattress Protector,-,size = facet
-Accessories,Mattress Topper,-,
-Accessories,Cushion / Cushion Cover,-,
-Accessories,Bean Bag Refill,-,beans
-Accessories,Furniture Cover,-,sofa/chair covers
+family,group,item_type,variant_axis,notes
+Seating,Sofas & Recliners,Sofa,Seater,seater = variant
+Seating,Sofas & Recliners,Sectional Sofa,Configuration,L/U-shape = variant
+Seating,Sofas & Recliners,Sofa-cum-bed,Seater,convertible
+Seating,Sofas & Recliners,Loveseat,-,2-seat compact
+Seating,Sofas & Recliners,Recliner,Seater,
+Seating,Sofas & Recliners,Chaise Lounger,-,
+Seating,Chairs,Accent / Arm Chair,-,Wing/Lounge/Slipper/Barrel = facet
+Seating,Chairs,Rocking Chair,-,
+Seating,Chairs,Office Chair,-,Ergonomic/Executive/Mesh = facet
+Seating,Chairs,Gaming Chair,-,
+Seating,Chairs,Dining Chair,-,sold singly or in sets
+Seating,Chairs,Folding Chair,-,
+Seating,Stools & Benches,Settee / Bench,-,entryway/living
+Seating,Stools & Benches,Bar Stool / Chair,-,
+Seating,Stools & Benches,Ottoman,-,
+Seating,Stools & Benches,Stool / Pouffe,-,Foot/Seating/Pouffe = facet
+Seating,Stools & Benches,Bean Bag,Size,XL/XXL/XXXL
+Tables & Storage,Tables,Coffee / Centre Table,-,Coffee/Nesting/Tea
+Tables & Storage,Tables,Side / Console Table,-,End/C-shaped/Console
+Tables & Storage,Tables,Nesting Table,-,
+Tables & Storage,TV & Display Units,TV & Media Unit,-,
+Tables & Storage,TV & Display Units,Display / Showcase Unit,-,
+Tables & Storage,TV & Display Units,Crockery Unit,-,
+Tables & Storage,Storage Units,Cabinet / Sideboard,-,
+Tables & Storage,Storage Units,Chest of Drawers,-,drawers = facet
+Tables & Storage,Storage Units,Storage Cabinet,-,multipurpose
+Tables & Storage,Storage Units,Trunk / Blanket Box,-,
+Tables & Storage,Storage Units,Shoe Rack / Cabinet,-,Cabinet/Open/With-seat = facet
+Tables & Storage,Shelves & Partitions,Bookshelf / Bookcase,-,tiers = facet
+Tables & Storage,Shelves & Partitions,Wall Shelf,-,
+Tables & Storage,Shelves & Partitions,Room Divider / Partition,-,panels = facet
+Beds & Bedroom,Beds & Mattresses,Bed,Size,Single/Double/Queen/King
+Beds & Bedroom,Beds & Mattresses,Bedroom Set,-,bed + side tables combo
+Beds & Bedroom,Beds & Mattresses,Mattress,Size,rich facet set
+Beds & Bedroom,Bedroom Storage,Wardrobe,Doors,doors = variant
+Beds & Bedroom,Bedroom Storage,Bedside Table / Nightstand,-,
+Beds & Bedroom,Bedroom Storage,Dressing Table,-,
+Dining & Bar,Dining,Dining Set,Seats,seats = variant
+Dining & Bar,Dining,Dining Table,-,seats = facet (table only)
+Dining & Bar,Bar & Kitchen,Bar Unit,-,Cabinet/Trolley/Table = facet
+Dining & Bar,Bar & Kitchen,Bar Cabinet,-,
+Dining & Bar,Bar & Kitchen,Kitchen Trolley / Cabinet,-,
+Study & Office,Desks & Tables,Study Table,-,Writing/Computer/Hutch = facet
+Study & Office,Desks & Tables,Office Desk / Table,-,
+Study & Office,Desks & Tables,Office Workstation,-,
+Study & Office,Office Storage,Office Cabinet,-,
+Study & Office,Office Storage,Filing Cabinet,-,
+Kids,Kids Beds,Crib / Cradle,-,convertible = facet
+Kids,Kids Beds,Bunk Bed,Configuration,Standard/L-shape = variant
+Kids,Kids Beds,Kids Bed,Size,
+Kids,Kids Furniture,Kids Study Table,-,
+Kids,Kids Furniture,Kids Wardrobe,Doors,
+Kids,Kids Furniture,Kids Storage,-,toy/book storage
+Kids,Kids Furniture,Kids Seating,-,chairs/beanbags
+Outdoor,Seating & Swings,Swing / Jhula,-,Single/Double/Hanging = facet
+Outdoor,Seating & Swings,Outdoor Seating,-,Chairs/Loungers/Sets = facet
+Outdoor,Seating & Swings,Lounger / Deck Chair,-,
+Outdoor,Garden & More,Outdoor Table,-,
+Outdoor,Garden & More,Garden Planter / Stand,-,
+Outdoor,Garden & More,Gazebo / Hammock,-,
+Pooja & Decor,,Temple / Pooja Unit,-,Wall/Floor/Cabinet = facet
+Pooja & Decor,,Wall Mirror,-,shape = facet
+Pooja & Decor,,Decorative Mirror / Dressing Mirror,-,
+Pooja & Decor,,Wall Art / Decor,-,
+Pooja & Decor,,Coat / Wall Hook Rack,-,
+Accessories,,Furniture Care Kit,-,Solid-wood/Fabric care
+Accessories,,Massager / Massage Chair,-,wellness
+Accessories,,Pillow,-,Sleeping/Body/Pregnancy = facet
+Accessories,,Mattress Protector,-,size = facet
+Accessories,,Mattress Topper,-,
+Accessories,,Cushion / Cushion Cover,-,
+Accessories,,Bean Bag Refill,-,beans
+Accessories,,Furniture Cover,-,sofa/chair covers

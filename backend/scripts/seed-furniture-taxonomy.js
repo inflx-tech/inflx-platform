@@ -56,8 +56,12 @@ function parseCsv(file) {
     await c.query(`DELETE FROM facet_definitions WHERE vertical='furniture'`);
     await c.query(`DELETE FROM category_nodes   WHERE vertical='furniture'`);
 
+    // 3-level drill (like fashion): Family → Group → Item-type. `group` is
+    // optional in the CSV — small families (Pooja & Decor, Accessories) stay
+    // 2-level; variable depth is native to the engine (leaf = is_leaf).
     const famId = new Map();
-    let famN = 0, leafN = 0;
+    const grpId = new Map();   // family||group -> id
+    let famN = 0, grpN = 0, leafN = 0;
     for (const r of tree) {
       if (!famId.has(r.family)) {
         const { rows } = await c.query(
@@ -66,11 +70,25 @@ function parseCsv(file) {
           [r.family, slug(r.family), famOrder(r.family)]);
         famId.set(r.family, rows[0].id); famN++;
       }
+      let parentId = famId.get(r.family);
+      let leafDepth = 1;
+      if (r.group) {
+        const gk = r.family + '||' + r.group;
+        if (!grpId.has(gk)) {
+          const { rows } = await c.query(
+            `INSERT INTO category_nodes (vertical,parent_id,segment,name,slug,depth,is_leaf,sort_order)
+             VALUES ('furniture',$1,$2,$3,$4,1,false,$5) RETURNING id`,
+            [famId.get(r.family), r.family, r.group, slug(r.group), grpId.size]);
+          grpId.set(gk, rows[0].id); grpN++;
+        }
+        parentId = grpId.get(gk);
+        leafDepth = 2;
+      }
       await c.query(
         `INSERT INTO category_nodes
            (vertical,parent_id,segment,category,name,slug,depth,is_leaf,sort_order,size_system,variant_axis)
-         VALUES ('furniture',$1,$2,$2,$3,$4,1,true,$5,NULL,$6)`,
-        [famId.get(r.family), r.family, r.item_type, slug(r.item_type), leafN,
+         VALUES ('furniture',$1,$2,$3,$4,$5,$6,true,$7,NULL,$8)`,
+        [parentId, r.family, r.group || r.family, r.item_type, slug(r.item_type), leafDepth, leafN,
          (r.variant_axis && r.variant_axis !== '-') ? r.variant_axis : null]);
       leafN++;
     }
@@ -107,7 +125,7 @@ function parseCsv(file) {
     }
 
     await c.query('COMMIT');
-    console.log(`[seed-furniture] families=${famN} item-types=${leafN} facets=${facetN} brands=${brandN}`);
+    console.log(`[seed-furniture] families=${famN} groups=${grpN} item-types=${leafN} facets=${facetN} brands=${brandN}`);
   } catch (e) {
     await c.query('ROLLBACK');
     throw e;

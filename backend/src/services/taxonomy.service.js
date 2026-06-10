@@ -42,7 +42,12 @@ async function getNode(nodeId) {
   return rows[0] || null;
 }
 
-/** Resolved facet definitions for a leaf, in render order (ALL → category → leaf). */
+/**
+ * Resolved facet definitions for a leaf, in render order (ALL → category → leaf).
+ * Deduped by facet_key — the MOST SPECIFIC scope wins (leaf > category > ALL),
+ * so e.g. a category's narrower "Occasion" overrides the shared one instead of
+ * rendering twice. Output keeps each facet at its first-occurrence position.
+ */
 async function getNodeFacets(node) {
   if (!node) return [];
   const { rows } = await db.query(
@@ -52,7 +57,15 @@ async function getNodeFacets(node) {
       ORDER BY (scope <> 'ALL'), sort_order`,
     [node.vertical, node.category, node.name]
   );
-  return rows;
+  const rank = (s) => (s === node.name ? 2 : s === node.category ? 1 : 0);
+  const order = [];
+  const best = new Map();
+  for (const r of rows) {
+    if (!best.has(r.facet_key)) order.push(r.facet_key);
+    const cur = best.get(r.facet_key);
+    if (!cur || rank(r.scope) > rank(cur.scope)) best.set(r.facet_key, r);
+  }
+  return order.map((k) => best.get(k));
 }
 
 /** Is the Size facet required for this leaf? (conditional → true unless free-size). */

@@ -51,17 +51,21 @@ function parseCsv(file) {
   const tree = parseCsv('fashion_listing_tree.draft.csv');
   const facets = parseCsv('fashion_facets.draft.csv');
 
+  // FACETS_ONLY=1 → re-seed facet_definitions only and leave the tree untouched.
+  // REQUIRED once real products reference category_nodes (the tree wipe would
+  // violate brand_products.category_node_id). Facets carry no FK → always safe.
+  const facetsOnly = process.env.FACETS_ONLY === '1';
+
   await c.query('BEGIN');
   try {
-    // Wipe fashion (CASCADE clears child nodes). 0 live fashion products → safe.
     await c.query(`DELETE FROM facet_definitions WHERE vertical='fashion'`);
-    await c.query(`DELETE FROM category_nodes   WHERE vertical='fashion'`);
+    if (!facetsOnly) await c.query(`DELETE FROM category_nodes WHERE vertical='fashion'`);
 
     const segId = new Map();   // segment -> id
     const catId = new Map();   // segment||category -> id
     let segN = 0, catN = 0, leafN = 0;
 
-    for (const r of tree) {
+    for (const r of facetsOnly ? [] : tree) {
       // segment (depth 0)
       if (!segId.has(r.segment)) {
         const { rows } = await c.query(

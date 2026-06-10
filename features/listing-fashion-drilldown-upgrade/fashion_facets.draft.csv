@@ -5,10 +5,40 @@ ALL,Color / Tone,variant,multi_select,required,Black|White|Red|Blue|Navy|Green|Y
 ALL,Size,variant,multi_select,conditional,per-leaf size_system,,required unless size_system is free_size/one_size/unstitched
 ALL,Brand,descriptive,single_select,recommended,open vocab + Own/Local,,
 ALL,Unisex,discovery,boolean,optional,Yes|No,,tag - surfaces under Unisex filter
-ALL,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi|Leather|PU|Canvas|Metal|Acetate,,broad list; trims per category at build
-ALL,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,
 ALL,Occasion,discovery,multi_select,optional,Casual|Daily|Office/Formal|Party|Festive|Wedding|Beach/Resort|Sports,,
-ALL,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,
+Ethnic Wear,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Ethnic Wear,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Ethnic Wear,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Western Wear,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Western Wear,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Western Wear,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Plus Size,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Plus Size,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Plus Size,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Innerwear & Sleepwear,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Innerwear & Sleepwear,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Innerwear & Sleepwear,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Activewear,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Activewear,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Activewear,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Maternity,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Maternity,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Maternity,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Topwear,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Topwear,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Topwear,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Bottomwear,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Bottomwear,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Bottomwear,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Boys,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Boys,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Boys,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Girls,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Girls,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Girls,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
+Infants,Fabric / Material,descriptive,single_select,recommended,Cotton|Silk|Linen|Rayon|Georgette|Chiffon|Polyester|Denim|Wool|Velvet|Net|Satin|Blended|Khadi,,apparel only
+Infants,Pattern / Print,descriptive,single_select,optional,Solid|Printed|Checks|Stripes|Floral|Embroidered|Embellished|Colourblock|Graphic,,apparel only
+Infants,Care,descriptive,single_select,optional,Machine wash|Hand wash|Dry clean,,apparel only
 Saree,Work,descriptive,single_select,optional,Plain|Zari|Embroidery|Print|Kundan|Bandhani|Block Print,,
 Saree,Border,descriptive,single_select,optional,Plain|Zari|Contrast|Tassel,,
 Saree,Blouse included,descriptive,boolean,optional,Yes|No,,
