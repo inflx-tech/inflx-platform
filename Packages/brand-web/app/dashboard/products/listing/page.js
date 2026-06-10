@@ -1,46 +1,46 @@
 'use client';
 
 /**
- * Drill-down listing wizard (Ship 2.2) — contract: listing-drilldown-taxonomy-engine.
- * Seller drills the tree ONCE to an item-type (leaf), then batch-adds products
- * (photo + price + brand + typed facets + per-colour variant pics & per-size stock).
- * Rides the live engine APIs:
- *   listingApi.getTree(vertical) · getNodeFacets(nodeId) · getBrands(vertical,q) · batchCreate
- * Auto-SKU is assigned by the backend (CODE-####, variant sub-SKUs CODE-####-CLR-SIZE).
- * One listing model (no Showcase/Sell). Self-contained route.
+ * Drill-down listing wizard (Ship 2.3) — contract: listing-drilldown-taxonomy-engine.
+ * Works for ANY drill-down vertical (fashion + furniture) — the vertical is derived
+ * from the brand's category at runtime. Drill the tree ONCE to a leaf, then batch-add
+ * products (photo + brand + price + typed facets + per-colour variant pics & per-
+ * variant stock). Auto-SKU from the backend. One listing model (no Showcase/Sell).
+ * Rides: listingApi.getTree / getNodeFacets / getBrands / batchCreate.
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { listingApi, uploadFileToGallery, API_BASE } from '../../../../lib/api';
+import { listingApi, uploadFileToGallery, API_BASE, brandApi } from '../../../../lib/api';
 
-const VERTICAL = 'fashion';
 const FREE = new Set(['free_size', 'one_size', 'unstitched']);
-const COLOR_KEY = 'color_tone';
+const COLOR_KEY = 'color_tone';   // the VISUAL variant → drives per-colour pics (both verticals)
 const SIZE_KEY = 'size';
 
+// Fashion size systems (clothing). Furniture has no size_system → its variant facets
+// (Seater/Doors/Seats/Size) carry real allowed_values and render normally.
 const SIZE_SYSTEMS = {
-  alpha:      ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'],
+  alpha: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'],
   plus_alpha: ['XL', '2XL', '3XL', '4XL', '5XL', '6XL'],
-  waist_in:   ['26', '28', '30', '32', '34', '36', '38', '40', '42', '44'],
+  waist_in: ['26', '28', '30', '32', '34', '36', '38', '40', '42', '44'],
   waist_plus: ['38', '40', '42', '44', '46', '48', '50'],
-  bra:        ['30', '32', '34', '36', '38', '40', '42', '44'],
-  age:        ['0-3m', '3-6m', '6-12m', '12-18m', '18-24m', '2-3y', '3-4y', '4-5y', '5-6y', '6-7y', '7-8y', '8-9y', '9-10y', '10-11y', '11-12y', '13-14y', '15-16y'],
-  uk_women:   ['UK2', 'UK3', 'UK4', 'UK5', 'UK6', 'UK7', 'UK8', 'UK9'],
-  uk_men:     ['UK5', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12'],
-  kids_shoe:  ['UK4', 'UK5', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12', 'UK13'],
-  ring:       ['Adjustable', '6', '8', '10', '12', '14', '16', '18', '20', '22'],
-  bangle:     ['2.4', '2.6', '2.8', '2.10', 'Free'],
-  sock_size:  ['S', 'M', 'L', 'Free'],
-  free_size:  ['Free Size'], one_size: ['One Size'], unstitched: ['Unstitched'],
+  bra: ['30', '32', '34', '36', '38', '40', '42', '44'],
+  age: ['0-3m', '3-6m', '6-12m', '12-18m', '18-24m', '2-3y', '3-4y', '4-5y', '5-6y', '6-7y', '7-8y', '8-9y', '9-10y', '10-11y', '11-12y', '13-14y', '15-16y'],
+  uk_women: ['UK2', 'UK3', 'UK4', 'UK5', 'UK6', 'UK7', 'UK8', 'UK9'],
+  uk_men: ['UK5', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12'],
+  kids_shoe: ['UK4', 'UK5', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12', 'UK13'],
+  ring: ['Adjustable', '6', '8', '10', '12', '14', '16', '18', '20', '22'],
+  bangle: ['2.4', '2.6', '2.8', '2.10', 'Free'], sock_size: ['S', 'M', 'L', 'Free'],
+  free_size: ['Free Size'], one_size: ['One Size'], unstitched: ['Unstitched'],
 };
 const sizeValues = (sys) => SIZE_SYSTEMS[sys] || ['Free Size'];
 const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant">variant</span>
   : f.facet_role === 'discovery' ? <span className="tag disc">discovery</span>
-  : f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
+  : f.facet_role === 'listing_attr' || f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
+const arr = (v) => Array.isArray(v) ? v : (v ? [v] : []);
 const blankDraft = () => ({ name: '', price: '', brand: '', sku: '', stock: '', images: [], facets: {}, variants: {} });
-const arr = (v) => Array.isArray(v) ? v : [];
 
 export default function DrilldownListingPage() {
+  const [vertical, setVertical] = useState('fashion');
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
@@ -50,23 +50,30 @@ export default function DrilldownListingPage() {
   const [facets, setFacets] = useState([]);
   const [draft, setDraft] = useState(blankDraft());
   const [items, setItems] = useState([]);
-  const [uploading, setUploading] = useState('');     // which uploader is busy ('cover' | color)
+  const [uploading, setUploading] = useState('');
   const [saving, setSaving] = useState(false);
   const [ok, setOk] = useState('');
   const [brandOpts, setBrandOpts] = useState([]);
-  const [counts, setCounts] = useState({});           // { leafId: nSavedThisSession }
+  const [counts, setCounts] = useState({});
 
   useEffect(() => {
     (async () => {
-      const r = await listingApi.getTree(VERTICAL);
+      let v = 'fashion';
+      try {
+        const s = await brandApi.getSchema();
+        const cat = String(s?.data?.schema?.category_key || '');
+        if (cat.startsWith('furniture')) v = 'furniture';
+      } catch { /* default fashion */ }
+      setVertical(v);
+      const r = await listingApi.getTree(v);
       setLoading(false);
       if (r.ok) { setTree(r.data.tree); setLevel(r.data.tree); } else setErr(r.error?.message || 'Failed to load categories');
+      loadBrands(v, '');
     })();
-    loadBrands('');
   }, []);
 
-  async function loadBrands(q) {
-    const r = await listingApi.getBrands(VERTICAL, q);
+  async function loadBrands(v, q) {
+    const r = await listingApi.getBrands(v, q);
     if (r.ok) setBrandOpts(r.data.brands || []);
   }
 
@@ -92,7 +99,6 @@ export default function DrilldownListingPage() {
     setLevel(crumb[i].children); setCrumb(crumb.slice(0, i));
   };
 
-  // ── draft setters ───────────────────────────────────────────────────────
   const setFacet = (key, val) => setDraft(d => ({ ...d, facets: { ...d.facets, [key]: val } }));
   const toggleMulti = (key, opt) => setDraft(d => {
     const cur = arr(d.facets[key]);
@@ -100,13 +106,13 @@ export default function DrilldownListingPage() {
   });
   const setColorImages = (color, urls) => setDraft(d => {
     const v = { ...(d.variants || {}) };
-    v[color] = { ...(v[color] || { images: [], sizes: {} }), images: [...arr(v[color]?.images), ...urls].slice(0, 6) };
+    v[color] = { ...(v[color] || { images: [], stock: {} }), images: [...arr(v[color]?.images), ...urls].slice(0, 6) };
     return { ...d, variants: v };
   });
-  const setColorSizeStock = (color, size, stock) => setDraft(d => {
+  const setColorVariantStock = (color, val, stock) => setDraft(d => {
     const v = { ...(d.variants || {}) };
-    const cv = { ...(v[color] || { images: [], sizes: {} }) };
-    cv.sizes = { ...cv.sizes, [size]: { stock } };
+    const cv = { ...(v[color] || { images: [], stock: {} }) };
+    cv.stock = { ...cv.stock, [val]: stock };
     v[color] = cv;
     return { ...d, variants: v };
   });
@@ -124,8 +130,12 @@ export default function DrilldownListingPage() {
     else setColorImages(target, urls);
   }
 
+  // Visual variant (colour) drives pics; the OTHER variant facet (size/seater/doors/
+  // seats) is the per-unit STOCK axis.
+  const stockFacet = facets.find(f => f.facet_role === 'variant' && f.facet_key !== COLOR_KEY) || null;
+  const stockKey = stockFacet?.facet_key || null;
   const selectedColors = arr(draft.facets[COLOR_KEY]);
-  const selectedSizes = arr(draft.facets[SIZE_KEY]);
+  const selectedVariants = stockKey ? arr(draft.facets[stockKey]) : [];
 
   const draftErrors = () => {
     const e = [];
@@ -133,7 +143,7 @@ export default function DrilldownListingPage() {
     if (draft.price === '' || Number(draft.price) < 0) e.push('price');
     for (const f of facets) {
       let req = f.required === 'required';
-      if (f.facet_key === SIZE_KEY) req = leaf && !FREE.has(leaf.size_system || 'free_size');
+      if (f.facet_key === SIZE_KEY && leaf.size_system) req = !FREE.has(leaf.size_system);
       const v = draft.facets[f.facet_key];
       const empty = v == null || v === '' || (Array.isArray(v) && v.length === 0);
       if (req && empty) e.push(f.label);
@@ -145,11 +155,10 @@ export default function DrilldownListingPage() {
     const e = draftErrors();
     if (e.length) { setErr('Required: ' + e.join(', ')); return; }
     setErr('');
-    // build per-colour variants (pics + per-size stock) from the draft
     const variants = selectedColors.map(color => ({
       color,
       images: arr(draft.variants[color]?.images),
-      sizes: selectedSizes.map(size => ({ size, stock: draft.variants[color]?.sizes?.[size]?.stock ?? null })),
+      sizes: selectedVariants.map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
     }));
     setItems(list => [...list, {
       name: draft.name.trim(), price: Number(draft.price),
@@ -174,17 +183,18 @@ export default function DrilldownListingPage() {
     } else setErr(r.error?.message || 'Save failed');
   };
 
-  if (loading) return <div className="lst" style={{ padding: 24 }}><style>{CSS}</style>Loading categories…</div>;
+  const vlabel = vertical[0].toUpperCase() + vertical.slice(1);
+  if (loading) return <div className="lst" style={{ padding: 24 }}><style>{CSS}</style>Loading {vlabel} categories…</div>;
 
   return (
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
-      <h1>Add products — {VERTICAL}</h1>
+      <h1>Add products — {vlabel}</h1>
       <div className="rule" />
-      <div className="sub">Drill to the exact item-type once, then add every product of that type — photo, brand, price, sizes, colours (each colour gets its own pics + stock). SKU is generated automatically.</div>
+      <div className="sub">Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.</div>
 
       <div className="crumb">
-        <a onClick={() => jumpTo(-1)}>{VERTICAL[0].toUpperCase() + VERTICAL.slice(1)}</a>
+        <a onClick={() => jumpTo(-1)}>{vlabel}</a>
         {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jumpTo(i)}>{c.name}</a>}</span>)}
       </div>
 
@@ -211,7 +221,7 @@ export default function DrilldownListingPage() {
       {leaf && (
         <div className="panel">
           <div className="phead">Add {leaf.name}{counts[leaf.id] ? <span className="done">· {counts[leaf.id]} already added</span> : null}</div>
-          <div className="sub" style={{ marginBottom: 4 }}>{leaf.segment} › {leaf.category} › {leaf.name}{leaf.size_system && !FREE.has(leaf.size_system) ? ` · sizes: ${leaf.size_system}` : ' · no size'}</div>
+          <div className="sub" style={{ marginBottom: 4 }}>{leaf.segment}{leaf.category && leaf.category !== leaf.segment ? ` › ${leaf.category}` : ''} › {leaf.name}</div>
 
           <label className="fl">Cover photos (up to 6) — the first is the cover</label>
           <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
@@ -221,12 +231,12 @@ export default function DrilldownListingPage() {
           <div className="row">
             <div style={{ flex: 1, minWidth: 170 }}>
               <label className="fl">Product name <span className="req">*</span></label>
-              <input className="t" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. Slim Fit Blue Jeans" />
+              <input className="t" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. Oakwood 3-Seater Sofa" />
             </div>
             <div style={{ flex: 1, minWidth: 150 }}>
               <label className="fl">Brand</label>
               <input className="t" list="brandlist" value={draft.brand}
-                onChange={e => { const v = e.target.value; setDraft(d => ({ ...d, brand: v })); loadBrands(v); }}
+                onChange={e => { const v = e.target.value; setDraft(d => ({ ...d, brand: v })); loadBrands(vertical, v); }}
                 placeholder="Search or type your brand" />
               <datalist id="brandlist">{brandOpts.map(b => <option key={b} value={b} />)}</datalist>
             </div>
@@ -248,7 +258,7 @@ export default function DrilldownListingPage() {
           </div>
 
           {facets.map(f => {
-            const isSize = f.facet_key === SIZE_KEY;
+            const isSize = f.facet_key === SIZE_KEY && !!leaf.size_system;
             const allowed = isSize ? sizeValues(leaf.size_system) : (Array.isArray(f.allowed_values) ? f.allowed_values : []);
             const enumerated = allowed.length > 1;
             const req = (f.required === 'required') || (isSize && leaf.size_required);
@@ -266,7 +276,7 @@ export default function DrilldownListingPage() {
                     <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on' + (f.facet_role === 'variant' ? ' v' : '') : '')} onClick={() => toggleMulti(f.facet_key, o)}>{o}</span>
                   ))}</div>
                 )}
-                {f.input_type === 'single_select' && enumerated && (
+                {!isSize && f.input_type === 'single_select' && enumerated && (
                   <select className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)}>
                     <option value="">Select…</option>{allowed.map(o => <option key={o}>{o}</option>)}
                   </select>
@@ -277,19 +287,25 @@ export default function DrilldownListingPage() {
                     <button className={v === 'Yes' ? 'on' : ''} onClick={() => setFacet(f.facet_key, 'Yes')}>Yes</button>
                   </div>
                 )}
-                {f.input_type === 'number' && <input className="t" style={{ maxWidth: 160 }} type="number" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} />}
+                {f.input_type === 'number' && <input className="t" style={{ maxWidth: 180 }} type="number" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder={f.allowed_values?.[0] || ''} />}
+                {f.input_type === 'dimension' && (
+                  <div className="row" style={{ gap: 6 }}>
+                    {['l', 'w', 'h'].map(d => <input key={d} className="t" style={{ width: 70 }} type="number" placeholder={d.toUpperCase()} value={v?.[d] || ''} onChange={e => setFacet(f.facet_key, { ...(v || {}), [d]: e.target.value })} />)}
+                    <span className="muted2" style={{ alignSelf: 'center' }}>cm</span>
+                  </div>
+                )}
                 {!isSize && (f.input_type === 'text' || (!enumerated && (f.input_type === 'single_select' || f.input_type === 'multi_select'))) &&
                   <input className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder="optional" />}
               </div>
             );
           })}
 
-          {/* Per-colour variant cards: each selected colour gets its own pics + per-size stock */}
+          {/* Per-colour variant cards: each colour gets its own pics + per-variant stock */}
           {selectedColors.length > 0 && (
             <>
               <div className="sec">Variant photos &amp; stock — per colour</div>
               {selectedColors.map(color => {
-                const cv = draft.variants[color] || { images: [], sizes: {} };
+                const cv = draft.variants[color] || { images: [], stock: {} };
                 return (
                   <div key={color} className="vcard">
                     <div className="vhead"><span className="dot" />{color}</div>
@@ -297,13 +313,13 @@ export default function DrilldownListingPage() {
                     <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, color)} />
                     {uploading === color && <div className="sub">Uploading…</div>}
                     {arr(cv.images).length > 0 && <div className="imgs">{cv.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
-                    {selectedSizes.length > 0 && (
+                    {selectedVariants.length > 0 && (
                       <>
-                        <label className="fl">Stock per size</label>
-                        <div className="vstock">{selectedSizes.map(sz => (
-                          <div key={sz} className="vsize">
-                            <span>{sz}</span>
-                            <input type="number" placeholder="0" value={cv.sizes?.[sz]?.stock ?? ''} onChange={e => setColorSizeStock(color, sz, e.target.value)} />
+                        <label className="fl">Stock per {stockFacet?.label || 'variant'}</label>
+                        <div className="vstock">{selectedVariants.map(val => (
+                          <div key={val} className="vsize">
+                            <span>{val}</span>
+                            <input type="number" placeholder="0" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
                           </div>
                         ))}</div>
                       </>
@@ -386,7 +402,7 @@ const CSS = `
 .lst .vhead .dot{width:12px;height:12px;border-radius:50%;border:1px solid var(--border);background:var(--variant-pale)}
 .lst .vstock{display:flex;flex-wrap:wrap;gap:8px}
 .lst .vsize{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--border);border-radius:9px;padding:5px 8px}
-.lst .vsize span{font-size:11px;font-weight:700;min-width:24px} .lst .vsize input{width:56px;border:0;border-bottom:1px solid var(--border);font-size:12px;padding:2px;font-family:inherit}
+.lst .vsize span{font-size:11px;font-weight:700;min-width:24px} .lst .vsize input{width:60px;border:0;border-bottom:1px solid var(--border);font-size:12px;padding:2px;font-family:inherit}
 .lst .added{display:flex;align-items:center;gap:11px;background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:7px}
 .lst .added .x{color:var(--danger);background:0;border:0;font-size:17px;cursor:pointer;margin-left:auto}
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
