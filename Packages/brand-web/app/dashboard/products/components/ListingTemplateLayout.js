@@ -78,6 +78,16 @@ export default function ListingTemplateLayout({
     [allSteps, skipBrand]
   );
 
+  // Drill-down templates (fashion/furniture) have NO in-page product-authoring
+  // step — registration is store-profile only and products are added in the
+  // dedicated tree+facets wizard. Their Add/Bulk entry points must route there,
+  // not to an empty 'add' view (the blank-screen bug).
+  const hasProductStep = useMemo(
+    () => allSteps.some(s => s.writes_to !== 'brand' && !['preview', 'done'].includes(s.component)),
+    [allSteps]
+  );
+  const gotoProductWizard = () => { window.location.href = '/dashboard/products/listing'; };
+
   const [currentStep, setCurrentStep] = useState(0);
   const stepConfig = visibleSteps[currentStep];
   const isDoneStep = stepConfig?.component === 'done';
@@ -365,7 +375,10 @@ export default function ListingTemplateLayout({
             : [{ key: 'upload', label: 'Bulk Upload', icon: '📤' }]),
         ].map(t => (
           <button key={t.key}
-            onClick={() => { setView(t.key); if (t.key === 'add') resetWizard(); }}
+            onClick={() => {
+              if ((t.key === 'add' || t.key === 'upload') && !hasProductStep) return gotoProductWizard();
+              setView(t.key); if (t.key === 'add') resetWizard();
+            }}
             className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5
               ${view === t.key
                 ? 'bg-yellow text-ink-1 shadow-sm'
@@ -384,8 +397,8 @@ export default function ListingTemplateLayout({
           labelPlural={labelPlural}
           icon={template.icon}
           onRemove={handleRemoveProduct}
-          onAdd={() => { setView('add'); resetWizard(); }}
-          onUpload={() => setView('upload')}
+          onAdd={() => { if (!hasProductStep) return gotoProductWizard(); setView('add'); resetWizard(); }}
+          onUpload={() => { if (!hasProductStep) return gotoProductWizard(); setView('upload'); }}
         />
       )}
 
