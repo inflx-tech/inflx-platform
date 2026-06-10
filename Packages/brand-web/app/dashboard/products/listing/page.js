@@ -59,6 +59,27 @@ const CSS = `
 `;
 
 const FREE = new Set(['free_size', 'one_size', 'unstitched']);
+
+// Size = the variant axis. Its values come from the leaf's size_system (the
+// facet's allowed_values is only a pointer), so render real pickable chips.
+const SIZE_SYSTEMS = {
+  alpha:      ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'],
+  plus_alpha: ['XL', '2XL', '3XL', '4XL', '5XL', '6XL'],
+  waist_in:   ['26', '28', '30', '32', '34', '36', '38', '40', '42', '44'],
+  waist_plus: ['38', '40', '42', '44', '46', '48', '50'],
+  bra:        ['30', '32', '34', '36', '38', '40', '42', '44'],
+  age:        ['0-3m', '3-6m', '6-12m', '12-18m', '18-24m', '2-3y', '3-4y', '4-5y', '5-6y', '6-7y', '7-8y', '8-9y', '9-10y', '10-11y', '11-12y', '13-14y', '15-16y'],
+  uk_women:   ['UK2', 'UK3', 'UK4', 'UK5', 'UK6', 'UK7', 'UK8', 'UK9'],
+  uk_men:     ['UK5', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12'],
+  kids_shoe:  ['UK4', 'UK5', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12', 'UK13'],
+  ring:       ['Adjustable', '6', '8', '10', '12', '14', '16', '18', '20', '22'],
+  bangle:     ['2.4', '2.6', '2.8', '2.10', 'Free'],
+  sock_size:  ['S', 'M', 'L', 'Free'],
+  free_size:  ['Free Size'],
+  one_size:   ['One Size'],
+  unstitched: ['Unstitched'],
+};
+const sizeValues = (sys) => SIZE_SYSTEMS[sys] || ['Free Size'];
 const tagFor = (f) => f.facet_role === 'variant' ? <span className="tag variant">variant</span>
   : f.facet_role === 'discovery' ? <span className="tag disc">discovery</span>
   : f.facet_role === 'attr' ? <span className="tag attr">listing</span> : null;
@@ -222,14 +243,20 @@ export default function DrilldownListingPage() {
           </div>
 
           {facets.map(f => {
-            const allowed = Array.isArray(f.allowed_values) ? f.allowed_values : [];
+            const isSize = f.facet_key === 'size';
+            const allowed = isSize ? sizeValues(leaf.size_system) : (Array.isArray(f.allowed_values) ? f.allowed_values : []);
             const enumerated = allowed.length > 1;
-            const req = (f.required === 'required') || (f.facet_key === 'size' && leaf.size_required);
+            const req = (f.required === 'required') || (isSize && leaf.size_required);
             const v = draft.facets[f.facet_key];
             return (
               <div key={f.facet_key}>
                 <label className="fl">{f.label}{req && <span className="req"> *</span>} {tagFor(f)}</label>
-                {f.input_type === 'multi_select' && enumerated && (
+                {isSize && (
+                  <div className="chips">{allowed.map(o => (
+                    <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on v' : '')} onClick={() => toggleMulti('size', o)}>{o}</span>
+                  ))}</div>
+                )}
+                {!isSize && f.input_type === 'multi_select' && enumerated && (
                   <div className="chips">{allowed.map(o => (
                     <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on' + (f.facet_role === 'variant' ? ' v' : '') : '')} onClick={() => toggleMulti(f.facet_key, o)}>{o}</span>
                   ))}</div>
@@ -246,7 +273,7 @@ export default function DrilldownListingPage() {
                   </div>
                 )}
                 {f.input_type === 'number' && <input className="t" style={{ maxWidth: 160 }} type="number" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} />}
-                {(f.input_type === 'text' || (!enumerated && (f.input_type === 'single_select' || f.input_type === 'multi_select'))) &&
+                {!isSize && (f.input_type === 'text' || (!enumerated && (f.input_type === 'single_select' || f.input_type === 'multi_select'))) &&
                   <input className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder="optional" />}
               </div>
             );

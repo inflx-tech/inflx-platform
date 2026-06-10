@@ -25,10 +25,12 @@
       "rollback": "revert routes/service commit; migration objects inert if unused"
     },
     "ship2": {
-      "status": "IN PROGRESS — not yet released",
-      "done": "listingApi (getTree/getNodeFacets/batchCreate) added to brand-web lib/api.js (uncommitted).",
-      "todo": "drill-once-batch-add seller wizard page (rides live Ship-1 APIs); will be a proper UI-governed commit with 06-diff. Interrupted by the fashion_walkin schema bug below.",
-      "reachable": "TBD"
+      "status": "RELEASED 2026-06-09",
+      "class": "brand-web UI (Vercel auto-deploy on push). UI-governed; mockup_locked + 06-diff present.",
+      "what": "Drill-once-batch-add seller wizard at /dashboard/products/listing — listingApi (getTree/getNodeFacets/batchCreate) in lib/api.js + isolated page.js. Drills the live tree → leaf → typed facet form (multi/single-select, boolean, number, text) + Size rendered as variant chips from the leaf size_system (SIZE_SYSTEMS map) + multi-image upload (≤6, first=cover) via uploadFileToGallery → batch POST. Client validation mirrors server (whole-batch reject). One listing (no Showcase/Sell). Does NOT touch the existing per-vertical wizard.",
+      "validation": "page.js + lib/api.js JSX/ESM parse OK; rides Ship-1 APIs verified live on prod; Next build not runnable in sandbox → founder is on-web gate.",
+      "reachable": "/dashboard/products/listing",
+      "deferred": "nav-button entry on products page + furniture vertical switcher + per-size price/stock matrix (single price+stock in v1)."
     },
     "fix_fashion_schema": {
       "class": "PRODUCTION-IMPACTING backend (Render). Bug surfaced by founder 2026-06-09 (Charvitha Fashions).",
