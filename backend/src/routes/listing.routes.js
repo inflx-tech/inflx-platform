@@ -18,6 +18,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const publicRouter = Router();
 publicRouter.get('/tree', ctrl.getTree);
 publicRouter.get('/nodes/:id/facets', ctrl.getNodeFacets);
+publicRouter.get('/brands', ctrl.getBrands);
 
 const brandRouter = Router();
 brandRouter.use(authenticate);

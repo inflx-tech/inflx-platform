@@ -19,6 +19,19 @@ const useSSL = /supabase\.com/.test(process.env.DATABASE_URL || '');
 const DIR = path.join(__dirname, '../../features/listing-fashion-drilldown-upgrade');
 const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 
+// Segment display order (Men first, per founder). Segments not listed sort last.
+const SEGMENT_ORDER = ['Men', 'Women', 'Unisex', 'Kids'];
+const segOrder = (s) => { const i = SEGMENT_ORDER.indexOf(s); return i >= 0 ? i : 99; };
+
+// Popular fashion brands seed (directory; custom brands captured at listing time).
+const POPULAR_BRANDS = [
+  'Levi\'s', 'Zara', 'H&M', 'Allen Solly', 'Peter England', 'US Polo Assn', 'Van Heusen',
+  'Louis Philippe', 'Raymond', 'Wrangler', 'Lee', 'Pepe Jeans', 'Jack & Jones', 'Roadster',
+  'Biba', 'W for Woman', 'Fabindia', 'Global Desi', 'Aurelia', 'Libas', 'Vero Moda', 'Only',
+  'Nike', 'Adidas', 'Puma', 'Reebok', 'Bata', 'Woodland', 'Sparx', 'Campus',
+  'Jockey', 'Rupa', 'Lux', 'Titan', 'Fastrack', 'Fossil', 'Ray-Ban', 'Fila', 'Decathlon',
+];
+
 function parseCsv(file) {
   const lines = fs.readFileSync(path.join(DIR, file), 'utf8').trim().split(/\r?\n/);
   const header = lines[0].split(',');
@@ -54,7 +67,7 @@ function parseCsv(file) {
         const { rows } = await c.query(
           `INSERT INTO category_nodes (vertical,parent_id,segment,name,slug,depth,is_leaf,sort_order)
            VALUES ('fashion',NULL,$1,$1,$2,0,false,$3) RETURNING id`,
-          [r.segment, slug(r.segment), segId.size]);
+          [r.segment, slug(r.segment), segOrder(r.segment)]);
         segId.set(r.segment, rows[0].id); segN++;
       }
       // category (depth 1)
@@ -96,8 +109,19 @@ function parseCsv(file) {
       facetN++;
     }
 
+    // popular brands directory (idempotent; never downgrade a 'custom' that got promoted)
+    let brandN = 0;
+    for (const b of POPULAR_BRANDS) {
+      await c.query(
+        `INSERT INTO listing_brands (vertical, name, source, status)
+         VALUES ('fashion', $1, 'seed', 'active')
+         ON CONFLICT (vertical, lower(name)) DO NOTHING`,
+        [b]);
+      brandN++;
+    }
+
     await c.query('COMMIT');
-    console.log(`[seed-fashion] segments=${segN} categories=${catN} leaves=${leafN} facets=${facetN}`);
+    console.log(`[seed-fashion] segments=${segN} categories=${catN} leaves=${leafN} facets=${facetN} brands=${brandN}`);
   } catch (e) {
     await c.query('ROLLBACK');
     throw e;
