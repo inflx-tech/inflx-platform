@@ -1,5 +1,10 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+
+// Drill-down verticals list products via the new tree+facets wizard
+// (/dashboard/products/listing), NOT the legacy flat ListingWizard.
+const DRILLDOWN_VERTICALS = new Set(['fashion', 'fashion_walkin', 'fashion_online', 'furniture']);
 import { brandApi, fmtRupees } from '../../../lib/api';
 import ListingWizard from './components/ListingWizard';
 import { QuotaWallModal, useQuotaWall } from '../../../components/QuotaWallModal';
@@ -634,6 +639,7 @@ function ProductRow({ product, onEdit, onDelete, onToggle, schema }) {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function ProductsPage() {
+  const router = useRouter();
   const [useListingWizard, setUseListingWizard] = useState(null);
   const [schema,    setSchema]    = useState(null);
   const [products,  setProducts]  = useState([]);
@@ -689,6 +695,18 @@ export default function ProductsPage() {
     }
     checkListingEngine();
   }, []);
+
+  // Drill-down verticals (fashion/furniture) list via the NEW tree+facets wizard,
+  // not the legacy flat ListingWizard — redirect there.
+  useEffect(() => {
+    if (useListingWizard !== true) return;
+    let cancelled = false;
+    brandApi.getSchema().then((res) => {
+      const cat = res?.data?.schema?.category_key;
+      if (!cancelled && cat && DRILLDOWN_VERTICALS.has(cat)) router.replace('/dashboard/products/listing');
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [useListingWizard]);
 
   const isMasterCatalogue = schema?.features?.master_catalogue === true;
   const category = catalogue?.category || (schema?.category_key);
