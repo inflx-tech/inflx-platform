@@ -25,7 +25,9 @@
   ],
   "booking_type": null,
   "availing_modes": [
-    "pay_at_store"
+    "walkin_pay",
+    "online_order",
+    "enquiry"
   ],
   "fields": [
     {
@@ -113,7 +115,53 @@
       "enabled": false
     }
   },
-  "listing_steps": [],
+  "listing_steps": [
+    {
+      "id": "brand_basics",
+      "title": "About your store",
+      "subtitle": "Description, hours, delivery and policies",
+      "component": "brand_fields",
+      "writes_to": "brand",
+      "field_keys": [
+        "brand_description",
+        "offers_online_delivery",
+        "ships_international",
+        "hours_json",
+        "amenities",
+        "default_return_policy_days"
+      ]
+    },
+    {
+      "id": "brand_photos",
+      "title": "Store photos",
+      "subtitle": "Showroom, workshop, delivery van — anything that builds trust",
+      "component": "photo_upload",
+      "writes_to": "brand",
+      "min_photos": 3,
+      "max_photos": 12,
+      "recommended_photos": 6
+    },
+    {
+      "id": "preview",
+      "title": "Preview your store",
+      "subtitle": "How followers will see this",
+      "component": "preview",
+      "show_quality_score": true,
+      "show_live_preview": true
+    },
+    {
+      "id": "done",
+      "title": "Store is live!",
+      "subtitle": "Now add your products from the Listings page",
+      "component": "done",
+      "boost_tips": [
+        "Add photos per colour/finish — buyers compare finishes first",
+        "Fill dimensions on big items — cuts return risk",
+        "Enable Request Quote for made-to-order work",
+        "Set a realistic lead time on custom pieces"
+      ]
+    }
+  ],
   "product_config": {
     "enabled": true,
     "required": false,
@@ -193,5 +241,107 @@
       "points": 10,
       "label": "Contact number"
     }
-  ]
+  ],
+  "brand_config": {
+    "fields": {
+      "brand_description": {
+        "key": "brand_description",
+        "type": "string",
+        "label": "About your store",
+        "max": 280,
+        "placeholder": "What you make/sell — e.g. solid-wood custom furniture, 20 years in business"
+      },
+      "offers_online_delivery": {
+        "key": "offers_online_delivery",
+        "type": "boolean",
+        "default": false,
+        "label": "I deliver online (ships across India)",
+        "follower_sync": {
+          "text": "Online buyers reachable"
+        }
+      },
+      "ships_international": {
+        "key": "ships_international",
+        "type": "boolean",
+        "default": false,
+        "label": "I also ship internationally",
+        "show_if": {
+          "field": "offers_online_delivery",
+          "value": true
+        }
+      },
+      "hours_json": {
+        "key": "hours_json",
+        "type": "weekly_schedule",
+        "label": "Store hours (for walk-in)"
+      },
+      "amenities": {
+        "key": "amenities",
+        "type": "multi_select",
+        "label": "Store amenities",
+        "options": [
+          "AC Showroom",
+          "Parking",
+          "Card Payment",
+          "UPI Payment",
+          "Home Delivery",
+          "Installation / Assembly",
+          "Carpenter Support",
+          "EMI Available",
+          "Custom / Made-to-Order",
+          "Bulk & Project Orders"
+        ]
+      },
+      "default_return_policy_days": {
+        "key": "default_return_policy_days",
+        "type": "number",
+        "min": 0,
+        "max": 30,
+        "default": 7,
+        "required": false,
+        "label": "Return window in days (optional — blank uses our standard)"
+      }
+    },
+    "photo_requirements": {
+      "cover_required": true,
+      "gallery_min": 3,
+      "gallery_max": 12,
+      "gallery_recommended": 6
+    },
+    "actions": [
+      {
+        "kind": "transactional",
+        "action": "walkin_pay",
+        "label": "Visit & Pay",
+        "config": {
+          "fields": [
+            "amount",
+            "tip_amount"
+          ],
+          "payment_modes": [
+            "full"
+          ],
+          "endpoint": "/follower/pay-at-store"
+        }
+      },
+      {
+        "kind": "transactional",
+        "action": "online_order",
+        "label": "Shop Online",
+        "visible_if": "offers_online_delivery === true",
+        "config": {
+          "endpoint": "/follower/orders",
+          "cart_scope": "brand"
+        }
+      },
+      {
+        "kind": "lead",
+        "action": "enquiry",
+        "label": "Request Quote",
+        "config": {
+          "endpoint": "/follower/enquiries"
+        }
+      }
+    ]
+  }
 }

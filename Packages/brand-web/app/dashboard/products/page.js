@@ -696,18 +696,24 @@ export default function ProductsPage() {
     checkListingEngine();
   }, []);
 
-  // Drill-down verticals (fashion/furniture) list via the NEW tree+facets wizard,
-  // not the legacy flat ListingWizard OR the legacy products CRUD. This redirect
-  // runs on mount and deliberately does NOT depend on the listing-engine flag —
-  // a drill-down vertical whose schema is still phase-gated (furniture was
-  // status=coming_soon) would otherwise fall back to the OLD flat products page.
+  // Drill-down verticals (fashion/furniture) split the flow:
+  //   FIRST visit (store setup never completed → listing_data empty) → stay here
+  //   and run the one-time store-setup wizard (about/photos/hours/return).
+  //   AFTER setup → Listings goes STRAIGHT to the product wizard (the frequent
+  //   job); "⚙ Store setup" (?setup=1) re-opens this page to edit the profile.
+  // Deliberately independent of the listing-engine flag — a phase-gated schema
+  // (furniture was coming_soon) must not fall back to the old flat products page.
   useEffect(() => {
-    // ?setup=1 → stay here to show store-setup (don't bounce to the product wizard).
+    // ?setup=1 → always stay to show/edit store-setup.
     if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('setup') === '1') return;
     let cancelled = false;
-    brandApi.getSchema().then((res) => {
-      const cat = res?.data?.schema?.category_key;
-      if (!cancelled && cat && DRILLDOWN_VERTICALS.has(cat)) router.replace('/dashboard/products/listing');
+    brandApi.get('/brands/me/listing-config').then((res) => {
+      if (cancelled || !res?.success) return;
+      const cat = res.data?.config?.category_key || res.data?.category;
+      if (!cat || !DRILLDOWN_VERTICALS.has(cat)) return;
+      const setupDone = res.data?.listing_data && Object.keys(res.data.listing_data).length > 0;
+      if (setupDone) router.replace('/dashboard/products/listing');
+      // else: first time → fall through to the store-setup wizard below.
     }).catch(() => {});
     return () => { cancelled = true; };
   }, []);

@@ -152,8 +152,7 @@
         "brand_description",
         "gender_focus",
         "offers_online_delivery",
-        "online_delivery_cities",
-        "shipping_fee_flat",
+        "ships_international",
         "hours_json",
         "amenities",
         "default_return_policy_days"
