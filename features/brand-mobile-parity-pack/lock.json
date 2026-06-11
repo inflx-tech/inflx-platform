@@ -1,0 +1,28 @@
+{
+  "feature": "brand-mobile-parity-pack",
+  "area": "mobile-brand",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-11) — explicit go on the W4 parity audit: 'ok pls carry with all 5 missed things'",
+  "approved_at": "2026-06-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING via OTA only (pure JS — no backend change, no APK rebuild, no Render/Vercel impact). Six additive screens; existing screens untouched except the Home quick-actions grid.",
+  "fix": "Six new brand mobile screens on existing endpoints: Orders (transactions w/ filters + money breakdown), Bookings (stats + confirm/reject), Meals board (restaurant-gated; Today ops + deal decisions), Offer library (manage all types + create discount), Plan & billing hub (subscription/usage/invoices-PDF/payout-connect; upgrade links to web), Creator market analytics. ~20 new api.js helpers; navigator + Home quick-actions wiring.",
+  "related": ["Docs/WALKTHROUGH_LEDGER.md W4", "features/brand-mobile-register"],
+  "result": "All six screens implemented + wired (Home stack ×5, Profile stack ×1, quick-actions grid w/ restaurant-only Meals tile + cross-tab Settings tile). esbuild JSX parse-check clean on all 9 touched files (caught + fixed a duplicate mealsApi export — helpers already existed from the follower meals flow). Mockup parity-pack.html (6 panels) in founder preview panel.",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (45.5s, report 2026-06-11T05-38-51). Mobile-only changeset; backend + web untouched. Founder's parity exclusions verified intact: no listing, no campaign creation on mobile.",
+  "discipline": "Endpoint shapes taken from direct reads of the six brand-web pages (not assumed); every screen consumes endpoints prod web traffic already exercises. Meals chat-builder/menu-costs/config + complex offer builders + native subscription checkout recorded as explicit v1 link-outs in 01-spec.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "Push (inert for phones) → publish-ota:all → founder on-device verification across the six screens → flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-11) — parity-pack.html (6 phone panels) authored per the W4-audited web pages; surfaced in founder's preview panel.",
+  "mockup_locked_at": "2026-06-11"
+}

@@ -24,6 +24,13 @@ import BrandInfluencerProfileScreen from '../screens/brand/BrandInfluencerProfil
 import BrandActionRequiredScreen from '../screens/brand/BrandActionRequiredScreen';
 import BrandStorePreviewScreen from '../screens/brand/BrandStorePreviewScreen';
 import ContractPdfScreen from '../screens/influencer/ContractPdfScreen';
+// Parity pack (contract: features/brand-mobile-parity-pack)
+import BrandOrdersScreen from '../screens/brand/BrandOrdersScreen';
+import BrandBookingsScreen from '../screens/brand/BrandBookingsScreen';
+import BrandMealsBoardScreen from '../screens/brand/BrandMealsBoardScreen';
+import BrandOffersLibraryScreen from '../screens/brand/BrandOffersLibraryScreen';
+import BrandSettingsHubScreen from '../screens/brand/BrandSettingsHubScreen';
+import BrandInfluencerAnalyticsScreen from '../screens/brand/BrandInfluencerAnalyticsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -45,6 +52,11 @@ function HomeStack() {
       <Stack.Screen name="BrandInfluencerProfile" component={BrandInfluencerProfileScreen} />
       <Stack.Screen name="BrandStorePreview"      component={BrandStorePreviewScreen} />
       <Stack.Screen name="ContractPdf"            component={ContractPdfScreen} />
+      <Stack.Screen name="BrandOrders"            component={BrandOrdersScreen} />
+      <Stack.Screen name="BrandBookings"          component={BrandBookingsScreen} />
+      <Stack.Screen name="BrandMealsBoard"        component={BrandMealsBoardScreen} />
+      <Stack.Screen name="BrandOffersLibrary"     component={BrandOffersLibraryScreen} />
+      <Stack.Screen name="BrandInfluencerAnalytics" component={BrandInfluencerAnalyticsScreen} />
     </Stack.Navigator>
   );
 }
@@ -74,6 +86,7 @@ function ProfileStack() {
       <Stack.Screen name="MediaGallery" component={BrandMediaGalleryScreen} />
       <Stack.Screen name="ContractPdf" component={ContractPdfScreen} />
       <Stack.Screen name="ProposalInbox" component={BrandProposalInboxScreen} />
+      <Stack.Screen name="BrandSettingsHub" component={BrandSettingsHubScreen} />
     </Stack.Navigator>
   );
 }

@@ -228,6 +228,27 @@ export const brandApi = {
   deleteReferenceLink:    (id)    => api.delete(`/brands/me/reference-links/${id}`),
   // Aggregate contracts
   listBrandContracts:     ()      => api.get('/brands/me/contracts'),
+
+  // ── Brand mobile parity pack (contract: features/brand-mobile-parity-pack) ──
+  // Bookings inbox
+  listBookings:   (status) => api.get(`/brands/me/bookings${status ? `?status=${status}` : ''}`),
+  confirmBooking: (id) => api.post(`/brands/me/bookings/${id}/confirm`),
+  rejectBooking:  (id) => api.post(`/brands/me/bookings/${id}/reject`),
+  // Offer library
+  getOffers:           () => api.get('/brands/me/offers'),
+  createOffer:         (data) => api.post('/brands/me/offers', data),
+  updateOffer:         (id, data) => api.patch(`/brands/me/offers/${id}`, data),
+  deleteOffer:         (id) => api.delete(`/brands/me/offers/${id}`),
+  getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),
+  listProducts:        () => api.get('/brands/me/products'),
+  // Billing + subscription + payouts
+  listInvoices:          () => api.get('/brands/me/billing/invoices?limit=100'),
+  getSubscription:       () => api.get('/brands/me/subscription'),
+  listSubscriptionTiers: () => api.get('/subscription-tiers'),
+  getPayoutAccount:      () => api.get('/brands/me/payout-account'),
+  createPayoutAccount:   () => api.post('/brands/me/payout-account'),
+  // Influencer market analytics (read-only)
+  getInfluencerAnalytics: (params) => api.get(`/influencers/analytics${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
 // Agency app (Contract 3b) — drives the Contract 3a backend.

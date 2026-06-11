@@ -51,12 +51,18 @@ const STATUS_LABEL = {
 };
 
 const QUICK_ACTIONS = [
+  { label: 'Orders',        icon: '🧾', target: 'BrandOrders' },
+  { label: 'Bookings',      icon: '📅', target: 'BrandBookings' },
+  { label: 'Offers',        icon: '🏷', target: 'BrandOffersLibrary' },
+  { label: 'Meals',         icon: '🍽', target: 'BrandMealsBoard', restaurantOnly: true },
   { label: 'Campaigns',     icon: '⊟', target: 'Campaigns' },
   { label: 'Wallet',        icon: '◫', target: 'Wallet' },
-  { label: 'Negotiations',  icon: '🤝', target: 'Campaigns' },
   { label: 'Enquiries',     icon: '✉',  target: 'BrandEnquiries' },
   { label: 'Conversions',   icon: '₹',  target: 'BrandConversions' },
   { label: 'Influencers',   icon: '★',  target: 'BrandInfluencerBrowse' },
+  { label: 'Creator market',icon: '📊', target: 'BrandInfluencerAnalytics' },
+  { label: 'Plan & billing',icon: '⚙',  target: 'BrandSettingsHub', tab: 'Profile' },
+  { label: 'Negotiations',  icon: '🤝', target: 'Campaigns' },
 ];
 
 export default function BrandHomeScreen({ navigation }) {
@@ -244,12 +250,16 @@ export default function BrandHomeScreen({ navigation }) {
             <Text style={styles.sectionTitle}>Quick actions</Text>
           </View>
           <View style={styles.quickGrid}>
-            {QUICK_ACTIONS.map(qa => (
+            {QUICK_ACTIONS
+              .filter(qa => !qa.restaurantOnly || brand?.category === 'restaurant')
+              .map(qa => (
               <TouchableOpacity
                 key={qa.label}
                 style={styles.quickTile}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate(qa.target)}
+                onPress={() => qa.tab
+                  ? navigation.navigate(qa.tab, { screen: qa.target })
+                  : navigation.navigate(qa.target)}
               >
                 <View style={styles.quickIcon}>
                   <Text style={styles.quickIconGlyph}>{qa.icon}</Text>
