@@ -8,7 +8,6 @@
   "card_type": "menu_item",
   "phase": 1,
   "status": "active",
-
   "features": {
     "sections": true,
     "veg_flag": true,
@@ -21,7 +20,6 @@
     "master_catalogue": false,
     "meals": true
   },
-
   "sections": [
     "Starters",
     "Soups",
@@ -32,10 +30,12 @@
     "Desserts",
     "Beverages"
   ],
-
-  "availing_modes": ["online_order"],
+  "availing_modes": [
+    "prebook",
+    "pay_at_store",
+    "online_order"
+  ],
   "booking_type": null,
-
   "attributes_schema": {
     "veg_flag": {
       "key": "veg_flag",
@@ -47,20 +47,38 @@
       "key": "section",
       "type": "select",
       "label": "Section",
-      "options": ["Starters","Soups","Main Course","Breads","Rice & Biryani","Sides","Desserts","Beverages"],
+      "options": [
+        "Starters",
+        "Soups",
+        "Main Course",
+        "Breads",
+        "Rice & Biryani",
+        "Sides",
+        "Desserts",
+        "Beverages"
+      ],
       "required": true
     },
     "spice_level": {
       "key": "spice_level",
       "type": "select",
       "label": "Spice Level",
-      "options": ["Mild","Medium","Hot","Extra Hot"]
+      "options": [
+        "Mild",
+        "Medium",
+        "Hot",
+        "Extra Hot"
+      ]
     },
     "portion_size": {
       "key": "portion_size",
       "type": "select",
       "label": "Portion",
-      "options": ["Half","Full","Regular"]
+      "options": [
+        "Half",
+        "Full",
+        "Regular"
+      ]
     },
     "bestseller": {
       "key": "bestseller",
@@ -94,9 +112,7 @@
       "label": "Daily Stock"
     }
   },
-
   "cart_scope": "brand",
-
   "listing_steps": [
     {
       "id": "basics",
@@ -198,7 +214,16 @@
           "type": "select",
           "label": "Section",
           "required": true,
-          "options": ["Starters","Soups","Main Course","Breads","Rice & Biryani","Sides","Desserts","Beverages"]
+          "options": [
+            "Starters",
+            "Soups",
+            "Main Course",
+            "Breads",
+            "Rice & Biryani",
+            "Sides",
+            "Desserts",
+            "Beverages"
+          ]
         },
         {
           "key": "description",
@@ -216,13 +241,22 @@
           "key": "spice_level",
           "type": "select",
           "label": "Spice level",
-          "options": ["Mild","Medium","Hot","Extra Hot"]
+          "options": [
+            "Mild",
+            "Medium",
+            "Hot",
+            "Extra Hot"
+          ]
         },
         {
           "key": "portion_size",
           "type": "select",
           "label": "Portion",
-          "options": ["Half","Full","Regular"],
+          "options": [
+            "Half",
+            "Full",
+            "Regular"
+          ],
           "default": "Full"
         },
         {
@@ -291,9 +325,7 @@
       ]
     }
   ],
-
   "fields": [],
-
   "product_config": {
     "enabled": true,
     "required": true,
@@ -321,22 +353,86 @@
     },
     "fields": [],
     "excel_columns": [
-      { "column": "Item Name", "field": "name", "required": true, "example": "Butter Chicken" },
-      { "column": "Section", "field": "section", "required": true, "example": "Main Course" },
-      { "column": "Price (₹)", "field": "price", "required": true, "example": "320" },
-      { "column": "Veg/Non-Veg", "field": "veg_flag", "required": true, "example": "Non-Veg" },
-      { "column": "Description", "field": "description", "required": false, "example": "Tender chicken in rich tomato gravy" },
-      { "column": "Spice Level", "field": "spice_level", "required": false, "example": "Medium" },
-      { "column": "Portion", "field": "portion_size", "required": false, "example": "Full" },
-      { "column": "Bestseller", "field": "bestseller", "required": false, "example": "Yes" },
-      { "column": "Chef's Special", "field": "chef_special", "required": false, "example": "No" },
-      { "column": "Contains Egg", "field": "contains_egg", "required": false, "example": "No" },
-      { "column": "Jain Option", "field": "jain_available", "required": false, "example": "No" },
-      { "column": "Daily Stock", "field": "stock", "required": false, "example": "50" },
-      { "column": "Image URL", "field": "image_url", "required": false, "example": "https://example.com/dish.jpg" }
+      {
+        "column": "Item Name",
+        "field": "name",
+        "required": true,
+        "example": "Butter Chicken"
+      },
+      {
+        "column": "Section",
+        "field": "section",
+        "required": true,
+        "example": "Main Course"
+      },
+      {
+        "column": "Price (₹)",
+        "field": "price",
+        "required": true,
+        "example": "320"
+      },
+      {
+        "column": "Veg/Non-Veg",
+        "field": "veg_flag",
+        "required": true,
+        "example": "Non-Veg"
+      },
+      {
+        "column": "Description",
+        "field": "description",
+        "required": false,
+        "example": "Tender chicken in rich tomato gravy"
+      },
+      {
+        "column": "Spice Level",
+        "field": "spice_level",
+        "required": false,
+        "example": "Medium"
+      },
+      {
+        "column": "Portion",
+        "field": "portion_size",
+        "required": false,
+        "example": "Full"
+      },
+      {
+        "column": "Bestseller",
+        "field": "bestseller",
+        "required": false,
+        "example": "Yes"
+      },
+      {
+        "column": "Chef's Special",
+        "field": "chef_special",
+        "required": false,
+        "example": "No"
+      },
+      {
+        "column": "Contains Egg",
+        "field": "contains_egg",
+        "required": false,
+        "example": "No"
+      },
+      {
+        "column": "Jain Option",
+        "field": "jain_available",
+        "required": false,
+        "example": "No"
+      },
+      {
+        "column": "Daily Stock",
+        "field": "stock",
+        "required": false,
+        "example": "50"
+      },
+      {
+        "column": "Image URL",
+        "field": "image_url",
+        "required": false,
+        "example": "https://example.com/dish.jpg"
+      }
     ]
   },
-
   "brand_config": {
     "fields": {
       "cuisines": {
@@ -344,9 +440,26 @@
         "type": "multi_select",
         "label": "Cuisines",
         "options": [
-          "North Indian","South Indian","Chinese","Continental","Biryani","Tandoor",
-          "Mughlai","Andhra","Hyderabadi","Bengali","Gujarati","Punjabi",
-          "Italian","Mexican","Thai","Japanese","Desserts","Fast Food","Cafe","Beverages"
+          "North Indian",
+          "South Indian",
+          "Chinese",
+          "Continental",
+          "Biryani",
+          "Tandoor",
+          "Mughlai",
+          "Andhra",
+          "Hyderabadi",
+          "Bengali",
+          "Gujarati",
+          "Punjabi",
+          "Italian",
+          "Mexican",
+          "Thai",
+          "Japanese",
+          "Desserts",
+          "Fast Food",
+          "Cafe",
+          "Beverages"
         ],
         "required": true,
         "max": 4
@@ -356,9 +469,17 @@
         "type": "multi_select",
         "label": "Vibes",
         "options": [
-          "fine_dining", "cafe", "quickbite", "rooftop",
-          "nightlife", "family", "buffet", "five_star",
-          "date_night", "birthday", "late_night"
+          "fine_dining",
+          "cafe",
+          "quickbite",
+          "rooftop",
+          "nightlife",
+          "family",
+          "buffet",
+          "five_star",
+          "date_night",
+          "birthday",
+          "late_night"
         ],
         "max": 4,
         "help": "Pick up to 4 that match your atmosphere"
@@ -379,7 +500,12 @@
         "label": "Google Maps URL",
         "required": true,
         "help": "Paste your Google Maps share link. We'll verify and auto-fill location.",
-        "writes_to_keys": ["lat", "lng", "locality", "formatted_address"]
+        "writes_to_keys": [
+          "lat",
+          "lng",
+          "locality",
+          "formatted_address"
+        ]
       },
       "locality": {
         "key": "locality",
@@ -512,67 +638,57 @@
         "primary": true,
         "config": {
           "booking_type": "table",
-          "fields": ["booking_date","time_slot","guest_count","special_requests"],
-          "payment_modes": ["token","full"],
-          "token_amount": 100,
-          "token_refundable": true,
-          "refund_policy": "100% refundable up to 2 hours before slot",
-          "balance_text": "Balance paid at the restaurant",
-          "endpoint": "/follower/prebook"
-        },
-        "visible_if": "brand_data.accepts_table_booking != false"
+          "fields": [
+            "booking_date",
+            "time_slot",
+            "guest_count",
+            "special_requests"
+          ]
+        }
       },
       {
         "kind": "transactional",
-        "action": "walkin_pay",
+        "action": "pay_at_store",
         "label": "Pay at Restaurant",
         "priority": 2,
         "config": {
-          "fields": ["amount","tip_amount"],
-          "payment_modes": ["full"],
-          "endpoint": "/follower/pay-at-store"
-        },
-        "visible_if": "brand_data.pay_at_store_supported != false"
+          "fields": [
+            "amount"
+          ]
+        }
       },
       {
         "kind": "transactional",
         "action": "online_order",
         "label": "Order Online",
         "priority": 3,
-        "config": {
-          "endpoint": "/follower/orders",
-          "cart_scope": "brand"
-        },
-        "visible_if": "brand_data.online_order_supported == true"
-      },
-      {
-        "kind": "transactional",
-        "action": "enquiry",
-        "label": "Send Enquiry",
-        "priority": 4,
-        "config": {
-          "endpoint": "/follower/enquiry",
-          "fields": ["name","phone","message"]
-        },
-        "visible_if": "brand_data.enquiry_enabled != false"
+        "config": {}
       },
       {
         "kind": "contact",
         "action": "call",
         "label": "Call",
-        "source_fields": ["phone"]
+        "source_fields": [
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "whatsapp",
         "label": "WhatsApp",
-        "source_fields": ["whatsapp_phone"]
+        "source_fields": [
+          "whatsapp",
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "directions",
         "label": "Directions",
-        "source_fields": ["google_maps_url","lat","lng","address_line"]
+        "source_fields": [
+          "google_maps_url",
+          "address_line"
+        ]
       }
     ],
     "photo_requirements": {
@@ -581,63 +697,153 @@
       "gallery_max": 12
     }
   },
-
   "buyer_config": {
     "discovery_surface": "feed",
     "filters": [
-      { "key": "veg_only",        "type": "boolean",      "label": "🟢 Veg only",            "source": "products.veg_flag" },
-      { "key": "vibes",           "type": "multi_select", "label": "Vibes",                  "source": "brand.vibes",
-        "options": ["fine_dining","cafe","quickbite","rooftop","nightlife","family","buffet","five_star","date_night","birthday","late_night"] },
-      { "key": "cuisines",        "type": "multi_select", "label": "Cuisines",               "source": "brand.cuisines" },
-      { "key": "cost_for_two",    "type": "range",        "label": "Cost",                   "source": "brand.cost_for_two",
+      {
+        "key": "veg_only",
+        "type": "boolean",
+        "label": "🟢 Veg only",
+        "source": "products.veg_flag"
+      },
+      {
+        "key": "vibes",
+        "type": "multi_select",
+        "label": "Vibes",
+        "source": "brand.vibes",
+        "options": [
+          "fine_dining",
+          "cafe",
+          "quickbite",
+          "rooftop",
+          "nightlife",
+          "family",
+          "buffet",
+          "five_star",
+          "date_night",
+          "birthday",
+          "late_night"
+        ]
+      },
+      {
+        "key": "cuisines",
+        "type": "multi_select",
+        "label": "Cuisines",
+        "source": "brand.cuisines"
+      },
+      {
+        "key": "cost_for_two",
+        "type": "range",
+        "label": "Cost",
+        "source": "brand.cost_for_two",
         "buckets": [
-          { "key": "under_300", "label": "Under ₹300",    "max": 300 },
-          { "key": "300_800",   "label": "₹300 – ₹800",   "min": 300, "max": 800 },
-          { "key": "800_plus",  "label": "₹800+",         "min": 800 }
-        ] },
-      { "key": "open_now",        "type": "boolean",      "label": "⏱ Open now",             "computed_from": "brand.hours_json" },
-      { "key": "has_offers",      "type": "boolean",      "label": "🏷 Has offers" },
-      { "key": "creator_trusted", "type": "boolean",      "label": "⭐ Creator trusted (3+)" }
+          {
+            "key": "under_300",
+            "label": "Under ₹300",
+            "max": 300
+          },
+          {
+            "key": "300_800",
+            "label": "₹300 – ₹800",
+            "min": 300,
+            "max": 800
+          },
+          {
+            "key": "800_plus",
+            "label": "₹800+",
+            "min": 800
+          }
+        ]
+      },
+      {
+        "key": "open_now",
+        "type": "boolean",
+        "label": "⏱ Open now",
+        "computed_from": "brand.hours_json"
+      },
+      {
+        "key": "has_offers",
+        "type": "boolean",
+        "label": "🏷 Has offers"
+      },
+      {
+        "key": "creator_trusted",
+        "type": "boolean",
+        "label": "⭐ Creator trusted (3+)"
+      }
     ],
     "sort_options": [
-      { "key": "distance",   "label": "Distance",        "default": true,
-        "computed_from": "haversine(brand.lat,lng, follower.lat,lng)" },
-      { "key": "rating",     "label": "Rating" },
-      { "key": "cost_asc",   "label": "Cost: low → high" },
-      { "key": "cost_desc",  "label": "Cost: high → low" },
-      { "key": "popularity", "label": "Popularity" },
-      { "key": "newest",     "label": "Newest" }
+      {
+        "key": "distance",
+        "label": "Distance",
+        "default": true,
+        "computed_from": "haversine(brand.lat,lng, follower.lat,lng)"
+      },
+      {
+        "key": "rating",
+        "label": "Rating"
+      },
+      {
+        "key": "cost_asc",
+        "label": "Cost: low → high"
+      },
+      {
+        "key": "cost_desc",
+        "label": "Cost: high → low"
+      },
+      {
+        "key": "popularity",
+        "label": "Popularity"
+      },
+      {
+        "key": "newest",
+        "label": "Newest"
+      }
     ],
     "default_sort": "distance"
   },
-
   "card_config": {
     "accent": "#dc2626",
     "accent_dim": "rgba(220,38,38,0.08)",
     "icon": "🍽️",
     "card_type": "menu_item",
-
     "cta_primary": {
       "label": "Order Now",
       "action": "online_order",
       "color": "#dc2626"
     },
-
     "price_display": {
       "source": "price.amount",
       "unit": ""
     },
-
     "subtitle_template": "{section} · {brand_name}",
-
     "tags": [
-      { "source": "veg_flag", "format": "{value}", "highlight_if": "value == 'Veg'" },
-      { "source": "bestseller", "text": "⭐ Bestseller", "show_if": true, "highlight": true },
-      { "source": "chef_special", "text": "👨‍🍳 Chef's Special", "show_if": true },
-      { "source": "spice_level", "format": "🌶 {value}", "show_if": true },
-      { "source": "portion_size", "format": "{value}" }
+      {
+        "source": "veg_flag",
+        "format": "{value}",
+        "highlight_if": "value == 'Veg'"
+      },
+      {
+        "source": "bestseller",
+        "text": "⭐ Bestseller",
+        "show_if": true,
+        "highlight": true
+      },
+      {
+        "source": "chef_special",
+        "text": "👨‍🍳 Chef's Special",
+        "show_if": true
+      },
+      {
+        "source": "spice_level",
+        "format": "🌶 {value}",
+        "show_if": true
+      },
+      {
+        "source": "portion_size",
+        "format": "{value}"
+      }
     ],
-
     "detail_sections": [
       {
         "type": "description",
@@ -647,19 +853,28 @@
       {
         "type": "spec_grid",
         "title": "Details",
-        "fields": ["veg_flag", "spice_level", "portion_size", "contains_egg", "jain_available"],
-        "emphasized_field": { "key": "bestseller", "color": "amber" }
+        "fields": [
+          "veg_flag",
+          "spice_level",
+          "portion_size",
+          "contains_egg",
+          "jain_available"
+        ],
+        "emphasized_field": {
+          "key": "bestseller",
+          "color": "amber"
+        }
       }
     ],
-
     "booking_config": {
       "type": "package",
       "fields": [],
-      "payment_modes": ["full"],
+      "payment_modes": [
+        "full"
+      ],
       "endpoint": "/follower/orders"
     }
   },
-
   "action_types": {
     "online_order": {
       "endpoint": "/follower/orders",
@@ -668,27 +883,117 @@
       "delivery_fee_field": "delivery_fee"
     }
   },
-
   "quality_rules": [
-    { "field": "restaurant_description", "scope": "brand",       "points": 5,  "label": "Description filled" },
-    { "field": "cuisines",               "scope": "brand",       "points": 5,  "label": "At least 1 cuisine", "min_count": 1 },
-    { "field": "vibes",                  "scope": "brand",       "points": 5,  "label": "At least 1 vibe",    "min_count": 1 },
-    { "field": "cost_for_two",           "scope": "brand",       "points": 5,  "label": "Cost for two set" },
-    { "field": "google_maps_url",        "scope": "brand",       "points": 10, "label": "Location verified" },
-    { "field": "hours_json",             "scope": "brand",       "points": 10, "label": "Operating hours set" },
-    { "field": "cover_image_url",        "scope": "brand",       "points": 10, "label": "Cover photo picked" },
-    { "type":  "photos",                 "scope": "brand",       "points": 10, "label": "6+ gallery photos",  "min": 6 },
-    { "type":  "photos",                 "scope": "brand",       "points": 5,  "label": "8+ gallery photos",  "min": 8 },
-    { "items": "menu_items",             "scope": "items",       "points": 15, "label": "10+ dishes on menu", "min": 10 },
-    { "items": "menu_items",             "scope": "items",       "points": 10, "label": "25+ dishes for complete menu", "min": 25 },
-    { "field": "image_url",              "scope": "item_photos", "points": 10, "label": "80% of dishes have photos", "min_pct": 0.8 },
-    { "field": "accepts_table_booking",  "scope": "brand",       "points": 5,  "label": "Table booking enabled" }
+    {
+      "field": "restaurant_description",
+      "scope": "brand",
+      "points": 5,
+      "label": "Description filled"
+    },
+    {
+      "field": "cuisines",
+      "scope": "brand",
+      "points": 5,
+      "label": "At least 1 cuisine",
+      "min_count": 1
+    },
+    {
+      "field": "vibes",
+      "scope": "brand",
+      "points": 5,
+      "label": "At least 1 vibe",
+      "min_count": 1
+    },
+    {
+      "field": "cost_for_two",
+      "scope": "brand",
+      "points": 5,
+      "label": "Cost for two set"
+    },
+    {
+      "field": "google_maps_url",
+      "scope": "brand",
+      "points": 10,
+      "label": "Location verified"
+    },
+    {
+      "field": "hours_json",
+      "scope": "brand",
+      "points": 10,
+      "label": "Operating hours set"
+    },
+    {
+      "field": "cover_image_url",
+      "scope": "brand",
+      "points": 10,
+      "label": "Cover photo picked"
+    },
+    {
+      "type": "photos",
+      "scope": "brand",
+      "points": 10,
+      "label": "6+ gallery photos",
+      "min": 6
+    },
+    {
+      "type": "photos",
+      "scope": "brand",
+      "points": 5,
+      "label": "8+ gallery photos",
+      "min": 8
+    },
+    {
+      "items": "menu_items",
+      "scope": "items",
+      "points": 15,
+      "label": "10+ dishes on menu",
+      "min": 10
+    },
+    {
+      "items": "menu_items",
+      "scope": "items",
+      "points": 10,
+      "label": "25+ dishes for complete menu",
+      "min": 25
+    },
+    {
+      "field": "image_url",
+      "scope": "item_photos",
+      "points": 10,
+      "label": "80% of dishes have photos",
+      "min_pct": 0.8
+    },
+    {
+      "field": "accepts_table_booking",
+      "scope": "brand",
+      "points": 5,
+      "label": "Table booking enabled"
+    }
   ],
-
   "quality_tiers": [
-    { "key": "bronze",   "min_points": 40, "label": "Bronze",   "color": "#CD7F32" },
-    { "key": "silver",   "min_points": 60, "label": "Silver",   "color": "#A8A29E" },
-    { "key": "gold",     "min_points": 80, "label": "Gold",     "color": "#FFB800" },
-    { "key": "platinum", "min_points": 95, "label": "Platinum", "color": "#EAB308" }
+    {
+      "key": "bronze",
+      "min_points": 40,
+      "label": "Bronze",
+      "color": "#CD7F32"
+    },
+    {
+      "key": "silver",
+      "min_points": 60,
+      "label": "Silver",
+      "color": "#A8A29E"
+    },
+    {
+      "key": "gold",
+      "min_points": 80,
+      "label": "Gold",
+      "color": "#FFB800"
+    },
+    {
+      "key": "platinum",
+      "min_points": 95,
+      "label": "Platinum",
+      "color": "#EAB308"
+    }
   ]
 }

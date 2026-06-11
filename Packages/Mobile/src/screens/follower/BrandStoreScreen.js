@@ -103,11 +103,17 @@ export default function BrandStoreScreen({ navigation, route }) {
     // PreBookScreen, EnquiryScreen) for now — those screens accept tracking
     // and route through the right /follower/* endpoints.
     switch (action.action) {
-      case 'walkin_pay':
+      case 'walkin_pay':            // legacy verb — schemas now say pay_at_store (CTA spec 2026-06-11)
+      case 'pay_at_store':
         navigation.navigate('PayAtStore', { brand, brandId, tracking: ctx.tracking });
         break;
       case 'book_slot':
         navigation.navigate('PreBook', { brand, brandId, tracking: ctx.tracking, action });
+        break;
+      case 'book_daterange':
+        // Date-range bookings (car/bike) need a specific vehicle — jump to the
+        // fleet so the follower picks one; each vehicle card opens CarBooking.
+        setTab('products');
         break;
       case 'online_order':
         navigation.navigate('OrderCart', { brandData });
@@ -271,7 +277,7 @@ export default function BrandStoreScreen({ navigation, route }) {
               · "Free cancellation" ← card_config.booking_config.refund_policy exists
             Borrowed from Luzo's trust-signal pattern; adapted to surface only
             when the schema actually supports them. */}
-        {renderTrustChips(store?.template, accent.accent)}
+        {renderTrustChips(store?.template, accent.accent, brand?.category)}
 
         {/* Schema-driven brand action row when template surfaces brand_config.
             Falls back to legacy hardcoded contact buttons when not. */}
@@ -546,7 +552,18 @@ export default function BrandStoreScreen({ navigation, route }) {
 // rather than per-brand opt-ins. Returns a small chip strip beneath the brand
 // name + category line.
 
-function renderTrustChips(template, accentColor) {
+// Per-category wording for the walk-in-pay trust chip — the old hardcoded
+// "Pay at salon" leaked onto fashion/furniture stores (walkthrough P4,
+// CTA spec 2026-06-11).
+const PAY_CHIP_TEXT = {
+  restaurant: 'Pay at restaurant',
+  bakery: 'Pay at bakery',
+  salon: 'Pay at salon',
+  car_rental: 'Pay at garage',
+  bike_rental: 'Pay at pickup',
+};
+
+function renderTrustChips(template, accentColor, category) {
   if (!template) return null;
 
   const availingModes = template.availing_modes || [];
@@ -555,15 +572,15 @@ function renderTrustChips(template, accentColor) {
 
   const chips = [];
 
-  // Pay-at-salon — surface if walkin_pay / pay_at_store is supported at the
-  // brand level OR per-item.
-  const hasPayAtSalon =
+  // Walk-in pay — surface if pay_at_store (or the legacy walkin_pay verb) is
+  // supported at the brand level OR per-item. Wording follows the category.
+  const hasPayAtStore =
     availingModes.includes('walkin_pay') ||
     availingModes.includes('pay_at_store') ||
-    brandActions.some(a => a.action === 'walkin_pay');
+    brandActions.some(a => a.action === 'walkin_pay' || a.action === 'pay_at_store');
 
-  if (hasPayAtSalon) {
-    chips.push({ key: 'pay_at_salon', icon: '💸', text: 'Pay at salon' });
+  if (hasPayAtStore) {
+    chips.push({ key: 'pay_at_store', icon: '💸', text: PAY_CHIP_TEXT[category] || 'Pay at store' });
   }
 
   // Free cancellation — surface if a refund policy exists on the booking_config.

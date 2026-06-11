@@ -14,33 +14,95 @@
     "enquiry_only": false,
     "availability": false
   },
-  "sections": ["Kurtas", "Sarees", "Suits", "Western Wear", "Kids Wear", "Accessories", "Footwear"],
+  "sections": [
+    "Kurtas",
+    "Sarees",
+    "Suits",
+    "Western Wear",
+    "Kids Wear",
+    "Accessories",
+    "Footwear"
+  ],
   "booking_type": null,
-  "availing_modes": ["pay_at_store"],
+  "availing_modes": [
+    "pay_at_store",
+    "online_order"
+  ],
   "fields": [
-    { "key": "name", "label": "Product Name", "type": "text", "required": true, "placeholder": "e.g. Floral Kurta" },
-    { "key": "section", "label": "Category", "type": "select", "options": ["Kurtas", "Sarees", "Suits", "Western Wear", "Kids Wear", "Accessories", "Footwear"], "required": false },
-    { "key": "price", "label": "Price (₹)", "type": "number", "required": true, "placeholder": "999" },
-    { "key": "description", "label": "Description", "type": "textarea", "required": false, "placeholder": "Brief description" },
-    { "key": "image_url", "label": "Image URL", "type": "url", "required": false },
-    { "key": "stock", "label": "Stock", "type": "number", "required": false, "placeholder": "Leave blank = unlimited" },
-    { "key": "variants_json", "label": "Sizes & Colors", "type": "variant_builder", "required": false, "placeholder": "e.g. S / M / L / XL, Red / Blue / Green" }
+    {
+      "key": "name",
+      "label": "Product Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "e.g. Floral Kurta"
+    },
+    {
+      "key": "section",
+      "label": "Category",
+      "type": "select",
+      "options": [
+        "Kurtas",
+        "Sarees",
+        "Suits",
+        "Western Wear",
+        "Kids Wear",
+        "Accessories",
+        "Footwear"
+      ],
+      "required": false
+    },
+    {
+      "key": "price",
+      "label": "Price (₹)",
+      "type": "number",
+      "required": true,
+      "placeholder": "999"
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "type": "textarea",
+      "required": false,
+      "placeholder": "Brief description"
+    },
+    {
+      "key": "image_url",
+      "label": "Image URL",
+      "type": "url",
+      "required": false
+    },
+    {
+      "key": "stock",
+      "label": "Stock",
+      "type": "number",
+      "required": false,
+      "placeholder": "Leave blank = unlimited"
+    },
+    {
+      "key": "variants_json",
+      "label": "Sizes & Colors",
+      "type": "variant_builder",
+      "required": false,
+      "placeholder": "e.g. S / M / L / XL, Red / Blue / Green"
+    }
   ],
   "buyer_config": {
     "show_veg_filter": false,
     "show_sections": true,
     "cta_label": "Visit Store"
   },
-
   "phase": 1,
   "status": "active",
   "super_category": "shop",
-
   "action_types": {
     "walkin_pay": {
       "enabled": true,
       "cta_label": "Visit & Pay via INFLX",
-      "discount_levels": ["shop", "category", "product"]
+      "discount_levels": [
+        "shop",
+        "category",
+        "product"
+      ]
     },
     "book_now": {
       "enabled": false
@@ -52,29 +114,107 @@
       "enabled": false
     }
   },
-
   "listing_steps": [
     {
       "id": "basics",
       "title": "Store Details",
       "subtitle": "Basic info — followers see your store name, location & hours",
       "fields": [
-        { "key": "business_name", "type": "text", "label": "Store Name", "required": true },
-        { "key": "city", "type": "select", "source": "cities_db", "required": true, "grid": "half" },
-        { "key": "locality", "type": "text", "label": "Area / Locality", "required": true, "grid": "half" },
-        { "key": "store_type", "type": "chip_group", "multi": true, "label": "Store Type",
-          "options": ["👩 Women", "👨 Men", "🧒 Kids", "👰 Bridal", "💼 Formal", "👕 Casual"] },
-        { "key": "fashion_categories", "type": "chip_group", "multi": true, "label": "Categories Available",
-          "options": ["Sarees", "Kurtas", "Suits", "Lehengas", "Western Wear", "Kids Wear", "Footwear", "Accessories", "Bridal Wear"] },
-        { "key": "operating_hours", "type": "text", "label": "Operating Hours", "placeholder": "e.g. 10 AM – 9 PM" },
-        { "key": "phone", "type": "text", "label": "Contact Number" },
-        { "key": "whatsapp", "type": "text", "label": "WhatsApp Number" },
-        { "key": "address", "type": "textarea", "label": "Full Address" },
-        { "key": "google_maps_url", "type": "url", "label": "Google Maps Link" },
-        { "key": "trial_room", "type": "toggle", "label": "Trial room available",
-          "follower_sync": { "target": "badge", "text": "🪞 Trial Room" } },
-        { "key": "alterations", "type": "toggle", "label": "Alteration service available",
-          "follower_sync": { "target": "badge", "text": "✂️ Alterations" } }
+        {
+          "key": "business_name",
+          "type": "text",
+          "label": "Store Name",
+          "required": true
+        },
+        {
+          "key": "city",
+          "type": "select",
+          "source": "cities_db",
+          "required": true,
+          "grid": "half"
+        },
+        {
+          "key": "locality",
+          "type": "text",
+          "label": "Area / Locality",
+          "required": true,
+          "grid": "half"
+        },
+        {
+          "key": "store_type",
+          "type": "chip_group",
+          "multi": true,
+          "label": "Store Type",
+          "options": [
+            "👩 Women",
+            "👨 Men",
+            "🧒 Kids",
+            "👰 Bridal",
+            "💼 Formal",
+            "👕 Casual"
+          ]
+        },
+        {
+          "key": "fashion_categories",
+          "type": "chip_group",
+          "multi": true,
+          "label": "Categories Available",
+          "options": [
+            "Sarees",
+            "Kurtas",
+            "Suits",
+            "Lehengas",
+            "Western Wear",
+            "Kids Wear",
+            "Footwear",
+            "Accessories",
+            "Bridal Wear"
+          ]
+        },
+        {
+          "key": "operating_hours",
+          "type": "text",
+          "label": "Operating Hours",
+          "placeholder": "e.g. 10 AM – 9 PM"
+        },
+        {
+          "key": "phone",
+          "type": "text",
+          "label": "Contact Number"
+        },
+        {
+          "key": "whatsapp",
+          "type": "text",
+          "label": "WhatsApp Number"
+        },
+        {
+          "key": "address",
+          "type": "textarea",
+          "label": "Full Address"
+        },
+        {
+          "key": "google_maps_url",
+          "type": "url",
+          "label": "Google Maps Link"
+        },
+        {
+          "key": "trial_room",
+          "type": "toggle",
+          "label": "Trial room available",
+          "follower_sync": {
+            "target": "badge",
+            "text": "🪞 Trial Room"
+          }
+        },
+        {
+          "key": "alterations",
+          "type": "toggle",
+          "label": "Alteration service available",
+          "follower_sync": {
+            "target": "badge",
+            "text": "✂️ Alterations"
+          }
+        }
       ]
     },
     {
@@ -87,12 +227,50 @@
           "item_type": "product",
           "excel_upload": true,
           "item_fields": [
-            { "key": "name", "type": "text", "label": "Product Name", "required": true },
-            { "key": "price", "type": "number", "label": "Price (₹)", "required": true, "market_benchmark": true },
-            { "key": "section", "type": "select", "label": "Category", "options": ["Kurtas", "Sarees", "Suits", "Western Wear", "Kids Wear", "Accessories", "Footwear"] },
-            { "key": "variants_json", "type": "variant_builder", "label": "Sizes & Colors", "placeholder": "e.g. S / M / L / XL" },
-            { "key": "description", "type": "textarea", "label": "Description" },
-            { "key": "stock", "type": "number", "label": "Stock", "placeholder": "Leave blank = unlimited" }
+            {
+              "key": "name",
+              "type": "text",
+              "label": "Product Name",
+              "required": true
+            },
+            {
+              "key": "price",
+              "type": "number",
+              "label": "Price (₹)",
+              "required": true,
+              "market_benchmark": true
+            },
+            {
+              "key": "section",
+              "type": "select",
+              "label": "Category",
+              "options": [
+                "Kurtas",
+                "Sarees",
+                "Suits",
+                "Western Wear",
+                "Kids Wear",
+                "Accessories",
+                "Footwear"
+              ]
+            },
+            {
+              "key": "variants_json",
+              "type": "variant_builder",
+              "label": "Sizes & Colors",
+              "placeholder": "e.g. S / M / L / XL"
+            },
+            {
+              "key": "description",
+              "type": "textarea",
+              "label": "Description"
+            },
+            {
+              "key": "stock",
+              "type": "number",
+              "label": "Stock",
+              "placeholder": "Leave blank = unlimited"
+            }
           ]
         }
       ]
@@ -102,45 +280,184 @@
       "title": "Preview & Publish",
       "subtitle": "See how followers will discover your store",
       "sections": [
-        { "type": "photo_upload", "slots": ["Storefront", "Interior", "Product Display", "Collection"] },
-        { "type": "live_preview" },
-        { "type": "quality_score" },
-        { "type": "publish_button" }
+        {
+          "type": "photo_upload",
+          "slots": [
+            "Storefront",
+            "Interior",
+            "Product Display",
+            "Collection"
+          ]
+        },
+        {
+          "type": "live_preview"
+        },
+        {
+          "type": "quality_score"
+        },
+        {
+          "type": "publish_button"
+        }
       ]
     }
   ],
-
   "product_config": {
     "enabled": true,
     "required": false,
     "excel_upload": true,
     "fields": [
-      { "key": "section", "type": "select", "options": ["Kurtas", "Sarees", "Suits", "Western Wear", "Kids Wear", "Accessories", "Footwear"] },
-      { "key": "variants_json", "type": "variant_builder" }
+      {
+        "key": "section",
+        "type": "select",
+        "options": [
+          "Kurtas",
+          "Sarees",
+          "Suits",
+          "Western Wear",
+          "Kids Wear",
+          "Accessories",
+          "Footwear"
+        ]
+      },
+      {
+        "key": "variants_json",
+        "type": "variant_builder"
+      }
     ],
-    "excel_columns": ["Product Name", "Category", "Price", "Sizes", "Colors", "Stock"]
+    "excel_columns": [
+      "Product Name",
+      "Category",
+      "Price",
+      "Sizes",
+      "Colors",
+      "Stock"
+    ]
   },
-
   "card_config": {
     "accent": "#f59e0b",
     "accent_dim": "rgba(245,158,11,0.1)",
     "icon": "👗",
-    "cta_primary": { "label": "Visit & Pay", "action": "walkin_pay", "color": "#f59e0b" },
+    "cta_primary": {
+      "label": "Visit & Pay",
+      "action": "walkin_pay",
+      "color": "#f59e0b"
+    },
     "cta_secondary": null,
-    "price_display": { "source": "cheapest_item", "unit": "onwards" },
+    "price_display": {
+      "source": "cheapest_item",
+      "unit": "onwards"
+    },
     "subtitle_template": "{store_type} · {locality} · {distance}",
-    "tags": ["store_type", "fashion_categories", "top_3_products", "trial_room", "alterations"]
+    "tags": [
+      "store_type",
+      "fashion_categories",
+      "top_3_products",
+      "trial_room",
+      "alterations"
+    ]
   },
-
   "quality_rules": [
-    { "field": "business_name", "points": 15, "label": "Store name & contact" },
-    { "field": "store_type", "points": 10, "label": "Store type set" },
-    { "field": "fashion_categories", "points": 5, "label": "Categories defined" },
-    { "items": "product", "min": 3, "points": 20, "label": "3+ products listed" },
-    { "type": "photos", "min": 1, "points": 15, "label": "Photos uploaded" },
-    { "field": "operating_hours", "points": 10, "label": "Operating hours set" },
-    { "field": "address", "points": 10, "label": "Address provided" },
-    { "field": "google_maps_url", "points": 10, "label": "Google Maps link" },
-    { "field": "phone", "points": 5, "label": "Contact number" }
-  ]
+    {
+      "field": "business_name",
+      "points": 15,
+      "label": "Store name & contact"
+    },
+    {
+      "field": "store_type",
+      "points": 10,
+      "label": "Store type set"
+    },
+    {
+      "field": "fashion_categories",
+      "points": 5,
+      "label": "Categories defined"
+    },
+    {
+      "items": "product",
+      "min": 3,
+      "points": 20,
+      "label": "3+ products listed"
+    },
+    {
+      "type": "photos",
+      "min": 1,
+      "points": 15,
+      "label": "Photos uploaded"
+    },
+    {
+      "field": "operating_hours",
+      "points": 10,
+      "label": "Operating hours set"
+    },
+    {
+      "field": "address",
+      "points": 10,
+      "label": "Address provided"
+    },
+    {
+      "field": "google_maps_url",
+      "points": 10,
+      "label": "Google Maps link"
+    },
+    {
+      "field": "phone",
+      "points": 5,
+      "label": "Contact number"
+    }
+  ],
+  "brand_config": {
+    "actions": [
+      {
+        "kind": "transactional",
+        "action": "pay_at_store",
+        "label": "Pay at Store",
+        "priority": 1,
+        "primary": true,
+        "config": {
+          "fields": [
+            "amount"
+          ]
+        }
+      },
+      {
+        "kind": "transactional",
+        "action": "online_order",
+        "label": "Order Online",
+        "priority": 2,
+        "config": {}
+      },
+      {
+        "kind": "contact",
+        "action": "call",
+        "label": "Call",
+        "source_fields": [
+          "phone"
+        ]
+      },
+      {
+        "kind": "contact",
+        "action": "whatsapp",
+        "label": "WhatsApp",
+        "source_fields": [
+          "whatsapp",
+          "phone"
+        ]
+      },
+      {
+        "kind": "contact",
+        "action": "directions",
+        "label": "Directions",
+        "source_fields": [
+          "google_maps_url",
+          "address_line"
+        ]
+      },
+      {
+        "kind": "contact",
+        "action": "share",
+        "label": "Share Store",
+        "source_fields": []
+      }
+    ]
+  }
 }

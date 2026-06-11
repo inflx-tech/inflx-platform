@@ -25,9 +25,8 @@
   ],
   "booking_type": null,
   "availing_modes": [
-    "walkin_pay",
-    "online_order",
-    "enquiry"
+    "pay_at_store",
+    "online_order"
   ],
   "fields": [
     {
@@ -311,36 +310,48 @@
     "actions": [
       {
         "kind": "transactional",
-        "action": "walkin_pay",
-        "label": "Visit & Pay",
+        "action": "pay_at_store",
+        "label": "Pay at Store",
+        "priority": 1,
+        "primary": true,
         "config": {
           "fields": [
-            "amount",
-            "tip_amount"
-          ],
-          "payment_modes": [
-            "full"
-          ],
-          "endpoint": "/follower/pay-at-store"
+            "amount"
+          ]
         }
       },
       {
         "kind": "transactional",
         "action": "online_order",
-        "label": "Shop Online",
-        "visible_if": "offers_online_delivery === true",
-        "config": {
-          "endpoint": "/follower/orders",
-          "cart_scope": "brand"
-        }
+        "label": "Order Online",
+        "priority": 2,
+        "config": {}
       },
       {
-        "kind": "lead",
-        "action": "enquiry",
-        "label": "Request Quote",
-        "config": {
-          "endpoint": "/follower/enquiries"
-        }
+        "kind": "contact",
+        "action": "call",
+        "label": "Call",
+        "source_fields": [
+          "phone"
+        ]
+      },
+      {
+        "kind": "contact",
+        "action": "whatsapp",
+        "label": "WhatsApp",
+        "source_fields": [
+          "whatsapp",
+          "phone"
+        ]
+      },
+      {
+        "kind": "contact",
+        "action": "directions",
+        "label": "Directions",
+        "source_fields": [
+          "google_maps_url",
+          "address_line"
+        ]
       }
     ]
   }

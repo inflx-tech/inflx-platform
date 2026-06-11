@@ -8,7 +8,6 @@
   "card_type": "vehicle",
   "phase": 3,
   "status": "active",
-
   "features": {
     "sections": true,
     "veg_flag": false,
@@ -20,7 +19,6 @@
     "availability": true,
     "master_catalogue": true
   },
-
   "sections": [
     "Hatchback",
     "Sedan",
@@ -29,25 +27,71 @@
     "Luxury",
     "Tempo Traveller"
   ],
-
-  "availing_modes": ["prebook"],
+  "availing_modes": [
+    "prebook",
+    "pay_at_store"
+  ],
   "booking_type": "date_range",
   "cart_scope": null,
-
   "attributes_schema": {
-    "seats": { "key": "seats", "type": "number", "label": "Seats" },
-    "fuel_type": { "key": "fuel_type", "type": "string", "label": "Fuel" },
-    "engine_cc": { "key": "engine_cc", "type": "string", "label": "Engine" },
-    "transmission": { "key": "transmission", "type": "string", "label": "Transmission" },
-    "kmpl": { "key": "kmpl", "type": "string", "label": "Mileage" },
-    "ac": { "key": "ac", "type": "boolean", "label": "AC" },
-    "sunroof": { "key": "sunroof", "type": "boolean", "label": "Sunroof" },
-    "features": { "key": "features", "type": "string[]", "label": "Features" },
-    "services": { "key": "services", "type": "string[]", "label": "Services offered" },
-    "day_rate": { "key": "day_rate", "type": "number", "label": "Day rate", "unit": "₹" },
-    "km_rate": { "key": "km_rate", "type": "number", "label": "Km rate", "unit": "₹/km" }
+    "seats": {
+      "key": "seats",
+      "type": "number",
+      "label": "Seats"
+    },
+    "fuel_type": {
+      "key": "fuel_type",
+      "type": "string",
+      "label": "Fuel"
+    },
+    "engine_cc": {
+      "key": "engine_cc",
+      "type": "string",
+      "label": "Engine"
+    },
+    "transmission": {
+      "key": "transmission",
+      "type": "string",
+      "label": "Transmission"
+    },
+    "kmpl": {
+      "key": "kmpl",
+      "type": "string",
+      "label": "Mileage"
+    },
+    "ac": {
+      "key": "ac",
+      "type": "boolean",
+      "label": "AC"
+    },
+    "sunroof": {
+      "key": "sunroof",
+      "type": "boolean",
+      "label": "Sunroof"
+    },
+    "features": {
+      "key": "features",
+      "type": "string[]",
+      "label": "Features"
+    },
+    "services": {
+      "key": "services",
+      "type": "string[]",
+      "label": "Services offered"
+    },
+    "day_rate": {
+      "key": "day_rate",
+      "type": "number",
+      "label": "Day rate",
+      "unit": "₹"
+    },
+    "km_rate": {
+      "key": "km_rate",
+      "type": "number",
+      "label": "Km rate",
+      "unit": "₹/km"
+    }
   },
-
   "listing_steps": [
     {
       "id": "vehicle_type",
@@ -56,12 +100,42 @@
       "component": "option_grid",
       "writes_to": "listing",
       "options": [
-        { "value": "Hatchback", "label": "Hatchback", "sub": "4–5 seats · Compact", "icon": "hatchback" },
-        { "value": "Sedan", "label": "Sedan", "sub": "5 seats · Mid-size", "icon": "sedan" },
-        { "value": "SUV", "label": "SUV", "sub": "5 seats · All-terrain", "icon": "suv" },
-        { "value": "MPV / MUV", "label": "MPV / MUV", "sub": "6–7 seats · Family", "icon": "mpv" },
-        { "value": "Luxury", "label": "Luxury", "sub": "4–5 seats · Premium", "icon": "luxury" },
-        { "value": "Tempo Traveller", "label": "Tempo Traveller", "sub": "9–17 seats · Group", "icon": "tempo" }
+        {
+          "value": "Hatchback",
+          "label": "Hatchback",
+          "sub": "4–5 seats · Compact",
+          "icon": "hatchback"
+        },
+        {
+          "value": "Sedan",
+          "label": "Sedan",
+          "sub": "5 seats · Mid-size",
+          "icon": "sedan"
+        },
+        {
+          "value": "SUV",
+          "label": "SUV",
+          "sub": "5 seats · All-terrain",
+          "icon": "suv"
+        },
+        {
+          "value": "MPV / MUV",
+          "label": "MPV / MUV",
+          "sub": "6–7 seats · Family",
+          "icon": "mpv"
+        },
+        {
+          "value": "Luxury",
+          "label": "Luxury",
+          "sub": "4–5 seats · Premium",
+          "icon": "luxury"
+        },
+        {
+          "value": "Tempo Traveller",
+          "label": "Tempo Traveller",
+          "sub": "9–17 seats · Group",
+          "icon": "tempo"
+        }
       ]
     },
     {
@@ -73,8 +147,14 @@
       "master_source": "master_vehicles",
       "filter_by": "segment",
       "makes": [
-        "Maruti Suzuki", "Hyundai", "Toyota", "Mahindra",
-        "Tata", "Honda", "Kia", "Mercedes"
+        "Maruti Suzuki",
+        "Hyundai",
+        "Toyota",
+        "Mahindra",
+        "Tata",
+        "Honda",
+        "Kia",
+        "Mercedes"
       ]
     },
     {
@@ -85,7 +165,13 @@
       "writes_to": "listing",
       "auto_fill_from": "master_vehicles",
       "spec_fields": [
-        "seats", "fuel_type", "engine_cc", "transmission", "kmpl", "ac", "sunroof"
+        "seats",
+        "fuel_type",
+        "engine_cc",
+        "transmission",
+        "kmpl",
+        "ac",
+        "sunroof"
       ],
       "variant_selector": true
     },
@@ -102,7 +188,10 @@
           "unit": "₹",
           "required": true,
           "benchmark_source": "master_vehicles",
-          "benchmark_fields": ["day_rate_min", "day_rate_max"]
+          "benchmark_fields": [
+            "day_rate_min",
+            "day_rate_max"
+          ]
         },
         {
           "key": "km_rate",
@@ -110,7 +199,10 @@
           "unit": "₹/km",
           "required": false,
           "benchmark_source": "master_vehicles",
-          "benchmark_fields": ["km_rate_min", "km_rate_max"]
+          "benchmark_fields": [
+            "km_rate_min",
+            "km_rate_max"
+          ]
         },
         {
           "key": "security_deposit",
@@ -129,10 +221,21 @@
       ],
       "service_toggles_source": "master_vehicles.services_json",
       "default_services": [
-        "Self drive", "With driver", "Outstation", "Airport",
-        "City trips", "Wedding / events", "Corporate", "Adventure trips"
+        "Self drive",
+        "With driver",
+        "Outstation",
+        "Airport",
+        "City trips",
+        "Wedding / events",
+        "Corporate",
+        "Adventure trips"
       ],
-      "photo_slots": ["Front", "Rear", "Interior", "Dashboard"]
+      "photo_slots": [
+        "Front",
+        "Rear",
+        "Interior",
+        "Dashboard"
+      ]
     },
     {
       "id": "preview",
@@ -154,9 +257,7 @@
       ]
     }
   ],
-
   "fields": [],
-
   "product_config": {
     "enabled": true,
     "required": true,
@@ -191,7 +292,6 @@
     "fields": [],
     "excel_columns": []
   },
-
   "brand_config": {
     "fields": {
       "garage_address": {
@@ -204,31 +304,55 @@
     "actions": [
       {
         "kind": "transactional",
-        "action": "walkin_pay",
-        "label": "At Garage",
+        "action": "book_daterange",
+        "label": "Book Your Dates",
+        "priority": 1,
+        "primary": true,
         "config": {
-          "fields": ["amount"],
-          "payment_modes": ["full"],
-          "endpoint": "/follower/pay-at-store"
+          "booking_type": "date_range",
+          "fields": [
+            "pickup_date",
+            "return_date",
+            "pickup_location"
+          ]
+        }
+      },
+      {
+        "kind": "transactional",
+        "action": "pay_at_store",
+        "label": "Pay at Garage",
+        "priority": 2,
+        "config": {
+          "fields": [
+            "amount"
+          ]
         }
       },
       {
         "kind": "contact",
         "action": "call",
         "label": "Call",
-        "source_fields": ["phone"]
+        "source_fields": [
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "whatsapp",
         "label": "WhatsApp",
-        "source_fields": ["whatsapp_phone"]
+        "source_fields": [
+          "whatsapp",
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "directions",
-        "label": "Directions to Garage",
-        "source_fields": ["address_line", "latitude", "longitude"]
+        "label": "Directions",
+        "source_fields": [
+          "google_maps_url",
+          "address_line"
+        ]
       }
     ],
     "photo_requirements": {
@@ -237,13 +361,11 @@
       "gallery_max": 12
     }
   },
-
   "buyer_config": {
     "show_veg_filter": false,
     "show_sections": true,
     "cta_label": "Pre-book"
   },
-
   "action_types": {
     "book_now": {
       "enabled": true,
@@ -259,14 +381,16 @@
     "walkin_pay": {
       "enabled": true,
       "cta_label": "At Garage",
-      "discount_levels": ["shop", "product"]
+      "discount_levels": [
+        "shop",
+        "product"
+      ]
     },
     "enquiry": {
       "enabled": true,
       "cta_label": "Enquire"
     }
   },
-
   "card_config": {
     "accent": "#f59e0b",
     "accent_dim": "rgba(245,158,11,0.1)",
@@ -287,18 +411,46 @@
     },
     "subtitle_template": "{year} · {variant} · {fuel_type} · {transmission}",
     "tags": [
-      { "source": "specs.seats", "format": "{value} seats", "highlight_if": "value >= 7" },
-      { "source": "specs.fuel_type" },
-      { "source": "specs.transmission", "use_first": true },
-      { "source": "specs.sunroof", "show_if": true, "text": "Sunroof", "highlight": true },
-      { "source": "specs.features", "show_first": 2 },
-      { "source": "services", "show_first": 1, "highlight": true }
+      {
+        "source": "specs.seats",
+        "format": "{value} seats",
+        "highlight_if": "value >= 7"
+      },
+      {
+        "source": "specs.fuel_type"
+      },
+      {
+        "source": "specs.transmission",
+        "use_first": true
+      },
+      {
+        "source": "specs.sunroof",
+        "show_if": true,
+        "text": "Sunroof",
+        "highlight": true
+      },
+      {
+        "source": "specs.features",
+        "show_first": 2
+      },
+      {
+        "source": "services",
+        "show_first": 1,
+        "highlight": true
+      }
     ],
     "detail_sections": [
       {
         "type": "spec_grid",
         "title": "Vehicle specs",
-        "fields": ["seats", "fuel_type", "transmission", "engine_cc", "kmpl", "insurance"]
+        "fields": [
+          "seats",
+          "fuel_type",
+          "transmission",
+          "engine_cc",
+          "kmpl",
+          "insurance"
+        ]
       },
       {
         "type": "feature_chips",
@@ -309,24 +461,67 @@
         "type": "pricing_tabs",
         "title": "Pricing",
         "tabs": [
-          { "key": "with_driver", "label": "With Driver", "fields": ["day_rate", "driver_allowance", "km_included", "extra_km_rate"] },
-          { "key": "self_drive", "label": "Self Drive", "fields": ["self_drive_rate", "km_limit", "extra_km_rate", "security_deposit"] },
-          { "key": "outstation", "label": "Outstation", "fields": ["km_rate", "min_km_per_day", "driver_allowance", "night_halt"] }
+          {
+            "key": "with_driver",
+            "label": "With Driver",
+            "fields": [
+              "day_rate",
+              "driver_allowance",
+              "km_included",
+              "extra_km_rate"
+            ]
+          },
+          {
+            "key": "self_drive",
+            "label": "Self Drive",
+            "fields": [
+              "self_drive_rate",
+              "km_limit",
+              "extra_km_rate",
+              "security_deposit"
+            ]
+          },
+          {
+            "key": "outstation",
+            "label": "Outstation",
+            "fields": [
+              "km_rate",
+              "min_km_per_day",
+              "driver_allowance",
+              "night_halt"
+            ]
+          }
         ]
       },
       {
         "type": "pickup_options",
         "title": "Pickup",
         "options": [
-          { "key": "garage", "label": "Garage pickup", "sub": "Free · At rental location" },
-          { "key": "doorstep", "label": "Doorstep delivery", "sub": "+₹200 · To your address" }
+          {
+            "key": "garage",
+            "label": "Garage pickup",
+            "sub": "Free · At rental location"
+          },
+          {
+            "key": "doorstep",
+            "label": "Doorstep delivery",
+            "sub": "+₹200 · To your address"
+          }
         ]
       }
     ],
     "booking_config": {
       "type": "date_range",
-      "fields": ["pickup_date", "return_date", "duration_days", "pickup_type"],
-      "payment_modes": ["token", "full"],
+      "fields": [
+        "pickup_date",
+        "return_date",
+        "duration_days",
+        "pickup_type"
+      ],
+      "payment_modes": [
+        "token",
+        "full"
+      ],
       "token_amount": 300,
       "token_refundable": true,
       "refund_policy": "100% refundable on cancellation 24hrs prior to pickup",
@@ -334,16 +529,60 @@
       "endpoint": "/follower/prebook-daterange"
     }
   },
-
   "quality_rules": [
-    { "field": "business_name", "scope": "brand", "points": 10, "label": "Business name & contact" },
-    { "items": "vehicle", "min": 1, "points": 15, "label": "1+ vehicle listed" },
-    { "items": "vehicle", "min": 3, "points": 10, "label": "3+ vehicles (fleet variety)" },
-    { "type": "photos", "min": 2, "points": 15, "label": "2+ vehicle photos" },
-    { "field": "day_rate", "scope": "listing", "points": 10, "label": "Day rate set" },
-    { "field": "km_rate", "scope": "listing", "points": 10, "label": "Outstation rate set" },
-    { "field": "services", "scope": "listing", "points": 10, "label": "Services confirmed" },
-    { "field": "address", "scope": "brand", "points": 10, "label": "Garage location" },
-    { "field": "phone", "scope": "brand", "points": 10, "label": "Contact number" }
+    {
+      "field": "business_name",
+      "scope": "brand",
+      "points": 10,
+      "label": "Business name & contact"
+    },
+    {
+      "items": "vehicle",
+      "min": 1,
+      "points": 15,
+      "label": "1+ vehicle listed"
+    },
+    {
+      "items": "vehicle",
+      "min": 3,
+      "points": 10,
+      "label": "3+ vehicles (fleet variety)"
+    },
+    {
+      "type": "photos",
+      "min": 2,
+      "points": 15,
+      "label": "2+ vehicle photos"
+    },
+    {
+      "field": "day_rate",
+      "scope": "listing",
+      "points": 10,
+      "label": "Day rate set"
+    },
+    {
+      "field": "km_rate",
+      "scope": "listing",
+      "points": 10,
+      "label": "Outstation rate set"
+    },
+    {
+      "field": "services",
+      "scope": "listing",
+      "points": 10,
+      "label": "Services confirmed"
+    },
+    {
+      "field": "address",
+      "scope": "brand",
+      "points": 10,
+      "label": "Garage location"
+    },
+    {
+      "field": "phone",
+      "scope": "brand",
+      "points": 10,
+      "label": "Contact number"
+    }
   ]
 }

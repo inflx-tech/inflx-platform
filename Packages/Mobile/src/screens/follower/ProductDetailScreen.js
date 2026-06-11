@@ -84,7 +84,7 @@ const MODE_LABELS = {
 // get reserved. Fall through to MODE_LABELS when no override exists.
 const CATEGORY_LABELS = {
   restaurant: {
-    online_order: { label: 'Order Online',    screen: 'OnlineOrder', emoji: '🛵' },
+    online_order: { label: 'Add to Cart',     screen: 'OnlineOrder', emoji: '🛒' },
     walkin_pay:   { label: 'Pay at Restaurant', screen: 'PayAtStore',  emoji: '💸' },
     pay_at_store: { label: 'Pay at Restaurant', screen: 'PayAtStore',  emoji: '💸' },
     prebook:      { label: 'Book a Table',    screen: 'PreBook',     emoji: '📅' },
@@ -95,23 +95,37 @@ const CATEGORY_LABELS = {
     pay_at_store: { label: 'Pay at Bakery', screen: 'PayAtStore',  emoji: '💸' },
   },
   salon: {
-    walkin_pay:   { label: 'Pay at Salon',  screen: 'PayAtStore', emoji: '💸' },
-    pay_at_store: { label: 'Pay at Salon',  screen: 'PayAtStore', emoji: '💸' },
+    walkin_pay:   { label: 'Pay at Store',  screen: 'PayAtStore', emoji: '💸' },
+    pay_at_store: { label: 'Pay at Store',  screen: 'PayAtStore', emoji: '💸' },
     prebook:      { label: 'Book Appointment', screen: 'PreBook',  emoji: '✂️' },
   },
   car_rental: {
-    prebook:      { label: 'Reserve Car',   screen: 'PreBook',     emoji: '🚗' },
-    walkin_pay:   { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
-    pay_at_store: { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
+    prebook:      { label: 'Book These Dates', screen: 'PreBook',  emoji: '🚗' },
+    walkin_pay:   { label: 'Pay at Garage', screen: 'PayAtStore',  emoji: '💸' },
+    pay_at_store: { label: 'Pay at Garage', screen: 'PayAtStore',  emoji: '💸' },
   },
   bike_rental: {
     prebook:      { label: 'Reserve Bike',  screen: 'PreBook',     emoji: '🏍️' },
     walkin_pay:   { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
     pay_at_store: { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
   },
-  fashion:        { online_order: { label: 'Buy Now', screen: 'OnlineOrder', emoji: '👗' } },
-  fashion_walkin: { online_order: { label: 'Buy Now', screen: 'OnlineOrder', emoji: '👗' } },
-  fashion_online: { online_order: { label: 'Buy Now', screen: 'OnlineOrder', emoji: '👕' } },
+  fashion:        { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '👗' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  fashion_walkin: { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '👗' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  fashion_online: { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '👕' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  furniture:      { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '🛋️' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+};
+
+// Founder-locked PRODUCT-page CTA order per business (Docs/CTA_SPEC.md,
+// 2026-06-11) — first entry = primary. Filtered to the offer's availing
+// modes when it carries any; categories not listed keep availing-mode order.
+const CATEGORY_CTA_ORDER = {
+  restaurant:     ['online_order', 'pay_at_store'],
+  fashion:        ['pay_at_store', 'online_order'],
+  fashion_walkin: ['pay_at_store', 'online_order'],
+  fashion_online: ['pay_at_store', 'online_order'],
+  furniture:      ['pay_at_store', 'online_order'],
+  salon:          ['prebook', 'pay_at_store'],
+  car_rental:     ['prebook'],
 };
 
 function getModeConfig(mode, category) {
@@ -256,9 +270,16 @@ export default function ProductDetailScreen({ navigation, route }) {
   // For restaurants/salons/cars we use category-specific verbs (Book a Table,
   // Pay at Restaurant, Reserve Car) instead of generic ones (Book Slot,
   // Pay at Venue). Falls back to generic labels for other categories.
-  const availingModes = Array.isArray(offerFull?.availing_modes) && offerFull.availing_modes.length
+  const rawModes = Array.isArray(offerFull?.availing_modes) && offerFull.availing_modes.length
     ? offerFull.availing_modes
     : ['online_order'];
+  // Canonicalize the legacy walkin_pay verb, then apply the founder-locked
+  // per-category CTA order (primary first) filtered by what this offer
+  // actually supports. Unspecced categories keep availing-mode order.
+  const availSet = new Set(rawModes.map(m => (m === 'walkin_pay' ? 'pay_at_store' : m)));
+  const specOrder = CATEGORY_CTA_ORDER[brand?.category] || null;
+  let availingModes = specOrder ? specOrder.filter(m => availSet.has(m)) : [...availSet];
+  if (!availingModes.length) availingModes = [...availSet];
   const ctaList = [];
   const seenScreens = new Set();
   for (const m of availingModes) {

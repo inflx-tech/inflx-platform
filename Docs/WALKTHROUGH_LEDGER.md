@@ -21,7 +21,7 @@
 | P1 | Offer tap → "Offer not found" (shelf passes brand_offer id, detail looks up campaign_offers) | F | **BUILT** — contract sprint1-offer-pipeline (3 tap channels proven E2E, journey 30/30); pending OTA + founder verify |
 | P2 | Share-link deep-link handler missing in follower app — attribution lost on entry | F | QUEUED (Sprint-1) |
 | P3 | Influencer has no screen to copy their share link | N | QUEUED (Sprint-1) |
-| P4 | "Pay at salon" + hardcoded CTAs on fashion business page (BrandStoreScreen ignores schema actions) | F | QUEUED |
+| P4 | "Pay at salon" + hardcoded CTAs on fashion business page (BrandStoreScreen ignores schema actions) | F | **BUILT** — contract sprint2-business-page-ctas (locked CTA spec in all 6 schemas + category-aware chip + product CTA order); pending OTA + founder verify |
 | P5 | Section config covers only Eat+Shop verticals — furniture etc. invisible | F | QUEUED (config rows) |
 | P6 | Blank filter chips on Offers tab (renderer/label mismatch) | D | QUEUED |
 | P7 | Orders empty-state says "Nothing here yet" twice | C | PARKED |

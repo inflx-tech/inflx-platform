@@ -35,7 +35,7 @@
     "Jewellery"
   ],
   "availing_modes": [
-    "walkin_pay",
+    "pay_at_store",
     "online_order"
   ],
   "booking_type": null,
@@ -357,28 +357,22 @@
     "actions": [
       {
         "kind": "transactional",
-        "action": "walkin_pay",
-        "label": "Visit & Pay",
+        "action": "pay_at_store",
+        "label": "Pay at Store",
+        "priority": 1,
+        "primary": true,
         "config": {
           "fields": [
-            "amount",
-            "tip_amount"
-          ],
-          "payment_modes": [
-            "full"
-          ],
-          "endpoint": "/follower/pay-at-store"
+            "amount"
+          ]
         }
       },
       {
         "kind": "transactional",
         "action": "online_order",
-        "label": "Shop Online",
-        "visible_if": "offers_online_delivery === true",
-        "config": {
-          "endpoint": "/follower/orders",
-          "cart_scope": "brand"
-        }
+        "label": "Order Online",
+        "priority": 2,
+        "config": {}
       },
       {
         "kind": "contact",
@@ -391,9 +385,10 @@
       {
         "kind": "contact",
         "action": "whatsapp",
-        "label": "Chat on WhatsApp",
+        "label": "WhatsApp",
         "source_fields": [
-          "whatsapp_phone"
+          "whatsapp",
+          "phone"
         ]
       },
       {
@@ -401,15 +396,15 @@
         "action": "directions",
         "label": "Directions",
         "source_fields": [
-          "address_line",
-          "latitude",
-          "longitude"
+          "google_maps_url",
+          "address_line"
         ]
       },
       {
         "kind": "contact",
         "action": "share",
-        "label": "Share Store"
+        "label": "Share Store",
+        "source_fields": []
       }
     ],
     "photo_requirements": {

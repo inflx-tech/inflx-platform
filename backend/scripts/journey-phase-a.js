@@ -361,7 +361,15 @@ const expectOk = (r, what) => {
     const r = await api(ctx.folToken).get(`/business/${ctx.brandId}/store`);
     const d = expectOk(r, 'business store');
     const nProducts = (d.products || []).length;
-    log('S6.2', 'PASS', 'Follower opens business store page', `${nProducts} products visible`);
+    // CTA spec (Docs/CTA_SPEC.md, sprint2): the schema template must carry the
+    // founder-locked actions — exactly one primary, canonical pay_at_store verb.
+    const actions = (d.template && d.template.brand_config && d.template.brand_config.actions) || [];
+    const tx = actions.filter(a => a.kind === 'transactional');
+    const primaries = tx.filter(a => a.primary);
+    const hasLegacyVerb = tx.some(a => a.action === 'walkin_pay');
+    const ctaOk = tx.length >= 2 && primaries.length === 1 && !hasLegacyVerb;
+    if (ctaOk) log('S6.2', 'PASS', 'Business store page + locked CTA spec in template', `${nProducts} products; primary=${primaries[0].label}; ctas=[${tx.map(a => a.label).join(' · ')}]`);
+    else log('S6.2', 'FAIL', 'Business store CTA spec', `tx=${tx.length} primaries=${primaries.length} legacyVerb=${hasLegacyVerb} actions=${JSON.stringify(actions.map(a => a.action))}`);
   } catch (e) { fail('S6.2', 'Business store fetch', e); }
 
   try { // PAY AT STORE with full 4-ID tracking

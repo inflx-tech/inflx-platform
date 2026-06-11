@@ -8,7 +8,6 @@
   "card_type": "service",
   "phase": 1,
   "status": "active",
-
   "features": {
     "sections": true,
     "veg_flag": false,
@@ -20,7 +19,6 @@
     "availability": true,
     "master_catalogue": true
   },
-
   "sections": [
     "Hair Men",
     "Hair Women",
@@ -31,10 +29,11 @@
     "Spa & Massage",
     "Bridal Packages"
   ],
-
-  "availing_modes": ["prebook"],
+  "availing_modes": [
+    "prebook",
+    "pay_at_store"
+  ],
   "booking_type": "appointment",
-
   "attributes_schema": {
     "duration_mins": {
       "key": "duration_mins",
@@ -47,14 +46,27 @@
       "key": "section",
       "type": "select",
       "label": "Category",
-      "options": ["Hair Men","Hair Women","Skin & Facials","Nails","Makeup","Waxing & Threading","Spa & Massage","Bridal Packages"],
+      "options": [
+        "Hair Men",
+        "Hair Women",
+        "Skin & Facials",
+        "Nails",
+        "Makeup",
+        "Waxing & Threading",
+        "Spa & Massage",
+        "Bridal Packages"
+      ],
       "required": true
     },
     "gender": {
       "key": "gender",
       "type": "select",
       "label": "For",
-      "options": ["Men","Women","Unisex"]
+      "options": [
+        "Men",
+        "Women",
+        "Unisex"
+      ]
     },
     "premium": {
       "key": "premium",
@@ -95,9 +107,7 @@
       "label": "Master service reference"
     }
   },
-
   "cart_scope": null,
-
   "listing_steps": [
     {
       "id": "brand_basics",
@@ -119,7 +129,9 @@
       "subtitle": "Add your stylists — name, photo, what they do",
       "component": "brand_fields",
       "writes_to": "brand",
-      "field_keys": ["team_members"]
+      "field_keys": [
+        "team_members"
+      ]
     },
     {
       "id": "brand_photos",
@@ -157,7 +169,10 @@
           "unit": "₹",
           "required": true,
           "benchmark_source": "master_services",
-          "benchmark_fields": ["price_min", "price_max"]
+          "benchmark_fields": [
+            "price_min",
+            "price_max"
+          ]
         }
       ]
     },
@@ -183,9 +198,7 @@
       ]
     }
   ],
-
   "fields": [],
-
   "product_config": {
     "enabled": true,
     "required": true,
@@ -209,18 +222,62 @@
     },
     "fields": [],
     "excel_columns": [
-      { "column": "Service Name", "field": "name", "required": true, "example": "Hair Cut & Style" },
-      { "column": "Section", "field": "section", "required": true, "example": "Hair Women" },
-      { "column": "Duration (min)", "field": "duration_mins", "required": true, "example": "45" },
-      { "column": "Price (₹)", "field": "price", "required": true, "example": "500" },
-      { "column": "Description", "field": "description", "required": false, "example": "Includes wash, cut, blow-dry" },
-      { "column": "Gender", "field": "gender", "required": false, "example": "Women" },
-      { "column": "Premium", "field": "premium", "required": false, "example": "No" },
-      { "column": "Stylist Choice Required", "field": "requires_stylist_choice", "required": false, "example": "Yes" },
-      { "column": "Image URL", "field": "image_url", "required": false, "example": "https://example.com/service.jpg" }
+      {
+        "column": "Service Name",
+        "field": "name",
+        "required": true,
+        "example": "Hair Cut & Style"
+      },
+      {
+        "column": "Section",
+        "field": "section",
+        "required": true,
+        "example": "Hair Women"
+      },
+      {
+        "column": "Duration (min)",
+        "field": "duration_mins",
+        "required": true,
+        "example": "45"
+      },
+      {
+        "column": "Price (₹)",
+        "field": "price",
+        "required": true,
+        "example": "500"
+      },
+      {
+        "column": "Description",
+        "field": "description",
+        "required": false,
+        "example": "Includes wash, cut, blow-dry"
+      },
+      {
+        "column": "Gender",
+        "field": "gender",
+        "required": false,
+        "example": "Women"
+      },
+      {
+        "column": "Premium",
+        "field": "premium",
+        "required": false,
+        "example": "No"
+      },
+      {
+        "column": "Stylist Choice Required",
+        "field": "requires_stylist_choice",
+        "required": false,
+        "example": "Yes"
+      },
+      {
+        "column": "Image URL",
+        "field": "image_url",
+        "required": false,
+        "example": "https://example.com/service.jpg"
+      }
     ]
   },
-
   "brand_config": {
     "fields": {
       "salon_description": {
@@ -234,7 +291,11 @@
         "key": "gender_focus",
         "type": "select",
         "label": "Customer focus",
-        "options": ["Unisex", "Women only", "Men only"],
+        "options": [
+          "Unisex",
+          "Women only",
+          "Men only"
+        ],
         "required": true
       },
       "hours_json": {
@@ -278,31 +339,57 @@
     "actions": [
       {
         "kind": "transactional",
-        "action": "walkin_pay",
-        "label": "Walk-in & Pay",
+        "action": "book_slot",
+        "label": "Book Appointment",
+        "priority": 1,
+        "primary": true,
         "config": {
-          "fields": ["amount", "tip_amount"],
-          "payment_modes": ["full"],
-          "endpoint": "/follower/pay-at-store"
+          "booking_type": "appointment",
+          "fields": [
+            "booking_date",
+            "time_slot",
+            "stylist_preference",
+            "notes"
+          ]
+        }
+      },
+      {
+        "kind": "transactional",
+        "action": "pay_at_store",
+        "label": "Pay at Store",
+        "priority": 2,
+        "config": {
+          "fields": [
+            "amount",
+            "tip_amount"
+          ]
         }
       },
       {
         "kind": "contact",
         "action": "call",
         "label": "Call",
-        "source_fields": ["phone"]
+        "source_fields": [
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "whatsapp",
-        "label": "Book on WhatsApp",
-        "source_fields": ["whatsapp_phone"]
+        "label": "WhatsApp",
+        "source_fields": [
+          "whatsapp",
+          "phone"
+        ]
       },
       {
         "kind": "contact",
         "action": "directions",
         "label": "Directions",
-        "source_fields": ["address_line", "latitude", "longitude"]
+        "source_fields": [
+          "google_maps_url",
+          "address_line"
+        ]
       }
     ],
     "photo_requirements": {
@@ -311,40 +398,60 @@
       "gallery_max": 10
     }
   },
-
   "buyer_config": {
     "discovery_surface": "feed",
-    "filters": ["section", "gender", "premium", "duration_mins"],
-    "sort_options": ["distance", "price_low", "price_high", "rating", "duration_short"],
+    "filters": [
+      "section",
+      "gender",
+      "premium",
+      "duration_mins"
+    ],
+    "sort_options": [
+      "distance",
+      "price_low",
+      "price_high",
+      "rating",
+      "duration_short"
+    ],
     "default_sort": "distance"
   },
-
   "card_config": {
     "accent": "#7c3aed",
     "accent_dim": "rgba(124,58,237,0.08)",
     "icon": "💇",
     "card_type": "service",
-
     "cta_primary": {
       "label": "Book Slot",
       "action": "book_slot",
       "color": "#7c3aed"
     },
-
     "price_display": {
       "source": "price.amount",
       "unit": ""
     },
-
     "subtitle_template": "{section} · {duration_mins} min · {brand_name}",
-
     "tags": [
-      { "source": "duration_mins", "format": "{value} min" },
-      { "source": "gender", "format": "{value}", "show_if": true },
-      { "source": "premium", "text": "✨ Premium", "show_if": true, "highlight": true },
-      { "source": "requires_stylist_choice", "text": "Pick stylist", "show_if": true }
+      {
+        "source": "duration_mins",
+        "format": "{value} min"
+      },
+      {
+        "source": "gender",
+        "format": "{value}",
+        "show_if": true
+      },
+      {
+        "source": "premium",
+        "text": "✨ Premium",
+        "show_if": true,
+        "highlight": true
+      },
+      {
+        "source": "requires_stylist_choice",
+        "text": "Pick stylist",
+        "show_if": true
+      }
     ],
-
     "detail_sections": [
       {
         "type": "description",
@@ -354,8 +461,15 @@
       {
         "type": "spec_grid",
         "title": "Details",
-        "fields": ["duration_mins", "gender", "premium"],
-        "emphasized_field": { "key": "premium", "color": "amber" }
+        "fields": [
+          "duration_mins",
+          "gender",
+          "premium"
+        ],
+        "emphasized_field": {
+          "key": "premium",
+          "color": "amber"
+        }
       },
       {
         "type": "feature_chips",
@@ -369,11 +483,18 @@
         "layout": "carousel"
       }
     ],
-
     "booking_config": {
       "type": "appointment",
-      "fields": ["booking_date", "time_slot", "stylist_id", "notes"],
-      "payment_modes": ["token", "full"],
+      "fields": [
+        "booking_date",
+        "time_slot",
+        "stylist_id",
+        "notes"
+      ],
+      "payment_modes": [
+        "token",
+        "full"
+      ],
       "token_amount": 100,
       "token_refundable": true,
       "refund_policy": "Full refund up to 4 hours before slot",
@@ -381,7 +502,6 @@
       "endpoint": "/follower/prebook"
     }
   },
-
   "action_types": {
     "prebook": {
       "endpoint": "/follower/prebook",
@@ -389,17 +509,68 @@
       "slot_source": "/follower/slots"
     }
   },
-
   "quality_rules": [
-    { "field": "salon_description", "scope": "brand", "points": 5, "label": "Add a salon description" },
-    { "field": "gender_focus", "scope": "brand", "points": 5, "label": "Set who you serve" },
-    { "field": "hours_json", "scope": "brand", "points": 5, "label": "Set operating hours" },
-    { "field": "amenities", "scope": "brand", "points": 5, "label": "List your amenities" },
-    { "field": "team_members", "scope": "brand", "points": 10, "label": "Add at least one stylist" },
-    { "type": "photos", "scope": "brand", "min": 3, "points": 10, "label": "Add 3 ambience photos" },
-    { "type": "photos", "scope": "brand", "min": 5, "points": 5, "label": "Add 5+ photos for full gallery" },
-    { "items": "services", "min": 5, "points": 15, "label": "Add at least 5 services" },
-    { "items": "services", "min": 15, "points": 10, "label": "Add 15+ services for a complete menu" },
-    { "field": "accepts_walkins", "scope": "brand", "points": 5, "label": "Confirm walk-in policy" }
+    {
+      "field": "salon_description",
+      "scope": "brand",
+      "points": 5,
+      "label": "Add a salon description"
+    },
+    {
+      "field": "gender_focus",
+      "scope": "brand",
+      "points": 5,
+      "label": "Set who you serve"
+    },
+    {
+      "field": "hours_json",
+      "scope": "brand",
+      "points": 5,
+      "label": "Set operating hours"
+    },
+    {
+      "field": "amenities",
+      "scope": "brand",
+      "points": 5,
+      "label": "List your amenities"
+    },
+    {
+      "field": "team_members",
+      "scope": "brand",
+      "points": 10,
+      "label": "Add at least one stylist"
+    },
+    {
+      "type": "photos",
+      "scope": "brand",
+      "min": 3,
+      "points": 10,
+      "label": "Add 3 ambience photos"
+    },
+    {
+      "type": "photos",
+      "scope": "brand",
+      "min": 5,
+      "points": 5,
+      "label": "Add 5+ photos for full gallery"
+    },
+    {
+      "items": "services",
+      "min": 5,
+      "points": 15,
+      "label": "Add at least 5 services"
+    },
+    {
+      "items": "services",
+      "min": 15,
+      "points": 10,
+      "label": "Add 15+ services for a complete menu"
+    },
+    {
+      "field": "accepts_walkins",
+      "scope": "brand",
+      "points": 5,
+      "label": "Confirm walk-in policy"
+    }
   ]
 }
