@@ -95,8 +95,8 @@ const CATEGORY_LABELS = {
     pay_at_store: { label: 'Pay at Bakery', screen: 'PayAtStore',  emoji: '💸' },
   },
   salon: {
-    walkin_pay:   { label: 'Pay at Store',  screen: 'PayAtStore', emoji: '💸' },
-    pay_at_store: { label: 'Pay at Store',  screen: 'PayAtStore', emoji: '💸' },
+    walkin_pay:   { label: 'Pay at Salon',  screen: 'PayAtStore', emoji: '💸' },
+    pay_at_store: { label: 'Pay at Salon',  screen: 'PayAtStore', emoji: '💸' },
     prebook:      { label: 'Book Appointment', screen: 'PreBook',  emoji: '✂️' },
   },
   car_rental: {
@@ -487,22 +487,6 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          {/* Secondary CTAs (when offer supports more than one mode) */}
-          {secondaryCtas.length > 0 && (
-            <View style={styles.secondaryCtaRow}>
-              {secondaryCtas.map(cta => (
-                <TouchableOpacity
-                  key={cta.mode}
-                  style={[styles.secondaryCta, { borderColor: C.brown }]}
-                  onPress={() => dispatchCta(cta)}
-                >
-                  <Text style={styles.secondaryCtaEmoji}>{cta.emoji}</Text>
-                  <Text style={[styles.secondaryCtaText, { color: C.brown }]}>{cta.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
           {/* More from this brand */}
           {others.length > 0 && (
             <View style={styles.moreBlock}>
@@ -542,19 +526,33 @@ export default function ProductDetailScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
-      {/* Sticky primary CTA */}
+      {/* Sticky bottom CTA bar — ALL modes side-by-side (founder sprint-2
+          revision: tabs at the bottom, not stacked mid-page). */}
       <View style={styles.footer}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 76 }}>
           <Text style={styles.footerPrice}>{fmtRupees(runningTotal)}</Text>
           <Text style={styles.footerName} numberOfLines={1}>
             {addonsCount > 0 ? `incl. ${addonsCount} add-on${addonsCount > 1 ? 's' : ''}` : (selectedSize ? `size ${selectedSize}` : selected.name)}
           </Text>
         </View>
+        {secondaryCtas.map(cta => (
+          <TouchableOpacity
+            key={cta.mode}
+            style={[styles.footerSecondaryCta, { borderColor: C.brown }]}
+            onPress={() => dispatchCta(cta)}
+          >
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
+              style={[styles.footerSecondaryCtaText, { color: C.brown }]}>
+              {cta.emoji} {cta.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
         <TouchableOpacity
           style={[styles.primaryCta, { backgroundColor: C.brown }]}
           onPress={() => dispatchCta(primaryCta)}
         >
-          <Text style={styles.primaryCtaText}>{primaryCta.emoji} {primaryCta.label}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
+            style={styles.primaryCtaText}>{primaryCta.emoji} {primaryCta.label}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -659,6 +657,8 @@ const styles = StyleSheet.create({
   },
   footerPrice: { fontFamily: fonts.monoBold, fontSize: 20, color: P.ink },
   footerName: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 2 },
-  primaryCta: { paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12 },
+  primaryCta: { paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, maxWidth: '52%' },
+  footerSecondaryCta: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 13, maxWidth: '34%' },
+  footerSecondaryCtaText: { fontSize: 11.5, fontWeight: '800' },
   primaryCtaText: { fontFamily: fonts.displayBlack, fontSize: 14, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.3 },
 });

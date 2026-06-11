@@ -1,4 +1,11 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Sprint 2 — locked CTA bars per business</title>
+<!doctype html><html><head><meta charset="utf-8"><title>Sprint 2 — locked CTA bars per business (REV 2)</title>
+<!-- REVISION 2 (founder, 2026-06-11): (1) the transactional buttons below render
+     SIDE-BY-SIDE in a sticky bar at the SCREEN BOTTOM (primary filled + wider,
+     secondaries outlined) — the vertical stacks in this static mockup show
+     content/order only; (2) salon wording = "Pay at Salon"; (3) contact row
+     replaced by ONE small "📍 Directions" chip just below the establishment
+     card — Call/WhatsApp/Share removed. -->
+
 <style>
  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#F7F3EC;padding:22px;color:#1F1F22;display:flex;flex-wrap:wrap;gap:16px}
  .card{background:#fff;border:1px solid #E5DDD0;border-radius:14px;padding:16px;width:300px}
@@ -20,7 +27,7 @@
  <span class="primary">📅 Book a Table</span>
  <span class="secondary">💸 Pay at Restaurant</span>
  <span class="secondary">🛵 Order Online</span>
- <div class="contacts"><span class="c">📞 Call</span><span class="c">💬 WhatsApp</span><span class="c">📍 Directions</span></div>
+ <div class="contacts"><span class="c">📍 Directions</span></div>
  <div class="pp"><div class="t">DISH PAGE</div><span class="pbtn">🛒 Add to Cart</span><span class="sbtn">💸 Pay at Restaurant</span></div>
 </div>
 
@@ -28,7 +35,7 @@
  <span class="chip">💸 Pay at store</span> <span style="font-size:9px;color:#0E7A3E;font-weight:700">← was &quot;Pay at salon&quot; (P4 dead)</span>
  <span class="primary">💸 Pay at Store</span>
  <span class="secondary">🛍 Order Online</span>
- <div class="contacts"><span class="c">📞 Call</span><span class="c">💬 WhatsApp</span><span class="c">📍 Directions</span><span class="c">↗ Share</span></div>
+ <div class="contacts"><span class="c">📍 Directions</span></div>
  <div class="pp"><div class="t">ITEM PAGE</div><span class="pbtn">💸 Pay at Store</span><span class="sbtn">👗 Order Online</span></div>
 </div>
 
@@ -36,23 +43,23 @@
  <span class="chip">💸 Pay at store</span>
  <span class="primary">💸 Pay at Store</span>
  <span class="secondary">🛋 Order Online</span>
- <div class="contacts"><span class="c">📞 Call</span><span class="c">💬 WhatsApp</span><span class="c">📍 Directions</span></div>
+ <div class="contacts"><span class="c">📍 Directions</span></div>
  <div class="pp"><div class="t">ITEM PAGE</div><span class="pbtn">💸 Pay at Store</span><span class="sbtn">🛋 Order Online</span></div>
 </div>
 
 <div class="card"><h3>💇 Glow Salon</h3><div class="cat">salon · Vijayawada</div>
  <span class="chip">💸 Pay at salon</span>
  <span class="primary">✂️ Book Appointment</span>
- <span class="secondary">💸 Pay at Store</span>
- <div class="contacts"><span class="c">📞 Call</span><span class="c">💬 WhatsApp</span><span class="c">📍 Directions</span></div>
- <div class="pp"><div class="t">SERVICE PAGE</div><span class="pbtn">✂️ Book Appointment</span><span class="sbtn">💸 Pay at Store</span></div>
+ <span class="secondary">💸 Pay at Salon</span>
+ <div class="contacts"><span class="c">📍 Directions</span></div>
+ <div class="pp"><div class="t">SERVICE PAGE</div><span class="pbtn">✂️ Book Appointment</span><span class="sbtn">💸 Pay at Salon</span></div>
 </div>
 
 <div class="card"><h3>🚗 Sagar Self-Drive</h3><div class="cat">car rental · Vijayawada</div>
  <span class="chip">💸 Pay at garage</span>
  <span class="primary">🚗 Book Your Dates → pick a car</span>
  <span class="secondary">💸 Pay at Garage</span>
- <div class="contacts"><span class="c">📞 Call</span><span class="c">💬 WhatsApp</span><span class="c">📍 Directions</span></div>
+ <div class="contacts"><span class="c">📍 Directions</span></div>
  <div class="pp"><div class="t">VEHICLE PAGE</div><span class="pbtn">🚗 Book These Dates</span> <span style="font-size:9px;color:#8A8073">(Enquire removed — founder)</span></div>
 </div>
 

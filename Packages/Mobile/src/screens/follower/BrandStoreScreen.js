@@ -279,10 +279,12 @@ export default function BrandStoreScreen({ navigation, route }) {
             when the schema actually supports them. */}
         {renderTrustChips(store?.template, accent.accent, brand?.category)}
 
-        {/* Schema-driven brand action row when template surfaces brand_config.
-            Falls back to legacy hardcoded contact buttons when not. */}
-        {brandConfig ? (
+        {/* Small contact chip(s) — Directions only per the founder's sprint-2
+            revision (2026-06-11). Transactional CTAs moved to the sticky
+            bottom bar (side-by-side) below the ScrollView. */}
+        {brandConfig && (
           <BrandActionRow
+            variant="contacts"
             brandConfig={brandConfig}
             brand={brand}
             brandData={brandData}
@@ -290,14 +292,6 @@ export default function BrandStoreScreen({ navigation, route }) {
             onAction={dispatchBrandAction}
             accent={accentHex}
           />
-        ) : (
-          <View style={s.contactRow}>
-            {['📞 Call', '💬 WhatsApp', '📍 Map'].map(label => (
-              <TouchableOpacity key={label} style={[s.contactBtn, { borderColor: `${accent.accent}33` }]}>
-                <Text style={[s.contactBtnText, { color: accent.accent }]}>{label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
         )}
 
         {/* Active offers banner */}
@@ -541,8 +535,24 @@ export default function BrandStoreScreen({ navigation, route }) {
         </Text>
       </View>
 
-      <View style={{ height: 80 }} />
+      <View style={{ height: 96 }} />
       </ScrollView>
+
+      {/* Sticky bottom CTA bar — schema transactional actions side-by-side
+          (founder sprint-2 revision: tabs at the bottom, not stacked). */}
+      {brandConfig && (
+        <View style={s.bottomCtaBar}>
+          <BrandActionRow
+            variant="cta"
+            brandConfig={brandConfig}
+            brand={brand}
+            brandData={brandData}
+            tracking={tracking}
+            onAction={dispatchBrandAction}
+            accent={accentHex}
+          />
+        </View>
+      )}
     </View>
   );
 }
@@ -605,6 +615,11 @@ function renderTrustChips(template, accentColor, category) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: P.bg },
+  bottomCtaBar: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.08)',
+    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 22,
+  },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: P.bg },
   banner: {
     height: 100, justifyContent: 'center', alignItems: 'center', position: 'relative',

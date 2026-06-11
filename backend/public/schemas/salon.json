@@ -356,7 +356,7 @@
       {
         "kind": "transactional",
         "action": "pay_at_store",
-        "label": "Pay at Store",
+        "label": "Pay at Salon",
         "priority": 2,
         "config": {
           "fields": [
@@ -367,28 +367,12 @@
       },
       {
         "kind": "contact",
-        "action": "call",
-        "label": "Call",
-        "source_fields": [
-          "phone"
-        ]
-      },
-      {
-        "kind": "contact",
-        "action": "whatsapp",
-        "label": "WhatsApp",
-        "source_fields": [
-          "whatsapp",
-          "phone"
-        ]
-      },
-      {
-        "kind": "contact",
         "action": "directions",
         "label": "Directions",
         "source_fields": [
           "google_maps_url",
-          "address_line"
+          "address_line",
+          "latitude"
         ]
       }
     ],

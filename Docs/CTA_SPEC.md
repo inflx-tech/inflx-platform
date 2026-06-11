@@ -14,7 +14,7 @@
 | 🍽 Restaurant | ★**Book a Table** · Pay at Restaurant · Order Online |
 | 👗 Fashion (walk-in + unified) | ★**Pay at Store** · Order Online |
 | 🛋 Furniture | ★**Pay at Store** · Order Online |
-| 💇 Salon | ★**Book Appointment** · Pay at Store |
+| 💇 Salon | ★**Book Appointment** · Pay at Salon |
 | 🚗 Car rental | ★**Book Your Dates** · Pay at Garage |
 
 ## Product / service page
@@ -24,12 +24,19 @@
 | 🍽 Restaurant (dish) | ★**Add to Cart** · Pay at Restaurant |
 | 👗 Fashion (item) | ★**Pay at Store** · Order Online |
 | 🛋 Furniture (item) | ★**Pay at Store** · Order Online |
-| 💇 Salon (service) | ★**Book Appointment** · Pay at Store |
+| 💇 Salon (service) | ★**Book Appointment** · Pay at Salon |
 | 🚗 Car rental (vehicle) | ★**Book These Dates** |
 
 ## Notes (founder decisions)
 
 - Car rental: Enquire REMOVED from both pages (founder, 2026-06-11 follow-up).
+- **Revision 2 (founder, 2026-06-11 post-sprint-2 review):**
+  1. CTA buttons render SIDE-BY-SIDE in a sticky BOTTOM bar (business page
+     bottom bar; product page footer carries price + all modes) — never
+     stacked vertically mid-page.
+  2. Salon wording is **"Pay at Salon"** (not Pay at Store) on both pages.
+  3. Contacts reduced to **Directions only** — one small chip just below the
+     establishment card. Call / WhatsApp / Share Store removed everywhere.
 
 - Restaurant business page drops Send Enquiry (was in old schema).
 - Furniture drops Request Quote — pay/order only, same as fashion.

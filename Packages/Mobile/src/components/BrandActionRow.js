@@ -26,7 +26,13 @@ import { evalExpr } from '../utils/exprEval';
  * to listing-level when tracking is present.
  */
 
-export default function BrandActionRow({ brandConfig, brand, brandData, tracking, onAction, accent }) {
+/**
+ * variant (founder revision 2026-06-11, sprint2 rider):
+ *   'full'     — legacy: stacked transactional + contact row (default)
+ *   'cta'      — transactional ONLY, side-by-side (for the sticky bottom bar)
+ *   'contacts' — contact actions ONLY, compact chips (near the brand card)
+ */
+export default function BrandActionRow({ brandConfig, brand, brandData, tracking, onAction, accent, variant = 'full' }) {
   if (!brandConfig?.actions?.length) return null;
 
   const ctx = { brand_data: brandData || {}, brand: brand || {} };
@@ -48,6 +54,52 @@ export default function BrandActionRow({ brandConfig, brand, brandData, tracking
   const transactional = visibleActions.filter(a => a.kind === 'transactional');
   const contact = visibleActions.filter(a => a.kind === 'contact');
 
+  // ── 'cta' — side-by-side transactional bar (sticky bottom on BrandStore) ──
+  if (variant === 'cta') {
+    if (!transactional.length) return null;
+    return (
+      <View style={styles.ctaRow}>
+        {transactional.map((action, i) => {
+          const isPrimary = action.primary || (i === 0 && !transactional.some(a => a.primary));
+          return (
+            <TouchableOpacity key={`t-${i}`}
+              style={[
+                styles.ctaBtn,
+                isPrimary
+                  ? { backgroundColor: accent || '#F59E0B', flex: 1.35 }
+                  : { backgroundColor: '#fff', borderWidth: 1.5, borderColor: accent || '#F59E0B' },
+              ]}
+              onPress={() => onAction?.(action, { tracking, brand, brandData })}>
+              <Text
+                numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}
+                style={[styles.ctaBtnText, !isPrimary && { color: accent || '#F59E0B' }]}>
+                {action.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
+
+  // ── 'contacts' — compact chips (small, near the establishment card) ──
+  if (variant === 'contacts') {
+    if (!contact.length) return null;
+    return (
+      <View style={styles.contactsCompact}>
+        {contact.map((action, i) => (
+          <TouchableOpacity key={`c-${i}`}
+            style={[styles.contactChip, { borderColor: (accent || '#F59E0B') + '40' }]}
+            onPress={() => handleContactAction(action, brand, brandData)}>
+            <Text style={styles.contactIcon}>{contactIcon(action.action)}</Text>
+            <Text style={[styles.contactLabel, { color: accent || '#F59E0B' }]}>{action.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  }
+
+  // ── 'full' — legacy stacked layout ──
   return (
     <View style={styles.wrap}>
       {/* Transactional actions — full-width stacked */}
@@ -133,6 +185,14 @@ function contactIcon(action) {
 
 const styles = StyleSheet.create({
   wrap: { paddingHorizontal: 16, paddingVertical: 8, gap: 8 },
+  ctaRow: { flexDirection: 'row', gap: 8, alignItems: 'stretch' },
+  ctaBtn: { flex: 1, paddingVertical: 13, paddingHorizontal: 8, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  ctaBtnText: { fontSize: 13, fontWeight: '800', color: '#000' },
+  contactsCompact: { flexDirection: 'row', gap: 6, paddingHorizontal: 16, marginTop: 6, alignSelf: 'flex-start' },
+  contactChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingVertical: 5, paddingHorizontal: 10, borderRadius: 9, borderWidth: 1,
+  },
   txButton: { paddingVertical: 14, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   txButtonText: { fontSize: 14, fontWeight: '800', color: '#000' },
   contactRow: { flexDirection: 'row', gap: 6, marginTop: 4 },
