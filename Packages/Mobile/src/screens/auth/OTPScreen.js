@@ -142,7 +142,11 @@ export default function OTPScreen({ navigation, route }) {
     if (user.role === 'brand') {
       const brandRes = await brandApi.getMe();
       if (!brandRes.success) {
-        navigation.reset({ index: 0, routes: [{ name: 'Waiting' }] });
+        // No brands row yet — collect business details first. Sending a new
+        // brand to Waiting strands them: the admin approval queue lists
+        // brands rows, so there would be nothing to approve
+        // (contract: features/brand-mobile-register).
+        navigation.navigate('BrandRegister');
       } else {
         const status = brandRes.data?.brand?.status || brandRes.data?.user_status;
         if (status === 'rejected')      navigation.reset({ index: 0, routes: [{ name: 'Rejected' }] });

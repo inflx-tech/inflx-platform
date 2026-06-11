@@ -1,0 +1,28 @@
+{
+  "feature": "brand-mobile-register",
+  "area": "mobile-auth",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-11) — walkthrough W3 explicit instruction: 'go to mobile brand login and check and fix that'",
+  "approved_at": "2026-06-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING via OTA (mobile JS only — no backend change, no APK rebuild, no Vercel impact). New brands gain a registration path on mobile; existing brands see zero change.",
+  "fix": "New BrandRegisterScreen (auth stack) — name/business/industry(W1-regrouped chips)/business-type/location(place-search autofill + manual) → POST /brands/register (with coords) → Waiting. OTPScreen no-profile branch: Waiting → BrandRegister. brandApi.register added to mobile api.js.",
+  "related": ["features/brand-register-location-picker (register endpoint accepts coords)", "Docs/WALKTHROUGH_LEDGER.md W3+W4"],
+  "result": "Screen + routing + api helper implemented; esbuild JSX parse-check clean on all 4 touched files; mockup brand-register.html locked; pending OTA publish + founder on-device verification (founder is the live walkthrough tester).",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (2.6m, report 2026-06-11T04-26-52). esbuild JSX parse-check clean on all 4 touched files. Existing-brand OTP routing byte-identical (single added branch on the !getMe path). Backend untouched this contract.",
+  "discipline": "Verify-twice: OTPScreen.js:142-151 read directly — brand no-profile path resets to Waiting while influencer path navigates to its register screen; AuthNavigator confirmed to have NO BrandRegister route. Parity audit (W4) confirmed no mobile registration screen existed.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "Pending: pnpm qa green → commit/push (code lands inert for mobile until OTA) → publish-ota:all → founder on-device verification → flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-11) — mockup brand-register.html authored from the locked web register design + W1 regrouped industries; surfaced in founder's preview panel.",
+  "mockup_locked_at": "2026-06-11"
+}

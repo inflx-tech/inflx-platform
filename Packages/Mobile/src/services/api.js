@@ -135,6 +135,7 @@ export const authApi = {
 };
 
 export const brandApi = {
+  register: (data) => api.post('/brands/register', data),
   getMe: () => api.get('/brands/me'),
   updateMe: (data) => api.patch('/brands/me', data),
   // Store preview — brand sees their store as customers see it
