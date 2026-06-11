@@ -1,0 +1,27 @@
+{
+  "feature": "redesign-campaign-command-center",
+  "area": "brand-web-campaign-detail (+ small backend products-endpoint enrichment)",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-11) — W5 discussion: 'ok pls go and prepare interactive html mockup and we will review' (scope agreed; mockup gate pending)",
+  "approved_at": "2026-06-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING when implemented (Vercel brand-web + small Render backend enrich). NOT YET IMPLEMENTED — mockup review stage.",
+  "fix": "Full-width Command Center rewrite of campaigns/[id]/page.js: attention banner, honest-content header strip (+escrow/conversions cells, ↻ refresh-all), Hierarchy/Products/Analytics tabs, per-deliverable ↻, every review state visible, products table with client-side set join. Frontend-only — planned backend enrichment proved unnecessary.",
+  "related": ["Docs/WALKTHROUGH_LEDGER.md W5a-W5e", "features/redesign-flow-6 (prior campaign-detail redesign that dropped the refresh button)"],
+  "result": "Implemented per locked mockup; recorded deltas in 06-diff/notes.md (escrow+conversions strip cells kept; name stays in page header). Data layer unchanged (same 5 fetches); refreshAllAnalytics sequentially re-scrapes live deliverables then refetches engagement.",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (1.5m, report 2026-06-11T07-16-28) — brand-web compiled + billing-nav specs green; no campaign-detail specs exist (verified by grep). All sub-routes (sets/influencers/reviews/escrow) untouched.",
+  "discipline": "Redesign 5-step rhythm: mockup authored AND LOCKED by founder before any implementation. Data-layer verified first: /engagement already returns by_set + by_influencer; deliverable_stats holds level-4; products endpoint returns assignments; zero submitted deliverables existed in prod at report time (founder's test reel was already reviewed+live).",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder (2026-06-11): 'Lock it and start implementation' — lock + build + ship in walkthrough mode",
+    "released_at": "2026-06-11",
+    "deploy": "git push main → Vercel auto-deploy of brand-web ONLY. No backend, no migration, no mobile/OTA impact."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (2026-06-11) — 'Lock it and start implementation' after interactive review of command-center.html",
+  "mockup_locked_at": "2026-06-11"
+}

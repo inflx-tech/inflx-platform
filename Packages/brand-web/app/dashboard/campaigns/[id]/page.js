@@ -1,10 +1,16 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { campaignApi, fmtRupees } from '../../../../lib/api';
+import { campaignApi, deliverableApi, fmtRupees } from '../../../../lib/api';
 
-/* ─── Helpers (locked palette) ───────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════════════
+   Campaign Command Center — full-width hierarchy view.
+   Contract: features/redesign-campaign-command-center (mockup locked
+   2026-06-11, walkthrough W5a–W5e). Campaign → sets → influencers →
+   deliverables + products, analytics at every level, review states visible,
+   refresh restored (campaign-wide + per-deliverable).
+   ══════════════════════════════════════════════════════════════════════════ */
 
 const STATUS_BADGE = {
   draft:          { bg: 'bg-[#F4F4F5]', text: 'text-[#52525B]', dot: 'bg-[#A1A1AA]', label: 'Draft' },
@@ -26,78 +32,74 @@ function StatusBadge({ status }) {
   );
 }
 
+/* Deliverable-state pills (the honest set: every state visible) */
+const DEL_PILL = {
+  live:               { cls: 'bg-[#D1FAE5] text-[#047857]',  label: 'LIVE' },
+  submitted:          { cls: 'bg-[#FFF7CC] text-[#6B5A00]',  label: 'SUBMITTED' },
+  under_review:       { cls: 'bg-[#FFF7CC] text-[#6B5A00]',  label: 'UNDER REVIEW' },
+  approved:           { cls: 'bg-[#DBEAFE] text-[#1D4ED8]',  label: 'APPROVED' },
+  approved_live:      { cls: 'bg-[#DBEAFE] text-[#1D4ED8]',  label: 'AWAITING LIVE-CONFIRM' },
+  revision_requested: { cls: 'bg-[#FDEEE9] text-[#B91C1C]',  label: 'REVISION REQUESTED' },
+  pending:            { cls: 'bg-[#F4F4F5] text-[#52525B]',  label: 'PENDING' },
+};
+
+function delPill(d) {
+  if (d.status === 'approved' && d.live_url) return DEL_PILL.approved_live;
+  return DEL_PILL[d.status] || DEL_PILL.pending;
+}
+
+const GOAL_TAG = {
+  conversion: 'bg-[#F3E8FF] text-[#7E22CE]',
+  engagement: 'bg-[#CFFAFE] text-[#0E7490]',
+  hybrid:     'bg-[#FFF7CC] text-[#6B5A00]',
+};
+
+const DEL_ICON = { reel: '🎬', post: '🖼', story: '📖', youtube_video: '▶️', youtube_short: '▶️' };
+
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+const nf = (n) => (n == null ? '—' : Number(n).toLocaleString('en-IN'));
 
-/* ─── Drill-down tile ────────────────────────────────────────────────────── */
-
-function DrillTile({ href, icon, iconDark, label, value, sub }) {
+function MiniStat({ v, k }) {
   return (
-    <Link
-      href={href}
-      className="bg-white border border-[#E4E4E7] rounded-[16px] p-[18px] hover:border-[#0A0A0A] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-14px_rgba(0,0,0,0.08)] transition-all flex flex-col gap-1.5 cursor-pointer no-underline"
-    >
-      <div className="flex justify-between items-center mb-1">
-        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-display font-extrabold text-base ${iconDark ? 'bg-[#0A0A0A] text-[#FFC107]' : 'bg-[#FFC107] text-[#0A0A0A]'}`}>
-          {icon}
-        </div>
-        <span className="font-mono font-bold text-[#A1A1AA] text-lg">→</span>
-      </div>
-      <div className="text-[10.5px] font-bold uppercase tracking-[0.4px] text-[#71717A] mt-1">{label}</div>
-      <div className="font-mono font-bold text-2xl text-[#0A0A0A] -tracking-[0.4px] leading-[1.1]">{value}</div>
-      <div className="text-xs text-[#52525B]">{sub}</div>
-    </Link>
+    <div className="text-right min-w-[52px]">
+      <div className="font-mono font-bold text-[13.5px] text-[#0A0A0A] leading-tight">{v}</div>
+      <div className="text-[9px] font-bold tracking-[0.4px] text-[#A1A1AA]">{k}</div>
+    </div>
   );
 }
 
-/* ─── Action queue row ────────────────────────────────────────────────────── */
+/* ════ Page ════ */
 
-function ActionRow({ href, tone, icon, title, meta }) {
-  const isDanger = tone === 'danger';
-  return (
-    <Link
-      href={href}
-      className="flex items-start gap-3 py-3 border-t border-[#E4E4E7] first:border-t-0 first:pt-0 group hover:bg-[#FAFAFA] -mx-3 px-3 rounded-lg transition-colors no-underline"
-    >
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isDanger ? 'bg-[#FDEEE9]' : 'bg-[#FFF7CC]'}`}>
-        <span className={`font-display font-extrabold text-sm ${isDanger ? 'text-[#E8401A]' : 'text-[#0A0A0A]'}`}>{icon}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-display font-bold text-[12.5px] text-[#0A0A0A] mb-0.5 group-hover:text-[#E0A800] transition-colors">{title}</div>
-        <div className="text-[11px] text-[#71717A]">{meta}</div>
-      </div>
-    </Link>
-  );
-}
-
-/* ─── Campaign Detail Page (HUB) ──────────────────────────────────────────── */
-
-export default function CampaignDetailHubPage() {
+export default function CampaignCommandCenterPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [campaign, setCampaign]     = useState(null);
-  const [escrow, setEscrow]         = useState(null);
-  const [engagement, setEngagement] = useState(null);
+  const [campaign, setCampaign]       = useState(null);
+  const [escrow, setEscrow]           = useState(null);
+  const [engagement, setEngagement]   = useState(null);
   const [conversions, setConversions] = useState(null);
   const [productsData, setProductsData] = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [briefOpen, setBriefOpen]   = useState(false);
-  const [error, setError]           = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState(null);
+  const [tab, setTab]                 = useState('hier');
+  const [openSets, setOpenSets]       = useState({});
+  const [openInfs, setOpenInfs]       = useState({});
+  const [briefOpen, setBriefOpen]     = useState(false);
+  const [refreshingAll, setRefreshingAll] = useState('');
+  const [refreshingOne, setRefreshingOne] = useState(null);
 
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    Promise.all([
+  const loadAll = useCallback((cancelledRef) => {
+    return Promise.all([
       campaignApi.get(id),
       campaignApi.get(`${id}/escrow`).catch(() => ({ success: false })),
       campaignApi.getEngagement(id).catch(() => ({ success: false })),
       campaignApi.getConversions(id).catch(() => ({ success: false })),
       campaignApi.get(`${id}/products`).catch(() => ({ success: false })),
     ]).then(([campRes, escRes, engRes, convRes, prodRes]) => {
-      if (cancelled) return;
+      if (cancelledRef?.cancelled) return;
       setLoading(false);
       if (campRes.success) setCampaign(campRes.data?.campaign || campRes.data);
       else setError(campRes.error?.message || 'Failed to load campaign');
@@ -105,107 +107,126 @@ export default function CampaignDetailHubPage() {
       if (engRes?.success)  setEngagement(engRes.data);
       if (convRes?.success) setConversions(convRes.data);
       if (prodRes?.success) setProductsData(prodRes.data);
-    }).catch(err => {
-      if (cancelled) return;
-      setLoading(false);
-      setError(err.message || 'Network error');
     });
-    return () => { cancelled = true; };
   }, [id]);
 
+  useEffect(() => {
+    if (!id) return;
+    const ref = { cancelled: false };
+    loadAll(ref).catch(err => { if (!ref.cancelled) { setLoading(false); setError(err.message || 'Network error'); } });
+    return () => { ref.cancelled = true; };
+  }, [id, loadAll]);
+
   if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto py-16 text-center text-[#71717A] font-body">
-        Loading campaign…
-      </div>
-    );
+    return <div className="py-16 text-center text-[#71717A] font-body">Loading campaign…</div>;
   }
   if (error || !campaign) {
     return (
-      <div className="max-w-6xl mx-auto py-16 text-center">
+      <div className="py-16 text-center">
         <div className="font-display text-lg font-bold text-[#0A0A0A] mb-2">{error || 'Campaign not found'}</div>
         <button onClick={() => router.back()} className="px-4 py-2 bg-[#F4F4F5] text-[#0A0A0A] rounded-[10px] font-semibold text-sm">← Back</button>
       </div>
     );
   }
 
+  /* ── Derive the hierarchy + rollups ─────────────────────────────────────── */
   const sets = campaign.sets || [];
-  const allInfluencers = sets.flatMap(s => (s.influencers || []).map(ci => ({ ...ci, set_name: s.name, set_goal: s.goal, set_mode: s.influencer_mode })));
-  const totalInf       = allInfluencers.length;
-  const activeInf      = allInfluencers.filter(ci => ['active','live'].includes(ci.status)).length;
-  const negotiatingInf = allInfluencers.filter(ci => ci.status === 'negotiating').length;
-  const appliedInf     = allInfluencers.filter(ci => ci.status === 'applied').length;
-  const openCallSets   = sets.filter(s => s.influencer_mode === 'open_group').length;
-  const handpickSets   = sets.length - openCallSets;
+  const allInfluencers = sets.flatMap(s => (s.influencers || []).map(ci => ({ ...ci, set_id: s.id, set_name: s.name, set_goal: s.goal })));
+  const totalInf  = allInfluencers.length;
+  const activeInf = allInfluencers.filter(ci => ['active', 'live'].includes(ci.status)).length;
 
-  let totalDel = 0, doneDel = 0, reviewQueue = 0, liveConfirmQueue = 0;
+  let totalDel = 0, liveDel = 0, reviewQueue = 0, liveConfirmQueue = 0;
   for (const ci of allInfluencers) {
     const dc = ci.deliverable_counts || {};
     totalDel += dc.total || 0;
-    doneDel  += (dc.live || 0) + (dc.approved || 0);
     for (const d of (ci.deliverables || [])) {
+      if (d.status === 'live') liveDel++;
       if (d.status === 'submitted' || d.status === 'under_review') reviewQueue++;
       if (d.status === 'approved' && d.live_url) liveConfirmQueue++;
     }
   }
-  const progressPct = totalDel > 0 ? Math.round((doneDel / totalDel) * 100) : 0;
-
-  const applicationsCount = sets
-    .filter(s => s.influencer_mode === 'open_group')
-    .flatMap(s => s.influencers || [])
-    .filter(ci => ci.status === 'applied').length;
 
   const totalBudget     = Number(campaign.total_budget) || 0;
   const allocatedBudget = allInfluencers.reduce((sum, ci) => sum + (Number(ci.agreed_fee) || 0), 0);
-  const budgetPct       = totalBudget > 0 ? Math.round((allocatedBudget / totalBudget) * 100) : 0;
 
-  const setGoals      = sets.map(s => (s.goal || '').toLowerCase()).filter(Boolean);
-  const hasFeeBearing = setGoals.some(g => g === 'engagement' || g === 'hybrid');
-  const hasConversion = setGoals.some(g => g === 'conversion' || g === 'hybrid');
+  const totals = engagement?.totals || {};
+  const bySet  = engagement?.by_set || [];
+  const byInf  = engagement?.by_influencer || [];
+  const engBySetId = Object.fromEntries(bySet.map(s => [s.set_id, s]));
+  const engByInfId = Object.fromEntries(byInf.map(i => [i.influencer_id, i]));
+  // engagement per-deliverable stats keyed by deliverable id
+  const engByDelId = {};
+  for (const inf of byInf) for (const d of (inf.deliverables || [])) engByDelId[d.id] = d;
 
-  const engagementTotals = engagement?.totals || {};
-  const totalLikes    = engagementTotals.total_likes;
-  const totalComments = engagementTotals.total_comments;
-  const totalViews    = engagementTotals.total_views;
-  const avgER         = engagementTotals.avg_er;
-
-  const escrowEntries = escrow?.entries || escrow?.escrow_entries || [];
+  const escrowEntries  = escrow?.entries || escrow?.escrow_entries || [];
   const escrowLocked   = escrowEntries.filter(e => e.status === 'locked').reduce((s, e) => s + Number(e.amount || 0), 0);
   const escrowReleased = escrowEntries.filter(e => e.status === 'released').reduce((s, e) => s + Number(e.amount || 0), 0);
-  const t2Locked       = escrowEntries.filter(e => e.tranche_number === 2 && e.status === 'locked').reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const convSummary = conversions?.summary || {};
   const convCount   = conversions?.total_transactions ?? convSummary.total_transactions ?? 0;
   const convRevenue = conversions?.total_revenue      ?? convSummary.total_revenue      ?? 0;
-  const convCommission = conversions?.total_commission ?? convSummary.total_commission ?? 0;
 
-  const productsList   = productsData?.products || [];
-  const publishedCount = productsList.filter(p => p.publish_status === 'published').length;
-  const totalProducts  = productsList.length;
+  const productsList = productsData?.products || [];
+  const isBrandLevelOffer = !!productsData?.is_brand_level_offer;
+  // ci → set lookup so each product can show its set(s) without backend change
+  const setByCiId = {};
+  for (const s of sets) for (const ci of (s.influencers || [])) setByCiId[ci.id] = s.name;
+  const productSetNames = (p) => {
+    if (isBrandLevelOffer || !(p.assigned_to_influencers || []).length) return 'All sets';
+    const names = [...new Set(p.assigned_to_influencers.map(a => setByCiId[a.campaign_influencer_id]).filter(Boolean))];
+    return names.join(' · ') || '—';
+  };
+  const productsForCi = (ciId) =>
+    isBrandLevelOffer ? productsList
+      : productsList.filter(p => (p.assigned_to_influencers || []).some(a => a.campaign_influencer_id === ciId));
 
   const actionItems = [];
-  if (applicationsCount > 0) actionItems.push({
-    key: 'apps', tone: 'pending', icon: '!',
-    title: `${applicationsCount} application${applicationsCount !== 1 ? 's' : ''} waiting`,
-    meta: 'Open-call applicants to review',
-    href: `/dashboard/campaigns/${id}/influencers?status=applied`,
-  });
-  if (reviewQueue > 0) actionItems.push({
-    key: 'reviews', tone: 'pending', icon: '⌕',
-    title: `${reviewQueue} deliverable${reviewQueue !== 1 ? 's' : ''} to review`,
-    meta: 'Approve or request revision',
-    href: `/dashboard/campaigns/${id}/reviews?tab=reviews`,
-  });
-  if (liveConfirmQueue > 0) actionItems.push({
-    key: 'live', tone: 'danger', icon: '▶',
-    title: `${liveConfirmQueue} live URL${liveConfirmQueue !== 1 ? 's' : ''} to confirm`,
-    meta: t2Locked > 0 ? `Releases up to ${fmtRupees(t2Locked)} Tranche-2` : 'Releases Tranche-2 once all confirmed',
-    href: `/dashboard/campaigns/${id}/reviews?tab=live`,
-  });
+  const appliedCount = allInfluencers.filter(ci => ci.status === 'applied').length;
+  if (appliedCount > 0) actionItems.push({ key: 'apps', label: `Review ${appliedCount} open-call application${appliedCount !== 1 ? 's' : ''}`, href: `/dashboard/campaigns/${id}/influencers?status=applied` });
+  if (reviewQueue > 0) actionItems.push({ key: 'rev', label: `Review ${reviewQueue} submitted deliverable${reviewQueue !== 1 ? 's' : ''}`, href: `/dashboard/campaigns/${id}/reviews?tab=reviews` });
+  if (liveConfirmQueue > 0) actionItems.push({ key: 'live', label: `Confirm ${liveConfirmQueue} live URL${liveConfirmQueue !== 1 ? 's' : ''}`, href: `/dashboard/campaigns/${id}/reviews?tab=live` });
 
+  // default expansion: every set open; influencers with action states open
+  const isSetOpen = (sid) => openSets[sid] !== undefined ? openSets[sid] : true;
+  const isInfOpen = (ciid, hasAction) => openInfs[ciid] !== undefined ? openInfs[ciid] : hasAction;
+
+  /* ── Refresh actions ────────────────────────────────────────────────────── */
+  async function refreshDeliverable(delId) {
+    setRefreshingOne(delId);
+    const res = await deliverableApi.refreshStats(delId);
+    if (res?.success) {
+      const eng = await campaignApi.getEngagement(id);
+      if (eng?.success) setEngagement(eng.data);
+    } else {
+      alert(res?.error?.message || 'Refresh failed');
+    }
+    setRefreshingOne(null);
+  }
+
+  async function refreshAllAnalytics() {
+    const liveIds = [];
+    for (const inf of byInf) for (const d of (inf.deliverables || [])) if (d.status === 'live') liveIds.push(d.id);
+    if (liveIds.length === 0) {
+      setRefreshingAll('refetching…');
+      const eng = await campaignApi.getEngagement(id);
+      if (eng?.success) setEngagement(eng.data);
+      setRefreshingAll('');
+      return;
+    }
+    for (let i = 0; i < liveIds.length; i++) {
+      setRefreshingAll(`re-scraping ${i + 1}/${liveIds.length}…`);
+      await deliverableApi.refreshStats(liveIds[i]).catch(() => null);
+    }
+    setRefreshingAll('updating totals…');
+    const eng = await campaignApi.getEngagement(id);
+    if (eng?.success) setEngagement(eng.data);
+    setRefreshingAll('');
+  }
+
+  /* ════ Render ════ */
   return (
-    <div className="max-w-6xl font-body">
-      {/* Breadcrumb */}
+    <div className="font-body">
+      {/* Breadcrumb + header */}
       <div className="font-mono text-[11px] font-medium text-[#71717A] uppercase tracking-[0.3px] mb-1.5">
         <Link href="/dashboard" className="text-[#71717A] hover:text-[#0A0A0A] no-underline">/dashboard</Link>
         <span className="text-[#A1A1AA] mx-1.5">/</span>
@@ -213,235 +234,394 @@ export default function CampaignDetailHubPage() {
         <span className="text-[#A1A1AA] mx-1.5">/</span>
         <span className="text-[#0A0A0A] font-bold">{(campaign.id || '').slice(0, 8)}</span>
       </div>
-
-      {/* Header */}
-      <div className="flex items-end justify-between gap-5 flex-wrap mb-2">
+      <div className="flex items-end justify-between gap-5 flex-wrap mb-4">
         <div>
           <h1 className="font-display text-[28px] font-bold text-[#0A0A0A] -tracking-[0.6px]">{campaign.name}</h1>
-          <div className="w-11 h-1 bg-[#FFC107] rounded-full mt-1.5 mb-2.5"></div>
+          <div className="w-11 h-1 bg-[#FFC107] rounded-full mt-1.5 mb-2"></div>
           <div className="text-[12.5px] text-[#52525B]">
             <span className="font-mono font-semibold text-[#0A0A0A]">{formatDate(campaign.start_date)} → {formatDate(campaign.end_date)}</span>
             <span className="text-[#D4D4D8] mx-2">·</span>
             <span className="font-mono font-semibold text-[#0A0A0A]">{sets.length}</span> set{sets.length !== 1 ? 's' : ''}
             <span className="text-[#D4D4D8] mx-2">·</span>
             <span className="font-mono font-semibold text-[#0A0A0A]">{totalInf}</span> influencer{totalInf !== 1 ? 's' : ''}
-            {totalDel > 0 && (<>
-              <span className="text-[#D4D4D8] mx-2">·</span>
-              <span className="font-mono font-semibold text-[#0A0A0A]">{totalDel}</span> deliverable{totalDel !== 1 ? 's' : ''}
-            </>)}
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <StatusBadge status={campaign.status} />
+        <StatusBadge status={campaign.status} />
+      </div>
+
+      {/* Needs-attention banner (replaces the old right rail) */}
+      {actionItems.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap bg-[#FFF7CC] border border-[#FFC107] rounded-[12px] px-4 py-2.5 mb-4">
+          <span className="text-base">⚡</span>
+          <span className="text-[12.5px] font-bold text-[#0A0A0A]">{actionItems.length} thing{actionItems.length !== 1 ? 's' : ''} need{actionItems.length === 1 ? 's' : ''} you:</span>
+          {actionItems.map(a => (
+            <Link key={a.key} href={a.href} className="bg-[#0A0A0A] text-[#FFC107] rounded-[8px] px-3 py-1.5 text-[11px] font-extrabold no-underline hover:opacity-85">
+              {a.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Full-width header strip */}
+      <div className="bg-white border border-[#E4E4E7] rounded-[14px] px-5 py-4 mb-4 flex items-center flex-wrap gap-y-3">
+        <div className="flex-1 min-w-[150px] px-4 first:pl-0 border-r border-[#F4F4F5]">
+          <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">CONTENT</div>
+          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">
+            {reviewQueue}<span className="text-[11px] text-[#71717A] font-semibold"> to review</span>
+            {' · '}{liveConfirmQueue}<span className="text-[11px] text-[#71717A] font-semibold"> awaiting live</span>
+            {' · '}{liveDel}<span className="text-[11px] text-[#71717A] font-semibold"> live</span>
+          </div>
+          <div className="text-[10px] text-[#A1A1AA] mt-0.5">{totalDel} deliverable{totalDel !== 1 ? 's' : ''} total</div>
+        </div>
+        <div className="flex-1 min-w-[120px] px-4 border-r border-[#F4F4F5]">
+          <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">BUDGET</div>
+          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{totalBudget > 0 ? fmtRupees(allocatedBudget) : '—'}</div>
+          <div className="text-[10px] text-[#A1A1AA] mt-0.5">{totalBudget > 0 ? `of ${fmtRupees(totalBudget)} allocated` : 'commission-only'}</div>
+        </div>
+        {escrowEntries.length > 0 && (
+          <div className="flex-1 min-w-[130px] px-4 border-r border-[#F4F4F5]">
+            <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">ESCROW</div>
+            <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{fmtRupees(escrowReleased)}</div>
+            <div className="text-[10px] text-[#A1A1AA] mt-0.5">released · {fmtRupees(escrowLocked)} locked · <Link href={`/dashboard/campaigns/${id}/escrow`} className="text-[#6B5A00] font-bold no-underline">detail ↗</Link></div>
+          </div>
+        )}
+        {(convCount > 0 || convRevenue > 0) && (
+          <div className="flex-1 min-w-[130px] px-4 border-r border-[#F4F4F5]">
+            <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">CONVERSIONS</div>
+            <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(convCount)}</div>
+            <div className="text-[10px] text-[#A1A1AA] mt-0.5">{fmtRupees(convRevenue)} revenue · <Link href={`/dashboard/conversions?campaign=${id}`} className="text-[#6B5A00] font-bold no-underline">detail ↗</Link></div>
+          </div>
+        )}
+        <div className="flex-1 min-w-[100px] px-4 border-r border-[#F4F4F5]">
+          <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">LIKES</div>
+          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(totals.total_likes)}</div>
+          <div className="text-[10px] text-[#A1A1AA] mt-0.5">{activeInf}/{totalInf} influencers active</div>
+        </div>
+        <div className="flex-1 min-w-[90px] px-4">
+          <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">AVG ER</div>
+          <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{totals.avg_er != null ? `${Number(totals.avg_er).toFixed(1)}%` : '—'}</div>
+          <div className="text-[10px] text-[#A1A1AA] mt-0.5">from {liveDel} live post{liveDel !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="pl-4">
+          <button
+            onClick={refreshAllAnalytics}
+            disabled={!!refreshingAll}
+            className={`bg-[#FFC107] rounded-[10px] px-4 py-2.5 text-[12px] font-extrabold text-[#0A0A0A] whitespace-nowrap ${refreshingAll ? 'opacity-60' : 'hover:bg-[#E0A800]'}`}
+          >
+            {refreshingAll ? `↻ ${refreshingAll}` : '↻ Refresh analytics'}
+          </button>
+          <div className="text-[9.5px] text-[#A1A1AA] mt-1 text-center">re-scrapes every live post</div>
         </div>
       </div>
 
-      {/* Hub grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 mt-6">
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4">
+        {[
+          { k: 'hier', label: 'Hierarchy' },
+          ...(productsList.length > 0 ? [{ k: 'prod', label: 'Products', n: productsList.length }] : []),
+          { k: 'ana', label: 'Analytics' },
+        ].map(t => (
+          <button key={t.k} onClick={() => setTab(t.k)}
+            className={`rounded-[10px] px-4 py-2 text-[12.5px] font-bold border ${tab === t.k ? 'bg-[#0A0A0A] text-[#FFC107] border-[#0A0A0A]' : 'bg-white text-[#52525B] border-[#E4E4E7] hover:border-[#0A0A0A]'}`}>
+            {t.label}{t.n != null && <span className={`ml-1.5 rounded-[7px] px-1.5 py-0.5 text-[10px] ${tab === t.k ? 'bg-[#FFC107]/25 text-[#FFC107]' : 'bg-[#F4F4F5] text-[#52525B]'}`}>{t.n}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* ════ HIERARCHY ════ */}
+      {tab === 'hier' && (
         <div>
-          {/* Summary card */}
-          <section className="bg-gradient-to-br from-[#FFFDEB] to-[#FFF7CC] border border-[#FFC107]/30 rounded-[20px] p-6 relative overflow-hidden mb-5">
-            <div className="absolute -top-12 -right-12 w-44 h-44 bg-[#FFC107] rounded-full opacity-[0.22]"></div>
-            <div className="absolute -top-5 right-12 w-20 h-20 bg-[#FFC107] rounded-full opacity-[0.14]"></div>
-            <div className="relative z-10">
-              <div className="flex justify-between items-end gap-6 mb-4">
-                <div>
-                  <div className="text-[11.5px] font-extrabold text-[#6B5A00] uppercase tracking-[0.6px] mb-0.5">Campaign progress</div>
-                  <div className="font-mono font-bold text-[48px] text-[#0A0A0A] -tracking-[1.2px] leading-none">
-                    {progressPct}<span className="text-[28px] text-[#71717A]">%</span>
-                  </div>
-                </div>
-                <div className="text-[13px] text-[#52525B] text-right">
-                  {totalDel > 0 ? (
-                    <>
-                      <span className="font-mono font-semibold text-[#0A0A0A]">{doneDel}</span> of{' '}
-                      <span className="font-mono font-semibold text-[#0A0A0A]">{totalDel}</span> deliverables<br />
-                      live or approved
-                    </>
-                  ) : 'No deliverables yet'}
-                </div>
-              </div>
-              <div className="h-2 bg-black/10 rounded-full overflow-hidden mb-5">
-                <div className="h-full bg-[#0A0A0A] rounded-full transition-all" style={{ width: `${progressPct}%` }} />
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                <div className="px-1">
-                  <div className="text-[10.5px] font-bold text-[#52525B] uppercase tracking-[0.4px] mb-1">Budget</div>
-                  <div className="font-mono font-bold text-[22px] text-[#0A0A0A] -tracking-[0.4px]">{totalBudget > 0 ? `${budgetPct}%` : '—'}</div>
-                  <div className="text-[11.5px] text-[#71717A] mt-0.5">
-                    {totalBudget > 0 ? `${fmtRupees(allocatedBudget)} / ${fmtRupees(totalBudget)}` : 'No budget set'}
-                  </div>
-                </div>
-                <div className="pl-4 border-l border-black/10">
-                  <div className="text-[10.5px] font-bold text-[#52525B] uppercase tracking-[0.4px] mb-1">Active</div>
-                  <div className="font-mono font-bold text-[22px] text-[#0A0A0A] -tracking-[0.4px]">{activeInf} / {totalInf}</div>
-                  <div className="text-[11.5px] text-[#71717A] mt-0.5">influencers</div>
-                </div>
-                <div className="pl-4 border-l border-black/10">
-                  <div className="text-[10.5px] font-bold text-[#52525B] uppercase tracking-[0.4px] mb-1">Reach</div>
-                  <div className="font-mono font-bold text-[22px] text-[#0A0A0A] -tracking-[0.4px]">
-                    {totalLikes != null
-                      ? (totalLikes >= 100000 ? `${(totalLikes / 100000).toFixed(1)}L` : Number(totalLikes).toLocaleString('en-IN'))
-                      : '—'}
-                  </div>
-                  <div className="text-[11.5px] text-[#71717A] mt-0.5">total likes</div>
-                </div>
-                <div className="pl-4 border-l border-black/10">
-                  <div className="text-[10.5px] font-bold text-[#52525B] uppercase tracking-[0.4px] mb-1">Avg ER</div>
-                  <div className="font-mono font-bold text-[22px] text-[#0A0A0A] -tracking-[0.4px]">{avgER != null ? `${Number(avgER).toFixed(1)}%` : '—'}</div>
-                  <div className="text-[11.5px] text-[#71717A] mt-0.5">engagement rate</div>
-                </div>
-              </div>
+          {sets.length === 0 && (
+            <div className="bg-white border border-[#E4E4E7] rounded-[14px] p-10 text-center text-[#71717A] text-sm">
+              No sets yet — <Link href={`/dashboard/campaigns/${id}/sets`} className="font-bold text-[#0A0A0A]">create the first set</Link>.
             </div>
-          </section>
-
-          {/* Drill-down section header */}
-          <div className="flex items-center gap-2.5 mb-3.5 mt-2">
-            <span className="inline-flex items-center gap-2.5 bg-[#FFC107] pl-1.5 pr-3.5 py-1 rounded-full">
-              <span className="w-[26px] h-[26px] rounded-full bg-[#0A0A0A] text-[#FFC107] flex items-center justify-center font-display font-extrabold text-xs">◫</span>
-              <span className="font-display font-bold text-[11.5px] text-[#0A0A0A] uppercase tracking-[0.5px]">Explore</span>
-            </span>
-            <span className="text-xs text-[#71717A] ml-auto">Tap a tile to drill in</span>
-          </div>
-
-          {/* Tile grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 mb-6">
-            <DrillTile
-              href={`/dashboard/campaigns/${id}/sets`}
-              icon="⊟"
-              label="Sets"
-              value={sets.length}
-              sub={<>{openCallSets > 0 && <><span className="font-mono font-semibold text-[#0A0A0A]">{openCallSets}</span> open call · </>}<span className="font-mono font-semibold text-[#0A0A0A]">{handpickSets}</span> handpick</>}
-            />
-            <DrillTile
-              href={`/dashboard/campaigns/${id}/influencers`}
-              icon="★"
-              label="Influencers"
-              value={totalInf}
-              sub={<>
-                <span className="font-mono font-semibold text-[#0A0A0A]">{activeInf}</span> active
-                {negotiatingInf > 0 && <> · <span className="font-mono font-semibold text-[#0A0A0A]">{negotiatingInf}</span> negotiating</>}
-                {appliedInf > 0 && <> · <span className="font-mono font-semibold text-[#0A0A0A]">{appliedInf}</span> applied</>}
-              </>}
-            />
-            <DrillTile
-              href={`/dashboard/campaigns/${id}/reviews`}
-              icon="▶"
-              label="Content"
-              value={totalDel > 0 ? `${doneDel} / ${totalDel}` : '0'}
-              sub={<>live{(reviewQueue + liveConfirmQueue) > 0 && <> · <span className="font-mono font-semibold text-[#0A0A0A]">{reviewQueue + liveConfirmQueue}</span> in queue</>}</>}
-            />
-            {hasFeeBearing && escrowEntries.length > 0 && (
-              <DrillTile
-                href={`/dashboard/campaigns/${id}/escrow`}
-                icon="₹"
-                iconDark
-                label="Escrow"
-                value={fmtRupees(escrowReleased)}
-                sub={<>released · <span className="font-mono font-semibold text-[#0A0A0A]">{fmtRupees(escrowLocked)}</span> locked</>}
-              />
-            )}
-            {hasConversion && (convCount > 0 || convRevenue > 0) && (
-              <DrillTile
-                href={`/dashboard/conversions?campaign=${id}`}
-                icon="⊞"
-                iconDark
-                label="Conversions"
-                value={Number(convCount).toLocaleString('en-IN')}
-                sub={<><span className="font-mono font-semibold text-[#0A0A0A]">{fmtRupees(convRevenue)}</span> revenue · <span className="font-mono font-semibold text-[#0A0A0A]">{fmtRupees(convCommission)}</span> comm</>}
-              />
-            )}
-            {hasConversion && totalProducts > 0 && (
-              <DrillTile
-                href={`/dashboard/campaigns/${id}/influencers`}
-                icon="▤"
-                label="Publishing"
-                value={`${publishedCount} / ${totalProducts}`}
-                sub={<>products live{productsData?.is_brand_level_offer && <> · brand-level offer</>}</>}
-              />
-            )}
-          </div>
-
-          {/* Inline analytics */}
-          {(totalLikes != null || avgER != null) && (
-            <section className="bg-white border border-[#E4E4E7] rounded-[16px] p-[18px] mb-5">
-              <div className="flex items-center gap-2.5 mb-2.5">
-                <span className="inline-flex items-center gap-2.5 bg-[#FFC107] pl-1.5 pr-3.5 py-1 rounded-full">
-                  <span className="w-[26px] h-[26px] rounded-full bg-[#0A0A0A] text-[#FFC107] flex items-center justify-center font-display font-extrabold text-xs">∼</span>
-                  <span className="font-display font-bold text-[11.5px] text-[#0A0A0A] uppercase tracking-[0.5px]">Analytics</span>
-                </span>
-                <span className="text-xs text-[#71717A] ml-auto">From <span className="font-mono font-semibold text-[#0A0A0A]">{doneDel}</span> live deliverable{doneDel !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-2">
-                <div className="bg-[#FFF7CC] rounded-[10px] p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.4px] text-[#6B5A00] mb-1">Likes</div>
-                  <div className="font-mono font-bold text-xl text-[#6B5A00] -tracking-[0.3px]">{totalLikes != null ? Number(totalLikes).toLocaleString('en-IN') : '—'}</div>
-                </div>
-                <div className="bg-[#D1FAE5] rounded-[10px] p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.4px] text-[#047857] mb-1">Comments</div>
-                  <div className="font-mono font-bold text-xl text-[#047857] -tracking-[0.3px]">{totalComments != null ? Number(totalComments).toLocaleString('en-IN') : '—'}</div>
-                </div>
-                <div className="bg-[#F4F4F5] rounded-[10px] p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.4px] text-[#1F1F22] mb-1">Views</div>
-                  <div className="font-mono font-bold text-xl text-[#1F1F22] -tracking-[0.3px]">{totalViews != null && totalViews > 0 ? Number(totalViews).toLocaleString('en-IN') : '—'}</div>
-                </div>
-                <div className="bg-[#FFFDEB] rounded-[10px] p-3">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.4px] text-[#6B5A00] mb-1">Avg ER</div>
-                  <div className="font-mono font-bold text-xl text-[#6B5A00] -tracking-[0.3px]">{avgER != null ? `${Number(avgER).toFixed(1)}%` : '—'}</div>
-                </div>
-              </div>
-              <div className="mt-3.5 text-[11px] text-[#71717A]">
-                Reach &amp; saves not shown — they need the influencer&apos;s Instagram Business API to be connected.
-              </div>
-            </section>
           )}
+          {sets.map(set => {
+            const eng = engBySetId[set.id] || {};
+            const open = isSetOpen(set.id);
+            const infs = set.influencers || [];
+            return (
+              <div key={set.id} className="bg-white border border-[#E4E4E7] rounded-[14px] mb-3 overflow-hidden">
+                <button onClick={() => setOpenSets(o => ({ ...o, [set.id]: !open }))}
+                  className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-[#FFFDEB] text-left">
+                  <span className={`w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-[11px] transition-transform ${open ? 'rotate-90 bg-[#FFF7CC]' : 'bg-[#F4F4F5]'}`}>▶</span>
+                  <span>
+                    <span className="block font-display font-extrabold text-[14.5px] text-[#0A0A0A]">{set.name}</span>
+                    <span className="block text-[11px] text-[#71717A]">{set.influencer_mode === 'open_group' ? 'open call' : 'handpick'} · {infs.length} influencer{infs.length !== 1 ? 's' : ''}</span>
+                  </span>
+                  {set.goal && (
+                    <span className={`text-[9.5px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] uppercase ${GOAL_TAG[set.goal] || 'bg-[#F4F4F5] text-[#52525B]'}`}>
+                      {set.goal}{set.set_budget ? ` · ${fmtRupees(set.set_budget)}` : ''}
+                    </span>
+                  )}
+                  <span className="ml-auto flex gap-4 items-center">
+                    <MiniStat v={nf(eng.views)} k="VIEWS" />
+                    <MiniStat v={nf(eng.likes)} k="LIKES" />
+                    <MiniStat v={nf(eng.comments)} k="COMMENTS" />
+                    <MiniStat v={eng.engagement_rate != null ? `${eng.engagement_rate}%` : '—'} k="ER" />
+                  </span>
+                </button>
 
-          {/* Brief */}
-          {campaign.brief && (
-            <button
-              type="button"
-              onClick={() => setBriefOpen(o => !o)}
-              className="block w-full text-left bg-white border border-[#E4E4E7] rounded-[14px] p-[18px] hover:border-[#D4D4D8] transition-colors"
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 font-display font-bold text-[13.5px] text-[#0A0A0A]">
-                  <span className="w-[3px] h-3.5 bg-[#FFC107] rounded-sm"></span>
-                  Campaign brief
-                </div>
-                <span className="font-mono font-bold text-[#71717A] text-lg">{briefOpen ? '∧' : '∨'}</span>
+                {open && (
+                  <div className="border-t border-[#F4F4F5]">
+                    {infs.length === 0 && <div className="px-10 py-4 text-[12px] text-[#A1A1AA]">No influencers in this set yet.</div>}
+                    {infs.map(ci => {
+                      const ieng = engByInfId[ci.influencer_id] || {};
+                      const handle = ci.instagram_handle || ci.handle || ieng.instagram_handle || ci.influencer_name || ci.name || '—';
+                      const dels = ci.deliverables || [];
+                      const hasAction = dels.some(d => ['submitted', 'under_review'].includes(d.status) || (d.status === 'approved' && d.live_url));
+                      const iOpen = isInfOpen(ci.id, hasAction || infs.length === 1);
+                      const ciProducts = productsForCi(ci.id);
+                      const reviewCount = dels.filter(d => ['submitted', 'under_review'].includes(d.status)).length;
+                      const statusPill = reviewCount > 0
+                        ? { cls: 'bg-[#FFF7CC] text-[#6B5A00]', label: `${reviewCount} TO REVIEW` }
+                        : (['active', 'live'].includes(ci.status) ? { cls: 'bg-[#D1FAE5] text-[#047857]', label: ci.status.toUpperCase() }
+                          : { cls: 'bg-[#F4F4F5] text-[#52525B]', label: (ci.status || '').replace('_', ' ').toUpperCase() });
+                      return (
+                        <div key={ci.id} className="border-b border-[#F4F4F5] last:border-b-0 pl-9 pr-4">
+                          <button onClick={() => setOpenInfs(o => ({ ...o, [ci.id]: !iOpen }))}
+                            className="w-full flex items-center gap-3 py-3 text-left">
+                            <span className={`w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-[11px] transition-transform ${iOpen ? 'rotate-90 bg-[#FFF7CC]' : 'bg-[#F4F4F5]'}`}>▶</span>
+                            <span className="w-[34px] h-[34px] rounded-full bg-[#FFC107] flex items-center justify-center font-extrabold text-[13px]">
+                              {String(handle).replace('@', '').charAt(0).toUpperCase()}
+                            </span>
+                            <span>
+                              <span className="block font-bold text-[13.5px] text-[#0A0A0A]">@{String(handle).replace('@', '')}</span>
+                              <span className="block text-[11px] text-[#71717A]">
+                                {ci.agreed_fee ? `${fmtRupees(ci.agreed_fee)} fee` : ci.commission_pct ? `${Number(ci.commission_pct)}% commission` : ''}
+                                {ciProducts.length > 0 ? ` · ${ciProducts.length} product${ciProducts.length !== 1 ? 's' : ''}` : ''}
+                                {' · '}
+                                <Link href={`/dashboard/campaigns/${id}/influencers`} onClick={e => e.stopPropagation()} className="text-[#6B5A00] font-bold no-underline">manage ↗</Link>
+                              </span>
+                            </span>
+                            <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${statusPill.cls}`}>{statusPill.label}</span>
+                            <span className="ml-auto flex gap-4 items-center">
+                              <MiniStat v={nf(ieng.views)} k="VIEWS" />
+                              <MiniStat v={nf(ieng.likes)} k="LIKES" />
+                              <MiniStat v={ieng.engagement_rate != null ? `${ieng.engagement_rate}%` : '—'} k="ER" />
+                            </span>
+                          </button>
+
+                          {iOpen && (
+                            <div className="pb-3.5">
+                              {dels.map(d => {
+                                const pill = delPill(d);
+                                const stats = engByDelId[d.id] || {};
+                                const needsReview = ['submitted', 'under_review'].includes(d.status);
+                                const needsLiveConfirm = d.status === 'approved' && d.live_url;
+                                return (
+                                  <div key={d.id}
+                                    className={`flex items-center gap-3 rounded-[10px] border px-3.5 py-2.5 my-1.5 ml-[46px] ${needsReview ? 'bg-[#FFFDEB] border-[#FFC107]' : 'bg-[#FAFAFA] border-[#F4F4F5]'}`}>
+                                    <span className="text-base">{DEL_ICON[d.type] || '🎬'}</span>
+                                    <span>
+                                      <span className="block text-[12.5px] font-bold text-[#0A0A0A] capitalize">{(d.type || '').replace('_', ' ')}</span>
+                                      <span className="block text-[10.5px] text-[#71717A]">
+                                        {d.status === 'live' && d.live_url && <a href={d.live_url} target="_blank" rel="noreferrer" className="text-[#6B5A00] font-bold no-underline">view post ↗</a>}
+                                        {needsReview && (d.submitted_at ? `submitted ${formatDate(d.submitted_at)}` : 'awaiting your review')}
+                                        {needsLiveConfirm && 'influencer says it’s posted'}
+                                        {d.status === 'pending' && 'not submitted yet'}
+                                        {d.status === 'revision_requested' && `revision ${d.revision_count || 1} requested`}
+                                      </span>
+                                    </span>
+                                    <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${pill.cls}`}>{pill.label}</span>
+                                    <span className="ml-auto flex gap-3.5 items-center">
+                                      {d.status === 'live' && (
+                                        <>
+                                          <MiniStat v={nf(stats.likes)} k="LIKES" />
+                                          <MiniStat v={nf(stats.comments)} k="COMMENTS" />
+                                          {stats.views != null && <MiniStat v={nf(stats.views)} k="VIEWS" />}
+                                          <MiniStat v={stats.engagement_rate != null ? `${stats.engagement_rate}%` : '—'} k="ER" />
+                                          <button
+                                            onClick={() => refreshDeliverable(d.id)}
+                                            disabled={refreshingOne === d.id}
+                                            title="Re-scrape this post now"
+                                            className="w-7 h-7 rounded-[8px] bg-white border border-[#E4E4E7] text-[13px] hover:bg-[#FFF7CC] hover:border-[#FFC107] disabled:opacity-50">
+                                            {refreshingOne === d.id ? '…' : '↻'}
+                                          </button>
+                                        </>
+                                      )}
+                                      {needsReview && (
+                                        <Link href={`/dashboard/campaigns/${id}/reviews?tab=reviews`}
+                                          className="bg-[#FFC107] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#0A0A0A] no-underline hover:bg-[#E0A800]">
+                                          Review now
+                                        </Link>
+                                      )}
+                                      {needsLiveConfirm && (
+                                        <Link href={`/dashboard/campaigns/${id}/reviews?tab=live`}
+                                          className="bg-[#DBEAFE] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#1D4ED8] no-underline hover:opacity-80">
+                                          Confirm live
+                                        </Link>
+                                      )}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                              {dels.length === 0 && <div className="ml-[46px] text-[11.5px] text-[#A1A1AA] my-1.5">No deliverables yet.</div>}
+
+                              {ciProducts.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 ml-[46px] mt-2">
+                                  {ciProducts.slice(0, 12).map(p => (
+                                    <span key={p.id} className="bg-white border border-[#E4E4E7] rounded-[9px] px-2.5 py-1.5 text-[11px] font-semibold text-[#1F1F22]">
+                                      {p.name} <span className="text-[#A1A1AA] font-medium">· {p.section || '—'} · {fmtRupees(p.price)}</span>
+                                    </span>
+                                  ))}
+                                  {ciProducts.length > 12 && (
+                                    <button onClick={() => setTab('prod')} className="text-[11px] font-bold text-[#6B5A00] px-2">+{ciProducts.length - 12} more →</button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              {briefOpen && (
-                <div className="mt-3 pt-3 border-t border-[#E4E4E7] text-[13px] text-[#1F1F22] leading-relaxed">
-                  {campaign.brief}
-                </div>
-              )}
-            </button>
-          )}
+            );
+          })}
         </div>
+      )}
 
-        {/* Right rail */}
-        <aside className="flex flex-col gap-3.5 lg:sticky lg:top-20 self-start">
-          {actionItems.length > 0 && (
-            <div className="bg-white border border-[#E4E4E7] rounded-[16px] p-[18px]">
-              <h3 className="font-display font-bold text-[13px] text-[#0A0A0A] flex items-center gap-2.5 mb-2">
-                Needs your attention
-                <span className="ml-auto bg-[#0A0A0A] text-[#FFC107] font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-full">{actionItems.length}</span>
-              </h3>
-              <div className="text-[11.5px] text-[#52525B] mb-3">Items waiting on a brand action.</div>
-              {actionItems.map(a => (
-                <ActionRow key={a.key} href={a.href} tone={a.tone} icon={a.icon} title={a.title} meta={a.meta} />
-              ))}
-            </div>
-          )}
-          <div className="bg-white border border-[#E4E4E7] rounded-[16px] p-[18px]">
-            <h3 className="font-display font-bold text-[13px] text-[#0A0A0A] mb-2">Web-only tools</h3>
-            <div className="text-[11.5px] text-[#52525B]">
-              Contract signing · negotiation chat · production scheduling are inline modals from the{' '}
-              <Link href={`/dashboard/campaigns/${id}/influencers`} className="text-[#0A0A0A] font-semibold border-b border-dotted border-[#A1A1AA] no-underline">Influencers list</Link>.
-            </div>
+      {/* ════ PRODUCTS ════ */}
+      {tab === 'prod' && (
+        <div>
+          <div className="bg-white border border-[#E4E4E7] rounded-[14px] overflow-hidden">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-[#FAFAFA]">
+                  {['PRODUCT', 'CATEGORY / SECTION', 'SET', 'INFLUENCER(S)', 'PRICE', 'STATUS'].map(h => (
+                    <th key={h} className="text-left text-[10px] font-extrabold tracking-[0.5px] text-[#71717A] px-4 py-3 border-b border-[#E4E4E7]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {productsList.map(p => (
+                  <tr key={p.id} className="hover:bg-[#FFFDEB]">
+                    <td className="px-4 py-3 border-b border-[#F4F4F5] text-[12.5px] font-bold text-[#0A0A0A]">{p.name}</td>
+                    <td className="px-4 py-3 border-b border-[#F4F4F5] text-[12px] text-[#52525B]">{[p.category_key, p.section].filter(Boolean).join(' · ') || '—'}</td>
+                    <td className="px-4 py-3 border-b border-[#F4F4F5] text-[12px] text-[#52525B]">{productSetNames(p)}</td>
+                    <td className="px-4 py-3 border-b border-[#F4F4F5] text-[12px] text-[#52525B]">
+                      {isBrandLevelOffer || !(p.assigned_to_influencers || []).length
+                        ? 'All campaign influencers'
+                        : p.assigned_to_influencers.map(a => `@${a.handle || a.name}`).join(' · ')}
+                    </td>
+                    <td className="px-4 py-3 border-b border-[#F4F4F5] font-mono text-[12px] font-bold text-[#0A0A0A]">{fmtRupees(p.price)}</td>
+                    <td className="px-4 py-3 border-b border-[#F4F4F5]">
+                      <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${p.publish_status === 'published' ? 'bg-[#D1FAE5] text-[#047857]' : 'bg-[#F4F4F5] text-[#52525B]'}`}>
+                        {p.publish_status === 'published' ? 'LIVE IN STORE' : 'PENDING'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </aside>
-      </div>
+          <div className="text-[11px] text-[#A1A1AA] mt-2">
+            {isBrandLevelOffer
+              ? 'Brand-level offer — every influencer in this campaign promotes the whole catalogue.'
+              : 'Each product shows exactly where it lives: set → influencer(s) → category.'}
+            {' '}&quot;Live in store&quot; = the influencer has published their note for it.
+          </div>
+        </div>
+      )}
+
+      {/* ════ ANALYTICS ════ */}
+      {tab === 'ana' && (
+        <div>
+          <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2">LEVEL 1 — CAMPAIGN</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            {[
+              { k: 'LIKES', v: nf(totals.total_likes) },
+              { k: 'COMMENTS', v: nf(totals.total_comments) },
+              { k: 'VIEWS', v: nf(totals.total_views) },
+              { k: 'AVG ER', v: totals.avg_er != null ? `${Number(totals.avg_er).toFixed(1)}%` : '—' },
+            ].map(c => (
+              <div key={c.k} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4">
+                <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">{c.k}</div>
+                <div className="font-mono font-bold text-[24px] text-[#0A0A0A] mt-1">{c.v}</div>
+              </div>
+            ))}
+          </div>
+
+          {bySet.length > 0 && (<>
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2">LEVEL 2 — BY SET</div>
+            {bySet.map(s => {
+              const maxViews = Math.max(...bySet.map(x => x.views || 0), 1);
+              return (
+                <div key={s.set_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[13px] text-[#0A0A0A]">{s.set_name} <span className="text-[11px] text-[#71717A] font-medium">· {s.goal || '—'} · {s.influencers} influencer{s.influencers !== 1 ? 's' : ''}</span></span>
+                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(s.views)} views · {nf(s.likes)} likes · {nf(s.comments)} comments · ER {s.engagement_rate}%</span>
+                  </div>
+                  <div className="h-[6px] bg-[#F4F4F5] rounded-[3px] mt-2"><div className="h-[6px] bg-[#FFC107] rounded-[3px]" style={{ width: `${Math.round(((s.views || 0) / maxViews) * 100)}%` }} /></div>
+                </div>
+              );
+            })}
+          </>)}
+
+          {byInf.length > 0 && (<>
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2 mt-5">LEVEL 3 — BY INFLUENCER</div>
+            {byInf.map(i => {
+              const maxViews = Math.max(...byInf.map(x => x.views || 0), 1);
+              const liveN = (i.deliverables || []).filter(d => d.status === 'live').length;
+              const otherN = (i.deliverables || []).length - liveN;
+              return (
+                <div key={i.influencer_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-[13px] text-[#0A0A0A]">{i.handle} <span className="text-[11px] text-[#71717A] font-medium">· {i.set_name} · {liveN} live{otherN > 0 ? ` + ${otherN} other` : ''}</span></span>
+                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(i.views)} views · {nf(i.likes)} likes · ER {i.engagement_rate}%</span>
+                  </div>
+                  <div className="h-[6px] bg-[#F4F4F5] rounded-[3px] mt-2"><div className="h-[6px] bg-[#FFC107] rounded-[3px]" style={{ width: `${Math.round(((i.views || 0) / maxViews) * 100)}%` }} /></div>
+                </div>
+              );
+            })}
+          </>)}
+
+          {Object.keys(engByDelId).length > 0 && (<>
+            <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2 mt-5">LEVEL 4 — BY DELIVERABLE</div>
+            {byInf.flatMap(i => (i.deliverables || []).map(d => ({ ...d, handle: i.handle }))).map(d => (
+              <div key={d.id} className="bg-white border border-[#E4E4E7] rounded-[12px] px-4 py-3 mb-2 flex items-center gap-3">
+                <span>{DEL_ICON[d.type] || '🎬'}</span>
+                <span className="font-bold text-[12.5px] text-[#0A0A0A]">{d.handle} <span className="capitalize font-medium text-[#52525B]">{(d.type || '').replace('_', ' ')}</span></span>
+                <span className={`text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] ${delPill(d).cls}`}>{delPill(d).label}</span>
+                <span className="ml-auto font-mono text-[11.5px] text-[#52525B]">
+                  {d.status === 'live'
+                    ? <>{nf(d.likes)} likes · {nf(d.comments)} comments{d.views != null ? <> · {nf(d.views)} views</> : null} · ER {d.engagement_rate != null ? `${d.engagement_rate}%` : '—'}{d.scraped_at ? <> · scraped {formatDate(d.scraped_at)}</> : null}</>
+                    : 'no stats until live'}
+                </span>
+                {d.status === 'live' && (
+                  <button onClick={() => refreshDeliverable(d.id)} disabled={refreshingOne === d.id}
+                    className="w-7 h-7 rounded-[8px] bg-white border border-[#E4E4E7] text-[13px] hover:bg-[#FFF7CC] hover:border-[#FFC107] disabled:opacity-50">
+                    {refreshingOne === d.id ? '…' : '↻'}
+                  </button>
+                )}
+              </div>
+            ))}
+          </>)}
+          <div className="text-[11px] text-[#A1A1AA] mt-3">
+            Reach &amp; saves not shown — they need the influencer&apos;s Instagram Business API to be connected.
+            Stats auto-refresh daily; ↻ re-scrapes a post on demand.
+          </div>
+        </div>
+      )}
+
+      {/* Brief (kept from the previous design) */}
+      {campaign.brief && (
+        <button type="button" onClick={() => setBriefOpen(o => !o)}
+          className="block w-full text-left bg-white border border-[#E4E4E7] rounded-[14px] p-[18px] hover:border-[#D4D4D8] transition-colors mt-5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2 font-display font-bold text-[13.5px] text-[#0A0A0A]">
+              <span className="w-[3px] h-3.5 bg-[#FFC107] rounded-sm"></span>
+              Campaign brief
+            </div>
+            <span className="font-mono font-bold text-[#71717A] text-lg">{briefOpen ? '∧' : '∨'}</span>
+          </div>
+          {briefOpen && (
+            <div className="mt-3 pt-3 border-t border-[#E4E4E7] text-[13px] text-[#1F1F22] leading-relaxed">{campaign.brief}</div>
+          )}
+        </button>
+      )}
     </div>
   );
 }

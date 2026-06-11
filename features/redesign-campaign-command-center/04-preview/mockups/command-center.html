@@ -1,0 +1,305 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Campaign Command Center — interactive mockup</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#FAFAFA;font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0A0A0A}
+  .mono{font-family:Menlo,Consolas,monospace}
+  /* top nav (unchanged, for context) */
+  .nav{background:#0A0A0A;color:#fff;padding:12px 28px;font-size:12px;display:flex;gap:18px;align-items:center}
+  .nav b{background:#FFC107;color:#0A0A0A;border-radius:8px;padding:5px 12px}
+  .wrap{max-width:1880px;margin:0 auto;padding:18px 28px}
+  /* attention banner */
+  .banner{background:#FFF7CC;border:1px solid #FFC107;border-radius:12px;padding:10px 16px;display:flex;gap:14px;align-items:center;margin-bottom:14px}
+  .banner .pill{background:#0A0A0A;color:#FFC107;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer}
+  /* header strip */
+  .strip{background:#fff;border:1px solid #E4E4E7;border-radius:14px;padding:16px 20px;display:flex;gap:0;align-items:center;margin-bottom:14px}
+  .strip .cell{flex:1;border-right:1px solid #F4F4F5;padding:0 18px}
+  .strip .cell:first-child{padding-left:0}.strip .cell:last-child{border-right:none}
+  .k{font-size:10px;font-weight:800;color:#71717A;letter-spacing:.5px}
+  .v{font-size:22px;font-weight:800;margin-top:2px}
+  .v small{font-size:11px;color:#71717A;font-weight:600}
+  .refresh{background:#FFC107;border:none;border-radius:10px;padding:11px 16px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .refresh.spin{opacity:.6}
+  .meta-note{font-size:10px;color:#A1A1AA;margin-top:4px}
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tab{background:#fff;border:1px solid #E4E4E7;border-radius:10px;padding:9px 18px;font-size:12.5px;font-weight:700;color:#52525B;cursor:pointer}
+  .tab.on{background:#0A0A0A;color:#FFC107;border-color:#0A0A0A}
+  .tab .n{background:#F4F4F5;border-radius:7px;padding:1px 7px;font-size:10px;margin-left:6px;color:#52525B}
+  .tab.on .n{background:rgba(255,193,7,.25);color:#FFC107}
+  /* hierarchy */
+  .set{background:#fff;border:1px solid #E4E4E7;border-radius:14px;margin-bottom:12px;overflow:hidden}
+  .setHead{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer}
+  .setHead:hover{background:#FFFDEB}
+  .caret{width:22px;height:22px;border-radius:6px;background:#F4F4F5;display:flex;align-items:center;justify-content:center;font-size:11px;transition:transform .15s}
+  .open>.setHead .caret{transform:rotate(90deg);background:#FFF7CC}
+  .setName{font-size:14.5px;font-weight:800}
+  .tag{font-size:9.5px;font-weight:800;border-radius:7px;padding:3px 8px;letter-spacing:.4px}
+  .tConv{background:#F3E8FF;color:#7E22CE}.tEng{background:#CFFAFE;color:#0E7490}
+  .miniStats{display:flex;gap:16px;margin-left:auto;align-items:center}
+  .ms{text-align:right}.ms .mv{font-size:13.5px;font-weight:800}.ms .mk{font-size:9px;color:#A1A1AA;font-weight:700;letter-spacing:.4px}
+  .setBody{display:none;border-top:1px solid #F4F4F5}
+  .open>.setBody{display:block}
+  /* influencer row */
+  .inf{border-bottom:1px solid #F4F4F5;padding:0 18px 0 38px}
+  .infHead{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer}
+  .avatar{width:34px;height:34px;border-radius:50%;background:#FFC107;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .infName{font-size:13.5px;font-weight:800}
+  .infMeta{font-size:11px;color:#71717A;margin-top:1px}
+  .st{font-size:9px;font-weight:800;border-radius:7px;padding:3px 8px;letter-spacing:.4px}
+  .stLive{background:#D1FAE5;color:#047857}.stAct{background:#D1FAE5;color:#047857}.stSub{background:#FFF7CC;color:#6B5A00}.stPend{background:#F4F4F5;color:#52525B}.stAwait{background:#DBEAFE;color:#1D4ED8}
+  .infBody{display:none;padding:0 0 14px}
+  .inf.open .infBody{display:block}
+  .inf.open .infHead .caret{transform:rotate(90deg);background:#FFF7CC}
+  /* deliverable rows */
+  .del{display:flex;align-items:center;gap:12px;background:#FAFAFA;border:1px solid #F4F4F5;border-radius:10px;padding:10px 14px;margin:6px 0 6px 46px}
+  .del .ic{font-size:16px}
+  .delName{font-size:12.5px;font-weight:700}
+  .delMeta{font-size:10.5px;color:#71717A}
+  .delStats{display:flex;gap:14px;margin-left:auto;align-items:center}
+  .rebtn{background:#fff;border:1px solid #E4E4E7;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:13px}
+  .rebtn:hover{background:#FFF7CC;border-color:#FFC107}
+  .reviewBtn{background:#FFC107;border:none;border-radius:8px;padding:7px 14px;font-size:11.5px;font-weight:800;cursor:pointer}
+  .confirmBtn{background:#DBEAFE;color:#1D4ED8;border:none;border-radius:8px;padding:7px 14px;font-size:11.5px;font-weight:800;cursor:pointer}
+  /* product chips strip inside influencer */
+  .prodStrip{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0 46px}
+  .pchip{background:#fff;border:1px solid #E4E4E7;border-radius:9px;padding:6px 10px;font-size:11px;font-weight:600;color:#1F1F22}
+  .pchip small{color:#A1A1AA;font-weight:600}
+  /* products tab table */
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E4E4E7;border-radius:14px;overflow:hidden}
+  th{font-size:10px;letter-spacing:.5px;color:#71717A;text-align:left;padding:12px 16px;border-bottom:1px solid #E4E4E7;background:#FAFAFA}
+  td{font-size:12.5px;padding:12px 16px;border-bottom:1px solid #F4F4F5}
+  tr:hover td{background:#FFFDEB}
+  /* analytics tab */
+  .anGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+  .anCard{background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:14px 16px}
+  .lvl{font-size:10px;font-weight:800;color:#71717A;letter-spacing:.5px;margin:18px 0 8px}
+  .bar{height:6px;background:#F4F4F5;border-radius:3px;margin-top:4px}.bar i{display:block;height:6px;background:#FFC107;border-radius:3px}
+  .hide{display:none}
+  .toast{position:fixed;bottom:24px;right:24px;background:#0A0A0A;color:#FFC107;border-radius:10px;padding:12px 18px;font-size:12.5px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1}
+</style></head><body>
+
+<div class="nav"><span style="border:1px dashed rgba(255,255,255,.4);border-radius:8px;padding:4px 14px;font-size:10px">LOGO</span><b>Campaigns</b><span>Dashboard</span><span>Contracts</span><span>Influencers</span><span style="margin-left:auto">75 · Sign out</span></div>
+
+<div class="wrap">
+
+  <!-- Needs-attention banner (only when non-empty) -->
+  <div class="banner">
+    <span style="font-size:16px">⚡</span>
+    <span style="font-size:12.5px;font-weight:700">2 things need you:</span>
+    <span class="pill" onclick="toast('→ opens the review panel')">Review @foodie_anu's reel</span>
+    <span class="pill" onclick="toast('→ opens confirm-live')">Confirm @sagartravel's story is live</span>
+  </div>
+
+  <!-- Full-width header strip -->
+  <div class="strip">
+    <div class="cell"><div class="k">CAMPAIGN</div><div class="v" style="font-size:16px">Campaign offer checking</div><div class="meta-note">conversion · active · started 9 Jun</div></div>
+    <div class="cell"><div class="k">CONTENT</div><div class="v mono">1<small> to review</small> · 1<small> awaiting live</small> · 1<small> live</small></div></div>
+    <div class="cell"><div class="k">BUDGET</div><div class="v mono">—</div><div class="meta-note">commission-only</div></div>
+    <div class="cell"><div class="k">REACH</div><div class="v mono" id="reach">12,400</div></div>
+    <div class="cell"><div class="k">AVG ER</div><div class="v mono" id="er">3.2%</div></div>
+    <div class="cell" style="flex:0;border:none">
+      <button class="refresh" id="rfAll" onclick="refreshAll()">↻ Refresh analytics</button>
+      <div class="meta-note">auto-refreshes daily · manual anytime</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab on" onclick="tab(this,'tHier')">Hierarchy</div>
+    <div class="tab" onclick="tab(this,'tProd')">Products <span class="n">6</span></div>
+    <div class="tab" onclick="tab(this,'tAna')">Analytics</div>
+  </div>
+
+  <!-- ════ HIERARCHY TAB ════ -->
+  <div id="tHier">
+
+    <div class="set open">
+      <div class="setHead" onclick="this.parentElement.classList.toggle('open')">
+        <div class="caret">▶</div>
+        <div><div class="setName">Set A</div><div class="infMeta">handpick · 2 influencers</div></div>
+        <span class="tag tConv">CONVERSION · 10% COMMISSION</span>
+        <div class="miniStats">
+          <div class="ms"><div class="mv mono">8,100</div><div class="mk">VIEWS</div></div>
+          <div class="ms"><div class="mv mono">412</div><div class="mk">LIKES</div></div>
+          <div class="ms"><div class="mv mono">37</div><div class="mk">COMMENTS</div></div>
+          <div class="ms"><div class="mv mono">3.4%</div><div class="mk">ER</div></div>
+        </div>
+      </div>
+      <div class="setBody">
+
+        <div class="inf open">
+          <div class="infHead" onclick="this.parentElement.classList.toggle('open')">
+            <div class="caret">▶</div>
+            <div class="avatar">S</div>
+            <div><div class="infName">@sagartravel</div><div class="infMeta">10% commission · Discount offer · 6 products</div></div>
+            <span class="st stAct">ACTIVE</span>
+            <div class="miniStats">
+              <div class="ms"><div class="mv mono">6,900</div><div class="mk">VIEWS</div></div>
+              <div class="ms"><div class="mv mono">351</div><div class="mk">LIKES</div></div>
+              <div class="ms"><div class="mv mono">3.6%</div><div class="mk">ER</div></div>
+            </div>
+          </div>
+          <div class="infBody">
+            <div class="del">
+              <span class="ic">🎬</span>
+              <div><div class="delName">Reel</div><div class="delMeta">live since 9 Jun · <a href="#" onclick="toast('opens Instagram post');return false">view post ↗</a></div></div>
+              <span class="st stLive">LIVE</span>
+              <div class="delStats">
+                <div class="ms"><div class="mv mono" id="d1l">351</div><div class="mk">LIKES</div></div>
+                <div class="ms"><div class="mv mono">29</div><div class="mk">COMMENTS</div></div>
+                <div class="ms"><div class="mv mono">88</div><div class="mk">SAVES</div></div>
+                <div class="ms"><div class="mv mono">3.6%</div><div class="mk">ER</div></div>
+                <button class="rebtn" title="Re-scrape this post now" onclick="refreshOne(this,'d1l')">↻</button>
+              </div>
+            </div>
+            <div class="del">
+              <span class="ic">📖</span>
+              <div><div class="delName">Story</div><div class="delMeta">approved 10 Jun · influencer says it's posted</div></div>
+              <span class="st stAwait">AWAITING LIVE-CONFIRM</span>
+              <div class="delStats"><button class="confirmBtn" onclick="toast('→ confirm-live flow (releases nothing here — conversion set)')">Confirm live</button></div>
+            </div>
+            <div class="prodStrip">
+              <span class="pchip">🍗 Chicken Biryani <small>· Chicken · ₹310</small></span>
+              <span class="pchip">🍗 Chicken 65 Biryani <small>· Chicken · ₹365</small></span>
+              <span class="pchip">🍗 Chicken Dum Biryani <small>· Chicken · ₹350</small></span>
+              <span class="pchip">🫓 Naan <small>· Breads · ₹75</small></span>
+              <span class="pchip">🫓 Garlic Naan <small>· Breads · ₹90</small></span>
+              <span class="pchip">🫓 Aloo Paratha <small>· Breads · ₹120</small></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="inf">
+          <div class="infHead" onclick="this.parentElement.classList.toggle('open')">
+            <div class="caret">▶</div>
+            <div class="avatar" style="background:#CFFAFE">A</div>
+            <div><div class="infName">@foodie_anu</div><div class="infMeta">10% commission · Discount offer · 2 products</div></div>
+            <span class="st stSub">1 TO REVIEW</span>
+            <div class="miniStats">
+              <div class="ms"><div class="mv mono">1,200</div><div class="mk">VIEWS</div></div>
+              <div class="ms"><div class="mv mono">61</div><div class="mk">LIKES</div></div>
+              <div class="ms"><div class="mv mono">2.8%</div><div class="mk">ER</div></div>
+            </div>
+          </div>
+          <div class="infBody">
+            <div class="del" style="border-color:#FFC107;background:#FFFDEB">
+              <span class="ic">🎬</span>
+              <div><div class="delName">Reel</div><div class="delMeta">submitted today 09:40 · "Tried the dum biryani — caption draft attached"</div></div>
+              <span class="st stSub">SUBMITTED</span>
+              <div class="delStats"><button class="reviewBtn" onclick="toast('→ opens review panel: preview + approve / request changes (1 of 2 revisions used)')">Review now</button></div>
+            </div>
+            <div class="del">
+              <span class="ic">🎬</span>
+              <div><div class="delName">Reel · attempt 1</div><div class="delMeta">live since 8 Jun · <a href="#" onclick="toast('opens post');return false">view post ↗</a></div></div>
+              <span class="st stLive">LIVE</span>
+              <div class="delStats">
+                <div class="ms"><div class="mv mono">61</div><div class="mk">LIKES</div></div>
+                <div class="ms"><div class="mv mono">8</div><div class="mk">COMMENTS</div></div>
+                <div class="ms"><div class="mv mono">2.8%</div><div class="mk">ER</div></div>
+                <button class="rebtn" onclick="refreshOne(this)">↻</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="set">
+      <div class="setHead" onclick="this.parentElement.classList.toggle('open')">
+        <div class="caret">▶</div>
+        <div><div class="setName">Set B — Awareness push</div><div class="infMeta">handpick · 1 influencer</div></div>
+        <span class="tag tEng">ENGAGEMENT · ₹2,000/creator</span>
+        <div class="miniStats">
+          <div class="ms"><div class="mv mono">4,300</div><div class="mk">VIEWS</div></div>
+          <div class="ms"><div class="mv mono">61</div><div class="mk">LIKES</div></div>
+          <div class="ms"><div class="mv mono">2.9%</div><div class="mk">ER</div></div>
+        </div>
+      </div>
+      <div class="setBody">
+        <div class="inf">
+          <div class="infHead" onclick="this.parentElement.classList.toggle('open')">
+            <div class="caret">▶</div>
+            <div class="avatar" style="background:#F3E8FF">R</div>
+            <div><div class="infName">@reels.ravi</div><div class="infMeta">₹2,000 fee · T1 paid · content due 14 Jun</div></div>
+            <span class="st stPend">AWAITING CONTENT</span>
+          </div>
+          <div class="infBody">
+            <div class="del">
+              <span class="ic">🎬</span>
+              <div><div class="delName">Reel</div><div class="delMeta">not submitted yet · due 14 Jun</div></div>
+              <span class="st stPend">PENDING</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════ PRODUCTS TAB ════ -->
+  <div id="tProd" class="hide">
+    <table>
+      <tr><th>PRODUCT</th><th>CATEGORY / SECTION</th><th>SET</th><th>INFLUENCER</th><th>PRICE</th><th>STATUS</th></tr>
+      <tr><td><b>Chicken Biryani</b></td><td>Restaurant · Chicken</td><td>Set A</td><td>@sagartravel</td><td class="mono">₹310</td><td><span class="st stLive">LIVE IN STORE</span></td></tr>
+      <tr><td><b>Chicken 65 Biryani</b></td><td>Restaurant · Chicken</td><td>Set A</td><td>@sagartravel</td><td class="mono">₹365</td><td><span class="st stLive">LIVE IN STORE</span></td></tr>
+      <tr><td><b>Chicken Dum Biryani</b></td><td>Restaurant · Chicken</td><td>Set A</td><td>@sagartravel · @foodie_anu</td><td class="mono">₹350</td><td><span class="st stLive">LIVE IN STORE</span></td></tr>
+      <tr><td><b>Naan</b></td><td>Restaurant · Breads</td><td>Set A</td><td>@sagartravel</td><td class="mono">₹75</td><td><span class="st stLive">LIVE IN STORE</span></td></tr>
+      <tr><td><b>Garlic Naan</b></td><td>Restaurant · Breads</td><td>Set A</td><td>@sagartravel · @foodie_anu</td><td class="mono">₹90</td><td><span class="st stLive">LIVE IN STORE</span></td></tr>
+      <tr><td><b>Aloo Paratha</b></td><td>Restaurant · Breads</td><td>Set A</td><td>@sagartravel</td><td class="mono">₹120</td><td><span class="st stLive">LIVE IN STORE</span></td></tr>
+    </table>
+    <div class="meta-note" style="margin-top:8px">Every product shows exactly where it lives: set → influencer(s) → category. Tap a row → product detail (existing page).</div>
+  </div>
+
+  <!-- ════ ANALYTICS TAB ════ -->
+  <div id="tAna" class="hide">
+    <div class="lvl">LEVEL 1 — CAMPAIGN</div>
+    <div class="anGrid">
+      <div class="anCard"><div class="k">LIKES</div><div class="v mono">412</div></div>
+      <div class="anCard"><div class="k">COMMENTS</div><div class="v mono">37</div></div>
+      <div class="anCard"><div class="k">VIEWS</div><div class="v mono">12,400</div></div>
+      <div class="anCard"><div class="k">AVG ER</div><div class="v mono">3.2%</div></div>
+    </div>
+    <div class="lvl">LEVEL 2 — BY SET</div>
+    <div class="anCard" style="margin-bottom:8px"><b>Set A</b> · conversion <div class="bar"><i style="width:78%"></i></div><div class="meta-note mono">8,100 views · 412 likes · ER 3.4%</div></div>
+    <div class="anCard"><b>Set B</b> · engagement <div class="bar"><i style="width:42%"></i></div><div class="meta-note mono">4,300 views · 61 likes · ER 2.9%</div></div>
+    <div class="lvl">LEVEL 3 — BY INFLUENCER</div>
+    <div class="anCard" style="margin-bottom:8px"><b>@sagartravel</b> (Set A) <div class="bar"><i style="width:85%"></i></div><div class="meta-note mono">6,900 views · 351 likes · 88 saves · ER 3.6% · 1 live + 1 awaiting</div></div>
+    <div class="anCard"><b>@foodie_anu</b> (Set A) <div class="bar"><i style="width:24%"></i></div><div class="meta-note mono">1,200 views · 61 likes · ER 2.8% · 1 live + 1 submitted</div></div>
+    <div class="lvl">LEVEL 4 — BY DELIVERABLE (each row has its own ↻)</div>
+    <div class="anCard"><span class="mono">🎬 @sagartravel reel — 6,900 views · 351 likes · 29 comments · 88 saves · ER 3.6% · scraped 2h ago</span> <button class="rebtn" style="float:right" onclick="refreshOne(this)">↻</button></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+function tab(el, id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  ['tHier','tProd','tAna'].forEach(t=>document.getElementById(t).classList.toggle('hide', t!==id));
+}
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function refreshAll(){
+  const b=document.getElementById('rfAll'); b.classList.add('spin'); b.textContent='↻ Re-scraping 2 live posts…';
+  setTimeout(()=>{
+    document.getElementById('reach').textContent='12,847';
+    document.getElementById('er').textContent='3.3%';
+    b.classList.remove('spin'); b.textContent='↻ Refresh analytics';
+    toast('Analytics refreshed — 2 posts re-scraped, totals updated');
+  }, 1400);
+}
+function refreshOne(btn, id){
+  btn.textContent='…';
+  setTimeout(()=>{
+    btn.textContent='↻';
+    if(id) document.getElementById(id).textContent='358';
+    toast('Post re-scraped — stats updated');
+  }, 1100);
+}
+</script>
+</body></html>
