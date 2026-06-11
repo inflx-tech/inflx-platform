@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Registration Location Section (3 modes)</title>
+<style>
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background:#FAFAFA; margin:0; padding:32px; color:#18181B; }
+  .card { max-width:420px; margin:0 auto; background:#fff; border:1px solid #E4E4E7; border-radius:16px; padding:24px; }
+  .sec { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; margin-bottom:12px; }
+  .num { width:18px; height:18px; border-radius:50%; background:#FFC107; color:#0A0A0A; font-size:10px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+  .modes { display:flex; gap:6px; margin-bottom:12px; }
+  .mode { flex:1; text-align:center; padding:8px 4px; border:1px solid #E4E4E7; border-radius:10px; font-size:11.5px; font-weight:600; color:#71717A; cursor:pointer; background:#fff; }
+  .mode.on { border-color:#FFC107; background:#FFFBEB; color:#18181B; }
+  label { display:block; font-size:11px; font-weight:600; color:#3F3F46; margin:10px 0 4px; }
+  input, select { width:100%; box-sizing:border-box; padding:10px 12px; border:1px solid #E4E4E7; border-radius:10px; font-size:13px; }
+  .sugs { border:1px solid #E4E4E7; border-radius:10px; margin-top:4px; overflow:hidden; }
+  .sug { padding:9px 12px; font-size:12.5px; border-bottom:1px solid #F4F4F5; cursor:pointer; }
+  .sug:hover { background:#FFFBEB; }
+  .sug b { display:block; font-size:13px; }
+  .sug span { color:#71717A; font-size:11.5px; }
+  .badge { display:inline-flex; align-items:center; gap:5px; margin-top:10px; padding:5px 10px; background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; border-radius:999px; font-size:11.5px; font-weight:600; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .hint { font-size:11px; color:#71717A; margin-top:6px; }
+  .btn { margin-top:8px; padding:10px 16px; background:#18181B; color:#fff; border:none; border-radius:10px; font-size:12.5px; font-weight:600; cursor:pointer; }
+  h4 { margin:28px auto 8px; max-width:420px; font-size:12px; color:#71717A; }
+</style>
+</head>
+<body>
+
+<h4>MODE 1 — Search place (default)</h4>
+<div class="card">
+  <div class="sec"><span class="num">2</span><span>Location</span></div>
+  <div class="modes">
+    <div class="mode on">🔍 Search place</div>
+    <div class="mode">🔗 Maps link</div>
+    <div class="mode">✍️ Manual</div>
+  </div>
+  <label>Search your business / area</label>
+  <input value="Charvitha Fash" placeholder="Type shop name or area…">
+  <div class="sugs">
+    <div class="sug"><b>Charvitha Fashions</b><span>Governorpet, Vijayawada, Andhra Pradesh</span></div>
+    <div class="sug"><b>Charvitha Fashion Mall</b><span>Eluru Road, Vijayawada</span></div>
+  </div>
+  <div class="badge">✓ Location captured — 16.5062, 80.6480</div>
+  <label>Business address</label>
+  <input value="Governorpet, Vijayawada, Andhra Pradesh 520002">
+  <div class="grid">
+    <div><label>City</label><input value="Vijayawada"></div>
+    <div><label>Pincode</label><input value="520002"></div>
+  </div>
+  <label>State</label>
+  <select><option>Andhra Pradesh</option></select>
+</div>
+
+<h4>MODE 2 — Google Maps link</h4>
+<div class="card">
+  <div class="sec"><span class="num">2</span><span>Location</span></div>
+  <div class="modes">
+    <div class="mode">🔍 Search place</div>
+    <div class="mode on">🔗 Maps link</div>
+    <div class="mode">✍️ Manual</div>
+  </div>
+  <label>Paste your Google Maps link</label>
+  <input value="https://maps.app.goo.gl/abc123">
+  <button class="btn">📍 Locate</button>
+  <div class="hint">Share your shop from the Google Maps app → copy link → paste here.</div>
+  <div class="badge">✓ Location captured — Governorpet, Vijayawada</div>
+  <label>Business address</label>
+  <input value="Governorpet, Vijayawada, Andhra Pradesh 520002">
+  <div class="grid">
+    <div><label>City</label><input value="Vijayawada"></div>
+    <div><label>Pincode</label><input placeholder="6-digit"></div>
+  </div>
+  <label>State</label>
+  <select><option>Andhra Pradesh</option></select>
+</div>
+
+<h4>MODE 3 — Manual (today's form, unchanged)</h4>
+<div class="card">
+  <div class="sec"><span class="num">2</span><span>Location</span></div>
+  <div class="modes">
+    <div class="mode">🔍 Search place</div>
+    <div class="mode">🔗 Maps link</div>
+    <div class="mode on">✍️ Manual</div>
+  </div>
+  <label>Business address</label>
+  <input placeholder="Building, street, area">
+  <div class="grid">
+    <div><label>City</label><input placeholder="e.g. Vijayawada"></div>
+    <div><label>Pincode</label><input placeholder="6-digit"></div>
+  </div>
+  <label>State</label>
+  <select><option>Select your state</option></select>
+</div>
+
+</body>
+</html>

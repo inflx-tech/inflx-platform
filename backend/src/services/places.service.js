@@ -48,7 +48,7 @@ async function autocomplete(input, opts = {}) {
 
 async function details(placeId, opts = {}) {
   if (GEOCODING_MOCK) {
-    return { lat: 16.5062, lng: 80.648, formatted_address: 'Vijayawada, India', name: 'Mock', area_name: 'Vijayawada' };
+    return { lat: 16.5062, lng: 80.648, formatted_address: 'Vijayawada, India', name: 'Mock', area_name: 'Vijayawada', city: 'Vijayawada', state: 'Andhra Pradesh', pincode: '520010' };
   }
   if (!GOOGLE_KEY || !placeId) return null;
   const p = new URLSearchParams({ place_id: placeId, key: GOOGLE_KEY, fields: 'geometry,formatted_address,name,address_components' });
@@ -71,6 +71,8 @@ async function details(placeId, opts = {}) {
       name: r.name || null,
       area_name: get('sublocality_level_1') || get('sublocality') || get('locality') || r.name || null,
       city: get('locality') || null,
+      state: get('administrative_area_level_1') || null,
+      pincode: get('postal_code') || null,
     };
   } catch (e) { console.error('[places] details failed:', e.message); return null; }
 }

@@ -1,0 +1,27 @@
+{
+  "feature": "brand-register-location-picker",
+  "area": "brand-web-login+backend-register+places-service",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-11) — walkthrough W2 report + explicit 'Go on location feature' after scope discussion",
+  "approved_at": "2026-06-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (Vercel brand-web + Render backend). NO migration (columns exist since 015/051). Manual registration path byte-identical; search/link modes additive.",
+  "fix": null,
+  "related": ["features/restaurant-listing-wizard (maps resolver origin)", "Docs/WALKTHROUGH_LEDGER.md W2"],
+  "result": "3-mode location section live in registration (search / maps-link / manual); places.details returns state+pincode; register accepts + stores lat/lng (+legacy sync) + locality + formatted_address, resolving google_maps_url server-side. Targeted test scripts/test-register-location.js 4/4: coords stored+synced, maps-url server-resolved, manual byte-identical (all NULL), latitude 200 → 422.",
+  "regression_proof": "pnpm qa 79/79 GREEN STATE=GREEN gate=0 (2.2m, report 2026-06-11T03-26-37). Journey driver 27 PASS / 0 FAIL (S1.2 register path green). First qa run's webServer timeout classified ENVIRONMENTAL (brand-web cold-start >180s; /login compiles in 8s and serves 200; re-run green on identical code).",
+  "discipline": "Verify-twice: resolveMapsUrl + /internal/geocode-maps-url + Places proxy + updateMe location handling + all 6 brands columns confirmed in code/DB before scoping. Reuse over rebuild.",
+  "release": {
+    "qa_all_green": true,
+    "released": true,
+    "released_by": "founder explicit go (2026-06-11): 'Go on location feature' (scope incl. deploy surfaced in the go-request)",
+    "released_at": "2026-06-11",
+    "deploy": "git push main → Render (backend: places.service + brand.controller) + Vercel (brand-web login). NO migration. NO mobile/OTA impact."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-11) — 3-mode location section mockup in 04-preview/mockups/location-section.html per locked palette",
+  "mockup_locked_at": "2026-06-11"
+}

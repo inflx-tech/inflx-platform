@@ -130,6 +130,17 @@ export const listingApi = {
   batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
 };
 
+// Location capture for registration (contract: brand-register-location-picker).
+// Reuses the follower Places proxy + the restaurant-wizard maps resolver.
+export const geoApi = {
+  placesAutocomplete: (q, session) =>
+    api.get(`/follower/places/autocomplete?q=${encodeURIComponent(q)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
+  placeDetails: (placeId, session) =>
+    api.get(`/follower/places/details?place_id=${encodeURIComponent(placeId)}${session ? `&session=${encodeURIComponent(session)}` : ''}`),
+  geocodeMapsUrl: (google_maps_url, name, city) =>
+    api.post('/internal/geocode-maps-url', { google_maps_url, name, city }),
+};
+
 export const authApi = {
   sendOtp: (phone) => api.post('/auth/send-otp', { phone }),
   verifyOtp: (phone, otp, name) => api.post('/auth/verify-otp', { phone, otp, role: 'brand', ...(name && { name }) }),

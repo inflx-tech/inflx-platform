@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, brandApi } from '../../lib/api';
+import { authApi, brandApi, geoApi } from '../../lib/api';
 import Logo from '../../../shared/components/Logo';
 
 const INDUSTRY_HIERARCHY = [
@@ -81,6 +81,18 @@ export default function LoginPage() {
   const [city, setCity]               = useState('');
   const [state, setStateField]        = useState('');
   const [pincode, setPincode]         = useState('');
+  // Location capture (contract: brand-register-location-picker).
+  // 'search' (Places autocomplete) | 'link' (Google Maps URL) | 'manual'
+  const [locMode, setLocMode]         = useState('search');
+  const [locQuery, setLocQuery]       = useState('');
+  const [locSugs, setLocSugs]         = useState([]);
+  const [mapsUrl, setMapsUrl]         = useState('');
+  const [locating, setLocating]       = useState(false);
+  const [coords, setCoords]           = useState(null);   // { lat, lng }
+  const [locLocality, setLocLocality] = useState('');
+  const [locFormatted, setLocFormatted] = useState('');
+  const debounceRef = useRef(null);
+  const placesSessionRef = useRef(Math.random().toString(36).slice(2) + Date.now().toString(36));
   const [loading, setLoading]         = useState(false);
   const [resending, setResending]     = useState(false);
   const [error, setError]             = useState('');
@@ -149,6 +161,49 @@ export default function LoginPage() {
     setStep('register');
   }
 
+  /* ── Location capture handlers ─────────────────────────────────────── */
+
+  function applyPlace(d, fallbackLabel) {
+    if (d.lat != null && d.lng != null) setCoords({ lat: d.lat, lng: d.lng });
+    setLocLocality(d.area_name || d.locality || '');
+    setLocFormatted(d.formatted_address || '');
+    if (d.formatted_address) setAddressLine(d.formatted_address);
+    else if (fallbackLabel) setAddressLine(fallbackLabel);
+    if (d.city) setCity(d.city);
+    if (d.state && INDIAN_STATES.includes(d.state)) setStateField(d.state);
+    if (d.pincode && /^[0-9]{6}$/.test(String(d.pincode))) setPincode(String(d.pincode));
+  }
+
+  function onLocQueryChange(v) {
+    setLocQuery(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (v.trim().length < 3) { setLocSugs([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      const res = await geoApi.placesAutocomplete(v.trim(), placesSessionRef.current).catch(() => null);
+      if (res?.success) setLocSugs(res.data?.predictions || []);
+    }, 350);
+  }
+
+  async function pickSuggestion(p) {
+    setLocSugs([]);
+    setLocQuery(p.description || p.main || '');
+    const res = await geoApi.placeDetails(p.place_id, placesSessionRef.current).catch(() => null);
+    if (res?.success && res.data) applyPlace(res.data, p.description);
+    else setError('Could not load that place — pick another or switch to Manual.');
+  }
+
+  async function locateMapsUrl() {
+    if (!mapsUrl.trim()) return;
+    setError('');
+    setLocating(true);
+    const res = await geoApi
+      .geocodeMapsUrl(mapsUrl.trim(), businessName.trim() || undefined, city.trim() || undefined)
+      .catch(() => null);
+    setLocating(false);
+    if (res?.success && res.data?.verified) applyPlace(res.data);
+    else setError("Couldn't read a location from that link. In Google Maps use Share → Copy link, paste it here — or use Search / Manual.");
+  }
+
   // Step 3: Register brand
   async function handleRegister(e) {
     e.preventDefault();
@@ -171,6 +226,13 @@ export default function LoginPage() {
       city:          city.trim(),
       state:         state.trim(),
       pincode:       pincode.trim(),
+      ...(coords ? {
+        latitude:  coords.lat,
+        longitude: coords.lng,
+        ...(locLocality  && { locality: locLocality }),
+        ...(locFormatted && { formatted_address: locFormatted }),
+      } : {}),
+      ...(locMode === 'link' && mapsUrl.trim() ? { google_maps_url: mapsUrl.trim() } : {}),
     });
     setLoading(false);
 
@@ -402,6 +464,57 @@ export default function LoginPage() {
                   <span className="w-[18px] h-[18px] rounded-full bg-[#FFC107] text-[#0A0A0A] font-display font-bold text-[10px] inline-flex items-center justify-center">2</span>
                   <span>Location</span>
                 </div>
+
+                {/* Mode pills — Search (default) / Maps link / Manual */}
+                <div className="flex gap-1.5 mb-3">
+                  {[['search', '🔍 Search place'], ['link', '🔗 Maps link'], ['manual', '✍️ Manual']].map(([m, lbl]) => (
+                    <button key={m} type="button" onClick={() => { setLocMode(m); setLocSugs([]); }}
+                      className={`flex-1 py-2 px-1 rounded-[10px] text-[11.5px] font-semibold border transition-colors ${
+                        locMode === m ? 'border-[#FFC107] bg-[#FFFBEB] text-[#18181B]' : 'border-[#E4E4E7] bg-white text-[#71717A]'}`}>
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+
+                {locMode === 'search' && (
+                  <div className="mb-3.5 relative">
+                    <label className={labelClass}>Search your business or area</label>
+                    <input type="text" value={locQuery} onChange={e => onLocQueryChange(e.target.value)}
+                      placeholder="Type shop name or area… (min 3 letters)" className={inputClass} />
+                    {locSugs.length > 0 && (
+                      <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-[#E4E4E7] rounded-[10px] overflow-hidden shadow-lg">
+                        {locSugs.slice(0, 5).map(p => (
+                          <button key={p.place_id} type="button" onClick={() => pickSuggestion(p)}
+                            className="block w-full text-left px-3 py-2 border-b border-[#F4F4F5] last:border-0 hover:bg-[#FFFBEB]">
+                            <span className="block text-[13px] font-semibold text-[#18181B]">{p.main}</span>
+                            <span className="block text-[11.5px] text-[#71717A]">{p.secondary}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {locMode === 'link' && (
+                  <div className="mb-3.5">
+                    <label className={labelClass}>Paste your Google Maps link</label>
+                    <div className="flex gap-2">
+                      <input type="url" value={mapsUrl} onChange={e => setMapsUrl(e.target.value)}
+                        placeholder="https://maps.app.goo.gl/…" className={inputClass} />
+                      <button type="button" onClick={locateMapsUrl} disabled={locating || !mapsUrl.trim()}
+                        className="shrink-0 px-4 rounded-[10px] bg-[#18181B] text-white text-[12px] font-semibold disabled:opacity-40">
+                        {locating ? '…' : '📍 Locate'}
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-[#71717A] mt-1.5">In Google Maps: Share → Copy link → paste here.</div>
+                  </div>
+                )}
+
+                {coords && (
+                  <div className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 bg-[#ECFDF5] border border-[#A7F3D0] rounded-full text-[11.5px] font-semibold text-[#047857]">
+                    ✓ Location captured{locLocality ? ` — ${locLocality}` : ''}
+                  </div>
+                )}
 
                 <div className="mb-3.5">
                   <label className={labelClass}>Business address{reqAst}</label>

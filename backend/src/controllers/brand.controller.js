@@ -69,6 +69,13 @@ const register = asyncHandler(async (req, res) => {
     pincode,
     city,           // lives on users table
     state,          // lives on users table
+    // Optional location capture (contract: features/brand-register-location-picker).
+    // Sent by the registration form's search/maps-link modes; absent for manual.
+    latitude,
+    longitude,
+    locality,
+    formatted_address,
+    google_maps_url,
   } = req.body;
 
   if (!business_name || !business_name.trim()) {
@@ -93,6 +100,28 @@ const register = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'pincode must be a 6-digit number', 422, 'pincode');
   }
 
+  // Optional coordinates — validate when present; a Google Maps URL resolved
+  // server-side is the source of truth and overrides client-sent coords.
+  let lat = latitude != null ? parseFloat(latitude) : null;
+  let lng = longitude != null ? parseFloat(longitude) : null;
+  if ((lat != null && (!Number.isFinite(lat) || lat < -90 || lat > 90)) ||
+      (lng != null && (!Number.isFinite(lng) || lng < -180 || lng > 180))) {
+    throw new AppError('VALIDATION_ERROR', 'latitude/longitude out of range', 422, 'latitude');
+  }
+  let loc = (locality && String(locality).trim()) || null;
+  let fmtAddr = (formatted_address && String(formatted_address).trim()) || null;
+  if (google_maps_url) {
+    const r = await geocoding.resolveMapsUrl(google_maps_url, {
+      name: business_name && business_name.trim(),
+      city: city && city.trim(),
+    });
+    if (r && r.verified) {
+      lat = r.lat; lng = r.lng;
+      loc = r.locality || loc;
+      fmtAddr = r.formatted_address || fmtAddr;
+    }
+  }
+
   // Idempotency: disallow duplicate registration
   const existing = await getBrandByUserId(userId);
   if (existing) {
@@ -107,11 +136,15 @@ const register = asyncHandler(async (req, res) => {
     [userId, name.trim(), city.trim(), state.trim()]
   );
 
+  // lat/lng are the discovery columns (mig 051 reads these); latitude/longitude
+  // are legacy — kept in sync exactly as updateMe does.
   const { rows } = await db.query(
-    `INSERT INTO brands (user_id, business_name, category, gstin, address_line, pincode)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO brands (user_id, business_name, category, gstin, address_line, pincode,
+                         lat, lng, latitude, longitude, locality, formatted_address)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $7, $8, $9, $10)
      RETURNING *`,
-    [userId, business_name.trim(), category.trim(), gstin || null, address_line.trim(), String(pincode).trim()]
+    [userId, business_name.trim(), category.trim(), gstin || null, address_line.trim(), String(pincode).trim(),
+     lat, lng, loc, fmtAddr]
   );
 
   const brand = rows[0];
