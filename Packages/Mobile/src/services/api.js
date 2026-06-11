@@ -483,6 +483,9 @@ export const followerApi = {
     if (s.ciId)    qs.push(`ci_id=${s.ciId}`);
     return api.get(`/store/${handle}/products${qs.length ? `?${qs.join('&')}` : ''}`);
   },
+  // Library-offer detail (store-direct / showcase taps — no creator handle).
+  // Contract: features/sprint1-offer-pipeline.
+  getStoreOffer: (brandOfferId) => api.get(`/follower/store-offer/${brandOfferId}`),
   // Phase Salon-2 — accepts an optional viaInfluencerId so the response
   // embeds a `creator` object the BrandStoreScreen sticky header renders.
   getBrandStore: (brandId, viaInfluencerId = null) => {

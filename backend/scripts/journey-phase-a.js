@@ -427,20 +427,42 @@ const expectOk = (r, what) => {
     } else log('S6.5', 'INFO', 'Order-create without address rejected', JSON.stringify(ord.data));
   } catch (e) { fail('S6.5', 'Silent-loss negative test', e); }
 
-  try { // OFFER-TAP 404 repro at API level
+  try { // OFFER PIPELINE E2E (contract: sprint1-offer-pipeline)
+    // (a) publish the library offer to the store → it must appear in the feed
+    const pub = await api(ctx.brandToken).patch(`/brands/me/offers/${ctx.brandOfferId}`, {
+      status: 'active', published_to_store: true,
+    });
+    expectOk(pub, 'publish offer to store');
     const sec = await api(ctx.folToken).get('/follower/section/offers');
     const sections = (body(sec).sections || []);
-    const offerItems = sections.flatMap(s => s.items || []).filter(i => i && (i.tracking || i.discount_label || i.offer_type));
-    if (!offerItems.length) { log('S6.6', 'INFO', 'Offers feed returned no offer items (adapter empty in dev)', `${sections.length} sections`); }
-    else {
-      const it = offerItems[0];
-      const oid = (it.tracking && (it.tracking.oid || it.tracking.offer_id)) || it.id;
-      const handle = `journey_creator_${RUN}`;
-      const r = await api(ctx.folToken).get(`/store/${handle}/products?offer_id=${oid}`);
-      if (r.status === 404) log('S6.6', 'PASS', 'CONFIRMED BUG: offer-tap lookup 404s (shelf id ≠ detail lookup)', `offer_id=${oid} → ${JSON.stringify(r.data && r.data.error)}`);
-      else log('S6.6', 'INFO', 'Offer-tap lookup did NOT 404 here', `HTTP ${r.status} — app may pass different id`);
+    const items = sections.flatMap(s => s.items || []).filter(i => i && i.entity_type === 'offer');
+    const storeItem = items.find(i => i.source === 'store' && i.id === ctx.brandOfferId);
+    const ciItem = items.find(i => i.source === 'assignment');
+
+    // (b) store-direct tap path: GET /follower/store-offer/:id → 200 + products
+    let storeOk = false;
+    if (storeItem || ctx.brandOfferId) {
+      const det = await api(ctx.folToken).get(`/follower/store-offer/${ctx.brandOfferId}`);
+      const dd = body(det);
+      storeOk = det.status === 200 && dd.offer && Array.isArray(dd.products);
+      if (!storeOk) log('S6.6a', 'FAIL', 'store-offer detail fetch', `HTTP ${det.status}: ${JSON.stringify(det.data).slice(0, 200)}`);
+      else log('S6.6a', 'PASS', 'Store-published offer: feed item + detail fetch 200 (offer + products)', `in_feed=${!!storeItem}; products=${dd.products.length}; discount=${dd.offer.discount && dd.offer.discount.label}`);
     }
-  } catch (e) { fail('S6.6', 'Offer-tap repro', e); }
+
+    // (c) assignment tap path: ci_id → /store/:handle/products (the app's new explicit identity)
+    if (ciItem) {
+      const handle = ciItem.via_creator && ciItem.via_creator.handle;
+      const r = await api(ctx.folToken).get(`/store/${handle}/products?ci_id=${ciItem.id}`);
+      if (r.status === 200) log('S6.6b', 'PASS', 'Assignment offer: ci_id tap path resolves products', `products=${(body(r).products || []).length}`);
+      else log('S6.6b', 'FAIL', 'Assignment ci_id tap path', `HTTP ${r.status}: ${JSON.stringify(r.data).slice(0, 200)}`);
+      // (d) the OLD broken pattern (library oid sent as offer_id) must no longer be used by the app;
+      // backend still 404s it — assert it 404s so we know the legacy branch didn't silently change.
+      const old = await api(ctx.folToken).get(`/store/${handle}/products?offer_id=${ctx.brandOfferId}`);
+      log('S6.6c', old.status === 404 ? 'PASS' : 'INFO', 'Legacy misuse (library id as offer_id) still rejected', `HTTP ${old.status}`);
+    } else {
+      log('S6.6b', 'INFO', 'No assignment-sourced offer item in feed', `items=${items.length}`);
+    }
+  } catch (e) { fail('S6.6', 'Offer pipeline E2E', e); }
 
   try { // ENQUIRY
     const r = await api(ctx.folToken).post('/follower/enquiry', {

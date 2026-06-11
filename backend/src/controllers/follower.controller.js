@@ -29,6 +29,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
+const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
 const places = require('../services/places.service');
 
@@ -406,6 +407,79 @@ const getFollowing = asyncHandler(async (req, res) => {
 
   const following = await followerService.getFollowing(follower.id);
   return success(res, { following });
+});
+
+// ── GET /follower/store-offer/:id ─────────────────────────────────────────────
+// Detail fetch for a LIBRARY offer tapped from a feed shelf (store-direct or
+// engagement showcase). These have no campaign_offers row and may have no
+// creator handle, so /store/:handle/products cannot serve them (contract:
+// features/sprint1-offer-pipeline). Pairs with POST /follower/store-offer/pay.
+const getStoreOfferDetail = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { rows } = await db.query(
+    `SELECT bo.id, bo.name, bo.offer_type::text AS offer_type, bo.offer_config_json,
+            bo.availing_modes, bo.store_ends_at,
+            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
+            b.locality AS brand_locality, u_b.city AS brand_city,
+            NULL::uuid AS influencer_id, NULL::text AS handle,
+            NULL::text AS influencer_name, NULL::text AS profile_pic_url
+     FROM brand_offers bo
+     JOIN brands b ON b.id = bo.brand_id
+     JOIN users u_b ON u_b.id = b.user_id
+     WHERE bo.id = $1 AND bo.status = 'active'`,
+    [id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Offer not found or no longer active', 404);
+  const row = rows[0];
+  const offer = brandOffersAdapter.toFeedItem(
+    brandOffersAdapter.normalizeLibraryOffer(row, 'store')
+  );
+
+  // Products: explicit refs from the offer config when present, else the
+  // brand's active products (category-scoped when the config says so).
+  const cfg = row.offer_config_json && typeof row.offer_config_json === 'object' ? row.offer_config_json : {};
+  const refIds = [];
+  const pushRef = (p) => {
+    const pid = p && (typeof p === 'string' ? p : (p.id || p.product_id));
+    if (pid) refIds.push(pid);
+  };
+  (Array.isArray(cfg.products) ? cfg.products : []).forEach(pushRef);
+  pushRef(cfg.buy_product);
+  pushRef(cfg.get_product);
+  (Array.isArray(cfg.offers) ? cfg.offers : []).forEach(o => { pushRef(o && o.main); pushRef(o && o.gift); });
+
+  let products;
+  if (refIds.length) {
+    const r = await db.query(
+      `SELECT id, name, price, image_url, description, section, variants_json
+       FROM brand_products
+       WHERE id = ANY($1) AND brand_id = $2 AND is_active = true`,
+      [[...new Set(refIds)], row.brand_id]
+    );
+    products = r.rows;
+  } else {
+    const params = [row.brand_id];
+    let catSql = '';
+    if (cfg.scope === 'category' && cfg.category) {
+      params.push(cfg.category);
+      catSql = ' AND section = $2';
+    }
+    const r = await db.query(
+      `SELECT id, name, price, image_url, description, section, variants_json
+       FROM brand_products
+       WHERE brand_id = $1 AND is_active = true${catSql}
+       ORDER BY created_at DESC
+       LIMIT 12`,
+      params
+    );
+    products = r.rows;
+  }
+
+  return success(res, {
+    offer,
+    brand: { id: row.brand_id, name: row.brand_name, category: row.brand_category, city: row.brand_city, locality: row.brand_locality },
+    products,
+  });
 });
 
 // ── GET /store/:handle/products ───────────────────────────────────────────────
@@ -1244,6 +1318,7 @@ module.exports = {
   search,
   register,
   getMe,
+  getStoreOfferDetail,
   recordTouch,
   followInfluencer,
   unfollowInfluencer,

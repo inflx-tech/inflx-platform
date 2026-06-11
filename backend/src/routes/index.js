@@ -147,6 +147,9 @@ router.use('/brands/me', listingRoutes.brandRouter);
 
 // ── Phase 4 — Public store endpoints (no auth required) ──────────────────────
 router.get('/store/:influencer_handle/products', authenticateOptional, followerCtrl.getStoreProducts);
+// Library-offer detail (store-direct / showcase taps — no creator handle needed).
+// Contract: features/sprint1-offer-pipeline. Pairs with POST /follower/store-offer/pay.
+router.get('/follower/store-offer/:id', authenticateOptional, followerCtrl.getStoreOfferDetail);
 router.get('/store/:influencer_handle',           authenticateOptional, followerCtrl.getInfluencerStore);
 router.get('/business/:brand_id/store',            authenticateOptional, followerCtrl.getBusinessStore);
 router.get('/business/:brand_id',                 authenticateOptional, followerCtrl.getBusinessStore);

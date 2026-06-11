@@ -134,14 +134,20 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   const handle = store?.instagram_handle || influencer?.instagram_handle || '';
   const trk = tracking || trackingParams || null;
-  const offerId = offer?.id || offer?.offer_id || trk?.offer_id || null;
-  // campaign_influencer_id is always present even when there's no
-  // campaign_offers row (conversion test campaigns configure offers per-CI
-  // via offer_config_json). Used as fallback scope to load the right brand's
-  // products without leaking unrelated cars onto a restaurant tap.
-  const ciId = trk?.campaign_influencer_id || null;
+  // Offer identity (contract: features/sprint1-offer-pipeline). Feed taps pass
+  // explicit ci_id (assignments) / brand_offer_id (store + showcase library
+  // offers). Feed tracking uses SHORT keys {cid,sid,oid,iid} — iid is the
+  // INFLUENCER id, never a campaign_influencer id, and oid is the LIBRARY
+  // offer id, never a campaign_offers id. Legacy entry points (BrandStore et
+  // al) still pass long-form tracking and real campaign offer ids — kept.
+  const ciId = offer?.ci_id || trk?.campaign_influencer_id || null;
+  const brandOfferId = offer?.brand_offer_id || null;
+  const legacyOfferId = (!offer?.ci_id && !offer?.brand_offer_id)
+    ? (offer?.id || offer?.offer_id || trk?.offer_id || null)
+    : null;
 
   const [products, setProducts] = useState(previewProduct ? [previewProduct] : []);
+  const [offerExtra, setOfferExtra] = useState(null); // discount/config enrich from the store-offer fetch
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedAddons, setSelectedAddons] = useState({}); // conditional Customize (food add-ons)
@@ -155,39 +161,58 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   useEffect(() => {
     async function load() {
-      if (!handle) {
-        setError('Missing creator handle');
+      // Path 1 — creator context (assignment or legacy campaign offer):
+      // products scoped via the creator's store endpoint.
+      if (handle && (ciId || legacyOfferId)) {
+        const res = await followerApi.getStoreProducts(handle, {
+          offerId: ciId ? null : legacyOfferId, // never send a library oid here
+          ciId,
+        });
         setLoading(false);
+        if (res.success) setProducts(res.data?.products || []);
+        else setError(res.error?.message || 'Failed to load product');
         return;
       }
-      if (!offerId && !ciId) {
-        setError('Missing offer context — the tap source did not pass an offer or campaign assignment id');
+      // Path 2 — library offer with no creator (store-direct / showcase):
+      // dedicated detail endpoint; also enriches the offer mechanics for
+      // the OfferBlock when the feed item didn't carry them.
+      if (brandOfferId) {
+        const res = await followerApi.getStoreOffer(brandOfferId);
         setLoading(false);
+        if (res.success) {
+          setProducts(res.data?.products || []);
+          if (res.data?.offer) {
+            const o = res.data.offer;
+            setOfferExtra({ discount: o.discount, config: o.config, availing_modes: o.availing_modes, offer_type: o.offer_type });
+          }
+        } else {
+          setError(res.error?.message || 'Failed to load offer');
+        }
         return;
       }
-      const res = await followerApi.getStoreProducts(handle, { offerId, ciId });
+      setError(!handle
+        ? 'Missing creator handle'
+        : 'Missing offer context — the tap source did not pass an offer or campaign assignment id');
       setLoading(false);
-      if (res.success) {
-        const items = res.data?.products || [];
-        setProducts(items);
-      } else {
-        setError(res.error?.message || 'Failed to load product');
-      }
     }
     load();
-  }, [handle, offerId, ciId]);
+  }, [handle, legacyOfferId, ciId, brandOfferId]);
 
   const selected = products.find(p => p.id === selectedProductId) || products[0] || previewProduct || null;
   const others = products.filter(p => p.id !== selected?.id);
 
+  // The offer the screen computes with: route param + any mechanics enrich
+  // fetched from the store-offer endpoint (route values win when present).
+  const offerFull = offerExtra ? { ...offerExtra, ...offer, config: offer?.config || offerExtra.config, discount: offer?.discount || offerExtra.discount } : offer;
+
   // ── Compute prices ─────────────────────────────────────────────────────
   const price = parseFloat(selected?.price || 0);
-  const discountValue = parseFloat(offer?.discount_value || 0);
+  const discountValue = parseFloat(offerFull?.discount_value ?? offerFull?.discount?.value ?? 0);
   let finalPrice = price;
   let savings = 0;
   let badgeLabel = null;
-  if (offer && discountValue > 0) {
-    const ot = (offer.offer_type || '').toLowerCase();
+  if (offerFull && discountValue > 0) {
+    const ot = (offerFull.offer_type || '').toLowerCase();
     if (ot === 'percentage' || ot === 'discount' || ot === '') {
       savings = parseFloat((price * (discountValue / 100)).toFixed(2));
       finalPrice = parseFloat((price - savings).toFixed(2));
@@ -231,7 +256,9 @@ export default function ProductDetailScreen({ navigation, route }) {
   // For restaurants/salons/cars we use category-specific verbs (Book a Table,
   // Pay at Restaurant, Reserve Car) instead of generic ones (Book Slot,
   // Pay at Venue). Falls back to generic labels for other categories.
-  const availingModes = Array.isArray(offer?.availing_modes) ? offer.availing_modes : ['online_order'];
+  const availingModes = Array.isArray(offerFull?.availing_modes) && offerFull.availing_modes.length
+    ? offerFull.availing_modes
+    : ['online_order'];
   const ctaList = [];
   const seenScreens = new Set();
   for (const m of availingModes) {
@@ -247,19 +274,30 @@ export default function ProductDetailScreen({ navigation, route }) {
   const primaryCta = ctaList[0];
   const secondaryCtas = ctaList.slice(1);
 
+  // Long-form attribution for the transact screens. Feed tracking carries
+  // SHORT keys {cid,sid,oid,iid}; payAtStore/orders validate the LONG keys —
+  // and the library oid is NOT a campaign offer id, so it is never forwarded
+  // as offer_id (contract: features/sprint1-offer-pipeline).
+  const txTracking = (ciId || trk?.campaign_id || trk?.cid) ? {
+    campaign_id: trk?.campaign_id || trk?.cid || null,
+    set_id: trk?.set_id || trk?.sid || null,
+    offer_id: trk?.offer_id || null,
+    campaign_influencer_id: trk?.campaign_influencer_id || ciId || null,
+  } : null;
+
   function dispatchCta(cta) {
     if (!selected) return;
     // Compose the cart for offer-type mechanics: BOGO adds the free item, bundle
     // adds all set products, free_gift adds the gift. Discount/Volume → just the
     // picked item. The SERVER re-prices authoritatively (resolveOfferDiscount).
-    const composed = composeCart(offer, {
+    const composed = composeCart(offerFull, {
       id: selected.id,
       name: selected.name,
       price: parseFloat(selected.price || finalPrice || 0),
       quantity: 1,
     });
     const params = {
-      offer,
+      offer: offerFull,
       brand,
       store: store || { name: brand?.name, instagram_handle: handle },
       influencer,
@@ -268,8 +306,13 @@ export default function ProductDetailScreen({ navigation, route }) {
       offer_composed: composed,   // { items, note, freeIds } — checkout can show free lines
       selected_addons: addons.filter((_, i) => selectedAddons[i]),
       selected_size: selectedSize,
-      tracking: trk,
-      trackingParams: trk,
+      tracking: txTracking,
+      trackingParams: txTracking,
+      // Store-direct buy (Offer Engine D3): PayAtStore routes through
+      // POST /follower/store-offer/pay when this is set.
+      storeOffer: (!txTracking && brandOfferId && brand?.id)
+        ? { brand_id: brand.id, brand_offer_id: brandOfferId }
+        : undefined,
     };
     navigation.navigate(cta.screen, params);
   }
@@ -372,7 +415,7 @@ export default function ProductDetailScreen({ navigation, route }) {
           </View>
 
           {/* Offer mechanics — type-specific block (discount / volume / bogo / bundle / gift) */}
-          <OfferBlock offer={offer} />
+          <OfferBlock offer={offerFull} />
 
           {/* Customize — food add-ons (conditional, brand-defined) */}
           {addons.length > 0 ? (

@@ -1,0 +1,28 @@
+{
+  "feature": "sprint1-offer-pipeline",
+  "area": "backend-controller+routes / mobile-follower",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-11) — 'ok start with sprint1' on the W8 fix plan",
+  "approved_at": "2026-06-11",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING: Render (one additive read-only endpoint) + mobile OTA (tap params, ProductDetail resolution, transact tracking shape). No migration, no web impact. Legacy entry points byte-identical via the legacyOfferId fallback.",
+  "fix": "GET /follower/store-offer/:id (adapter-normalized offer + brand + resolved products) for store/showcase taps; feed taps pass explicit identity (ci_id / brand_offer_id / source) + offer mechanics; ProductDetail branches by identity and builds LONG-FORM transact tracking (library oid never forwarded as offer_id); store-direct dispatch passes storeOffer{} into the existing D3 pay path.",
+  "related": ["features/listing-section-d0-seams (adapter origin)", "Docs/WALKTHROUGH_LEDGER.md P1+W8", "Docs/FOLLOWER_APP_ANALYSIS.md"],
+  "result": "All three tap channels proven E2E in the journey driver: S6.6a store-published offer → feed item → detail 200 (products + discount label); S6.6b assignment ci_id path 200; S6.6c legacy misuse still 404s. Purchases S6.3/S6.4 stay green with the long-form tracking.",
+  "regression_proof": "Journey driver 30/30 PASS (run 7921108, SECTION_ENGINE_OFFERS=true mirroring prod) — first-ever fully green run incl. natural T3 queue→release→campaign-completed. pnpm qa 79/79 GREEN STATE=GREEN gate=0 (1.4m, report 2026-06-11T11-48-26). esbuild parse-check clean on the 4 mobile files.",
+  "discipline": "Verify-twice on the full chain before coding: DealsScreen:106 + SectionRenderer:37 (oid preference), ProductDetailScreen:137-142 (short/long key mismatch), follower.controller:470-489 (dead campaign_offers lookup), buildTracking (iid=influencer id), PayAtStoreScreen:47+114 (storeOffer support already present).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "Push → Render auto-deploy (endpoint live, OTA-inert for phones) → publish-ota:all → founder on-device tap-through verification → flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-11) — no visual redesign; tap-flow.html documents the three channels against the already-locked Offers/Product screens; surfaced in founder preview panel.",
+  "mockup_locked_at": "2026-06-11"
+}

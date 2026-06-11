@@ -6,6 +6,7 @@ import { creatorVibe as C, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { DealCard, ShelfHeader, Gradient } from '../../components/vibe';
 import { emojiFor } from '../../components/vibe/palette';
+import { offerNavParam } from '../../components/SectionRenderer';
 
 /**
  * DealsScreen (Offers tab) — rebuilt to design/wave4-creator-vibe/offers-comprehensive.html.
@@ -102,12 +103,7 @@ export default function DealsScreen({ navigation }) {
 
   const goToOffer = useCallback((item) => {
     navigation.navigate('ProductDetail', {
-      offer: {
-        id: item.tracking?.oid || item.id,
-        offer_type: item.offer_type,
-        discount_value: item.discount_value,
-        availing_modes: item.availing_modes,
-      },
+      offer: offerNavParam(item),
       brand: item.brand
         ? { id: item.brand.id, name: item.brand.name, category: item.brand.category, locality: item.brand.city }
         : null,

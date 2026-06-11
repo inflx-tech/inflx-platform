@@ -31,14 +31,29 @@ function navigateCategory(navigation, cat) {
   return navigation.navigate('CategoryList', { superCategory: key, label: cat.label, icon: cat.icon });
 }
 
+// Build the explicit offer identity ProductDetail needs (contract:
+// features/sprint1-offer-pipeline). Assignments resolve via ci_id
+// (/store/:handle/products); store/showcase library offers via
+// brand_offer_id (/follower/store-offer/:id). Never send the library oid
+// as a campaign offer id — that was the "Offer not found" 404.
+export function offerNavParam(item) {
+  const isAssignment = item.source ? item.source === 'assignment' : !!item.tracking;
+  return {
+    id: item.id,
+    source: item.source || (isAssignment ? 'assignment' : 'store'),
+    ci_id: isAssignment ? item.id : null,
+    brand_offer_id: isAssignment ? (item.tracking?.oid || null) : item.id,
+    offer_type: item.offer_type,
+    discount_value: item.discount_value,
+    discount: item.discount || null,
+    config: item.config || null,
+    availing_modes: item.availing_modes,
+  };
+}
+
 function goToOffer(navigation, item) {
   navigation.navigate('ProductDetail', {
-    offer: {
-      id: item.tracking?.oid || item.id,
-      offer_type: item.offer_type,
-      discount_value: item.discount_value,
-      availing_modes: item.availing_modes,
-    },
+    offer: offerNavParam(item),
     brand: item.brand
       ? { id: item.brand.id, name: item.brand.name, category: item.brand.category, locality: item.brand.city }
       : null,
@@ -53,9 +68,7 @@ function goToOffer(navigation, item) {
 function goToProduct(navigation, item) {
   const product = item.product || { id: item.id, name: item.name, price: item.price, image_url: item.image_url };
   navigation.navigate('ProductDetail', {
-    offer: item.discount_value
-      ? { id: item.tracking?.oid || item.id, offer_type: item.offer_type, discount_value: item.discount_value, availing_modes: item.availing_modes }
-      : null,
+    offer: item.discount_value ? offerNavParam(item) : null,
     brand: item.brand
       ? { id: item.brand.id, name: item.brand.name, category: item.brand.category, locality: item.brand.city }
       : null,

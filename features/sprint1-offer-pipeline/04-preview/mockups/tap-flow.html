@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Sprint 1 — offer tap-through flow</title>
+<style>
+ body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#F7F3EC;padding:24px;color:#1F1F22}
+ h2{font-size:15px;margin:0 0 14px}
+ .flow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+ .node{background:#fff;border:1px solid #E5DDD0;border-radius:12px;padding:12px 14px;width:190px;font-size:11.5px}
+ .node b{display:block;font-size:12.5px;margin-bottom:4px}
+ .arrow{font-size:18px;color:#8B4A2F;font-weight:800}
+ .tag{display:inline-block;background:#F1ECE3;border-radius:7px;padding:2px 7px;font-size:9px;font-weight:800;color:#8B4A2F;margin-bottom:5px}
+ .ok{color:#0E7A3E;font-weight:700}.bad{color:#B91C1C;text-decoration:line-through}
+ .cta{background:#8B4A2F;color:#fff;border-radius:8px;padding:6px 10px;font-size:10.5px;font-weight:800;display:inline-block;margin-top:6px}
+</style></head><body>
+<h2>Before: any offer tap → ❌ "Offer not found" (library id sent to a dead table) · attribution keys mismatched → payment 422</h2>
+
+<h2>After — channel 1: STORE-DIRECT (brand published, no creator)</h2>
+<div class="flow">
+ <div class="node"><span class="tag">OFFERS TAB</span><b>40% OFF · Aveen Food</b>taps card → carries brand_offer_id + mechanics</div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">NEW ENDPOINT</span><b>GET /follower/store-offer/:id</b><span class="ok">200</span> offer + brand + products</div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">PRODUCT PAGE</span><b>OfferBlock renders deal</b>tiers / BOGO pair / bundle<br><span class="cta">Pay at Venue</span></div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">PAYMENT</span><b>store-offer/pay</b><span class="ok">works (existing D3 path)</span></div>
+</div>
+
+<h2>After — channel 2: CREATOR ASSIGNMENT (conversion, commissioned)</h2>
+<div class="flow">
+ <div class="node"><span class="tag">DEAL SHELF</span><b>via @sagar.eats</b>taps card → carries ci_id (not the library id)</div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">PROVEN PATH</span><b>/store/:handle/products?ci_id</b><span class="ok">200</span> creator's product picks</div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">PRODUCT PAGE</span><b>price + offer + creator note</b><span class="cta">Pay at Restaurant</span></div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">PAYMENT</span><b>4-ID long-form tracking</b><span class="ok">commission attributes ✓</span></div>
+</div>
+
+<h2>After — channel 3: SHOWCASE (engagement promote — no commission by design)</h2>
+<div class="flow">
+ <div class="node"><span class="tag">CREATOR STORE</span><b>promoted deal</b>brand_offer_id + source:showcase</div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">SAME ENDPOINT</span><b>store-offer/:id</b><span class="ok">200</span></div>
+ <span class="arrow">→</span>
+ <div class="node"><span class="tag">PRODUCT PAGE</span><b>deal renders</b>no tracking (promotional)</div>
+</div>
+</body></html>
