@@ -1,3 +1,12 @@
+# FIX 2026-06-12 (post-deploy) — "Invalid or expired token" on upload
+Founder hit a 401 "Invalid or expired token" uploading a filled template after
+the page sat open. Cause: `listingApi.importProducts` used a custom multipart
+`fetch` that attached the current access token but — unlike `api.request()` —
+never refreshed + retried on a 401, so an expired 15-min access token hard-
+failed. Fix: importProducts now calls `tryRefreshToken()` once on 401 and
+retries with the new token (mirrors the shared wrapper). Brand-web only, no
+backend change.
+
 # Before / after — Listing Bulk Add via Excel
 
 **Before:** the only way to add fashion/furniture products was one at a time

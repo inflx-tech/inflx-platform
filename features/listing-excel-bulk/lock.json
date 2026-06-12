@@ -13,6 +13,7 @@
   "related": ["project-listing-add-redesign", "features/listing-add-stepper", "features/listing-drilldown-taxonomy-engine", "backend/src/controllers/listing.controller.js"],
   "result": "IMPLEMENTED. Backend: listingBulk.service.js (live template gen + parse + row-per-variant grouping) + 2 endpoints (downloadTemplate public, importProducts brand-auth+multer); batchCreate refactored to share insertProducts with import (same SQL/SKUs). Brand-web: leaf tab toggle (one-by-one | bulk Excel) + download/upload panel + per-row error report + post-import photo tray (updateProduct). Awaiting founder go for Render+Vercel deploy + verify.",
   "regression_proof": "scripts/test-listing-bulk.js 14/14 (columns, parse, row-per-variant grouping, multi-select split, validateItem pass, stale-column file error, bad-value row error). Live: GET template.xlsx 200 valid xlsx (real facets, 10.5KB), POST import unauth 401. next build compiled (page 8.67kB). pnpm qa 79/79 GREEN (report 2026-06-12T04-58-16Z; prior run's 5 ECONNRESET classified env-contention from stray :3001 backend, not a regression — clean re-run GREEN).",
+  "post_deploy_fix_2026-06-12": "importProducts now refreshes the access token + retries once on 401 (was a hard 'Invalid or expired token' on upload after the 15-min TTL lapsed). Brand-web only; next build clean.",
   "discipline": "Reuses validateItem + batchCreate verbatim — no new validation or write logic; live generation = zero template maintenance.",
   "release": {
     "qa_all_green": true,

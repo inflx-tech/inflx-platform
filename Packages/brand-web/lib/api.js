@@ -136,14 +136,20 @@ export const listingApi = {
   importProducts: async (nodeId, file) => {
     const fd = new FormData();
     fd.append('file', file);
-    const token = getToken();
+    const send = (tok) => fetch(`${API_BASE}/listing/nodes/${nodeId}/import`, {
+      method: 'POST',
+      headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      credentials: 'include',
+      body: fd,
+    });
     try {
-      const res = await fetch(`${API_BASE}/listing/nodes/${nodeId}/import`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: 'include',
-        body: fd,
-      });
+      let res = await send(getToken());
+      // The 15-min access token may have expired while the page sat open —
+      // refresh once and retry, mirroring api.request() (was: hard "Invalid or
+      // expired token" on upload).
+      if (res.status === 401 && (await tryRefreshToken())) {
+        res = await send(getToken());
+      }
       const json = await res.json().catch(() => ({}));
       return { ok: res.ok, status: res.status, data: json.data, error: json.error };
     } catch (e) {
