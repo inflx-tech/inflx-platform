@@ -177,6 +177,20 @@ export default function CategoryListScreen({ route, navigation }) {
       });
   }, [sections, activeSubCat]);
 
+  // Header "N places" — in section-engine mode the businesses come from the
+  // sections, not `stores`, so stores.length showed 0 (walkthrough P8). Count
+  // distinct brands across the rendered section items; fall back to stores.
+  const placeCount = useMemo(() => {
+    if (!sectionsActive) return stores.length;
+    const ids = new Set();
+    (Array.isArray(filteredSections) ? filteredSections : []).forEach(sec =>
+      (Array.isArray(sec.items) ? sec.items : []).forEach(it => {
+        const id = it.brand?.id || (sec.type === 'brands' ? it.id : null);
+        if (id) ids.add(id);
+      }));
+    return ids.size || stores.length;
+  }, [sectionsActive, filteredSections, stores.length]);
+
   // ── Render helpers ──────────────────────────────────────────────────────
 
   function renderDiningCard(store, sIdx) {
@@ -385,7 +399,7 @@ export default function CategoryListScreen({ route, navigation }) {
         </TouchableOpacity>
         <TouchableOpacity style={s.ttl} onPress={() => setLocOpen(true)} activeOpacity={0.7}>
           <Text style={s.t1} numberOfLines={1}>{icon} {label}</Text>
-          <Text style={s.t2} numberOfLines={1}>📍 {location.label || 'Vijayawada'} · {stores.length} places ▾</Text>
+          <Text style={s.t2} numberOfLines={1}>📍 {location.label || 'Vijayawada'} · {placeCount} places ▾</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.ib} onPress={() => navigation.navigate('Find')}>
           <Text style={s.ibTxt}>🔍</Text>

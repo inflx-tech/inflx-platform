@@ -105,14 +105,20 @@ function isFeatureShelf(section) {
 
 // ── controls / hero / grid (offers screen variants — preserved) ───────────────
 
+// Chips may arrive as plain strings OR objects ({label,value}/{name}/{key}).
+// Rendering the raw value blanked the chip (object child) — normalise to a
+// display string and drop empties (walkthrough P6).
+const chipLabel = (l) => (typeof l === 'string' ? l : (l?.label || l?.name || l?.value || l?.key || ''));
+
 function ChipRow({ section }) {
   const cfg = section.config || {};
-  const labels =
+  const raw =
     (Array.isArray(cfg.chips) && cfg.chips) ||
     (Array.isArray(cfg.sorts) && cfg.sorts) ||
     (Array.isArray(cfg.filters) && cfg.filters) ||
-    (Array.isArray(cfg.verticals) && cfg.verticals.map(v => v.label)) ||
+    (Array.isArray(cfg.verticals) && cfg.verticals) ||
     [];
+  const labels = raw.map(chipLabel).filter(Boolean);
   if (!labels.length) return null;
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>

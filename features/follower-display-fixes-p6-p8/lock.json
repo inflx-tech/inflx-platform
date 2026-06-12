@@ -1,0 +1,27 @@
+{
+  "feature": "follower-display-fixes-p6-p8",
+  "area": "mobile-follower",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-12) — 'go and complete ... others' batch; P6/P8 are diagnosed display bugs in the walkthrough ledger",
+  "approved_at": "2026-06-12",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING via mobile OTA only. No backend/DB/migration.",
+  "fix": "P6: ChipRow chipLabel() normaliser (string/object → display label, drop empties) in SectionRenderer.js. P8: placeCount in CategoryListScreen.js counts distinct brands across rendered sections in section-engine mode, falls back to stores.length.",
+  "related": ["Docs/WALKTHROUGH_LEDGER.md P6+P8", "project-follower-diagnostic-2026-06-10"],
+  "result": "IMPLEMENTED — render-only fixes to two locked screens. Awaiting OTA + founder walk.",
+  "regression_proof": "Both files parse clean (@babel/parser JSX). pnpm qa 79/79 GREEN (report 2026-06-12T06-53-22Z).",
+  "discipline": "Bug fixes to already-locked screens; safe fallbacks; no data-shape change.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "pnpm qa -> publish-ota:all (rides the share-links OTA round) -> founder walk -> flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (2026-06-12) — delegated in the 'complete others' batch; corrected render of already-locked screens (chips legible, count honest)",
+  "mockup_locked_at": "2026-06-12"
+}
