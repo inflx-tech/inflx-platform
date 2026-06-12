@@ -23,11 +23,14 @@ const facets = [
 // Fill an in-memory workbook the way a brand would, using the live column model.
 async function filledBuffer(dropHeaders = []) {
   const { cols } = bulk.columnModel(node, facets);
-  const headers = cols.map(c => c.header).filter(h => !dropHeaders.includes(h));
+  // Use the REAL template headers — required ones carry a " *" marker, exactly
+  // as buildTemplateWorkbook writes them. (Regression guard: the importer must
+  // match "Name *" to the "Name" column spec.)
+  const headers = cols.map(c => c.header + (c.required ? ' *' : '')).filter(h => !dropHeaders.includes(h.replace(/ \*$/, '')) && !dropHeaders.includes(h));
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Products');
   ws.addRow(headers);
-  const set = (obj) => headers.map(h => obj[h] ?? '');
+  const set = (obj) => headers.map(h => obj[h.replace(/ \*$/, '')] ?? obj[h] ?? '');
   // One product, two colours (row-per-variant) + image-URL columns.
   ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Maroon', Size: 'Free', 'Variant stock': '12', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Cover image URLs': 'https://x.test/c1.jpg, https://x.test/c2.jpg', 'Colour image URLs': 'https://x.test/maroon.jpg' }));
   ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Teal', Size: 'Free', 'Variant stock': '8', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Colour image URLs': 'https://x.test/teal.jpg' }));

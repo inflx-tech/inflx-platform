@@ -35,6 +35,9 @@ const sizeValues = (sys) => SIZE_SYSTEMS[sys] || ['Free Size'];
 
 const norm = (s) => String(s == null ? '' : s).trim();
 const lc = (s) => norm(s).toLowerCase();
+// Match headers ignoring case AND the required-marker " *" the template adds to
+// required column headers (e.g. sheet has "Name *", model has "Name").
+const headerKey = (s) => lc(s).replace(/\s*\*$/, '').trim();
 
 /**
  * The ordered column model for a leaf — the single definition both the template
@@ -168,18 +171,19 @@ function buildItems(rows, node, facets) {
   const { cols, hasVariants, detail } = columnModel(node, facets);
   const fileErrors = [];
 
-  // Map present headers (case-insensitive) → column spec.
+  // Present headers (case-insensitive, required-marker-insensitive). Built from
+  // the UNION of all rows' keys — parseRows only emits keys for non-empty cells,
+  // so a single sparse first row must not hide a column that exists elsewhere.
   const present = new Set();
-  if (rows.length) Object.keys(rows[0]).forEach(h => present.add(lc(h)));
+  rows.forEach(r => Object.keys(r).forEach(h => present.add(headerKey(h))));
   // A required column entirely absent from the sheet = stale/wrong template.
   cols.filter(c => c.required).forEach(c => {
-    if (!present.has(lc(c.header))) fileErrors.push(`Column "${c.header}" is missing — your template is out of date, please re-download.`);
+    if (!present.has(headerKey(c.header))) fileErrors.push(`Column "${c.header}" is missing — your template is out of date, please re-download.`);
   });
   if (fileErrors.length) return { items: [], fileErrors };
 
   const get = (row, header) => {
-    // case-insensitive header lookup
-    const k = Object.keys(row).find(kk => lc(kk) === lc(header));
+    const k = Object.keys(row).find(kk => headerKey(kk) === headerKey(header));
     return k ? row[k] : '';
   };
 
