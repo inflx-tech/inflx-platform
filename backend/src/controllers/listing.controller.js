@@ -245,6 +245,11 @@ const importProducts = asyncHandler(async (req, res) => {
   if (fileErrors.length) throw new AppError('VALIDATION_ERROR', fileErrors.join(' '), 422, JSON.stringify({ file_errors: fileErrors }));
   if (items.length > 200) throw new AppError('VALIDATION_ERROR', 'Max 200 products per upload — split into smaller files', 422, 'items');
 
+  // Forgiving value handling: snap case mismatches to the canonical allowed
+  // value; drop unrecognised OPTIONAL tags (don't let one stray catalog value
+  // block the whole upload) and report them. Required/colour stay strict.
+  const valueWarnings = bulk.coerceItemFacets(items, facets);
+
   // Per-row validation, mapped back to spreadsheet row numbers. All-or-nothing.
   const problems = [];
   items.forEach((it) => {
@@ -290,6 +295,7 @@ const importProducts = asyncHandler(async (req, res) => {
     products: created,                       // id + sku → drives the post-import photo tray
     needs_photos: created.map(p => p.id),
     image_warnings: imageWarnings,           // links we couldn't fetch (product still created)
+    value_warnings: valueWarnings,           // unrecognised optional tags we dropped
   }, 201);
 });
 

@@ -89,6 +89,15 @@ async function filledBuffer(dropHeaders = []) {
   const ebad = taxonomy.validateItem(node, facets, rb.items[0]);
   ok(ebad.some(e => /Fabric/i.test(e)), 'invalid Fabric value rejected by validateItem');
 
+  // 6) coerceItemFacets — snap case + drop unknown OPTIONAL tag (the founder's bug)
+  const cit = { name: 'Z', facets: { fabric: 'cotton', occasion: ['Casual', 'Smart Casual'] } };
+  const cw = bulk.coerceItemFacets([cit], facets);
+  ok(cit.facets.fabric === 'Cotton', 'coerce snaps case (cotton → Cotton)');
+  ok(JSON.stringify(cit.facets.occasion) === JSON.stringify(['Casual']), 'coerce drops unknown optional tag (Smart Casual kept Casual)');
+  ok(cw.some(w => w.dropped === 'Smart Casual'), 'coerce reports the dropped tag as a warning');
+  const cerr = taxonomy.validateItem(node, facets, { ...cit, price: '1', facets: { ...cit.facets, color_tone: ['Maroon'] } });
+  ok(cerr.length === 0, 'item validates after coerce');
+
   console.log(`\nTOTALS: ${pass} pass / ${fail} fail`);
   process.exit(fail ? 1 : 0);
 })().catch(e => { console.error('ERR', e); process.exit(1); });

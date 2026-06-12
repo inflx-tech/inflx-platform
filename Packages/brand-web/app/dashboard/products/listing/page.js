@@ -56,6 +56,7 @@ export default function DrilldownListingPage() {
   const [importErrors, setImportErrors] = useState(null);  // per-product row errors
   const [importFileErr, setImportFileErr] = useState('');  // file-level (stale template etc.)
   const [imported, setImported] = useState([]);            // just-created products → photo tray
+  const [importWarnings, setImportWarnings] = useState(null); // {images:[], values:[]} non-blocking
   const [trayUploading, setTrayUploading] = useState('');
   const [urlText, setUrlText] = useState({});              // paste-image-URL inputs, keyed by target
   const [ingesting, setIngesting] = useState('');          // target currently ingesting
@@ -96,7 +97,7 @@ export default function DrilldownListingPage() {
       setLeaf({ ...node, size_system: r.data.node.size_system, size_required: r.data.node.size_required });
       setFacets((r.data.facets || []).filter(f => f.facet_key !== 'images' && f.facet_key !== 'price'));
       setItems([]); setDraft(blankDraft()); setStep(1); setMoreOpen(false);
-      setMode('one'); setImported([]); setImportErrors(null); setImportFileErr('');
+      setMode('one'); setImported([]); setImportErrors(null); setImportFileErr(''); setImportWarnings(null);
       setCrumb(c => [...c, { name: node.name, children: level }]);
     } else {
       setCrumb(c => [...c, { name: node.name, children: level }]);
@@ -322,13 +323,13 @@ export default function DrilldownListingPage() {
   // ── Excel bulk add ──────────────────────────────────────────────────────
   async function handleImport(file) {
     if (!file) return;
-    setImporting(true); setImportErrors(null); setImportFileErr(''); setErr(''); setOk('');
+    setImporting(true); setImportErrors(null); setImportFileErr(''); setImportWarnings(null); setImported([]); setErr(''); setOk('');
     const r = await listingApi.importProducts(leaf.id, file);
     setImporting(false);
     if (r.ok) {
       const created = r.data?.products || [];
       setImported(created);
-      setOk(`✓ ${r.data?.created_count} product(s) created under ${leaf.name} — add photos below`);
+      setImportWarnings({ images: r.data?.image_warnings || [], values: r.data?.value_warnings || [] });
       setCounts(c => ({ ...c, [leaf.id]: (c[leaf.id] || 0) + (r.data?.created_count || 0) }));
     } else {
       let parsed = null;
@@ -585,18 +586,41 @@ export default function DrilldownListingPage() {
               </div>
               <div className="bnote"><b>Auto-updating:</b> change a spec for this item type and the template here changes too — the sheet is always today's specs (stamped on the Instructions tab).</div>
 
-              {importFileErr && <div className="err">{importFileErr}</div>}
-              {importErrors && (
+              {/* File-level problem (e.g. out-of-date template) */}
+              {importFileErr && (
                 <div className="err">
-                  <div style={{ fontWeight: 800, marginBottom: 6 }}>{importErrors.length} product(s) need fixing — nothing was saved</div>
-                  {importErrors.slice(0, 25).map((p, i) => (
-                    <div key={i} className="erow"><b>{p.name}</b>{p.rows?.length ? ` (row ${p.rows.join(', ')})` : ''} — {p.errors.join('; ')}</div>
-                  ))}
+                  <div style={{ fontWeight: 800, marginBottom: 4 }}>Couldn't read that file</div>
+                  <div>{importFileErr}</div>
+                  <div style={{ marginTop: 6 }}>Download a fresh template above, paste your rows into it, and upload again.</div>
                 </div>
               )}
 
+              {/* Per-row problems — fix and re-upload (nothing was saved) */}
+              {importErrors && (
+                <div className="err">
+                  <div style={{ fontWeight: 800, marginBottom: 6 }}>{importErrors.length} product(s) need a fix — nothing was saved</div>
+                  {importErrors.slice(0, 25).map((p, i) => (
+                    <div key={i} className="erow"><b>{p.name}</b>{p.rows?.length ? ` (row ${p.rows.join(', ')})` : ''} — {p.errors.join('; ')}</div>
+                  ))}
+                  {importErrors.length > 25 && <div className="erow">…and {importErrors.length - 25} more</div>}
+                  <div style={{ marginTop: 8, fontWeight: 700 }}>Fix these cells in your sheet, then press “⬆ Choose .xlsx / .csv” again.</div>
+                </div>
+              )}
+
+              {/* Success — created products + non-blocking warnings + photo tray */}
               {imported.length > 0 && (
                 <>
+                  <div className="ok">✓ {imported.length} product{imported.length > 1 ? 's' : ''} added under {leaf.name}. Add photos below — then they're live.</div>
+                  {importWarnings && (importWarnings.values?.length > 0 || importWarnings.images?.length > 0) && (
+                    <div className="warnbox">
+                      {importWarnings.values?.length > 0 && (
+                        <div>Skipped {importWarnings.values.length} unrecognised tag{importWarnings.values.length > 1 ? 's' : ''}: {importWarnings.values.slice(0, 6).map(w => `${w.facet} “${w.dropped}”`).join(', ')}{importWarnings.values.length > 6 ? '…' : ''}. Everything else imported fine.</div>
+                      )}
+                      {importWarnings.images?.length > 0 && (
+                        <div style={{ marginTop: importWarnings.values?.length ? 4 : 0 }}>{importWarnings.images.length} image link{importWarnings.images.length > 1 ? 's' : ''} couldn't be fetched — add those photos below.</div>
+                      )}
+                    </div>
+                  )}
                   <div className="sec">Add photos — {imported.length} just imported</div>
                   {imported.map(p => (
                     <div key={p.id} className="trow">
@@ -612,6 +636,8 @@ export default function DrilldownListingPage() {
                       </label>
                     </div>
                   ))}
+                  <button className="btn ghost" style={{ marginTop: 8 }}
+                    onClick={() => { setImported([]); setImportWarnings(null); }}>Upload another file</button>
                 </>
               )}
             </div>
@@ -674,6 +700,7 @@ const CSS = `
 .lst .brandtag{font-size:10px;font-weight:700;background:var(--info-pale);color:var(--info);padding:1px 7px;border-radius:6px;margin-left:7px}
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
+.lst .warnbox{background:var(--yellow-pale);border:1px solid #f0e1a8;color:var(--yellow-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:0 0 10px}
 .lst .sec{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:16px 0 8px}
 .lst .steps{display:flex;align-items:center;gap:4px;margin-bottom:14px;flex-wrap:wrap}
 .lst .stwrap{display:flex;align-items:center;gap:4px}

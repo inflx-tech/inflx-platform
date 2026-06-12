@@ -244,4 +244,48 @@ function buildItems(rows, node, facets) {
   return { items, fileErrors };
 }
 
-module.exports = { buildTemplateWorkbook, parseRows, buildItems, columnModel, COLOR_KEY, SIZE_KEY };
+/**
+ * Make imported facet values forgiving for bulk-from-catalog sheets:
+ *  - case/whitespace-insensitive match → snap to the canonical allowed value
+ *    (e.g. "machine wash" → "Machine wash"); and
+ *  - an UNRECOGNISED value on an OPTIONAL enumerated facet is dropped (a search
+ *    tag we don't know shouldn't block the whole upload) and reported as a
+ *    warning. Required facets / colour keep strict behaviour → validateItem
+ *    still hard-fails them.
+ * Mutates items in place; returns warnings[].
+ */
+function coerceItemFacets(items, facets) {
+  const warnings = [];
+  const byKey = new Map(facets.map(f => [f.facet_key, f]));
+  for (const it of items) {
+    const f4 = it.facets || {};
+    for (const key of Object.keys(f4)) {
+      const f = byKey.get(key);
+      if (!f) continue;
+      const allowed = Array.isArray(f.allowed_values) ? f.allowed_values : [];
+      if (allowed.length <= 1) continue;                    // open vocab / note-style → leave
+      const canon = (v) => allowed.find(a => lc(a) === lc(v)) || null;
+      const required = f.required === 'required';
+      const val = f4[key];
+      if (Array.isArray(val)) {
+        const kept = [];
+        for (const v of val) {
+          const c2 = canon(v);
+          if (c2) kept.push(c2);
+          else { warnings.push({ name: it.name, facet: f.label, dropped: v }); }
+        }
+        if (kept.length) f4[key] = [...new Set(kept)];
+        else if (!required) delete f4[key];
+        else f4[key] = kept;                                // empty → validateItem hard-fails (required)
+      } else {
+        const c2 = canon(val);
+        if (c2) f4[key] = c2;
+        else if (!required) { warnings.push({ name: it.name, facet: f.label, dropped: val }); delete f4[key]; }
+        // required + no match → leave; validateItem hard-fails
+      }
+    }
+  }
+  return warnings;
+}
+
+module.exports = { buildTemplateWorkbook, parseRows, buildItems, coerceItemFacets, columnModel, COLOR_KEY, SIZE_KEY };
