@@ -1,0 +1,28 @@
+{
+  "feature": "sprint3-cart-rebuild",
+  "area": "backend-transaction / mobile-follower",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-12) — 'Ok pls proceed' + scope decision 'build organic delivery now' (AskUserQuestion)",
+  "approved_at": "2026-06-12",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING: Render (transaction.controller placeOrder organic branch + verifyOrder null-CI guards) + mobile OTA (OnlineOrderScreen, ProductDetailScreen). No web. No migration (attribution cols already nullable; store-offer/pay precedent writes NULL-attribution rows).",
+  "fix": "Rebuild the online-order cart: (1) correct the 6-key payload mismatch (set_id, campaign_influencer_id, address_id, items[].quantity, items[].variant_id; drop library offer_id); (2) real onSave address refresh; (3) organic brand-direct online-order backend path mirroring store-offer/pay (zero commission, brand-direct L3 fee, NULL attribution); (4) variant cart — colour selector + size×colour→priced variant_id on ProductDetail, variant lines carried through the cart. Verify-twice correction recorded: product-page variant/add-on UI already renders (W9); only colour + variant_id mapping were missing.",
+  "related": ["Docs/WALKTHROUGH_LEDGER.md W9(e)", "Docs/USER_JOURNEY_MAP.md online-order silent loss", "features/sprint1-offer-pipeline", "features/sprint2-business-page-ctas"],
+  "result": "IMPLEMENTED + VERIFIED on LOCAL dev. Backend: organic branch in placeOrder + verifyOrder null-CI guard + items_json variant_sku/label passthrough. Mobile: OnlineOrderScreen full 3-step order (create→pay→verify) with correct keys + working onSave + variant lines + organic branch; ProductDetailScreen colour-first variant model (variants_json.colors[]) + size-required gate + colour/size/SKU into checkout. Awaiting founder go for prod backend deploy + device verify.",
+  "regression_proof": "pnpm qa 79/79 GREEN (report 2026-06-12T02-43-51Z, gate 0). journey-phase-a.js 32/32 PASS incl NEW S6.4b organic online order (NULL attribution, zero commission, variant label 'Blue · S' in items_json, order confirmed). Both screens parse clean (@babel/parser JSX). Backend node -c clean.",
+  "discipline": "Backend organic path is a direct mirror of the already-shipped, already-verified store-offer/pay organic handler — low risk. Payload fix is strictly corrective (current code 422s 100%).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "Founder mockup-lock → implement → pnpm qa + journey (LOCAL dev) → explicit go for Render → push (gov-check) → publish-ota:all → founder device verify → flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (2026-06-12) — delegated lock: previewed cart-rebuild.html, said 'pls move forward with sprint 3' (standing autonomy on design/lock choices)",
+  "mockup_locked_at": "2026-06-12"
+}

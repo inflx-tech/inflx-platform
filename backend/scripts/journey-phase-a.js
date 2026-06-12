@@ -435,6 +435,38 @@ const expectOk = (r, what) => {
     else log('S6.4', 'FAIL', 'Online order', detail + ` rows=${JSON.stringify(rows)}`);
   } catch (e) { fail('S6.4', 'Online order', e); }
 
+  try { // ORGANIC ONLINE ORDER (sprint3): brand-direct delivery, NO creator/offer
+    const addr = await api(ctx.folToken).post('/follower/addresses', {
+      label: 'Organic', line1: '5 Beach Rd', city: 'Vijayawada', state: 'Andhra Pradesh', pincode: '520001',
+      lat: 16.5062, lng: 80.648,
+    });
+    const ad = expectOk(addr, 'create organic address');
+    const addrId = (ad.address && ad.address.id) || ad.id;
+    const ord = await api(ctx.folToken).post('/follower/orders', {
+      brand_id: ctx.brandId,
+      items: [{ product_id: ctx.productId, quantity: 1, variant_sku: 'SKU-TEST-BLU-S', variant_label: 'Blue · S' }],
+      address_id: addrId,
+    });
+    const od = expectOk(ord, 'place organic order');
+    const ver = await api(ctx.folToken).post('/follower/orders/verify', {
+      razorpay_order_id: od.razorpay_order_id || od.order_id, razorpay_payment_id: `pay_mock_orgord_${RUN}`,
+    });
+    expectOk(ver, 'verify organic order');
+    const rows = await q(`SELECT ft.id, ft.status, ft.campaign_id, ft.campaign_influencer_id, ft.influencer_commission,
+                                 fo.order_status, fo.items_json
+                            FROM follower_transactions ft LEFT JOIN follower_orders fo ON fo.transaction_id=ft.id
+                           WHERE ft.follower_id=$1 AND ft.transaction_type='online_order'
+                             AND ft.campaign_influencer_id IS NULL
+                           ORDER BY ft.created_at DESC LIMIT 1`, [ctx.followerId]);
+    const r0 = rows[0];
+    const variantOk = r0 && JSON.stringify(r0.items_json || '').includes('Blue · S');
+    const organicOk = r0 && r0.campaign_id === null && r0.campaign_influencer_id === null
+      && parseFloat(r0.influencer_commission) === 0 && r0.order_status === 'confirmed';
+    if (organicOk && variantOk)
+      log('S6.4b', 'PASS', 'ORGANIC online order E2E: NULL attribution, zero commission, variant label recorded', `order_status=${r0.order_status}; commission=${r0.influencer_commission}`);
+    else log('S6.4b', 'FAIL', 'Organic online order', JSON.stringify({ organicOk, variantOk, r0 }));
+  } catch (e) { fail('S6.4b', 'Organic online order', e); }
+
   try { // NEGATIVE: order created but verify never fires → silent loss
     const before = await q(`SELECT count(*)::int n FROM follower_transactions WHERE follower_id=$1`, [ctx.followerId]);
     const ord = await api(ctx.folToken).post('/follower/orders', {

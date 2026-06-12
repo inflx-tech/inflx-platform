@@ -1116,12 +1116,40 @@ const placeOrder = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { offer_id, campaign_id, set_id, campaign_influencer_id, items, address_id, delivery_fee } = req.body;
-  if (!campaign_id || !set_id || !campaign_influencer_id || !items?.length) {
-    throw new AppError('VALIDATION_ERROR', 'campaign_id, set_id, campaign_influencer_id, items are required', 422);
+  const { offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, items, address_id, delivery_fee } = req.body;
+  if (!items?.length) {
+    throw new AppError('VALIDATION_ERROR', 'items are required', 422, 'items');
   }
 
-  const record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
+  // Two ordering modes (sprint3-cart-rebuild):
+  //   creator-mediated — campaign_id + set_id + campaign_influencer_id present;
+  //     discount + commission resolved from the contracted offer.
+  //   organic — no creator, just brand_id. A brand-direct delivery order:
+  //     zero discount, zero commission, platform fee only. Mirrors the
+  //     store-offer/pay organic path (W9 founder model). campaign/set/CI/offer
+  //     are NULL on the resulting follower_transactions row.
+  const isOrganic = !campaign_influencer_id;
+  let record;
+  if (isOrganic) {
+    if (!brand_id) {
+      throw new AppError('VALIDATION_ERROR',
+        'brand_id (organic) or campaign_id + set_id + campaign_influencer_id (creator) is required', 422);
+    }
+    const { rows } = await db.query(
+      `SELECT b.id AS brand_id, b.category AS brand_category
+         FROM brands b JOIN users u ON u.id = b.user_id
+        WHERE b.id = $1 AND u.status = 'approved'`,
+      [brand_id]
+    );
+    if (!rows[0]) throw new AppError('NOT_FOUND', 'Business not found', 404, 'brand_id');
+    record = { brand_id: rows[0].brand_id, brand_category: rows[0].brand_category,
+               commission_pct: 0, ci_offer_type: null, offer_config_json: null };
+  } else {
+    if (!campaign_id || !set_id) {
+      throw new AppError('VALIDATION_ERROR', 'campaign_id and set_id are required for a creator order', 422);
+    }
+    record = await txService.validateTracking(campaign_id, set_id, campaign_influencer_id, offer_id || null);
+  }
 
   // Build base + variant price maps + product metadata.
   // productMetaMap surfaces brand_products.section so category-scoped
@@ -1138,19 +1166,26 @@ const placeOrder = asyncHandler(async (req, res) => {
     product_id: i.product_id,
     variant_id: i.variant_id || null,
     quantity: parseInt(i.quantity, 10),
+    // Fashion/furniture variants live in variants_json.colors[] as SKUs (no
+    // product_variants rows). Carry the chosen colour·size + SKU as
+    // fulfillment metadata so the brand knows what to ship; price stays base.
+    variant_sku: i.variant_sku || null,
+    variant_label: i.variant_label || null,
   }));
 
   // Discount via offer.service.js parser. Handles all 5 offer mechanics
   // (Discount / Volume / BOGO / Bundle / Free gift) with the 3-tier scope
   // model (store / category / products) for Discount + Volume.
-  const offerResult = offerService.resolveOfferDiscount({
-    offerType: record.ci_offer_type,
-    offerConfig: record.offer_config_json,
-    items: safeItems,
-    priceMap,
-    variantPriceMap,
-    productMetaMap,
-  });
+  const offerResult = isOrganic
+    ? { discount_amount: 0, reason: null, adjustments: null }
+    : offerService.resolveOfferDiscount({
+        offerType: record.ci_offer_type,
+        offerConfig: record.offer_config_json,
+        items: safeItems,
+        priceMap,
+        variantPriceMap,
+        productMetaMap,
+      });
 
   const discountAmount = parseFloat(offerResult.discount_amount || 0);
   const commissionPct  = parseFloat(record.commission_pct || 0);
@@ -1167,7 +1202,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     client:                db,
     brandId:               record.brand_id,
     followerId:            follower.id,
-    campaignInfluencerId:  campaign_influencer_id,
+    campaignInfluencerId:  campaign_influencer_id || null,
     brandCategory:         record.brand_category,
     netAmount:             discountedItems,
   });
@@ -1179,13 +1214,20 @@ const placeOrder = asyncHandler(async (req, res) => {
   const itemsJson = safeItems.map(i => ({
     product_id: i.product_id,
     variant_id: i.variant_id,
+    variant_sku: i.variant_sku,
+    variant_label: i.variant_label,
     quantity: i.quantity,
     price: offerService.lineItemPrice(i, priceMap, variantPriceMap),
   }));
 
   const orderId = await txService.createOrder(netAmount, {
     type: 'online_order',
-    offer_id, campaign_id, set_id, campaign_influencer_id,
+    // Organic orders carry NO creator attribution — keep these explicitly null
+    // so the pending-order meta round-trips cleanly into the verify INSERT.
+    offer_id:              isOrganic ? null : (offer_id || null),
+    campaign_id:           isOrganic ? null : campaign_id,
+    set_id:                isOrganic ? null : set_id,
+    campaign_influencer_id: isOrganic ? null : campaign_influencer_id,
     items_total: itemsTotal, discount_amount: discountAmount, net_amount: netAmount,
     influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet,
     delivery_fee: deliveryFee, address_id, items_json: itemsJson,
@@ -1299,7 +1341,10 @@ const verifyOrder = asyncHandler(async (req, res) => {
     );
     orderRowId = orderRows[0].id;
 
-    await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+    // Organic orders have no influencer → nothing to credit.
+    if (influencer?.id && commissionAmount > 0) {
+      await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+    }
 
     // L3 attribution write (Phase A5) — Path B (CI present) opens a
     // 30-day attribution window so future direct buys by this follower

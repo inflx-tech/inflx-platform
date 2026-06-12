@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Image,
+  ActivityIndicator, Image, Alert,
 } from 'react-native';
 import { creatorVibe as C, fonts, fmtRupees, getBusinessAccentLight } from '../../theme/tokens';
 
@@ -167,6 +167,7 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [error, setError] = useState(null);
   const [selectedAddons, setSelectedAddons] = useState({}); // conditional Customize (food add-ons)
   const [selectedSize, setSelectedSize] = useState(null);     // conditional Variants (fashion size)
+  const [selectedColour, setSelectedColour] = useState(null); // fashion/furniture colour (variants_json.colors[])
 
   // Per-business accent: WAYFINDING tints only (hero / card image bg). Chrome,
   // CTAs, prices stay ink + yellow per the F0 design language.
@@ -263,8 +264,27 @@ export default function ProductDetailScreen({ navigation, route }) {
   })();
   const addons = Array.isArray(selected?.addons) ? selected.addons
     : (Array.isArray(variantsJson.addons) ? variantsJson.addons : []);
-  const sizes = Array.isArray(variantsJson.sizes) ? variantsJson.sizes
-    : (Array.isArray(variantsJson.options) ? variantsJson.options : []);
+  // Fashion/furniture matrix lives in variants_json.colors[] =
+  // [{ color, sizes:[{ sku, size, price, stock }], images }] — there are no
+  // product_variants rows. Legacy/food shape is a flat variants_json.sizes |
+  // .options list with no colour. Support both; colour-first when present.
+  const colours = Array.isArray(variantsJson.colors) ? variantsJson.colors : [];
+  const hasColourMatrix = colours.length > 0;
+  const colourName = (c) => (c && (c.color ?? c.colour)) || null;
+  const activeColour = hasColourMatrix
+    ? (colours.find(c => colourName(c) === selectedColour) || colours[0])
+    : null;
+  const sizes = hasColourMatrix
+    ? (Array.isArray(activeColour?.sizes) ? activeColour.sizes : [])
+    : (Array.isArray(variantsJson.sizes) ? variantsJson.sizes
+       : (Array.isArray(variantsJson.options) ? variantsJson.options : []));
+  const sizeLabel = (sz) => (typeof sz === 'string' ? sz : (sz?.label || sz?.value || sz?.size));
+  const selectedSizeObj = sizes.find(sz => sizeLabel(sz) === selectedSize) || null;
+  // Variant identity = SKU (string); price is base (overrides are null today).
+  const variantSku = (selectedSizeObj && selectedSizeObj.sku) || null;
+  const variantLabel = [hasColourMatrix ? colourName(activeColour) : null, selectedSize]
+    .filter(Boolean).join(' · ') || null;
+  const needsSize = sizes.length > 0 && !selectedSize;
   const addonPrice = (a) => parseFloat(a?.price ?? a?.amount ?? 0) || 0;
   const addonsTotal = addons.reduce((sum, a, i) => sum + (selectedAddons[i] ? addonPrice(a) : 0), 0);
   const addonsCount = Object.values(selectedAddons).filter(Boolean).length;
@@ -317,6 +337,9 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   function dispatchCta(cta) {
     if (!selected) return;
+    // Block checkout until a size is chosen (when the product offers sizes) —
+    // the brand can't fulfill "some size".
+    if (needsSize) { Alert.alert('Select a size', 'Please pick a size before continuing.'); return; }
     // Compose the cart for offer-type mechanics: BOGO adds the free item, bundle
     // adds all set products, free_gift adds the gift. Discount/Volume → just the
     // picked item. The SERVER re-prices authoritatively (resolveOfferDiscount).
@@ -326,16 +349,23 @@ export default function ProductDetailScreen({ navigation, route }) {
       price: parseFloat(selected.price || finalPrice || 0),
       quantity: 1,
     });
+    // Attach the chosen colour·size + SKU to the picked line so the cart can
+    // display it and the order records what to fulfill (variant_id stays null —
+    // these products have no product_variants rows; price is base).
+    const lines = (composed.items.length ? composed.items : [selected]).map(it =>
+      it.id === selected.id ? { ...it, variant_sku: variantSku, variant_label: variantLabel } : it
+    );
     const params = {
       offer: offerFull,
       brand,
       store: store || { name: brand?.name, instagram_handle: handle },
       influencer,
       product: selected,
-      products: composed.items.length ? composed.items : [selected],
+      products: lines,
       offer_composed: composed,   // { items, note, freeIds } — checkout can show free lines
       selected_addons: addons.filter((_, i) => selectedAddons[i]),
       selected_size: selectedSize,
+      selected_colour: hasColourMatrix ? colourName(activeColour) : null,
       tracking: txTracking,
       trackingParams: txTracking,
       // Store-direct buy (Offer Engine D3 + W9 organic): PayAtStore routes
@@ -472,13 +502,35 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
+          {/* Colour — fashion/furniture matrix (variants_json.colors[]) */}
+          {hasColourMatrix ? (
+            <View style={styles.customizeBlock}>
+              <Text style={styles.blockTitle}>Select Colour</Text>
+              <View style={styles.sizeRow}>
+                {colours.map((c, i) => {
+                  const name = colourName(c);
+                  const on = (selectedColour || colourName(activeColour)) === name;
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.sizeChip, on && styles.sizeChipOn]}
+                      onPress={() => { setSelectedColour(name); setSelectedSize(null); }}
+                    >
+                      <Text style={[styles.sizeChipTxt, on && styles.sizeChipTxtOn]}>{name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
           {/* Variants — size/options (conditional, brand-defined) */}
           {sizes.length > 0 ? (
             <View style={styles.customizeBlock}>
               <Text style={styles.blockTitle}>Select Size</Text>
               <View style={styles.sizeRow}>
                 {sizes.map((sz, i) => {
-                  const label = typeof sz === 'string' ? sz : (sz.label || sz.value || sz.size);
+                  const label = sizeLabel(sz);
                   const on = selectedSize === label;
                   return (
                     <TouchableOpacity key={i} style={[styles.sizeChip, on && styles.sizeChipOn]} onPress={() => setSelectedSize(label)}>

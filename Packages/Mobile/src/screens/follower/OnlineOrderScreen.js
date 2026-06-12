@@ -16,25 +16,45 @@ const P = {
   danger: C.offer, dangerPale: C.soft, dangerText: C.offer,
 };
 import { followerApi } from '../../services/api';
+import { processPayment } from '../../services/payment';
 
 export default function OnlineOrderScreen({ navigation, route }) {
-  const { products = [], offer, store, trackingParams } = route.params || {};
+  const { products = [], offer, store, tracking, trackingParams, storeOffer } = route.params || {};
+  // ProductDetail passes the long-key tracking object as both `tracking` and
+  // `trackingParams` ({campaign_id, set_id, offer_id, campaign_influencer_id}).
+  // When it's absent the order is ORGANIC (brand-direct, no creator).
+  const trk = tracking || trackingParams || null;
+  const brandId = storeOffer?.brand_id || store?.brand_id || store?.id || null;
+
   const [cart, setCart]         = useState(
-    products.map(p => ({ ...p, qty: 1 }))
+    products.map(p => ({
+      ...p,
+      qty: p.qty || p.quantity || 1,
+      variant_sku: p.variant_sku || null,
+      variant_label: p.variant_label || null,
+    }))
   );
   const [addresses, setAddresses] = useState([]);
   const [selectedAddr, setAddr]   = useState(null);
   const [loading, setLoading]     = useState(false);
 
-  useEffect(() => {
-    followerApi.getAddresses?.().then(res => {
-      if (res?.success) {
-        const addrs = res.data?.addresses || [];
-        setAddresses(addrs);
-        if (addrs.length > 0) setAddr(addrs[0].id);
-      }
+  // Reusable so the "+ Add" flow can refresh the list (the old onSave was a
+  // no-op, so a freshly-added address never appeared and Place Order stayed
+  // disabled forever).
+  function loadAddresses(preferId) {
+    return followerApi.getAddresses?.().then(res => {
+      if (!res?.success) return;
+      const addrs = res.data?.addresses || [];
+      setAddresses(addrs);
+      setAddr(prev => {
+        if (preferId && addrs.some(a => a.id === preferId)) return preferId;
+        if (prev && addrs.some(a => a.id === prev)) return prev;
+        return addrs.length ? addrs[0].id : null;
+      });
     });
-  }, []);
+  }
+
+  useEffect(() => { loadAddresses(); }, []);
 
   function updateQty(productId, delta) {
     setCart(prev => prev
@@ -49,28 +69,67 @@ export default function OnlineOrderScreen({ navigation, route }) {
     if (cart.length === 0) { Alert.alert('Cart empty', 'Add items to your cart'); return; }
     if (!selectedAddr) { Alert.alert('Select address', 'Please add or select a delivery address'); return; }
 
-    setLoading(true);
-    const res = await followerApi.createOrder({
-      items: cart.map(i => ({ product_id: i.id, qty: i.qty, name: i.name, price: i.price })),
-      delivery_address_id: selectedAddr,
-      offer_id: offer?.id,
-      influencer_id: store?.influencer_id,
-      campaign_id: trackingParams?.cid || offer?.campaign_id,
-      campaign_set_id: trackingParams?.sid || offer?.campaign_set_id,
-    });
-    setLoading(false);
+    // Backend POST /follower/orders expects: address_id, items[{product_id,
+    // quantity, variant_sku, variant_label}], and EITHER the creator triple
+    // (campaign_id + set_id + campaign_influencer_id [+ offer_id]) OR, for an
+    // organic order, just brand_id. The old payload used wrong keys
+    // (campaign_set_id, delivery_address_id, qty) and omitted
+    // campaign_influencer_id → it 422'd every time.
+    const items = cart.map(i => ({
+      product_id: i.id,
+      quantity: i.qty,
+      variant_sku: i.variant_sku || null,
+      variant_label: i.variant_label || null,
+    }));
+    const isOrganic = !trk?.campaign_influencer_id;
+    const payload = isOrganic
+      ? { items, address_id: selectedAddr, brand_id: brandId }
+      : {
+          items, address_id: selectedAddr,
+          campaign_id: trk.campaign_id,
+          set_id: trk.set_id,
+          campaign_influencer_id: trk.campaign_influencer_id,
+          offer_id: trk.offer_id || null,
+        };
 
-    if (res.success) {
-      const orderId = res.data?.order?.id || res.data?.id;
-      Alert.alert(
-        'Order Placed!',
-        'Your order has been placed successfully.',
-        [{ text: 'Track Order', onPress: () => {
-          navigation.replace('OrderDetail', { orderId });
-        }}]
-      );
-    } else {
-      Alert.alert('Order Failed', res.error?.message || 'Please try again');
+    // 3-step order: createOrder → pay → verifyOrder. The DB row is only
+    // written at verify — the old screen stopped after createOrder, so even a
+    // "successful" order never reached the Orders tab (diagnostic D2).
+    setLoading(true);
+    try {
+      const res = await followerApi.createOrder(payload);
+      if (!res.success && !res.data) {
+        Alert.alert('Order Failed', res.error?.message || 'Please try again');
+        return;
+      }
+
+      const payResult = await processPayment({
+        amount: Math.round((res.data?.net_amount || subtotal) * 100),  // SDK expects paise
+        orderId: res.data?.razorpay_order_id,
+        keyId: res.data?.razorpay_key_id,
+        description: `Order from ${store?.name || 'store'}`,
+        brandName: store?.name,
+      });
+      if (!payResult) { Alert.alert('Payment Cancelled', 'You can try again anytime.'); return; }
+
+      const verifyRes = await followerApi.verifyOrder?.({
+        razorpay_order_id: payResult.razorpay_order_id,
+        razorpay_payment_id: payResult.razorpay_payment_id,
+        razorpay_signature: payResult.razorpay_signature,
+      });
+
+      if (verifyRes?.success || verifyRes?.data) {
+        const orderId = verifyRes?.data?.order_id;
+        Alert.alert('Order Placed!', 'Your order has been placed successfully.', [
+          { text: 'Track Order', onPress: () => navigation.replace('OrderDetail', { orderId }) },
+        ]);
+      } else {
+        Alert.alert('Verification Failed', verifyRes?.error?.message || 'Payment received but verification failed. Contact support.');
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -98,6 +157,9 @@ export default function OnlineOrderScreen({ navigation, route }) {
               <View key={item.id} style={styles.itemRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemName}>{item.name}</Text>
+                  {item.variant_label ? (
+                    <Text style={styles.itemVariant}>{item.variant_label}</Text>
+                  ) : null}
                   <Text style={styles.itemPrice}>{fmtRupees(item.price || 0)}</Text>
                 </View>
                 <View style={styles.qtyControls}>
@@ -118,7 +180,9 @@ export default function OnlineOrderScreen({ navigation, route }) {
         <View style={styles.card}>
           <View style={styles.addrHeader}>
             <Text style={styles.cardTitle}>Delivery Address</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Address', { onSave: () => {} })}>
+            <TouchableOpacity onPress={() => navigation.navigate('Address', {
+              onSave: (addr) => loadAddresses(addr?.id),
+            })}>
               <Text style={styles.addAddrBtn}>+ Add</Text>
             </TouchableOpacity>
           </View>
@@ -195,6 +259,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 12, color: P.muted3, textAlign: 'center' },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: P.border },
   itemName: { fontSize: 14, fontWeight: '600', color: P.ink, marginBottom: 2 },
+  itemVariant: { fontSize: 11, color: P.yellowText, fontWeight: '700', marginBottom: 2 },
   itemPrice: { fontSize: 12, color: P.muted },
   qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   qtyBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
