@@ -116,6 +116,12 @@ app.get('/health', (req, res) => {
 // Logs the click then redirects to the follower store.
 app.get('/s/:influencer_handle', trackingCtrl.trackClick);
 
+// ─── Universal share links (contract: universal-share-links) ──────────────────
+// /b/:id brand store · /p/:id product · /o/:id offer — log + redirect like /s/.
+app.get('/b/:id', trackingCtrl.trackBrand);
+app.get('/p/:id', trackingCtrl.trackProduct);
+app.get('/o/:id', trackingCtrl.trackOffer);
+
 // ─── API routes ───────────────────────────────────────────────────────────────
 app.use('/v1', routes);
 

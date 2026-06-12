@@ -59,4 +59,37 @@ async function trackClick(req, res) {
   return res.redirect(302, redirectUrl);
 }
 
-module.exports = { trackClick };
+// Universal share targets (contract: universal-share-links). Brand store,
+// product and offer share links mirror /s/ — log the click (best-effort, into
+// the existing link_clicks columns) then redirect to the follower-app deep path.
+// In-app OPENING of these links lands with the native intent-filter round; until
+// then they resolve via FOLLOWER_APP_URL like /s/ does today.
+function _share(kind, deepPath) {
+  return async function (req, res) {
+    const id = req.params.id;
+    const { cid, sid, oid, iid } = req.query;
+    db.query(
+      `INSERT INTO link_clicks
+         (influencer_handle, campaign_id, set_id, offer_id, influencer_id, ip_address, user_agent, referer)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [null, cid || null, sid || null, kind === 'offer' ? id : (oid || null), iid || null,
+       req.ip || null, (req.headers['user-agent'] || '').slice(0, 500) || null, (req.headers['referer'] || '').slice(0, 500) || null]
+    ).catch(err => console.error('[TRACKING] Share click log error:', err.message));
+
+    const params = new URLSearchParams();
+    if (cid) params.set('cid', cid);
+    if (sid) params.set('sid', sid);
+    if (oid) params.set('oid', oid);
+    if (iid) params.set('iid', iid);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+
+    const base = FOLLOWER_APP_URL || `${req.protocol}://${req.get('host')}/v1`;
+    return res.redirect(302, `${base}${deepPath(id)}${qs}`);
+  };
+}
+
+const trackBrand   = _share('business', (id) => `/business/${encodeURIComponent(id)}`);
+const trackProduct = _share('product',  (id) => `/product/${encodeURIComponent(id)}`);
+const trackOffer   = _share('offer',    (id) => `/offer/${encodeURIComponent(id)}`);
+
+module.exports = { trackClick, trackBrand, trackProduct, trackOffer };

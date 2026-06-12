@@ -24,6 +24,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { creatorVibe as C, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
+import { shareTarget } from '../../utils/shareUrl';
 import { DealCard, ShelfProductCard, ShelfHeader, Gradient } from '../../components/vibe';
 import { emojiFor } from '../../components/vibe/palette';
 
@@ -193,7 +194,11 @@ export default function InfluencerStoreScreen({ route, navigation }) {
             <TouchableOpacity style={[s.btn, isFollowing && s.btnOut]} onPress={onFollow}>
               <Text style={[s.btnTxt, isFollowing && s.btnOutTxt]}>{isFollowing ? 'Following' : '+ Follow'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, s.btnOut]}><Text style={[s.btnTxt, s.btnOutTxt]}>↗ Share</Text></TouchableOpacity>
+            <TouchableOpacity style={[s.btn, s.btnOut]}
+              onPress={() => shareTarget({ type: 'influencer', handle: influencer.instagram_handle || handle },
+                `Check out @${influencer.instagram_handle || handle}'s store on INFLX`)}>
+              <Text style={[s.btnTxt, s.btnOutTxt]}>↗ Share</Text>
+            </TouchableOpacity>
           </View>
           {influencer.bio ? <Text style={s.bio}>"{influencer.bio}"</Text> : null}
         </SafeAreaView>

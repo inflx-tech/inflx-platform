@@ -12,6 +12,7 @@ const P = {
   success: C.verify, danger: C.offer,
 };
 import { followerApi } from '../../services/api';
+import { shareTarget } from '../../utils/shareUrl';
 import ProductCard from '../../components/cards/ProductCard';
 import BrandActionRow from '../../components/BrandActionRow';
 import RestaurantDetailScreen from './RestaurantDetailScreen';
@@ -293,6 +294,18 @@ export default function BrandStoreScreen({ navigation, route }) {
             accent={accentHex}
           />
         )}
+
+        {/* Share this store (contract: universal-share-links) */}
+        {brand?.id ? (
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+              paddingHorizontal: 16, marginTop: 6 }}
+            onPress={() => shareTarget({ type: 'brand', id: brand.id, cid: tracking?.cid, sid: tracking?.sid, iid: tracking?.iid },
+              `Check out ${brand.business_name || 'this store'} on INFLX`)}>
+            <Text style={{ fontSize: 13 }}>↗</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: accentHex }}>Share store</Text>
+          </TouchableOpacity>
+        ) : null}
 
         {/* Active offers banner */}
         {bestOffer && (

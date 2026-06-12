@@ -1,0 +1,27 @@
+{
+  "feature": "universal-share-links",
+  "area": "backend-tracking / mobile-follower",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-12) — 'make sure each brand/influencer store + each product/offer has shareable link copy' (explicit feature directive in the 'implement all remaining sprints' batch)",
+  "approved_at": "2026-06-12",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING: Render (3 redirect routes) + mobile OTA (shareUrl util + 3 screens). No DB/schema/migration. Native universal-link OPENING deferred to next APK round.",
+  "fix": "Backend: GET /b/:id /p/:id /o/:id mirror /s/ (log click + 302 to follower deep path, preserve cid/sid/oid/iid). Mobile: utils/shareUrl.js (buildShareUrl/shareTarget/copyShareLink) wired into InfluencerStoreScreen (dead Share button), BrandStoreScreen (new Share-store chip), ProductDetailScreen (hero share icon → product, or offer when brand_offer context). v1 = copy/share over OTA; in-app link OPENING needs native intent-filters (APK round).",
+  "related": ["backend/src/controllers/tracking.controller.js", "backend/src/utils/tracking.js", "Packages/Mobile/src/utils/shareUrl.js", "Docs/WALKTHROUGH_LEDGER.md P2/P3 (deep-link handler + influencer share UI)"],
+  "result": "IMPLEMENTED + backend smoke verified. Awaiting founder go for Render+OTA deploy + device walk.",
+  "regression_proof": "Backend live: /b/:id→302 /v1/business/:id, /p/:id?cid&sid→302 /v1/product/:id (query preserved), /o/:id→302 /v1/offer/:id, /s/:handle unchanged. Mobile parse-clean (shareUrl + 3 screens). pnpm qa 79/79 GREEN (report 2026-06-12T06-26-41Z).",
+  "discipline": "Mirrors the proven /s/ handler via one factory; no attribution/schema change. Native-open limitation surfaced explicitly, not hidden.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "pnpm qa -> explicit go for Render + publish-ota:all -> founder device walk (share from each of the 4) -> flip released. Native universal-link round = separate APK contract."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (2026-06-12) — delegated in the 'go and implement' batch; share buttons are a small additive control reusing the ReferAndEarn copy/share pattern",
+  "mockup_locked_at": "2026-06-12"
+}

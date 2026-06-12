@@ -403,10 +403,17 @@ export default function ProductDetailScreen({ navigation, route }) {
         <TouchableOpacity style={styles.backFloating} onPress={() => navigation.goBack()}>
           <Text style={styles.backFloatingText}>←</Text>
         </TouchableOpacity>
-        {/* ♡ + share (visual) */}
+        {/* ♡ + share (contract: universal-share-links) */}
         <View style={styles.heroIconsRight}>
           <View style={styles.heroIcon}><Text style={styles.heroIconGlyph}>♡</Text></View>
-          <View style={styles.heroIcon}><Text style={styles.heroIconGlyph}>↗</Text></View>
+          <TouchableOpacity style={styles.heroIcon}
+            onPress={() => shareTarget(
+              brandOfferId
+                ? { type: 'offer', id: brandOfferId, cid: trk?.cid || trk?.campaign_id, sid: trk?.sid || trk?.set_id }
+                : { type: 'product', id: selected?.id, cid: trk?.cid || trk?.campaign_id, sid: trk?.sid || trk?.set_id },
+              `Check this out on INFLX${selected?.name ? ` — ${selected.name}` : ''}`)}>
+            <Text style={styles.heroIconGlyph}>↗</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Hero image */}
