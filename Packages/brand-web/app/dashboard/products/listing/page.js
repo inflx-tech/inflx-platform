@@ -49,6 +49,8 @@ export default function DrilldownListingPage() {
   const [leaf, setLeaf] = useState(null);
   const [facets, setFacets] = useState([]);
   const [draft, setDraft] = useState(blankDraft());
+  const [step, setStep] = useState(1);          // 1 Basics · 2 Variants · 3 Details · 4 Review
+  const [moreOpen, setMoreOpen] = useState(false); // step-3 optional facets (collapsed by default)
   const [items, setItems] = useState([]);
   const [uploading, setUploading] = useState('');
   const [saving, setSaving] = useState(false);
@@ -85,7 +87,7 @@ export default function DrilldownListingPage() {
       setErr('');
       setLeaf({ ...node, size_system: r.data.node.size_system, size_required: r.data.node.size_required });
       setFacets((r.data.facets || []).filter(f => f.facet_key !== 'images' && f.facet_key !== 'price'));
-      setItems([]); setDraft(blankDraft());
+      setItems([]); setDraft(blankDraft()); setStep(1); setMoreOpen(false);
       setCrumb(c => [...c, { name: node.name, children: level }]);
     } else {
       setCrumb(c => [...c, { name: node.name, children: level }]);
@@ -137,6 +139,105 @@ export default function DrilldownListingPage() {
   const selectedColors = arr(draft.facets[COLOR_KEY]);
   const selectedVariants = stockKey ? arr(draft.facets[stockKey]) : [];
 
+  // Steps fall straight out of facet_role (contract listing-add-stepper):
+  //   ② Variants  = role 'variant'   ③ Details = everything else.
+  // 'brand' is handled by its own field in ① so it never doubles up in ③.
+  const variantFacets = facets.filter(f => f.facet_role === 'variant');
+  const detailFacets  = facets.filter(f => f.facet_role !== 'variant' && f.facet_key !== 'brand');
+  const hasVariantStep = variantFacets.length > 0;
+  // Required ones lead Step ③; the rest hide under "More details".
+  const facetRequired = (f) => {
+    if (f.facet_key === SIZE_KEY && leaf?.size_system) return !FREE.has(leaf.size_system);
+    return f.required === 'required';
+  };
+  const facetEmpty = (f) => {
+    const v = draft.facets[f.facet_key];
+    return v == null || v === '' || (Array.isArray(v) && v.length === 0);
+  };
+  const requiredDetails = detailFacets.filter(facetRequired);
+  const optionalDetails = detailFacets.filter(f => !facetRequired(f));
+
+  // Per-step validation — STRICTER-or-equal to taxonomy.validateItem, so a step
+  // that passes can never fail server-side. (Photos are required here though the
+  // backend treats them as optional — the stepper is the photo-first path.)
+  const stepErrors = (s) => {
+    const e = [];
+    if (s === 1) {
+      if (!draft.name.trim()) e.push('product name');
+      if (draft.price === '' || Number(draft.price) < 0) e.push('price');
+      if (!draft.images.length) e.push('a cover photo');
+    }
+    if (s === 2) variantFacets.filter(f => facetRequired(f) && facetEmpty(f)).forEach(f => e.push(f.label));
+    if (s === 3) requiredDetails.filter(f => facetEmpty(f)).forEach(f => e.push(f.label));
+    return e;
+  };
+  const stepBlocked = stepErrors(step);
+
+  const goNext = () => {
+    if (stepBlocked.length) return;          // Next is disabled; the inline hint explains
+    setErr('');
+    let n = step + 1;
+    if (n === 2 && !hasVariantStep) n = 3;   // auto-skip Variants when the leaf has none
+    setStep(n);
+  };
+  const goBack = () => {
+    setErr('');
+    let p = step - 1;
+    if (p === 2 && !hasVariantStep) p = 1;
+    setStep(p);
+  };
+
+  const STEP_DEFS = [
+    { n: 1, label: 'Basics' },
+    ...(hasVariantStep ? [{ n: 2, label: 'Variants' }] : []),
+    { n: 3, label: 'Details' },
+    { n: 4, label: 'Review' },
+  ];
+
+  // One facet's input — shared by Step ② (variant facets) and Step ③ (details).
+  const renderFacet = (f) => {
+    const isSize = f.facet_key === SIZE_KEY && !!leaf?.size_system;
+    const allowed = isSize ? sizeValues(leaf.size_system) : (Array.isArray(f.allowed_values) ? f.allowed_values : []);
+    const enumerated = allowed.length > 1;
+    const req = (f.required === 'required') || (isSize && leaf.size_required);
+    const v = draft.facets[f.facet_key];
+    return (
+      <div key={f.facet_key}>
+        <label className="fl">{f.label}{req && <span className="req"> *</span>} {tagFor(f)}</label>
+        {isSize && (
+          <div className="chips">{allowed.map(o => (
+            <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on v' : '')} onClick={() => toggleMulti(SIZE_KEY, o)}>{o}</span>
+          ))}</div>
+        )}
+        {!isSize && f.input_type === 'multi_select' && enumerated && (
+          <div className="chips">{allowed.map(o => (
+            <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on' + (f.facet_role === 'variant' ? ' v' : '') : '')} onClick={() => toggleMulti(f.facet_key, o)}>{o}</span>
+          ))}</div>
+        )}
+        {!isSize && f.input_type === 'single_select' && enumerated && (
+          <select className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)}>
+            <option value="">Select…</option>{allowed.map(o => <option key={o}>{o}</option>)}
+          </select>
+        )}
+        {f.input_type === 'boolean' && (
+          <div className="tog">
+            <button className={v === 'No' || !v ? 'on' : ''} onClick={() => setFacet(f.facet_key, 'No')}>No</button>
+            <button className={v === 'Yes' ? 'on' : ''} onClick={() => setFacet(f.facet_key, 'Yes')}>Yes</button>
+          </div>
+        )}
+        {f.input_type === 'number' && <input className="t" style={{ maxWidth: 180 }} type="number" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder={f.allowed_values?.[0] || ''} />}
+        {f.input_type === 'dimension' && (
+          <div className="row" style={{ gap: 6 }}>
+            {['l', 'w', 'h'].map(d => <input key={d} className="t" style={{ width: 70 }} type="number" placeholder={d.toUpperCase()} value={v?.[d] || ''} onChange={e => setFacet(f.facet_key, { ...(v || {}), [d]: e.target.value })} />)}
+            <span className="muted2" style={{ alignSelf: 'center' }}>cm</span>
+          </div>
+        )}
+        {!isSize && (f.input_type === 'text' || (!enumerated && (f.input_type === 'single_select' || f.input_type === 'multi_select'))) &&
+          <input className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder="optional" />}
+      </div>
+    );
+  };
+
   const draftErrors = () => {
     const e = [];
     if (!draft.name.trim()) e.push('name');
@@ -167,7 +268,13 @@ export default function DrilldownListingPage() {
       images: draft.images, facets: draft.facets,
       variants: variants.length ? variants : undefined,
     }]);
-    setDraft(blankDraft());
+    // Carry brand + the descriptive/discovery facet values to the next item so
+    // adding many similar products is fast; clear identity, photos and variants.
+    const carry = blankDraft();
+    carry.brand = draft.brand;
+    detailFacets.forEach(f => { if (!facetEmpty(f)) carry.facets[f.facet_key] = draft.facets[f.facet_key]; });
+    setDraft(carry);
+    setStep(1); setMoreOpen(false);
   };
 
   const saveBatch = async () => {
@@ -226,117 +333,136 @@ export default function DrilldownListingPage() {
           <div className="phead">Add {leaf.name}{counts[leaf.id] ? <span className="done">· {counts[leaf.id]} already added</span> : null}</div>
           <div className="sub" style={{ marginBottom: 4 }}>{leaf.segment}{leaf.category && leaf.category !== leaf.segment ? ` › ${leaf.category}` : ''} › {leaf.name}</div>
 
-          <label className="fl">Cover photos (up to 6) — the first is the cover</label>
-          <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
-          {uploading === 'cover' && <div className="sub">Uploading…</div>}
-          {draft.images.length > 0 && <div className="imgs">{draft.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
-
-          <div className="row">
-            <div style={{ flex: 1, minWidth: 170 }}>
-              <label className="fl">Product name <span className="req">*</span></label>
-              <input className="t" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. Oakwood 3-Seater Sofa" />
-            </div>
-            <div style={{ flex: 1, minWidth: 150 }}>
-              <label className="fl">Brand</label>
-              <input className="t" list="brandlist" value={draft.brand}
-                onChange={e => { const v = e.target.value; setDraft(d => ({ ...d, brand: v })); loadBrands(vertical, v); }}
-                placeholder="Search or type your brand" />
-              <datalist id="brandlist">{brandOpts.map(b => <option key={b} value={b} />)}</datalist>
-            </div>
-          </div>
-
-          <div className="row">
-            <div style={{ width: 130 }}>
-              <label className="fl">Price ₹ <span className="req">*</span></label>
-              <input className="t" type="number" value={draft.price} onChange={e => setDraft(d => ({ ...d, price: e.target.value }))} placeholder="0" />
-            </div>
-            <div style={{ width: 110 }}>
-              <label className="fl">Stock</label>
-              <input className="t" type="number" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: e.target.value }))} placeholder="—" />
-            </div>
-            <div style={{ flex: 1, minWidth: 150 }}>
-              <label className="fl">SKU <span className="muted2">(auto — leave blank)</span></label>
-              <input className="t" value={draft.sku} onChange={e => setDraft(d => ({ ...d, sku: e.target.value }))} placeholder="auto-generated" />
-            </div>
-          </div>
-
-          {facets.map(f => {
-            const isSize = f.facet_key === SIZE_KEY && !!leaf.size_system;
-            const allowed = isSize ? sizeValues(leaf.size_system) : (Array.isArray(f.allowed_values) ? f.allowed_values : []);
-            const enumerated = allowed.length > 1;
-            const req = (f.required === 'required') || (isSize && leaf.size_required);
-            const v = draft.facets[f.facet_key];
-            return (
-              <div key={f.facet_key}>
-                <label className="fl">{f.label}{req && <span className="req"> *</span>} {tagFor(f)}</label>
-                {isSize && (
-                  <div className="chips">{allowed.map(o => (
-                    <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on v' : '')} onClick={() => toggleMulti(SIZE_KEY, o)}>{o}</span>
-                  ))}</div>
-                )}
-                {!isSize && f.input_type === 'multi_select' && enumerated && (
-                  <div className="chips">{allowed.map(o => (
-                    <span key={o} className={'chip' + ((Array.isArray(v) && v.includes(o)) ? ' on' + (f.facet_role === 'variant' ? ' v' : '') : '')} onClick={() => toggleMulti(f.facet_key, o)}>{o}</span>
-                  ))}</div>
-                )}
-                {!isSize && f.input_type === 'single_select' && enumerated && (
-                  <select className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)}>
-                    <option value="">Select…</option>{allowed.map(o => <option key={o}>{o}</option>)}
-                  </select>
-                )}
-                {f.input_type === 'boolean' && (
-                  <div className="tog">
-                    <button className={v === 'No' || !v ? 'on' : ''} onClick={() => setFacet(f.facet_key, 'No')}>No</button>
-                    <button className={v === 'Yes' ? 'on' : ''} onClick={() => setFacet(f.facet_key, 'Yes')}>Yes</button>
-                  </div>
-                )}
-                {f.input_type === 'number' && <input className="t" style={{ maxWidth: 180 }} type="number" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder={f.allowed_values?.[0] || ''} />}
-                {f.input_type === 'dimension' && (
-                  <div className="row" style={{ gap: 6 }}>
-                    {['l', 'w', 'h'].map(d => <input key={d} className="t" style={{ width: 70 }} type="number" placeholder={d.toUpperCase()} value={v?.[d] || ''} onChange={e => setFacet(f.facet_key, { ...(v || {}), [d]: e.target.value })} />)}
-                    <span className="muted2" style={{ alignSelf: 'center' }}>cm</span>
-                  </div>
-                )}
-                {!isSize && (f.input_type === 'text' || (!enumerated && (f.input_type === 'single_select' || f.input_type === 'multi_select'))) &&
-                  <input className="t" value={v || ''} onChange={e => setFacet(f.facet_key, e.target.value)} placeholder="optional" />}
+          {/* Progress header — steps derive from facet_role (② hidden when no variants) */}
+          <div className="steps">
+            {STEP_DEFS.map((sd, i) => (
+              <div key={sd.n} className="stwrap">
+                {i > 0 && <span className="bar" />}
+                <span className={'st' + (step === sd.n ? ' on' : step > sd.n ? ' done' : '')}>
+                  <span className="n">{step > sd.n ? '✓' : sd.n}</span>{step >= sd.n ? sd.label : ''}
+                </span>
               </div>
-            );
-          })}
+            ))}
+          </div>
 
-          {/* Per-colour variant cards: each colour gets its own pics + per-variant stock */}
-          {selectedColors.length > 0 && (
-            <>
-              <div className="sec">Variant photos &amp; stock — per colour</div>
-              {selectedColors.map(color => {
-                const cv = draft.variants[color] || { images: [], stock: {} };
-                return (
-                  <div key={color} className="vcard">
-                    <div className="vhead"><span className="dot" />{color}</div>
-                    <label className="fl">Photos for {color}</label>
-                    <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, color)} />
-                    {uploading === color && <div className="sub">Uploading…</div>}
-                    {arr(cv.images).length > 0 && <div className="imgs">{cv.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
-                    {selectedVariants.length > 0 && (
-                      <>
-                        <label className="fl">Stock per {stockFacet?.label || 'variant'}</label>
-                        <div className="vstock">{selectedVariants.map(val => (
-                          <div key={val} className="vsize">
-                            <span>{val}</span>
-                            <input type="number" placeholder="0" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
-                          </div>
-                        ))}</div>
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </>
+          {/* ① Basics */}
+          {step === 1 && (
+            <div className="stepbody">
+              <label className="fl">Cover photos (up to 6) — the first is the cover <span className="req">*</span></label>
+              <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
+              {uploading === 'cover' && <div className="sub">Uploading…</div>}
+              {draft.images.length > 0 && <div className="imgs">{draft.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
+              <div className="row">
+                <div style={{ flex: 1, minWidth: 170 }}>
+                  <label className="fl">Product name <span className="req">*</span></label>
+                  <input className="t" value={draft.name} onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} placeholder="e.g. Oakwood 3-Seater Sofa" />
+                </div>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label className="fl">Brand</label>
+                  <input className="t" list="brandlist" value={draft.brand}
+                    onChange={e => { const v = e.target.value; setDraft(d => ({ ...d, brand: v })); loadBrands(vertical, v); }}
+                    placeholder="Search or type your brand" />
+                  <datalist id="brandlist">{brandOpts.map(b => <option key={b} value={b} />)}</datalist>
+                </div>
+              </div>
+              <div className="row">
+                <div style={{ width: 130 }}>
+                  <label className="fl">Price ₹ <span className="req">*</span></label>
+                  <input className="t" type="number" value={draft.price} onChange={e => setDraft(d => ({ ...d, price: e.target.value }))} placeholder="0" />
+                </div>
+                <div style={{ width: 110 }}>
+                  <label className="fl">Stock</label>
+                  <input className="t" type="number" value={draft.stock} onChange={e => setDraft(d => ({ ...d, stock: e.target.value }))} placeholder="—" />
+                </div>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label className="fl">SKU <span className="muted2">(auto — leave blank)</span></label>
+                  <input className="t" value={draft.sku} onChange={e => setDraft(d => ({ ...d, sku: e.target.value }))} placeholder="auto-generated" />
+                </div>
+              </div>
+            </div>
           )}
 
-          <div className="row" style={{ marginTop: 14 }}>
-            <button className="btn yellow" onClick={addItem}>+ Add this item</button>
-            <button className="btn ghost" onClick={() => jumpTo(crumb.length - 1)}>‹ Pick another item type</button>
+          {/* ② Variants — only the variant-role facets + per-colour pics & stock */}
+          {step === 2 && (
+            <div className="stepbody">
+              {variantFacets.map(renderFacet)}
+              {selectedColors.length > 0 && (
+                <>
+                  <div className="sec">Variant photos &amp; stock — per colour</div>
+                  {selectedColors.map(color => {
+                    const cv = draft.variants[color] || { images: [], stock: {} };
+                    return (
+                      <div key={color} className="vcard">
+                        <div className="vhead"><span className="dot" />{color}</div>
+                        <label className="fl">Photos for {color}</label>
+                        <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, color)} />
+                        {uploading === color && <div className="sub">Uploading…</div>}
+                        {arr(cv.images).length > 0 && <div className="imgs">{cv.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
+                        {selectedVariants.length > 0 && (
+                          <>
+                            <label className="fl">Stock per {stockFacet?.label || 'variant'}</label>
+                            <div className="vstock">{selectedVariants.map(val => (
+                              <div key={val} className="vsize">
+                                <span>{val}</span>
+                                <input type="number" placeholder="0" value={cv.stock?.[val] ?? ''} onChange={e => setColorVariantStock(color, val, e.target.value)} />
+                              </div>
+                            ))}</div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ③ Details — required attrs lead, the rest under "More details" */}
+          {step === 3 && (
+            <div className="stepbody">
+              {requiredDetails.map(renderFacet)}
+              {optionalDetails.length > 0 && (
+                <>
+                  <div className="more" onClick={() => setMoreOpen(o => !o)}>
+                    {moreOpen ? '▾' : '▸'} More details (optional) — {optionalDetails.length} field{optionalDetails.length > 1 ? 's' : ''}
+                  </div>
+                  {moreOpen && optionalDetails.map(renderFacet)}
+                </>
+              )}
+              {requiredDetails.length === 0 && optionalDetails.length === 0 &&
+                <div className="sub" style={{ marginTop: 10 }}>No extra details for this item type — continue to review.</div>}
+            </div>
+          )}
+
+          {/* ④ Review */}
+          {step === 4 && (
+            <div className="stepbody review">
+              {draft.images[0] && <img className="revimg" src={draft.images[0]} alt="" />}
+              <div className="revname">{draft.name || '(unnamed)'}</div>
+              <div className="revmeta">₹{draft.price || '0'}{draft.brand ? ` · ${draft.brand}` : ''}</div>
+              {selectedColors.length > 0 && (
+                <div className="revrow">{selectedColors.map(c => {
+                  const tot = stockKey && draft.variants[c]?.stock ? Object.values(draft.variants[c].stock).reduce((a, b) => a + (Number(b) || 0), 0) : null;
+                  return <span key={c} className="pill v">{c}{tot != null ? ` ·${tot}` : ''}</span>;
+                })}</div>
+              )}
+              <div className="revrow">{detailFacets.map(f => {
+                const v = draft.facets[f.facet_key]; const txt = Array.isArray(v) ? v.join(', ') : v;
+                return txt ? <span key={f.facet_key} className="pill">{txt}</span> : null;
+              })}</div>
+            </div>
+          )}
+
+          {/* Step navigation */}
+          <div className="nav">
+            {step > 1
+              ? <button className="btn ghost" onClick={goBack}>‹ Back</button>
+              : <button className="btn ghost" onClick={() => jumpTo(crumb.length - 1)}>‹ Pick another type</button>}
+            {step < 4
+              ? <button className={'btn ink' + (stepBlocked.length ? ' dis' : '')} onClick={goNext}>Next ›</button>
+              : <button className="btn yellow" onClick={addItem}>+ Add this item</button>}
           </div>
+          {step < 4 && stepBlocked.length > 0 && <div className="hint">Still needed: {stepBlocked.join(', ')}</div>}
 
           {items.length > 0 && (
             <>
@@ -414,4 +540,23 @@ const CSS = `
 .lst .err{background:var(--danger-pale);border:1px solid #f3c0b0;color:#9a2a12;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:600;margin:10px 0}
 .lst .ok{background:var(--success-pale);border:1px solid #9be3c4;color:var(--success-text);border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;margin:10px 0}
 .lst .sec{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:16px 0 8px}
+.lst .steps{display:flex;align-items:center;gap:4px;margin-bottom:14px;flex-wrap:wrap}
+.lst .stwrap{display:flex;align-items:center;gap:4px}
+.lst .st{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--muted3)}
+.lst .st .n{width:20px;height:20px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted2);border:1px solid var(--border)}
+.lst .st.on{color:var(--ink)} .lst .st.on .n{background:var(--ink);color:var(--yellow);border-color:var(--ink)}
+.lst .st.done .n{background:var(--success);color:#fff;border-color:var(--success)}
+.lst .bar{width:18px;height:2px;background:var(--border)}
+.lst .stepbody{min-height:120px}
+.lst .nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px;border-top:1px solid var(--border);padding-top:14px}
+.lst .hint{font-size:11px;color:var(--danger);font-weight:700;margin-top:6px;text-align:right}
+.lst .more{margin-top:12px;border:1px dashed var(--border);border-radius:9px;padding:9px 11px;font-size:12px;font-weight:700;color:var(--muted2);background:var(--bg);cursor:pointer;user-select:none}
+.lst .more:hover{border-color:var(--yellow);color:var(--ink2)}
+.lst .review{text-align:left}
+.lst .revimg{width:80px;height:80px;border-radius:11px;object-fit:cover;border:1px solid var(--border);margin-bottom:8px}
+.lst .revname{font-family:'Outfit';font-weight:800;font-size:16px}
+.lst .revmeta{font-size:13px;color:var(--muted);font-weight:600;margin-top:2px}
+.lst .revrow{margin-top:8px}
+.lst .pill{display:inline-block;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin:0 4px 4px 0}
+.lst .pill.v{background:var(--variant-pale);color:var(--variant);border-color:#e7d3fb}
 `;

@@ -1,0 +1,27 @@
+{
+  "feature": "listing-add-stepper",
+  "area": "brand-web (listing wizard)",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-12) — 'ok good' to the stepped-wizard direction; sequence locked stepper-first (Excel bulk import = separate follow-on)",
+  "approved_at": "2026-06-12",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING via Vercel (brand-web). Single file page.js. NO backend / facet_definitions / batchCreate / DB / migration change. No OTA.",
+  "fix": "Replace the single giant leaf panel in products/listing/page.js with a 4-step wizard (Basics / Variants / Details / Review) whose steps derive from facet_role. Adds progress header, per-step inline validation (mirrors taxonomy.validateItem), step nav, and brand+common-facet carry-over between items. Drill-down, per-colour variant cards, and saveBatch->batchCreate reused verbatim. Step 2 auto-skips when a leaf has no variant facets (furniture single items).",
+  "related": ["project-listing-add-redesign", "Packages/brand-web/app/dashboard/products/listing/page.js", "features/listing-drilldown-taxonomy-engine"],
+  "result": "IMPLEMENTED. page.js leaf panel is now a 4-step wizard (Basics/Variants/Details/Review) partitioned by facet_role; progress header, per-step validation (mirrors validateItem, stricter on photos), Step-2 auto-skip when no variant facets, More-details collapsed, brand+detail carry-over. Drill-down + variant cards + saveBatch/batchCreate reused verbatim. Awaiting founder go for Vercel deploy + verify.",
+  "regression_proof": "next build compiled successfully (page emitted /dashboard/products/listing 7.31kB). pnpm qa 79/79 GREEN (report 2026-06-12T04-14-29Z, gate 0). JSX parse clean. No backend/DB change.",
+  "discipline": "Schema-driven: steps fall out of facet_role which already exists; no new data model. batchCreate payload byte-identical, so listing QA stays valid.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Founder mockup-lock -> implement -> pnpm qa + Playwright walk -> Vercel deploy (explicit go) -> founder verify -> flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (2026-06-12) — delegated lock: previewed stepper.html, said 'pls go and implement' (Step 3 More-details collapsed per stated default)",
+  "mockup_locked_at": "2026-06-12"
+}
