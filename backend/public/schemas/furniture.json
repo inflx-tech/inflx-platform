@@ -321,13 +321,6 @@
         }
       },
       {
-        "kind": "transactional",
-        "action": "online_order",
-        "label": "Order Online",
-        "priority": 2,
-        "config": {}
-      },
-      {
         "kind": "contact",
         "action": "directions",
         "label": "Directions",

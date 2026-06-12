@@ -361,13 +361,14 @@ const expectOk = (r, what) => {
     const r = await api(ctx.folToken).get(`/business/${ctx.brandId}/store`);
     const d = expectOk(r, 'business store');
     const nProducts = (d.products || []).length;
-    // CTA spec (Docs/CTA_SPEC.md, sprint2): the schema template must carry the
-    // founder-locked actions — exactly one primary, canonical pay_at_store verb.
+    // CTA spec REV 3 (Docs/CTA_SPEC.md): retail STORE level = Pay at Store
+    // ONLY (single primary transactional action + directions contact).
     const actions = (d.template && d.template.brand_config && d.template.brand_config.actions) || [];
     const tx = actions.filter(a => a.kind === 'transactional');
     const primaries = tx.filter(a => a.primary);
     const hasLegacyVerb = tx.some(a => a.action === 'walkin_pay');
-    const ctaOk = tx.length >= 2 && primaries.length === 1 && !hasLegacyVerb;
+    const ctaOk = tx.length === 1 && tx[0].action === 'pay_at_store'
+      && primaries.length === 1 && !hasLegacyVerb;
     if (ctaOk) log('S6.2', 'PASS', 'Business store page + locked CTA spec in template', `${nProducts} products; primary=${primaries[0].label}; ctas=[${tx.map(a => a.label).join(' · ')}]`);
     else log('S6.2', 'FAIL', 'Business store CTA spec', `tx=${tx.length} primaries=${primaries.length} legacyVerb=${hasLegacyVerb} actions=${JSON.stringify(actions.map(a => a.action))}`);
   } catch (e) { fail('S6.2', 'Business store fetch', e); }
@@ -392,6 +393,23 @@ const expectOk = (r, what) => {
     if (idsOk && t.status === 'completed') log('S6.3', 'PASS', 'Pay-at-store E2E: attribution IDs + fee recorded', detail);
     else log('S6.3', 'FAIL', 'Pay-at-store', detail);
   } catch (e) { fail('S6.3', 'Pay-at-store', e); }
+
+  try { // ORGANIC direct pay (W9): follower in-store, NO offer, NO creator
+    const init = await api(ctx.folToken).post('/follower/store-offer/pay', {
+      brand_id: ctx.brandId, bill_amount: 500,
+    });
+    const ind = expectOk(init, 'organic store pay init');
+    if (parseFloat(ind.discount_amount || 0) !== 0) throw new Error(`organic pay should have zero discount, got ${ind.discount_amount}`);
+    const ver = await api(ctx.folToken).post('/follower/store-offer/verify', {
+      razorpay_order_id: ind.razorpay_order_id, razorpay_payment_id: `pay_mock_org_${RUN}`,
+    });
+    expectOk(ver, 'organic store pay verify');
+    const rows = await q(`SELECT offer_source, brand_offer_id, discount_amount, net_amount, marketplace_fee_amount FROM follower_transactions WHERE follower_id=$1 AND offer_source='store'`, [ctx.followerId]);
+    const t = rows[0];
+    if (t && t.brand_offer_id === null && parseFloat(t.net_amount) === 500)
+      log('S6.3b', 'PASS', 'ORGANIC direct pay (no offer, no creator) → completed, zero discount, fee recorded', `net=${t.net_amount}; mktfee=${t.marketplace_fee_amount}`);
+    else log('S6.3b', 'FAIL', 'Organic direct pay row', JSON.stringify(rows));
+  } catch (e) { fail('S6.3b', 'Organic direct pay', e); }
 
   try { // ONLINE ORDER happy path
     const addr = await api(ctx.folToken).post('/follower/addresses', {

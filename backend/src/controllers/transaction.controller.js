@@ -504,20 +504,42 @@ const initiateStoreOfferPay = asyncHandler(async (req, res) => {
   if (!bill_amount || parseFloat(bill_amount) <= 0) {
     throw new AppError('VALIDATION_ERROR', 'bill_amount must be a positive number (rupees)', 422, 'bill_amount');
   }
-  if (!brand_id || !brand_offer_id) {
-    throw new AppError('VALIDATION_ERROR', 'brand_id and brand_offer_id are required', 422);
+  if (!brand_id) {
+    throw new AppError('VALIDATION_ERROR', 'brand_id is required', 422, 'brand_id');
   }
 
-  const offer = await fetchStoreOfferOrThrow(brand_offer_id, brand_id);
+  // brand_offer_id is OPTIONAL (walkthrough W9 / founder model): an
+  // organically-browsing follower standing in the store can pay via INFLX
+  // with NO offer at all — a plain direct (platform-owned) transaction with
+  // zero discount and zero commission. With an offer id, the existing
+  // store-offer discount flow applies unchanged.
+  let offer;
+  let offerResult;
+  if (brand_offer_id) {
+    offer = await fetchStoreOfferOrThrow(brand_offer_id, brand_id);
+  } else {
+    const { rows: brandRows } = await db.query(
+      `SELECT b.id, b.category AS brand_category
+       FROM brands b JOIN users u ON u.id = b.user_id
+       WHERE b.id = $1 AND u.status = 'approved'`,
+      [brand_id]
+    );
+    if (!brandRows[0]) throw new AppError('NOT_FOUND', 'Business not found', 404);
+    offer = { offer_type: null, offer_config_json: null, brand_category: brandRows[0].brand_category };
+  }
   const billAmount = parseFloat(bill_amount);
 
-  // Discount via the shared parser. No influencer record — synthesize the
-  // minimal shape computeOfferDiscount needs from the library offer.
-  const offerResult = await computeOfferDiscount({
-    trackingRecord: { ci_offer_type: offer.offer_type, offer_config_json: offer.offer_config_json },
-    items: items || [],
-    billAmount,
-  });
+  if (brand_offer_id) {
+    // Discount via the shared parser. No influencer record — synthesize the
+    // minimal shape computeOfferDiscount needs from the library offer.
+    offerResult = await computeOfferDiscount({
+      trackingRecord: { ci_offer_type: offer.offer_type, offer_config_json: offer.offer_config_json },
+      items: items || [],
+      billAmount,
+    });
+  } else {
+    offerResult = { discount_amount: 0, reason: null };
+  }
   const discountAmount = parseFloat(offerResult.discount_amount || 0);
 
   const netAmount = parseFloat((billAmount - discountAmount).toFixed(2));
@@ -542,7 +564,7 @@ const initiateStoreOfferPay = asyncHandler(async (req, res) => {
 
   const orderId = await txService.createOrder(netAmount, {
     type: 'store_offer',
-    brand_id, brand_offer_id, offer_source: 'store',
+    brand_id, brand_offer_id: brand_offer_id || null, offer_source: 'store',
     bill_amount: billAmount,
     gross_for_txn: billAmount,
     discount_amount: discountAmount,

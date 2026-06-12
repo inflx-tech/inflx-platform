@@ -24,4 +24,16 @@ footer carries price + all modes inline; contacts collapsed to one small
 📍 Directions chip below the establishment card (Call/WhatsApp/Share removed
 from schemas + UI); salon wording corrected to "Pay at Salon" on both pages.
 
+**Revision 3 (founder's clarified purchase model + W9 walk findings,
+2026-06-11):** retail store pages (fashion/walk-in/furniture) now show ONLY
+★Pay at Store; product pages show both paths with an in-store nudge ("At the
+store? Pay via INFLX — the deal discount applies. Not there? Order online.");
+the decorative "Visit & Pay via INFLX" banner is deleted; product taps on
+stores WITHOUT creator offers finally open the product page (the old code
+swallowed them silently — every organic store visit was a dead end); a
+creator offer's availing modes no longer shrink the product page's buttons;
+and an organically-browsing follower can now actually PAY in-store with no
+offer at all — store-offer/pay accepts brand-only direct payments (zero
+discount, platform fee only), proven E2E by journey S6.3b.
+
 Founder on-device walk of the five business pages is the release gate.

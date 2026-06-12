@@ -31,30 +31,31 @@ const SPEC = {
       ...CONTACTS_STD,
     ],
   },
+  // REV 3 (founder, 2026-06-11): retail STORE level = Pay at Store ONLY (the
+  // walk-in INFLX payment). Online ordering lives on the PRODUCT page
+  // (CATEGORY_CTA_ORDER), not the business page. availing_modes keep
+  // online_order -- products remain orderable online.
   'fashion.json': {
     availing_modes: ['pay_at_store', 'online_order'],
     actions: [
       { kind: 'transactional', action: 'pay_at_store', label: 'Pay at Store', priority: 1, primary: true,
         config: { fields: ['amount'] } },
-      { kind: 'transactional', action: 'online_order', label: 'Order Online', priority: 2, config: {} },
       ...CONTACTS_STD,
-          ],
+    ],
   },
   'fashion_walkin.json': {
     availing_modes: ['pay_at_store', 'online_order'],
     actions: [
       { kind: 'transactional', action: 'pay_at_store', label: 'Pay at Store', priority: 1, primary: true,
         config: { fields: ['amount'] } },
-      { kind: 'transactional', action: 'online_order', label: 'Order Online', priority: 2, config: {} },
       ...CONTACTS_STD,
-          ],
+    ],
   },
   'furniture.json': {
     availing_modes: ['pay_at_store', 'online_order'],
     actions: [
       { kind: 'transactional', action: 'pay_at_store', label: 'Pay at Store', priority: 1, primary: true,
         config: { fields: ['amount'] } },
-      { kind: 'transactional', action: 'online_order', label: 'Order Online', priority: 2, config: {} },
       ...CONTACTS_STD,
     ],
   },

@@ -429,7 +429,25 @@ export default function BrandStoreScreen({ navigation, route }) {
                           || influencers.find(inf => (inf.offers || []).some(o => o.offer_id === bestOffer?.offer_id))
                           || influencers[0]
                           || null;
-                        if (!owningInfluencer || !bestOffer) return; // no attribution context — can't load details
+                        if (!owningInfluencer || !bestOffer) {
+                          // ORGANIC browse (walkthrough W9) — no creator, no offer.
+                          // The old code silently swallowed the tap, making every
+                          // organically-visited store a dead end. Open the product
+                          // page with the store's own products; payment runs as the
+                          // direct (platform-owned) path with zero discount.
+                          navigation.navigate('ProductDetail', {
+                            offer: null,
+                            brand: { id: brand?.id, name: brand?.business_name, category: brand?.category, locality: brand?.city, city: brand?.city },
+                            store: null,
+                            influencer: null,
+                            selectedProductId: product.id,
+                            product: { ...product, price: parseFloat(product.price || 0) },
+                            products: products.map(p => ({ ...p, price: parseFloat(p.price || 0) })),
+                            tracking: null,
+                            trackingParams: null,
+                          });
+                          return;
+                        }
                         const attribTracking = tracking || {
                           campaign_id: bestOffer.campaign_id,
                           set_id: bestOffer.set_id,
@@ -526,14 +544,8 @@ export default function BrandStoreScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Sticky CTA */}
-      <View style={[s.stickyCTA, { backgroundColor: accent.accent }]}>
-        <Text style={s.stickyText}>
-          {brand?.category === 'restaurant' ? '🍽️ Visit & Pay via INFLX' :
-           brand?.category === 'salon' ? '💇 Book Appointment' :
-           '🛍️ Visit & Pay via INFLX'}
-        </Text>
-      </View>
+      {/* Legacy "Visit & Pay via INFLX" banner REMOVED (walkthrough W9) — it
+          was decorative text, not a button, and duplicated the bottom CTA bar. */}
 
       <View style={{ height: 96 }} />
       </ScrollView>

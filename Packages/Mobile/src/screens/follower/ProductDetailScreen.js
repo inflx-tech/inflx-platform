@@ -142,6 +142,7 @@ export default function ProductDetailScreen({ navigation, route }) {
     influencer,
     selectedProductId,
     product: previewProduct,   // optional — drawn from the card the user tapped
+    products: routeProducts,   // optional — ORGANIC path: caller already has them
     tracking,
     trackingParams,
   } = route.params || {};
@@ -175,6 +176,13 @@ export default function ProductDetailScreen({ navigation, route }) {
 
   useEffect(() => {
     async function load() {
+      // Path 0 — ORGANIC (walkthrough W9): the business page already handed us
+      // the products; no creator, no offer, nothing to fetch.
+      if (Array.isArray(routeProducts) && routeProducts.length) {
+        setProducts(routeProducts);
+        setLoading(false);
+        return;
+      }
       // Path 1 — creator context (assignment or legacy campaign offer):
       // products scoped via the creator's store endpoint.
       if (handle && (ciId || legacyOfferId)) {
@@ -273,12 +281,13 @@ export default function ProductDetailScreen({ navigation, route }) {
   const rawModes = Array.isArray(offerFull?.availing_modes) && offerFull.availing_modes.length
     ? offerFull.availing_modes
     : ['online_order'];
-  // Canonicalize the legacy walkin_pay verb, then apply the founder-locked
-  // per-category CTA order (primary first) filtered by what this offer
-  // actually supports. Unspecced categories keep availing-mode order.
-  const availSet = new Set(rawModes.map(m => (m === 'walkin_pay' ? 'pay_at_store' : m)));
+  // Founder-locked rule (W9 rev): for the 5 specced categories the CATEGORY
+  // spec WINS OUTRIGHT — a creator offer that happens to carry fewer availing
+  // modes must not shrink the product page's buttons. Offer modes only drive
+  // unspecced categories.
   const specOrder = CATEGORY_CTA_ORDER[brand?.category] || null;
-  let availingModes = specOrder ? specOrder.filter(m => availSet.has(m)) : [...availSet];
+  const availSet = new Set(rawModes.map(m => (m === 'walkin_pay' ? 'pay_at_store' : m)));
+  let availingModes = specOrder ? [...specOrder] : [...availSet];
   if (!availingModes.length) availingModes = [...availSet];
   const ctaList = [];
   const seenScreens = new Set();
@@ -329,10 +338,12 @@ export default function ProductDetailScreen({ navigation, route }) {
       selected_size: selectedSize,
       tracking: txTracking,
       trackingParams: txTracking,
-      // Store-direct buy (Offer Engine D3): PayAtStore routes through
-      // POST /follower/store-offer/pay when this is set.
-      storeOffer: (!txTracking && brandOfferId && brand?.id)
-        ? { brand_id: brand.id, brand_offer_id: brandOfferId }
+      // Store-direct buy (Offer Engine D3 + W9 organic): PayAtStore routes
+      // through POST /follower/store-offer/pay when this is set. With NO
+      // offer at all (organic browse) brand_offer_id is omitted — the
+      // backend now accepts a plain direct payment (zero discount).
+      storeOffer: (!txTracking && brand?.id)
+        ? { brand_id: brand.id, ...(brandOfferId ? { brand_offer_id: brandOfferId } : {}) }
         : undefined,
     };
     navigation.navigate(cta.screen, params);
@@ -526,6 +537,16 @@ export default function ProductDetailScreen({ navigation, route }) {
         </View>
       </ScrollView>
 
+      {/* In-store nudge (founder W9 model): offline pay via INFLX carries the
+          deal discount — shown only when both pay paths are on offer. */}
+      {ctaList.some(c => c.screen === 'PayAtStore') && ctaList.some(c => c.screen === 'OnlineOrder') && (
+        <View style={styles.instoreHint}>
+          <Text style={styles.instoreHintText} numberOfLines={2}>
+            🏬 At the store? Pay via INFLX{discountValue > 0 ? ' — the deal discount applies' : ''}. Not there? Order online.
+          </Text>
+        </View>
+      )}
+
       {/* Sticky bottom CTA bar — ALL modes side-by-side (founder sprint-2
           revision: tabs at the bottom, not stacked mid-page). */}
       <View style={styles.footer}>
@@ -658,6 +679,8 @@ const styles = StyleSheet.create({
   footerPrice: { fontFamily: fonts.monoBold, fontSize: 20, color: P.ink },
   footerName: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted, marginTop: 2 },
   primaryCta: { paddingHorizontal: 16, paddingVertical: 14, borderRadius: 12, maxWidth: '52%' },
+  instoreHint: { backgroundColor: C.soft, paddingHorizontal: 16, paddingVertical: 7 },
+  instoreHintText: { fontFamily: fonts.sansMedium, fontSize: 11, color: C.ink, opacity: 0.75 },
   footerSecondaryCta: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 13, maxWidth: '34%' },
   footerSecondaryCtaText: { fontSize: 11.5, fontWeight: '800' },
   primaryCtaText: { fontFamily: fonts.displayBlack, fontSize: 14, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.3 },

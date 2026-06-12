@@ -12,8 +12,8 @@
 | Business | CTAs (in order) |
 |---|---|
 | 🍽 Restaurant | ★**Book a Table** · Pay at Restaurant · Order Online |
-| 👗 Fashion (walk-in + unified) | ★**Pay at Store** · Order Online |
-| 🛋 Furniture | ★**Pay at Store** · Order Online |
+| 👗 Fashion (walk-in + unified) | ★**Pay at Store** *(rev 3: store level = this only)* |
+| 🛋 Furniture | ★**Pay at Store** *(rev 3: store level = this only)* |
 | 💇 Salon | ★**Book Appointment** · Pay at Salon |
 | 🚗 Car rental | ★**Book Your Dates** · Pay at Garage |
 
@@ -30,6 +30,17 @@
 ## Notes (founder decisions)
 
 - Car rental: Enquire REMOVED from both pages (founder, 2026-06-11 follow-up).
+- **Revision 3 (founder, 2026-06-11 — the clarified purchase model):**
+  - Retail (fashion, fashion_walkin, furniture) **STORE level = ★Pay at Store
+    ONLY** (the walk-in INFLX payment). Order Online is NOT a store-level CTA.
+  - **PRODUCT level = both**: "At the store? Pay via INFLX — the deal discount
+    applies" (offline) OR "Order Online". The product page nudges this choice.
+  - Category spec WINS over an offer's availing modes on product pages — a
+    creator deal carrying fewer modes must not shrink the buttons.
+  - ORGANIC browsing fully supported: product taps open without any creator/
+    offer; in-store pay completes as a plain direct payment (zero discount,
+    platform fee only — backend store-offer/pay with brand_offer_id optional).
+  - Restaurant (3 CTAs), salon, car rental store pages unchanged.
 - **Revision 2 (founder, 2026-06-11 post-sprint-2 review):**
   1. CTA buttons render SIDE-BY-SIDE in a sticky BOTTOM bar (business page
      bottom bar; product page footer carries price + all modes) — never
