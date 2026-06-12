@@ -260,10 +260,25 @@ const importProducts = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', `${problems.length} product(s) need fixing — nothing was saved`, 422, JSON.stringify({ row_errors: problems }));
   }
 
-  // Ingest any image-URL cells to R2 (contract: listing-image-urls). NON-blocking:
-  // a link that fails is skipped (product still created) and reported as a warning.
+  // Dedup: skip products whose name already exists under this leaf for this
+  // brand, so a re-uploaded sheet doesn't create duplicates (walkthrough:
+  // "uploaded twice → two copies"). Match by case-insensitive name within leaf.
+  const lname = (s) => String(s || '').trim().toLowerCase();
+  const wanted = [...new Set(items.map(it => lname(it.name)))];
+  const { rows: existRows } = wanted.length ? await db.query(
+    `SELECT DISTINCT lower(name) AS n FROM brand_products
+      WHERE brand_id = $1 AND category_node_id = $2 AND is_active = true AND lower(name) = ANY($3)`,
+    [brand.id, node.id, wanted]
+  ) : { rows: [] };
+  const existSet = new Set(existRows.map(r => r.n));
+  const skipped = [...new Set(items.filter(it => existSet.has(lname(it.name))).map(it => it.name))];
+  const toCreate = items.filter(it => !existSet.has(lname(it.name)));
+
+  // Ingest image-URL cells to R2 (contract: listing-image-urls), only for the
+  // products we'll actually create. NON-blocking: a link that fails is skipped
+  // (product still created) and reported as a warning.
   const imageWarnings = [];
-  for (const it of items) {
+  for (const it of toCreate) {
     if (it.__cover_urls?.length) {
       const covers = [];
       for (const u of it.__cover_urls) {
@@ -283,17 +298,18 @@ const importProducts = asyncHandler(async (req, res) => {
     }
   }
 
-  const clean = items.map(({ __rows, __cover_urls, variants, ...it }) => ({
+  const clean = toCreate.map(({ __rows, __cover_urls, variants, ...it }) => ({
     ...it,
     variants: variants ? variants.map(({ __image_urls, ...v }) => v) : undefined,
   }));
-  const created = await insertProducts(brand, node, clean);
+  const created = clean.length ? await insertProducts(brand, node, clean) : [];
 
   return success(res, {
     node: { id: node.id, segment: node.segment, category: node.category, name: node.name },
     created_count: created.length,
     products: created,                       // id + sku → drives the post-import photo tray
     needs_photos: created.map(p => p.id),
+    skipped,                                 // names already in the listing — not re-created
     image_warnings: imageWarnings,           // links we couldn't fetch (product still created)
     value_warnings: valueWarnings,           // unrecognised optional tags we dropped
   }, 201);
@@ -314,4 +330,33 @@ const ingestImage = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage };
+// ── POST /listing/products/:id/cover-photos ───────────────────────────────────
+// Append cover photos to a product (post-import photo tray supports MULTIPLE).
+// Merges into variants_json.cover_images (keeps the colour matrix) + sets the
+// main image_url to the first cover.
+const setProductCoverPhotos = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  const { urls } = req.body || {};
+  if (!Array.isArray(urls) || !urls.length) throw new AppError('VALIDATION_ERROR', 'urls[] is required', 422, 'urls');
+
+  const { rows } = await db.query(
+    `SELECT id, variants_json, image_url FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    [req.params.id, brand.id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
+
+  let vj = rows[0].variants_json || {};
+  if (typeof vj === 'string') { try { vj = JSON.parse(vj); } catch { vj = {}; } }
+  const existing = Array.isArray(vj.cover_images) ? vj.cover_images : [];
+  vj.cover_images = [...existing, ...urls.filter(Boolean)].slice(0, 6);
+  const cover = vj.cover_images[0] || rows[0].image_url || null;
+
+  await db.query(
+    `UPDATE brand_products SET variants_json = $1::jsonb, image_url = $2 WHERE id = $3 AND brand_id = $4`,
+    [JSON.stringify(vj), cover, req.params.id, brand.id]
+  );
+  return success(res, { id: req.params.id, image_url: cover, cover_images: vj.cover_images });
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos };

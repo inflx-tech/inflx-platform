@@ -130,6 +130,8 @@ export const listingApi = {
   batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
   // Ingest a pasted image URL into our R2 (contract: listing-image-urls).
   ingestImage: (url) => api.post('/listing/ingest-image', { url }),
+  // Append cover photos to a product (post-import photo tray, multiple).
+  setCoverPhotos: (productId, urls) => api.post(`/listing/products/${productId}/cover-photos`, { urls }),
   // Excel bulk add (contract: listing-excel-bulk). Template is a public GET;
   // import is a multipart POST (mirrors uploadFileToGallery's transport).
   templateUrl: (nodeId) => `${API_BASE}/listing/nodes/${nodeId}/template.xlsx`,

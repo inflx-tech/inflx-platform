@@ -25,6 +25,7 @@ publicRouter.get('/nodes/:id/facets', ctrl.getNodeFacets);
 publicRouter.get('/nodes/:id/template.xlsx', ctrl.downloadTemplate);   // contract: listing-excel-bulk
 publicRouter.post('/nodes/:id/import', authenticate, requireRole('brand'), upload.single('file'), ctrl.importProducts);
 publicRouter.post('/ingest-image', authenticate, requireRole('brand'), ctrl.ingestImage);   // contract: listing-image-urls
+publicRouter.post('/products/:id/cover-photos', authenticate, requireRole('brand'), ctrl.setProductCoverPhotos);
 publicRouter.get('/brands', ctrl.getBrands);
 
 const brandRouter = Router();

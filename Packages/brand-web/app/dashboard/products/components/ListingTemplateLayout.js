@@ -370,7 +370,11 @@ export default function ListingTemplateLayout({
         {[
           { key: 'fleet',  label: `${labelPlural} (${myProducts?.length || 0})`, icon: template.icon || '📋' },
           { key: 'add',    label: `Add ${labelSingular}`, icon: '➕' },
-          ...(tmpl?.hideUploadTab
+          // Hide the top-level Bulk Upload tab for drill-down templates
+          // (fashion/furniture): there you pick the item type first, then choose
+          // one-by-one OR bulk inside the wizard — a tab here just lands on the
+          // same page and is confusing (founder walkthrough 2026-06-12).
+          ...((tmpl?.hideUploadTab || !hasProductStep)
             ? []
             : [{ key: 'upload', label: 'Bulk Upload', icon: '📤' }]),
         ].map(t => (

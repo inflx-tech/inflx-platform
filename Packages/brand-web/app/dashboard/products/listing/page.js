@@ -328,8 +328,9 @@ export default function DrilldownListingPage() {
     setImporting(false);
     if (r.ok) {
       const created = r.data?.products || [];
+      const skipped = r.data?.skipped || [];
       setImported(created);
-      setImportWarnings({ images: r.data?.image_warnings || [], values: r.data?.value_warnings || [] });
+      setImportWarnings({ images: r.data?.image_warnings || [], values: r.data?.value_warnings || [], skipped });
       setCounts(c => ({ ...c, [leaf.id]: (c[leaf.id] || 0) + (r.data?.created_count || 0) }));
     } else {
       let parsed = null;
@@ -343,11 +344,16 @@ export default function DrilldownListingPage() {
   async function addTrayPhoto(productId, fileList) {
     const files = Array.from(fileList || []); if (!files.length) return;
     setTrayUploading(productId);
-    const r = await uploadFileToGallery(files[0], { title: files[0].name, tags: ['listing'] });
-    if (r.asset?.id) {
-      const url = `${API_BASE}/media/assets/${r.asset.id}`;
-      await brandApi.updateProduct(productId, { image_url: url });
-      setImported(list => list.map(p => p.id === productId ? { ...p, image_url: url } : p));
+    const urls = [];
+    for (const f of files) {
+      const r = await uploadFileToGallery(f, { title: f.name, tags: ['listing'] });
+      if (r.asset?.id) urls.push(`${API_BASE}/media/assets/${r.asset.id}`);
+    }
+    if (urls.length) {
+      const res = await listingApi.setCoverPhotos(productId, urls);
+      const cover = res.data?.image_url || urls[0];
+      const count = res.data?.cover_images?.length || urls.length;
+      setImported(list => list.map(p => p.id === productId ? { ...p, image_url: cover, photo_count: count } : p));
     }
     setTrayUploading('');
   }
@@ -607,17 +613,25 @@ export default function DrilldownListingPage() {
                 </div>
               )}
 
+              {/* All duplicates — nothing new created */}
+              {imported.length === 0 && importWarnings?.skipped?.length > 0 && (
+                <div className="warnbox">All {importWarnings.skipped.length} product{importWarnings.skipped.length > 1 ? 's were' : ' was'} already in your {leaf.name} listing — nothing new was added (no duplicates created).</div>
+              )}
+
               {/* Success — created products + non-blocking warnings + photo tray */}
               {imported.length > 0 && (
                 <>
                   <div className="ok">✓ {imported.length} product{imported.length > 1 ? 's' : ''} added under {leaf.name}. Add photos below — then they're live.</div>
-                  {importWarnings && (importWarnings.values?.length > 0 || importWarnings.images?.length > 0) && (
+                  {importWarnings && (importWarnings.values?.length > 0 || importWarnings.images?.length > 0 || importWarnings.skipped?.length > 0) && (
                     <div className="warnbox">
+                      {importWarnings.skipped?.length > 0 && (
+                        <div>{importWarnings.skipped.length} already in your listing — skipped (no duplicates): {importWarnings.skipped.slice(0, 5).join(', ')}{importWarnings.skipped.length > 5 ? '…' : ''}.</div>
+                      )}
                       {importWarnings.values?.length > 0 && (
-                        <div>Skipped {importWarnings.values.length} unrecognised tag{importWarnings.values.length > 1 ? 's' : ''}: {importWarnings.values.slice(0, 6).map(w => `${w.facet} “${w.dropped}”`).join(', ')}{importWarnings.values.length > 6 ? '…' : ''}. Everything else imported fine.</div>
+                        <div style={{ marginTop: importWarnings.skipped?.length ? 4 : 0 }}>Skipped {importWarnings.values.length} unrecognised tag{importWarnings.values.length > 1 ? 's' : ''}: {importWarnings.values.slice(0, 6).map(w => `${w.facet} “${w.dropped}”`).join(', ')}{importWarnings.values.length > 6 ? '…' : ''}. Everything else imported fine.</div>
                       )}
                       {importWarnings.images?.length > 0 && (
-                        <div style={{ marginTop: importWarnings.values?.length ? 4 : 0 }}>{importWarnings.images.length} image link{importWarnings.images.length > 1 ? 's' : ''} couldn't be fetched — add those photos below.</div>
+                        <div style={{ marginTop: (importWarnings.values?.length || importWarnings.skipped?.length) ? 4 : 0 }}>{importWarnings.images.length} image link{importWarnings.images.length > 1 ? 's' : ''} couldn't be fetched (the source blocks it) — add those photos below.</div>
                       )}
                     </div>
                   )}
@@ -627,11 +641,11 @@ export default function DrilldownListingPage() {
                       {p.image_url ? <img className="tph" src={p.image_url} alt="" /> : <span className="tph ph">＋</span>}
                       <div>
                         <div style={{ fontWeight: 700 }}>{p.name}</div>
-                        <div className="sub">{p.sku}{p.image_url ? ' · photo added' : ' · needs photos'}</div>
+                        <div className="sub">{p.sku}{p.photo_count ? ` · ${p.photo_count} photo${p.photo_count > 1 ? 's' : ''}` : (p.image_url ? ' · photo added' : ' · needs photos')}</div>
                       </div>
                       <label className="btn ghost" style={{ marginLeft: 'auto', cursor: 'pointer' }}>
-                        {trayUploading === p.id ? 'Uploading…' : '＋ Add photos'}
-                        <input type="file" accept="image/*" style={{ display: 'none' }}
+                        {trayUploading === p.id ? 'Uploading…' : (p.photo_count || p.image_url ? '＋ More photos' : '＋ Add photos')}
+                        <input type="file" accept="image/*" multiple style={{ display: 'none' }}
                           onChange={e => addTrayPhoto(p.id, e.target.files)} />
                       </label>
                     </div>
