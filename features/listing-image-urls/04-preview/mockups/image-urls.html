@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listing image URLs (mockup)</title>
+<style>
+  :root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--ink:#0A0A0A;--ink2:#1F1F22;
+    --muted2:#71717A;--muted3:#A1A1AA;--border:#E4E4E7;--variant:#7E22CE;--variant-pale:#F3E8FF;--danger:#E8401A;--danger-pale:#FDEEE9;--success-text:#047857;}
+  *{box-sizing:border-box}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);font-size:13px;background:var(--bg2);margin:0;padding:24px}
+  h1{font-family:'Outfit';font-size:21px;font-weight:700;margin:0 0 12px}
+  .seclbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:18px 0 8px}
+  .card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:520px}
+  .fl{display:block;font-size:11px;font-weight:700;color:var(--ink2);margin:11px 0 5px}.req{color:var(--danger)}
+  .file{border:1.5px dashed var(--border);border-radius:9px;padding:10px;color:var(--muted3);font-size:12px}
+  .or{font-size:10px;font-weight:800;color:var(--muted3);text-transform:uppercase;margin:8px 0;text-align:center}
+  .urlrow{display:flex;gap:8px}
+  .t{flex:1;border:1px solid var(--border);border-radius:9px;padding:9px;font-size:13px}
+  .btn{padding:9px 14px;border:0;border-radius:9px;font-size:12px;font-weight:800;cursor:default}
+  .btn.ink{background:var(--ink);color:var(--yellow)}
+  .thumbs{display:flex;gap:8px;margin-top:8px}.thumb{width:54px;height:54px;border-radius:9px;background:linear-gradient(135deg,#EAD7B8,#D9BE92);border:1px solid var(--border);position:relative}
+  .main{position:absolute;left:3px;top:3px;background:var(--ink);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:5px}
+  .vcard{border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:8px;background:var(--bg)}
+  .vhead{font-weight:800;font-size:12px;display:flex;align-items:center;gap:6px}.dot{width:11px;height:11px;border-radius:50%;background:var(--variant-pale);border:1px solid var(--border)}
+  table{border-collapse:collapse;font-size:11px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:4px}
+  th,td{border:1px solid var(--border);padding:5px 9px;text-align:left;white-space:nowrap}th{background:var(--bg2);font-weight:800;font-size:10px}td.ex{color:var(--muted3);font-style:italic}
+  .warn{background:var(--danger-pale);border:1px solid #f3c0b0;border-radius:10px;padding:11px;max-width:520px;margin-top:8px;font-size:12px;color:#7a2410}
+  .note{font-size:11px;color:var(--muted2);margin-top:8px;max-width:520px}
+</style></head><body>
+  <h1>Add images by URL — manual + Excel</h1>
+
+  <div class="seclbl">Stepper · Step ① cover (and same on each colour in Step ②)</div>
+  <div class="card">
+    <label class="fl">Cover photos <span class="req">*</span></label>
+    <div class="file">⬆ Upload from desktop (up to 6)</div>
+    <div class="or">— or —</div>
+    <label class="fl">Paste image URL(s) <span style="color:var(--muted3);font-weight:500">— comma-separate for more; first = main</span></label>
+    <div class="urlrow"><input class="t" value="https://shop.example.com/saree-maroon-1.jpg, .../front.jpg"><span class="btn ink">Add</span></div>
+    <div class="thumbs"><div class="thumb"><span class="main">MAIN</span></div><div class="thumb"></div></div>
+    <div class="vcard"><div class="vhead"><span class="dot"></span>Maroon — same Upload / Paste-URL inputs per colour</div></div>
+  </div>
+
+  <div class="seclbl">Excel · two new columns (auto-added to every leaf template)</div>
+  <table>
+    <tr><th class="req">Name *</th><th class="req">Price *</th><th class="req">Colour *</th><th>Variant stock</th><th>Cover image URLs</th><th>Colour image URLs</th></tr>
+    <tr><td class="ex">Kanjivaram Silk</td><td class="ex">4200</td><td class="ex">Maroon</td><td class="ex">12</td><td class="ex">https://…/cover1.jpg, https://…/cover2.jpg</td><td class="ex">https://…/maroon1.jpg, …/maroon2.jpg</td></tr>
+  </table>
+  <div class="note">Each link is fetched once and copied into our storage (so it can't break later). Cover URLs are product-level; Colour URLs attach to that colour's row.</div>
+
+  <div class="seclbl">If a link can't be fetched (bulk) — non-blocking</div>
+  <div class="warn">✓ 24 products created. <b>2 image links couldn't be fetched</b> (Banarasi · cover #2; Cotton Saree · Teal #1) — add them from the photo tray below.</div>
+</body></html>

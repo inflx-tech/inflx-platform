@@ -70,6 +70,11 @@ function columnModel(node, facets) {
     if (sizeFacet) cols.push({ header: 'Size', field: 'size', list: sizeValues(node.size_system) });
     cols.push({ header: 'Variant stock', field: 'variant_stock', note: 'stock for this colour+size row' });
   }
+  // Image-URL columns (contract: listing-image-urls). Ingested server-side on
+  // import; comma-separate multiple. Cover is product-level; Colour attaches to
+  // that colour's row.
+  cols.push({ header: 'Cover image URLs', field: 'cover_urls', note: 'image links, comma-separated; first = main' });
+  if (hasVariants) cols.push({ header: 'Colour image URLs', field: 'colour_urls', note: 'image links for this colour, comma-separated' });
   return { cols, hasVariants, colorFacet, sizeFacet, detail };
 }
 
@@ -199,9 +204,12 @@ function buildItems(rows, node, facets) {
         : raw;
     });
 
+    const splitUrls = (s) => norm(s).split(',').map(x => x.trim()).filter(Boolean);
+
     let variants;
     if (hasVariants) {
       const byColor = new Map();
+      const colorImgs = new Map();
       const sizes = new Set();
       grp.forEach(row => {
         const color = norm(get(row, 'Colour')); if (!color) return;
@@ -209,10 +217,13 @@ function buildItems(rows, node, facets) {
         const size = norm(get(row, 'Size'));
         const stock = norm(get(row, 'Variant stock'));
         if (size) { byColor.get(color).push({ size, stock: stock === '' ? null : stock }); sizes.add(size); }
+        const us = splitUrls(get(row, 'Colour image URLs'));
+        if (us.length) colorImgs.set(color, [...(colorImgs.get(color) || []), ...us]);
       });
       facetVals[COLOR_KEY] = [...byColor.keys()];
       if (sizes.size) facetVals[SIZE_KEY] = [...sizes];
-      variants = [...byColor.entries()].map(([color, szs]) => ({ color, images: [], sizes: szs }));
+      // __image_urls = raw links → ingested by the controller; images filled then.
+      variants = [...byColor.entries()].map(([color, szs]) => ({ color, images: [], __image_urls: colorImgs.get(color) || [], sizes: szs }));
     }
 
     items.push({
@@ -222,6 +233,7 @@ function buildItems(rows, node, facets) {
       stock: norm(get(first, 'Stock')) || null,
       facets: facetVals,
       variants: variants && variants.length ? variants : undefined,
+      __cover_urls: splitUrls(get(first, 'Cover image URLs')),   // raw → ingested by controller
       __rows: grp.map(r => r.__row).filter(Boolean),
     });
   }

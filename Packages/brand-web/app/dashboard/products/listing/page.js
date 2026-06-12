@@ -57,6 +57,8 @@ export default function DrilldownListingPage() {
   const [importFileErr, setImportFileErr] = useState('');  // file-level (stale template etc.)
   const [imported, setImported] = useState([]);            // just-created products → photo tray
   const [trayUploading, setTrayUploading] = useState('');
+  const [urlText, setUrlText] = useState({});              // paste-image-URL inputs, keyed by target
+  const [ingesting, setIngesting] = useState('');          // target currently ingesting
   const [items, setItems] = useState([]);
   const [uploading, setUploading] = useState('');
   const [saving, setSaving] = useState(false);
@@ -137,6 +139,26 @@ export default function DrilldownListingPage() {
     setUploading('');
     if (target === 'cover') setDraft(d => ({ ...d, images: [...d.images, ...urls].slice(0, 6) }));
     else setColorImages(target, urls);
+  }
+
+  // Paste image URL(s) → ingest each into our R2 → same image list as uploads
+  // (contract: listing-image-urls). target = 'cover' or a colour name.
+  async function addImagesFromUrls(target) {
+    const raw = String(urlText[target] || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    if (!raw.length) return;
+    setIngesting(target); setErr('');
+    const urls = [];
+    for (const u of raw) {
+      const r = await listingApi.ingestImage(u);
+      if (r.ok && r.data?.url) urls.push(r.data.url);
+      else setErr(`Couldn't add ${u} — ${r.error?.message || 'failed'}`);
+    }
+    if (urls.length) {
+      if (target === 'cover') setDraft(d => ({ ...d, images: [...d.images, ...urls].slice(0, 6) }));
+      else setColorImages(target, urls);
+    }
+    setUrlText(t => ({ ...t, [target]: '' }));
+    setIngesting('');
   }
 
   // Visual variant (colour) drives pics; the OTHER variant facet (size/seater/doors/
@@ -396,6 +418,13 @@ export default function DrilldownListingPage() {
             <div className="stepbody">
               <label className="fl">Cover photos (up to 6) — the first is the cover <span className="req">*</span></label>
               <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, 'cover')} />
+              <div className="urlrow">
+                <input className="t" placeholder="or paste image URL(s) — comma-separated" value={urlText.cover || ''}
+                  onChange={e => setUrlText(t => ({ ...t, cover: e.target.value }))} />
+                <button className="btn ghost" disabled={ingesting === 'cover'} onClick={() => addImagesFromUrls('cover')}>
+                  {ingesting === 'cover' ? 'Adding…' : 'Add URL'}
+                </button>
+              </div>
               {uploading === 'cover' && <div className="sub">Uploading…</div>}
               {draft.images.length > 0 && <div className="imgs">{draft.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
               <div className="row">
@@ -442,6 +471,13 @@ export default function DrilldownListingPage() {
                         <div className="vhead"><span className="dot" />{color}</div>
                         <label className="fl">Photos for {color}</label>
                         <input className="t" type="file" accept="image/*" multiple onChange={e => uploadImages(e.target.files, color)} />
+                        <div className="urlrow">
+                          <input className="t" placeholder="or paste URL(s)" value={urlText[color] || ''}
+                            onChange={e => setUrlText(t => ({ ...t, [color]: e.target.value }))} />
+                          <button className="btn ghost" disabled={ingesting === color} onClick={() => addImagesFromUrls(color)}>
+                            {ingesting === color ? 'Adding…' : 'Add URL'}
+                          </button>
+                        </div>
                         {uploading === color && <div className="sub">Uploading…</div>}
                         {arr(cv.images).length > 0 && <div className="imgs">{cv.images.map((u, i) => <img key={i} className="thumb" src={u} alt="" />)}</div>}
                         {selectedVariants.length > 0 && (
@@ -672,4 +708,6 @@ const CSS = `
 .lst .trow{display:flex;align-items:center;gap:11px;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:8px}
 .lst .tph{width:42px;height:42px;border-radius:9px;object-fit:cover;border:1px solid var(--border)}
 .lst .tph.ph{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);color:var(--muted3);font-size:17px}
+.lst .urlrow{display:flex;gap:8px;margin-top:6px}
+.lst .urlrow .t{flex:1}
 `;

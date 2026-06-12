@@ -28,9 +28,9 @@ async function filledBuffer(dropHeaders = []) {
   const ws = wb.addWorksheet('Products');
   ws.addRow(headers);
   const set = (obj) => headers.map(h => obj[h] ?? '');
-  // One product, two colours (row-per-variant).
-  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Maroon', Size: 'Free', 'Variant stock': '12', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive' }));
-  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Teal', Size: 'Free', 'Variant stock': '8', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive' }));
+  // One product, two colours (row-per-variant) + image-URL columns.
+  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Maroon', Size: 'Free', 'Variant stock': '12', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Cover image URLs': 'https://x.test/c1.jpg, https://x.test/c2.jpg', 'Colour image URLs': 'https://x.test/maroon.jpg' }));
+  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Teal', Size: 'Free', 'Variant stock': '8', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive', 'Colour image URLs': 'https://x.test/teal.jpg' }));
   return wb.xlsx.writeBuffer();
 }
 
@@ -59,6 +59,11 @@ async function filledBuffer(dropHeaders = []) {
   ok(it.facets.fabric === 'Silk', 'single_select Fabric = Silk');
   const vMaroon = (it.variants || []).find(v => v.color === 'Maroon');
   ok(vMaroon && vMaroon.sizes[0].stock === '12', 'per-variant stock carried (Maroon Free = 12)');
+
+  // Image-URL columns (listing-image-urls): raw links collected for the controller to ingest.
+  ok(hdr.includes('Cover image URLs') && hdr.includes('Colour image URLs'), 'template has image-URL columns');
+  ok(Array.isArray(it.__cover_urls) && it.__cover_urls.length === 2, `cover image URLs collected (got ${it.__cover_urls?.length})`);
+  ok(vMaroon && JSON.stringify(vMaroon.__image_urls) === JSON.stringify(['https://x.test/maroon.jpg']), 'per-colour image URL collected (Maroon)');
 
   // 3) validateItem (current specs) passes
   const errs = taxonomy.validateItem(node, facets, it);

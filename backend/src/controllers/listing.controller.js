@@ -20,6 +20,14 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const taxonomy = require('../services/taxonomy.service');
 const bulk = require('../services/listingBulk.service');
+const imageIngest = require('../services/imageIngest.service');
+
+const INGEST_ERR_MSG = {
+  bad_scheme: 'Only http/https links are allowed', private_ip: 'That address is not allowed',
+  not_image: 'That link is not an image', unreachable: 'Could not fetch that link',
+  too_large: 'Image is over 5 MB', invalid_url: 'That is not a valid link',
+  dns_failed: 'Could not resolve that host', too_many_redirects: 'Too many redirects', empty: 'The image was empty',
+};
 
 async function getBrandByUserId(userId) {
   const { rows } = await db.query(
@@ -247,7 +255,33 @@ const importProducts = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', `${problems.length} product(s) need fixing — nothing was saved`, 422, JSON.stringify({ row_errors: problems }));
   }
 
-  const clean = items.map(({ __rows, ...it }) => it);
+  // Ingest any image-URL cells to R2 (contract: listing-image-urls). NON-blocking:
+  // a link that fails is skipped (product still created) and reported as a warning.
+  const imageWarnings = [];
+  for (const it of items) {
+    if (it.__cover_urls?.length) {
+      const covers = [];
+      for (const u of it.__cover_urls) {
+        try { covers.push(await imageIngest.ingestImageFromUrl({ brandId: brand.id, url: u })); }
+        catch (e) { imageWarnings.push({ name: it.name, where: 'cover', url: u, reason: INGEST_ERR_MSG[e.message] || 'failed' }); }
+      }
+      if (covers.length) it.images = covers;
+    }
+    for (const v of (it.variants || [])) {
+      if (!v.__image_urls?.length) continue;
+      const vi = [];
+      for (const u of v.__image_urls) {
+        try { vi.push(await imageIngest.ingestImageFromUrl({ brandId: brand.id, url: u })); }
+        catch (e) { imageWarnings.push({ name: it.name, where: `colour ${v.color}`, url: u, reason: INGEST_ERR_MSG[e.message] || 'failed' }); }
+      }
+      if (vi.length) v.images = vi;
+    }
+  }
+
+  const clean = items.map(({ __rows, __cover_urls, variants, ...it }) => ({
+    ...it,
+    variants: variants ? variants.map(({ __image_urls, ...v }) => v) : undefined,
+  }));
   const created = await insertProducts(brand, node, clean);
 
   return success(res, {
@@ -255,7 +289,23 @@ const importProducts = asyncHandler(async (req, res) => {
     created_count: created.length,
     products: created,                       // id + sku → drives the post-import photo tray
     needs_photos: created.map(p => p.id),
+    image_warnings: imageWarnings,           // links we couldn't fetch (product still created)
   }, 201);
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts };
+// ── POST /listing/ingest-image ────────────────────────────────────────────────
+// Manual flow: fetch a pasted image URL into our R2, return a stable served URL.
+const ingestImage = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  const { url } = req.body || {};
+  if (!url || typeof url !== 'string') throw new AppError('VALIDATION_ERROR', 'url is required', 422, 'url');
+  try {
+    const ingested = await imageIngest.ingestImageFromUrl({ brandId: brand.id, url });
+    return success(res, { url: ingested }, 201);
+  } catch (e) {
+    throw new AppError('VALIDATION_ERROR', INGEST_ERR_MSG[e.message] || 'Could not import that image', 422, 'url');
+  }
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage };

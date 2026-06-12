@@ -123,6 +123,25 @@ function getUploadDir() {
   return UPLOAD_DIR;
 }
 
+/**
+ * Store a raw buffer at an explicit key (R2 in prod, local disk in mock).
+ * Used by server-side image ingest (contract: listing-image-urls) so a fetched
+ * URL lands in the same place a client upload would. Returns the key.
+ */
+async function putBuffer(key, buffer, contentType = 'application/octet-stream') {
+  if (env.R2_MOCK) {
+    await saveFile(key, buffer, contentType);
+    return key;
+  }
+  const { PutObjectCommand } = require('@aws-sdk/client-s3');
+  const client = _getR2Client();
+  await client.send(new PutObjectCommand({
+    Bucket: env.R2_BUCKET, Key: key, Body: buffer, ContentType: contentType,
+    CacheControl: 'public, max-age=86400',
+  }));
+  return key;
+}
+
 // ─── Private helpers ────────────────────────────────────────────────────────
 
 async function _saveLocally(buffer, filename, keyPrefix = 'contracts') {
@@ -199,4 +218,4 @@ async function getAvatarUrl(key, { expiresIn = 21600 } = {}) {
   }
 }
 
-module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, getUploadDir, getAvatarUrl };
+module.exports = { uploadPDF, getPdfDownloadUrl, generateUploadUrl, generateDownloadUrl, saveFile, putBuffer, getUploadDir, getAvatarUrl };

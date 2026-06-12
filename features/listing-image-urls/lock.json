@@ -1,0 +1,27 @@
+{
+  "feature": "listing-image-urls",
+  "area": "backend-listing / brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (2026-06-12) — 'pls go' after confirming ingest-into-R2 + bad-URL-non-blocking decisions (AskUserQuestion)",
+  "approved_at": "2026-06-12",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING: Render (imageIngest.service + ingest-image endpoint + Excel image-URL ingest + storage.putBuffer) + Vercel (brand-web paste-URL inputs). No DB/schema/migration. New behaviour: outbound fetch of brand-supplied URLs — SSRF-hardened.",
+  "fix": "Add image-by-URL on both surfaces. Backend: SSRF-safe ingestImageFromUrl (http/https only; block private/loopback/link-local/multicast v4+v6+v4-mapped; image/* + 5MB/15s) → storage.putBuffer at brands/<id>/assets/ → brand_media_assets row → stable /v1/media/assets/:id; POST /listing/ingest-image (brand auth). Excel: Cover image URLs + Colour image URLs columns (auto from column model); import ingests each, failures NON-blocking → image_warnings + photo tray. Stepper: paste-URL field beside desktop upload in cover + per-colour. Ingested/uploaded/URL images all served identically.",
+  "related": ["project-listing-add-redesign", "features/listing-add-stepper", "features/listing-excel-bulk", "backend/src/services/imageProxy.service.js", "backend/src/controllers/mediaAsset.controller.js"],
+  "result": "IMPLEMENTED. Backend: imageIngest.service.js (SSRF guard + safe-fetch w/ redirect re-validation + asset create) + storage.putBuffer + POST /listing/ingest-image; listingBulk gains Cover/Colour image-URL columns; import ingests them non-blocking → image_warnings. Brand-web: paste-URL inputs in stepper cover + per-colour + listingApi.ingestImage. Awaiting founder go for Render+Vercel deploy + verify.",
+  "regression_proof": "scripts/test-image-ingest.js 28/28 (SSRF block/allow matrix, scheme, literal-IP, localhost). scripts/test-listing-bulk.js 17/17 (incl image-URL columns + cover/colour collection). Live: template carries both image columns (real leaf); ingest unauth 401. next build compiled (page 8.98kB). pnpm qa 79/79 GREEN (report 2026-06-12T05-49-37Z).",
+  "discipline": "Reuses imageProxy fetch shape + media-asset serve path; SSRF is the new trust boundary and is unit-tested. Ingest-to-R2 mirrors the codebase's existing IG-cache decision.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Implement -> SSRF test + bulk test + next build + pnpm qa -> explicit go for Render+Vercel -> founder verify -> flip released."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (2026-06-12) — delegated: 'pls go' after the full plan + decisions; paste-URL inputs are a small additive control on the locked stepper/excel surfaces",
+  "mockup_locked_at": "2026-06-12"
+}

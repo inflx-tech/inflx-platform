@@ -128,6 +128,8 @@ export const listingApi = {
   getNodeFacets: (nodeId) => api.get(`/listing/nodes/${nodeId}/facets`),
   getBrands: (vertical, q) => api.get(`/listing/brands?vertical=${encodeURIComponent(vertical)}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
   batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
+  // Ingest a pasted image URL into our R2 (contract: listing-image-urls).
+  ingestImage: (url) => api.post('/listing/ingest-image', { url }),
   // Excel bulk add (contract: listing-excel-bulk). Template is a public GET;
   // import is a multipart POST (mirrors uploadFileToGallery's transport).
   templateUrl: (nodeId) => `${API_BASE}/listing/nodes/${nodeId}/template.xlsx`,
