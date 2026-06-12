@@ -19,6 +19,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const taxonomy = require('../services/taxonomy.service');
+const bulk = require('../services/listingBulk.service');
 
 async function getBrandByUserId(userId) {
   const { rows } = await db.query(
@@ -75,6 +76,56 @@ function coverImage(it) {
   const v = Array.isArray(it.variants) ? it.variants : [];
   for (const cv of v) { const im = Array.isArray(cv.images) ? cv.images.filter(Boolean) : []; if (im[0]) return im[0]; }
   return null;
+}
+
+// Shared create path — insert a validated batch of items, reserving a
+// contiguous SKU block. Used by BOTH the UI batch-add and the Excel import so
+// they can never diverge. Caller validates with taxonomy.validateItem first.
+async function insertProducts(brand, node, items) {
+  const created = [];
+  await db.withTransaction(async (client) => {
+    const storeCode = await ensureStoreCode(client, brand);
+    // Atomically reserve a contiguous block of sequence numbers for this batch.
+    const { rows: [seqRow] } = await client.query(
+      `UPDATE brands SET product_seq = product_seq + $1 WHERE id = $2 RETURNING product_seq`,
+      [items.length, brand.id]);
+    let seq = seqRow.product_seq - items.length;
+    const customBrands = new Set();
+
+    for (const it of items) {
+      seq += 1;
+      const sku = (it.sku && String(it.sku).trim()) || `${storeCode}-${pad4(seq)}`;
+      const facets = (it.facets && typeof it.facets === 'object') ? { ...it.facets } : {};
+      const cover = Array.isArray(it.images) ? it.images.filter(Boolean) : [];
+      if (cover.length) facets._images = cover;
+      if (it.brand && String(it.brand).trim()) { facets.brand = String(it.brand).trim(); customBrands.add(facets.brand); }
+      const variantsJson = buildVariants(it, sku);
+
+      const { rows } = await client.query(
+        `INSERT INTO brand_products
+           (brand_id, name, price, sku, category_key, super_category, section,
+            image_url, description, stock, variants_json, category_node_id, facets, is_active)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13::jsonb,true)
+         RETURNING id, name, price, sku, category_node_id`,
+        [brand.id, String(it.name).trim(), Number(it.price), sku,
+         node.vertical, node.segment, node.category,
+         coverImage(it), it.description || null,
+         it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
+         JSON.stringify(variantsJson), node.id, JSON.stringify(facets)]
+      );
+      created.push(rows[0]);
+    }
+
+    // Capture custom (typed) brands into the directory — feeds the future flywheel.
+    for (const b of customBrands) {
+      await client.query(
+        `INSERT INTO listing_brands (vertical, name, source, status, usage_count)
+         VALUES ($1, $2, 'custom', 'active', 1)
+         ON CONFLICT (vertical, lower(name)) DO UPDATE SET usage_count = listing_brands.usage_count + 1`,
+        [node.vertical, b]);
+    }
+  });
+  return created;
 }
 
 // ── GET /listing/tree?vertical= ───────────────────────────────────────────────
@@ -139,49 +190,7 @@ const batchCreate = asyncHandler(async (req, res) => {
   });
   if (problems.length) throw new AppError('VALIDATION_ERROR', `${problems.length} item(s) invalid`, 422, JSON.stringify(problems));
 
-  const created = [];
-  await db.withTransaction(async (client) => {
-    const storeCode = await ensureStoreCode(client, brand);
-    // Atomically reserve a contiguous block of sequence numbers for this batch.
-    const { rows: [seqRow] } = await client.query(
-      `UPDATE brands SET product_seq = product_seq + $1 WHERE id = $2 RETURNING product_seq`,
-      [items.length, brand.id]);
-    let seq = seqRow.product_seq - items.length;
-    const customBrands = new Set();
-
-    for (const it of items) {
-      seq += 1;
-      const sku = (it.sku && String(it.sku).trim()) || `${storeCode}-${pad4(seq)}`;
-      const facets = (it.facets && typeof it.facets === 'object') ? { ...it.facets } : {};
-      const cover = Array.isArray(it.images) ? it.images.filter(Boolean) : [];
-      if (cover.length) facets._images = cover;
-      if (it.brand && String(it.brand).trim()) { facets.brand = String(it.brand).trim(); customBrands.add(facets.brand); }
-      const variantsJson = buildVariants(it, sku);
-
-      const { rows } = await client.query(
-        `INSERT INTO brand_products
-           (brand_id, name, price, sku, category_key, super_category, section,
-            image_url, description, stock, variants_json, category_node_id, facets, is_active)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$13::jsonb,true)
-         RETURNING id, name, price, sku, category_node_id`,
-        [brand.id, String(it.name).trim(), Number(it.price), sku,
-         node.vertical, node.segment, node.category,
-         coverImage(it), it.description || null,
-         it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
-         JSON.stringify(variantsJson), node.id, JSON.stringify(facets)]
-      );
-      created.push(rows[0]);
-    }
-
-    // Capture custom (typed) brands into the directory — feeds the future flywheel.
-    for (const b of customBrands) {
-      await client.query(
-        `INSERT INTO listing_brands (vertical, name, source, status, usage_count)
-         VALUES ($1, $2, 'custom', 'active', 1)
-         ON CONFLICT (vertical, lower(name)) DO UPDATE SET usage_count = listing_brands.usage_count + 1`,
-        [node.vertical, b]);
-    }
-  });
+  const created = await insertProducts(brand, node, items);
 
   return success(res, {
     node: { id: node.id, segment: node.segment, category: node.category, name: node.name },
@@ -191,4 +200,62 @@ const batchCreate = asyncHandler(async (req, res) => {
   }, 201);
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate };
+// ── GET /listing/nodes/:id/template.xlsx ──────────────────────────────────────
+// Live-generate a per-leaf Excel template from the leaf's CURRENT facets, so a
+// spec change auto-propagates to the sheet (contract: listing-excel-bulk).
+const downloadTemplate = asyncHandler(async (req, res) => {
+  const node = await taxonomy.getNode(req.params.id);
+  if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  if (!node.is_leaf) throw new AppError('VALIDATION_ERROR', 'Templates exist only for leaf item types', 422, 'id');
+  const facets = await taxonomy.getNodeFacets(node);
+  const wb = bulk.buildTemplateWorkbook(node, facets, new Date());
+
+  const fname = `${String(node.name || 'listing').replace(/[^A-Za-z0-9]+/g, '-')}-template.xlsx`;
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${fname}"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+// ── POST /listing/nodes/:id/import (multipart file) ───────────────────────────
+// Parse → group row-per-variant → validate against CURRENT specs (same
+// taxonomy.validateItem as the UI) → all-or-nothing → insertProducts.
+const importProducts = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const node = await taxonomy.getNode(req.params.id);
+  if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  if (!node.is_leaf) throw new AppError('VALIDATION_ERROR', 'Products can only be added under a leaf node', 422, 'id');
+  if (!req.file || !req.file.buffer) throw new AppError('VALIDATION_ERROR', 'No file uploaded (field "file")', 422, 'file');
+
+  const facets = await taxonomy.getNodeFacets(node);
+  const rows = await bulk.parseRows(req.file);
+  if (!rows.length) throw new AppError('VALIDATION_ERROR', 'The file has no product rows', 422, 'file');
+
+  const { items, fileErrors } = bulk.buildItems(rows, node, facets);
+  if (fileErrors.length) throw new AppError('VALIDATION_ERROR', fileErrors.join(' '), 422, JSON.stringify({ file_errors: fileErrors }));
+  if (items.length > 200) throw new AppError('VALIDATION_ERROR', 'Max 200 products per upload — split into smaller files', 422, 'items');
+
+  // Per-row validation, mapped back to spreadsheet row numbers. All-or-nothing.
+  const problems = [];
+  items.forEach((it) => {
+    const errs = taxonomy.validateItem(node, facets, it);
+    if (errs.length) problems.push({ rows: it.__rows, name: it.name || '(unnamed)', errors: errs });
+  });
+  if (problems.length) {
+    throw new AppError('VALIDATION_ERROR', `${problems.length} product(s) need fixing — nothing was saved`, 422, JSON.stringify({ row_errors: problems }));
+  }
+
+  const clean = items.map(({ __rows, ...it }) => it);
+  const created = await insertProducts(brand, node, clean);
+
+  return success(res, {
+    node: { id: node.id, segment: node.segment, category: node.category, name: node.name },
+    created_count: created.length,
+    products: created,                       // id + sku → drives the post-import photo tray
+    needs_photos: created.map(p => p.id),
+  }, 201);
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts };

@@ -51,6 +51,12 @@ export default function DrilldownListingPage() {
   const [draft, setDraft] = useState(blankDraft());
   const [step, setStep] = useState(1);          // 1 Basics · 2 Variants · 3 Details · 4 Review
   const [moreOpen, setMoreOpen] = useState(false); // step-3 optional facets (collapsed by default)
+  const [mode, setMode] = useState('one');      // 'one' = stepper · 'bulk' = Excel (contract: listing-excel-bulk)
+  const [importing, setImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState(null);  // per-product row errors
+  const [importFileErr, setImportFileErr] = useState('');  // file-level (stale template etc.)
+  const [imported, setImported] = useState([]);            // just-created products → photo tray
+  const [trayUploading, setTrayUploading] = useState('');
   const [items, setItems] = useState([]);
   const [uploading, setUploading] = useState('');
   const [saving, setSaving] = useState(false);
@@ -88,6 +94,7 @@ export default function DrilldownListingPage() {
       setLeaf({ ...node, size_system: r.data.node.size_system, size_required: r.data.node.size_required });
       setFacets((r.data.facets || []).filter(f => f.facet_key !== 'images' && f.facet_key !== 'price'));
       setItems([]); setDraft(blankDraft()); setStep(1); setMoreOpen(false);
+      setMode('one'); setImported([]); setImportErrors(null); setImportFileErr('');
       setCrumb(c => [...c, { name: node.name, children: level }]);
     } else {
       setCrumb(c => [...c, { name: node.name, children: level }]);
@@ -290,6 +297,38 @@ export default function DrilldownListingPage() {
     } else setErr(r.error?.message || 'Save failed');
   };
 
+  // ── Excel bulk add ──────────────────────────────────────────────────────
+  async function handleImport(file) {
+    if (!file) return;
+    setImporting(true); setImportErrors(null); setImportFileErr(''); setErr(''); setOk('');
+    const r = await listingApi.importProducts(leaf.id, file);
+    setImporting(false);
+    if (r.ok) {
+      const created = r.data?.products || [];
+      setImported(created);
+      setOk(`✓ ${r.data?.created_count} product(s) created under ${leaf.name} — add photos below`);
+      setCounts(c => ({ ...c, [leaf.id]: (c[leaf.id] || 0) + (r.data?.created_count || 0) }));
+    } else {
+      let parsed = null;
+      try { parsed = r.error?.field ? JSON.parse(r.error.field) : null; } catch { /* not json */ }
+      if (parsed?.row_errors) setImportErrors(parsed.row_errors);
+      else if (parsed?.file_errors) setImportFileErr(parsed.file_errors.join(' '));
+      else setImportFileErr(r.error?.message || 'Import failed');
+    }
+  }
+
+  async function addTrayPhoto(productId, fileList) {
+    const files = Array.from(fileList || []); if (!files.length) return;
+    setTrayUploading(productId);
+    const r = await uploadFileToGallery(files[0], { title: files[0].name, tags: ['listing'] });
+    if (r.asset?.id) {
+      const url = `${API_BASE}/media/assets/${r.asset.id}`;
+      await brandApi.updateProduct(productId, { image_url: url });
+      setImported(list => list.map(p => p.id === productId ? { ...p, image_url: url } : p));
+    }
+    setTrayUploading('');
+  }
+
   const vlabel = vertical[0].toUpperCase() + vertical.slice(1);
   if (loading) return <div className="lst" style={{ padding: 24 }}><style>{CSS}</style>Loading {vlabel} categories…</div>;
 
@@ -333,6 +372,13 @@ export default function DrilldownListingPage() {
           <div className="phead">Add {leaf.name}{counts[leaf.id] ? <span className="done">· {counts[leaf.id]} already added</span> : null}</div>
           <div className="sub" style={{ marginBottom: 4 }}>{leaf.segment}{leaf.category && leaf.category !== leaf.segment ? ` › ${leaf.category}` : ''} › {leaf.name}</div>
 
+          {/* Entry mode — one-by-one (stepper) or bulk Excel */}
+          <div className="bulktabs">
+            <span className={'btab' + (mode === 'one' ? ' on' : '')} onClick={() => setMode('one')}>Add one-by-one</span>
+            <span className={'btab' + (mode === 'bulk' ? ' on' : '')} onClick={() => setMode('bulk')}>Bulk add (Excel)</span>
+          </div>
+
+          {mode === 'one' && (<>
           {/* Progress header — steps derive from facet_role (② hidden when no variants) */}
           <div className="steps">
             {STEP_DEFS.map((sd, i) => (
@@ -481,6 +527,59 @@ export default function DrilldownListingPage() {
               </button>
             </>
           )}
+          </>)}
+
+          {mode === 'bulk' && (
+            <div className="bulkwrap">
+              <div className="brow">
+                <div className="bcard">
+                  <div className="bcn">1 · Download template</div>
+                  <div className="bcd">An Excel built for <b>this item type's current specs</b> — with dropdowns where options are fixed.</div>
+                  <a className="btn yellow" href={listingApi.templateUrl(leaf.id)}>⬇ {leaf.name}-template.xlsx</a>
+                </div>
+                <div className="bcard">
+                  <div className="bcn">2 · Upload filled file</div>
+                  <div className="bcd">One row per colour+size. We check every row, then create them all — or show what to fix.</div>
+                  <label className={'btn ink' + (importing ? ' dis' : '')} style={{ display: 'inline-block', cursor: 'pointer' }}>
+                    {importing ? 'Checking…' : '⬆ Choose .xlsx / .csv'}
+                    <input type="file" accept=".xlsx,.csv" style={{ display: 'none' }} disabled={importing}
+                      onChange={e => handleImport(e.target.files?.[0])} />
+                  </label>
+                </div>
+              </div>
+              <div className="bnote"><b>Auto-updating:</b> change a spec for this item type and the template here changes too — the sheet is always today's specs (stamped on the Instructions tab).</div>
+
+              {importFileErr && <div className="err">{importFileErr}</div>}
+              {importErrors && (
+                <div className="err">
+                  <div style={{ fontWeight: 800, marginBottom: 6 }}>{importErrors.length} product(s) need fixing — nothing was saved</div>
+                  {importErrors.slice(0, 25).map((p, i) => (
+                    <div key={i} className="erow"><b>{p.name}</b>{p.rows?.length ? ` (row ${p.rows.join(', ')})` : ''} — {p.errors.join('; ')}</div>
+                  ))}
+                </div>
+              )}
+
+              {imported.length > 0 && (
+                <>
+                  <div className="sec">Add photos — {imported.length} just imported</div>
+                  {imported.map(p => (
+                    <div key={p.id} className="trow">
+                      {p.image_url ? <img className="tph" src={p.image_url} alt="" /> : <span className="tph ph">＋</span>}
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{p.name}</div>
+                        <div className="sub">{p.sku}{p.image_url ? ' · photo added' : ' · needs photos'}</div>
+                      </div>
+                      <label className="btn ghost" style={{ marginLeft: 'auto', cursor: 'pointer' }}>
+                        {trayUploading === p.id ? 'Uploading…' : '＋ Add photos'}
+                        <input type="file" accept="image/*" style={{ display: 'none' }}
+                          onChange={e => addTrayPhoto(p.id, e.target.files)} />
+                      </label>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -559,4 +658,18 @@ const CSS = `
 .lst .revrow{margin-top:8px}
 .lst .pill{display:inline-block;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin:0 4px 4px 0}
 .lst .pill.v{background:var(--variant-pale);color:var(--variant);border-color:#e7d3fb}
+.lst .bulktabs{display:flex;gap:6px;margin:8px 0 14px}
+.lst .btab{padding:8px 15px;border-radius:9px;font-size:12px;font-weight:800;border:1px solid var(--border);background:var(--bg);color:var(--muted2);cursor:pointer;user-select:none}
+.lst .btab.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.lst .bulkwrap{margin-top:4px}
+.lst .brow{display:flex;gap:12px;flex-wrap:wrap}
+.lst .bcard{flex:1;min-width:230px;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--bg)}
+.lst .bcn{font-family:'Outfit';font-weight:800;font-size:14px;margin-bottom:3px}
+.lst .bcd{font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:11px}
+.lst .bnote{margin-top:12px;font-size:11px;color:var(--yellow-text);background:var(--yellow-pale);border:1px solid #f0e1a8;border-radius:9px;padding:10px 12px;line-height:1.5}
+.lst .erow{font-size:12px;color:#7a2410;padding:3px 0;border-bottom:1px dashed #f0c4b4}
+.lst .erow:last-child{border-bottom:0}
+.lst .trow{display:flex;align-items:center;gap:11px;background:var(--white);border:1px solid var(--border);border-radius:11px;padding:9px 11px;margin-bottom:8px}
+.lst .tph{width:42px;height:42px;border-radius:9px;object-fit:cover;border:1px solid var(--border)}
+.lst .tph.ph{display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--border);color:var(--muted3);font-size:17px}
 `;

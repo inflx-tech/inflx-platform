@@ -128,6 +128,26 @@ export const listingApi = {
   getNodeFacets: (nodeId) => api.get(`/listing/nodes/${nodeId}/facets`),
   getBrands: (vertical, q) => api.get(`/listing/brands?vertical=${encodeURIComponent(vertical)}${q ? `&q=${encodeURIComponent(q)}` : ''}`),
   batchCreate: (payload) => api.post('/brands/me/products/batch', payload),
+  // Excel bulk add (contract: listing-excel-bulk). Template is a public GET;
+  // import is a multipart POST (mirrors uploadFileToGallery's transport).
+  templateUrl: (nodeId) => `${API_BASE}/listing/nodes/${nodeId}/template.xlsx`,
+  importProducts: async (nodeId, file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    const token = getToken();
+    try {
+      const res = await fetch(`${API_BASE}/listing/nodes/${nodeId}/import`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
+        body: fd,
+      });
+      const json = await res.json().catch(() => ({}));
+      return { ok: res.ok, status: res.status, data: json.data, error: json.error };
+    } catch (e) {
+      return { ok: false, error: { message: e.message } };
+    }
+  },
 };
 
 // Location capture for registration (contract: brand-register-location-picker).

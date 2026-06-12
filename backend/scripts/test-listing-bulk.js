@@ -1,0 +1,86 @@
+'use strict';
+
+/**
+ * Round-trip test for the Excel bulk-add service (contract: listing-excel-bulk).
+ * No DB/HTTP — exercises template build → fill → parse → group → validateItem.
+ *   node scripts/test-listing-bulk.js
+ */
+const ExcelJS = require('exceljs');
+const bulk = require('../src/services/listingBulk.service');
+const taxonomy = require('../src/services/taxonomy.service');
+
+let pass = 0, fail = 0;
+const ok = (c, m) => { if (c) { pass++; console.log('  ✓', m); } else { fail++; console.log('  ✗', m); } };
+
+const node = { id: 'node-saree', vertical: 'fashion', segment: 'Women', category: 'Ethnic Wear', name: 'Saree', is_leaf: true, size_system: 'free_size' };
+const facets = [
+  { facet_key: 'color_tone', label: 'Colour / Tone', facet_role: 'variant', input_type: 'multi_select', required: 'required', allowed_values: ['Maroon', 'Teal', 'Gold'] },
+  { facet_key: 'size', label: 'Size', facet_role: 'variant', input_type: 'multi_select', required: 'optional', allowed_values: [] },
+  { facet_key: 'fabric', label: 'Fabric / Material', facet_role: 'descriptive', input_type: 'single_select', required: 'required', allowed_values: ['Silk', 'Cotton', 'Linen'] },
+  { facet_key: 'occasion', label: 'Occasion', facet_role: 'discovery', input_type: 'multi_select', required: 'optional', allowed_values: ['Wedding', 'Festive', 'Casual'] },
+];
+
+// Fill an in-memory workbook the way a brand would, using the live column model.
+async function filledBuffer(dropHeaders = []) {
+  const { cols } = bulk.columnModel(node, facets);
+  const headers = cols.map(c => c.header).filter(h => !dropHeaders.includes(h));
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Products');
+  ws.addRow(headers);
+  const set = (obj) => headers.map(h => obj[h] ?? '');
+  // One product, two colours (row-per-variant).
+  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Maroon', Size: 'Free', 'Variant stock': '12', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive' }));
+  ws.addRow(set({ Name: 'Kanjivaram Silk', Price: '4200', Brand: 'Charvitha', Colour: 'Teal', Size: 'Free', 'Variant stock': '8', 'Fabric / Material': 'Silk', Occasion: 'Wedding,Festive' }));
+  return wb.xlsx.writeBuffer();
+}
+
+(async () => {
+  console.log('listing-bulk round-trip');
+
+  // 1) Template columns
+  const wb = bulk.buildTemplateWorkbook(node, facets, new Date('2026-06-12T00:00:00Z'));
+  const ws = wb.getWorksheet('Products');
+  const hdr = ws.getRow(1).values.filter(Boolean).map(s => String(s));
+  ok(hdr.some(h => /Name \*/.test(h)) && hdr.some(h => /Price \*/.test(h)), 'template marks Name/Price required');
+  ok(hdr.some(h => /Colour \*/.test(h)) && hdr.includes('Size') && hdr.includes('Variant stock'), 'template has row-per-variant columns');
+  ok(!!wb.getWorksheet('Instructions'), 'template has Instructions sheet');
+
+  // 2) Parse + group a filled file
+  const buf = await filledBuffer();
+  const rows = await bulk.parseRows({ originalname: 'saree.xlsx', buffer: buf });
+  ok(rows.length === 2, `parsed 2 rows (got ${rows.length})`);
+  const { items, fileErrors } = bulk.buildItems(rows, node, facets);
+  ok(fileErrors.length === 0, 'no file errors on a good sheet');
+  ok(items.length === 1, `2 colour rows grouped into 1 product (got ${items.length})`);
+  const it = items[0] || {};
+  ok(it.variants && it.variants.length === 2, 'item has 2 colour variants');
+  ok(JSON.stringify(it.facets.color_tone) === JSON.stringify(['Maroon', 'Teal']), 'color_tone facet = [Maroon, Teal]');
+  ok(Array.isArray(it.facets.occasion) && it.facets.occasion.length === 2, 'multi_select Occasion split to array');
+  ok(it.facets.fabric === 'Silk', 'single_select Fabric = Silk');
+  const vMaroon = (it.variants || []).find(v => v.color === 'Maroon');
+  ok(vMaroon && vMaroon.sizes[0].stock === '12', 'per-variant stock carried (Maroon Free = 12)');
+
+  // 3) validateItem (current specs) passes
+  const errs = taxonomy.validateItem(node, facets, it);
+  ok(errs.length === 0, `validateItem passes (errs: ${JSON.stringify(errs)})`);
+
+  // 4) Stale template — a now-required column missing → file error, nothing built
+  const buf2 = await filledBuffer(['Fabric / Material']);
+  const rows2 = await bulk.parseRows({ originalname: 'stale.xlsx', buffer: buf2 });
+  const r2 = bulk.buildItems(rows2, node, facets);
+  ok(r2.fileErrors.length > 0 && /Fabric/.test(r2.fileErrors[0]), 'missing required column → re-download file error');
+
+  // 5) Bad dropdown value → per-item validation catches it
+  const { cols } = bulk.columnModel(node, facets);
+  const headers = cols.map(c => c.header);
+  const wbBad = new ExcelJS.Workbook(); const wsB = wbBad.addWorksheet('Products');
+  wsB.addRow(headers);
+  wsB.addRow(headers.map(h => ({ Name: 'X', Price: '100', Colour: 'Maroon', Size: 'Free', 'Variant stock': '1', 'Fabric / Material': 'Silkk' }[h] ?? '')));
+  const rowsBad = await bulk.parseRows({ originalname: 'bad.xlsx', buffer: await wbBad.xlsx.writeBuffer() });
+  const rb = bulk.buildItems(rowsBad, node, facets);
+  const ebad = taxonomy.validateItem(node, facets, rb.items[0]);
+  ok(ebad.some(e => /Fabric/i.test(e)), 'invalid Fabric value rejected by validateItem');
+
+  console.log(`\nTOTALS: ${pass} pass / ${fail} fail`);
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error('ERR', e); process.exit(1); });

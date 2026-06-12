@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bulk Add via Excel (mockup)</title>
+<style>
+  :root{--white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;
+    --ink:#0A0A0A;--ink2:#1F1F22;--muted:#52525B;--muted2:#71717A;--muted3:#A1A1AA;--border:#E4E4E7;
+    --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;--danger:#E8401A;--danger-pale:#FDEEE9;
+    --variant:#7E22CE;--variant-pale:#F3E8FF;--info:#1D4ED8;--info-pale:#DBEAFE;}
+  *{box-sizing:border-box}
+  body{font-family:'Plus Jakarta Sans','Outfit',system-ui,sans-serif;color:var(--ink);font-size:13px;
+    background:var(--bg2);margin:0;padding:24px}
+  h1{font-family:'Outfit';font-size:22px;font-weight:700;letter-spacing:-.3px;margin:0 0 2px}
+  .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0 4px}
+  .sub{font-size:12px;color:var(--muted2);max-width:720px}
+  .crumb{font-size:12px;color:var(--muted2);font-weight:600;margin:12px 0}
+  .crumb b{color:var(--ink)}
+  .tabs{display:flex;gap:6px;margin:14px 0}
+  .tab{padding:9px 16px;border-radius:10px 10px 0 0;font-size:13px;font-weight:800;border:1px solid var(--border);
+    border-bottom:0;background:var(--bg);color:var(--muted2);cursor:default}
+  .tab.on{background:var(--white);color:var(--ink)}
+  .panel{background:var(--white);border:1px solid var(--border);border-radius:0 14px 14px 14px;padding:18px;max-width:560px}
+  .flowrow{display:flex;gap:14px;flex-wrap:wrap}
+  .card{flex:1;min-width:220px;border:1px solid var(--border);border-radius:12px;padding:15px;background:var(--bg)}
+  .cn{font-family:'Outfit';font-weight:800;font-size:14px;margin-bottom:3px}
+  .cd{font-size:11px;color:var(--muted2);line-height:1.5;margin-bottom:11px}
+  .btn{padding:11px 16px;border:0;border-radius:11px;font-size:13px;font-weight:800;cursor:default;display:inline-block}
+  .btn.yellow{background:var(--yellow);color:var(--ink)} .btn.ink{background:var(--ink);color:var(--yellow)}
+  .btn.ghost{background:var(--white);border:1px solid var(--border);color:var(--ink2)}
+  .drop{border:1.5px dashed var(--border);border-radius:10px;padding:18px;text-align:center;color:var(--muted3);
+    font-size:12px;font-weight:600;background:var(--white)}
+  .note{margin-top:14px;font-size:11px;color:var(--muted2);background:var(--yellow-pale);border:1px solid #f0e1a8;
+    border-radius:9px;padding:10px 12px;line-height:1.5}
+  .seclbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:800;margin:20px 0 8px}
+  /* sheet preview */
+  table{border-collapse:collapse;font-size:11px;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  th,td{border:1px solid var(--border);padding:5px 9px;text-align:left;white-space:nowrap}
+  th{background:var(--bg2);font-weight:800;font-size:10px}
+  th.req{color:var(--danger)} th.var{color:var(--variant)}
+  td.ex{color:var(--muted3);font-style:italic}
+  .dd::after{content:" ▾";color:var(--muted3)}
+  /* error report */
+  .err{background:var(--danger-pale);border:1px solid #f3c0b0;border-radius:11px;padding:13px;max-width:560px}
+  .err .h{font-weight:800;color:#9a2a12;margin-bottom:7px}
+  .erow{font-size:12px;color:#7a2410;padding:3px 0;border-bottom:1px dashed #f0c4b4}
+  .erow b{font-weight:800}
+  /* success + photo tray */
+  .ok{background:var(--success-pale);border:1px solid #9be3c4;border-radius:11px;padding:13px;color:var(--success-text);
+    font-weight:700;max-width:560px;margin-bottom:12px}
+  .tray{max-width:560px}
+  .trow{display:flex;align-items:center;gap:11px;background:var(--white);border:1px solid var(--border);
+    border-radius:11px;padding:9px 11px;margin-bottom:8px}
+  .ph{width:42px;height:42px;border-radius:9px;border:1.5px dashed var(--border);display:flex;align-items:center;
+    justify-content:center;color:var(--muted3);font-size:17px}
+  .tname{font-weight:700;font-size:13px} .tmeta{font-size:11px;color:var(--muted2)}
+  .pill{display:inline-block;background:var(--variant-pale);color:var(--variant);border:1px solid #e7d3fb;border-radius:6px;
+    padding:1px 7px;font-size:10px;font-weight:700;margin-left:5px}
+  .addp{margin-left:auto;font-size:12px;font-weight:800;color:var(--ink2);background:var(--bg2);border:1px solid var(--border);
+    border-radius:9px;padding:7px 12px}
+</style>
+</head>
+<body>
+  <h1>Add products — Fashion</h1>
+  <div class="rule"></div>
+  <div class="crumb">Fashion › Women › Ethnic Wear › <b>Saree</b></div>
+
+  <div class="tabs">
+    <span class="tab">Add one-by-one</span>
+    <span class="tab on">Bulk add (Excel)</span>
+  </div>
+
+  <div class="panel">
+    <div class="flowrow">
+      <div class="card">
+        <div class="cn">1 · Download template</div>
+        <div class="cd">An Excel built for <b>this leaf's current specs</b> — colour, size, fabric, pattern… with dropdowns where options are fixed.</div>
+        <span class="btn yellow">⬇ Saree-template.xlsx</span>
+      </div>
+      <div class="card">
+        <div class="cn">2 · Upload filled file</div>
+        <div class="cd">One row per colour+size. We check every row, then create them all (or show you exactly what to fix).</div>
+        <div class="drop">⬆ Drop .xlsx / .csv here</div>
+      </div>
+    </div>
+    <div class="note"><b>Auto-updating:</b> if a spec is added or removed for this item type, the template here changes automatically — nothing to rebuild. The sheet you download is always today's specs (stamped on the Instructions tab).</div>
+  </div>
+
+  <div class="seclbl">What the downloaded sheet looks like (row-per-variant)</div>
+  <table>
+    <tr><th class="req">Name *</th><th class="req">Price *</th><th>Brand</th><th class="req var">Colour *</th><th class="var">Size</th><th class="var">Variant stock</th><th class="req">Fabric *</th><th class="dd">Pattern</th><th class="dd">Occasion</th></tr>
+    <tr><td class="ex">Kanjivaram Silk</td><td class="ex">4200</td><td class="ex">Charvitha</td><td class="ex">Maroon</td><td class="ex">Free</td><td class="ex">12</td><td class="ex">Silk</td><td class="ex">Zari</td><td class="ex">Wedding</td></tr>
+    <tr><td class="ex">Kanjivaram Silk</td><td class="ex">4200</td><td class="ex">Charvitha</td><td class="ex">Teal</td><td class="ex">Free</td><td class="ex">8</td><td class="ex">Silk</td><td class="ex">Zari</td><td class="ex">Wedding</td></tr>
+  </table>
+  <div class="sub" style="margin-top:6px">Same Name+Price+specs across rows → grouped into one product with a 2-colour stock matrix. Bold/★ headers are required; ▾ columns are pick-lists.</div>
+
+  <div class="seclbl">If something's wrong — nothing saves, you get a row-by-row list</div>
+  <div class="err">
+    <div class="h">⚠ 23 of 25 rows OK — fix 2 and re-upload</div>
+    <div class="erow"><b>Row 7</b> — Fabric “Silkk” isn’t an allowed value (did you mean Silk?)</div>
+    <div class="erow"><b>Row 12</b> — Price is missing</div>
+  </div>
+
+  <div class="seclbl">After a clean upload — add photos in a quick pass</div>
+  <div class="ok">✓ 24 products created under Saree · SKUs CHAR-0007 … CHAR-0030</div>
+  <div class="tray">
+    <div class="trow"><div class="ph">＋</div><div><div class="tname">Kanjivaram Silk Saree <span class="pill">2 colours</span></div><div class="tmeta">₹4,200 · needs photos</div></div><span class="addp">＋ Add photos</span></div>
+    <div class="trow"><div class="ph">＋</div><div><div class="tname">Banarasi Saree <span class="pill">3 colours</span></div><div class="tmeta">₹6,800 · needs photos</div></div><span class="addp">＋ Add photos</span></div>
+  </div>
+</body>
+</html>
