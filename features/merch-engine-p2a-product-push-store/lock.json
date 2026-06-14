@@ -1,0 +1,22 @@
+{
+  "feature": "merch-engine-p2a-product-push-store",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "default_visibility": "pushed=true (default ON / visible — founder chose A, behaviour-preserving)",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-14",
+  "notes": "Step 5 gate. Phase 2a (visibility gate, part 1 of 3). Product pushed_to_store flag + gate the BRAND STORE only (platform pages = 2c, creator store = 2b). DECISION TO CONFIRM: default pushed=true (parity, recommended) vs false (explicit opt-in). UI-governed (brand product toggle) → mockup + mockup_locked before frontend. No implementation until approved=true. Migration + brand-store query are production-impacting → explicit go before deploy.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "notes": "pnpm qa 79/79 GREEN; DB lane migrations 100/100 incl 101 (0 err); +38 DB-lane failures classified = pre-existing tier-cascade (campaign-create 500 at test setup, follower-store.test.js:78), NOT this change (no pushed_to_store/SQL errors, 0 flaky signatures). brand-web build exit 0. Migration 101 applied to PROD 2026-06-14 — 85/85 products pushed=true (parity, nothing vanishes). released stays false pending founder prod verification + typed-FleetRow toggle follow-up."
+  }
+}

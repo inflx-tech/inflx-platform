@@ -405,7 +405,7 @@ const listProducts = asyncHandler(async (req, res) => {
     `SELECT id, name, description, price, category_key, sku, section,
             veg_flag, duration_mins, variants_json, image_url,
             is_active, is_bookable, stock, availability_json,
-            booking_config_json, tags, created_at, updated_at
+            booking_config_json, tags, pushed_to_store, created_at, updated_at
      FROM brand_products
      WHERE ${conditions.join(' AND ')}
      ORDER BY section NULLS LAST, name ASC`,
@@ -434,7 +434,7 @@ const createProduct = asyncHandler(async (req, res) => {
     is_bookable, stock,
     availability_json, booking_config_json,
     master_vehicle_id, master_service_id, master_dish_id,
-    tags,
+    tags, pushed_to_store,
   } = req.body;
 
   // For master-catalogue activations, skip schema validation (name/image come from master)
@@ -453,8 +453,8 @@ const createProduct = asyncHandler(async (req, res) => {
        (brand_id, name, description, price, category_key, section,
         veg_flag, duration_mins, variants_json, image_url, sku,
         is_active, is_bookable, stock, availability_json, booking_config_json,
-        master_vehicle_id, master_service_id, master_dish_id, tags)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18,$19)
+        master_vehicle_id, master_service_id, master_dish_id, tags, pushed_to_store)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18,$19,$20)
      RETURNING *`,
     [
       brand.id,
@@ -476,6 +476,7 @@ const createProduct = asyncHandler(async (req, res) => {
       master_service_id ? parseInt(master_service_id, 10) : null,
       master_dish_id ? parseInt(master_dish_id, 10) : null,
       tagsService.sanitizeProductTags(tags),
+      pushed_to_store !== false,
     ]
   );
 
@@ -554,7 +555,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   const ALLOWED = ['name','description','price','section','veg_flag','duration_mins',
                    'variants_json','image_url','sku','is_active','is_bookable','stock',
-                   'availability_json','booking_config_json'];
+                   'availability_json','booking_config_json','pushed_to_store'];
 
   const updates = {};
   ALLOWED.forEach(f => {

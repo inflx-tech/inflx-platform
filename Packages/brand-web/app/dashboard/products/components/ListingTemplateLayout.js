@@ -264,6 +264,17 @@ export default function ListingTemplateLayout({
     }
   }
 
+  // Phase 2a — push/un-push a product to the brand store (only pushed products
+  // show in the storefront; the product stays listed + allocatable regardless).
+  async function handleTogglePush(productId, next) {
+    try {
+      await brandApi.patch(`/brands/me/products/${productId}`, { pushed_to_store: next });
+      if (onRefreshProducts) await onRefreshProducts();
+    } catch (e) {
+      alert('Failed to update: ' + (e.message || e));
+    }
+  }
+
   // ── Step component dispatch ────────────────────────────────────────────────
 
   function renderStep() {
@@ -401,6 +412,7 @@ export default function ListingTemplateLayout({
           labelPlural={labelPlural}
           icon={template.icon}
           onRemove={handleRemoveProduct}
+          onTogglePush={handleTogglePush}
           onAdd={() => { if (!hasProductStep) return gotoProductWizard(); setView('add'); resetWizard(); }}
           onUpload={() => { if (!hasProductStep) return gotoProductWizard(); setView('upload'); }}
         />
@@ -448,7 +460,7 @@ export default function ListingTemplateLayout({
 
 // ── Subviews ────────────────────────────────────────────────────────────────
 
-function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRemove, onAdd, onUpload }) {
+function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRemove, onTogglePush, onAdd, onUpload }) {
   if (!products || products.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -473,24 +485,25 @@ function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRem
     <div className="space-y-3">
       {products.map(product => (
         FleetRow
-          ? <FleetRow key={product.id} product={product} onRemove={() => onRemove(product.id)} />
-          : <DefaultFleetRow key={product.id} product={product} icon={icon} onRemove={() => onRemove(product.id)} />
+          ? <FleetRow key={product.id} product={product} onRemove={() => onRemove(product.id)} onTogglePush={onTogglePush} />
+          : <DefaultFleetRow key={product.id} product={product} icon={icon} onRemove={() => onRemove(product.id)} onTogglePush={onTogglePush} />
       ))}
     </div>
   );
 }
 
-function DefaultFleetRow({ product, icon, onRemove }) {
+function DefaultFleetRow({ product, icon, onRemove, onTogglePush }) {
+  const pushed = product.pushed_to_store !== false;
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4">
+    <div className={`bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 ${pushed ? '' : 'opacity-60'}`}>
       <div className="w-20 h-14 bg-gray-100 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
         {icon || '📋'}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-gray-900">{product.name}</span>
-          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${product.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-            {product.is_active ? 'Live' : 'Inactive'}
+          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${pushed ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+            {pushed ? 'In store' : 'Hidden'}
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-0.5">{product.description || product.section}</p>
@@ -500,6 +513,16 @@ function DefaultFleetRow({ product, icon, onRemove }) {
           ₹{Number(product.price || 0).toLocaleString('en-IN')}
         </div>
       </div>
+      {onTogglePush && (
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          <span className="text-[9px] font-bold uppercase tracking-wide text-gray-400">In store</span>
+          <button type="button" onClick={() => onTogglePush(product.id, !pushed)}
+            className={`w-10 h-5 rounded-full relative transition-colors ${pushed ? 'bg-green-500' : 'bg-gray-300'}`}
+            title={pushed ? 'Showing in your store — tap to hide' : 'Hidden from your store — tap to show'}>
+            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${pushed ? 'translate-x-5' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+      )}
       <button onClick={onRemove}
         className="text-red-400 hover:text-red-600 text-xs font-semibold ml-2">Remove</button>
     </div>

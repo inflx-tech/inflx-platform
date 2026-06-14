@@ -411,6 +411,13 @@ function ProductFormModal({ schema, product, onSave, onClose, saving }) {
               </div>
               <button type="button" className={`toggle-sw${form.is_active !== false ? ' on' : ''}`} onClick={() => setField('is_active', !form.is_active)}><span className="dot" /></button>
             </div>
+            <div className="toggle">
+              <div>
+                <div className="toggle-l">Show in store</div>
+                <div className="toggle-s">Appears in your storefront</div>
+              </div>
+              <button type="button" className={`toggle-sw${form.pushed_to_store !== false ? ' on' : ''}`} onClick={() => setField('pushed_to_store', form.pushed_to_store === false)}><span className="dot" /></button>
+            </div>
           </div>
           <div className="modal-f">
             <button type="button" className="cancel" onClick={onClose}>Cancel</button>

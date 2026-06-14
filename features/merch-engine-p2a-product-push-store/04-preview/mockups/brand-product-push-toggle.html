@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFLX Brand — Show in store toggle</title>
+<style>
+  :root{
+    --ink:#0A0A0A; --muted:#52525B; --muted-2:#71717A; --muted-3:#A1A1AA;
+    --border:#E4E4E7; --bg:#FAFAFA; --bg2:#F4F4F5; --white:#FFFFFF;
+    --yellow:#F6B11E; --yellow-pale:#FFF7CC; --success:#10B981; --danger-text:#B91C1C;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;}
+  body{background:var(--bg);color:var(--ink);padding:32px;}
+  .wrap{max-width:680px;margin:0 auto;}
+  h1{font-size:22px;font-weight:800;}
+  .sub{font-size:13px;color:var(--muted-2);margin-top:6px;margin-bottom:18px;}
+  .rc{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px 16px;display:grid;grid-template-columns:44px 1fr auto auto;gap:14px;align-items:center;margin-bottom:8px;}
+  .rc.off{opacity:.65;}
+  .av{width:40px;height:40px;border-radius:9px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .nm{font-size:14px;font-weight:700;}
+  .meta{font-size:11.5px;color:var(--muted-2);margin-top:2px;}
+  .price{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;}
+  .store{display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .store .lab{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--muted-3);}
+  .sw{width:44px;height:24px;background:var(--muted-3);border-radius:99px;position:relative;cursor:pointer;border:0;}
+  .sw.on{background:var(--success);}
+  .sw .dot{position:absolute;top:2px;left:2px;width:20px;height:20px;background:#fff;border-radius:50%;transition:transform .15s;}
+  .sw.on .dot{transform:translateX(20px);}
+  .badge{font-size:9.5px;font-weight:800;padding:2px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.3px;}
+  .badge.live{background:#D1FAE5;color:#047857;}
+  .badge.hidden{background:var(--bg2);color:var(--muted-2);}
+  .note{margin-top:16px;background:var(--yellow-pale);border:1px solid rgba(246,177,30,.4);border-radius:12px;padding:14px;font-size:12.5px;color:#6B5A00;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>👗 Your Inventory</h1>
+  <div class="sub">Each product has a <b>Show in store</b> switch. On = it appears in your store; off = hidden from your store (still listed, still allocatable to creators).</div>
+
+  <div class="rc">
+    <span class="av">👗</span>
+    <div><div class="nm">Floral Summer Dress <span class="badge live">In store</span></div><div class="meta">Dresses · Maternity</div></div>
+    <span class="price">₹1,499</span>
+    <div class="store"><span class="lab">Show in store</span><button class="sw on"><span class="dot"></span></button></div>
+  </div>
+
+  <div class="rc">
+    <span class="av">👕</span>
+    <div><div class="nm">KASSUALLY Oversized Graphic Tee <span class="badge live">In store</span></div><div class="meta">Topwear</div></div>
+    <span class="price">₹1,199</span>
+    <div class="store"><span class="lab">Show in store</span><button class="sw on"><span class="dot"></span></button></div>
+  </div>
+
+  <div class="rc off">
+    <span class="av">👖</span>
+    <div><div class="nm">Levis Slim Jeans <span class="badge hidden">Hidden</span></div><div class="meta">Bottomwear</div></div>
+    <span class="price">₹899</span>
+    <div class="store"><span class="lab">Show in store</span><button class="sw"><span class="dot"></span></button></div>
+  </div>
+
+  <div class="note">
+    <b>Default: ON</b> — every product is shown in your store to start, exactly like today. Turn one <b>off</b> to hide it from your store while keeping it listed (and still usable in campaigns / creator allocations). Followers see only the ON ones in your store.
+  </div>
+</div>
+</body>
+</html>

@@ -337,7 +337,7 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
 
   // Full product catalog
   const { rows: products } = await db.query(
-    `SELECT * FROM brand_products WHERE brand_id = $1 AND is_active = true ORDER BY section, name`,
+    `SELECT * FROM brand_products WHERE brand_id = $1 AND is_active = true AND pushed_to_store = true ORDER BY section, name`,
     [brandId]
   );
 
