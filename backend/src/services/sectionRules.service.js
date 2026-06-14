@@ -37,7 +37,7 @@ const offerAdapter = require('./brandOffers.adapter');
 async function offersViaAdapter(ruleKey, ctx) {
   const items = await offerAdapter.fetchOffers({ limit: 200 });
   return offerAdapter.rankForRule(ruleKey, items, {
-    categoryKeys: categoryFilter(ctx.categoryKey),
+    categoryKeys: categoryFilter(ctx),
     followedIds: ctx.followedIds,
     influencerId: ctx.influencer && ctx.influencer.id,
     limit: ctx.limit || 8,
@@ -149,8 +149,20 @@ function cityBoost(city, paramIdx) {
     : '';
 }
 
-function categoryFilter(categoryKey) {
-  const cats = categoryKey && CATEGORY_MAP[categoryKey];
+// Resolve a category key → the list of brand.category values it covers.
+// The admin-managed linkage (follower_categories.member_categories, injected by
+// the engine as ctx.categoryCats) is the source of truth; the legacy hardcoded
+// CATEGORY_MAP is a fallback used only when the table had no row for the key
+// (e.g. legacy section_config category_key like 'dining', or a DB read failure).
+// Before this, the section engine consulted CATEGORY_MAP alone — and its keys
+// (dining/shopping/...) don't match the follower_categories keys (eat/shop/...),
+// so eat/shop/fitness/home silently resolved to null = NO filter = every
+// business leaked into the category screen (restaurants under "Shop", etc.).
+function categoryFilter(ctx) {
+  const fromDb = ctx && Array.isArray(ctx.categoryCats) ? ctx.categoryCats : null;
+  if (fromDb && fromDb.length) return fromDb;
+  const key = ctx && ctx.categoryKey;
+  const cats = key && CATEGORY_MAP[key];
   return cats && cats.length ? cats : null;
 }
 
@@ -171,7 +183,7 @@ async function topByEngagementOffers(ctx) {
   const { city, limit = 8, windowDays = 7, categoryKey } = ctx;
   const params = [];
   let p = 0;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catClause = cats ? `AND b.category = ANY($${++p})` : '';
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
@@ -203,7 +215,7 @@ async function topByConversionsOffers(ctx) {
   const { city, limit = 8, windowDays = 30, categoryKey } = ctx;
   const params = [];
   let p = 0;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catClause = cats ? `AND b.category = ANY($${++p})` : '';
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
@@ -328,7 +340,7 @@ async function allOffers(ctx) {
   const { city, limit = 30, categoryKey } = ctx;
   const params = [];
   let p = 0;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catClause = cats ? `AND b.category = ANY($${++p})` : '';
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
@@ -352,7 +364,7 @@ async function creatorPromotes(ctx) {
   if (offerAdapter.offersV2Enabled()) return offersViaAdapter('creator_promotes', ctx);
   const params = [influencer.id];
   let p = 1;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catClause = cats ? `AND b.category = ANY($${++p})` : '';
   if (cats) params.push(cats);
   const limIdx = ++p; params.push(limit);
@@ -373,7 +385,7 @@ async function creatorTopPicks(ctx) {
   if (offerAdapter.offersV2Enabled()) return offersViaAdapter('creator_top_picks', ctx);
   const params = [influencer.id];
   let p = 1;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catClause = cats ? `AND b.category = ANY($${++p})` : '';
   if (cats) params.push(cats);
   const winIdx = ++p; params.push(windowDays);
@@ -400,7 +412,7 @@ async function topByEngagementBrands(ctx) {
   const { city, limit = 8, windowDays = 30, categoryKey } = ctx;
   const params = [];
   let p = 0;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catIdx = cats ? ++p : null;
   if (cats) params.push(cats);
   const cityIdx = city ? ++p : null;
@@ -457,7 +469,7 @@ async function creatorBrands(ctx) {
   if (!influencer) return [];
   const params = [influencer.id];
   let p = 1;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const catClause = cats ? `AND b.category = ANY($${++p})` : '';
   if (cats) params.push(cats);
   const limIdx = ++p; params.push(limit);
@@ -524,7 +536,7 @@ function liveOfferExistsForInfluencer(infRef) {
 // Creators active in a vertical+city, ranked by reach.
 async function creatorsInCategory(ctx) {
   const { city, limit = 8, categoryKey } = ctx;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const params = [];
   let p = 0;
   const catIdx = cats ? ++p : null;
@@ -579,7 +591,7 @@ function mapListedProductItem(r) {
 async function businessesInCategory(ctx) {
   const { city, limit = 8, categoryKey } = ctx;
   const geo = hasCoords(ctx);
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const params = [];
   let p = 0;
   const catIdx = cats ? ++p : null;
@@ -619,7 +631,7 @@ async function businessesInCategory(ctx) {
 async function productsInCategory(ctx) {
   const { city, limit = 8, categoryKey } = ctx;
   const geo = hasCoords(ctx);
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const params = [];
   let p = 0;
   const catIdx = cats ? ++p : null;
@@ -658,7 +670,7 @@ async function productsInCategory(ctx) {
 // offer required — picks express what a creator promotes regardless of campaigns.
 async function creatorsInCategoryListing(ctx) {
   const { limit = 8, categoryKey } = ctx;
-  const cats = categoryFilter(categoryKey);
+  const cats = categoryFilter(ctx);
   const params = [];
   let p = 0;
   const catIdx = cats ? ++p : null;

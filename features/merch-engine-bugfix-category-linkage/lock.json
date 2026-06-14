@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-bugfix-category-linkage",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Prod bugfix (founder-reported). Section-engine category screen ignored the admin category->business linkage (follower_categories.member_categories) and used the hardcoded CATEGORY_MAP whose keys (dining/shopping/...) don't match the table keys (eat/shop/...), so eat/shop/fitness/home resolved to no-filter = every business leaked (restaurants under Shop). Fix: engine injects member_categories as ctx.categoryCats; categoryFilter prefers it, CATEGORY_MAP only as fallback. BACKEND-ONLY (not UI-governed). No migration. Parity for groom/travel/events + legacy category_key shelves. Production-impacting (backend) -> explicit go before deploy.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "notes": "pnpm qa 79/79 GREEN, gate 0; node --check clean; categoryFilter inline proof captured. released stays false pending founder prod verification (open Shop/Fashion -> no restaurants)."
+  }
+}

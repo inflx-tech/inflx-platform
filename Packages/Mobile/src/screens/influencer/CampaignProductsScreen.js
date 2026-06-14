@@ -23,18 +23,26 @@ const CATEGORY_EMOJI = {
 };
 
 /**
- * CampaignProductsScreen — influencer views assigned products and publishes to store.
+ * CampaignProductsScreen — influencer views products that are live in their store
+ * via this campaign, and optionally adds a personal recommendation per product.
  *
- * Flow:
- * 1. Shows all products assigned via the campaign
- * 2. Influencer adds personal note per product ("I love this deal!")
- * 3. Clicks "Publish to My Store" — product goes live on their influencer store
+ * Flow (post Phase 2b — auto-allocation):
+ * 1. Products allocated by this LIVE campaign are AUTOMATICALLY live in the
+ *    creator's store (resolveStore auto-fills from the live allocation). There is
+ *    no manual publish step — listing here = live in store.
+ * 2. The only action is the OPTIONAL personal recommendation (a note). Saving a
+ *    note attaches the creator's words to an already-live deal; removing the note
+ *    leaves the product live — it only clears the words.
+ *
+ * Reframe (2026-06-14, bug fix): dropped the redundant "Publish to my store" /
+ * "Remove from store" gate — it was an illusion after 2b (the product was live
+ * regardless of the note, and "remove" only deleted the note). Now: permanent
+ * LIVE badge + add/edit/remove RECOMMENDATION only. Note upsert/delete API
+ * unchanged (influencer_product_notes = annotation, not a visibility gate).
  *
  * Flow 32 restyle (2026-05-27): brandPalette + Outfit/Plus Jakarta Sans/JetBrains
  * Mono fonts. successPale Live badge + bg2 note cards + ink-bordered note input
- * + ink/yellow Outfit-Black UPPERCASE CTAs. Action emoji DROPPED from alerts +
- * CTAs + quick-publish copy per design call #4 (no 🎉/🚀/🔥). 4-API publish/
- * unpublish flow preserved verbatim.
+ * + ink/yellow Outfit-Black UPPERCASE CTAs. No action emoji per design call #4.
  */
 
 export default function CampaignProductsScreen({ navigation, route }) {
@@ -63,7 +71,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
 
   const onRefresh = () => { setRefreshing(true); loadProducts(); };
 
-  async function handlePublish(product) {
+  async function handleSaveNote(product) {
     const note = noteText.trim() || `Check out this ${product.name}!`;
     setSaving(true);
     try {
@@ -73,12 +81,12 @@ export default function CampaignProductsScreen({ navigation, route }) {
         note_text: note,
       });
       if (res.success || res.data) {
-        Alert.alert('Published', `${product.name} is now live on your store`);
+        Alert.alert('Recommendation saved', `Your note now shows with ${product.name}.`);
         setEditingNote(null);
         setNoteText('');
         loadProducts();
       } else {
-        Alert.alert('Failed', res.error?.message || 'Could not publish');
+        Alert.alert('Failed', res.error?.message || 'Could not save recommendation');
       }
     } catch (e) {
       Alert.alert('Error', e.message);
@@ -87,15 +95,16 @@ export default function CampaignProductsScreen({ navigation, route }) {
     }
   }
 
-  async function handleUnpublish(product) {
-    // Find the note and delete it
+  async function handleRemoveNote(product) {
+    // Delete the note only — the product stays live in the store (it's allocated
+    // by the live campaign; the note is just an annotation).
     try {
       const notesRes = await influencerApi.getProductNotes(data.campaign_id);
       const notes = notesRes.data?.notes || [];
       const note = notes.find(n => n.product_id === product.id);
       if (note) {
         await influencerApi.deleteProductNote(note.id);
-        Alert.alert('Removed', `${product.name} removed from your store`);
+        Alert.alert('Recommendation removed', `${product.name} is still live in your store — only your note was removed.`);
         loadProducts();
       }
     } catch (e) {
@@ -109,7 +118,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
 
   const products = data?.products || [];
   const brand = data?.brand;
-  const publishedCount = products.filter(p => p.is_published).length;
+  const notedCount = products.filter(p => p.influencer_note).length;
 
   return (
     <ScrollView style={s.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[P.yellow]} />}>
@@ -131,12 +140,12 @@ export default function CampaignProductsScreen({ navigation, route }) {
           <Text style={s.statLabel}>Products</Text>
         </View>
         <View style={s.stat}>
-          <Text style={[s.statVal, { color: P.successText }]}>{publishedCount}</Text>
-          <Text style={s.statLabel}>Published</Text>
+          <Text style={[s.statVal, { color: P.successText }]}>{products.length}</Text>
+          <Text style={s.statLabel}>Live in store</Text>
         </View>
         <View style={s.stat}>
-          <Text style={[s.statVal, { color: P.yellowText }]}>{products.length - publishedCount}</Text>
-          <Text style={s.statLabel}>Pending</Text>
+          <Text style={[s.statVal, { color: P.yellowText }]}>{notedCount}</Text>
+          <Text style={s.statLabel}>With note</Text>
         </View>
       </View>
 
@@ -144,7 +153,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
       <View style={s.infoBanner}>
         <Icon name="information-outline" size={20} color={P.yellowText} style={{ marginTop: 1 }} />
         <Text style={s.infoText}>
-          Add your personal recommendation to each product and publish it to your store. Your followers will see these deals!
+          These products are automatically live in your store while this campaign is running. Add a personal recommendation so followers see why you love each deal.
         </Text>
       </View>
 
@@ -178,16 +187,15 @@ export default function CampaignProductsScreen({ navigation, route }) {
                   {discount ? <Text style={s.discountBadge}>{discount}% OFF</Text> : null}
                 </View>
               </View>
-              {product.is_published && (
-                <View style={s.liveBadge}>
-                  <Icon name="check-bold" size={11} color={P.successText} />
-                  <Text style={s.liveBadgeText}>LIVE</Text>
-                </View>
-              )}
+              {/* Always live — the product is allocated by this live campaign. */}
+              <View style={s.liveBadge}>
+                <Icon name="check-bold" size={11} color={P.successText} />
+                <Text style={s.liveBadgeText}>LIVE</Text>
+              </View>
             </View>
 
-            {/* Published note */}
-            {product.is_published && product.influencer_note && !isEditing && (
+            {/* Saved recommendation */}
+            {product.influencer_note && !isEditing && (
               <View style={s.noteCard}>
                 <Text style={s.noteLabel}>YOUR RECOMMENDATION</Text>
                 <Text style={s.noteText}>"{product.influencer_note}"</Text>
@@ -195,18 +203,18 @@ export default function CampaignProductsScreen({ navigation, route }) {
                   <TouchableOpacity onPress={() => { setEditingNote(product.id); setNoteText(product.influencer_note); }}>
                     <Text style={s.noteEdit}>EDIT</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleUnpublish(product)}>
-                    <Text style={s.noteRemove}>REMOVE FROM STORE</Text>
+                  <TouchableOpacity onPress={() => handleRemoveNote(product)}>
+                    <Text style={s.noteRemove}>REMOVE NOTE</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
-            {/* Edit note / Publish form */}
-            {(isEditing || !product.is_published) && editingNote === product.id && (
+            {/* Add / edit recommendation form */}
+            {isEditing && (
               <View style={s.publishForm}>
                 <Text style={s.publishLabel}>
-                  {product.is_published ? 'UPDATE YOUR RECOMMENDATION' : 'ADD YOUR RECOMMENDATION'}
+                  {product.influencer_note ? 'UPDATE YOUR RECOMMENDATION' : 'ADD YOUR RECOMMENDATION'}
                 </Text>
                 <TextInput
                   style={s.noteInput}
@@ -222,19 +230,19 @@ export default function CampaignProductsScreen({ navigation, route }) {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.publishBtn, saving && { opacity: 0.5 }]}
-                    onPress={() => handlePublish(product)}
+                    onPress={() => handleSaveNote(product)}
                     disabled={saving}
                   >
                     <Text style={s.publishText}>
-                      {saving ? 'PUBLISHING…' : product.is_published ? 'UPDATE' : 'PUBLISH TO MY STORE'}
+                      {saving ? 'SAVING…' : product.influencer_note ? 'UPDATE NOTE' : 'SAVE RECOMMENDATION'}
                     </Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
-            {/* Quick publish without editing */}
-            {!product.is_published && editingNote !== product.id && (
+            {/* Add a recommendation (product is already live) */}
+            {!product.influencer_note && !isEditing && (
               <TouchableOpacity
                 style={s.quickPublish}
                 onPress={() => {
@@ -242,7 +250,7 @@ export default function CampaignProductsScreen({ navigation, route }) {
                   setNoteText(`Check out this amazing ${product.name}! Great deal.`);
                 }}
               >
-                <Text style={s.quickPublishText}>+ ADD NOTE &amp; PUBLISH</Text>
+                <Text style={s.quickPublishText}>+ ADD RECOMMENDATION</Text>
               </TouchableOpacity>
             )}
           </View>

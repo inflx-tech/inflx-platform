@@ -71,6 +71,29 @@ async function loadConfig(screen, scopeType = 'global', scopeValue = null) {
   return merged;
 }
 
+// Admin-managed category → member-business linkage (follower_categories.
+// member_categories). Loaded once per buildSections and injected into each
+// rule's ctx as categoryCats so the listing rules filter by what the admin
+// actually linked, not the legacy hardcoded CATEGORY_MAP (whose keys don't even
+// match the table keys). Empty/failed read → {} → rules fall back to CATEGORY_MAP.
+async function loadCategoryMembers() {
+  try {
+    const { rows } = await db.query(
+      `SELECT key, member_categories FROM follower_categories`
+    );
+    const map = {};
+    for (const r of rows) {
+      if (Array.isArray(r.member_categories) && r.member_categories.length) {
+        map[r.key] = r.member_categories;
+      }
+    }
+    return map;
+  } catch (e) {
+    console.error('[sectionEngine] follower_categories members read failed — CATEGORY_MAP fallback:', e.message);
+    return {};
+  }
+}
+
 async function getFollowedIds(followerId) {
   if (!followerId) return new Set();
   const { rows } = await db.query(
@@ -104,9 +127,10 @@ async function buildSections(opts) {
           city = null, followerId = null, categoryKey = null, influencer = null,
           lat = null, lng = null } = opts;
 
-  const [rows, followedIds] = await Promise.all([
+  const [rows, followedIds, catMembers] = await Promise.all([
     loadConfig(screen, scopeType, scopeValue),
     getFollowedIds(followerId),
+    loadCategoryMembers(),
   ]);
 
   const creatorHandle = influencer?.instagram_handle || null;
@@ -114,11 +138,14 @@ async function buildSections(opts) {
 
   for (const row of rows) {
     const cfg = row.config_json || {};
+    const rowCategoryKey = row.category_key || categoryKey || null;
     const ctx = {
       city,
       followerId,
       followedIds,
-      categoryKey: row.category_key || categoryKey || null,
+      categoryKey: rowCategoryKey,
+      // admin-linked member businesses for this key (null → rules fall back to CATEGORY_MAP)
+      categoryCats: rowCategoryKey ? (catMembers[rowCategoryKey] || null) : null,
       influencer,
       itemType: row.item_type || null,
       limit: row.item_limit || 8,

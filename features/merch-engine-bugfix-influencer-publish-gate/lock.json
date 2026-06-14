@@ -1,0 +1,22 @@
+{
+  "feature": "merch-engine-bugfix-influencer-publish-gate",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Prod UX bugfix (founder-reported). Influencer Campaign Products screen showed a 'Publish to my store' / 'Remove from store' gate that is an illusion after Phase 2b auto-allocation (product is live whenever the campaign is live; 'remove' only deleted the note). Reframe: permanent LIVE badge + optional recommendation note only (add/edit/remove note; product stays live). Mobile-only, single screen; no backend/API/migration. UI-governed path deployed via GOVERNANCE_OVERRIDE (founder-chosen) - HTML mockups + 06-diff skipped for a copy/logic change. Production-impacting (mobile OTA) -> explicit go before publish.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "notes": "No backend change; pnpm qa unaffected. Grep-verified zero leftover publish-gate references. released stays false pending founder on-device verification after OTA."
+  }
+}
