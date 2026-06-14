@@ -199,9 +199,10 @@ export const brandApi = {
   updateEnquiry: (id, data) => api.patch(`/brands/me/enquiries/${id}`, data),
   // Generic GET (for listing engine and new endpoints)
   get: (path) => api.get(path),
-  // Generic POST/PATCH
+  // Generic POST/PATCH/DELETE
   post: (path, data) => api.post(path, data),
   patch: (path, data) => api.patch(path, data),
+  delete: (path) => api.delete(path),   // fixes drilldown remove ("brandApi.delete is not a function")
   // Category schema
   getSchema: () => api.get('/brands/me/schema'),
   // Master catalogue (car_rental + salon browse-and-activate)
