@@ -149,4 +149,11 @@ router.patch ('/subscription-tiers/:tierKey',    authenticate, requireAdminRole(
 router.get   ('/subscriptions',                  authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListSubscriptions);
 router.get   ('/subscription-invoices',          authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListInvoices);
 
+// ── Tag vocabulary (merch-engine Phase 1a) — any admin role (reversible) ─────
+const tagVocabCtrl = require('../controllers/adminTagVocabulary.controller');
+router.get   ('/tag-vocabulary',     authenticate, requireAnyAdminRole, tagVocabCtrl.listVocabulary);
+router.post  ('/tag-vocabulary',     authenticate, requireAnyAdminRole, tagVocabCtrl.createTag);
+router.patch ('/tag-vocabulary/:id', authenticate, requireAnyAdminRole, tagVocabCtrl.updateTag);
+router.delete('/tag-vocabulary/:id', authenticate, requireAnyAdminRole, tagVocabCtrl.deleteTag);
+
 module.exports = router;

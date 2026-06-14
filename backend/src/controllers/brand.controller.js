@@ -5,6 +5,7 @@ const notificationService = require('../services/notification.service');
 const entitlementsService = require('../services/entitlements.service');
 const { loadSchema, clearSchemaCache } = require('../services/schema.service');
 const dishFlywheel = require('../services/dishFlywheel.service');
+const tagsService = require('../services/tags.service');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
@@ -404,7 +405,7 @@ const listProducts = asyncHandler(async (req, res) => {
     `SELECT id, name, description, price, category_key, sku, section,
             veg_flag, duration_mins, variants_json, image_url,
             is_active, is_bookable, stock, availability_json,
-            booking_config_json, created_at, updated_at
+            booking_config_json, tags, created_at, updated_at
      FROM brand_products
      WHERE ${conditions.join(' AND ')}
      ORDER BY section NULLS LAST, name ASC`,
@@ -433,6 +434,7 @@ const createProduct = asyncHandler(async (req, res) => {
     is_bookable, stock,
     availability_json, booking_config_json,
     master_vehicle_id, master_service_id, master_dish_id,
+    tags,
   } = req.body;
 
   // For master-catalogue activations, skip schema validation (name/image come from master)
@@ -451,8 +453,8 @@ const createProduct = asyncHandler(async (req, res) => {
        (brand_id, name, description, price, category_key, section,
         veg_flag, duration_mins, variants_json, image_url, sku,
         is_active, is_bookable, stock, availability_json, booking_config_json,
-        master_vehicle_id, master_service_id, master_dish_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18)
+        master_vehicle_id, master_service_id, master_dish_id, tags)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,true,$12,$13,$14,$15,$16,$17,$18,$19)
      RETURNING *`,
     [
       brand.id,
@@ -473,6 +475,7 @@ const createProduct = asyncHandler(async (req, res) => {
       master_vehicle_id ? parseInt(master_vehicle_id, 10) : null,
       master_service_id ? parseInt(master_service_id, 10) : null,
       master_dish_id ? parseInt(master_dish_id, 10) : null,
+      tagsService.sanitizeProductTags(tags),
     ]
   );
 
@@ -495,6 +498,18 @@ const createProduct = asyncHandler(async (req, res) => {
   }
 
   return success(res, { product }, 201);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /brands/me/tag-options — fixed tag vocabulary for this brand's business
+// (its own scope + cross-business 'ALL'). Drives the listing tag-picker.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getTagOptions = asyncHandler(async (req, res) => {
+  const brand = await getBrandByUserId(req.user.sub);
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+  const options = await tagsService.listTagOptions(brand.category);
+  return success(res, { options, scope: brand.category });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -551,6 +566,11 @@ const updateProduct = asyncHandler(async (req, res) => {
       }
     }
   });
+
+  // tags is a text[] column — sanitize to slugs (mix of fixed + free), not JSON.
+  if (req.body.tags !== undefined) {
+    updates.tags = tagsService.sanitizeProductTags(req.body.tags);
+  }
 
   if (!Object.keys(updates).length) throw new AppError('VALIDATION_ERROR', 'No valid fields to update', 422);
 
@@ -1108,7 +1128,7 @@ const getTemplateColumns = asyncHandler(async (req, res) => {
 module.exports = {
   register, getMe, updateMe, getById, updateStatus, resubmit,
   getCategorySchema, getMasterCatalogue, searchDishes,
-  listProducts, createProduct, updateProduct, deleteProduct,
+  listProducts, createProduct, updateProduct, deleteProduct, getTagOptions,
   listBrandOrders, listAllTransactions, getPublicProfile, storePreview,
   getListingConfig, getQualityScore, getListingPreview,
   downloadListingTemplate, bulkUploadProducts, getTemplateColumns,

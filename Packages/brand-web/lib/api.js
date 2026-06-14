@@ -211,6 +211,8 @@ export const brandApi = {
   createProduct: (data) => api.post('/brands/me/products', data),
   updateProduct: (id, data) => api.patch(`/brands/me/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/brands/me/products/${id}`),
+  // Tag picker options — fixed vocabulary for this brand's business (+ 'ALL')
+  getTagOptions: () => api.get('/brands/me/tag-options'),
   // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────
   getOffers:   (params) => api.get(`/brands/me/offers${params ? '?' + new URLSearchParams(params) : ''}`),
   getOfferAttachments: (id) => api.get(`/brands/me/offers/${id}/attachments`),
@@ -568,6 +570,13 @@ export const adminApi = {
   // Dish Review Queue (flywheel) — custom names sellers typed
   listDishQueue:      () => api.get('/admin/master-dishes/queue'),
   resolveDishQueue:   (id, data) => api.patch(`/admin/master-dishes/queue/${id}`, data),
+
+  // ─── Tag vocabulary (merch-engine Phase 1a) ────────────────────────────────
+  // Fixed tags brands pick from while listing; admin Collections rule on these.
+  listTagVocabulary: (scope) => api.get(`/admin/tag-vocabulary${scope ? `?scope=${encodeURIComponent(scope)}` : ''}`),
+  createTagVocab:    (data) => api.post('/admin/tag-vocabulary', data),
+  updateTagVocab:    (id, data) => api.patch(`/admin/tag-vocabulary/${id}`, data),
+  deleteTagVocab:    (id) => api.delete(`/admin/tag-vocabulary/${id}`),
 
   // Creator verification queue (claimed → verified / rejected / reset).
   // Backed by /v1/admin/creator-verifications/* — admin queue surfaces

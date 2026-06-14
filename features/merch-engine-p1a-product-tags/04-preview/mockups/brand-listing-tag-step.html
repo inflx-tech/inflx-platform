@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFLX Brand — Listing · Tags step</title>
+<style>
+  :root{
+    --gold:#F6B11E; --gold-d:#E8A200; --cream:#FBEFD0;
+    --ink:#1A1A1A; --muted:#8C8C8C; --muted-2:#A8A8A8;
+    --line:#EFEFEF; --line-2:#E6E6E6; --page:#FFFFFF; --chip:#F1F1F1;
+    --sale:#D9663C; --ok:#2E9E54;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  body{background:#F4F4F6;color:var(--ink);padding:32px;}
+  .wrap{max-width:640px;margin:0 auto;}
+  .logo{font-size:22px;font-weight:800;letter-spacing:.5px;margin-bottom:18px;}
+  .logo span{color:var(--gold);}
+  .card{background:var(--page);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 4px 14px rgba(0,0,0,.03);}
+  .stepper{display:flex;align-items:center;gap:8px;margin-bottom:22px;}
+  .st{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);font-weight:600;}
+  .st .d{width:22px;height:22px;border-radius:50%;background:#EDEDED;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--muted);}
+  .st.on .d{background:var(--gold);color:var(--ink);}
+  .st.done .d{background:var(--ok);color:#fff;}
+  .st.on{color:var(--ink);}
+  .ln{flex:1;height:1px;background:var(--line-2);}
+  h2{font-size:20px;font-weight:800;}
+  .sub{font-size:13.5px;color:var(--muted);margin-top:6px;margin-bottom:20px;}
+  .label{font-size:13px;font-weight:700;margin:18px 0 10px;}
+  .label .mut{color:var(--muted);font-weight:500;}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;}
+  .chip{padding:9px 16px;border-radius:22px;border:1px solid var(--line-2);background:#fff;font-size:13.5px;font-weight:600;color:var(--ink);cursor:pointer;user-select:none;}
+  .chip.sel{background:var(--gold);border-color:var(--gold);color:var(--ink);}
+  .chip.free{border-style:dashed;}
+  .chip .x{margin-left:7px;color:var(--muted);font-weight:700;}
+  .freeadd{display:flex;gap:10px;margin-top:12px;}
+  .freeadd input{flex:1;border:1px solid var(--line-2);border-radius:10px;padding:11px 14px;font-size:14px;}
+  .freeadd button{background:#fff;border:1px solid var(--gold);color:var(--gold-d);border-radius:10px;padding:11px 16px;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .summary{margin-top:22px;background:var(--cream);border-radius:12px;padding:14px 16px;font-size:13px;}
+  .summary b{font-weight:800;}
+  .actions{display:flex;justify-content:space-between;margin-top:24px;}
+  .btn{background:var(--gold);color:var(--ink);border:none;border-radius:11px;padding:13px 26px;font-weight:700;font-size:14px;cursor:pointer;}
+  .btn.ghost{background:#fff;border:1px solid var(--line-2);color:#4a4a4a;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">INFL<span>X</span> · List a product</div>
+  <div class="card">
+    <div class="stepper">
+      <div class="st done"><span class="d">✓</span>Basics</div><div class="ln"></div>
+      <div class="st done"><span class="d">✓</span>Photos</div><div class="ln"></div>
+      <div class="st on"><span class="d">3</span>Tags</div><div class="ln"></div>
+      <div class="st"><span class="d">4</span>Preview</div>
+    </div>
+
+    <h2>Tag this product</h2>
+    <div class="sub">Tags help your product show up in the right places. Pick any that fit — it’s optional.</div>
+
+    <div class="label">Fashion tags <span class="mut">· pick any</span></div>
+    <div class="chips" id="fixed">
+      <div class="chip sel">Summer</div>
+      <div class="chip">Festive</div>
+      <div class="chip sel">Casual</div>
+      <div class="chip">Trending</div>
+    </div>
+
+    <div class="label">Your own tags <span class="mut">· optional</span></div>
+    <div class="chips" id="free">
+      <div class="chip free sel">beachwear<span class="x">×</span></div>
+    </div>
+    <div class="freeadd">
+      <input placeholder="Add your own tag…" />
+      <button>+ Add</button>
+    </div>
+
+    <div class="summary">Selected: <b>Summer</b>, <b>Casual</b>, <b>beachwear</b></div>
+
+    <div class="actions">
+      <button class="btn ghost">Back</button>
+      <button class="btn">Continue</button>
+    </div>
+  </div>
+</div>
+<script>
+  // light interactivity so the reviewer can feel the toggle
+  document.querySelectorAll('#fixed .chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('sel')));
+</script>
+</body>
+</html>

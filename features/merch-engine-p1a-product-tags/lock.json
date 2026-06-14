@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p1a-product-tags",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-14",
+  "notes": "Step 5 gate. Phase 1a of the merch-engine roadmap. Set approved=true (with approved_by/at) only after spec + workflow + expected-outputs are agreed. UI-governed (brand-web tag step + admin-web vocabulary screen) → HTML mockups + mockup_locked required before frontend code. No implementation (Step 7) until approved=true. Migration is production-impacting → explicit go before deploy.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "notes": "Backend verified: pnpm qa 79/79 GREEN + DB lane migrations 98/98 incl 099 (0 errors). Migration 099 applied to PROD 2026-06-14 (brand_products.tags + tag_vocabulary + 2 indexes confirmed). brand-web production build exit 0. UI not auto-tested (no local eslint/babel); founder verifies in prod. released stays false until prod verification + drilldown/wizard tag-picker follow-up."
+  }
+}

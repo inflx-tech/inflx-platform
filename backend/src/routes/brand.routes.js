@@ -80,6 +80,9 @@ router.get('/me/master-catalogue',  authenticate, requireRole('brand'), ctrl.get
 // MUST stay above the admin '/:id' catch-all at the bottom of this file.
 router.get('/me/dishes/search',     authenticate, requireRole('brand'), ctrl.searchDishes);
 
+// Tag picker options — fixed vocabulary for this brand's business (+ 'ALL')
+router.get('/me/tag-options',       authenticate, requireRole('brand'), ctrl.getTagOptions);
+
 // Excel bulk upload
 router.get('/me/listing-template/download',  authenticate, requireRole('brand'), ctrl.downloadListingTemplate);
 router.get('/me/listing-template/columns',   authenticate, requireRole('brand'), ctrl.getTemplateColumns);

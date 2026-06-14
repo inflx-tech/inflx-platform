@@ -293,6 +293,73 @@ function DynamicField({ field, value, onChange, error }) {
 
 // ─── Modals ─────────────────────────────────────────────────────────────────
 
+// Per-product tag picker (contract: merch-engine-p1a-product-tags).
+// Fixed tags come from the admin vocabulary for this brand's business
+// (GET /brands/me/tag-options); the brand may also add free tags. Selection is
+// a flat list of slugs on form.tags → POST/PATCH /brands/me/products reads it.
+function ProductTagPicker({ value, onChange }) {
+  const tags = Array.isArray(value) ? value : [];
+  const [options, setOptions] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [free, setFree] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    brandApi.getTagOptions()
+      .then(res => { if (!cancelled) { if (res.success) setOptions(res.data?.options || []); setLoaded(true); } })
+      .catch(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const optionSlugs = new Set(options.map(o => o.slug));
+  const freeTags = tags.filter(t => !optionSlugs.has(t));
+
+  function toggle(slug) {
+    onChange(tags.includes(slug) ? tags.filter(t => t !== slug) : [...tags, slug]);
+  }
+  function slugify(raw) {
+    return String(raw || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  }
+  function addFree() {
+    const s = slugify(free);
+    if (s && !tags.includes(s)) onChange([...tags, s]);
+    setFree('');
+  }
+
+  return (
+    <div className="field">
+      <label className="field-l">Tags (optional)</label>
+      {loaded && options.length > 0 && (
+        <div className="chip-row" style={{ marginBottom: 8 }}>
+          {options.map(o => (
+            <button type="button" key={o.slug} className={`chip${tags.includes(o.slug) ? ' act' : ''}`} onClick={() => toggle(o.slug)}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {freeTags.length > 0 && (
+        <div className="chip-row" style={{ marginBottom: 8 }}>
+          {freeTags.map(t => (
+            <button type="button" key={t} className="chip act" style={{ borderStyle: 'dashed' }} onClick={() => onChange(tags.filter(x => x !== t))}>
+              {t} ×
+            </button>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input value={free} onChange={(e) => setFree(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFree(); } }}
+          placeholder="Add your own tag…" />
+        <button type="button" className="btn-ghost" onClick={addFree}>+ Add</button>
+      </div>
+      {loaded && options.length === 0 && (
+        <p className="field-err" style={{ color: 'var(--muted-2)' }}>No preset tags for your business yet — you can still add your own above.</p>
+      )}
+    </div>
+  );
+}
+
 function ProductFormModal({ schema, product, onSave, onClose, saving }) {
   const noun = schema?.product_noun || 'Product';
   const [form, setForm] = useState(() => {
@@ -336,6 +403,7 @@ function ProductFormModal({ schema, product, onSave, onClose, saving }) {
                 {errors[field.key] && <p className="field-err">{errors[field.key]}</p>}
               </div>
             ))}
+            <ProductTagPicker value={form.tags} onChange={(t) => setField('tags', t)} />
             <div className="toggle">
               <div>
                 <div className="toggle-l">Active</div>
