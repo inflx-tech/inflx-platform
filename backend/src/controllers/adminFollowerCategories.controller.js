@@ -15,6 +15,7 @@ const db = require('../config/db');
 const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const cache = require('../utils/ttlCache');
 
 const STATUSES = ['active', 'hidden'];
 
@@ -60,6 +61,7 @@ const create = asyncHandler(async (req, res) => {
      RETURNING id, key, label, icon, sort_order, status, member_categories, created_at, updated_at`,
     [key, label, icon, sortOrder, members]
   );
+  cache.clear(); // bust the section-engine cache so the Home carousel reflects immediately
   return success(res, { category: rows[0] }, 201);
 });
 
@@ -99,6 +101,7 @@ const update = asyncHandler(async (req, res) => {
     params
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'tile not found', 404);
+  cache.clear();
   return success(res, { category: rows[0] });
 });
 
@@ -109,6 +112,7 @@ const remove = asyncHandler(async (req, res) => {
     [req.params.id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'tile not found', 404);
+  cache.clear();
   return success(res, { hidden: rows[0].id });
 });
 

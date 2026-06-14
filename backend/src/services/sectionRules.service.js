@@ -724,7 +724,23 @@ async function creatorsListing(ctx) {
 // ── nav / static / disabled ─────────────────────────────────────────────────
 
 async function navVerticals(ctx) {
-  // Nav tiles are configuration, not queried data — sourced from config_json.
+  // Home "Browse by Category" tiles. Prefer the admin-managed follower_categories
+  // table (Phase 1b) so the tiles stay in sync with the Categories screen + admin
+  // edits AND share the same keys (eat/shop/...) the category endpoint expects.
+  // Fall back to the legacy config_json.verticals if the table is empty/unreachable.
+  try {
+    const { rows } = await db.query(
+      `SELECT key, label, icon FROM follower_categories
+        WHERE status = 'active' ORDER BY sort_order ASC, label ASC`
+    );
+    if (rows.length) {
+      return rows.slice(0, ctx.limit || rows.length).map(v => ({
+        entity_type: 'nav', key: v.key, label: v.label, icon: v.icon || null,
+      }));
+    }
+  } catch (e) {
+    console.error('[sections] navVerticals follower_categories read failed — config fallback:', e.message);
+  }
   const verticals = ctx.config && Array.isArray(ctx.config.verticals) ? ctx.config.verticals : [];
   return verticals.slice(0, ctx.limit || verticals.length).map(v => ({
     entity_type: 'nav', key: v.key, label: v.label, icon: v.icon || null,

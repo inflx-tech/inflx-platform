@@ -18,6 +18,11 @@
 - brand-web production build exit 0.
 - Web-lane `pnpm qa` green (admin web no regression).
 
+## Fix-up (2026-06-14, prod-verify): Home carousel was a second source
+- **Found in prod:** the follower **Home "Browse by Category" carousel** is fed by the section-engine `nav_verticals` rule from hardcoded `section_config.config_json.verticals` (labels Eat/Shop, keys dining/shopping) — a SEPARATE source 1b's `getSuperCategories` change didn't touch. So admin renames showed on the Categories screen but NOT the Home carousel.
+- **Fix (backend-only):** `navVerticals` now reads `follower_categories` (active, by sort_order) with the legacy config as fallback → Home tiles use the admin labels + the table keys (eat/shop), which also fixes the old key mismatch (shopping/stay_fit tiles → 404 on the category endpoint). `adminFollowerCategories.controller` now `cache.clear()`s on write so edits reflect immediately. Mobile `CategoryListScreen` already accepts both `dining`/`eat`.
+- **Still deferred:** `CategoryPills.js` (mobile) + section-engine `CATEGORY_MAP` are additional hardcoded category lists — full reconciliation stays in the Section-Library phase.
+
 ## What still needs capturing in dev env
 - Playwright shots of the admin screen (7 seeded → add/hide/reorder).
 - (Optional) a seed-parity snapshot assertion in QA.

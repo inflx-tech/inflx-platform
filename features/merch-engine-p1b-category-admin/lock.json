@@ -16,6 +16,6 @@
     "released": false,
     "released_by": null,
     "released_at": null,
-    "notes": "Web-lane pnpm qa 79/79 GREEN; DB lane migrations 99/99 incl 100 (0 errors), follower category endpoints pass; getSuperCategories sync->async unit test updated (await, same assertions). Migration 100 applied to PROD 2026-06-14 (7 tiles seeded = identical to legacy SUPER_CATEGORIES, parity verified). brand-web build exit 0. released stays false pending founder prod verification + 1b-2/1b-3 follow-ups."
+    "notes": "Web-lane pnpm qa 79/79 GREEN; DB lane migrations 99/99 incl 100 (0 errors), follower category endpoints pass; getSuperCategories sync->async unit test updated (await, same assertions). Migration 100 applied to PROD 2026-06-14 (7 tiles seeded = identical to legacy SUPER_CATEGORIES, parity verified). brand-web build exit 0. released stays false pending founder prod verification + 1b-2/1b-3 follow-ups. FIX-UP 2026-06-14: Home 'Browse by Category' carousel (section-engine navVerticals) now reads follower_categories with config fallback (was a 2nd hardcoded source) + cache-clear on admin write, so category edits reflect on Home too; see 06-diff/notes.md."
   }
 }
