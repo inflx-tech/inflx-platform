@@ -116,8 +116,8 @@ describe('Listing Service — Unit Tests', () => {
     expect(steps[2].id).toBe('hours');
   });
 
-  test('getSuperCategories returns 7 categories', () => {
-    const cats = listingService.getSuperCategories();
+  test('getSuperCategories returns 7 categories', async () => {
+    const cats = await listingService.getSuperCategories();
     expect(cats.length).toBe(7);
     expect(cats[0].key).toBe('eat');
     expect(cats[1].key).toBe('shop');

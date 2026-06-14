@@ -176,7 +176,28 @@ const SUPER_CATEGORIES = [
   { key: 'events',  label: 'Events',   icon: '🎉',  sub_categories: ['function_hall', 'wedding_planner', 'florist', 'photography', 'legal_ca'] },
 ];
 
-function getSuperCategories() {
+// Reads the admin-managed follower_categories table (Phase 1b). Falls back to
+// the hardcoded SUPER_CATEGORIES constant if the table is empty or unreachable
+// so followers never see an empty category list. Async (callers await).
+async function getSuperCategories() {
+  try {
+    const { rows } = await db.query(
+      `SELECT key, label, icon, member_categories
+         FROM follower_categories
+        WHERE status = 'active'
+        ORDER BY sort_order ASC, label ASC`
+    );
+    if (rows.length) {
+      return rows.map(r => ({
+        key: r.key,
+        label: r.label,
+        icon: r.icon,
+        sub_categories: Array.isArray(r.member_categories) ? r.member_categories : [],
+      }));
+    }
+  } catch (e) {
+    console.error('[listing] follower_categories read failed — using hardcoded fallback:', e.message);
+  }
   return SUPER_CATEGORIES;
 }
 

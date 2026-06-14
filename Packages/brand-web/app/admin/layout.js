@@ -17,6 +17,7 @@ const NAV = [
   { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️' },
   { href: '/admin/sections', label: 'App Sections', icon: '🎛️' },
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️' },
+  { href: '/admin/follower-categories', label: 'Follower Categories', icon: '🗂️' },
   { section: 'MARKETING' },
   { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯' },
   { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕' },

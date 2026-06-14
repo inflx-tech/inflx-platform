@@ -737,7 +737,7 @@ const getStories = asyncHandler(async (req, res) => {
 
 // GET /follower/categories — super-categories with deal counts
 const getCategories = asyncHandler(async (req, res) => {
-  const superCats = listingService.getSuperCategories();
+  const superCats = await listingService.getSuperCategories();
 
   // Get deal counts per super_category
   const { rows } = await db.query(
@@ -787,7 +787,7 @@ const getCategoryStores = asyncHandler(async (req, res) => {
   const limit = 10;
   const offset = (pageNum - 1) * limit;
 
-  const superCat = listingService.getSuperCategories().find(s => s.key === super_category);
+  const superCat = (await listingService.getSuperCategories()).find(s => s.key === super_category);
   if (!superCat) throw new AppError('NOT_FOUND', `Unknown super-category: ${super_category}`, 404);
 
   // Filter by sub_category or all sub_categories
@@ -1089,7 +1089,7 @@ const search = asyncHandler(async (req, res) => {
     return success(res, { brands: [], dishes: [] });
   }
 
-  const superCat = listingService.getSuperCategories().find(s => s.key === superKey);
+  const superCat = (await listingService.getSuperCategories()).find(s => s.key === superKey);
   const categoryKeys = superCat ? superCat.sub_categories : ['restaurant'];
   if (!categoryKeys.length) return success(res, { brands: [], dishes: [] });
 

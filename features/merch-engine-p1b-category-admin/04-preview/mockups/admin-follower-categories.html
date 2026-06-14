@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFLX Admin — Follower Categories</title>
+<style>
+  /* Navy admin theme (matches the live /admin dashboard, not the follower gold/cream) */
+  :root{
+    --navy:#1E293B; --navy-deep:#0F172A; --navy-pale:#E8EDF4;
+    --t1:#0F172A; --t2:#475569; --t3:#94A3B8;
+    --border:#E5E7EB; --surface2:#F1F5F9; --page:#FFFFFF; --bg:#F4F4F6;
+    --green:#2E9E54; --green-pale:#E9F6EC; --gold:#F6B11E;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;}
+  body{background:var(--bg);color:var(--t1);padding:32px;}
+  .wrap{max-width:920px;margin:0 auto;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+  .logo{font-size:22px;font-weight:800;color:var(--navy-deep);}
+  .logo span{color:var(--gold);}
+  .who{font-size:13px;color:var(--t3);}
+  h1{font-size:24px;font-weight:800;}
+  .sub{font-size:13.5px;color:var(--t3);margin-top:6px;}
+  .btn{background:var(--navy);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;}
+  .card{background:var(--page);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:18px;box-shadow:0 4px 14px rgba(0,0,0,.03);}
+  .row{display:grid;grid-template-columns:1.6fr 0.5fr 2.2fr 0.7fr 1fr;gap:12px;align-items:center;padding:14px 18px;border-top:1px solid var(--border);}
+  .head{background:var(--surface2);border-top:none;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);}
+  .tile{display:flex;align-items:center;gap:11px;}
+  .tile .ic{width:40px;height:40px;border-radius:10px;background:var(--navy-pale);display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;}
+  .tile b{font-size:14.5px;font-weight:700;}
+  .tile .key{font-size:11px;color:var(--t3);}
+  .ord{display:flex;gap:5px;}
+  .ord button{width:28px;height:28px;border:1px solid var(--border);background:#fff;border-radius:7px;color:var(--t3);cursor:pointer;}
+  .members{display:flex;flex-wrap:wrap;gap:5px;}
+  .chip{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--t2);}
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+  .pill.active{background:var(--green-pale);color:var(--green);}
+  .pill.hidden{background:var(--surface2);color:var(--t3);}
+  .acts{display:flex;gap:6px;justify-content:flex-end;}
+  .acts button{font-size:12px;font-weight:700;border-radius:8px;padding:6px 11px;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--t2);}
+  .acts .edit{color:var(--navy);border-color:rgba(30,41,59,.25);}
+  .note{padding:14px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--t3);font-style:italic;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><div class="logo">INFL<span>X</span> · Admin</div><div class="who">Follower Categories · superadmin</div></div>
+  <h1>Follower Categories</h1>
+  <div class="sub">The top-level tiles followers browse on the Find screen. Seeded to today’s 7 — edit name, icon, order, which businesses belong, or hide one. Followers never see an empty list (falls back to defaults).</div>
+
+  <div style="display:flex;justify-content:flex-end;margin-top:14px;"><button class="btn">+ Add tile</button></div>
+
+  <div class="card">
+    <div class="row head"><div>Tile</div><div>Order</div><div>Member businesses</div><div>Status</div><div style="text-align:right">Actions</div></div>
+
+    <div class="row">
+      <div class="tile"><span class="ic">🍽️</span><div><b>Eat</b><div class="key">eat</div></div></div>
+      <div class="ord"><button>↑</button><button>↓</button></div>
+      <div class="members"><span class="chip">restaurant</span><span class="chip">bakery</span><span class="chip">packaged_food</span><span class="chip">grocery</span></div>
+      <div><span class="pill active">Active</span></div>
+      <div class="acts"><button class="edit">Edit</button><button>Hide</button></div>
+    </div>
+
+    <div class="row">
+      <div class="tile"><span class="ic">🛍️</span><div><b>Shop</b><div class="key">shop</div></div></div>
+      <div class="ord"><button>↑</button><button>↓</button></div>
+      <div class="members"><span class="chip">fashion_walkin</span><span class="chip">fashion_online</span><span class="chip">electronics</span><span class="chip">jewellery</span><span class="chip">footwear</span><span class="chip">furniture</span><span class="chip">+4</span></div>
+      <div><span class="pill active">Active</span></div>
+      <div class="acts"><button class="edit">Edit</button><button>Hide</button></div>
+    </div>
+
+    <div class="row">
+      <div class="tile"><span class="ic">✨</span><div><b>Groom</b><div class="key">groom</div></div></div>
+      <div class="ord"><button>↑</button><button>↓</button></div>
+      <div class="members"><span class="chip">salon</span><span class="chip">home_beauty</span><span class="chip">pet_grooming</span></div>
+      <div><span class="pill active">Active</span></div>
+      <div class="acts"><button class="edit">Edit</button><button>Hide</button></div>
+    </div>
+
+    <div class="row">
+      <div class="tile"><span class="ic">💪</span><div><b>Stay Fit</b><div class="key">fitness</div></div></div>
+      <div class="ord"><button>↑</button><button>↓</button></div>
+      <div class="members"><span class="chip">gym_fitness</span><span class="chip">clinic_doctor</span><span class="chip">dental_clinic</span><span class="chip">+2</span></div>
+      <div><span class="pill hidden">Hidden</span></div>
+      <div class="acts"><button class="edit">Edit</button><button>Show</button></div>
+    </div>
+
+    <div class="note">Hidden tiles leave the follower Find screen but keep their data; member businesses are untouched (a brand’s own store, links, and allocations don’t depend on tiles). Seeded identical to today — nothing changes for followers until you edit.</div>
+  </div>
+</div>
+</body>
+</html>

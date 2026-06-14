@@ -578,6 +578,12 @@ export const adminApi = {
   updateTagVocab:    (id, data) => api.patch(`/admin/tag-vocabulary/${id}`, data),
   deleteTagVocab:    (id) => api.delete(`/admin/tag-vocabulary/${id}`),
 
+  // ─── Follower category tiles (merch-engine Phase 1b) ───────────────────────
+  listFollowerCategories:  () => api.get('/admin/follower-categories'),
+  createFollowerCategory:  (data) => api.post('/admin/follower-categories', data),
+  updateFollowerCategory:  (id, data) => api.patch(`/admin/follower-categories/${id}`, data),
+  deleteFollowerCategory:  (id) => api.delete(`/admin/follower-categories/${id}`),
+
   // Creator verification queue (claimed → verified / rejected / reset).
   // Backed by /v1/admin/creator-verifications/* — admin queue surfaces
   // creator_profiles rows in 'claimed' state (either auto-claimed from a

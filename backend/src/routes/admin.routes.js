@@ -156,4 +156,11 @@ router.post  ('/tag-vocabulary',     authenticate, requireAnyAdminRole, tagVocab
 router.patch ('/tag-vocabulary/:id', authenticate, requireAnyAdminRole, tagVocabCtrl.updateTag);
 router.delete('/tag-vocabulary/:id', authenticate, requireAnyAdminRole, tagVocabCtrl.deleteTag);
 
+// ── Follower category tiles (merch-engine Phase 1b) — any admin (reversible) ─
+const followerCatCtrl = require('../controllers/adminFollowerCategories.controller');
+router.get   ('/follower-categories',     authenticate, requireAnyAdminRole, followerCatCtrl.list);
+router.post  ('/follower-categories',     authenticate, requireAnyAdminRole, followerCatCtrl.create);
+router.patch ('/follower-categories/:id', authenticate, requireAnyAdminRole, followerCatCtrl.update);
+router.delete('/follower-categories/:id', authenticate, requireAnyAdminRole, followerCatCtrl.remove);
+
 module.exports = router;

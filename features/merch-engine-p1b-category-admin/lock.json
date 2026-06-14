@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p1b-category-admin",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-14",
+  "notes": "Step 5 gate. Phase 1b of the merch-engine roadmap. Follower category tiles → DB (seeded to mirror today; behaviour-preserving) + admin CRUD. UI-governed (brand-web admin screen) → HTML mockup + mockup_locked before frontend code. No implementation until approved=true. Migration + read-path change are production-impacting → explicit go before deploy. Subcategory/creator-cat/brand-cat admin + CATEGORY_MAP reconciliation are OUT (follow-up slices 1b-2/1b-3 + Section-Library phase).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "notes": "Web-lane pnpm qa 79/79 GREEN; DB lane migrations 99/99 incl 100 (0 errors), follower category endpoints pass; getSuperCategories sync->async unit test updated (await, same assertions). Migration 100 applied to PROD 2026-06-14 (7 tiles seeded = identical to legacy SUPER_CATEGORIES, parity verified). brand-web build exit 0. released stays false pending founder prod verification + 1b-2/1b-3 follow-ups."
+  }
+}
