@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p2c-platform-gate",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Phase 2c (visibility gate, part 3 of 3). BACKEND-ONLY (not UI-governed). Gate the platform product shelves (productsInCategory + businessesInCategory EXISTS) to pushed_to_store=true. Offer/deal shelves already gate by campaign-allocation/published_to_store. DEFERRED to 2c-2: the '∪ allocated' half for platform products (needs allocation index; allocated already visible via creator store 2b; default pushed=true → no behaviour diff today). Parity on deploy. Production-impacting (backend) → explicit go before deploy.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "notes": "pnpm qa 79/79 GREEN; node --check clean. Backend-only, no migration. Parity (all products pushed=true). released stays false pending founder combined 2b+2c prod verification."
+  }
+}

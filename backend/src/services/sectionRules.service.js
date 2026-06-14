@@ -607,7 +607,7 @@ async function businessesInCategory(ctx) {
       FROM brands b
       JOIN users u_b ON u_b.id = b.user_id
      WHERE u_b.status = 'approved'
-       AND EXISTS (SELECT 1 FROM brand_products bp WHERE bp.brand_id = b.id AND bp.is_active = true)
+       AND EXISTS (SELECT 1 FROM brand_products bp WHERE bp.brand_id = b.id AND bp.is_active = true AND bp.pushed_to_store = true)
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
@@ -646,7 +646,7 @@ async function productsInCategory(ctx) {
       FROM brand_products bp
       JOIN brands b   ON b.id = bp.brand_id
       JOIN users u_b  ON u_b.id = b.user_id
-     WHERE u_b.status = 'approved' AND bp.is_active = true
+     WHERE u_b.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
