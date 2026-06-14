@@ -30,6 +30,16 @@ function mapCreator(c) {
 
 // ─── Constants (preserved verbatim) ──────────────────────────────────────────
 const FORMATS = ['Instagram reel', 'Instagram stories', 'Instagram post', 'YouTube short', 'YouTube video'];
+// Map the display labels to the canonical formats_json types the backend validates
+// (reel | story | post | youtube_short | youtube_video). Without this the wizard
+// sent {name, count} → backend saw type=undefined → "formats_json type undefined".
+const FORMAT_TYPE_MAP = {
+  'Instagram reel': 'reel',
+  'Instagram stories': 'story',
+  'Instagram post': 'post',
+  'YouTube short': 'youtube_short',
+  'YouTube video': 'youtube_video',
+};
 const NICHES   = ['Food','Fashion','Fitness','Travel','Lifestyle','Beauty','Tech','Gaming','Finance','Parenting'];
 const CITIES   = ['Mumbai','Delhi','Bengaluru','Hyderabad','Chennai','Vijayawada','Pune','Kolkata','Jaipur','Ahmedabad'];
 const TIERS    = [{key:'nano',label:'Nano',sub:'1K–10K'},{key:'micro',label:'Micro',sub:'10K–100K'},{key:'macro',label:'Macro',sub:'100K–1M'},{key:'mega',label:'Mega',sub:'1M+'}];
@@ -550,7 +560,9 @@ function NewCampaignPageInner() {
   const matchTimer = useRef(null);
 
   useEffect(() => {
-    brandApi.getProducts().then(res => { if (res.ok) setProducts(res.data?.products || []); }).catch(() => {});
+    // Only LIVE, in-store products are allocatable to influencers (founder rule;
+    // keeps allocated ⊆ pushed). Excludes inactive + un-pushed ("disabled in store").
+    brandApi.getProducts().then(res => { if (res.ok) setProducts((res.data?.products || []).filter(p => p.is_active !== false && p.pushed_to_store !== false)); }).catch(() => {});
     // Offer Engine: load the brand's active saved offers for the in-wizard picker.
     brandApi.getOffers({ status: 'active' }).then(res => { if (res.success || res.ok) setLibOffers(res.data?.offers || []); }).catch(() => {});
   }, []);
@@ -994,7 +1006,7 @@ function NewCampaignPageInner() {
       if (!s.goal) { throw new Error(`Set "${s.name}" needs a goal before saving`); }
       const setPayload = {
         name: s.name, goal: s.goal, brief: s.brief || null,
-        formats_json: s.formats,
+        formats_json: (s.formats || []).map(f => ({ name: f.name, type: FORMAT_TYPE_MAP[f.name] || f.type, count: f.count })),
         assets_json: (s.assets || []).map(a => ({
           asset_id: a.asset_id || a.id || null, title: a.title || a.name || a.file_name || null,
           file_r2_key: a.file_r2_key || null, file_name: a.file_name || a.name || null,
