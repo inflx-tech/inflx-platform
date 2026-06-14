@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p2b-creator-allocation",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-14",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": false,
+  "mockup_locked_by": null,
+  "mockup_locked_at": null,
+  "notes": "Phase 2b (visibility gate, part 2 of 3). BACKEND-ONLY (not UI-governed → no mockup/06-diff). Creator store (resolveStore) auto-fills from products allocated by the creator's LIVE campaign offers (config snapshot u set products_json) instead of hand-picked influencer_product_notes; notes become optional annotations. No schema/migration, no mobile change (response shape unchanged). pushed_to_store does NOT gate the creator store (allocation is its own path). Production-impacting (backend) → explicit go before deploy.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "notes": "pnpm qa 79/79 GREEN; node --check clean; allocation key-shapes validated against REAL prod data (campaign_influencers.offer_config_json.products[].id — car-rental creators). Backend-only, no migration, no mobile change. released stays false pending founder prod verification (open a creator store with a live campaign → allocated products auto-show)."
+  }
+}

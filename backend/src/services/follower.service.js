@@ -162,6 +162,39 @@ const CATEGORY_MAP = {
  * Resolve influencer + active offers for GET /store/:handle
  * Now includes influencer product notes and date gating
  */
+// Phase 2b — product IDs ALLOCATED to a creator by a single live offer:
+// the offer-config snapshot's product arrays ∪ the campaign set's products_json.
+// Covers discount/volume/bundle (products/d_prods/v_prods/bnd_prods), bogo
+// (buy_product/get_product), and free_gift (offers[].main/gift).
+function allocatedProductIds(ciCfg, setProductsJson) {
+  const ids = new Set();
+  const add = (arr) => {
+    if (!Array.isArray(arr)) return;
+    for (const x of arr) {
+      const id = typeof x === 'string' ? x : (x && (x.product_id || x.id));
+      if (id) ids.add(id);
+    }
+  };
+  if (ciCfg && typeof ciCfg === 'object') {
+    add(ciCfg.products); add(ciCfg.d_prods); add(ciCfg.v_prods); add(ciCfg.bnd_prods);
+    if (ciCfg.buy_product && ciCfg.buy_product.id) ids.add(ciCfg.buy_product.id);
+    if (ciCfg.get_product && ciCfg.get_product.id) ids.add(ciCfg.get_product.id);
+    if (Array.isArray(ciCfg.offers)) {
+      for (const o of ciCfg.offers) {
+        if (o && o.main && o.main.id) ids.add(o.main.id);
+        if (o && o.gift && o.gift.id) ids.add(o.gift.id);
+      }
+    }
+  }
+  if (setProductsJson) {
+    try {
+      const pj = typeof setProductsJson === 'string' ? JSON.parse(setProductsJson) : setProductsJson;
+      add(pj);
+    } catch { /* malformed → ignore */ }
+  }
+  return Array.from(ids);
+}
+
 async function resolveStore(handle) {
   const { rows: infRows } = await db.query(
     `SELECT i.*, u.name, u.status AS user_status, u.phone
@@ -194,47 +227,26 @@ async function resolveStore(handle) {
   // Fetch products — prioritize published products (with notes), then fill from brand catalog
   const offersWithProducts = [];
   for (const r of offerRows) {
-    // Get product IDs that have notes (published by this influencer for this campaign)
-    const publishedIds = noteRows
-      .filter(n => n.campaign_id === r.campaign_id)
-      .map(n => n.product_id);
+    // Phase 2b — show the products ALLOCATED to this creator by the live offer
+    // (offer-config snapshot ∪ the campaign set's products_json), automatically.
+    // No hand-picking. Any influencer note becomes an optional annotation, never
+    // a visibility gate. pushed_to_store does NOT apply here — allocation is its
+    // own path (a product can show in a creator's store without being pushed to
+    // the brand's own store).
+    const ciCfg = r.ci_offer_config || {};
+    const allocatedIds = allocatedProductIds(ciCfg, r.products_json);
 
-    let products;
-    if (publishedIds.length > 0) {
-      // Show ONLY published products (influencer chose to publish these)
+    let products = [];
+    if (allocatedIds.length > 0) {
       const { rows } = await db.query(
         `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
          FROM brand_products WHERE id = ANY($1) AND is_active = true
          ORDER BY section, name`,
-        [publishedIds]
+        [allocatedIds]
       );
       products = rows;
-    } else {
-      // Creator hasn't published anything for this offer yet. The offer card
-      // stays visible (followers know the deal exists) but the products array
-      // is empty so the UI can render a "still curating" empty state. The
-      // brand-catalogue preview fallback was removed because it leaked
-      // products through before the creator approved them, contradicting the
-      // creator-curation gate.
-      products = [];
     }
-
-    // Does this offer have brand-assigned products? If yes and the creator
-    // hasn't published any yet, the mobile UI shows a "still curating" empty
-    // state instead of treating it as a brand-level (storefront-wide) deal.
-    const ciCfg = r.ci_offer_config || {};
-    const setProductsJson = r.products_json;
-    let hasAssignedProducts = false;
-    if (Array.isArray(ciCfg.products)   && ciCfg.products.length   > 0) hasAssignedProducts = true;
-    if (Array.isArray(ciCfg.d_prods)    && ciCfg.d_prods.length    > 0) hasAssignedProducts = true;
-    if (Array.isArray(ciCfg.v_prods)    && ciCfg.v_prods.length    > 0) hasAssignedProducts = true;
-    if (Array.isArray(ciCfg.bnd_prods)  && ciCfg.bnd_prods.length  > 0) hasAssignedProducts = true;
-    if (setProductsJson) {
-      try {
-        const pj = typeof setProductsJson === 'string' ? JSON.parse(setProductsJson) : setProductsJson;
-        if (Array.isArray(pj) && pj.length > 0) hasAssignedProducts = true;
-      } catch {}
-    }
+    const hasAssignedProducts = allocatedIds.length > 0;
 
     offersWithProducts.push({
       campaign_influencer_id: r.campaign_influencer_id,
@@ -964,26 +976,18 @@ async function getInfluencerStorePreview(influencerId) {
 
   const offersWithProducts = [];
   for (const r of offerRows) {
-    // Get published product IDs (with notes)
-    const publishedIds = noteRows
-      .filter(n => n.campaign_id === r.campaign_id)
-      .map(n => n.product_id);
-
-    let products;
-    if (publishedIds.length > 0) {
+    // Phase 2b — same allocation source as the follower-facing resolveStore so
+    // the creator's preview matches what followers see. (Was: notes-gated with a
+    // full brand-catalogue ELSE fallback that leaked every product when the
+    // creator hadn't hand-picked anything.)
+    const allocatedIds = allocatedProductIds(r.ci_offer_config || {}, r.products_json);
+    let products = [];
+    if (allocatedIds.length > 0) {
       const { rows } = await db.query(
         `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
          FROM brand_products WHERE id = ANY($1) AND is_active = true
          ORDER BY section, name`,
-        [publishedIds]
-      );
-      products = rows;
-    } else {
-      const { rows } = await db.query(
-        `SELECT id, name, price, image_url, section, veg_flag, description, variants_json
-         FROM brand_products WHERE brand_id = $1 AND is_active = true
-         ORDER BY section, name`,
-        [r.brand_id]
+        [allocatedIds]
       );
       products = rows;
     }
