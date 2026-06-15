@@ -12,7 +12,7 @@ const INDUSTRY_HIERARCHY = [
     { value: 'grocery', label: 'Grocery & Supermarket' },
   ]},
   { group: 'Shopping & Retail', categories: [
-    { value: 'fashion_walkin', label: 'Fashion & Apparel' },
+    { value: 'fashion', label: 'Fashion & Apparel' },
     { value: 'electronics', label: 'Electronics & Gadgets' },
     { value: 'jewellery', label: 'Jewellery & Watches' },
     { value: 'footwear', label: 'Footwear' },

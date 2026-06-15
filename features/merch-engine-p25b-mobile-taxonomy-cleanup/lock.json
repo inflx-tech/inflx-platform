@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p25b-mobile-taxonomy-cleanup",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (verbal go 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (scope approved 2026-06-15 — no new design: FindScreen deferred to Phase 5; Food reuses existing dining layout)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "UI-governed (mobile + brand-web). No new visual design authored — founder deferred the only visually-changing screen (FindScreen) to Phase 5; the Food tile reuses the existing dining layout. 06-diff/notes.md records before/after in words. released stays false (founder verifies) so the Maestro gate (Rule 5) is not triggered this cycle. Production-impacting (mobile OTA + brand-web) → explicit founder go for deploy.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

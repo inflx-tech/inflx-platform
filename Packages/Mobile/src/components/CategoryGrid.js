@@ -20,24 +20,29 @@ const P = {
  * without a focus-vertical accent.
  */
 
+// Offline fallback ONLY — the real tiles come from /follower/categories (the
+// admin follower_categories table; contract 2.5a). Kept in sync with the 5 launch
+// tiles so a rare API-down render still matches reality.
 const DEFAULT_CATEGORIES = [
-  { key: 'eat',     icon: '🍽️', label: 'Eat' },
-  { key: 'shop',    icon: '🛍️', label: 'Shop' },
-  { key: 'groom',   icon: '✨',  label: 'Groom' },
-  { key: 'fitness', icon: '💪',  label: 'Fitness' },
-  { key: 'travel',  icon: '✈️', label: 'Travel' },
-  { key: 'home',    icon: '🏠',  label: 'Home' },
-  { key: 'events',  icon: '🎉',  label: 'Events' },
-  { key: 'all',     icon: '•••', label: 'All' },
+  { key: 'fashion',    icon: '👗', label: 'Fashion' },
+  { key: 'furniture',  icon: '🛋️', label: 'Furniture' },
+  { key: 'food',       icon: '🍽️', label: 'Food' },
+  { key: 'beauty',     icon: '✨', label: 'Beauty' },
+  { key: 'car_rental', icon: '🚗', label: 'Car Rentals' },
 ];
 
 // Map super-category keys → the focus-vertical accent key (for the pale tint).
+// Includes the 5 launch-tile keys + legacy keys (back-compat during transition).
 const SUPERCAT_ACCENT = {
+  fashion: 'fashion',
+  furniture: 'furniture',
+  food: 'restaurant',
+  beauty: 'salon',
+  car_rental: 'car_rental',
+  // legacy keys (still resolve if an old payload arrives)
   eat: 'restaurant',
   shop: 'fashion',
-  fashion: 'fashion',
   groom: 'salon',
-  beauty: 'salon',
   cars: 'car_rental',
   car: 'car_rental',
   travel: 'car_rental',

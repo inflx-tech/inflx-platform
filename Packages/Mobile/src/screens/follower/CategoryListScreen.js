@@ -92,7 +92,8 @@ export default function CategoryListScreen({ route, navigation }) {
   const { location } = useAppLocation();
   const { latitude, longitude } = location;
   const [locOpen, setLocOpen] = useState(false);
-  const isDining = superCategory === 'dining' || superCategory === 'eat';
+  // 'food' is the launch-tile key (contract 2.5a); 'eat'/'dining' are legacy keys.
+  const isDining = superCategory === 'food' || superCategory === 'dining' || superCategory === 'eat';
 
   // Section engine (Phase C2): when on, render the category from
   // GET /v1/follower/section/category/:key via <SectionRenderer>. Inert + falls
