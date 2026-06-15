@@ -19,6 +19,7 @@ const db = require('../config/db');
 const { runRule } = require('./sectionRules.service');
 const cache = require('../utils/ttlCache');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
+const sectionLibrary = require('./sectionLibrary.service');
 
 // Last-resort labels for {category} interpolation if a key isn't in the taxonomy
 // (e.g. a legacy section_config key during transition). The tile's real label from
@@ -120,14 +121,34 @@ async function buildSections(opts) {
 
   for (const row of rows) {
     const cfg = row.config_json || {};
-    const rowCategoryKey = row.category_key || categoryKey || null;
+    let rowCategoryKey = row.category_key || categoryKey || null;
+    let categoryCats = rowCategoryKey ? (taxMaps.membersByKey[rowCategoryKey] || null) : null;
+    let ruleDef = null;
+
+    // Data-driven section (Phase 3a): resolve the placed library section's rule.
+    // The section's OWN business_type sets the category members (the surface's
+    // creator/brand/city stack on top inside the rule). 'ALL' = no business filter.
+    if (row.rule === 'library_products' && cfg.library_section_id) {
+      const lib = await sectionLibrary.getRuleJson(cfg.library_section_id);
+      if (lib) {
+        ruleDef = lib.rule || {};
+        if (lib.business_type && lib.business_type !== 'ALL') {
+          rowCategoryKey = lib.business_type;
+          categoryCats = taxMaps.membersByKey[lib.business_type] || null;
+        } else {
+          categoryCats = null;
+        }
+      }
+    }
+
     const ctx = {
       city,
       followerId,
       followedIds,
       categoryKey: rowCategoryKey,
       // admin-linked member businesses for this key, from the single taxonomy source
-      categoryCats: rowCategoryKey ? (taxMaps.membersByKey[rowCategoryKey] || null) : null,
+      categoryCats,
+      ruleDef,                       // data-driven rule definition (library_products)
       influencer,
       itemType: row.item_type || null,
       limit: row.item_limit || 8,
@@ -141,6 +162,7 @@ async function buildSections(opts) {
     const key = JSON.stringify([
       screen, scopeType, scopeValue, sectionKey(row), row.rule, ctx.itemType,
       ctx.categoryKey, ctx.limit, city, followerId, influencer?.id || null,
+      cfg.library_section_id || null,   // distinct cache per placed library section
       // round coords to ~100m so nearby followers share a cache entry
       lat != null ? Math.round(lat * 1000) / 1000 : null,
       lng != null ? Math.round(lng * 1000) / 1000 : null,

@@ -1,0 +1,18 @@
+{
+  "feature": "merch-engine-p3a-section-library-engine",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (verbal go 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": false,
+  "notes": "Phase 3 step 1 of 3 (3a engine → 3b rule-builder UI → 3c placement+render). Backend + data only → NOT UI-governed; no mockup/06-diff gate. Additive + DORMANT (no follower-visible change until 3c). Step-5 gate: set approved=true (+by/+at) after founder reviews this spec. Production-impacting (backend/src + migration 103) → explicit founder go for the prod deploy, migrate-first.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

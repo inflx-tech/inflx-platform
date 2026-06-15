@@ -30,6 +30,7 @@ const db = require('../config/db');
 const { buildTracking } = require('../utils/tracking');
 const offerAdapter = require('./brandOffers.adapter');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
+const sectionLibrary = require('./sectionLibrary.service');
 
 // OR cutover (contract: listing-section-d0-seams / section-offer-repoint): when
 // SECTION_ENGINE_OFFERS is ON, offer shelves read the brandOffers.adapter (offers
@@ -659,6 +660,93 @@ async function productsInCategory(ctx) {
   return rows.map(mapListedProductItem);
 }
 
+// ── DATA-DRIVEN section (Phase 3a) ───────────────────────────────────────────
+// library_products = productsInCategory generalised with a rule definition
+// (sub-category subtree + tags + price + sort), with SURFACE CONTEXT stacked
+// (Layer 6): creator allocation, brand scope, category, city/geo. The rule def
+// is injected by the engine as ctx.ruleDef (from the placed section's library row).
+// Gate: pushed_to_store on platform/brand surfaces; LIVE ALLOCATION on a creator
+// surface (matches 2a/2b/2c — allocation is the creator-store gate, not push).
+async function libraryProducts(ctx) {
+  const def = (ctx.ruleDef && typeof ctx.ruleDef === 'object') ? ctx.ruleDef : {};
+  const { city, limit = 8 } = ctx;
+  const geo = hasCoords(ctx);
+  const cats = categoryFilter(ctx);                       // business → brand.category members
+  const creatorScoped = !!(ctx.influencer && ctx.influencer.id);
+
+  const params = [];
+  let p = 0;
+  const catIdx = cats ? ++p : null; if (cats) params.push(cats);
+
+  let subIdx = null;
+  if (def.subcategory_node_id) { subIdx = ++p; params.push(def.subcategory_node_id); }
+
+  let tagsIdx = null;
+  if (Array.isArray(def.tags) && def.tags.length) { tagsIdx = ++p; params.push(def.tags); }
+
+  let minIdx = null, maxIdx = null;
+  if (def.price_min != null) { minIdx = ++p; params.push(def.price_min); }
+  if (def.price_max != null) { maxIdx = ++p; params.push(def.price_max); }
+
+  // creator surface → intersect with this creator's LIVE-allocated products (2b)
+  let allocIdx = null;
+  if (creatorScoped) {
+    const allocIds = await sectionLibrary.creatorAllocatedProductIds(ctx.influencer.id);
+    if (!allocIds.length) return [];                      // creator promotes nothing live → empty
+    allocIdx = ++p; params.push(allocIds);
+  }
+
+  // brand surface → constrain to that brand
+  let brandIdx = null;
+  if (ctx.brandId) { brandIdx = ++p; params.push(ctx.brandId); }
+
+  const cityIdx = (city && !geo) ? ++p : null; if (city && !geo) params.push(city);
+  let latIdx, lngIdx;
+  if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
+  const limIdx = ++p; params.push(limit);
+
+  const distExpr = geo
+    ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN ${haversineKm(latIdx, lngIdx)} END`
+    : `NULL::numeric`;
+  const sortKey = def.sort === 'price_asc' ? 'bp.price ASC NULLS LAST'
+    : def.sort === 'price_desc' ? 'bp.price DESC NULLS LAST'
+    : 'bp.created_at DESC NULLS LAST';
+  const orderBy = geo
+    ? `dist_km ASC NULLS LAST, ${sortKey}`
+    : `${cityBoost(city, cityIdx)} ${sortKey}`;
+
+  // sub-category match = the node OR any descendant (recursive walk of category_nodes).
+  const subClause = subIdx ? `AND bp.category_node_id IN (
+        WITH RECURSIVE sub AS (
+          SELECT id FROM category_nodes WHERE id = $${subIdx}
+          UNION ALL
+          SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
+        ) SELECT id FROM sub)` : '';
+
+  const sql = `
+    SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
+           bp.created_at,
+           b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
+           u_b.city AS brand_city,
+           ${distExpr} AS dist_km
+      FROM brand_products bp
+      JOIN brands b   ON b.id = bp.brand_id
+      JOIN users u_b  ON u_b.id = b.user_id
+     WHERE u_b.status = 'approved' AND bp.is_active = true
+       ${creatorScoped ? '' : 'AND bp.pushed_to_store = true'}
+       ${cats ? `AND b.category = ANY($${catIdx})` : ''}
+       ${subClause}
+       ${tagsIdx ? `AND bp.tags @> $${tagsIdx}` : ''}
+       ${minIdx ? `AND bp.price >= $${minIdx}` : ''}
+       ${maxIdx ? `AND bp.price <= $${maxIdx}` : ''}
+       ${allocIdx ? `AND bp.id = ANY($${allocIdx})` : ''}
+       ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+     ORDER BY ${orderBy}
+     LIMIT $${limIdx}`;
+  const { rows } = await db.query(sql, params);
+  return rows.map(mapListedProductItem);
+}
+
 // Creators who PICKED products (influencer_product_notes) in a category. No live
 // offer required — picks express what a creator promotes regardless of campaigns.
 async function creatorsInCategoryListing(ctx) {
@@ -782,6 +870,7 @@ const RULES = {
   // listing-driven discovery (offer-independent)
   businesses_in_category: businessesInCategory,
   products_in_category: productsInCategory,
+  library_products: libraryProducts,
   creators_in_category_listing: creatorsInCategoryListing,
   // nav / static / disabled
   nav_verticals: navVerticals,

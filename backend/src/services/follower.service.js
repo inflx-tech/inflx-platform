@@ -1047,4 +1047,5 @@ module.exports = {
   getInfluencerStorePreview,
   getBrandStorePreview,
   computeOpenStatus,        // Phase 1 (Dining) — exported so controllers can reuse the helper
+  allocatedProductIds,      // Phase 3a — reused by sectionLibrary for creator-surface stacking
 };
