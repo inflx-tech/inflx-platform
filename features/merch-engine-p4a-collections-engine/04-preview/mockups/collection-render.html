@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Collection render — follower (Phase 4a mockup)</title>
+<style>
+  :root{--gold:#F6B11E;--cream:#FBEFD0;--ink:#1A1A1A;--muted:#6b6256;--line:#ece4d2;--terra:#D9663C}
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#f3ede0;color:var(--ink)}
+  .phone{max-width:380px;margin:18px auto;background:#fff;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+  .top{padding:14px 16px;font-size:13px;color:var(--muted)}
+  .shelf{padding:6px 14px 14px}
+  .stitle{font-size:15px;font-weight:800;margin:6px 0 8px}
+  .rail{display:flex;gap:10px;overflow:hidden}
+  .card{min-width:108px;border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
+  .thumb{height:74px;border-radius:8px;background:linear-gradient(135deg,#f3ede0,#fbefd0);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:6px}
+  .pn{font-size:11px;font-weight:700;line-height:1.15}
+  .pp{font-size:12px;font-weight:900;margin-top:2px}
+  .pp small{color:var(--terra);font-weight:800}
+  /* the NEW collection header band */
+  .collhdr{margin:8px 14px 2px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .collbanner{height:96px;background:linear-gradient(120deg,#F6B11E,#FBEFD0);display:flex;align-items:flex-end;padding:12px}
+  .collname{font-family:Georgia,serif;font-size:20px;font-weight:800;color:#3a2f12}
+  .collsub{font-size:11px;color:var(--muted);padding:7px 12px;background:#fffaf0}
+  .tag{display:inline-block;font-size:11px;font-weight:800;color:#8a6a12;background:#fff3d6;border-radius:999px;padding:2px 9px;margin-left:8px}
+  .annot{max-width:380px;margin:0 auto 22px;font-size:12px;color:#6b6256;padding:0 18px}
+  .annot b{color:#1A1A1A}
+</style></head>
+<body>
+  <div class="phone">
+    <div class="top">📍 Vijayawada · Home</div>
+
+    <!-- a normal section shelf (existing) -->
+    <div class="shelf">
+      <div class="stitle">Trending near you</div>
+      <div class="rail">
+        <div class="card"><div class="thumb">👗</div><div class="pn">Floral Dress</div><div class="pp">₹899</div></div>
+        <div class="card"><div class="thumb">👜</div><div class="pn">Tote Bag</div><div class="pp">₹599</div></div>
+        <div class="card"><div class="thumb">👟</div><div class="pn">Sneakers</div><div class="pp">₹1,299</div></div>
+      </div>
+    </div>
+
+    <!-- NEW: a COLLECTION = header band + its member section shelves, inline -->
+    <div class="collhdr">
+      <div class="collbanner"><div class="collname">Summer Collection ☀️</div></div>
+      <div class="collsub">Curated for the season <span class="tag">COLLECTION</span></div>
+    </div>
+
+    <div class="shelf">
+      <div class="stitle">Summer Dresses</div>
+      <div class="rail">
+        <div class="card"><div class="thumb">👗</div><div class="pn">Linen Midi</div><div class="pp">₹1,199</div></div>
+        <div class="card"><div class="thumb">👗</div><div class="pn">Cotton Wrap</div><div class="pp">₹899</div></div>
+        <div class="card"><div class="thumb">👗</div><div class="pn">Floral Maxi</div><div class="pp">₹1,499</div></div>
+      </div>
+    </div>
+    <div class="shelf">
+      <div class="stitle">Summer Footwear</div>
+      <div class="rail">
+        <div class="card"><div class="thumb">🩴</div><div class="pn">Slides</div><div class="pp">₹499</div></div>
+        <div class="card"><div class="thumb">👡</div><div class="pn">Wedges</div><div class="pp">₹999</div></div>
+        <div class="card"><div class="thumb">👟</div><div class="pn">Canvas</div><div class="pp">₹799</div></div>
+      </div>
+    </div>
+    <div class="shelf">
+      <div class="stitle">Summer Bags</div>
+      <div class="rail">
+        <div class="card"><div class="thumb">👜</div><div class="pn">Straw Tote</div><div class="pp">₹699</div></div>
+        <div class="card"><div class="thumb">🎒</div><div class="pn">Mini Pack</div><div class="pp">₹599</div></div>
+      </div>
+    </div>
+
+    <!-- next normal shelf continues -->
+    <div class="shelf">
+      <div class="stitle">Top Creators</div>
+      <div class="rail">
+        <div class="card" style="min-width:84px"><div class="thumb" style="border-radius:50%">🧕</div><div class="pn">@rikita</div></div>
+        <div class="card" style="min-width:84px"><div class="thumb" style="border-radius:50%">🧑</div><div class="pn">@sagar</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="annot">
+    The <b>Summer Collection</b> band is the one new piece (a titled header). Under it,
+    its member <b>sections</b> render as normal shelves — each is a Phase-3 rule, so they
+    stay <b>context-aware</b> (on a creator's store they'd show only that creator's summer
+    items). Empty members are hidden; an all-empty collection shows no band. Palette shown is
+    indicative — the real gold/cream re-skin is Phase 5.
+  </div>
+</body></html>

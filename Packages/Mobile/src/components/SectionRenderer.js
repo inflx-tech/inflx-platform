@@ -184,6 +184,10 @@ function renderSection(section, navigation, canFollow) {
 
   if (section.type === 'controls') return <ChipRow section={section} />;
 
+  // Collection header band (Phase 4a) — renders even with no items (it's a title,
+  // not a data shelf); placed before the empty-items guard below.
+  if (section.type === 'collection_header') return <CollectionHeader section={section} />;
+
   if ((section.type === 'offers' || section.type === 'mixed') && section.items.length) {
     if (section.config?.hero) return <HeroOffer section={section} navigation={navigation} />;
     if (section.config?.grid) return <OfferGrid section={section} navigation={navigation} />;
@@ -299,6 +303,22 @@ function renderSection(section, navigation, canFollow) {
   }
 }
 
+// Collection header band (Phase 4a) — a titled group header above the collection's
+// member section shelves. Optional banner image; otherwise a soft branded band.
+function CollectionHeader({ section }) {
+  const img = section.config?.image_url;
+  return (
+    <View style={styles.collHeader}>
+      {img ? <View style={styles.collImgWrap}><Text style={styles.collImgFallback}>🛍️</Text></View> : null}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.collName}>{section.title}</Text>
+        {section.config?.sub ? <Text style={styles.collSub}>{section.config.sub}</Text> : null}
+      </View>
+      <Text style={styles.collTag}>COLLECTION</Text>
+    </View>
+  );
+}
+
 export default function SectionRenderer({ sections, navigation, canFollow }) {
   if (!Array.isArray(sections)) return null;
   return (
@@ -324,4 +344,18 @@ const styles = StyleSheet.create({
   heroDiscount: { fontSize: 14, fontWeight: '800', color: '#fff', marginTop: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
   gridCell: { width: '47%' },
+  collHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    marginHorizontal: 16, marginTop: 14, marginBottom: 2,
+    paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: C.soft, borderRadius: 14, borderWidth: 1, borderColor: C.line,
+  },
+  collImgWrap: {
+    width: 38, height: 38, borderRadius: 9, backgroundColor: C.card,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  collImgFallback: { fontSize: 18 },
+  collName: { fontSize: 17, fontWeight: '800', color: C.ink, fontFamily: fonts?.serifDisplay },
+  collSub: { fontSize: 11, color: C.muted, marginTop: 1, fontFamily: fonts?.sansRegular },
+  collTag: { fontSize: 9, fontWeight: '800', color: C.brown, letterSpacing: 0.4 },
 });

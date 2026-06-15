@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p4a-collections-engine",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": true,
+  "approved_by": "founder (verbal go to phase 4 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (verbal lock 2026-06-15)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "Phase 4 step 1 of 2. Collections data + engine expansion + one mobile renderer case (collection_header). UI-governed (mobile) + backend + migration 104. Mockup at 04-preview/mockups/collection-render.html — AWAITING founder mockup-lock before implementation. DORMANT until 4b builds+places a collection. Production-impacting (backend + migration + mobile OTA) → explicit founder go for deploy. released=false; no Maestro (not flipping released).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
