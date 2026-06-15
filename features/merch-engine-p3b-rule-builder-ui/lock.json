@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p3b-rule-builder-ui",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": true,
+  "approved_by": "founder (verbal go to proceed to 3b 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (verbal lock 2026-06-15)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "Phase 3 step 2 of 3. UI-governed (brand-web admin + backend admin routes). Mockup at 04-preview/mockups/section-library.html — AWAITING founder mockup-lock before implementation (set mockup_locked=true +_by +_at on his sign-off). released=false; founder verifies in prod. No mobile/Maestro.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

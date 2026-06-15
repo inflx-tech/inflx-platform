@@ -163,4 +163,11 @@ router.post  ('/follower-categories',     authenticate, requireAnyAdminRole, fol
 router.patch ('/follower-categories/:id', authenticate, requireAnyAdminRole, followerCatCtrl.update);
 router.delete('/follower-categories/:id', authenticate, requireAnyAdminRole, followerCatCtrl.remove);
 
+// ── Section Library (merch-engine Phase 3b) — reusable data-driven sections ──
+const sectionLibraryCtrl = require('../controllers/adminSectionLibrary.controller');
+router.get   ('/section-library',         authenticate, requireAnyAdminRole, sectionLibraryCtrl.list);
+router.post  ('/section-library',         authenticate, requireAnyAdminRole, sectionLibraryCtrl.create);
+router.post  ('/section-library/preview', authenticate, requireAnyAdminRole, sectionLibraryCtrl.preview);
+router.patch ('/section-library/:id',     authenticate, requireAnyAdminRole, sectionLibraryCtrl.update);
+
 module.exports = router;

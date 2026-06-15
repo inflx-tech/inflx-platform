@@ -585,6 +585,13 @@ export const adminApi = {
   updateFollowerCategory:  (id, data) => api.patch(`/admin/follower-categories/${id}`, data),
   deleteFollowerCategory:  (id) => api.delete(`/admin/follower-categories/${id}`),
 
+  // Section Library (merch-engine Phase 3b) — reusable data-driven sections + live preview.
+  listSectionLibrary:    (businessType) => api.get(`/admin/section-library${businessType ? `?business_type=${encodeURIComponent(businessType)}` : ''}`),
+  createSectionLibrary:  (data) => api.post('/admin/section-library', data),
+  updateSectionLibrary:  (id, data) => api.patch(`/admin/section-library/${id}`, data),
+  previewSectionLibrary: (data) => api.post('/admin/section-library/preview', data),
+  getListingTree:        (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
+
   // Creator verification queue (claimed → verified / rejected / reset).
   // Backed by /v1/admin/creator-verifications/* — admin queue surfaces
   // creator_profiles rows in 'claimed' state (either auto-claimed from a
