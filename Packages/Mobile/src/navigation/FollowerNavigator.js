@@ -52,6 +52,8 @@ import LookbookDetailScreen from '../screens/follower/LookbookDetailScreen';
 import ReelsScreen from '../screens/follower/ReelsScreen';
 // Flow 52.7 — Creator-scoped category screen (mockup 4a)
 import CreatorCategoryScreen from '../screens/follower/CreatorCategoryScreen';
+// merch-engine — shared "View all" full-list results screen
+import SectionResultsScreen from '../screens/follower/SectionResultsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -73,6 +75,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="Find" component={FindScreen} />
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
     <Stack.Screen name="CreatorCategory" component={CreatorCategoryScreen} />
+    <Stack.Screen name="SectionResults" component={SectionResultsScreen} />
     {/* Wave 4 — restaurant discovery surface (only routed to from the 'eat'
         category tile on HomeScreenV2; other categories keep CategoryList). */}
     <Stack.Screen name="DiningHome" component={DiningHomeScreen} />

@@ -186,7 +186,7 @@ export default function HomeScreenV2({ navigation }) {
       </View>
 
       {sectionsActive ? (
-        <SectionRenderer sections={sections} navigation={navigation} canFollow={isLoggedIn} />
+        <SectionRenderer sections={sections} navigation={navigation} canFollow={isLoggedIn} context={{ lat: latitude, lng: longitude }} />
       ) : (
       <>
       {/* Influencer stories */}

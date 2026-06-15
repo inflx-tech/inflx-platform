@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Results page + View all (mockup)</title>
+<style>
+  :root{--gold:#F6B11E;--cream:#FBEFD0;--ink:#1A1A1A;--muted:#6b6256;--line:#ece4d2;--terra:#D9663C}
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#f3ede0;color:var(--ink)}
+  .stage{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;padding:20px}
+  .phone{width:330px;background:#fff;border-radius:20px;overflow:hidden;border:1px solid var(--line)}
+  .cap{font-size:12px;font-weight:700;color:var(--muted);text-align:center;margin-top:8px}
+  .top{padding:13px 15px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line)}
+  .shelfhdr{display:flex;align-items:center;justify-content:space-between;padding:12px 15px 6px}
+  .stitle{font-size:15px;font-weight:800}
+  .seeall{font-size:12px;font-weight:800;color:var(--terra)}
+  .rail{display:flex;gap:10px;overflow:hidden;padding:0 15px 14px}
+  .card{min-width:104px;border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
+  .thumb{height:70px;border-radius:8px;background:linear-gradient(135deg,#f3ede0,#fbefd0);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:6px;position:relative}
+  .badge{position:absolute;top:3px;left:3px;font-size:8px;font-weight:900;color:#fff;background:var(--terra);border-radius:4px;padding:1px 4px}
+  .pn{font-size:10.5px;font-weight:700;line-height:1.15}.pp{font-size:11px;font-weight:900}
+  /* results screen */
+  .rhead{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid var(--line)}
+  .back{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+  .rtitle{font-size:16px;font-weight:900}
+  .rsub{font-size:11px;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:13px 15px}
+  .gcard{border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff}
+  .gthumb{height:96px;border-radius:8px;background:linear-gradient(135deg,#f3ede0,#fbefd0);display:flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:7px;position:relative}
+  .pp s{color:var(--muted);font-weight:600;font-size:9px}
+  .note{font-size:10px;color:var(--muted);text-align:center;padding:6px}
+  .annot{max-width:720px;margin:6px auto 0;font-size:12px;color:#6b6256;padding:0 16px;text-align:center}
+</style></head>
+<body>
+  <div class="stage">
+    <!-- LEFT: a shelf with the new "See all" -->
+    <div>
+      <div class="phone">
+        <div class="top">📍 Vijayawada · Home</div>
+        <div class="shelfhdr"><div class="stitle">Jeans Under ₹499</div><div class="seeall">See all →</div></div>
+        <div class="rail">
+          <div class="card"><div class="thumb">👖</div><div class="pn">Pepe Slim</div><div class="pp">₹449</div></div>
+          <div class="card"><div class="thumb">👖</div><div class="pn">Levi's 511</div><div class="pp">₹499</div></div>
+          <div class="card"><div class="thumb">👖</div><div class="pn">Wrangler</div><div class="pp">₹399</div></div>
+        </div>
+        <div class="shelfhdr"><div class="stitle">Top Creators</div><div class="seeall">See all →</div></div>
+        <div class="rail">
+          <div class="card" style="min-width:80px"><div class="thumb" style="border-radius:50%">🧕</div><div class="pn">@rikita</div></div>
+          <div class="card" style="min-width:80px"><div class="thumb" style="border-radius:50%">🧑</div><div class="pn">@sagar</div></div>
+        </div>
+      </div>
+      <div class="cap">Every shelf → "See all →" (title tappable too)</div>
+    </div>
+
+    <!-- RIGHT: the shared Results screen it opens -->
+    <div>
+      <div class="phone">
+        <div class="rhead"><div class="back">←</div><div><div class="rtitle">Jeans Under ₹499</div><div class="rsub">all matching products · near you</div></div></div>
+        <div class="grid">
+          <div class="gcard"><div class="gthumb">👖<span class="badge">25% OFF</span></div><div class="pn">Pepe Slim Fit</div><div class="pp">₹449 <s>₹599</s></div></div>
+          <div class="gcard"><div class="gthumb">👖</div><div class="pn">Levi's 511</div><div class="pp">₹499</div></div>
+          <div class="gcard"><div class="gthumb">👖</div><div class="pn">Wrangler Skinny</div><div class="pp">₹399</div></div>
+          <div class="gcard"><div class="gthumb">👖<span class="badge">20% OFF</span></div><div class="pn">Spykar Slim</div><div class="pp">₹479</div></div>
+          <div class="gcard"><div class="gthumb">👖</div><div class="pn">Flying Machine</div><div class="pp">₹459</div></div>
+          <div class="gcard"><div class="gthumb">👖</div><div class="pn">Roadster Slim</div><div class="pp">₹429</div></div>
+        </div>
+        <div class="note">showing all 14 · context: near you</div>
+      </div>
+      <div class="cap">Shared Results screen — 2-column full list</div>
+    </div>
+  </div>
+  <p class="annot">One screen for all: "See all" (now), Banner-Gateway CTA + Hero tiles (Phase 6) all open this same Results page, re-running the shelf's rule with the same surface context (on a creator's store → only that creator's jeans). Products show as a 2-column grid; creators/brands/offers show as a list. Palette indicative — gold/cream re-skin is Phase 5. v1 shows up to 100 (load-more later).</p>
+</body></html>

@@ -29,6 +29,8 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
+const sectionLibrary = require('../services/sectionLibrary.service');
+const { runRule } = require('../services/sectionRules.service');
 const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
@@ -1318,8 +1320,52 @@ const getCreatorCategorySections = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
+// GET /v1/follower/section-results — the shared "View all" full list for one shelf's rule.
+// Re-runs the shelf's rule with the SAME surface context (creator/category/brand/city) but a
+// larger limit. Generic: the app passes the shelf's rule + config + its context. v1 = capped
+// list (no offset pagination — the rules have no OFFSET). Also the Phase-6 banner-gateway target.
+const getSectionResults = asyncHandler(async (req, res) => {
+  const { followerId, city, lat, lng } = await resolveFollowerContext(req);
+  const { rule, library_section_id, category_key, creator_handle, brand_id } = req.query;
+  if (!rule) throw new AppError('VALIDATION_ERROR', 'rule is required', 422, 'rule');
+
+  const limit = Math.min(parseInt(req.query.limit, 10) || 60, 100);
+  const influencer = creator_handle
+    ? await sectionEngine.resolveInfluencerByHandle(creator_handle)
+    : null;
+
+  // library/collection-member shelves carry their rule definition in the library section.
+  let ruleDef = null;
+  if (library_section_id) {
+    const lib = await sectionLibrary.getRuleJson(library_section_id);
+    ruleDef = lib ? lib.rule : {};
+  }
+
+  let categoryCats = null;
+  if (category_key) {
+    const maps = await categoryTaxonomy.getMaps();
+    categoryCats = maps.membersByKey[category_key] || null;
+  }
+
+  const ctx = {
+    city, followerId,
+    followedIds: await sectionEngine.getFollowedIds(followerId),
+    categoryKey: category_key || null,
+    categoryCats,
+    influencer,
+    brandId: brand_id || null,
+    ruleDef,
+    limit,
+    lat, lng,
+  };
+
+  const items = await runRule(rule, ctx);
+  return success(res, { items, item_type: req.query.item_type || null, capped: items.length >= limit });
+});
+
 module.exports = {
   creatorsEatingNow,
+  getSectionResults,
   search,
   register,
   getMe,

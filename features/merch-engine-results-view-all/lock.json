@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-results-view-all",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": true,
+  "approved_by": "founder (verbal go for results page + view-all 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (verbal lock 2026-06-15)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "Shared Results screen + universal 'View all' on every list-bearing shelf; also the Phase-6 banner-gateway/hero-tile target. Backend generic /follower/section-results (re-runs runRule with bigger limit) + mobile SectionResultsScreen + SectionRenderer onSeeAll wiring + host context threading. No migration. v1 = capped list (≤100), no offset pagination (fast-follow). Mockup at 04-preview/mockups/results-view-all.html — AWAITING founder mockup-lock before implementation. Production-impacting (backend + mobile OTA) → explicit founder go for deploy. released=false; no Maestro (not flipping released).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

@@ -428,7 +428,7 @@ export default function CategoryListScreen({ route, navigation }) {
         {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
 
         {sectionsActive ? (
-          <SectionRenderer sections={filteredSections} navigation={navigation} />
+          <SectionRenderer sections={filteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
         ) : (
         <>
         {/* Layout dispatch (legacy fallback on engine error/empty) */}

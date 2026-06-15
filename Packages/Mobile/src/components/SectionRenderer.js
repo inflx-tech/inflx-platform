@@ -51,7 +51,7 @@ export function offerNavParam(item) {
   };
 }
 
-function goToOffer(navigation, item) {
+export function goToOffer(navigation, item) {
   navigation.navigate('ProductDetail', {
     offer: offerNavParam(item),
     brand: item.brand
@@ -65,7 +65,7 @@ function goToOffer(navigation, item) {
 }
 
 // Listing/product tap → ProductDetail with the product (+ any offer/4-ID it carries).
-function goToProduct(navigation, item) {
+export function goToProduct(navigation, item) {
   const product = item.product || { id: item.id, name: item.name, price: item.price, image_url: item.image_url };
   navigation.navigate('ProductDetail', {
     offer: item.discount_value ? offerNavParam(item) : null,
@@ -81,7 +81,7 @@ function goToProduct(navigation, item) {
   });
 }
 
-function goToBrand(navigation, item) {
+export function goToBrand(navigation, item) {
   navigation.navigate('BrandStore', { brandId: item.id, name: item.name, tracking: item.tracking || null });
 }
 
@@ -177,10 +177,25 @@ export function hasEngineContent(sections) {
 
 // ── per-shelf render ──────────────────────────────────────────────────────────
 
-function renderSection(section, navigation, canFollow) {
+function renderSection(section, navigation, canFollow, context = {}) {
   if (!section || !Array.isArray(section.items)) return null;
   const sub = section.config?.sub;
   const count = section.items.length;
+
+  // Universal "View all" → the shared Results screen, re-running THIS shelf's rule with the
+  // same surface context (creator/category/brand/city stack). Only for list-bearing shelves.
+  const ctx = context || {};
+  const seeAll = () => navigation.navigate('SectionResults', {
+    title: section.title,
+    rule: section.rule,
+    item_type: section.type,
+    library_section_id: section.config?.library_section_id || null,
+    category_key: ctx.superCategory || null,
+    creator_handle: ctx.creatorHandle || null,
+    brand_id: ctx.brandId || null,
+    lat: ctx.lat ?? null,
+    lng: ctx.lng ?? null,
+  });
 
   if (section.type === 'controls') return <ChipRow section={section} />;
 
@@ -199,7 +214,7 @@ function renderSection(section, navigation, canFollow) {
     case 'creators':
       return (
         <View>
-          <ShelfHeader title={section.title} sub={sub} count={count} tag="creators" />
+          <ShelfHeader title={section.title} sub={sub} count={count} tag="creators" onSeeAll={seeAll} />
           <StoryRail
             items={section.items.map(s => ({
               id: s.id, handle: s.handle, name: s.name, avatar: s.avatar,
@@ -229,7 +244,7 @@ function renderSection(section, navigation, canFollow) {
       if (section.config?.main_list) {
         return (
           <View>
-            <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" />
+            <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" onSeeAll={seeAll} />
             {section.items.map((item, i) => (
               <ShelfBrandListRow key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => goToBrand(navigation, item)} />
             ))}
@@ -238,7 +253,7 @@ function renderSection(section, navigation, canFollow) {
       }
       return (
         <View>
-          <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" />
+          <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" onSeeAll={seeAll} />
           <Rail>
             {section.items.map((item, i) => (
               <ShelfBrandCard key={item.id || i} brand={item} distanceKm={item.distance_km} onPress={() => goToBrand(navigation, item)} />
@@ -250,7 +265,7 @@ function renderSection(section, navigation, canFollow) {
     case 'products':
       return (
         <View>
-          <ShelfHeader title={section.title} sub={sub} count={count} tag="products" />
+          <ShelfHeader title={section.title} sub={sub} count={count} tag="products" onSeeAll={seeAll} />
           <Rail>
             {section.items.map((item, i) => (
               <ShelfProductCard
@@ -270,7 +285,7 @@ function renderSection(section, navigation, canFollow) {
     case 'mixed':
       return (
         <View>
-          <ShelfHeader title={section.title} sub={sub} count={count} tag={section.type} />
+          <ShelfHeader title={section.title} sub={sub} count={count} tag={section.type} onSeeAll={seeAll} />
           <Rail>
             {section.items.map((item, i) => (
               isFeatureShelf(section) ? (
@@ -319,12 +334,12 @@ function CollectionHeader({ section }) {
   );
 }
 
-export default function SectionRenderer({ sections, navigation, canFollow }) {
+export default function SectionRenderer({ sections, navigation, canFollow, context }) {
   if (!Array.isArray(sections)) return null;
   return (
     <View>
       {sections.map((section, i) => (
-        <View key={section.key || i}>{renderSection(section, navigation, canFollow)}</View>
+        <View key={section.key || i}>{renderSection(section, navigation, canFollow, context)}</View>
       ))}
     </View>
   );

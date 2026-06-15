@@ -456,6 +456,20 @@ export const followerApi = {
     const qs = p.length ? `?${p.join('&')}` : '';
     return api.get(`/follower/section/offers${qs}`);
   },
+  // Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
+  getSectionResults: (opts = {}) => {
+    const p = [];
+    const add = (k, v) => { if (v != null && v !== '') p.push(`${k}=${encodeURIComponent(v)}`); };
+    add('rule', opts.rule);
+    add('item_type', opts.item_type);
+    add('library_section_id', opts.library_section_id);
+    add('category_key', opts.category_key);
+    add('creator_handle', opts.creator_handle);
+    add('brand_id', opts.brand_id);
+    if (opts.lat != null) { add('lat', opts.lat); add('lng', opts.lng); }
+    add('limit', opts.limit);
+    return api.get(`/follower/section-results?${p.join('&')}`);
+  },
 
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),

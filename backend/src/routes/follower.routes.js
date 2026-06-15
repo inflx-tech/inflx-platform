@@ -54,6 +54,8 @@ router.get('/section/category/:key',                 authenticateOptional, ctrl.
 router.get('/section/offers',                        authenticateOptional, ctrl.getOffersSections);
 router.get('/section/creator/:handle',               authenticateOptional, ctrl.getCreatorSections);
 router.get('/section/creator/:handle/category/:cat', authenticateOptional, ctrl.getCreatorCategorySections);
+// Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
+router.get('/section-results',                        authenticateOptional, ctrl.getSectionResults);
 
 // ── Wave 5 — Reviews + ratings ───────────────────────────────────────────────
 // List is public (followers read reviews before visiting); create +
