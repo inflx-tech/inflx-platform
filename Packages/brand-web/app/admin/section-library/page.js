@@ -19,7 +19,8 @@ const SORTS = [
   { key: 'price_desc', label: 'Price: high → low' },
 ];
 const EMPTY = { business_type: '', name: '', image_url: '', sort: 'newest',
-  subcategory_node_id: '', subcategory_label: '', tags: [], price_min: '', price_max: '' };
+  subcategory_node_id: '', subcategory_label: '', tags: [], price_min: '', price_max: '',
+  has_offer: false, min_discount_pct: '' };
 
 // Flatten the nested category tree into indented, selectable rows.
 function flattenTree(roots, depth = 0, out = []) {
@@ -86,6 +87,7 @@ export default function SectionLibraryPage() {
       subcategory_node_id: r.subcategory_node_id || '', subcategory_label: '',
       tags: Array.isArray(r.tags) ? r.tags : [],
       price_min: r.price_min ?? '', price_max: r.price_max ?? '',
+      has_offer: r.has_offer === true, min_discount_pct: r.min_discount_pct ?? '',
     };
     setForm(f); setFormError(null); setPreview(null); setEditing(s);
     loadBusinessMeta(s.business_type);
@@ -107,6 +109,8 @@ export default function SectionLibraryPage() {
     if (f.tags.length) rule.tags = f.tags;
     if (f.price_min !== '' && f.price_min != null) rule.price_min = Number(f.price_min);
     if (f.price_max !== '' && f.price_max != null) rule.price_max = Number(f.price_max);
+    if (f.has_offer) rule.has_offer = true;
+    if (f.min_discount_pct !== '' && f.min_discount_pct != null) rule.min_discount_pct = Number(f.min_discount_pct);
     return rule;
   }
 
@@ -124,7 +128,7 @@ export default function SectionLibraryPage() {
     }, 350);
     return () => debRef.current && clearTimeout(debRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing, form.business_type, form.subcategory_node_id, JSON.stringify(form.tags), form.price_min, form.price_max, form.sort]);
+  }, [editing, form.business_type, form.subcategory_node_id, JSON.stringify(form.tags), form.price_min, form.price_max, form.sort, form.has_offer, form.min_discount_pct]);
 
   async function handleSave() {
     setFormError(null);
@@ -194,6 +198,8 @@ export default function SectionLibraryPage() {
                       {(r.tags || []).map(t => <span key={t} className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">#{t}</span>)}
                       {r.price_min != null && <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-surface2 text-t2">≥ ₹{r.price_min}</span>}
                       {r.price_max != null && <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-surface2 text-t2">≤ ₹{r.price_max}</span>}
+                      {r.min_discount_pct != null && <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700">≥{r.min_discount_pct}% off</span>}
+                      {r.has_offer && r.min_discount_pct == null && <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700">has offer</span>}
                       <span className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-surface2 text-t3">{(SORTS.find(x => x.key === r.sort) || SORTS[0]).label}</span>
                     </div>
                     <div className="col-span-2 flex justify-end gap-2">
@@ -270,6 +276,24 @@ export default function SectionLibraryPage() {
                     </select>
                   </div>
                   <div><label className="block text-[11px] font-bold text-t2 mb-1">Image URL <span className="text-t3 font-medium">(optional)</span></label><input value={form.image_url} onChange={e => patch({ image_url: e.target.value })} placeholder="https://…" className="w-full border border-border rounded-lg px-3 py-2 text-xs" /></div>
+                </div>
+                {/* Offers (Phase 3d) — live published-to-store offers */}
+                <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3 space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Offers</div>
+                  <label className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-t2">Only products with a live offer</span>
+                    <button type="button" onClick={() => patch({ has_offer: !form.has_offer })}
+                      className={`w-10 h-6 rounded-full relative transition-colors ${form.has_offer ? 'bg-navy' : 'bg-border'}`}>
+                      <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${form.has_offer ? 'left-[18px]' : 'left-0.5'}`} />
+                    </button>
+                  </label>
+                  <div>
+                    <label className="block text-[11px] font-bold text-t2 mb-1">Minimum discount %</label>
+                    <input type="number" min="0" max="100" value={form.min_discount_pct}
+                      onChange={e => patch({ min_discount_pct: e.target.value })}
+                      placeholder="e.g. 20" className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
+                    <p className="text-[10px] text-t3 mt-1 italic">Live store offers; % uses the value, flat ₹ = ₹off ÷ price. Store-wide offers count for all the brand’s products.</p>
+                  </div>
                 </div>
               </div>
 

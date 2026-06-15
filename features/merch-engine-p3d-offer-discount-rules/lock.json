@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p3d-offer-discount-rules",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": true,
+  "approved_by": "founder (verbal go to implement offer/discount rules 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (verbal lock 2026-06-15)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "Adds has_offer + min_discount_pct to the section rule (extends 3a evaluator + 3b builder). Joins brand_offers (published-to-store, live); store-wide offers apply to all the brand's products. No migration/mobile. Mockup at 04-preview/mockups/offer-discount-rule.html — AWAITING founder mockup-lock before implementation. Production-impacting (backend + brand-web) → explicit founder go for deploy. released=false. Fast-follow noted: creator-allocated-offer discount filtering.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

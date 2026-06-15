@@ -54,4 +54,18 @@ describe('Section Library — rule validation (Phase 3a)', () => {
     expect(() => sectionLibrary.validateRule({ subcategory_node_id: '   ' }))
       .toThrow(/subcategory_node_id/);
   });
+
+  // Phase 3d — offer/discount filters
+  test('has_offer accepted only when true; absent otherwise', () => {
+    expect(sectionLibrary.validateRule({ has_offer: true }).has_offer).toBe(true);
+    expect(sectionLibrary.validateRule({ has_offer: false }).has_offer).toBeUndefined();
+    expect(sectionLibrary.validateRule({}).has_offer).toBeUndefined();
+  });
+
+  test('min_discount_pct coerced, clamped to 100, rejects negative', () => {
+    expect(sectionLibrary.validateRule({ min_discount_pct: '20' }).min_discount_pct).toBe(20);
+    expect(sectionLibrary.validateRule({ min_discount_pct: 150 }).min_discount_pct).toBe(100);
+    expect(sectionLibrary.validateRule({ min_discount_pct: '' }).min_discount_pct).toBeUndefined();
+    expect(() => sectionLibrary.validateRule({ min_discount_pct: -5 })).toThrow(/non-negative/);
+  });
 });

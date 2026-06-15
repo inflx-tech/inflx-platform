@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Offer/discount rule fields (Phase 3d mockup)</title>
+<style>
+  :root{--navy:#1b2a4a;--t1:#1c2741;--t2:#55617c;--t3:#8a93a8;--border:#e6e9f0;--surface2:#f4f6fa;--navy-pale:#eef1f8;--green:#1c8a5a;--terra:#D9663C}
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#fafbfd;color:var(--t1)}
+  .wrap{max-width:720px;margin:18px auto;padding:0 18px}
+  .h{font-size:15px;font-weight:800;margin-bottom:2px}.sub{font-size:12px;color:var(--t3);margin-bottom:14px}
+  .panel{display:grid;grid-template-columns:1.3fr 1fr;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff}
+  .form{padding:16px;border-right:1px solid var(--border)}
+  .preview{padding:16px;background:var(--surface2)}
+  .fld{margin-bottom:12px}
+  label{display:block;font-size:11px;font-weight:700;color:var(--t2);margin-bottom:5px}
+  input,select{width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px;background:#fff}
+  .existing{opacity:.55}
+  .newblk{border:1px dashed var(--terra);border-radius:10px;padding:11px;margin-top:6px;background:#fff7f3}
+  .newtag{display:inline-block;font-size:9px;font-weight:800;color:#fff;background:var(--terra);border-radius:5px;padding:1px 6px;margin-bottom:8px;letter-spacing:.3px}
+  .togrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .togrow span{font-size:12px;font-weight:700}
+  .tog{width:40px;height:22px;border-radius:99px;background:var(--navy);position:relative}
+  .tog::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff}
+  .pct{display:flex;align-items:center;gap:8px}
+  .pct input{width:80px}
+  .hint{font-size:10px;color:var(--t3);font-style:italic;margin-top:4px}
+  .pv-lab{font-size:10px;font-weight:800;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+  .pv-count{font-size:28px;font-weight:900;color:var(--green)}
+  .pv-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .pc{background:#fff;border:1px solid var(--border);border-radius:9px;padding:7px}
+  .pt{height:46px;border-radius:6px;background:linear-gradient(135deg,#eef1f8,#fbefd0);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:5px;position:relative}
+  .badge{position:absolute;top:3px;left:3px;font-size:8px;font-weight:900;color:#fff;background:var(--terra);border-radius:4px;padding:1px 4px}
+  .pn{font-size:10.5px;font-weight:700}.pp{font-size:10.5px;font-weight:900}
+  .pp s{color:var(--t3);font-weight:600;font-size:9px}
+</style></head>
+<body><div class="wrap">
+  <div class="h">Section builder — new offer/discount filters</div>
+  <div class="sub">Same builder as today; two new controls added under the existing rule fields.</div>
+  <div class="panel">
+    <div class="form">
+      <div class="existing">
+        <div class="fld"><label>Name</label><input value="Fashion Deals 20%+"/></div>
+        <div class="fld"><label>Business</label><select><option>Fashion</option></select></div>
+        <div class="fld"><label>Sub-category · Tags · Price · Sort</label><input value="(existing fields…)"/></div>
+      </div>
+
+      <div class="newblk">
+        <span class="newtag">NEW · OFFERS</span>
+        <div class="togrow"><span>Has a live offer</span><div class="tog"></div></div>
+        <label>Minimum discount %</label>
+        <div class="pct"><input value="20"/><span style="font-size:12px;color:#55617c">% off or more</span></div>
+        <div class="hint">Counts live store offers (published-to-store). % offers use the value; flat ₹ offers = ₹off ÷ price. A store-wide offer counts for all the brand's products.</div>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="pv-lab">Live preview · platform</div>
+      <div class="pv-count">7</div>
+      <div style="font-size:11px;color:#55617c">products with a live ≥20% offer</div>
+      <div class="pv-cards">
+        <div class="pc"><div class="pt">👗<span class="badge">25% OFF</span></div><div class="pn">Floral Maxi</div><div class="pp">₹1,124 <s>₹1,499</s></div></div>
+        <div class="pc"><div class="pt">👕<span class="badge">20% OFF</span></div><div class="pn">Pepe Tee</div><div class="pp">₹879 <s>₹1,099</s></div></div>
+        <div class="pc"><div class="pt">👖<span class="badge">30% OFF</span></div><div class="pn">Levi's 511</div><div class="pp">₹349 <s>₹499</s></div></div>
+        <div class="pc"><div class="pt">👜<span class="badge">20% OFF</span></div><div class="pn">Tote</div><div class="pp">₹479 <s>₹599</s></div></div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:11.5px;color:#6b6256;margin-top:14px">Both filters stack with the existing category/tags/price + surface context (on a creator's store, only that creator's discounted items). "Has a live offer" alone = any live offer (incl. BOGO/bundle); "Minimum discount %" = discount-type offers meeting the threshold.</p>
+</div></body></html>

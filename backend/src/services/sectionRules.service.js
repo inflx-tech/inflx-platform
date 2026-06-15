@@ -700,6 +700,10 @@ async function libraryProducts(ctx) {
   let brandIdx = null;
   if (ctx.brandId) { brandIdx = ++p; params.push(ctx.brandId); }
 
+  // offer/discount filters (Phase 3d) — live published-to-store offers
+  let minDiscIdx = null;
+  if (def.min_discount_pct != null) { minDiscIdx = ++p; params.push(def.min_discount_pct); }
+
   const cityIdx = (city && !geo) ? ++p : null; if (city && !geo) params.push(city);
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
@@ -723,6 +727,32 @@ async function libraryProducts(ctx) {
           SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id
         ) SELECT id FROM sub)` : '';
 
+  // Offer/discount filters (Phase 3d): correlated EXISTS over live, published-to-store
+  // brand_offers that APPLY to the product. Effective scope = config.scope, else
+  // products-present ? 'products' : 'store'. store-wide & category offers apply broadly.
+  const offerLiveGate = `bo.brand_id = b.id AND bo.status = 'active' AND bo.published_to_store = true
+        AND (bo.store_starts_at IS NULL OR bo.store_starts_at <= now())
+        AND (bo.store_ends_at IS NULL OR bo.store_ends_at >= now())`;
+  const effScope = `COALESCE(bo.offer_config_json->>'scope',
+        CASE WHEN jsonb_typeof(bo.offer_config_json->'products') = 'array'
+               AND jsonb_array_length(bo.offer_config_json->'products') > 0 THEN 'products' ELSE 'store' END)`;
+  const offerApplies = `(
+        ${effScope} = 'store'
+        OR (${effScope} = 'category' AND bp.section IS NOT DISTINCT FROM bo.offer_config_json->>'category')
+        OR (${effScope} = 'products' AND EXISTS (
+              SELECT 1 FROM jsonb_array_elements(COALESCE(bo.offer_config_json->'products', '[]'::jsonb)) e
+               WHERE e->>'id' = bp.id::text)))`;
+  const numVal = `CASE WHEN bo.offer_config_json->>'value' ~ '^[0-9]+(\\.[0-9]+)?$'
+        THEN (bo.offer_config_json->>'value')::numeric ELSE NULL END`;
+  const discPct = `(CASE WHEN bo.offer_config_json->>'sub_type' = 'pct' THEN ${numVal}
+        WHEN bo.offer_config_json->>'sub_type' = 'flat' AND bp.price > 0 THEN ${numVal} / bp.price * 100
+        ELSE NULL END)`;
+  const hasOfferClause = def.has_offer
+    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate} AND ${offerApplies})` : '';
+  const minDiscClause = minDiscIdx
+    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate}
+          AND bo.offer_type = 'discount' AND ${offerApplies} AND ${discPct} >= $${minDiscIdx})` : '';
+
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.created_at,
@@ -741,6 +771,8 @@ async function libraryProducts(ctx) {
        ${maxIdx ? `AND bp.price <= $${maxIdx}` : ''}
        ${allocIdx ? `AND bp.id = ANY($${allocIdx})` : ''}
        ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
+       ${hasOfferClause}
+       ${minDiscClause}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);

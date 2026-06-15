@@ -49,6 +49,13 @@ function validateRule(rule) {
   if (out.price_min != null && out.price_max != null && out.price_min > out.price_max) {
     throw new Error('price_min must be ≤ price_max');
   }
+  // Offer/discount filters (Phase 3d) — evaluated against live published-to-store offers.
+  if (r.has_offer === true || r.has_offer === 'true') out.has_offer = true;
+  if (r.min_discount_pct != null && r.min_discount_pct !== '') {
+    const n = Number(r.min_discount_pct);
+    if (!Number.isFinite(n) || n < 0) throw new Error('min_discount_pct must be a non-negative number');
+    out.min_discount_pct = Math.min(100, n);
+  }
   out.sort = SORTS.has(r.sort) ? r.sort : 'newest';
   return out;
 }
