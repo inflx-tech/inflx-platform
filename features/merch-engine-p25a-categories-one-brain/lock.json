@@ -1,0 +1,18 @@
+{
+  "feature": "merch-engine-p25a-categories-one-brain",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (verbal go 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": false,
+  "notes": "Backend + data only (no mobile/web runtime files) → NOT UI-governed; no mockup/06-diff gates. Step-5 gate: set approved=true (+by/+at) after founder reviews this spec. No implementation until approved=true. Production-impacting (backend/src + migration 102) → explicit founder go for the prod deploy, migrate-first-then-push. Follow-ups: 2.5b (mobile lists + registration dropdown, UI-governed) and 2.5c (retire legacy screens).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

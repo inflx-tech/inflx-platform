@@ -18,16 +18,21 @@
 const db = require('../config/db');
 const { runRule } = require('./sectionRules.service');
 const cache = require('../utils/ttlCache');
+const categoryTaxonomy = require('./categoryTaxonomy.service');
 
+// Last-resort labels for {category} interpolation if a key isn't in the taxonomy
+// (e.g. a legacy section_config key during transition). The tile's real label from
+// categoryTaxonomy is preferred — passed in as categoryLabel.
 const CATEGORY_LABELS = {
   dining: 'Eat', shopping: 'Shop', groom: 'Groom', stay_fit: 'Stay Fit',
   travel: 'Travel', home: 'Home', events: 'Events', booking: 'Book',
 };
 
-function interpolate(title, { city, categoryKey, creatorHandle }) {
+function interpolate(title, { city, categoryKey, categoryLabel, creatorHandle }) {
+  const catLabel = categoryLabel || (categoryKey && CATEGORY_LABELS[categoryKey]) || categoryKey || 'Category';
   return (title || '')
     .replace(/\{city\}/g, city || 'your city')
-    .replace(/\{category\}/g, (categoryKey && CATEGORY_LABELS[categoryKey]) || categoryKey || 'Category')
+    .replace(/\{category\}/g, catLabel)
     .replace(/\{creator\}/g, creatorHandle ? `@${creatorHandle}` : 'Creator');
 }
 
@@ -71,29 +76,6 @@ async function loadConfig(screen, scopeType = 'global', scopeValue = null) {
   return merged;
 }
 
-// Admin-managed category → member-business linkage (follower_categories.
-// member_categories). Loaded once per buildSections and injected into each
-// rule's ctx as categoryCats so the listing rules filter by what the admin
-// actually linked, not the legacy hardcoded CATEGORY_MAP (whose keys don't even
-// match the table keys). Empty/failed read → {} → rules fall back to CATEGORY_MAP.
-async function loadCategoryMembers() {
-  try {
-    const { rows } = await db.query(
-      `SELECT key, member_categories FROM follower_categories`
-    );
-    const map = {};
-    for (const r of rows) {
-      if (Array.isArray(r.member_categories) && r.member_categories.length) {
-        map[r.key] = r.member_categories;
-      }
-    }
-    return map;
-  } catch (e) {
-    console.error('[sectionEngine] follower_categories members read failed — CATEGORY_MAP fallback:', e.message);
-    return {};
-  }
-}
-
 async function getFollowedIds(followerId) {
   if (!followerId) return new Set();
   const { rows } = await db.query(
@@ -127,10 +109,10 @@ async function buildSections(opts) {
           city = null, followerId = null, categoryKey = null, influencer = null,
           lat = null, lng = null } = opts;
 
-  const [rows, followedIds, catMembers] = await Promise.all([
+  const [rows, followedIds, taxMaps] = await Promise.all([
     loadConfig(screen, scopeType, scopeValue),
     getFollowedIds(followerId),
-    loadCategoryMembers(),
+    categoryTaxonomy.getMaps(),   // single source: tile → member businesses + labels
   ]);
 
   const creatorHandle = influencer?.instagram_handle || null;
@@ -144,8 +126,8 @@ async function buildSections(opts) {
       followerId,
       followedIds,
       categoryKey: rowCategoryKey,
-      // admin-linked member businesses for this key (null → rules fall back to CATEGORY_MAP)
-      categoryCats: rowCategoryKey ? (catMembers[rowCategoryKey] || null) : null,
+      // admin-linked member businesses for this key, from the single taxonomy source
+      categoryCats: rowCategoryKey ? (taxMaps.membersByKey[rowCategoryKey] || null) : null,
       influencer,
       itemType: row.item_type || null,
       limit: row.item_limit || 8,
@@ -175,7 +157,11 @@ async function buildSections(opts) {
     sections.push({
       key: sectionKey(row),
       shelf_key: row.shelf_key,
-      title: interpolate(row.title, { city, categoryKey: ctx.categoryKey, creatorHandle }),
+      title: interpolate(row.title, {
+        city, categoryKey: ctx.categoryKey,
+        categoryLabel: ctx.categoryKey ? taxMaps.labelsByKey[ctx.categoryKey] : null,
+        creatorHandle,
+      }),
       type: row.shelf_type,
       item_type: row.item_type || null,
       rule: row.rule,

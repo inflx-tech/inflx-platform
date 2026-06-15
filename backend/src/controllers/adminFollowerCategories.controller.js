@@ -16,6 +16,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const cache = require('../utils/ttlCache');
+const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 
 const STATUSES = ['active', 'hidden'];
 
@@ -61,7 +62,8 @@ const create = asyncHandler(async (req, res) => {
      RETURNING id, key, label, icon, sort_order, status, member_categories, created_at, updated_at`,
     [key, label, icon, sortOrder, members]
   );
-  cache.clear(); // bust the section-engine cache so the Home carousel reflects immediately
+  cache.clear();
+  categoryTaxonomy.clearCache(); // bust the section-engine cache so the Home carousel reflects immediately
   return success(res, { category: rows[0] }, 201);
 });
 
@@ -102,6 +104,7 @@ const update = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'tile not found', 404);
   cache.clear();
+  categoryTaxonomy.clearCache();
   return success(res, { category: rows[0] });
 });
 
@@ -113,6 +116,7 @@ const remove = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'tile not found', 404);
   cache.clear();
+  categoryTaxonomy.clearCache();
   return success(res, { hidden: rows[0].id });
 });
 

@@ -17,6 +17,7 @@
 
 const db = require('../config/db');
 const listingService = require('./listing.service');
+const categoryTaxonomy = require('./categoryTaxonomy.service');
 
 // ── Open/closed status helper ────────────────────────────────────────────────
 // hours_json shape (per WeeklyScheduleEditor):
@@ -151,12 +152,9 @@ const FEED_QUERY = `
     AND (co.id IS NOT NULL OR ci.offer_type IS NOT NULL)
 `;
 
-// Category mapping for deals tab
-const CATEGORY_MAP = {
-  dining:   ['restaurant', 'bakery'],
-  shopping: ['fashion_walkin', 'fashion_online', 'florist', 'packaged_food'],
-  booking:  ['salon', 'car_rental', 'function_hall', 'wedding_planner'],
-};
+// Category → business linkage for the deals tab now comes from the single source
+// (categoryTaxonomy.service / follower_categories). The old local CATEGORY_MAP was a
+// duplicate, smaller, inconsistently-keyed copy — removed in contract 2.5a.
 
 /**
  * Resolve influencer + active offers for GET /store/:handle
@@ -818,10 +816,10 @@ async function getDealsByCategory(category, followerCity, followerId, page = 1, 
   const params = [];
   let paramIdx = 0;
 
-  // Category filter
-  if (category && category !== 'all' && CATEGORY_MAP[category]) {
-    const cats = CATEGORY_MAP[category];
-    const placeholders = cats.map((_, i) => `$${++paramIdx}`);
+  // Category filter — members for the tile from the single taxonomy source.
+  const cats = (category && category !== 'all') ? await categoryTaxonomy.membersFor(category) : null;
+  if (cats && cats.length) {
+    const placeholders = cats.map(() => `$${++paramIdx}`);
     sql += ` AND b.category IN (${placeholders.join(',')})`;
     params.push(...cats);
   }

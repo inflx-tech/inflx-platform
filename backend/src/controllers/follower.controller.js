@@ -29,6 +29,7 @@ const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
+const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
 const places = require('../services/places.service');
@@ -787,7 +788,11 @@ const getCategoryStores = asyncHandler(async (req, res) => {
   const limit = 10;
   const offset = (pageNum - 1) * limit;
 
-  const superCat = (await listingService.getSuperCategories()).find(s => s.key === super_category);
+  // Resolve legacy tile keys (eat/shop/...) to the active launch-tile keys so a
+  // not-yet-updated app request still finds its tile instead of 404ing (2.5a transition).
+  const resolvedKey = categoryTaxonomy.resolveTileKey(super_category);
+  const tiles = await listingService.getSuperCategories();
+  const superCat = tiles.find(s => s.key === resolvedKey) || tiles.find(s => s.key === super_category);
   if (!superCat) throw new AppError('NOT_FOUND', `Unknown super-category: ${super_category}`, 404);
 
   // Filter by sub_category or all sub_categories

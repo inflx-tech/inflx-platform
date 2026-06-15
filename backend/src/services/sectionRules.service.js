@@ -29,6 +29,7 @@
 const db = require('../config/db');
 const { buildTracking } = require('../utils/tracking');
 const offerAdapter = require('./brandOffers.adapter');
+const categoryTaxonomy = require('./categoryTaxonomy.service');
 
 // OR cutover (contract: listing-section-d0-seams / section-offer-repoint): when
 // SECTION_ENGINE_OFFERS is ON, offer shelves read the brandOffers.adapter (offers
@@ -44,15 +45,9 @@ async function offersViaAdapter(ruleKey, ctx) {
   });
 }
 
-// Category → brand.category schema keys (mirrors follower.service CATEGORY_MAP).
-const CATEGORY_MAP = {
-  dining:   ['restaurant', 'bakery'],
-  shopping: ['fashion_walkin', 'fashion_online', 'florist', 'packaged_food'],
-  groom:    ['salon'],
-  booking:  ['salon', 'car_rental', 'function_hall', 'wedding_planner'],
-  travel:   ['car_rental'],
-  events:   ['function_hall', 'wedding_planner'],
-};
+// Category → brand.category linkage now lives in ONE place: categoryTaxonomy.service
+// (backed by the admin follower_categories table). The old hardcoded CATEGORY_MAP here
+// was one of five conflicting sources — removed in contract 2.5a. See categoryFilter.
 
 // One row per live (campaign_influencer × offer). Only rows with a real offer.
 const OFFER_COLS = `
@@ -149,21 +144,19 @@ function cityBoost(city, paramIdx) {
     : '';
 }
 
-// Resolve a category key → the list of brand.category values it covers.
-// The admin-managed linkage (follower_categories.member_categories, injected by
-// the engine as ctx.categoryCats) is the source of truth; the legacy hardcoded
-// CATEGORY_MAP is a fallback used only when the table had no row for the key
-// (e.g. legacy section_config category_key like 'dining', or a DB read failure).
-// Before this, the section engine consulted CATEGORY_MAP alone — and its keys
-// (dining/shopping/...) don't match the follower_categories keys (eat/shop/...),
-// so eat/shop/fitness/home silently resolved to null = NO filter = every
-// business leaked into the category screen (restaurants under "Shop", etc.).
+// Resolve a category key → the list of brand.category values it covers, from the
+// SINGLE source (categoryTaxonomy.service / the admin follower_categories table).
+// The engine pre-resolves and injects ctx.categoryCats; if that's absent we read the
+// taxonomy's warm in-memory cache synchronously (the engine warms it before any rule
+// runs). null → no category filter. The old hardcoded CATEGORY_MAP fallback is gone:
+// it was keyed (dining/shopping/...) inconsistently with the table (eat/shop/...), so
+// unmatched keys silently became "no filter" and every business leaked into a tile.
 function categoryFilter(ctx) {
   const fromDb = ctx && Array.isArray(ctx.categoryCats) ? ctx.categoryCats : null;
   if (fromDb && fromDb.length) return fromDb;
   const key = ctx && ctx.categoryKey;
-  const cats = key && CATEGORY_MAP[key];
-  return cats && cats.length ? cats : null;
+  const sync = key ? categoryTaxonomy.membersForSync(key) : null;
+  return sync && sync.length ? sync : null;
 }
 
 // Haversine great-circle distance in km from ($latIdx,$lngIdx) to (latCol,lngCol).
@@ -809,4 +802,4 @@ async function runRule(ruleKey, ctx) {
   return fn(ctx);
 }
 
-module.exports = { runRule, RULES, CATEGORY_MAP, buildTracking };
+module.exports = { runRule, RULES, buildTracking };
