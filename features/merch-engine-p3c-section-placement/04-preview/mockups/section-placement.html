@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Section placement — App Sections (Phase 3c mockup)</title>
+<style>
+  :root{--ink:#1c2741;--t2:#55617c;--t3:#8a93a8;--border:#e6e9f0;--surface2:#f4f6fa;--navy-pale:#eef1f8;--amber:#b45309;--amber-bg:#fffbeb}
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#fafbfd;color:var(--ink)}
+  .wrap{max-width:760px;margin:0 auto;padding:26px 20px}
+  h1{font-size:19px;margin:0 0 2px}.sub{font-size:12px;color:var(--t3);margin-bottom:16px}
+  .bar{display:flex;gap:8px;align-items:center;margin-bottom:14px}
+  select,input{border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:12.5px;background:#fff}
+  .btn{border:none;border-radius:10px;font-weight:700;font-size:12px;padding:8px 14px;cursor:pointer}
+  .btn-amber{background:#b45309;color:#fff}.btn-ghost{background:var(--surface2);color:var(--t2)}
+  .shelf{background:#fff;border:1px solid var(--border);border-radius:12px;margin-bottom:9px;overflow:hidden}
+  .shelf.new{border-color:#b45309;box-shadow:0 0 0 2px #fde9c8}
+  .srow{display:flex;align-items:center;gap:10px;padding:11px 14px}
+  .drag{color:var(--t3);font-size:14px}
+  .sname{font-size:13px;font-weight:700;flex:1}
+  .pill{font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--navy-pale);color:#33406a}
+  .pill.lib{background:#ecfdf5;color:#047857}
+  .tog{font-size:10px;color:var(--t3)}
+  .expand{border-top:1px solid var(--border);background:var(--surface2);padding:13px 14px}
+  .fl{margin-bottom:11px}.fl label{display:block;font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px}
+  .fl select,.fl input{width:100%}
+  .hint{font-size:10.5px;color:var(--t3);font-style:italic;margin-top:4px}
+  .callout{font-size:11px;color:var(--amber);background:var(--amber-bg);border:1px solid #fde68a;border-radius:9px;padding:9px 11px;margin:12px 0}
+  .arrow{font-size:11px;color:#047857;font-weight:700;margin:10px 0 4px}
+  /* mini phone */
+  .phone{margin-top:8px;border:1px solid var(--border);border-radius:14px;background:#fff;max-width:300px;padding:12px}
+  .ptitle{font-size:13px;font-weight:800;margin-bottom:8px}
+  .prow{display:flex;gap:8px;overflow:hidden}
+  .pcard{min-width:84px;border:1px solid var(--border);border-radius:9px;padding:7px}
+  .pthumb{height:46px;border-radius:6px;background:linear-gradient(135deg,#eef1f8,#fbefd0);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:5px}
+  .pn{font-size:10px;font-weight:700;line-height:1.1}.pp{font-size:10px;font-weight:800;margin-top:2px}
+</style></head>
+<body><div class="wrap">
+  <h1>🎛️ App Sections</h1>
+  <div class="sub">Place shelves on a follower screen. New: place a <b>Library Section</b> you built in the Section Library.</div>
+
+  <div class="bar">
+    <label style="font-size:12px;color:#55617c;font-weight:700">Screen</label>
+    <select><option>Home</option><option>Category</option><option>Creator Store</option><option>Creator Category</option><option>Offers</option></select>
+    <span style="flex:1"></span>
+    <select><option>+ Add: Library Section</option><option>+ Add: Products</option><option>+ Add: Brands</option><option>+ Add: Creators</option></select>
+    <button class="btn btn-amber">Publish</button>
+  </div>
+
+  <div class="shelf"><div class="srow"><span class="drag">⠿</span><span class="sname">Stories</span><span class="pill">creators</span><span class="tog">● on</span></div></div>
+  <div class="shelf"><div class="srow"><span class="drag">⠿</span><span class="sname">Browse by Category</span><span class="pill">nav</span><span class="tog">● on</span></div></div>
+
+  <div class="shelf new">
+    <div class="srow"><span class="drag">⠿</span><span class="sname">Jeans Under ₹499</span><span class="pill lib">library section</span><span class="pill">products</span><span class="tog">● on</span></div>
+    <div class="expand">
+      <div class="fl">
+        <label>Library section</label>
+        <select><option>Jeans Under ₹499 · Fashion</option><option>Summer Dresses · Fashion</option><option>Under ₹199 Bites · Food</option></select>
+        <div class="hint">The shelf auto-fills from this section's rule. Title defaults to the section name (editable).</div>
+      </div>
+      <div class="fl"><label>Title shown to followers</label><input value="Jeans Under ₹499"/></div>
+      <div class="fl" style="display:flex;gap:10px"><div style="flex:1"><label>Items shown</label><input value="8"/></div><div style="flex:1"><label>Position</label><input value="3"/></div></div>
+    </div>
+  </div>
+
+  <div class="callout">Placing on <b>Home</b> = platform scope (all gated jeans). Place the same section on <b>Creator Store</b> and it shows only that creator's allocated jeans — context stacks automatically. One section, every surface.</div>
+
+  <div class="arrow">↓ what a follower then sees on Home</div>
+  <div class="phone">
+    <div class="ptitle">Jeans Under ₹499</div>
+    <div class="prow">
+      <div class="pcard"><div class="pthumb">👖</div><div class="pn">Pepe Slim</div><div class="pp">₹449</div></div>
+      <div class="pcard"><div class="pthumb">👖</div><div class="pn">Levi's 511</div><div class="pp">₹499</div></div>
+      <div class="pcard"><div class="pthumb">👖</div><div class="pn">Wrangler</div><div class="pp">₹399</div></div>
+    </div>
+  </div>
+</div></body></html>

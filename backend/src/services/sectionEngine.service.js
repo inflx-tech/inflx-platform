@@ -124,6 +124,7 @@ async function buildSections(opts) {
     let rowCategoryKey = row.category_key || categoryKey || null;
     let categoryCats = rowCategoryKey ? (taxMaps.membersByKey[rowCategoryKey] || null) : null;
     let ruleDef = null;
+    let libResolved = false;
 
     // Data-driven section (Phase 3a): resolve the placed library section's rule.
     // The section's OWN business_type sets the category members (the surface's
@@ -131,6 +132,7 @@ async function buildSections(opts) {
     if (row.rule === 'library_products' && cfg.library_section_id) {
       const lib = await sectionLibrary.getRuleJson(cfg.library_section_id);
       if (lib) {
+        libResolved = true;
         ruleDef = lib.rule || {};
         if (lib.business_type && lib.business_type !== 'ALL') {
           rowCategoryKey = lib.business_type;
@@ -140,6 +142,9 @@ async function buildSections(opts) {
         }
       }
     }
+    // Safety (3c): an unresolved library placement (no/hidden/deleted section) must
+    // NOT fall through to "all gated products" — render it empty instead.
+    const libUnresolved = row.rule === 'library_products' && !libResolved;
 
     const ctx = {
       city,
@@ -169,11 +174,15 @@ async function buildSections(opts) {
     ]);
 
     let items = [];
-    try {
-      items = await cache.getOrSet(key, () => runRule(row.rule, ctx));
-    } catch (err) {
-      console.error(`[sectionEngine] rule '${row.rule}' for shelf '${row.shelf_key}' failed:`, err.message);
-      items = []; // graceful — a broken shelf never 500s the feed
+    if (libUnresolved) {
+      items = []; // unresolved library placement → empty (never the whole catalogue)
+    } else {
+      try {
+        items = await cache.getOrSet(key, () => runRule(row.rule, ctx));
+      } catch (err) {
+        console.error(`[sectionEngine] rule '${row.rule}' for shelf '${row.shelf_key}' failed:`, err.message);
+        items = []; // graceful — a broken shelf never 500s the feed
+      }
     }
 
     sections.push({

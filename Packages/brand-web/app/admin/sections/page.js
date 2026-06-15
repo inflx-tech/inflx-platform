@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { sectionApi } from '../../../lib/api';
+import { sectionApi, adminApi } from '../../../lib/api';
 
 /**
  * App Sections — Admin Section Manager v2 (Creator Vibe).
@@ -35,6 +35,9 @@ const ADD_PRESETS = [
   { key: 'offers',   label: 'Offers rail',     shelf_type: 'offers',   rule: 'top_by_conversions',     item_type: 'offers',   title: 'Best Deals' },
   { key: 'creators', label: 'Creators rail',   shelf_type: 'creators', rule: 'creators_listing',       title: 'Top Creators' },
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
+  // Phase 3c — place a reusable Section Library section (data-driven). Pick which
+  // section in the row editor; the engine fills it from that section's rule.
+  { key: 'library',  label: 'Library Section',  shelf_type: 'products', rule: 'library_products',       item_type: 'products', title: 'New section' },
 ];
 
 function hasTypeControls(s) {
@@ -57,6 +60,14 @@ export default function SectionsPage() {
   const [jsonDraft, setJsonDraft] = useState('');
   const [jsonErr, setJsonErr] = useState(null);
   const [addPreset, setAddPreset] = useState('brands');
+  const [librarySections, setLibrarySections] = useState([]);
+
+  // Section Library options (Phase 3c) — for the "Library Section" placement picker.
+  useEffect(() => {
+    adminApi.listSectionLibrary().then(res => {
+      if (res.success) setLibrarySections((res.data?.sections || []).filter(s => s.status === 'active'));
+    });
+  }, []);
 
   const load = useCallback(async (scr, sType, sVal) => {
     setLoading(true); setMsg(null); setExpanded(null);
@@ -128,6 +139,9 @@ export default function SectionsPage() {
   };
 
   const publish = async () => {
+    // Phase 3c — a Library Section placement must reference a section.
+    const unset = shelves.find(s => s.rule === 'library_products' && !(s.config_json || {}).library_section_id);
+    if (unset) { setMsg({ kind: 'err', text: `"${unset.title || 'Library Section'}" — pick a library section before publishing.` }); return; }
     setSaving(true); setMsg(null);
     const payload = {
       scope_type: scopeType,
@@ -273,6 +287,28 @@ export default function SectionsPage() {
                 {/* Config editor (v2) */}
                 {isOpen && (
                   <div className="px-3 pb-3 pt-1 border-t border-gray-100 flex flex-col gap-2">
+                    {/* Library Section placement (Phase 3c) — pick which reusable section fills this shelf. */}
+                    {s.rule === 'library_products' && (
+                      <label className="text-[11px] font-semibold text-gray-600">Library section
+                        <select value={cfg.library_section_id || ''}
+                          onChange={e => {
+                            const secId = e.target.value;
+                            const sec = librarySections.find(x => x.id === secId);
+                            update(id, {
+                              config_json: { ...(s.config_json || {}), library_section_id: secId },
+                              ...((!s.title || s.title === 'New section') && sec ? { title: sec.name } : {}),
+                            });
+                          }}
+                          className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                          <option value="">(pick a section)</option>
+                          {librarySections.map(sec => (
+                            <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>
+                          ))}
+                        </select>
+                        {!cfg.library_section_id && <span className="block mt-0.5 text-[11px] text-red-600 font-semibold">Pick a section — required before publishing.</span>}
+                        {librarySections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No sections yet — create them in Section Library.</span>}
+                      </label>
+                    )}
                     {/* Greeting/tagline — the home 'header' shelf (admin-editable greeting). */}
                     {(s.shelf_key === 'header' || cfg.greeting != null || cfg.tagline != null) && (
                       <>
