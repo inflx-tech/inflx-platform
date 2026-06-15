@@ -170,4 +170,10 @@ router.post  ('/section-library',         authenticate, requireAnyAdminRole, sec
 router.post  ('/section-library/preview', authenticate, requireAnyAdminRole, sectionLibraryCtrl.preview);
 router.patch ('/section-library/:id',     authenticate, requireAnyAdminRole, sectionLibraryCtrl.update);
 
+// ── Collection Library (merch-engine Phase 4b) — group of sections ──────────
+const collectionLibraryCtrl = require('../controllers/adminCollectionLibrary.controller');
+router.get   ('/collection-library',     authenticate, requireAnyAdminRole, collectionLibraryCtrl.list);
+router.post  ('/collection-library',     authenticate, requireAnyAdminRole, collectionLibraryCtrl.create);
+router.patch ('/collection-library/:id', authenticate, requireAnyAdminRole, collectionLibraryCtrl.update);
+
 module.exports = router;

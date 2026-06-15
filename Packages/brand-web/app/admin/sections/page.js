@@ -38,6 +38,8 @@ const ADD_PRESETS = [
   // Phase 3c — place a reusable Section Library section (data-driven). Pick which
   // section in the row editor; the engine fills it from that section's rule.
   { key: 'library',  label: 'Library Section',  shelf_type: 'products', rule: 'library_products',       item_type: 'products', title: 'New section' },
+  // Phase 4b — place a Collection (group of sections). Pick which in the row editor.
+  { key: 'collection', label: 'Collection',     shelf_type: 'products', rule: 'collection',            item_type: 'products', title: 'New collection' },
 ];
 
 function hasTypeControls(s) {
@@ -61,11 +63,15 @@ export default function SectionsPage() {
   const [jsonErr, setJsonErr] = useState(null);
   const [addPreset, setAddPreset] = useState('brands');
   const [librarySections, setLibrarySections] = useState([]);
+  const [collections, setCollections] = useState([]);
 
-  // Section Library options (Phase 3c) — for the "Library Section" placement picker.
+  // Section Library (3c) + Collection Library (4b) options for the placement pickers.
   useEffect(() => {
     adminApi.listSectionLibrary().then(res => {
       if (res.success) setLibrarySections((res.data?.sections || []).filter(s => s.status === 'active'));
+    });
+    adminApi.listCollectionLibrary().then(res => {
+      if (res.success) setCollections((res.data?.collections || []).filter(c => c.status === 'active'));
     });
   }, []);
 
@@ -142,6 +148,9 @@ export default function SectionsPage() {
     // Phase 3c — a Library Section placement must reference a section.
     const unset = shelves.find(s => s.rule === 'library_products' && !(s.config_json || {}).library_section_id);
     if (unset) { setMsg({ kind: 'err', text: `"${unset.title || 'Library Section'}" — pick a library section before publishing.` }); return; }
+    // Phase 4b — a Collection placement must reference a collection.
+    const unsetColl = shelves.find(s => s.rule === 'collection' && !(s.config_json || {}).collection_id);
+    if (unsetColl) { setMsg({ kind: 'err', text: `"${unsetColl.title || 'Collection'}" — pick a collection before publishing.` }); return; }
     setSaving(true); setMsg(null);
     const payload = {
       scope_type: scopeType,
@@ -307,6 +316,28 @@ export default function SectionsPage() {
                         </select>
                         {!cfg.library_section_id && <span className="block mt-0.5 text-[11px] text-red-600 font-semibold">Pick a section — required before publishing.</span>}
                         {librarySections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No sections yet — create them in Section Library.</span>}
+                      </label>
+                    )}
+                    {/* Collection placement (Phase 4b) — pick which collection fills this shelf. */}
+                    {s.rule === 'collection' && (
+                      <label className="text-[11px] font-semibold text-gray-600">Collection
+                        <select value={cfg.collection_id || ''}
+                          onChange={e => {
+                            const cid = e.target.value;
+                            const coll = collections.find(x => x.id === cid);
+                            update(id, {
+                              config_json: { ...(s.config_json || {}), collection_id: cid },
+                              ...((!s.title || s.title === 'New collection') && coll ? { title: coll.name } : {}),
+                            });
+                          }}
+                          className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                          <option value="">(pick a collection)</option>
+                          {collections.map(coll => (
+                            <option key={coll.id} value={coll.id}>{coll.name} · {(coll.section_ids || []).length} sections</option>
+                          ))}
+                        </select>
+                        {!cfg.collection_id && <span className="block mt-0.5 text-[11px] text-red-600 font-semibold">Pick a collection — required before publishing.</span>}
+                        {collections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No collections yet — create them in Collection Library.</span>}
                       </label>
                     )}
                     {/* Greeting/tagline — the home 'header' shelf (admin-editable greeting). */}

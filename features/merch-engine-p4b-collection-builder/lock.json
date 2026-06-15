@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p4b-collection-builder",
+  "spec_version": "0.1.0",
+  "status": "draft",
+  "approved": true,
+  "approved_by": "founder (verbal go to start 4b 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (verbal proceed 2026-06-15)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "Phase 4 step 2 of 2 — makes collections usable e2e. UI-governed (brand-web admin Collection Library + App Sections 'Collection' preset). No migration/mobile/engine change (4a renders). Mockup at 04-preview/mockups/collection-builder.html — AWAITING founder mockup-lock before implementation. Production-impacting (brand-web + backend routes) → explicit founder go for deploy. released=false. NOTE: 4a follower OTA still pending (Render mid-deploy 'fetch failed') — retry before founder verifies collection rendering (header band needs the follower bundle).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
