@@ -1,0 +1,21 @@
+{
+  "feature": "merch-engine-p6-presentation",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (reviewed scope + mockup, 'pls start building' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (approved the phase6-presentation mockup 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Phase 6 — presentation types B (Banner-Gateway) + C (Hero-Tiles). SCOPED FOR REVIEW (founder: scope contract, then show before deploy). Founder decisions 2026-06-16: build BOTH B+C; banner image via URL field; review-before-deploy. Additive + default-inert (presentation_type rides config_json, default 'row'; no migration; reuses SectionResults). PENDING: founder review of 01-spec + 04-preview mockup -> then approved=true + mockup_locked=true -> implement -> surface for explicit go -> deploy. released stays false.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

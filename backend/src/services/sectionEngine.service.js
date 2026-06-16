@@ -127,10 +127,27 @@ async function buildSections(opts) {
   const expandedRows = [];
   for (const row of rows) {
     if (row.rule === 'collection' && (row.config_json || {}).collection_id) {
+      const ccfg = row.config_json || {};
       let coll = null;
-      try { coll = await collectionLibrary.getForRender(row.config_json.collection_id); }
+      try { coll = await collectionLibrary.getForRender(ccfg.collection_id); }
       catch (e) { console.error('[sectionEngine] collection render failed:', e.message); }
       if (coll && coll.sections.length) {
+        // Phase 6 — Hero+Tiles (C): render the collection as ONE hero block whose
+        // tiles are its member sections (each tile taps through to Results running
+        // that member's rule), instead of the inline header + member rows.
+        if (ccfg.presentation_type === 'hero_tiles') {
+          const hero = ccfg.hero || {};
+          expandedRows.push({
+            ...row, shelf_type: 'hero_tiles', rule: 'static', item_type: null, category_key: null,
+            title: hero.title || coll.name,
+            config_json: {
+              ...ccfg,
+              hero: { title: hero.title || coll.name, eyebrow: hero.eyebrow || null, image_url: hero.image_url || coll.image_url || null },
+              tiles: coll.sections.map(s => ({ library_section_id: s.id, label: s.name, image_url: s.image_url || null })),
+            },
+          });
+          continue;
+        }
         const grp = row.shelf_key;
         expandedRows.push({
           ...row, shelf_key: `${row.shelf_key}__hdr`, shelf_type: 'collection_header',
@@ -174,6 +191,27 @@ async function buildSections(opts) {
     // Safety (3c): an unresolved library placement (no/hidden/deleted section) must
     // NOT fall through to "all gated products" — render it empty instead.
     const libUnresolved = row.rule === 'library_products' && !libResolved;
+
+    // Phase 6 — Banner-Gateway (B): a library section placement shown as a tappable
+    // banner. It is a GATEWAY (tap → Results re-runs the rule), so we do NOT pre-run
+    // the rule here; emit always so the marketing banner shows regardless of matches.
+    if (row.rule === 'library_products' && cfg.presentation_type === 'banner' && libResolved) {
+      sections.push({
+        key: sectionKey(row),
+        shelf_key: row.shelf_key,
+        title: interpolate(row.title, {
+          city, categoryKey: rowCategoryKey,
+          categoryLabel: rowCategoryKey ? taxMaps.labelsByKey[rowCategoryKey] : null,
+          creatorHandle,
+        }),
+        type: 'banner_gateway',
+        item_type: row.item_type || null,
+        rule: row.rule,
+        config: cfg,
+        items: [],
+      });
+      continue;
+    }
 
     const ctx = {
       city,

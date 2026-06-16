@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phase 6 — Banner-Gateway + Hero-Tiles</title>
+<style>
+  :root{--gold:#F6B11E;--gold-d:#E8A200;--cream:#FBEFD0;--ink:#1A1A1A;--muted:#6B6B6B;--line:#EBE3D2;--sale:#D9663C;--page:#FFFFFF;--navy:#1f2d4d;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;}
+  body{background:#2A2A2E;color:var(--ink);padding:34px 24px 60px;}
+  h1{color:#fff;font-size:20px;margin-bottom:4px;} .sub{color:#9A9A9E;font-size:13px;margin-bottom:26px;}
+  .row{display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;}
+  .col{display:flex;flex-direction:column;align-items:center;gap:10px;} .cap{color:#cfcfcf;font-size:12px;font-weight:600;}
+  .phone{width:300px;background:#0E0E10;border-radius:34px;padding:8px;}
+  .screen{background:var(--page);border-radius:28px;overflow:hidden;height:560px;display:flex;flex-direction:column;}
+  .bar{display:flex;justify-content:space-between;padding:10px 16px 4px;font-size:12px;font-weight:600;color:var(--ink);}
+  .scroll{flex:1;overflow:hidden;padding-bottom:8px;}
+  .sechead{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px;}
+  .sechead h3{font-size:15px;font-weight:800;} .sechead a{color:var(--gold-d);font-size:12px;font-weight:700;}
+  /* B — banner gateway */
+  .banner{margin:6px 14px;background:var(--cream);border-radius:16px;padding:16px;min-height:140px;position:relative;overflow:hidden;}
+  .banner .eye{color:var(--sale);font-size:11px;font-weight:800;letter-spacing:.5px;}
+  .banner h2{font-size:23px;font-weight:800;margin-top:4px;line-height:1.05;max-width:70%;}
+  .banner .s{font-size:12px;color:#6b6b6b;margin-top:5px;}
+  .banner .cta{margin-top:14px;display:inline-block;background:var(--gold);color:var(--ink);font-weight:800;font-size:11px;letter-spacing:.4px;padding:10px 18px;border-radius:9px;}
+  .banner .badge{position:absolute;top:14px;right:12px;width:58px;height:58px;border-radius:50%;background:var(--gold);color:var(--ink);font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;}
+  .tapnote{font-size:10px;color:var(--muted);text-align:center;margin-top:6px;font-style:italic;}
+  /* C — hero + tiles */
+  .hero{margin:6px 14px 2px;background:linear-gradient(120deg,var(--gold),var(--gold-d));border-radius:16px;padding:16px;}
+  .hero .e{color:rgba(26,26,26,.7);font-size:10px;font-weight:800;letter-spacing:.5px;}
+  .hero h2{color:var(--ink);font-size:20px;font-weight:800;margin-top:3px;}
+  .tiles{display:flex;gap:10px;padding:12px 14px 4px;overflow:hidden;}
+  .tile{flex:1;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.05);}
+  .tile .ph{height:70px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .tile .t{padding:9px 8px;text-align:center;} .tile .t b{font-size:12px;font-weight:800;} .tile .t span{display:block;font-size:10px;color:var(--gold-d);font-weight:700;margin-top:2px;}
+  /* Results (reused) */
+  .rhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);}
+  .rhead .b{width:28px;height:28px;border-radius:14px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .rhead h3{font-size:15px;font-weight:800;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:12px 14px;}
+  .pc{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;}
+  .pc .ph{height:84px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:26px;}
+  .pc .m{padding:8px 9px;} .pc .nm{font-size:12px;font-weight:800;} .pc .pr{font-size:12px;font-weight:900;margin-top:3px;} .pc .pr s{color:var(--muted);font-weight:600;font-size:10px;margin-left:5px;}
+  .arrow{color:#fff;font-size:30px;align-self:center;opacity:.7;}
+  /* admin */
+  .admin{width:330px;background:#fff;border-radius:14px;padding:16px;}
+  .admin .ah{font-size:13px;font-weight:800;color:var(--navy);margin-bottom:10px;}
+  .fld{margin-bottom:10px;} .fld label{display:block;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;margin-bottom:3px;}
+  .fld select,.fld input{width:100%;border:1px solid #cbd5e1;border-radius:7px;padding:7px 9px;font-size:12px;}
+  .seg{display:flex;gap:6px;} .seg div{flex:1;text-align:center;border:1px solid #cbd5e1;border-radius:7px;padding:7px 0;font-size:11px;font-weight:700;color:#475569;}
+  .seg div.on{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .pub{width:100%;background:var(--gold-d);color:#fff;font-weight:800;font-size:12px;border:none;border-radius:8px;padding:10px;margin-top:4px;}
+  .note{font-size:10px;color:#94a3b8;margin-top:8px;line-height:1.5;}
+</style></head>
+<body>
+<h1>Phase 6 — Presentation Types B &amp; C</h1>
+<div class="sub">Same section rule, new ways to show it · taps reuse the existing Results screen · admin drives it from App Sections</div>
+
+<div class="row">
+
+  <!-- B: Banner gateway -->
+  <div class="col">
+    <div class="cap">B — Banner-Gateway (Home)</div>
+    <div class="phone"><div class="screen">
+      <div class="bar"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="scroll">
+        <div class="sechead"><h3>Hey, what's good today?</h3></div>
+        <div class="banner">
+          <div class="eye">SUMMER SALE</div><h2>FLAT 20% OFF</h2>
+          <div class="s">On all sale items</div><span class="cta">SHOP NOW →</span>
+          <div class="badge">Limited<br>Time</div>
+        </div>
+        <div class="tapnote">tap anywhere → Results (the rule runs)</div>
+        <div class="sechead"><h3>Top Picks</h3><a>View all</a></div>
+        <div style="padding:0 14px;color:var(--muted);font-size:11px;">…rows below (unchanged)…</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="arrow">→</div>
+
+  <!-- Results (reused) -->
+  <div class="col">
+    <div class="cap">tap → Results (already built)</div>
+    <div class="phone"><div class="screen">
+      <div class="bar"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="rhead"><div class="b">←</div><h3>Summer Sale</h3></div>
+      <div class="grid">
+        <div class="pc"><div class="ph">👗</div><div class="m"><div class="nm">Floral Dress</div><div class="pr">₹1,199 <s>₹1,499</s></div></div></div>
+        <div class="pc"><div class="ph">👕</div><div class="m"><div class="nm">Park Ave Tee</div><div class="pr">₹879 <s>₹1,099</s></div></div></div>
+        <div class="pc"><div class="ph">👜</div><div class="m"><div class="nm">Lavie Bag</div><div class="pr">₹1,759 <s>₹2,199</s></div></div></div>
+        <div class="pc"><div class="ph">👟</div><div class="m"><div class="nm">Sneakers</div><div class="pr">₹1,999 <s>₹2,499</s></div></div></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- C: Hero + tiles -->
+  <div class="col">
+    <div class="cap">C — Hero + Tiles (from a Collection)</div>
+    <div class="phone"><div class="screen">
+      <div class="bar"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="scroll">
+        <div class="hero"><div class="e">CURATED FOR YOU</div><h2>Shop by Budget</h2></div>
+        <div class="tiles">
+          <div class="tile"><div class="ph">💸</div><div class="t"><b>Under ₹499</b><span>View →</span></div></div>
+          <div class="tile"><div class="ph">🛍️</div><div class="t"><b>Under ₹999</b><span>View →</span></div></div>
+          <div class="tile"><div class="ph">✨</div><div class="t"><b>Under ₹1999</b><span>View →</span></div></div>
+        </div>
+        <div class="tapnote">each tile → Results for its own rule</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Admin -->
+  <div class="col">
+    <div class="cap">Admin — App Sections (how you drive it)</div>
+    <div class="admin">
+      <div class="ah">🎛️ Placement · Home</div>
+      <div class="fld"><label>Section / Collection</label><select><option>Sale Items (section)</option></select></div>
+      <div class="fld"><label>Presentation</label><div class="seg"><div>Row</div><div class="on">Banner</div><div>Hero+Tiles</div></div></div>
+      <div class="fld"><label>Eyebrow</label><input value="SUMMER SALE"/></div>
+      <div class="fld"><label>Headline</label><input value="FLAT 20% OFF"/></div>
+      <div class="fld"><label>CTA label</label><input value="SHOP NOW"/></div>
+      <div class="fld"><label>Banner image URL</label><input value="https://…/summer.jpg"/></div>
+      <button class="pub">Publish — live in ~60s</button>
+      <div class="note">Row = today's carousel. Banner = single gateway → Results. Hero+Tiles (pick a Collection) = hero + a tile per member section. No app update; no code.</div>
+    </div>
+  </div>
+
+</div>
+</body></html>

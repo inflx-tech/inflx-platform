@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { creatorVibe as C, fonts } from '../theme/tokens';
 import NewOfferCard from './cards/NewOfferCard';
 import { followerApi } from '../services/api';
@@ -181,9 +181,14 @@ function OfferGrid({ section, navigation }) {
 // ── content detection (unchanged contract — screens depend on this) ───────────
 
 const DATA_TYPES = ['offers', 'products', 'brands', 'creators', 'mixed'];
+// Presentational shelves carry their content in config (not `items`) — a screen
+// composed only of these is still "engine content" (Phase 6 banner/hero-tiles).
+const PRESENTATION_TYPES = ['banner_gateway', 'hero_tiles'];
 export function hasEngineContent(sections) {
   return Array.isArray(sections) &&
-    sections.some(s => DATA_TYPES.includes(s?.type) && Array.isArray(s?.items) && s.items.length > 0);
+    sections.some(s =>
+      PRESENTATION_TYPES.includes(s?.type) ||
+      (DATA_TYPES.includes(s?.type) && Array.isArray(s?.items) && s.items.length > 0));
 }
 
 // ── per-shelf render ──────────────────────────────────────────────────────────
@@ -213,6 +218,29 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // Collection header band (Phase 4a) — renders even with no items (it's a title,
   // not a data shelf); placed before the empty-items guard below.
   if (section.type === 'collection_header') return <CollectionHeader section={section} />;
+
+  // Banner-Gateway (Phase 6 B) — a tappable marketing banner; tap → the shared
+  // Results screen re-runs THIS section's rule with the surface context.
+  if (section.type === 'banner_gateway') return <BannerGateway section={section} onPress={seeAll} />;
+
+  // Hero + Tiles (Phase 6 C) — a hero band + one tile per collection member; each
+  // tile taps through to Results for that member section's rule. Renders before the
+  // empty-items guard (its content is the tiles in config, not `items`).
+  if (section.type === 'hero_tiles') {
+    const tiles = Array.isArray(section.config?.tiles) ? section.config.tiles : [];
+    const onTile = (t) => navigation.navigate('SectionResults', {
+      title: t.label,
+      rule: 'library_products',
+      item_type: 'products',
+      library_section_id: t.library_section_id || null,
+      category_key: ctx.superCategory || null,
+      creator_handle: ctx.creatorHandle || null,
+      brand_id: ctx.brandId || null,
+      lat: ctx.lat ?? null,
+      lng: ctx.lng ?? null,
+    });
+    return <HeroTiles section={section} tiles={tiles} onTile={onTile} />;
+  }
 
   if ((section.type === 'offers' || section.type === 'mixed') && section.items.length) {
     if (section.config?.hero) return <HeroOffer section={section} navigation={navigation} />;
@@ -345,6 +373,55 @@ function CollectionHeader({ section }) {
   );
 }
 
+// Banner-Gateway (Phase 6 B) — reuses the 5b cream-banner styling; an optional
+// right-side image. The whole card is the tap target → Results.
+function BannerGateway({ section, onPress }) {
+  const b = section.config?.banner || {};
+  const headline = b.headline || section.title || 'Shop now';
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+      <TouchableOpacity activeOpacity={0.92} style={styles.banner} onPress={onPress}>
+        {b.image_url ? <Image source={{ uri: b.image_url }} style={styles.bannerImg} resizeMode="cover" /> : null}
+        <View style={styles.bannerCopy}>
+          {b.eyebrow ? <Text style={styles.bannerEyebrow} numberOfLines={1}>{b.eyebrow}</Text> : null}
+          <Text style={styles.bannerTitle} numberOfLines={2}>{headline}</Text>
+          {b.sub ? <Text style={styles.bannerSub} numberOfLines={1}>{b.sub}</Text> : null}
+          <View style={styles.bannerBtn}><Text style={styles.bannerBtnTxt}>{b.cta_label || 'SHOP NOW'}</Text></View>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// Hero + Tiles (Phase 6 C) — a gold hero band (ink text) + a rail of tiles, each
+// carrying a member section's rule.
+function HeroTiles({ section, tiles, onTile }) {
+  const h = section.config?.hero || {};
+  return (
+    <View>
+      <View style={styles.heroBand}>
+        {h.eyebrow ? <Text style={styles.heroEyebrow} numberOfLines={1}>{h.eyebrow}</Text> : null}
+        <Text style={styles.heroTitle2} numberOfLines={2}>{h.title || section.title}</Text>
+      </View>
+      <Rail>
+        {tiles.map((t, i) => (
+          <TouchableOpacity key={t.library_section_id || i} style={styles.tile} activeOpacity={0.85} onPress={() => onTile(t)}>
+            <View style={styles.tileImg}>
+              {t.image_url
+                ? <Image source={{ uri: t.image_url }} style={styles.tileImgFill} resizeMode="cover" />
+                : <Text style={styles.tileEmoji}>🛍️</Text>}
+            </View>
+            <View style={styles.tileBody}>
+              <Text style={styles.tileLabel} numberOfLines={1}>{t.label}</Text>
+              <Text style={styles.tileView}>View →</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </Rail>
+    </View>
+  );
+}
+
 export default function SectionRenderer({ sections, navigation, canFollow, context }) {
   if (!Array.isArray(sections)) return null;
   return (
@@ -382,6 +459,24 @@ const styles = StyleSheet.create({
     backgroundColor: C.brown, alignItems: 'center', justifyContent: 'center',
   },
   bannerBadgeTxt: { fontSize: 10, fontWeight: '800', color: C.onGold, textAlign: 'center', lineHeight: 12, fontFamily: fonts?.sansBold },
+  bannerImg: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '44%' },
+  // Hero + Tiles (Phase 6 C)
+  heroBand: {
+    marginHorizontal: 16, marginTop: 10, borderRadius: 16,
+    paddingHorizontal: 16, paddingVertical: 16, backgroundColor: C.brown,
+  },
+  heroEyebrow: { fontSize: 10, fontWeight: '800', color: 'rgba(26,26,26,0.65)', letterSpacing: 0.5, fontFamily: fonts?.sansBold },
+  heroTitle2: { fontSize: 20, fontWeight: '800', color: C.onGold, marginTop: 3, fontFamily: fonts?.serifDisplay },
+  tile: {
+    width: 122, borderRadius: 14, overflow: 'hidden',
+    backgroundColor: C.card, borderWidth: 1, borderColor: C.line,
+  },
+  tileImg: { height: 72, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  tileImgFill: { width: '100%', height: '100%' },
+  tileEmoji: { fontSize: 26 },
+  tileBody: { paddingVertical: 9, paddingHorizontal: 8, alignItems: 'center' },
+  tileLabel: { fontSize: 12, fontWeight: '800', color: C.ink, fontFamily: fonts?.sansBold },
+  tileView: { fontSize: 10, fontWeight: '700', color: C.goldDeep, marginTop: 2, fontFamily: fonts?.sansBold },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
   gridCell: { width: '47%' },
   collHeader: {

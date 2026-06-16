@@ -93,7 +93,7 @@ async function getForRender(id) {
   const ids = Array.isArray(rows[0].section_ids) ? rows[0].section_ids : [];
   if (!ids.length) return { name: rows[0].name, image_url: rows[0].image_url, sections: [] };
   const { rows: secs } = await db.query(
-    `SELECT id, name FROM section_library WHERE id = ANY($1) AND status = 'active'`,
+    `SELECT id, name, image_url FROM section_library WHERE id = ANY($1) AND status = 'active'`,
     [ids]
   );
   const byId = new Map(secs.map(s => [s.id, s]));

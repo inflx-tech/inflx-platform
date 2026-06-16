@@ -92,6 +92,11 @@ export default function SectionsPage() {
   const setConfig = (id, nextConfig) => update(id, { config_json: nextConfig });
   const patchConfig = (id, key, value) =>
     setShelves(prev => prev.map(s => (rowId(s) === id ? { ...s, config_json: { ...(s.config_json || {}), [key]: value } } : s)));
+  // Phase 6 — patch a nested config object (config_json.banner.*, config_json.hero.*).
+  const patchNested = (id, parent, key, value) =>
+    setShelves(prev => prev.map(s => (rowId(s) === id
+      ? { ...s, config_json: { ...(s.config_json || {}), [parent]: { ...((s.config_json || {})[parent] || {}), [key]: value } } }
+      : s)));
 
   const move = (idx, dir) => {
     setShelves(prev => {
@@ -151,6 +156,9 @@ export default function SectionsPage() {
     // Phase 4b — a Collection placement must reference a collection.
     const unsetColl = shelves.find(s => s.rule === 'collection' && !(s.config_json || {}).collection_id);
     if (unsetColl) { setMsg({ kind: 'err', text: `"${unsetColl.title || 'Collection'}" — pick a collection before publishing.` }); return; }
+    // Phase 6 — a Banner-Gateway placement needs a headline.
+    const unsetBanner = shelves.find(s => (s.config_json || {}).presentation_type === 'banner' && !((s.config_json || {}).banner || {}).headline);
+    if (unsetBanner) { setMsg({ kind: 'err', text: `"${unsetBanner.title || 'Banner'}" — add a banner headline before publishing.` }); return; }
     setSaving(true); setMsg(null);
     const payload = {
       scope_type: scopeType,
@@ -340,6 +348,53 @@ export default function SectionsPage() {
                         {collections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No collections yet — create them in Collection Library.</span>}
                       </label>
                     )}
+                    {/* Presentation (Phase 6) — how this placement is shown.
+                        library_products → Row | Banner-Gateway; collection → Row | Hero+Tiles. */}
+                    {(s.rule === 'library_products' || s.rule === 'collection') && (
+                      <div className="text-[11px] font-semibold text-gray-600">
+                        Presentation
+                        <div className="flex gap-1.5 mt-1">
+                          {(s.rule === 'library_products' ? ['row', 'banner'] : ['row', 'hero_tiles']).map(pt => {
+                            const active = (cfg.presentation_type || 'row') === pt;
+                            const lbl = pt === 'row' ? 'Row' : pt === 'banner' ? 'Banner' : 'Hero + Tiles';
+                            return (
+                              <button key={pt} type="button"
+                                onClick={() => update(id, { config_json: { ...(s.config_json || {}), presentation_type: pt } })}
+                                className={`flex-1 text-[11px] font-bold rounded px-2 py-1.5 border ${active ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>
+                                {lbl}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {/* Banner fields */}
+                        {s.rule === 'library_products' && cfg.presentation_type === 'banner' && (
+                          <div className="mt-2 flex flex-col gap-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                            <input value={cfg.banner?.eyebrow || ''} onChange={e => patchNested(id, 'banner', 'eyebrow', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Eyebrow — e.g. SUMMER SALE" />
+                            <input value={cfg.banner?.headline || ''} onChange={e => patchNested(id, 'banner', 'headline', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Headline — e.g. FLAT 20% OFF (required)" />
+                            <input value={cfg.banner?.cta_label || ''} onChange={e => patchNested(id, 'banner', 'cta_label', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="CTA label — default SHOP NOW" />
+                            <input value={cfg.banner?.image_url || ''} onChange={e => patchNested(id, 'banner', 'image_url', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Banner image URL (optional)" />
+                            {!cfg.banner?.headline && <span className="text-[11px] text-red-600 font-semibold">Headline required before publishing.</span>}
+                          </div>
+                        )}
+                        {/* Hero+Tiles fields (tiles come from the collection's member sections) */}
+                        {s.rule === 'collection' && cfg.presentation_type === 'hero_tiles' && (
+                          <div className="mt-2 flex flex-col gap-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                            <input value={cfg.hero?.eyebrow || ''} onChange={e => patchNested(id, 'hero', 'eyebrow', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hero eyebrow — e.g. CURATED FOR YOU" />
+                            <input value={cfg.hero?.title || ''} onChange={e => patchNested(id, 'hero', 'title', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hero title — defaults to collection name" />
+                            <input value={cfg.hero?.image_url || ''} onChange={e => patchNested(id, 'hero', 'image_url', e.target.value)}
+                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hero image URL (optional)" />
+                            <span className="text-[11px] text-gray-500">Tiles = this collection&apos;s member sections (each taps to its own results).</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Greeting/tagline — the home 'header' shelf (admin-editable greeting). */}
                     {(s.shelf_key === 'header' || cfg.greeting != null || cfg.tagline != null) && (
                       <>
