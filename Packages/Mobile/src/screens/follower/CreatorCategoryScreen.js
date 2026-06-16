@@ -178,7 +178,7 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
   chipOn: { backgroundColor: C.brown, borderColor: C.brown },
   chipTxt: { fontSize: 11.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
-  chipTxtOn: { color: '#fff' },
+  chipTxtOn: { color: C.onGold },
   partnerRow: { paddingHorizontal: 16, paddingBottom: 4, gap: 14 },
   partner: { width: 74, alignItems: 'center', gap: 6 },
   partnerAv: { width: 60, height: 60, borderRadius: 18, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, alignItems: 'center', justifyContent: 'center' },

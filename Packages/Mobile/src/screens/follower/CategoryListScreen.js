@@ -472,13 +472,9 @@ const s = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: P.border,
   },
   subbarInner: { gap: 14, paddingHorizontal: 16, paddingVertical: 10 },
-  subchip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 30,
-    backgroundColor: P.white, borderWidth: 1, borderColor: P.border,
-  },
-  subchipOn: { backgroundColor: C.brown, borderColor: C.brown },
-  subchipTxt: { fontSize: 11.5, fontWeight: '700', color: '#5E5345', fontFamily: fonts.sansBold },
-  subchipTxtOn: { color: '#fff' },
+  // (Phase 5c) The sub-category bar renders <CategoryCircle> (gold-active, ink
+  // label) — the old pill `subchip*` styles incl. a white-on-gold remnant were
+  // dead and have been removed.
   headerTitle: { fontSize: 18, fontWeight: '600', color: P.ink, fontFamily: fonts.serifDisplay },
   headerSub: { fontSize: 10, color: P.muted },
   search: {

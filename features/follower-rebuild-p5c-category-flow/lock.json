@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-p5c-category-flow",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated: 'complete till phase 6, next we verify together' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (recolored mockup is the locked reference; lock+proceed delegated 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Phase 5 step 3 — Category flow. Layout already delivered by 5b's shared SectionRenderer/vibe components; this contract = the Category-flow white-on-gold sweep (CreatorCategory chip ink-on-gold) + removal of dead CategoryList subchip styles. FindScreen 'All Categories' hub deferred (2.5b). Mobile-only OTA, no backend/migration. released=false until the joint 5->6 founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
