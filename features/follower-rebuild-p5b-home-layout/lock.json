@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-p5b-home-layout",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated: 'complete till phase 6, next we verify together' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (recolored Home mockup is the locked reference; lock+proceed delegated 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Phase 5 step 2 — follower Home layout polish to the recolored Home mockup: hero/banner band (ink-on-gold SHOP NOW), cleaner ShelfHeader (drop tag/count, 'View all' gold-deep), circular category bubbles, trust band, Home white-on-gold sweep. Mobile-only (OTA), no backend/migration. Locked reference = 04-preview/mockups/home-recolored.html. Popular-Near-You landscape + Influencer-Picks curated grid DEFERRED (net-new card variants, need shelf-shape decision). released=false until the joint 5->6 founder verify; no Maestro (released stays false).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

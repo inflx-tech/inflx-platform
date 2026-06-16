@@ -132,14 +132,25 @@ function ChipRow({ section }) {
 function HeroOffer({ section, navigation }) {
   const item = section.items[0];
   if (!item) return null;
+  // Cream banner per the recolored Home mockup (.banner): terracotta eyebrow,
+  // serif headline (discount or brand), ink-on-gold SHOP NOW, limited badge.
+  const pct = Number(item.discount_value) > 0 ? Number(item.discount_value) : 0;
+  const eyebrow = item.via_creator ? `VIA @${String(item.via_creator.handle).toUpperCase()}` : 'FEATURED DEAL';
+  const headline = pct > 0 ? `FLAT ${pct}% OFF` : (item.brand?.name || 'Top Deal');
   return (
     <View>
       <ShelfHeader title={section.title} sub={section.config?.sub} />
       <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
-        <TouchableOpacity activeOpacity={0.9} style={styles.hero} onPress={() => goToOffer(navigation, item)}>
-          <Text style={styles.heroLabel}>{item.via_creator ? `via @${item.via_creator.handle}` : 'FEATURED DEAL'}</Text>
-          <Text style={styles.heroTitle} numberOfLines={2}>{item.brand?.name || 'Top Deal'}</Text>
-          <Text style={styles.heroDiscount}>{item.discount_value ? `${item.discount_value}% OFF` : 'Tap to view'}</Text>
+        <TouchableOpacity activeOpacity={0.92} style={styles.banner} onPress={() => goToOffer(navigation, item)}>
+          <View style={styles.bannerCopy}>
+            <Text style={styles.bannerEyebrow} numberOfLines={1}>{eyebrow}</Text>
+            <Text style={styles.bannerTitle} numberOfLines={2}>{headline}</Text>
+            {pct > 0 && item.brand?.name ? <Text style={styles.bannerSub} numberOfLines={1}>{item.brand.name}</Text> : null}
+            <View style={styles.bannerBtn}><Text style={styles.bannerBtnTxt}>SHOP NOW</Text></View>
+          </View>
+          {pct > 0 ? (
+            <View style={styles.bannerBadge}><Text style={styles.bannerBadgeTxt}>Limited{'\n'}Time</Text></View>
+          ) : null}
         </TouchableOpacity>
       </View>
     </View>
@@ -353,10 +364,24 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: C.line, backgroundColor: C.card, marginRight: 8,
   },
   chipTxt: { fontSize: 12, fontWeight: '700', color: C.ink, fontFamily: fonts?.sansBold },
-  hero: { backgroundColor: C.brown, borderRadius: 18, padding: 18 },
-  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(26,26,26,0.7)', letterSpacing: 0.5 },
-  heroTitle: { fontSize: 20, fontWeight: '800', color: C.ink, marginTop: 4, fontFamily: fonts?.serifDisplay },
-  heroDiscount: { fontSize: 14, fontWeight: '800', color: C.ink, marginTop: 8 },
+  banner: {
+    backgroundColor: C.cream, borderRadius: 18, padding: 18, minHeight: 150,
+    overflow: 'hidden', justifyContent: 'center', position: 'relative',
+  },
+  bannerCopy: { maxWidth: '74%' },
+  bannerEyebrow: { fontSize: 11, fontWeight: '800', color: C.offer, letterSpacing: 0.5, fontFamily: fonts?.sansBold },
+  bannerTitle: { fontSize: 25, fontWeight: '800', color: C.ink, marginTop: 4, lineHeight: 27, fontFamily: fonts?.serifDisplay },
+  bannerSub: { fontSize: 13, fontWeight: '700', color: C.ink, marginTop: 3, fontFamily: fonts?.sansBold },
+  bannerBtn: {
+    marginTop: 14, alignSelf: 'flex-start', backgroundColor: C.brown,
+    borderRadius: 10, paddingHorizontal: 20, paddingVertical: 11,
+  },
+  bannerBtnTxt: { fontSize: 12, fontWeight: '800', color: C.onGold, letterSpacing: 0.5, fontFamily: fonts?.sansBold },
+  bannerBadge: {
+    position: 'absolute', top: 16, right: 14, width: 64, height: 64, borderRadius: 32,
+    backgroundColor: C.brown, alignItems: 'center', justifyContent: 'center',
+  },
+  bannerBadgeTxt: { fontSize: 10, fontWeight: '800', color: C.onGold, textAlign: 'center', lineHeight: 12, fontFamily: fonts?.sansBold },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
   gridCell: { width: '47%' },
   collHeader: {

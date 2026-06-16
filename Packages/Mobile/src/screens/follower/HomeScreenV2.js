@@ -360,6 +360,15 @@ export default function HomeScreenV2({ navigation }) {
       </>
       )}
 
+      {/* Trust band (recolored Home mockup .trust) — static chrome, no data. */}
+      {!loading && (
+        <View style={styles.trust}>
+          <Text style={styles.trustItem}>🛡️  100% Authentic</Text>
+          <Text style={styles.trustItem}>↩️  Easy Returns</Text>
+          <Text style={styles.trustItem}>🔒  Secure Payment</Text>
+        </View>
+      )}
+
       {loading && (
         <ActivityIndicator color={C.brown} size="large" style={{ marginTop: 40 }} />
       )}
@@ -455,7 +464,13 @@ const styles = StyleSheet.create({
     width: 28, height: 28, borderRadius: 9,
     backgroundColor: C.brown, alignItems: 'center', justifyContent: 'center',
   },
-  filterTxt: { fontSize: 14, color: '#fff', fontWeight: '800' },
+  filterTxt: { fontSize: 14, color: C.onGold, fontWeight: '800' },
+  trust: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginHorizontal: 18, marginTop: 8, marginBottom: 4,
+    backgroundColor: C.cream, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 12,
+  },
+  trustItem: { fontSize: 11.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansSemiBold },
   section: {
     flexDirection: 'row',
     alignItems: 'center',
