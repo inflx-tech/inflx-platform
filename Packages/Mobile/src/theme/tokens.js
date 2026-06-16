@@ -202,27 +202,32 @@ export const brandPalette = {
 // (features/redesign-flow-52-follower-creator-vibe/04-preview/mockups/all-screens.html).
 
 export const creatorVibe = {
-  // Surfaces
-  screenBg:  '#F7F3EC',  // cream app background
+  // Surfaces — white canvas + cream accents (Phase 5 INFLX gold/cream re-skin).
+  screenBg:  '#F7F4EC',  // warm near-white app background
   card:      '#FFFFFF',
-  soft:      '#F1ECE3',  // tinted info/chip background
-  soft2:     '#EFE7DA',
+  soft:      '#FBF1D9',  // cream — info/chip/thumbnail tint
+  soft2:     '#F5EAD3',
 
-  // Primary — terracotta-brown (CTAs, active states). Text on brown = white.
-  brown:     '#8B4A2F',
-  brownDark: '#6E3A24',
+  // Primary — GOLD (CTAs, active states). Per the locked mockup, text on gold = INK.
+  // (Key name kept as `brown` to avoid touching 150+ call sites; value is now gold.)
+  brown:     '#F6B11E',
+  brownDark: '#E8A200',
 
   // Ink + muted ladder
-  ink:       '#1C1A17',
-  muted:     '#8A8275',
-  line:      '#ECE6DC',
+  ink:       '#1A1A1A',
+  muted:     '#6B6B6B',
+  line:      '#EBE3D2',
 
   // Accents
-  offer:     '#D9531E',  // discount / offer red-orange
+  gold:      '#F6B11E',  // explicit alias for new gold-accent usages
+  goldDeep:  '#E8A200',
+  cream:     '#FBEFD0',
+  onGold:    '#1A1A1A',  // text/icon color to use ON a gold background
+  offer:     '#D9663C',  // sale / discount — terracotta (reserved accent)
   star:      '#F2A93B',  // ratings
   verify:    '#2D9CDB',  // verified tick
-  ring1:     '#FF6A5F',  // creator-story gradient start
-  ring2:     '#FFB24C',  // creator-story gradient end
+  ring1:     '#F6B11E',  // creator-story gradient start (gold)
+  ring2:     '#FAD27A',  // creator-story gradient end (light gold)
 
   white:     '#FFFFFF',
   black:     '#000000',

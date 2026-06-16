@@ -742,5 +742,5 @@ const styles = StyleSheet.create({
   instoreHintText: { fontFamily: fonts.sansMedium, fontSize: 11, color: C.ink, opacity: 0.75 },
   footerSecondaryCta: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 13, maxWidth: '34%' },
   footerSecondaryCtaText: { fontSize: 11.5, fontWeight: '800' },
-  primaryCtaText: { fontFamily: fonts.displayBlack, fontSize: 14, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.3 },
+  primaryCtaText: { fontFamily: fonts.displayBlack, fontSize: 14, color: C.onGold, textTransform: 'uppercase', letterSpacing: 0.3 },
 });

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFLX — Home & Categories</title>
+<style>
+  :root{
+    --gold:#F6B11E;
+    --gold-d:#E8A200;
+    --cream:#FBEFD0;
+    --cream-2:#FAE7C0;
+    --ink:#1A1A1A;
+    --muted:#8C8C8C;
+    --muted-2:#A8A8A8;
+    --line:#EFEFEF;
+    --line-2:#E6E6E6;
+    --page:#FFFFFF;
+    --chip:#F1F1F1;
+    --ring:#F6B11E;
+    --sale:#D9663C;   /* terracotta — reserved for sale / discount */
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:#2A2A2E;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+    padding:44px 30px 70px;
+  }
+  .ghead{max-width:1000px;margin:0 auto 34px;}
+  .ghead .logo{font-size:24px;font-weight:800;letter-spacing:.5px;color:#fff;}
+  .ghead .logo span{color:var(--gold);}
+  .ghead p{color:#9A9A9E;font-size:13.5px;margin-top:7px;}
+
+  .grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;align-items:flex-start;max-width:1000px;margin:0 auto;}
+  .frame{display:flex;flex-direction:column;align-items:center;gap:13px;}
+  .frame .cap{color:#A9A9AD;font-size:13px;font-weight:600;}
+
+  .phone{width:402px;background:#0E0E10;border-radius:46px;padding:10px;box-shadow:0 30px 70px rgba(0,0,0,.5),inset 0 0 0 1px rgba(255,255,255,.08);}
+  .screen{width:100%;height:830px;background:var(--page);border-radius:38px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+  .scroll{flex:1;overflow-y:auto;scrollbar-width:none;}
+  .scroll::-webkit-scrollbar{display:none;}
+
+  /* status bar */
+  .statusbar{display:flex;align-items:center;justify-content:space-between;padding:14px 26px 6px;font-weight:600;font-size:16px;flex:none;}
+  .statusbar .r{display:flex;align-items:center;gap:7px;}
+
+  /* header */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 12px;flex:none;}
+  .header .l{display:flex;align-items:center;gap:16px;}
+  .logo{font-size:24px;font-weight:800;letter-spacing:.5px;}
+  .logo span{color:var(--gold);}
+  .header .r{display:flex;align-items:center;gap:18px;}
+  .iconbtn{position:relative;display:flex;cursor:pointer;color:var(--ink);}
+  .ic{width:23px;height:23px;display:block;}
+  .badge{position:absolute;top:-7px;right:-8px;background:var(--gold);color:#fff;font-size:11px;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .reddot{position:absolute;top:-1px;right:0;width:7px;height:7px;border-radius:50%;background:var(--gold);}
+  .titlebar{display:flex;align-items:center;gap:14px;padding:10px 20px 14px;flex:none;}
+  .titlebar h1{font-size:19px;font-weight:700;}
+
+  /* search */
+  .searchbar{display:flex;align-items:center;gap:11px;margin:0 18px 12px;background:#F5F5F5;border:1px solid var(--line);border-radius:13px;padding:13px 15px;flex:none;}
+  .searchbar .ic{width:18px;height:18px;color:var(--muted);}
+  .searchbar span{color:var(--muted-2);font-size:14px;}
+
+  /* categories row */
+  .cats{display:flex;justify-content:space-between;gap:4px;padding:6px 16px 10px;}
+  .cat{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;flex:1;}
+  .cat .bub{width:58px;height:58px;border-radius:50%;background:#F1F1F1;display:flex;align-items:center;justify-content:center;font-size:27px;overflow:hidden;}
+  .cat .bub .ph{width:100%;height:100%;}
+  .cat .lbl{font-size:12px;font-weight:500;}
+  .dots4{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .dots4 i{width:8px;height:8px;border-radius:50%;background:#9a9a9a;}
+
+  /* section head */
+  .sechead{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;}
+  .sechead h3{font-size:17px;font-weight:800;}
+  .sechead a{color:var(--gold-d);font-size:13.5px;font-weight:600;text-decoration:none;cursor:pointer;}
+
+  /* influencers */
+  .infl{display:flex;gap:14px;overflow-x:auto;padding:0 20px 2px;scrollbar-width:none;}
+  .infl::-webkit-scrollbar{display:none;}
+  .inflcard{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none;}
+  .inflcard .ringimg{width:58px;height:58px;border-radius:50%;padding:2.5px;background:linear-gradient(135deg,var(--gold),#F47C2E);}
+  .inflcard .ringimg .ph{width:100%;height:100%;border-radius:50%;border:2px solid #fff;}
+  .inflcard span{font-size:12px;font-weight:500;}
+
+  /* banner */
+  .banner{margin:8px 18px 4px;background:linear-gradient(105deg,var(--cream) 55%,var(--cream-2));border-radius:18px;position:relative;overflow:hidden;height:200px;}
+  .banner .copy{position:absolute;left:20px;top:22px;z-index:2;max-width:62%;}
+  .banner .eyebrow{font-size:13px;font-weight:600;letter-spacing:.4px;color:var(--sale);}
+  .banner h2{font-size:27px;font-weight:800;line-height:1.05;margin-top:4px;}
+  .banner .s1{font-size:17px;font-weight:700;margin-top:4px;}
+  .banner .s2{font-size:12px;color:#6b6b6b;margin-top:6px;}
+  .banner .shop{margin-top:14px;background:var(--gold);color:var(--ink);border:none;font-weight:800;font-size:12px;letter-spacing:.5px;padding:11px 20px;border-radius:9px;cursor:pointer;}
+  .banner .model{position:absolute;right:0;bottom:0;top:0;width:44%;}
+  .banner .model .ph{width:100%;height:100%;}
+  .banner .limited{position:absolute;top:22px;right:14px;z-index:3;width:66px;height:66px;border-radius:50%;background:var(--gold);color:#fff;font-size:11px;font-weight:700;line-height:1.15;text-align:center;display:flex;align-items:center;justify-content:center;padding:0 7px;}
+
+  /* brands */
+  .hbrands{display:flex;gap:13px;overflow-x:auto;padding:0 20px 2px;scrollbar-width:none;}
+  .hbrands::-webkit-scrollbar{display:none;}
+  .brand{flex:none;width:58px;height:58px;border-radius:50%;background:#F1F1F1;display:flex;align-items:center;justify-content:center;font-weight:800;color:#1d1d1d;font-size:13px;text-align:center;line-height:1.05;}
+  .brand.nike svg{width:34px;}
+  .brand.zara{font-family:Georgia,serif;font-size:16px;letter-spacing:.5px;}
+  .brand.mango{font-size:10px;letter-spacing:1px;}
+  .brand.hm{color:#E1140A;font-family:Georgia,serif;font-style:italic;font-size:15px;}
+  .brand.ajio{color:#2C2C54;font-size:12px;letter-spacing:.5px;}
+  .brand.uspa{font-size:8.5px;letter-spacing:.3px;}
+  .brand.arrow{background:#fff;border:1px solid var(--line-2);color:#555;}
+
+  /* products */
+  .prow{display:flex;gap:13px;overflow-x:auto;padding:0 20px 2px;scrollbar-width:none;}
+  .prow::-webkit-scrollbar{display:none;}
+  .prod{flex:none;width:150px;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 5px 14px rgba(0,0,0,.04);}
+  .prod .img{position:relative;height:150px;background:#F4F4F4;}
+  .prod .img .ph{width:100%;height:100%;}
+  .prod .fav{position:absolute;top:9px;right:9px;width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.1);}
+  .prod .fav .ic{width:15px;height:15px;}
+  .prod .meta{padding:10px 11px 12px;}
+  .prod .nm{font-size:13.5px;font-weight:600;}
+  .prod .pr{display:flex;align-items:center;justify-content:space-between;margin-top:7px;}
+  .prod .price{font-size:14px;font-weight:800;}
+  .prod .rate{display:flex;align-items:center;gap:3px;font-size:11.5px;color:#555;font-weight:600;}
+  .prod .rate .ic{width:12px;height:12px;color:var(--gold);}
+
+  /* popular near you (landscape cards) */
+  .lprow{display:flex;gap:13px;overflow-x:auto;padding:0 20px 2px;scrollbar-width:none;}
+  .lprow::-webkit-scrollbar{display:none;}
+  .lcard{flex:none;width:190px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff;}
+  .lcard .img{height:120px;position:relative;}
+  .lcard .img .ph{width:100%;height:100%;}
+  .lcard .meta{padding:9px 11px 11px;}
+  .lcard .nm{font-size:13.5px;font-weight:700;}
+  .lcard .sub{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:5px;flex-wrap:wrap;}
+  .lcard .sub b{color:var(--sale);font-weight:700;}
+  .lcard .tag{margin-left:auto;background:#E9F6EC;color:#2E9E54;font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:5px;display:flex;align-items:center;gap:2px;}
+  .lcard .tag .ic{width:10px;height:10px;}
+
+  /* influencer picks block */
+  .picks{margin:4px 18px 0;background:#F4F4F4;border-radius:16px;padding:14px;}
+  .picks .by{display:flex;align-items:center;gap:10px;margin-bottom:13px;}
+  .picks .by .ph{width:40px;height:40px;border-radius:50%;flex:none;}
+  .picks .by .nm{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;}
+  .verify{width:16px;height:16px;}
+  .picks .by .role{font-size:12px;color:var(--muted);margin-top:1px;}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+  .pgrid .pk{background:#fff;border-radius:10px;overflow:hidden;}
+  .pgrid .pk .ph{width:100%;height:90px;}
+  .pgrid .pk .p{text-align:center;font-size:12px;font-weight:800;padding:7px 0;}
+
+  /* trust */
+  .trust{margin:16px 18px 18px;background:var(--cream);border-radius:14px;display:flex;justify-content:space-between;padding:14px 12px;}
+  .trust .t{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;}
+  .trust .t .ic{width:18px;height:18px;color:var(--gold-d);}
+
+  /* bottom nav */
+  .nav{display:flex;justify-content:space-around;align-items:center;padding:11px 6px 22px;background:#fff;border-top:1px solid var(--line);flex:none;}
+  .nav .n{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted-2);font-size:11px;font-weight:600;cursor:pointer;}
+  .nav .n .ic{width:23px;height:23px;}
+  .nav .n.active{color:var(--gold-d);}
+  .homeind{position:absolute;left:50%;transform:translateX(-50%);bottom:9px;width:130px;height:5px;border-radius:3px;background:#1a1a1a;z-index:30;}
+
+  /* ===== PROFILE CARD (home variant) ===== */
+  .profcard{display:flex;align-items:center;gap:14px;margin:2px 18px 4px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:0 5px 14px rgba(0,0,0,.04);}
+  .profcard .avring{width:64px;height:64px;border-radius:50%;padding:3px;background:var(--gold);flex:none;}
+  .profcard .avring .ph{width:100%;height:100%;border-radius:50%;border:3px solid #fff;}
+  .profcard .stat{text-align:center;flex:none;}
+  .profcard .stat .num{font-size:18px;font-weight:800;}
+  .profcard .stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+  .profcard .vl{width:1px;height:32px;background:var(--line-2);}
+  .profcard .follow{margin-left:auto;background:var(--gold);color:var(--ink);font-weight:700;font-size:14px;border:none;border-radius:11px;padding:11px 18px;cursor:pointer;white-space:nowrap;}
+
+  /* ===== PAY AT STORE FAB + POPOVER ===== */
+  .fabwrap{position:absolute;right:16px;bottom:96px;z-index:40;display:flex;flex-direction:column;align-items:center;gap:9px;}
+  .fab{width:82px;height:82px;border-radius:50%;background:var(--gold);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;box-shadow:0 10px 24px rgba(246,177,30,.5);border:4px solid #fff;cursor:pointer;}
+  .fab .ic{width:27px;height:27px;}
+  .fab span{font-size:10px;font-weight:700;}
+  .fabx{width:38px;height:38px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.16);cursor:pointer;}
+  .fabx .ic{width:18px;height:18px;color:#555;}
+  .arrowcurve{position:absolute;right:88px;bottom:108px;z-index:39;pointer-events:none;}
+  .popover{position:absolute;right:14px;bottom:86px;z-index:38;width:262px;background:var(--cream);border-radius:16px;padding:16px;box-shadow:0 18px 40px rgba(0,0,0,.22);}
+  .popover .ptop{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .popover .pico{width:38px;height:38px;border-radius:9px;background:var(--gold);display:flex;align-items:center;justify-content:center;flex:none;color:#fff;}
+  .popover .pico .ic{width:20px;height:20px;}
+  .popover .ph2{font-size:16px;font-weight:800;}
+  .popover .ps{font-size:10px;color:#7a6f55;margin-top:1px;}
+  .popover ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:14px;}
+  .popover li{display:flex;align-items:center;gap:8px;font-size:12.5px;color:#3d3a32;}
+  .popover li .ic{width:15px;height:15px;color:var(--gold-d);flex:none;}
+  .popover .enter{width:100%;background:var(--gold);color:var(--ink);border:none;font-weight:800;font-size:14px;padding:13px;border-radius:11px;cursor:pointer;}
+
+  /* ===== ALL CATEGORIES ===== */
+  .cscroll{padding:0 18px 22px;}
+  .blocktitle{font-size:18px;font-weight:800;margin:8px 2px 14px;}
+  .ccard{display:flex;align-items:center;gap:14px;border:1px solid var(--line-2);border-radius:16px;padding:14px;margin-bottom:13px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.03);}
+  .ccard .ico{width:54px;height:54px;border-radius:12px;background:#F6F6F6;display:flex;align-items:center;justify-content:center;font-size:26px;flex:none;}
+  .ccard .tx{flex:1;}
+  .ccard .tx b{font-size:15.5px;font-weight:700;}
+  .ccard .tx p{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45;}
+  .ccard .chev .ic{width:18px;height:18px;color:var(--muted-2);}
+
+  .exrow{display:flex;align-items:center;gap:14px;border:1px solid var(--line-2);border-radius:13px;padding:15px 14px;margin-bottom:11px;cursor:pointer;}
+  .exrow .ic{width:21px;height:21px;color:var(--ink);}
+  .exrow b{flex:1;font-size:14.5px;font-weight:600;}
+  .exrow .chev{width:17px;height:17px;color:var(--muted-2);}
+
+  .reqcard{background:var(--cream);border-radius:16px;padding:18px;position:relative;overflow:hidden;margin-top:6px;}
+  .reqcard h4{font-size:16px;font-weight:800;line-height:1.25;max-width:62%;}
+  .reqcard p{font-size:12.5px;color:#6b6b6b;margin-top:8px;max-width:60%;line-height:1.4;}
+  .reqcard .reqbtn{margin-top:14px;background:var(--gold);color:var(--ink);border:none;font-weight:800;font-size:12.5px;padding:11px 16px;border-radius:9px;cursor:pointer;}
+  .reqcard .bags{position:absolute;right:14px;bottom:14px;font-size:46px;}
+</style>
+</head>
+<body>
+
+<!-- icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.2-8.7C1.4 8 3 5 6 5c2 0 3.2 1.2 4 2.4C10.8 6.2 12 5 14 5c3 0 4.6 3 3.2 6.3C19 15.6 12 20 12 20Z"/></symbol>
+  <symbol id="cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 12.2a1 1 0 0 0 1 .8h8.4a1 1 0 0 0 1-.8L20 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.5 7 .6-5.3 4.6 1.6 6.9L12 17l-6 3.6 1.6-6.9L2.3 9.1l7-.6L12 2Z"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
+  <symbol id="grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></symbol>
+  <symbol id="bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="creators" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="18.5" cy="6.5" r="1.3" fill="currentColor"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="return" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.3 5.6"/><path d="M4 19v-4h4"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l9 9-8 8-9-9Z"/><circle cx="7.5" cy="7.5" r="1.3"/></symbol>
+  <symbol id="percent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2"/><circle cx="17" cy="17" r="2"/><path d="M6 18 18 6"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4-4 7-7.5 7-11a7 7 0 0 0-14 0c0 3.5 3 7 7 11Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M4 13h16M12 9v11"/><path d="M12 9C9 9 7.5 4 12 6.5 16.5 4 15 9 12 9Z"/></symbol>
+  <symbol id="help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 0 1 4.2 1.8c0 1.7-2.2 1.9-2.2 3.2"/><circle cx="11.5" cy="17" r=".5"/></symbol>
+  <symbol id="people" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5M17.5 19a5.5 5.5 0 0 0-2-4.2"/></symbol>
+  <symbol id="sig" viewBox="0 0 18 13"><rect x="0" y="8" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="8" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="10.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="13" rx="1" fill="currentColor"/></symbol>
+  <symbol id="wifi" viewBox="0 0 18 13"><path d="M9 2.5c2.6 0 5 1 6.8 2.6l1.5-1.6C15.1 1.4 12.2 0 9 0S2.9 1.4.7 3.5l1.5 1.6C4 3.5 6.4 2.5 9 2.5Z" fill="currentColor"/><path d="M9 6.2c1.5 0 2.9.6 3.9 1.6l1.5-1.6C13 4.8 11.1 4 9 4S5 4.8 3.6 6.2l1.5 1.6C6.1 6.8 7.5 6.2 9 6.2Z" fill="currentColor"/><path d="M9 9.8c.7 0 1.4.3 1.9.8L9 12.6 7.1 10.6c.5-.5 1.2-.8 1.9-.8Z" fill="currentColor"/></symbol>
+  <symbol id="batt" viewBox="0 0 26 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor" opacity=".5"/></symbol>
+  <symbol id="store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16l-1-4H5L4 9Z"/><path d="M5 9v10h14V9"/><path d="M10 19v-5h4v5"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.3 2.3 4.7-4.7"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="verify" viewBox="0 0 24 24" fill="none"><path d="m12 1.6 2.5 1.8 3-.3 1 2.9 2.6 1.6-.8 3 .8 3-2.6 1.6-1 2.9-3-.3L12 22.4 9.5 20.6l-3 .3-1-2.9L2.9 16.4l.8-3-.8-3L5.5 7.8l1-2.9 3 .3L12 1.6Z" fill="#F6B11E"/><path d="m8.5 12 2.3 2.3 4.7-4.7" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="ghead">
+  <div class="logo">INFL<span>X</span></div>
+  <p>Influencer marketplace — Home &amp; All Categories</p>
+</div>
+
+<div class="grid">
+
+  <!-- ============ SCREEN 0 — PROFILE HOME (Pay at Store) ============ -->
+  <div class="frame">
+    <div class="cap">Home — Influencer Profile</div>
+    <div class="phone"><div class="screen" data-screen-label="Home Profile">
+      <div class="statusbar"><span>9:41</span><span class="r"><svg class="ic" style="width:17px;height:12px"><use href="#sig"/></svg><svg class="ic" style="width:17px;height:12px"><use href="#wifi"/></svg><svg class="ic" style="width:25px;height:12px"><use href="#batt"/></svg></span></div>
+      <div class="header">
+        <div class="l"><span class="iconbtn"><svg class="ic"><use href="#menu"/></svg></span><div class="logo">INFL<span>X</span></div></div>
+        <div class="r">
+          <span class="iconbtn"><svg class="ic"><use href="#search"/></svg></span>
+          <span class="iconbtn"><svg class="ic"><use href="#heart"/></svg><span class="reddot"></span></span>
+          <span class="iconbtn"><svg class="ic"><use href="#cart"/></svg><span class="badge">2</span></span>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="profcard">
+          <div class="avring"><div class="ph"></div></div>
+          <div class="stat"><div class="num">128K</div><div class="lbl">Followers</div></div>
+          <div class="vl"></div>
+          <div class="stat"><div class="num">24</div><div class="lbl">Collabs</div></div>
+          <button class="follow">+ Follow</button>
+        </div>
+
+        <div class="cats">
+          <div class="cat"><div class="bub"><div class="ph"></div></div><div class="lbl">Women</div></div>
+          <div class="cat"><div class="bub"><div class="ph"></div></div><div class="lbl">Men</div></div>
+          <div class="cat"><div class="bub"><div class="ph"></div></div><div class="lbl">Footwear</div></div>
+          <div class="cat"><div class="bub"><div class="ph"></div></div><div class="lbl">Bags</div></div>
+          <div class="cat"><div class="bub"><div class="ph"></div></div><div class="lbl">Beauty</div></div>
+          <div class="cat"><div class="bub"><div class="dots4"><i></i><i></i><i></i><i></i></div></div><div class="lbl">More</div></div>
+        </div>
+
+        <div class="banner">
+          <div class="copy">
+            <div class="eyebrow">SUMMER SALE</div>
+            <h2>FLAT 20% OFF</h2>
+            <div class="s1">On Entire Store</div>
+            <div class="s2">Shop your favorites now!</div>
+            <button class="shop">SHOP NOW</button>
+          </div>
+          <div class="model"><div class="ph"></div></div>
+          <div class="limited">Limited Time Only</div>
+        </div>
+
+        <div class="sechead"><h3>Brands I Collaborate With</h3><a>View all</a></div>
+        <div class="hbrands">
+          <div class="brand nike"><svg viewBox="0 0 24 9" fill="#111"><path d="M1 8.6c-.6-.2-.9-.6-1-1.2 0-.5.1-.9.6-1.5.3-.4.7-.7 3-2C5.4 2.7 7 1.7 7 1.7s-1 1.5-1.4 2.1c-.4.7-.5 1-.5 1.4 0 .5.3.8.8.9.6.1 1.5-.1 4-1.1L24 1.1l-6 4.2c-3.6 2.5-4.6 3-6.1 3.2-1 .2-1.8.2-2.6 0L1 8.6Z"/></svg></div>
+          <div class="brand zara">ZARA</div>
+          <div class="brand mango">MANGO</div>
+          <div class="brand hm">H&amp;M</div>
+          <div class="brand uspa">URBANIC</div>
+          <div class="brand ajio">AJIO</div>
+          <div class="brand arrow"><svg class="ic" style="width:18px;height:18px"><use href="#chev"/></svg></div>
+        </div>
+
+        <div class="sechead"><h3>Top Picks For You</h3><a>View all</a></div>
+        <div class="prow">
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Floral Summer Dress</div><div class="pr"><span class="price">₹1,499</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.6 (128)</span></div></div></div>
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Nike Air Max 270</div><div class="pr"><span class="price">₹7,499</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.8 (96)</span></div></div></div>
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Lavie Brown Bag</div><div class="pr"><span class="price">₹2,199</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.7 (89)</span></div></div></div>
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Lavie Sport Shoe</div><div class="pr"><span class="price">₹2,199</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.5 (74)</span></div></div></div>
+        </div>
+
+        <div class="sechead"><h3>Influencer Picks</h3></div>
+        <div class="picks">
+          <div class="by">
+            <div class="ph"></div>
+            <div>
+              <div class="nm">Curated by Ananya <svg class="verify"><use href="#verify"/></svg></div>
+              <div class="role">Fashion &amp; Lifestyle Creator</div>
+            </div>
+          </div>
+          <div class="pgrid" style="grid-template-columns:1fr 1fr 1fr">
+            <div class="pk"><div class="ph" style="height:110px"></div><div class="p">₹1,299</div></div>
+            <div class="pk"><div class="ph" style="height:110px"></div><div class="p">₹2,799</div></div>
+            <div class="pk"><div class="ph" style="height:110px"></div><div class="p">₹1,899</div></div>
+          </div>
+        </div>
+
+        <div class="trust">
+          <div class="t"><svg class="ic"><use href="#shield"/></svg>100% Authentic</div>
+          <div class="t"><svg class="ic"><use href="#return"/></svg>Easy Returns</div>
+          <div class="t"><svg class="ic"><use href="#lock"/></svg>Secure Payment</div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <div class="n active"><svg class="ic"><use href="#home"/></svg>Home</div>
+        <div class="n"><svg class="ic"><use href="#grid"/></svg>Categories</div>
+        <div class="n"><svg class="ic"><use href="#creators"/></svg>Creators</div>
+        <div class="n"><svg class="ic"><use href="#bag"/></svg>Orders</div>
+        <div class="n"><svg class="ic"><use href="#user"/></svg>Account</div>
+      </div>
+      <div class="homeind"></div>
+    </div></div>
+  </div>
+
+  <!-- ============ SCREEN 1 — HOME ============ -->
+  <div class="frame">
+    <div class="cap">Home</div>
+    <div class="phone"><div class="screen" data-screen-label="Home">
+      <div class="statusbar"><span>9:41</span><span class="r"><svg class="ic" style="width:17px;height:12px"><use href="#sig"/></svg><svg class="ic" style="width:17px;height:12px"><use href="#wifi"/></svg><svg class="ic" style="width:25px;height:12px"><use href="#batt"/></svg></span></div>
+      <div class="header">
+        <div class="l"><span class="iconbtn"><svg class="ic"><use href="#menu"/></svg></span><div class="logo">INFL<span>X</span></div></div>
+        <div class="r">
+          <span class="iconbtn"><svg class="ic"><use href="#search"/></svg></span>
+          <span class="iconbtn"><svg class="ic"><use href="#heart"/></svg></span>
+          <span class="iconbtn"><svg class="ic"><use href="#cart"/></svg><span class="badge">2</span></span>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="searchbar"><svg class="ic"><use href="#search"/></svg><span>Search Fashion, Restaurants, Salons...</span></div>
+
+        <div class="cats">
+          <div class="cat"><div class="bub">👗</div><div class="lbl">Fashion</div></div>
+          <div class="cat"><div class="bub">🍔</div><div class="lbl">Food</div></div>
+          <div class="cat"><div class="bub">💄</div><div class="lbl">Beauty</div></div>
+          <div class="cat"><div class="bub">🛋️</div><div class="lbl">Furniture</div></div>
+          <div class="cat"><div class="bub">🚗</div><div class="lbl">Rentals</div></div>
+          <div class="cat"><div class="bub"><div class="dots4"><i></i><i></i><i></i><i></i></div></div><div class="lbl">More</div></div>
+        </div>
+
+        <div class="sechead"><h3>Top Influencers</h3><a>View all</a></div>
+        <div class="infl">
+          <div class="inflcard"><div class="ringimg"><div class="ph"></div></div><span>Ananya</span></div>
+          <div class="inflcard"><div class="ringimg"><div class="ph"></div></div><span>Komal</span></div>
+          <div class="inflcard"><div class="ringimg"><div class="ph"></div></div><span>Rohit</span></div>
+          <div class="inflcard"><div class="ringimg"><div class="ph"></div></div><span>Neha</span></div>
+          <div class="inflcard"><div class="ringimg"><div class="ph"></div></div><span>Arjun</span></div>
+          <div class="inflcard"><div class="ringimg"><div class="ph"></div></div><span>Diya</span></div>
+        </div>
+
+        <div class="banner">
+          <div class="copy">
+            <div class="eyebrow">SUMMER SALE</div>
+            <h2>FLAT 20% OFF</h2>
+            <div class="s1">On Entire Store</div>
+            <div class="s2">Shop your favorites now!</div>
+            <button class="shop">SHOP NOW</button>
+          </div>
+          <div class="model"><div class="ph"></div></div>
+          <div class="limited">Limited Time Only</div>
+        </div>
+
+        <div class="sechead"><h3>Top Brands</h3><a>View all</a></div>
+        <div class="hbrands">
+          <div class="brand nike"><svg viewBox="0 0 24 9" fill="#111"><path d="M1 8.6c-.6-.2-.9-.6-1-1.2 0-.5.1-.9.6-1.5.3-.4.7-.7 3-2C5.4 2.7 7 1.7 7 1.7s-1 1.5-1.4 2.1c-.4.7-.5 1-.5 1.4 0 .5.3.8.8.9.6.1 1.5-.1 4-1.1L24 1.1l-6 4.2c-3.6 2.5-4.6 3-6.1 3.2-1 .2-1.8.2-2.6 0L1 8.6Z"/></svg></div>
+          <div class="brand zara">ZARA</div>
+          <div class="brand mango">MANGO</div>
+          <div class="brand hm">H&amp;M</div>
+          <div class="brand ajio">AJIO</div>
+          <div class="brand uspa">US POLO<br>ASSN.</div>
+          <div class="brand arrow"><svg class="ic" style="width:18px;height:18px"><use href="#chev"/></svg></div>
+        </div>
+
+        <div class="sechead"><h3>Top Picks For You</h3><a>View all</a></div>
+        <div class="prow">
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Floral Summer Dress</div><div class="pr"><span class="price">₹1,499</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.6 (128)</span></div></div></div>
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Nike Air Max 270</div><div class="pr"><span class="price">₹7,499</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.8 (96)</span></div></div></div>
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Lavie Brown Bag</div><div class="pr"><span class="price">₹2,199</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.7 (89)</span></div></div></div>
+          <div class="prod"><div class="img"><div class="ph"></div><span class="fav"><svg class="ic"><use href="#heart"/></svg></span></div><div class="meta"><div class="nm">Nautica Watch</div><div class="pr"><span class="price">₹2,499</span><span class="rate"><svg class="ic"><use href="#star"/></svg>4.5 (61)</span></div></div></div>
+        </div>
+
+        <div class="sechead"><h3>Popular Near You</h3><a>View all</a></div>
+        <div class="lprow">
+          <div class="lcard"><div class="img"><div class="ph"></div></div><div class="meta"><div class="nm">Domino's Pizza</div><div class="sub">20–30 mins · <b>50% OFF</b><span class="tag"><svg class="ic"><use href="#star"/></svg>4.2</span></div></div></div>
+          <div class="lcard"><div class="img"><div class="ph"></div></div><div class="meta"><div class="nm">Naturals Salon</div><div class="sub"><span class="tag"><svg class="ic"><use href="#star"/></svg>4.6</span> · <b>20% OFF</b></div></div></div>
+          <div class="lcard"><div class="img"><div class="ph"></div></div><div class="meta"><div class="nm">BMW 3 Series</div><div class="sub">₹3,999/day · <b>10% OFF</b><span class="tag"><svg class="ic"><use href="#star"/></svg>4.8</span></div></div></div>
+        </div>
+
+        <div class="sechead"><h3>Influencer Picks</h3><a>View all</a></div>
+        <div class="picks">
+          <div class="by">
+            <div class="ph"></div>
+            <div>
+              <div class="nm">Curated by Ananya <svg class="verify"><use href="#verify"/></svg></div>
+              <div class="role">Fashion &amp; Lifestyle Creator</div>
+            </div>
+          </div>
+          <div class="pgrid">
+            <div class="pk"><div class="ph"></div><div class="p">₹1,299</div></div>
+            <div class="pk"><div class="ph"></div><div class="p">₹2,799</div></div>
+            <div class="pk"><div class="ph"></div><div class="p">₹1,899</div></div>
+            <div class="pk"><div class="ph"></div><div class="p">₹2,499</div></div>
+          </div>
+        </div>
+
+        <div class="trust">
+          <div class="t"><svg class="ic"><use href="#shield"/></svg>100% Authentic</div>
+          <div class="t"><svg class="ic"><use href="#return"/></svg>Easy Returns</div>
+          <div class="t"><svg class="ic"><use href="#lock"/></svg>Secure Payment</div>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="n active"><svg class="ic"><use href="#home"/></svg>Home</div>
+        <div class="n"><svg class="ic"><use href="#grid"/></svg>Categories</div>
+        <div class="n"><svg class="ic"><use href="#creators"/></svg>Creators</div>
+        <div class="n"><svg class="ic"><use href="#bag"/></svg>Orders</div>
+        <div class="n"><svg class="ic"><use href="#user"/></svg>Account</div>
+      </div>
+      <div class="homeind"></div>
+    </div></div>
+  </div>
+
+  <!-- ============ SCREEN 2 — ALL CATEGORIES ============ -->
+  <div class="frame">
+    <div class="cap">All Categories</div>
+    <div class="phone"><div class="screen" data-screen-label="All Categories">
+      <div class="statusbar"><span>9:41</span><span class="r"><svg class="ic" style="width:17px;height:12px"><use href="#sig"/></svg><svg class="ic" style="width:17px;height:12px"><use href="#wifi"/></svg><svg class="ic" style="width:25px;height:12px"><use href="#batt"/></svg></span></div>
+      <div class="titlebar"><span class="iconbtn"><svg class="ic" style="width:22px;height:22px"><use href="#back"/></svg></span><h1>All Categories</h1></div>
+      <div class="searchbar"><svg class="ic"><use href="#search"/></svg><span>Search Fashion, Restaurants, Salons...</span></div>
+      <div class="scroll">
+        <div class="cscroll">
+          <div class="blocktitle">Shop by Category</div>
+
+          <div class="ccard"><div class="ico">👗</div><div class="tx"><b>Fashion</b><p>Women, Men, Kids, Footwear, Bags, Jewelry, Watches &amp; more</p></div><span class="chev"><svg class="ic"><use href="#chev"/></svg></span></div>
+          <div class="ccard"><div class="ico">🍔</div><div class="tx"><b>Food</b><p>Restaurants, Cafe, Bakery, Pizza, Biryani, Desserts &amp; more</p></div><span class="chev"><svg class="ic"><use href="#chev"/></svg></span></div>
+          <div class="ccard"><div class="ico">💄</div><div class="tx"><b>Beauty</b><p>Salon, Spa, Makeup, Nail Art, Skincare, Hair Care &amp; more</p></div><span class="chev"><svg class="ic"><use href="#chev"/></svg></span></div>
+          <div class="ccard"><div class="ico">🛋️</div><div class="tx"><b>Furniture</b><p>Living Room, Bedroom, Dining, Office, Decor, Lighting &amp; more</p></div><span class="chev"><svg class="ic"><use href="#chev"/></svg></span></div>
+          <div class="ccard"><div class="ico">🚗</div><div class="tx"><b>Car Rentals</b><p>Cars, Bikes, Luxury Cars, Self Drive, With Driver &amp; more</p></div><span class="chev"><svg class="ic"><use href="#chev"/></svg></span></div>
+
+          <div class="blocktitle" style="margin-top:20px">Explore More</div>
+          <div class="exrow"><svg class="ic"><use href="#tag"/></svg><b>Top Brands</b><svg class="ic chev"><use href="#chev"/></svg></div>
+          <div class="exrow"><svg class="ic"><use href="#people"/></svg><b>Top Influencers</b><svg class="ic chev"><use href="#chev"/></svg></div>
+          <div class="exrow"><svg class="ic"><use href="#percent"/></svg><b>Offers &amp; Deals</b><svg class="ic chev"><use href="#chev"/></svg></div>
+          <div class="exrow"><svg class="ic"><use href="#pin"/></svg><b>Nearby Businesses</b><svg class="ic chev"><use href="#chev"/></svg></div>
+          <div class="exrow"><svg class="ic"><use href="#gift"/></svg><b>Gift Cards</b><svg class="ic chev"><use href="#chev"/></svg></div>
+          <div class="exrow"><svg class="ic"><use href="#help"/></svg><b>Help &amp; Support</b><svg class="ic chev"><use href="#chev"/></svg></div>
+
+          <div class="reqcard">
+            <h4>Can't find what you're looking for?</h4>
+            <p>Request a category and we'll add it for you!</p>
+            <button class="reqbtn">Request Category</button>
+            <span class="bags">🛍️</span>
+          </div>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

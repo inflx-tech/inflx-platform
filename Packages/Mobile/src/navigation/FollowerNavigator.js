@@ -156,7 +156,7 @@ function ReelsTabButton({ onPress, accessibilityState }) {
         accessibilityLabel="Reels"
         style={[navStyles.reelsBtn, focused && navStyles.reelsBtnActive]}
       >
-        <Icon name="movie-open" size={24} color="#fff" />
+        <Icon name="movie-open" size={24} color={C.ink} />
         <Text style={navStyles.reelsLabel}>Reels</Text>
       </TouchableOpacity>
     </View>
@@ -255,7 +255,7 @@ const navStyles = StyleSheet.create({
     backgroundColor: C.brownDark,
   },
   reelsLabel: {
-    color: '#fff',
+    color: C.ink,
     fontSize: 8,
     fontWeight: '800',
     fontFamily: fonts.monoBold,

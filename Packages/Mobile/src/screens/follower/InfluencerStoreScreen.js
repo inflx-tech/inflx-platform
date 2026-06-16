@@ -301,7 +301,7 @@ const s = StyleSheet.create({
   pbtns: { flexDirection: 'row', gap: 10, paddingHorizontal: 18, paddingTop: 14 },
   btn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 30, backgroundColor: C.brown },
   btnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.brown },
-  btnTxt: { fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: fonts.sansBold },
+  btnTxt: { fontSize: 13, fontWeight: '800', color: C.onGold, fontFamily: fonts.sansBold },
   btnOutTxt: { color: C.brown },
   bio: { fontStyle: 'italic', fontSize: 12.5, color: '#5e4a37', fontWeight: '500', paddingHorizontal: 18, paddingTop: 12, lineHeight: 18, fontFamily: fonts.sansMedium },
   collabRow: { paddingHorizontal: 16, paddingBottom: 4, gap: 14 },

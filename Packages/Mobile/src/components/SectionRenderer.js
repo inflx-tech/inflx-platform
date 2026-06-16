@@ -354,9 +354,9 @@ const styles = StyleSheet.create({
   },
   chipTxt: { fontSize: 12, fontWeight: '700', color: C.ink, fontFamily: fonts?.sansBold },
   hero: { backgroundColor: C.brown, borderRadius: 18, padding: 18 },
-  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 0.5 },
-  heroTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginTop: 4, fontFamily: fonts?.serifDisplay },
-  heroDiscount: { fontSize: 14, fontWeight: '800', color: '#fff', marginTop: 8 },
+  heroLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(26,26,26,0.7)', letterSpacing: 0.5 },
+  heroTitle: { fontSize: 20, fontWeight: '800', color: C.ink, marginTop: 4, fontFamily: fonts?.serifDisplay },
+  heroDiscount: { fontSize: 14, fontWeight: '800', color: C.ink, marginTop: 8 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10 },
   gridCell: { width: '47%' },
   collHeader: {

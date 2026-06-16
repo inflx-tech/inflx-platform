@@ -24,5 +24,5 @@ const styles = StyleSheet.create({
     backgroundColor: C.brown, borderRadius: 20,
     paddingHorizontal: 9, paddingVertical: 3,
   },
-  txt: { fontSize: 9, fontWeight: '800', color: '#fff', letterSpacing: 0.3, fontFamily: fonts.monoBold },
+  txt: { fontSize: 9, fontWeight: '800', color: C.onGold, letterSpacing: 0.3, fontFamily: fonts.monoBold },
 });

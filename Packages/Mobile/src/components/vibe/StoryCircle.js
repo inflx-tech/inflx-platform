@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     marginTop: 1, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20,
     backgroundColor: C.brown,
   },
-  followTxt: { fontSize: 9, fontWeight: '800', color: '#fff', fontFamily: fonts.monoBold },
+  followTxt: { fontSize: 9, fontWeight: '800', color: C.onGold, fontFamily: fonts.monoBold },
   followingPill: {
     marginTop: 1, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
     backgroundColor: C.soft, borderWidth: 1, borderColor: C.line,

@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-p5a-palette",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (verbal go phase 5, establish palette via Home 2026-06-15)",
+  "approved_at": "2026-06-15",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (provided the recolored mockups as the locked reference 2026-06-15)",
+  "mockup_locked_at": "2026-06-15",
+  "notes": "Phase 5 step 1 — follower gold/cream palette foundation (creatorVibe token retune + ink-on-gold text fixes on shared/Home-reachable surfaces). Locked reference = founder's recolored mockups in 04-preview/mockups. Mobile-only (OTA), no backend/migration, follower-scoped (brandPalette untouched). released=false until founder visually verifies on Home; no Maestro (released stays false). FOLLOW: 5b Home layout polish + per-screen CTA/chip sweeps + 2.5c cleanup.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
