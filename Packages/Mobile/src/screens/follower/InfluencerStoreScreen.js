@@ -313,7 +313,7 @@ const s = StyleSheet.create({
   chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
   chipOn: { backgroundColor: C.brown, borderColor: C.brown },
   chipTxt: { fontSize: 11.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
-  chipTxtOn: { color: '#fff' },
+  chipTxtOn: { color: C.onGold },
   rail: { paddingHorizontal: 16, paddingBottom: 6, gap: 12 },
   empty: { paddingHorizontal: 18, paddingTop: 14, fontSize: 12, color: C.muted, fontFamily: fonts.sansMedium },
   note: { marginHorizontal: 16, marginTop: 14, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 11 },

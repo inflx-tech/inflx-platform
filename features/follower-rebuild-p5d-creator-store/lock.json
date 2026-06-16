@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-p5d-creator-store",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated: 'complete till phase 6, next we verify together' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (recolored + comprehensive creator-store mockup is the locked reference; delegated 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Phase 5 step 4 — Creator Store flow. Screen already matched the comprehensive creator-store mockup; cards/headers styled by 5a/5b shared components; Follow/Share fixed ink-on-gold in 5a. This contract = the one remaining Creator-Store white-on-gold sweep (category tab chip ink-on-gold). Mobile-only OTA, no backend/migration. released=false until the joint 5->6 founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
