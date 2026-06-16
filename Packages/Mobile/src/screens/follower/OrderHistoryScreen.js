@@ -293,7 +293,7 @@ const s = StyleSheet.create({
   tab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 30, marginRight: 7, borderWidth: 1, borderColor: C.line, backgroundColor: C.card },
   tabOn: { backgroundColor: C.brown, borderColor: C.brown },
   tabTxt: { fontSize: 11.5, fontWeight: '800', color: C.ink, fontFamily: fonts.sansBold },
-  tabTxtOn: { color: '#fff' },
+  tabTxtOn: { color: C.onGold },
 
   secttl: { fontSize: 11, fontWeight: '800', color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6, fontFamily: fonts.sansBold },
 

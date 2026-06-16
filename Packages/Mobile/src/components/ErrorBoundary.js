@@ -41,5 +41,5 @@ const st = StyleSheet.create({
   msgBox: { maxHeight: 180, alignSelf: 'stretch', backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 12 },
   msg: { fontSize: 11, color: C.muted, fontFamily: fonts.monoMedium },
   btn: { marginTop: 16, backgroundColor: C.brown, paddingHorizontal: 22, paddingVertical: 12, borderRadius: 12 },
-  btnTxt: { fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: fonts.sansBold },
+  btnTxt: { fontSize: 13, fontWeight: '800', color: C.onGold, fontFamily: fonts.sansBold },
 });

@@ -296,7 +296,7 @@ const s = StyleSheet.create({
   },
   chipOn: { backgroundColor: C.brown, borderColor: C.brown },
   chipTxt: { fontSize: 12, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
-  chipTxtOn: { color: '#fff' },
+  chipTxtOn: { color: C.onGold },
   pillRow: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8, gap: 7 },
   pill: {
     paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, marginRight: 7,
@@ -304,7 +304,7 @@ const s = StyleSheet.create({
   },
   pillOn: { backgroundColor: C.brown, borderColor: C.brown },
   pillTxt: { fontSize: 11, fontWeight: '700', color: C.muted, fontFamily: fonts.sansSemiBold },
-  pillTxtOn: { color: '#fff' },
+  pillTxtOn: { color: C.onGold },
   rail: { paddingHorizontal: 16, paddingBottom: 6, gap: 12 },
   heroWrap: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2 },
   hero: { borderRadius: 20, padding: 16, minHeight: 110, justifyContent: 'center', overflow: 'hidden' },

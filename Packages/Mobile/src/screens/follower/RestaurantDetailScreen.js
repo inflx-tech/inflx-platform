@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
   actionBar: { flexDirection: 'row', gap: 10, marginTop: 12 },
   abtn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 30, backgroundColor: C.brown },
   abtnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.brown },
-  abtnTxt: { fontSize: 13, fontWeight: '800', color: '#fff', fontFamily: fonts.sansBold },
+  abtnTxt: { fontSize: 13, fontWeight: '800', color: C.onGold, fontFamily: fonts.sansBold },
   abtnOutTxt: { color: C.brown },
   // {Business} × Creators row + trust line
   collabTitle: { fontSize: 14, fontWeight: '800', color: C.ink, marginBottom: 10, fontFamily: fonts.displayBold },

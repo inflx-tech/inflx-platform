@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-p5ef-store-checkout-sweep",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder (delegated: 'complete till phase 6'; chose 'visual sweep now, engine later' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (recolored mockups + locked gold/cream palette rule are the reference; delegated 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Phase 5 steps 5+6 — Brand Store + remaining white-on-gold sweep. 5e Brand Store = VERIFIED NO-OP (already palette-consistent; per-business accent CTAs; no white-on-gold; ProductCard->vibe swap is the deferred engine-migration layout work). 5f swept Deals chip/pill, OrderHistory tab, RestaurantDetail CTA, ErrorBoundary btn, MeScreen wallet+refer -> ink-on-gold. Completes the 5a sweep list (except deliberately-left correct items). Brand-Store->section-engine migration + Phase 6 (banner-gateway/hero-tiles) DEFERRED as separate production-impacting builds requiring explicit go. Mobile-only OTA, no backend/migration. released=false until the joint 5->6 founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
