@@ -213,6 +213,14 @@ export default function ProductDetailScreen({ navigation, route }) {
         }
         return;
       }
+      // Path 3 — plain product tap (library / platform shelf, e.g. Section Results,
+      // banner-gateway, hero tile): no creator and no offer to fetch. Render the
+      // product we were handed directly instead of erroring.
+      if (previewProduct) {
+        setProducts([previewProduct]);
+        setLoading(false);
+        return;
+      }
       setError(!handle
         ? 'Missing creator handle'
         : 'Missing offer context — the tap source did not pass an offer or campaign assignment id');

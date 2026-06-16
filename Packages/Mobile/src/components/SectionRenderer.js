@@ -204,7 +204,9 @@ function renderSection(section, navigation, canFollow, context = {}) {
   const seeAll = () => navigation.navigate('SectionResults', {
     title: section.title,
     rule: section.rule,
-    item_type: section.type,
+    // banner_gateway is a presentation, not a data type — its rule is library_products
+    // (a product list), so Results must render the product grid.
+    item_type: section.type === 'banner_gateway' ? 'products' : section.type,
     library_section_id: section.config?.library_section_id || null,
     category_key: ctx.superCategory || null,
     creator_handle: ctx.creatorHandle || null,

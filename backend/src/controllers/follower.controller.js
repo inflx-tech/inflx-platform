@@ -1334,23 +1334,35 @@ const getSectionResults = asyncHandler(async (req, res) => {
     ? await sectionEngine.resolveInfluencerByHandle(creator_handle)
     : null;
 
-  // library/collection-member shelves carry their rule definition in the library section.
+  // library/collection-member shelves carry their rule definition + business in the
+  // library section. The section's OWN business_type scopes results when the surface
+  // passed no category (e.g. a section/banner/tile placed on Home) — mirrors
+  // sectionEngine.buildSections so "Under ₹1999" / "On Sale Now" stay fashion-only
+  // instead of leaking every industry.
   let ruleDef = null;
+  let sectionBusinessType = null;
   if (library_section_id) {
     const lib = await sectionLibrary.getRuleJson(library_section_id);
     ruleDef = lib ? lib.rule : {};
+    sectionBusinessType = (lib && lib.business_type && lib.business_type !== 'ALL') ? lib.business_type : null;
   }
 
+  let categoryKey = category_key || null;
   let categoryCats = null;
-  if (category_key) {
+  if (categoryKey || sectionBusinessType) {
     const maps = await categoryTaxonomy.getMaps();
-    categoryCats = maps.membersByKey[category_key] || null;
+    if (categoryKey) categoryCats = maps.membersByKey[categoryKey] || null;
+    // No surface category → fall back to the section's own business_type.
+    if (!categoryCats && sectionBusinessType) {
+      categoryCats = maps.membersByKey[sectionBusinessType] || null;
+      categoryKey = categoryKey || sectionBusinessType;
+    }
   }
 
   const ctx = {
     city, followerId,
     followedIds: await sectionEngine.getFollowedIds(followerId),
-    categoryKey: category_key || null,
+    categoryKey,
     categoryCats,
     influencer,
     brandId: brand_id || null,

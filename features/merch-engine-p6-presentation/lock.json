@@ -11,7 +11,7 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder (approved the phase6-presentation mockup 2026-06-16)",
   "mockup_locked_at": "2026-06-16",
-  "notes": "Phase 6 — presentation types B (Banner-Gateway) + C (Hero-Tiles). SCOPED FOR REVIEW (founder: scope contract, then show before deploy). Founder decisions 2026-06-16: build BOTH B+C; banner image via URL field; review-before-deploy. Additive + default-inert (presentation_type rides config_json, default 'row'; no migration; reuses SectionResults). PENDING: founder review of 01-spec + 04-preview mockup -> then approved=true + mockup_locked=true -> implement -> surface for explicit go -> deploy. released stays false.",
+  "notes": "Phase 6 — presentation types B (Banner-Gateway) + C (Hero-Tiles). Built + deployed (commit 80f9cbf, OTA v113). Founder decisions 2026-06-16: build BOTH B+C; banner image via URL field. Additive + default-inert (presentation_type rides config_json, default 'row'; no migration; reuses SectionResults). FOUNDER-VERIFY BUGFIXES 2026-06-16 (see 06-diff/notes.md): (1) getSectionResults now falls back to the section's business_type so fashion sections stay fashion-only on banner/tile/View-all; (2) banner seeAll passes item_type:'products' so Results grids; (3) ProductDetailScreen renders a plain product tap directly (no more 'Missing creator handle'). pnpm qa 79/79 GREEN. released stays false until founder verify.",
   "release": {
     "qa_all_green": true,
     "released": false,
