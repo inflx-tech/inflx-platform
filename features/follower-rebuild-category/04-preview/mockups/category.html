@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INFLX — Category (Creators Vibe Yellow)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+:root{
+  --bg:#F6F1EA;--bezel:#E6DCCF;--notch:#1E1A16;--ink:#2A2520;--ink-2:#4A4038;
+  --muted:#9C8E7F;--muted-2:#B6A899;--terra:#F4B40D;--terra-d:#E0A100;--terra-soft:#FCEFC9;
+  --accent-text:#C28A12;--sale:#D9663C;--line:#ECE4DA;--line-2:#E2D8CC;--card:#FFFFFF;
+  --beige:#D9CABA;--beige-2:#CDBBA6;--beige-3:#E3D6C7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#322B24;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);padding:40px 26px 70px;-webkit-font-smoothing:antialiased;}
+.gh{max-width:1200px;margin:0 auto 30px;color:#EBE2D6;}
+.gh h1{font-size:21px;font-weight:800;letter-spacing:2px;}
+.gh p{color:#A99C8D;font-size:13px;margin-top:7px;}
+.grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto;}
+.frame{display:flex;flex-direction:column;align-items:center;gap:13px;}
+.cap{color:#B7AA9B;font-size:13px;font-weight:600;}
+.phone{width:372px;background:var(--bezel);border-radius:50px;padding:11px;box-shadow:0 30px 70px rgba(0,0,0,.45);}
+.screen{width:100%;background:var(--bg);border-radius:40px;overflow:hidden;position:relative;height:780px;display:flex;flex-direction:column;}
+.scroll{flex:1;overflow-y:auto;}
+.status{display:flex;align-items:center;justify-content:space-between;padding:15px 26px 4px;font-weight:700;font-size:14px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 10px;}
+.appbar .grp{display:flex;align-items:center;gap:15px;font-size:19px;}
+.appbar .logo b{font-size:14px;font-weight:800;letter-spacing:1.4px;}
+.appbar .logo b span{color:var(--terra);}
+.cart-badge{background:var(--terra);color:var(--ink);font-size:10px;font-weight:700;border-radius:9px;padding:1px 5px;margin-left:-6px;}
+.pad{padding:0 20px;}
+.h-page{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:-.3px;padding:4px 20px 2px;}
+.h-sub{color:var(--muted);font-size:13px;padding:0 20px 6px;}
+/* sub-category circles */
+.catscroll{display:flex;gap:15px;padding:12px 20px 8px;overflow-x:auto;}
+.catcircle{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none;width:62px;}
+.catcircle .ph{width:60px;height:60px;border-radius:50%;background:linear-gradient(150deg,var(--beige-3),var(--beige));display:flex;align-items:center;justify-content:center;font-size:26px;}
+.catcircle.on .ph{box-shadow:0 0 0 2px var(--terra);}
+.catcircle span{font-size:11.5px;font-weight:600;}
+/* section head */
+.row-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 11px;}
+.row-head h3{font-size:17px;font-weight:800;}
+.row-head a{color:var(--accent-text);font-size:13px;font-weight:700;}
+/* story rail (creators) */
+.rail{display:flex;gap:14px;padding:0 20px 4px;overflow-x:auto;}
+.story{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none;width:64px;}
+.story .ring{width:60px;height:60px;border-radius:50%;padding:2.5px;background:linear-gradient(135deg,var(--terra),#F47C2E);}
+.story .ring .ph{width:100%;height:100%;border-radius:50%;border:2px solid var(--bg);background:linear-gradient(150deg,var(--beige-3),var(--beige));}
+.story span{font-size:11px;font-weight:600;}
+/* brand cards */
+.bcard{flex:none;width:150px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.bcard .ph{height:90px;background:linear-gradient(150deg,var(--beige-3),var(--beige));}
+.bcard .bm{padding:9px 11px;}
+.bcard .bm b{font-size:13px;font-weight:700;}
+.bcard .bm span{display:block;font-size:11px;color:var(--muted);margin-top:2px;}
+/* product cards */
+.prow{display:flex;gap:13px;padding:0 20px 4px;overflow-x:auto;}
+.pcard{flex:none;width:148px;}
+.pcard .imgwrap{position:relative;border-radius:14px;overflow:hidden;}
+.pcard .ph{width:100%;height:158px;background:linear-gradient(150deg,var(--beige-3),var(--beige),var(--beige-2));display:block;}
+.pcard .heart{position:absolute;top:9px;right:9px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:14px;}
+.pcard .nm{font-size:13px;font-weight:600;margin-top:8px;}
+.pcard .br{font-size:11px;color:var(--muted);margin-top:1px;}
+.pcard .pr{font-size:13.5px;font-weight:800;margin-top:3px;}
+.pcard .pr s{color:var(--muted);font-weight:500;font-size:11px;margin-left:5px;}
+/* all-categories list */
+.catlist{padding:8px 20px 18px;display:flex;flex-direction:column;gap:13px;}
+.catrow{display:flex;align-items:center;gap:14px;background:#FBF8F3;border:1px solid var(--line);border-radius:14px;padding:11px;cursor:pointer;}
+.catrow .ph{width:60px;height:60px;border-radius:11px;flex:none;background:linear-gradient(150deg,var(--beige-3),var(--beige));display:flex;align-items:center;justify-content:center;font-size:27px;}
+.catrow .ctx{flex:1;}
+.catrow .ctx b{font-size:15px;font-weight:700;}
+.catrow .ctx span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px;}
+.catrow .chev{color:var(--muted-2);font-size:17px;}
+/* bottom nav (OUR tabs) */
+.bnav{display:flex;justify-content:space-around;align-items:center;padding:10px 6px 14px;background:#FBF8F3;border-top:1px solid var(--line);}
+.bnav .n{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--muted-2);font-size:10.5px;font-weight:600;}
+.bnav .n .i{font-size:19px;}
+.bnav .n.active{color:var(--terra-d);}
+.bnav .reels{background:var(--terra);color:var(--ink);width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-top:-6px;}
+.note{max-width:1200px;margin:26px auto 0;color:#C9BCAD;font-size:12.5px;line-height:1.7;}
+.note b{color:#F4B40D;}
+</style></head>
+<body>
+<div class="gh"><h1>INFL<span style="color:#F4B40D">X</span> — CATEGORY</h1><p>Creators Vibe Yellow · shopping-journey rebuild · screen 1 of sequence</p></div>
+
+<div class="grid">
+
+  <!-- A · ALL CATEGORIES (the 5 launch tiles) -->
+  <div class="frame">
+    <div class="cap">A · All Categories (the 5 tiles)</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 5G 🔋</span></div>
+      <div class="appbar">
+        <div class="grp">☰</div>
+        <div class="logo"><b>INFL<span>X</span></b></div>
+        <div class="grp">🔍 <span>🛒<span class="cart-badge">0</span></span></div>
+      </div>
+      <div class="h-page">Categories</div>
+      <div class="h-sub">Discover by what you love</div>
+      <div class="scroll">
+        <div class="catlist">
+          <div class="catrow"><span class="ph">👗</span><div class="ctx"><b>Fashion</b><span>Women, Men, Footwear, Bags &amp; more</span></div><span class="chev">›</span></div>
+          <div class="catrow"><span class="ph">🍔</span><div class="ctx"><b>Food</b><span>Restaurants, Cafe, Bakery, Biryani &amp; more</span></div><span class="chev">›</span></div>
+          <div class="catrow"><span class="ph">💄</span><div class="ctx"><b>Beauty</b><span>Salon, Spa, Makeup, Skincare &amp; more</span></div><span class="chev">›</span></div>
+          <div class="catrow"><span class="ph">🛋️</span><div class="ctx"><b>Furniture</b><span>Living, Bedroom, Decor &amp; more</span></div><span class="chev">›</span></div>
+          <div class="catrow"><span class="ph">🚗</span><div class="ctx"><b>Car Rentals</b><span>Self-drive, With driver, Luxury &amp; more</span></div><span class="chev">›</span></div>
+        </div>
+      </div>
+      <div class="bnav">
+        <div class="n active"><span class="i">⌂</span>Home</div>
+        <div class="n"><span class="i">🏷️</span>Offers</div>
+        <div class="reels">▶</div>
+        <div class="n"><span class="i">🛍️</span>Orders</div>
+        <div class="n"><span class="i">👤</span>Profile</div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- B · CATEGORY DETAIL (per-vertical, section-driven) -->
+  <div class="frame">
+    <div class="cap">B · Fashion (section-driven — admin places these)</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 5G 🔋</span></div>
+      <div class="appbar">
+        <div class="grp">←</div>
+        <div class="logo"><b>Fashion</b></div>
+        <div class="grp">🔍 <span>🛒<span class="cart-badge">0</span></span></div>
+      </div>
+      <div class="scroll">
+        <!-- sub-category circles from the listing tree -->
+        <div class="catscroll">
+          <div class="catcircle on"><div class="ph">✦</div><span>All</span></div>
+          <div class="catcircle"><div class="ph">👚</div><span>Women</span></div>
+          <div class="catcircle"><div class="ph">👔</div><span>Men</span></div>
+          <div class="catcircle"><div class="ph">👟</div><span>Footwear</span></div>
+          <div class="catcircle"><div class="ph">👜</div><span>Bags</span></div>
+        </div>
+
+        <!-- section: Top Creators -->
+        <div class="row-head"><h3>Top Fashion Creators</h3><a>View all</a></div>
+        <div class="rail">
+          <div class="story"><div class="ring"><div class="ph"></div></div><span>Ritika</span></div>
+          <div class="story"><div class="ring"><div class="ph"></div></div><span>Ananya</span></div>
+          <div class="story"><div class="ring"><div class="ph"></div></div><span>Neha</span></div>
+          <div class="story"><div class="ring"><div class="ph"></div></div><span>Diya</span></div>
+        </div>
+
+        <!-- section: Popular Businesses -->
+        <div class="row-head"><h3>Popular Stores</h3><a>View all</a></div>
+        <div class="rail">
+          <div class="bcard"><div class="ph"></div><div class="bm"><b>Charvitha Fashions</b><span>Vijayawada · 4.6 ★</span></div></div>
+          <div class="bcard"><div class="ph"></div><div class="bm"><b>Trendz Boutique</b><span>Vijayawada · 4.4 ★</span></div></div>
+        </div>
+
+        <!-- section: Top Picks (products) -->
+        <div class="row-head"><h3>Top Picks</h3><a>View all</a></div>
+        <div class="prow">
+          <div class="pcard"><div class="imgwrap"><span class="ph"></span><span class="heart">♡</span></div><div class="nm">Floral Summer Dress</div><div class="br">Charvitha Fashions</div><div class="pr">₹1,499</div></div>
+          <div class="pcard"><div class="imgwrap"><span class="ph"></span><span class="heart">♡</span></div><div class="nm">Pepe Slim Jeans</div><div class="br">Charvitha Fashions</div><div class="pr">₹1,199 <s>₹1,299</s></div></div>
+        </div>
+
+        <!-- section: On Sale -->
+        <div class="row-head"><h3>On Sale Now</h3><a>View all</a></div>
+        <div class="prow">
+          <div class="pcard"><div class="imgwrap"><span class="ph"></span><span class="heart">♡</span></div><div class="nm">Graphic Tee</div><div class="br">Charvitha Fashions</div><div class="pr">₹359 <s>₹449</s></div></div>
+          <div class="pcard"><div class="imgwrap"><span class="ph"></span><span class="heart">♡</span></div><div class="nm">Denim Skirt</div><div class="br">Charvitha Fashions</div><div class="pr">₹639 <s>₹799</s></div></div>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+      <div class="bnav">
+        <div class="n active"><span class="i">⌂</span>Home</div>
+        <div class="n"><span class="i">🏷️</span>Offers</div>
+        <div class="reels">▶</div>
+        <div class="n"><span class="i">🛍️</span>Orders</div>
+        <div class="n"><span class="i">👤</span>Profile</div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Mapping notes (confirm at lock):</b><br>
+  • <b>A — All Categories</b> = the 5 launch tiles rendered as the source's <code>catrow</code> list (icon + name + helper + chevron). Tapping a tile → screen B.<br>
+  • <b>B — Category detail</b> is <b>section-driven</b> (admin-placed shelves), re-skinned to the source's components: sub-category circles (from the listing tree), creator story-rail, store cards, and product cards. The source's "Loungewear listing" grid + filter/sort toolbar is reused on the <b>Results / "View all"</b> screen, not here.<br>
+  • <b>Bottom nav kept as OUR tabs</b>: Home · Offers · Reels · Orders · Profile (not the source's Shop/Wishlist/Cart).<br>
+  • Palette = your Creators Vibe Yellow exactly (cream #F6F1EA, gold #F4B40D, terra #D9663C sale, Playfair headings).
+</div>
+</body></html>

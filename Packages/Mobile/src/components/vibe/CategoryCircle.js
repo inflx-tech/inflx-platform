@@ -44,10 +44,12 @@ const styles = StyleSheet.create({
   cat: { width: 64, alignItems: 'center', gap: 8 },
   tile: {
     width: 60, height: 60, borderRadius: 30,
-    backgroundColor: '#F1F1F1',
+    backgroundColor: C.soft,
+    borderWidth: 2, borderColor: 'transparent',
     alignItems: 'center', justifyContent: 'center',
   },
-  tileActive: { backgroundColor: C.brown },
+  // Active = cream fill + gold ring (source .catcircle.on), not a solid-gold fill.
+  tileActive: { borderColor: C.brown },
   icon: { fontSize: 25 },
   label: { fontSize: 10.5, fontWeight: '700', color: C.ink, fontFamily: fonts.sansBold },
   labelActive: { color: C.brown },

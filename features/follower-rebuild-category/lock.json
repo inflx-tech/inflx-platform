@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-category",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('ok lock it' 2026-06-16, Creators Vibe Yellow source)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('ok lock it' on category.html 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Follower visual rebuild — Category screen, shopping-journey sequence step 1. Locked reference = founder's 'CREATORS VIBE Yellow -standalone- (1).html' (screen 11 Categories + the card/appbar system), authored into 04-preview/mockups/category.html. Two states: A All-Categories (5 launch tiles as catrow list), B per-vertical Category detail (section-driven, re-skinned: sub-category circles + creator rail + store cards + product cards). Bottom nav kept as our tabs (Home/Offers/Reels/Orders/Profile). Mobile-only OTA, no backend/migration. released=false until founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
