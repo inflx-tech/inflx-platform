@@ -19,6 +19,15 @@ import { Alert, Platform } from 'react-native';
  * @returns {Promise<{razorpay_payment_id, razorpay_order_id, razorpay_signature}|null>}
  */
 export async function processPayment({ amount, orderId, keyId, description, brandName, prefill }) {
+  // CRITICAL: RazorpayCheckout.open() with an undefined key — OR a mock order id —
+  // crashes the app NATIVELY (bypasses the JS try/catch below): it closes with no
+  // payment, no order. When the backend is in RAZORPAY_MOCK mode it returns
+  // `order_mock_…` ids; use the simulated confirm directly instead of handing a fake
+  // order to the native SDK. Real key + real order → the real Razorpay sheet below.
+  if (!keyId || String(orderId || '').startsWith('order_mock_')) {
+    console.log('[Payment] Mock/keyless checkout — simulating payment.');
+    return mockPayment(orderId);
+  }
   try {
     const RazorpayCheckout = require('react-native-razorpay').default;
 

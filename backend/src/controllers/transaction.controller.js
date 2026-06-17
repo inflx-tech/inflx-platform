@@ -1245,6 +1245,10 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   return success(res, {
     razorpay_order_id: orderId,
+    // The app needs the key to open Razorpay. Pay-at-store/prebook return it;
+    // the online-order response omitted it → the app opened Razorpay with an
+    // undefined key → native hard-crash on Place Order (no payment, no order).
+    razorpay_key_id: txService.getRazorpayKeyId(),
     net_amount: netAmount,
     breakdown: {
       items_total: itemsTotal,

@@ -35,3 +35,16 @@ cover_images fall back to the single image (no empty carousel).
 - LOGOUT was broken (cleared tokens but never navigated; FollowerLogin not in ProfileStack)
   → registered FollowerLogin in ProfileStack + MeScreen navigates to it on logout. This also
   unblocks the session-expired recovery: logout → re-login stores the refresh token.
+
+## Round 3 — PLACE ORDER did nothing / app exited / 0 orders (critical money path)
+ROOT CAUSE: the online-order `createOrder` response OMITTED `razorpay_key_id` (pay-at-store
+/prebook include it). The app called `RazorpayCheckout.open({key: undefined})` → native
+hard-crash (bypasses JS try/catch) → app exits, no payment, no order. (Same endpoint →
+also broke the restaurant cart cutover.)
+FIX: (1) backend transaction.controller online-order response now returns
+`razorpay_key_id: txService.getRazorpayKeyId()`. (2) app `processPayment` guards: if no key
+OR a mock order id (`order_mock_…`, prod is RAZORPAY_MOCK=true) → use the simulated confirm
+directly instead of handing a fake order to the native SDK. Real key + real order → real
+Razorpay sheet. NOTE: prod RAZORPAY_MOCK=true → orders complete via the mock confirm
+(simulated pay) and a real order + commission ARE written; flip RAZORPAY_MOCK=false + live
+keys for real charges.
