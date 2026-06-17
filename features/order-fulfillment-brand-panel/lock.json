@@ -1,0 +1,21 @@
+{
+  "feature": "order-fulfillment-brand-panel",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('ok pls proceed' on brand-fulfillment.html 2026-06-17)",
+  "approved_at": "2026-06-17",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('ok pls proceed' 2026-06-17)",
+  "mockup_locked_at": "2026-06-17",
+  "notes": "Order Fulfillment Engine Unit 2 — brand-web fulfillment panel. New /dashboard/fulfillment page (+nav 📦) lists online orders, expands to a 5-step stepper (Confirmed→Packed→Shipped→Out for Delivery→Delivered) with per-status action buttons + courier dropdown + tracking/AWB entry on ship + track-on-courier deep link + cancel. Wired to orderApi.list + orderApi.updateStatus (Unit 1 backend). No backend/migration. Phase-1 manual model. brand-web black/yellow dashboard style. released=false until founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

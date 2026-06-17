@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brand — Order Fulfillment</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@600;700&family=JetBrains+Mono:wght@700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  --white:#fff;--bg:#FAFAFA;--bg2:#F4F4F5;--yellow:#FFC107;--yellow-pale:#FFF7CC;--yellow-text:#6B5A00;
+  --ink:#0A0A0A;--muted:#52525B;--muted-2:#71717A;--muted-3:#A1A1AA;--border:#E4E4E7;--border-soft:#F4F4F5;
+  --success:#10B981;--success-pale:#D1FAE5;--success-text:#047857;--danger:#E8401A;--danger-pale:#FDEEE9;--danger-text:#B91C1C;--conv:#7E22CE;--conv-pale:#F3E8FF;
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);font-size:13px;background:var(--bg2);padding:26px;
+}
+.wrap{max-width:1000px;margin:0 auto;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.hdr h1{font-family:'Outfit',sans-serif;font-size:24px;font-weight:700;letter-spacing:-.4px;}
+.hdr .rule{width:42px;height:3px;background:var(--yellow);border-radius:2px;margin:6px 0;}
+.hdr .sub{font-size:12px;color:var(--muted-2);margin-bottom:18px;}
+.cnt-chip{display:inline-flex;padding:5px 11px;border-radius:99px;background:var(--ink);color:var(--yellow);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;margin-bottom:6px;}
+.chip-row{display:flex;gap:6px;margin-bottom:14px;}
+.chip{padding:6px 12px;border-radius:99px;background:var(--white);border:1px solid var(--border);font-size:11.5px;font-weight:600;color:var(--muted);}
+.chip.act{background:var(--ink);border-color:var(--ink);color:var(--yellow);font-weight:700;}
+/* order card */
+.oc{background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;overflow:hidden;}
+.oc.open{border-color:var(--ink);}
+.oc-row{padding:12px 14px;display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:center;cursor:pointer;}
+.oc-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;padding:5px 10px;border-radius:8px;background:var(--conv-pale);color:var(--conv);}
+.oc-name{font-family:'Outfit',sans-serif;font-size:13.5px;font-weight:700;}
+.oc-meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2);margin-top:2px;}
+.oc-amt{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;text-align:right;}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:99px;text-transform:uppercase;}
+.pill.confirmed{background:var(--yellow-pale);color:var(--yellow-text);}
+.pill.packed{background:var(--conv-pale);color:var(--conv);}
+.pill.dispatched{background:#DBEAFE;color:#1D4ED8;}
+.pill.delivered{background:var(--success-pale);color:var(--success-text);}
+/* expanded */
+.oc-exp{background:var(--bg);border-top:1px solid var(--border-soft);padding:16px;}
+.exp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.kv-l{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;}
+.kv-v{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;margin-top:3px;}
+/* stepper */
+.stepper{display:flex;align-items:center;margin:8px 0 18px;}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative;}
+.step .dot{width:30px;height:30px;border-radius:50%;background:#EDE9E0;color:var(--muted-2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;z-index:2;}
+.step.done .dot{background:var(--success);color:#fff;}
+.step.curr .dot{background:var(--ink);color:var(--yellow);}
+.step .lab{font-size:10px;font-weight:700;color:var(--muted-2);text-align:center;}
+.step.done .lab,.step.curr .lab{color:var(--ink);}
+.step .line{position:absolute;top:15px;left:50%;width:100%;height:2px;background:#E4E4E7;z-index:1;}
+.step.done .line{background:var(--success);}
+.step:last-child .line{display:none;}
+/* ship form */
+.shipbox{background:var(--white);border:1px dashed var(--yellow);border-radius:10px;padding:14px;margin-bottom:14px;}
+.shipbox h4{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;margin-bottom:10px;}
+.fld{margin-bottom:10px;}
+.fld label{display:block;font-size:10px;font-weight:800;color:var(--muted-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.fld input,.fld select{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:12.5px;font-family:inherit;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+/* actions */
+.acts{display:flex;gap:10px;align-items:center;}
+.btn{background:var(--ink);color:var(--yellow);border:none;font-weight:800;font-size:12.5px;padding:11px 20px;border-radius:9px;cursor:pointer;font-family:inherit;}
+.btn.gh{background:var(--white);border:1px solid var(--border);color:var(--muted);}
+.cancel{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--danger-text);background:none;border:none;cursor:pointer;}
+.note{font-size:11px;color:var(--muted-2);margin-top:10px;line-height:1.5;}
+.note b{color:var(--ink);}
+</style></head>
+<body><div class="wrap">
+
+  <div class="hdr">
+    <span class="cnt-chip">5 online orders</span>
+    <h1>Order Fulfillment</h1>
+    <div class="rule"></div>
+    <div class="sub">Pack, ship, and track your online orders. Customers &amp; admin see each step.</div>
+  </div>
+
+  <div class="chip-row">
+    <span class="chip act">New / To pack</span>
+    <span class="chip">Shipped</span>
+    <span class="chip">Delivered</span>
+    <span class="chip">Cancelled</span>
+  </div>
+
+  <!-- collapsed order -->
+  <div class="oc">
+    <div class="oc-row">
+      <span class="oc-badge">📦 ORDER</span>
+      <div><div class="oc-name">Ritika Gupta · Floral Summer Dress +1</div><div class="oc-meta">via @rikitafashion · 2 items · 12m ago</div></div>
+      <div class="oc-amt">₹1,838</div>
+      <span class="pill confirmed">● Confirmed</span>
+    </div>
+  </div>
+
+  <!-- expanded order: at "Packed", entering shipment -->
+  <div class="oc open">
+    <div class="oc-row">
+      <span class="oc-badge">📦 ORDER</span>
+      <div><div class="oc-name">Ritika Gupta · Cozy Cloud Hoodie</div><div class="oc-meta">via @rikitafashion · 1 item · 1h ago</div></div>
+      <div class="oc-amt">₹1,199</div>
+      <span class="pill packed">● Packed</span>
+    </div>
+    <div class="oc-exp">
+      <div class="exp-grid">
+        <div><div class="kv-l">Customer</div><div class="kv-v">Ritika Gupta · 90000 00019</div></div>
+        <div><div class="kv-l">Ship to</div><div class="kv-v">12-3-45 Benz Circle, Vijayawada 520010</div></div>
+        <div><div class="kv-l">Item</div><div class="kv-v">Cozy Cloud Hoodie · Oat / M</div></div>
+      </div>
+
+      <!-- 5-step stepper -->
+      <div class="stepper">
+        <div class="step done"><div class="line"></div><div class="dot">✓</div><div class="lab">Confirmed</div></div>
+        <div class="step curr"><div class="line"></div><div class="dot">2</div><div class="lab">Packed</div></div>
+        <div class="step"><div class="line"></div><div class="dot">3</div><div class="lab">Shipped</div></div>
+        <div class="step"><div class="line"></div><div class="dot">4</div><div class="lab">Out for Delivery</div></div>
+        <div class="step"><div class="dot">5</div><div class="lab">Delivered</div></div>
+      </div>
+
+      <!-- shipment entry (shown when advancing to Shipped) -->
+      <div class="shipbox">
+        <h4>Ship this order</h4>
+        <div class="two">
+          <div class="fld"><label>Courier</label><select><option>Delhivery</option><option>DTDC</option><option>Blue Dart</option><option>India Post</option><option>XpressBees</option><option>Other</option></select></div>
+          <div class="fld"><label>Tracking / AWB number</label><input placeholder="e.g. 1234567890123"/></div>
+        </div>
+        <div class="note">Enter the courier &amp; AWB you got at hand-off. The customer sees this + a <b>track-on-courier link</b> built from the AWB.</div>
+      </div>
+
+      <div class="acts">
+        <button class="btn">Mark Shipped →</button>
+        <button class="cancel">Cancel order</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- expanded order: shipped, showing tracking + next action -->
+  <div class="oc open">
+    <div class="oc-row">
+      <span class="oc-badge">📦 ORDER</span>
+      <div><div class="oc-name">Sagar T · Denim Skirt</div><div class="oc-meta">via @sagartravel · 1 item · yesterday</div></div>
+      <div class="oc-amt">₹799</div>
+      <span class="pill dispatched">● Shipped</span>
+    </div>
+    <div class="oc-exp">
+      <div class="exp-grid">
+        <div><div class="kv-l">Courier</div><div class="kv-v">Delhivery</div></div>
+        <div><div class="kv-l">Tracking / AWB</div><div class="kv-v">1234567890123 · <span style="color:#1D4ED8">Track ↗</span></div></div>
+        <div><div class="kv-l">Shipped</div><div class="kv-v">17 Jun, 10:24</div></div>
+      </div>
+      <div class="stepper">
+        <div class="step done"><div class="line"></div><div class="dot">✓</div><div class="lab">Confirmed</div></div>
+        <div class="step done"><div class="line"></div><div class="dot">✓</div><div class="lab">Packed</div></div>
+        <div class="step curr"><div class="line"></div><div class="dot">✓</div><div class="lab">Shipped</div></div>
+        <div class="step"><div class="line"></div><div class="dot">4</div><div class="lab">Out for Delivery</div></div>
+        <div class="step"><div class="dot">5</div><div class="lab">Delivered</div></div>
+      </div>
+      <div class="acts">
+        <button class="btn gh">Mark Out for Delivery</button>
+        <button class="btn">Mark Delivered ✓</button>
+        <button class="cancel">Cancel order</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note" style="margin-top:14px">
+    <b>How it maps to the backend (Unit 1, live):</b> each action calls PATCH /brands/me/orders/:id/status with the new status (+ courier_name + tracking_number on Ship). Per-step timestamp + a push to the follower fire automatically. Commission stays held until the return window closes.
+  </div>
+
+</div></body></html>
