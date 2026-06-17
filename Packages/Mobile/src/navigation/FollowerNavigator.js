@@ -144,6 +144,7 @@ function ProfileStack() {
       <Stack.Screen name="FollowedInfluencers" component={FollowedInfluencersScreen} />
       <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
       <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
+      <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
     </Stack.Navigator>
   );
 }

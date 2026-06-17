@@ -24,3 +24,14 @@ Four founder-reported bugs from device testing (OTA v118), root-caused in code +
 ## Note
 facets renders defensively (object key→value; arrays joined); products with empty
 cover_images fall back to the single image (no empty carousel).
+
+## Round 2 (founder device feedback on v119)
+- Images were stored in `facets.images` (not variants_json.cover_images) → carousel now
+  sources `facets.images` too; `images`/`size`/`colour`/`category` keys hidden from the
+  Product Details spec rows (FACET_HIDE) so they're not dumped as text.
+- Colour selector → small round **swatches** (filled via COLOUR_HEX, name below, ring when
+  selected); Size selector → small round **circles** (gold fill when selected) — replaces
+  the full-width boxes (founder: "round small circles in color as well as sizes").
+- LOGOUT was broken (cleared tokens but never navigated; FollowerLogin not in ProfileStack)
+  → registered FollowerLogin in ProfileStack + MeScreen navigates to it on logout. This also
+  unblocks the session-expired recovery: logout → re-login stores the refresh token.

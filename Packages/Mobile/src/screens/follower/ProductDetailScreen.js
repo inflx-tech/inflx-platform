@@ -5,6 +5,18 @@ import {
 } from 'react-native';
 
 const HERO_W = Dimensions.get('window').width;
+
+// Common colour-name → hex for round swatches (fallback = neutral chip w/ initial).
+const COLOUR_HEX = {
+  black: '#1A1A1A', white: '#F5F5F5', red: '#D9381E', blue: '#2C5BD9', navy: '#1F2D4D',
+  green: '#2E9E54', yellow: '#F6B11E', orange: '#E8732B', pink: '#E8579E', purple: '#7E22CE',
+  grey: '#9CA3AF', gray: '#9CA3AF', brown: '#8B5A2B', beige: '#D9CABA', cream: '#FBEFD0',
+  maroon: '#7B1E2B', olive: '#7C8A5A', teal: '#0E7490', gold: '#D4AF37', silver: '#C0C0C0',
+  'sky blue': '#7FB5E6', 'light blue': '#7FB5E6', coral: '#E8896B', tan: '#D2B48C',
+};
+// facets keys NOT shown as spec rows — they drive other UI (images→carousel,
+// size/colour→selectors) or duplicate Category.
+const FACET_HIDE = new Set(['images', 'image', 'image_url', 'image_urls', 'size', 'sizes', 'color', 'colour', 'colors', 'colours', 'category']);
 import { creatorVibe as C, fonts, fmtRupees, getBusinessAccentLight } from '../../theme/tokens';
 
 // Flow 52.4 — Creator Vibe recolor shim. Per-business accent stays wayfinding-only
@@ -475,6 +487,9 @@ export default function ProductDetailScreen({ navigation, route }) {
         {(() => {
           const vj = variantsJson || {};
           const gallery = [
+            // The brand's uploaded images live in facets.images (verified in prod);
+            // also fold in image_url + variant cover/colour images.
+            ...(Array.isArray(selected.facets?.images) ? selected.facets.images : []),
             selected.image_url,
             ...(Array.isArray(vj.cover_images) ? vj.cover_images : []),
             ...((activeColour && Array.isArray(activeColour.images)) ? activeColour.images : []),
@@ -591,21 +606,22 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          {/* Colour — fashion/furniture matrix (variants_json.colors[]) */}
+          {/* Colour — small round swatches (filled with the colour; ring when
+              selected), name below. variants_json.colors[]. */}
           {hasColourMatrix ? (
             <View style={styles.customizeBlock}>
-              <Text style={styles.blockTitle}>Select Colour</Text>
-              <View style={styles.sizeRow}>
+              <Text style={styles.blockTitle}>Colour{(selectedColour || colourName(activeColour)) ? `: ${selectedColour || colourName(activeColour)}` : ''}</Text>
+              <View style={styles.swatchRow}>
                 {colours.map((c, i) => {
                   const name = colourName(c);
                   const on = (selectedColour || colourName(activeColour)) === name;
+                  const hex = COLOUR_HEX[String(name || '').toLowerCase()] || null;
                   return (
-                    <TouchableOpacity
-                      key={i}
-                      style={[styles.sizeChip, on && styles.sizeChipOn]}
-                      onPress={() => { setSelectedColour(name); setSelectedSize(null); }}
-                    >
-                      <Text style={[styles.sizeChipTxt, on && styles.sizeChipTxtOn]}>{name}</Text>
+                    <TouchableOpacity key={i} style={styles.swatchCol} onPress={() => { setSelectedColour(name); setSelectedSize(null); setImageIndex(0); }}>
+                      <View style={[styles.swatch, on && styles.swatchOn, hex ? { backgroundColor: hex } : styles.swatchUnknown]}>
+                        {!hex ? <Text style={styles.swatchInit}>{String(name || '?')[0].toUpperCase()}</Text> : null}
+                      </View>
+                      <Text style={[styles.swatchLbl, on && styles.swatchLblOn]} numberOfLines={1}>{name}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -613,17 +629,17 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          {/* Variants — size/options (conditional, brand-defined) */}
+          {/* Size — small round circles (ring/fill when selected). */}
           {sizes.length > 0 ? (
             <View style={styles.customizeBlock}>
-              <Text style={styles.blockTitle}>Select Size</Text>
-              <View style={styles.sizeRow}>
+              <Text style={styles.blockTitle}>Size{selectedSize ? `: ${selectedSize}` : ''}</Text>
+              <View style={styles.swatchRow}>
                 {sizes.map((sz, i) => {
                   const label = sizeLabel(sz);
                   const on = selectedSize === label;
                   return (
-                    <TouchableOpacity key={i} style={[styles.sizeChip, on && styles.sizeChipOn]} onPress={() => setSelectedSize(label)}>
-                      <Text style={[styles.sizeChipTxt, on && styles.sizeChipTxtOn]}>{label}</Text>
+                    <TouchableOpacity key={i} style={[styles.sizeCircle, on && styles.sizeCircleOn]} onPress={() => setSelectedSize(label)}>
+                      <Text style={[styles.sizeCircleTxt, on && styles.sizeCircleTxtOn]}>{label}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -644,7 +660,7 @@ export default function ProductDetailScreen({ navigation, route }) {
           {(() => {
             const f = selected.facets;
             const rows = (f && typeof f === 'object' && !Array.isArray(f))
-              ? Object.entries(f).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))
+              ? Object.entries(f).filter(([k, v]) => !FACET_HIDE.has(String(k).toLowerCase()) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0))
               : [];
             if (selected.section) rows.unshift(['Category', selected.section]);
             if (!rows.length) return null;
@@ -799,11 +815,19 @@ const styles = StyleSheet.create({
   toggleKnob: { width: 19, height: 19, borderRadius: 10, backgroundColor: '#fff', marginLeft: 3 },
   toggleKnobOn: { marginLeft: 22 },
   sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  // Source `.sizebox` — full-width boxes; active = gold fill + ink text (`.sizebox.sel`).
-  sizeChip: { flex: 1, minWidth: 42, height: 44, paddingHorizontal: 10, borderRadius: 9, borderWidth: 1, borderColor: P.border, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card },
-  sizeChipOn: { borderColor: C.brown, backgroundColor: C.brown },
-  sizeChipTxt: { fontFamily: fonts.sansBold, fontSize: 13, color: P.ink },
-  sizeChipTxtOn: { color: C.onGold },
+  // Round selectors (founder: small round circles for colour + size).
+  swatchRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, alignItems: 'flex-start' },
+  swatchCol: { alignItems: 'center', gap: 5, width: 52 },
+  swatch: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: P.border },
+  swatchOn: { borderWidth: 2, borderColor: C.ink },
+  swatchUnknown: { backgroundColor: C.soft },
+  swatchInit: { fontFamily: fonts.sansBold, fontSize: 12, color: C.ink },
+  swatchLbl: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted },
+  swatchLblOn: { fontFamily: fonts.sansBold, color: C.ink },
+  sizeCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, borderColor: P.border, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card },
+  sizeCircleOn: { borderColor: C.brown, backgroundColor: C.brown },
+  sizeCircleTxt: { fontFamily: fonts.sansBold, fontSize: 13, color: P.ink },
+  sizeCircleTxtOn: { color: C.onGold },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandLine: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, flexShrink: 1 },
   brandChevron: { fontSize: 16, fontWeight: '300' },

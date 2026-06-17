@@ -43,6 +43,9 @@ function MeInner({ navigation }) {
       { text: 'Logout', style: 'destructive', onPress: async () => {
         await AsyncStorage.multiRemove(['inflx_token', 'inflx_refresh_token', 'inflx_user']);
         setRole('');
+        // Take the user to the login screen so they can re-authenticate (without
+        // this the tokens cleared but the UI didn't change → "logout not working").
+        navigation.navigate('FollowerLogin');
       } },
     ]);
   };
