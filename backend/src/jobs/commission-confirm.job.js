@@ -18,7 +18,18 @@ async function run() {
      JOIN users u ON u.id = i.user_id
      WHERE ft.return_window_ends_at <= NOW()
        AND ft.commission_confirmed_at IS NULL
-       AND ft.status = 'completed'`
+       AND ft.status = 'completed'
+       -- Do NOT release commission for a cancelled order or an active/successful
+       -- return (founder rule: wallet isn't confirmed until the window closes, and
+       -- a return within the window cancels the pending commission). A later-REJECTED
+       -- return clears this guard so the next run confirms normally.
+       AND NOT EXISTS (
+         SELECT 1 FROM follower_orders fo
+          WHERE fo.transaction_id = ft.id AND fo.order_status = 'cancelled')
+       AND NOT EXISTS (
+         SELECT 1 FROM follower_returns fr
+          WHERE fr.transaction_id = ft.id
+            AND fr.return_status IN ('requested', 'approved', 'received', 'refunded'))`
   );
 
   if (ready.length === 0) {

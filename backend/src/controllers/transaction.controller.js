@@ -1502,9 +1502,12 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
 
   const { id } = req.params;
-  const { order_status } = req.body;
+  const { order_status, courier_name, tracking_number } = req.body;
 
-  const VALID_STATUSES = ['confirmed', 'dispatched', 'delivered'];
+  // 5-step lifecycle (migration 105): confirmed → packed → dispatched(=Shipped)
+  // → out_for_delivery → delivered ; cancelled (terminal). 'dispatched' kept for
+  // back-compat as the Shipped step.
+  const VALID_STATUSES = ['confirmed', 'packed', 'dispatched', 'out_for_delivery', 'delivered', 'cancelled'];
   if (!VALID_STATUSES.includes(order_status)) {
     throw new AppError('VALIDATION_ERROR', `order_status must be one of: ${VALID_STATUSES.join(', ')}`, 422);
   }
@@ -1523,25 +1526,32 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
   if (!existing[0]) throw new AppError('NOT_FOUND', 'Order not found or access denied', 404);
 
-  const updates = { order_status };
-  if (order_status === 'dispatched') updates.dispatched_at = new Date();
-  if (order_status === 'delivered') updates.delivered_at = new Date();
+  // Per-step timestamp (set once, on first entry into that status).
+  const tsCol = {
+    packed: 'packed_at', dispatched: 'dispatched_at',
+    out_for_delivery: 'out_for_delivery_at', delivered: 'delivered_at',
+    cancelled: 'cancelled_at',
+  }[order_status] || null;
 
   const { rows } = await db.query(
     `UPDATE follower_orders SET
-       order_status  = $1,
-       dispatched_at = COALESCE($2, dispatched_at),
-       delivered_at  = COALESCE($3, delivered_at)
+       order_status    = $1,
+       courier_name    = COALESCE($2, courier_name),
+       tracking_number = COALESCE($3, tracking_number)
+       ${tsCol ? `, ${tsCol} = COALESCE(${tsCol}, now())` : ''}
      WHERE id = $4
      RETURNING *`,
-    [order_status, updates.dispatched_at || null, updates.delivered_at || null, id]
+    [order_status, courier_name || null, tracking_number || null, id]
   );
 
-  // Notify follower
+  // Notify follower at each meaningful step.
   const followerUserId = existing[0].follower_user_id;
   const msgMap = {
-    dispatched: 'Your order has been dispatched!',
-    delivered: 'Your order has been delivered!',
+    packed:           'Your order is packed and ready to ship.',
+    dispatched:       'Your order has been shipped!',
+    out_for_delivery: 'Your order is out for delivery.',
+    delivered:        'Your order has been delivered!',
+    cancelled:        'Your order has been cancelled.',
   };
   if (msgMap[order_status]) {
     notificationService.send({

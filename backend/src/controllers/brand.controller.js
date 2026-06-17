@@ -724,17 +724,25 @@ const listBrandOrders = asyncHandler(async (req, res) => {
   const total = parseInt(countRows[0].count, 10);
 
   params.push(limitNum, offset);
+  // NOTE: follower_orders has NO delivery_address column — the shipping address
+  // lives in follower_addresses via fo.address_id. Join + compose it (the old
+  // query SELECTed a non-existent column and errored). courier_name + the step
+  // timestamps come from migration 105.
   const { rows } = await db.query(
     `SELECT
-       fo.id, fo.order_status, fo.tracking_number, fo.delivery_address,
-       fo.created_at, fo.dispatched_at, fo.delivered_at,
+       fo.id, fo.order_status, fo.tracking_number, fo.courier_name,
+       fo.created_at, fo.packed_at, fo.dispatched_at, fo.out_for_delivery_at,
+       fo.delivered_at, fo.cancelled_at,
        ft.net_amount, ft.gross_amount,
        fo.items_json,
-       u_f.name AS follower_name, u_f.phone AS follower_phone
+       u_f.name AS follower_name, u_f.phone AS follower_phone,
+       a.label AS address_label,
+       NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.state, a.pincode), '') AS delivery_address
      FROM follower_orders fo
      JOIN follower_transactions ft ON ft.id = fo.transaction_id
      JOIN followers f ON f.id = ft.follower_id
      JOIN users u_f ON u_f.id = f.user_id
+     LEFT JOIN follower_addresses a ON a.id = fo.address_id
      WHERE ${where}
      ORDER BY fo.created_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
