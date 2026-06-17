@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-checkout",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('proceed to implementation, actual functionality must work' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (locked checkout.html 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Follower rebuild — Checkout flow (Creators Vibe Yellow 05-08). FUNCTIONAL. Reskin OnlineOrderScreen into a 3-step stepper (Shipping=address select/add -> Payment=Razorpay -> Review=summary+PLACE ORDER), preserving the existing REAL createOrder->Razorpay->verifyOrder logic + 4-ID tracking + commission. New OrderConfirmationScreen (replaces success Alert) with order # + VIEW ORDER + share band. Razorpay adaptation: NO raw card form (PCI) — Razorpay secure sheet handles entry; Payment step is method confirm. Also fold in restaurant mock->live payment cutover (RestaurantCartScreen mockPayment -> processPayment). Mobile-only OTA, no backend/migration (reuses real order/commission backend). released=false until founder real-purchase verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

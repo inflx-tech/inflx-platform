@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Image,
 } from 'react-native';
-import { creatorVibe as C, fonts, fmtMoney, fmtRupees } from '../../theme/tokens';
-
-// Flow 52.G — Creator Vibe recolor shim (transaction screens). Visual only —
-// qty/address/subtotal logic, order placement, and navigation untouched.
-const P = {
-  white: C.card, bg: C.screenBg, bg2: C.soft,
-  border: C.line, ink: C.ink, ink2: C.ink,
-  muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
-  yellow: C.star, yellowHover: C.brown, yellowPale: C.soft, yellowText: C.brown,
-  success: C.verify, successPale: C.soft, successText: C.brown,
-  danger: C.offer, dangerPale: C.soft, dangerText: C.offer,
-};
+import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
 
+/**
+ * OnlineOrderScreen — the real stepped checkout (Creators Vibe Yellow 05–07).
+ *
+ * Step 1 Shipping  → pick/add a saved delivery address
+ * Step 2 Payment   → Razorpay (UPI/cards/netbanking/wallets) — NO raw card form
+ *                    (PCI; Razorpay's secure sheet handles entry)
+ * Step 3 Review    → order summary + PLACE ORDER
+ *
+ * PLACE ORDER runs the EXISTING real pipeline: createOrder → Razorpay sheet →
+ * verifyOrder. The DB order + follower_transactions (4-ID) + influencer commission
+ * are written at verify. On success → OrderConfirmation (not a plain alert).
+ */
 export default function OnlineOrderScreen({ navigation, route }) {
   const { products = [], offer, store, tracking, trackingParams, storeOffer } = route.params || {};
-  // ProductDetail passes the long-key tracking object as both `tracking` and
-  // `trackingParams` ({campaign_id, set_id, offer_id, campaign_influencer_id}).
-  // When it's absent the order is ORGANIC (brand-direct, no creator).
   const trk = tracking || trackingParams || null;
   const brandId = storeOffer?.brand_id || store?.brand_id || store?.id || null;
 
-  const [cart, setCart]         = useState(
+  const [step, setStep] = useState(1);
+  const [cart, setCart] = useState(
     products.map(p => ({
       ...p,
       qty: p.qty || p.quantity || 1,
@@ -35,12 +34,9 @@ export default function OnlineOrderScreen({ navigation, route }) {
     }))
   );
   const [addresses, setAddresses] = useState([]);
-  const [selectedAddr, setAddr]   = useState(null);
-  const [loading, setLoading]     = useState(false);
+  const [selectedAddr, setAddr] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  // Reusable so the "+ Add" flow can refresh the list (the old onSave was a
-  // no-op, so a freshly-added address never appeared and Place Order stayed
-  // disabled forever).
   function loadAddresses(preferId) {
     return followerApi.getAddresses?.().then(res => {
       if (!res?.success) return;
@@ -53,28 +49,32 @@ export default function OnlineOrderScreen({ navigation, route }) {
       });
     });
   }
-
   useEffect(() => { loadAddresses(); }, []);
 
   function updateQty(productId, delta) {
     setCart(prev => prev
       .map(item => item.id === productId ? { ...item, qty: Math.max(0, item.qty + delta) } : item)
-      .filter(item => item.qty > 0)
-    );
+      .filter(item => item.qty > 0));
   }
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price || 0) * item.qty, 0);
+  const subtotal = cart.reduce((sum, item) => sum + (Number(item.price) || 0) * item.qty, 0);
+
+  // Discount estimate from the carried offer (server re-prices authoritatively).
+  const ot = String(offer?.offer_type || '').toLowerCase();
+  const dval = Number(offer?.discount_value ?? offer?.discount?.value ?? 0) || 0;
+  let discount = 0, discountPct = 0;
+  if (dval > 0 && subtotal > 0) {
+    if (ot === 'flat') { discount = Math.min(dval, subtotal); discountPct = Math.round(discount / subtotal * 100); }
+    else { discountPct = dval; discount = Math.round(subtotal * dval / 100); }
+  }
+  const total = Math.max(0, subtotal - discount);
+  const addrObj = addresses.find(a => a.id === selectedAddr) || null;
+  const creatorHandle = store?.instagram_handle || null;
 
   async function placeOrder() {
     if (cart.length === 0) { Alert.alert('Cart empty', 'Add items to your cart'); return; }
-    if (!selectedAddr) { Alert.alert('Select address', 'Please add or select a delivery address'); return; }
+    if (!selectedAddr) { Alert.alert('Select address', 'Please add or select a delivery address'); setStep(1); return; }
 
-    // Backend POST /follower/orders expects: address_id, items[{product_id,
-    // quantity, variant_sku, variant_label}], and EITHER the creator triple
-    // (campaign_id + set_id + campaign_influencer_id [+ offer_id]) OR, for an
-    // organic order, just brand_id. The old payload used wrong keys
-    // (campaign_set_id, delivery_address_id, qty) and omitted
-    // campaign_influencer_id → it 422'd every time.
     const items = cart.map(i => ({
       product_id: i.id,
       quantity: i.qty,
@@ -92,9 +92,6 @@ export default function OnlineOrderScreen({ navigation, route }) {
           offer_id: trk.offer_id || null,
         };
 
-    // 3-step order: createOrder → pay → verifyOrder. The DB row is only
-    // written at verify — the old screen stopped after createOrder, so even a
-    // "successful" order never reached the Orders tab (diagnostic D2).
     setLoading(true);
     try {
       const res = await followerApi.createOrder(payload);
@@ -102,9 +99,8 @@ export default function OnlineOrderScreen({ navigation, route }) {
         Alert.alert('Order Failed', res.error?.message || 'Please try again');
         return;
       }
-
       const payResult = await processPayment({
-        amount: Math.round((res.data?.net_amount || subtotal) * 100),  // SDK expects paise
+        amount: Math.round((res.data?.net_amount || total) * 100), // paise
         orderId: res.data?.razorpay_order_id,
         keyId: res.data?.razorpay_key_id,
         description: `Order from ${store?.name || 'store'}`,
@@ -120,9 +116,11 @@ export default function OnlineOrderScreen({ navigation, route }) {
 
       if (verifyRes?.success || verifyRes?.data) {
         const orderId = verifyRes?.data?.order_id;
-        Alert.alert('Order Placed!', 'Your order has been placed successfully.', [
-          { text: 'Track Order', onPress: () => navigation.replace('OrderDetail', { orderId }) },
-        ]);
+        navigation.replace('OrderConfirmation', {
+          orderId,
+          total: res.data?.net_amount || total,
+          brandName: store?.name,
+        });
       } else {
         Alert.alert('Verification Failed', verifyRes?.error?.message || 'Payment received but verification failed. Contact support.');
       }
@@ -133,154 +131,218 @@ export default function OnlineOrderScreen({ navigation, route }) {
     }
   }
 
-  return (
-    <View style={styles.outer}>
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Your Cart</Text>
-        </View>
+  const STEPS = ['Shipping', 'Payment', 'Review'];
 
-        {/* Cart items */}
-        {cart.length === 0 ? (
-          <View style={[styles.card, { alignItems: 'center', paddingVertical: 32 }]}>
-            <Text style={{ fontSize: 32, marginBottom: 8 }}>🛒</Text>
-            <Text style={styles.emptyText}>Your cart is empty</Text>
-          </View>
-        ) : (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Items</Text>
-            {cart.map(item => (
-              <View key={item.id} style={styles.itemRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  {item.variant_label ? (
-                    <Text style={styles.itemVariant}>{item.variant_label}</Text>
-                  ) : null}
-                  <Text style={styles.itemPrice}>{fmtRupees(item.price || 0)}</Text>
-                </View>
-                <View style={styles.qtyControls}>
-                  <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQty(item.id, -1)}>
-                    <Text style={styles.qtyBtnText}>−</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.qtyNum}>{item.qty}</Text>
-                  <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQty(item.id, 1)}>
-                    <Text style={styles.qtyBtnText}>+</Text>
-                  </TouchableOpacity>
-                </View>
+  function onBack() { if (step > 1) setStep(step - 1); else navigation.goBack(); }
+
+  return (
+    <View style={s.outer}>
+      {/* App bar */}
+      <View style={s.appbar}>
+        <TouchableOpacity style={s.ib} onPress={onBack}><Text style={s.ibTxt}>←</Text></TouchableOpacity>
+        <Text style={s.logo}>INFL<Text style={{ color: C.brown }}>X</Text></Text>
+        <View style={s.ib} />
+      </View>
+      <Text style={s.h1}>Checkout</Text>
+
+      {/* Stepper */}
+      <View style={s.stepper}>
+        {STEPS.map((label, i) => {
+          const n = i + 1;
+          const on = step === n;
+          const done = step > n;
+          return (
+            <React.Fragment key={label}>
+              {i > 0 ? <View style={s.stepLine} /> : null}
+              <View style={s.step}>
+                <View style={[s.dot, (on || done) && s.dotOn]}><Text style={[s.dotTxt, (on || done) && s.dotTxtOn]}>{done ? '✓' : n}</Text></View>
+                <Text style={[s.stepLab, on && s.stepLabOn]}>{label}</Text>
               </View>
-            ))}
+            </React.Fragment>
+          );
+        })}
+      </View>
+
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+        {/* ── Step 1: Shipping ── */}
+        {step === 1 && (
+          <View style={s.form}>
+            <Text style={s.h3}>Delivery Address</Text>
+            {addresses.length === 0 ? (
+              <Text style={s.muted}>No addresses saved yet. Add one to continue.</Text>
+            ) : addresses.map(addr => {
+              const on = selectedAddr === addr.id;
+              return (
+                <TouchableOpacity key={addr.id} style={[s.addrCard, on && s.addrCardOn]} onPress={() => setAddr(addr.id)}>
+                  <View style={[s.radio, !on && s.radioOff]}>{on ? <View style={s.radioIn} /> : null}</View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.addrLabel}>{addr.label || addr.type || 'Address'}</Text>
+                    <Text style={s.addrText}>{[addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity onPress={() => navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) })}>
+              <Text style={s.addLink}>+ Add new address</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Delivery address */}
-        <View style={styles.card}>
-          <View style={styles.addrHeader}>
-            <Text style={styles.cardTitle}>Delivery Address</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Address', {
-              onSave: (addr) => loadAddresses(addr?.id),
-            })}>
-              <Text style={styles.addAddrBtn}>+ Add</Text>
-            </TouchableOpacity>
+        {/* ── Step 2: Payment (Razorpay) ── */}
+        {step === 2 && (
+          <View style={s.form}>
+            <Text style={s.h3}>Payment Method</Text>
+            <View style={s.payCard}>
+              <View style={s.payHead}>
+                <View style={s.radio}><View style={s.radioIn} /></View>
+                <Text style={s.payName}>Razorpay</Text>
+                <Text style={s.paySecure}>Secure</Text>
+              </View>
+              <View style={s.methods}>
+                {['UPI', 'Cards', 'NetBanking', 'Wallets'].map(m => (
+                  <View key={m} style={s.mchip}><Text style={s.mchipTxt}>{m}</Text></View>
+                ))}
+              </View>
+              <Text style={s.rzpNote}>You'll complete payment in Razorpay's secure sheet. INFLX never stores your card details.</Text>
+              <Text style={s.secure}>🔒 PCI-DSS secure · powered by Razorpay</Text>
+            </View>
           </View>
-          {addresses.length === 0 ? (
-            <Text style={styles.emptyText}>No addresses saved. Tap + Add to add one.</Text>
-          ) : (
-            addresses.map(addr => (
-              <TouchableOpacity
-                key={addr.id}
-                style={[styles.addrCard, selectedAddr === addr.id && styles.addrCardActive]}
-                onPress={() => setAddr(addr.id)}
-              >
-                <View style={styles.radio}>
-                  {selectedAddr === addr.id && <View style={styles.radioInner} />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.addrLabel}>{addr.label || addr.type || 'Home'}</Text>
-                  <Text style={styles.addrText}>
-                    {[addr.line1, addr.line2, addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
+        )}
 
-        {/* Price summary */}
-        <View style={styles.card}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal</Text>
-            <Text style={styles.totalVal}>{fmtRupees(subtotal)}</Text>
-          </View>
-          <View style={[styles.totalRow, styles.grandTotal]}>
-            <Text style={[styles.totalLabel, { fontWeight: '800', color: P.ink }]}>Total</Text>
-            <Text style={[styles.totalVal, { color: P.ink }]}>{fmtRupees(subtotal)}</Text>
-          </View>
-        </View>
-
-        <View style={{ height: 100 }} />
+        {/* ── Step 3: Review ── */}
+        {step === 3 && (
+          <>
+            <View style={s.form}>
+              <Text style={s.h3}>Order Summary</Text>
+              {cart.map(item => (
+                <View key={item.id} style={s.revItem}>
+                  <View style={s.revThumb}>
+                    {item.image_url ? <Image source={{ uri: item.image_url }} style={s.revThumbImg} /> : <Text style={{ fontSize: 20 }}>🛍️</Text>}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.revNm} numberOfLines={1}>{item.name}</Text>
+                    {item.variant_label ? <Text style={s.revVar}>{item.variant_label}</Text> : null}
+                    {creatorHandle ? <Text style={s.revBy}>via @{creatorHandle}</Text> : null}
+                    <View style={s.qty}>
+                      <TouchableOpacity onPress={() => updateQty(item.id, -1)}><Text style={s.qtyBtn}>−</Text></TouchableOpacity>
+                      <Text style={s.qtyNum}>{item.qty}</Text>
+                      <TouchableOpacity onPress={() => updateQty(item.id, 1)}><Text style={s.qtyBtn}>+</Text></TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={s.revPr}>{fmtRupees((Number(item.price) || 0) * item.qty)}</Text>
+                </View>
+              ))}
+              <View style={s.totals}>
+                <View style={s.srow}><Text style={s.mut}>Subtotal</Text><Text style={s.sval}>{fmtRupees(subtotal)}</Text></View>
+                <View style={s.srow}><Text style={s.mut}>Shipping</Text><Text style={s.sval}>Free</Text></View>
+                {discount > 0 ? <View style={s.srow}><Text style={s.mut}>Creator discount{discountPct ? ` (${discountPct}%)` : ''}</Text><Text style={s.disc}>−{fmtRupees(discount)}</Text></View> : null}
+                <View style={s.totalRow}><Text style={s.totalLbl}>Total</Text><Text style={s.totalVal}>{fmtRupees(total)}</Text></View>
+                {discount > 0 ? <Text style={s.estimate}>Final price confirmed by Razorpay at payment.</Text> : null}
+              </View>
+            </View>
+            <View style={s.addrBlock}>
+              <View style={s.addrHd}>
+                <Text style={s.h4}>Shipping Address</Text>
+                <TouchableOpacity onPress={() => setStep(1)}><Text style={s.addLink}>Change</Text></TouchableOpacity>
+              </View>
+              {addrObj ? (
+                <Text style={s.addrText}>{addrObj.label || 'Address'} · {[addrObj.line1, addrObj.line2, addrObj.city, addrObj.state, addrObj.pincode].filter(Boolean).join(', ')}</Text>
+              ) : <Text style={s.muted}>No address selected.</Text>}
+            </View>
+          </>
+        )}
       </ScrollView>
 
-      {/* Place order button */}
-      <View style={styles.footer}>
-        <View style={styles.footerRow}>
-          <View>
-            <Text style={styles.footerTotal}>{fmtRupees(subtotal)}</Text>
-            <Text style={styles.footerItems}>{cart.reduce((s, i) => s + i.qty, 0)} item(s)</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.orderBtn, (loading || cart.length === 0 || !selectedAddr) && { opacity: 0.5 }]}
-            onPress={placeOrder}
-            disabled={loading || cart.length === 0 || !selectedAddr}
-          >
-            {loading
-              ? <ActivityIndicator color={P.white} />
-              : <Text style={styles.orderBtnText}>Place Order</Text>
-            }
+      {/* Footer CTA per step */}
+      <View style={s.footer}>
+        {step === 1 && (
+          <TouchableOpacity style={[s.cta, !selectedAddr && s.ctaOff]} disabled={!selectedAddr} onPress={() => setStep(2)}>
+            <Text style={s.ctaTxt}>CONTINUE TO PAYMENT</Text>
           </TouchableOpacity>
-        </View>
+        )}
+        {step === 2 && (
+          <TouchableOpacity style={s.cta} onPress={() => setStep(3)}>
+            <Text style={s.ctaTxt}>CONTINUE TO REVIEW</Text>
+          </TouchableOpacity>
+        )}
+        {step === 3 && (
+          <TouchableOpacity style={[s.cta, (loading || cart.length === 0 || !selectedAddr) && s.ctaOff]} disabled={loading || cart.length === 0 || !selectedAddr} onPress={placeOrder}>
+            {loading ? <ActivityIndicator color={C.onGold} /> : <Text style={s.ctaTxt}>PLACE ORDER · {fmtRupees(total)}</Text>}
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  outer: { flex: 1, backgroundColor: P.bg },
-  container: { flex: 1 },
-  header: { backgroundColor: P.ink, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: '900', color: P.white, fontFamily: fonts.displayBlack },
-  card: { margin: 16, marginBottom: 0, backgroundColor: P.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: P.border },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: P.ink, marginBottom: 12 },
-  emptyText: { fontSize: 12, color: P.muted3, textAlign: 'center' },
-  itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: P.border },
-  itemName: { fontSize: 14, fontWeight: '600', color: P.ink, marginBottom: 2 },
-  itemVariant: { fontSize: 11, color: P.yellowText, fontWeight: '700', marginBottom: 2 },
-  itemPrice: { fontSize: 12, color: P.muted },
-  qtyControls: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  qtyBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: P.bg2, alignItems: 'center', justifyContent: 'center' },
-  qtyBtnText: { fontSize: 18, color: P.ink, fontWeight: '600' },
-  qtyNum: { fontSize: 16, fontWeight: '800', color: P.ink, minWidth: 20, textAlign: 'center' },
-  addrHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  addAddrBtn: { fontSize: 12, fontWeight: '700', color: P.ink },
-  addrCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: P.border, marginBottom: 8 },
-  addrCardActive: { borderColor: P.ink, backgroundColor: P.ink + '08' },
-  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: P.muted3, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  radioInner: { width: 9, height: 9, borderRadius: 4.5, backgroundColor: P.ink },
-  addrLabel: { fontSize: 12, fontWeight: '700', color: P.ink, marginBottom: 2 },
-  addrText: { fontSize: 11, color: P.muted, lineHeight: 16 },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  grandTotal: { borderTopWidth: 1, borderTopColor: P.border, marginTop: 6, paddingTop: 10 },
-  totalLabel: { fontSize: 13, color: P.muted },
-  totalVal: { fontSize: 13, fontWeight: '700', color: P.ink },
-  footer: { backgroundColor: P.white, borderTopWidth: 1, borderTopColor: P.border, padding: 16 },
-  footerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footerTotal: { fontSize: 18, fontWeight: '900', color: P.ink, fontFamily: fonts.monoBold },
-  footerItems: { fontSize: 11, color: P.muted3, fontWeight: '700', fontFamily: fonts.monoMedium },
-  orderBtn: { backgroundColor: P.ink, borderRadius: 12, paddingHorizontal: 24, paddingVertical: 14 },
-  orderBtnText: { fontSize: 14, fontWeight: '900', color: P.yellow, textTransform: 'uppercase', letterSpacing: 0.2, fontFamily: fonts.displayBlack },
+const s = StyleSheet.create({
+  outer: { flex: 1, backgroundColor: C.screenBg },
+  appbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 50, paddingHorizontal: 16, paddingBottom: 6 },
+  ib: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  ibTxt: { fontSize: 18, color: C.ink },
+  logo: { fontSize: 16, fontWeight: '800', color: C.ink, letterSpacing: 1.4, fontFamily: fonts.displayBold },
+  h1: { fontSize: 24, fontWeight: '800', color: C.ink, paddingHorizontal: 20, paddingBottom: 4, fontFamily: fonts.displayBold },
+
+  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16 },
+  step: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  dot: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#EDE5DA', alignItems: 'center', justifyContent: 'center' },
+  dotOn: { backgroundColor: C.brown },
+  dotTxt: { fontSize: 12, fontWeight: '700', color: C.muted },
+  dotTxtOn: { color: C.onGold },
+  stepLab: { fontSize: 12, fontWeight: '600', color: C.muted },
+  stepLabOn: { color: C.ink },
+  stepLine: { flex: 1, height: 1, backgroundColor: C.line, marginHorizontal: 7 },
+
+  form: { paddingHorizontal: 20, paddingTop: 4 },
+  h3: { fontSize: 16, fontWeight: '800', color: C.ink, marginBottom: 14, fontFamily: fonts.sansBold },
+  h4: { fontSize: 14, fontWeight: '800', color: C.ink },
+  muted: { fontSize: 12.5, color: C.muted },
+
+  addrCard: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', borderWidth: 1, borderColor: C.line, borderRadius: 11, padding: 12, marginBottom: 10 },
+  addrCardOn: { borderColor: C.brown, backgroundColor: C.soft },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: C.brown, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  radioOff: { borderColor: C.muted },
+  radioIn: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.brown },
+  addrLabel: { fontSize: 12.5, fontWeight: '700', color: C.ink },
+  addrText: { fontSize: 11.5, color: C.muted, marginTop: 2, lineHeight: 16 },
+  addLink: { fontSize: 12.5, fontWeight: '700', color: C.goldDeep, marginTop: 4 },
+
+  payCard: { borderWidth: 1, borderColor: C.brown, borderRadius: 14, padding: 15 },
+  payHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  payName: { fontSize: 14, fontWeight: '700', color: C.ink, flex: 1 },
+  paySecure: { fontSize: 11, color: C.goldDeep, fontWeight: '700' },
+  methods: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', marginTop: 12 },
+  mchip: { height: 24, paddingHorizontal: 9, borderRadius: 5, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center' },
+  mchipTxt: { fontSize: 10, fontWeight: '700', color: C.ink },
+  rzpNote: { fontSize: 11.5, color: C.muted, marginTop: 12, lineHeight: 16 },
+  secure: { fontSize: 11, color: '#7C8A5A', fontWeight: '700', marginTop: 10 },
+
+  revItem: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingVertical: 13, borderTopWidth: 1, borderTopColor: C.line },
+  revThumb: { width: 48, height: 56, borderRadius: 9, backgroundColor: C.soft, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  revThumbImg: { width: '100%', height: '100%' },
+  revNm: { fontSize: 13, fontWeight: '700', color: C.ink },
+  revVar: { fontSize: 11, color: C.muted, marginTop: 2 },
+  revBy: { fontSize: 10, color: C.goldDeep, fontWeight: '700', marginTop: 2 },
+  revPr: { fontSize: 13, fontWeight: '700', color: C.ink },
+  qty: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 8, borderWidth: 1, borderColor: C.line, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3, alignSelf: 'flex-start' },
+  qtyBtn: { fontSize: 15, fontWeight: '700', color: C.ink },
+  qtyNum: { fontSize: 12.5, fontWeight: '800', color: C.ink, minWidth: 12, textAlign: 'center' },
+
+  totals: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 14, marginTop: 4 },
+  srow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  mut: { fontSize: 13, color: C.muted },
+  sval: { fontSize: 13, color: C.ink, fontWeight: '600' },
+  disc: { fontSize: 13, color: C.offer, fontWeight: '700' },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 13, borderTopWidth: 1, borderTopColor: C.line },
+  totalLbl: { fontSize: 17, fontWeight: '800', color: C.ink },
+  totalVal: { fontSize: 17, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
+  estimate: { fontSize: 10.5, color: C.muted, marginTop: 8, fontStyle: 'italic' },
+
+  addrBlock: { paddingHorizontal: 20, paddingTop: 14 },
+  addrHd: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+
+  footer: { backgroundColor: C.card, borderTopWidth: 1, borderTopColor: C.line, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 22 },
+  cta: { backgroundColor: C.brown, borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
+  ctaOff: { opacity: 0.5 },
+  ctaTxt: { fontSize: 14, fontWeight: '800', color: C.onGold, letterSpacing: 0.8, fontFamily: fonts.sansBold },
 });

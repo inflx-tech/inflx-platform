@@ -34,7 +34,7 @@ const lightColors = {
   star: C.star, black: C.ink,
 };
 import { followerApi } from '../../services/api';
-import { mockPayment } from '../../services/payment';
+import { processPayment } from '../../services/payment';
 import { ensureFollowerAuth } from '../../utils/authGate';
 import { CreatorChip } from '../../components/restaurant';
 
@@ -89,12 +89,16 @@ export default function RestaurantCartScreen({ route, navigation }) {
       const orderId = d.razorpay_order_id || d.order_id;
       const payable = d.net_amount != null ? d.net_amount : subtotal;
 
-      // Mock-mode pilot: safe JS mock instead of native Razorpay SDK.
-      // processPayment()'s RazorpayCheckout.open() with an undefined key
-      // hard-crashed the app (native, bypasses JS try/catch) — that was
-      // the "app simply closes on Place order" report. Swap to
-      // processPayment + real keyId at production cutover.
-      const pay = await mockPayment(orderId);
+      // Live Razorpay (production cutover). processPayment passes the real keyId
+      // from the backend (d.razorpay_key_id) — the old undefined-key hard-crash is
+      // gone — and it catches SDK errors / falls back to mock in dev. User-cancel → null.
+      const pay = await processPayment({
+        amount: Math.round((payable || subtotal) * 100), // paise
+        orderId,
+        keyId: d.razorpay_key_id,
+        description: `Order from ${brand?.business_name || 'restaurant'}`,
+        brandName: brand?.business_name,
+      });
       if (!pay?.razorpay_payment_id) {
         Alert.alert('Payment cancelled', 'Your order was not placed.');
         setPlacing(false);
@@ -104,6 +108,7 @@ export default function RestaurantCartScreen({ route, navigation }) {
       const verify = await followerApi.verifyOrder({
         razorpay_order_id: orderId,
         razorpay_payment_id: pay.razorpay_payment_id,
+        razorpay_signature: pay.razorpay_signature,
       });
       setPlacing(false);
       if (verify?.success || verify?.data) {

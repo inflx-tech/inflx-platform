@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INFLX — Checkout flow (Creators Vibe Yellow · 05–08)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+:root{--bg:#F6F1EA;--bezel:#E6DCCF;--ink:#2A2520;--ink-2:#4A4038;--muted:#9C8E7F;--muted-2:#B6A899;
+--terra:#F4B40D;--terra-d:#E0A100;--terra-soft:#FCEFC9;--accent-text:#C28A12;--sale:#D9663C;
+--line:#ECE4DA;--line-2:#E2D8CC;--card:#FFFFFF;--beige:#D9CABA;--beige-2:#CDBBA6;--beige-3:#E3D6C7;--ok:#7C8A5A;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#322B24;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;padding:44px 26px 70px;}
+.gh{max-width:1640px;margin:0 auto 30px;color:#EBE2D6;}
+.gh h1{font-size:21px;font-weight:800;letter-spacing:2px;}.gh h1 span{color:var(--terra);}
+.gh p{color:#A99C8D;font-size:13px;margin-top:7px;}
+.grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;align-items:flex-start;max-width:1640px;margin:0 auto;}
+.frame{display:flex;flex-direction:column;align-items:center;gap:13px;}
+.frame>.cap{color:#B7AA9B;font-size:13px;font-weight:600;}
+.phone{width:360px;background:var(--bezel);border-radius:46px;padding:10px;box-shadow:0 26px 60px rgba(0,0,0,.45);}
+.screen{width:100%;background:var(--bg);border-radius:38px;overflow:hidden;position:relative;height:760px;display:flex;flex-direction:column;}
+.scroll{flex:1;overflow-y:auto;}
+.status{display:flex;align-items:center;justify-content:space-between;padding:14px 24px 4px;font-weight:700;font-size:14px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 10px;}
+.appbar .grp{display:flex;align-items:center;gap:13px;font-size:17px;}
+.appbar .logo b{font-size:13px;font-weight:800;letter-spacing:1.4px;}.appbar .logo b span{color:var(--terra);}
+.pad{padding:0 20px;}.h-page{font-size:24px;font-weight:800;}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--terra);color:var(--ink);border:none;font-weight:800;font-size:13.5px;letter-spacing:1px;padding:15px;border-radius:12px;width:100%;}
+.ph{background:linear-gradient(150deg,var(--beige-3),var(--beige),var(--beige-2));display:block;}
+.stepper{display:flex;align-items:center;justify-content:space-between;padding:12px 24px 18px;}
+.step{display:flex;align-items:center;gap:7px;}
+.step .dot{width:24px;height:24px;border-radius:50%;background:#EDE5DA;color:var(--muted);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.step.on .dot{background:var(--terra);color:var(--ink);}
+.step .lab{font-size:12px;font-weight:600;color:var(--muted);}.step.on .lab{color:var(--ink);}
+.step-line{flex:1;height:1px;background:var(--line-2);margin:0 7px;}
+.form{padding:0 20px 18px;}
+.form h3{font-size:16px;font-weight:800;margin-bottom:14px;}
+.field{margin-bottom:13px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:6px;}
+.field input{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:12px;font-family:inherit;font-size:13px;background:#FCFAF7;}
+.field input::placeholder{color:var(--muted-2);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.addrcard{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line-2);border-radius:11px;padding:12px;margin-bottom:10px;}
+.addrcard.sel{border-color:var(--terra);background:var(--terra-soft);}
+.radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--terra);display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;}
+.radio i{width:8px;height:8px;border-radius:50%;background:var(--terra);}
+.radio.off{border-color:var(--muted-2);}.radio.off i{display:none;}
+.addrcard .al{font-size:12.5px;font-weight:700;}.addrcard .at{font-size:11.5px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.addlink{color:var(--accent-text);font-weight:700;font-size:12.5px;}
+/* payment (Razorpay) */
+.paycard{border:1px solid var(--terra);border-radius:14px;padding:15px;margin-bottom:14px;}
+.phead{display:flex;align-items:center;gap:10px;}
+.phead b{font-size:14px;font-weight:700;flex:1;}
+.methods{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;}
+.mchip{height:24px;padding:0 9px;border-radius:5px;display:flex;align-items:center;font-size:10px;font-weight:700;background:#F2ECE2;color:var(--ink-2);}
+.rzp-note{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.5;}
+.secure{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ok);font-weight:700;margin-top:10px;}
+/* review */
+.rev-item{display:flex;align-items:center;gap:13px;padding:13px 0;}
+.rev-item .ph{width:48px;height:56px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.rev-item .nm{font-size:13px;font-weight:700;}.rev-item .var{font-size:11px;color:var(--muted);margin-top:2px;}
+.rev-item .by{font-size:10px;color:var(--accent-text);font-weight:700;margin-top:2px;}
+.rev-item .pr{font-size:13px;font-weight:700;}
+.srow{display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px;color:var(--ink-2);}
+.srow .mut{color:var(--muted);}.srow.disc span:last-child{color:var(--sale);font-weight:700;}
+.total{display:flex;justify-content:space-between;font-size:17px;font-weight:800;padding-top:13px;border-top:1px solid var(--line);}
+.addr{padding:14px 20px;}.addr .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.addr h4{font-size:14px;font-weight:800;}.addr p{font-size:12.5px;color:var(--ink-2);line-height:1.7;}
+.cta-pad{padding:6px 20px 20px;}
+/* confirmation */
+.conf{text-align:center;padding:34px 28px 22px;}
+.conf .circ{width:78px;height:78px;border-radius:50%;border:2px solid var(--terra);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:34px;color:var(--terra);}
+.conf h2{font-family:'Playfair Display',serif;font-size:30px;font-weight:600;margin-bottom:12px;}
+.conf p{font-size:13px;color:var(--muted);line-height:1.5;}
+.conf .ord{font-size:15px;font-weight:800;margin:16px 0;}
+.conf .btn{margin:22px auto 0;width:auto;padding:13px 30px;}
+.share{position:relative;height:150px;margin-top:6px;}
+.share .ph{width:100%;height:100%;}
+.share .cap2{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding:18px;background:linear-gradient(180deg,transparent 45%,rgba(40,33,26,.5));color:#fff;}
+.share .cap2 .t2{font-size:18px;font-weight:800;font-family:'Playfair Display',serif;margin:3px 0;}
+.note{max-width:1640px;margin:24px auto 0;color:#C9BCAD;font-size:12.5px;line-height:1.7;}.note b{color:var(--terra);}
+</style></head>
+<body>
+<div class="gh"><h1>INFL<span>X</span> — CHECKOUT FLOW (05–08)</h1><p>Creators Vibe Yellow · adapted to INFLX (saved addresses + Razorpay + ₹ + creator attribution)</p></div>
+<div class="grid">
+
+  <!-- 05 Shipping -->
+  <div class="frame"><div class="cap">05 · Shipping (address)</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar"><div class="grp">←</div><div class="logo"><b>INFL<span>X</span></b></div><div class="grp">🛒</div></div>
+      <div class="pad"><div class="h-page">Checkout</div></div>
+      <div class="stepper">
+        <div class="step on"><span class="dot">1</span><span class="lab">Shipping</span></div><div class="step-line"></div>
+        <div class="step"><span class="dot">2</span><span class="lab">Payment</span></div><div class="step-line"></div>
+        <div class="step"><span class="dot">3</span><span class="lab">Review</span></div>
+      </div>
+      <div class="form">
+        <h3>Delivery Address</h3>
+        <div class="addrcard sel"><span class="radio"><i></i></span><div><div class="al">Home</div><div class="at">12-3-45 Benz Circle, Vijayawada, AP 520010</div></div></div>
+        <div class="addrcard"><span class="radio off"><i></i></span><div><div class="al">Work</div><div class="at">MG Road, Vijayawada, AP 520008</div></div></div>
+        <div style="margin:4px 0 16px"><span class="addlink">+ Add new address</span></div>
+        <button class="btn">CONTINUE TO PAYMENT</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 06 Payment (Razorpay) -->
+  <div class="frame"><div class="cap">06 · Payment (Razorpay)</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar"><div class="grp">←</div><div class="logo"><b>INFL<span>X</span></b></div><div class="grp">🛒</div></div>
+      <div class="pad"><div class="h-page">Checkout</div></div>
+      <div class="stepper">
+        <div class="step"><span class="dot">1</span><span class="lab">Shipping</span></div><div class="step-line"></div>
+        <div class="step on"><span class="dot">2</span><span class="lab">Payment</span></div><div class="step-line"></div>
+        <div class="step"><span class="dot">3</span><span class="lab">Review</span></div>
+      </div>
+      <div class="form">
+        <h3>Payment Method</h3>
+        <div class="paycard">
+          <div class="phead"><span class="radio"><i></i></span><b>Razorpay</b><span style="font-size:11px;color:var(--accent-text);font-weight:700">Secure</span></div>
+          <div class="methods"><span class="mchip">UPI</span><span class="mchip">Cards</span><span class="mchip">NetBanking</span><span class="mchip">Wallets</span></div>
+          <div class="rzp-note">You'll complete payment in Razorpay's secure sheet — UPI, card, netbanking or wallet. INFLX never stores your card details.</div>
+          <div class="secure">🔒 PCI-DSS secure · powered by Razorpay</div>
+        </div>
+        <button class="btn">CONTINUE TO REVIEW</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- 07 Review -->
+  <div class="frame"><div class="cap">07 · Review &amp; Place Order</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar"><div class="grp">←</div><div class="logo"><b>INFL<span>X</span></b></div><div class="grp">🛒</div></div>
+      <div class="pad"><div class="h-page">Checkout</div></div>
+      <div class="stepper">
+        <div class="step"><span class="dot">1</span><span class="lab">Shipping</span></div><div class="step-line"></div>
+        <div class="step"><span class="dot">2</span><span class="lab">Payment</span></div><div class="step-line"></div>
+        <div class="step on"><span class="dot">3</span><span class="lab">Review</span></div>
+      </div>
+      <div class="form">
+        <h3>Order Summary</h3>
+        <div class="rev-item"><span class="ph">👗</span><div style="flex:1"><div class="nm">Floral Summer Dress</div><div class="var">Coral / M</div><div class="by">via @rikitafashion</div></div><div class="pr">₹1,499</div></div>
+        <div class="rev-item" style="border-top:1px solid var(--line)"><span class="ph">👖</span><div style="flex:1"><div class="nm">Denim Skirt</div><div class="var">Blue / M</div><div class="by">via @rikitafashion</div></div><div class="pr">₹799</div></div>
+        <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
+          <div class="srow"><span class="mut">Subtotal</span><span>₹2,298</span></div>
+          <div class="srow"><span class="mut">Shipping</span><span>Free</span></div>
+          <div class="srow disc"><span class="mut">Creator discount (20%)</span><span>−₹460</span></div>
+          <div class="total"><span>Total</span><span>₹1,838</span></div>
+        </div>
+      </div>
+      <div class="addr"><div class="hd"><h4>Shipping Address</h4><a class="addlink">Change</a></div><p>Home · 12-3-45 Benz Circle,<br>Vijayawada, AP 520010</p></div>
+      <div class="cta-pad"><button class="btn">PLACE ORDER · ₹1,838</button></div>
+    </div></div>
+  </div>
+
+  <!-- 08 Confirmation -->
+  <div class="frame"><div class="cap">08 · Order Confirmation</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar"><div class="grp"></div><div class="logo"><b>INFL<span>X</span></b></div><div class="grp">🛒</div></div>
+      <div class="conf">
+        <div class="circ">✓</div>
+        <h2>Thank You!</h2>
+        <p>Your order has been placed<br>successfully.</p>
+        <div class="ord">Order #INF10234</div>
+        <p>You'll get an SMS &amp; notification<br>with your order details.</p>
+        <button class="btn">VIEW ORDER</button>
+      </div>
+      <div class="share"><span class="ph"></span><div class="cap2"><span>Share your look with</span><span class="t2">#INFLX</span><span>and get featured!</span></div></div>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Faithful to your source 05–08:</b> 3-step stepper (Shipping · Payment · Review), shipping form, review summary (items + Subtotal/Shipping/Discount/Total), confirmation (✓ Thank You + Order # + VIEW ORDER + share band).<br>
+  <b>INFLX adaptations (must-do, flagged):</b> (1) <b>Shipping</b> = pick a saved address / + add (we already store addresses) instead of re-typing name/email every time. (2) <b>Payment = Razorpay</b>, NOT a raw card form — your source's card-number/CVV fields can't be built (PCI; we use Razorpay's secure sheet for UPI/cards/netbanking/wallets). (3) ₹ not $; each item shows <b>via @creator</b> + a <b>Creator discount</b> line — this is the attribution that pays the influencer. (4) PLACE ORDER triggers the existing real createOrder → Razorpay → verify → order + commission; Confirmation replaces today's plain alert.
+</div>
+</body></html>
