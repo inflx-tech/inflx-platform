@@ -38,6 +38,7 @@ import FollowerLoginScreen from '../screens/follower/FollowerLoginScreen';
 import PayAtStoreScreen from '../screens/follower/PayAtStoreScreen';
 import PreBookScreen from '../screens/follower/PreBookScreen';
 import OnlineOrderScreen from '../screens/follower/OnlineOrderScreen';
+import CartScreen from '../screens/follower/CartScreen';
 import ProductDetailScreen from '../screens/follower/ProductDetailScreen';
 import OrderDetailScreen from '../screens/follower/OrderDetailScreen';
 import EnquiryScreen from '../screens/follower/EnquiryScreen';
@@ -68,6 +69,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="PayAtStore" component={PayAtStoreScreen} />
     <Stack.Screen name="PreBook" component={PreBookScreen} />
     <Stack.Screen name="OnlineOrder" component={OnlineOrderScreen} />
+    <Stack.Screen name="Cart" component={CartScreen} />
     <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
     <Stack.Screen name="Enquiry" component={EnquiryScreen} />
     <Stack.Screen name="Address" component={AddressScreen} />

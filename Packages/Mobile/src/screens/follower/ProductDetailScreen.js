@@ -20,6 +20,7 @@ const P = {
 import { followerApi } from '../../services/api';
 import OfferBlock from '../../components/OfferBlock';
 import { composeCart } from '../../utils/offerMechanics';
+import { useCart } from '../../services/CartContext';
 
 /**
  * ProductDetailScreen — single-product detail page reached from any product
@@ -72,7 +73,7 @@ const CATEGORY_EMOJI = {
 
 // Generic labels — fallback for categories without category-specific verbs.
 const MODE_LABELS = {
-  online_order:  { label: 'Buy Now',     screen: 'OnlineOrder',  emoji: '🛒' },
+  online_order:  { label: 'Add to Cart', screen: 'OnlineOrder',  emoji: '🛒' },
   pay_at_store:  { label: 'Pay at Venue', screen: 'PayAtStore',   emoji: '💸' },
   walkin_pay:    { label: 'Pay at Venue', screen: 'PayAtStore',   emoji: '💸' },
   prebook:       { label: 'Book Slot',   screen: 'PreBook',      emoji: '📅' },
@@ -109,10 +110,10 @@ const CATEGORY_LABELS = {
     walkin_pay:   { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
     pay_at_store: { label: 'Pay at Pickup', screen: 'PayAtStore',  emoji: '💸' },
   },
-  fashion:        { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '👗' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
-  fashion_walkin: { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '👗' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
-  fashion_online: { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '👕' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
-  furniture:      { online_order: { label: 'Order Online', screen: 'OnlineOrder', emoji: '🛋️' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  fashion:        { online_order: { label: 'Add to Cart', screen: 'OnlineOrder', emoji: '🛒' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  fashion_walkin: { online_order: { label: 'Add to Cart', screen: 'OnlineOrder', emoji: '🛒' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  fashion_online: { online_order: { label: 'Add to Cart', screen: 'OnlineOrder', emoji: '🛒' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
+  furniture:      { online_order: { label: 'Add to Cart', screen: 'OnlineOrder', emoji: '🛒' }, walkin_pay: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' }, pay_at_store: { label: 'Pay at Store', screen: 'PayAtStore', emoji: '💸' } },
 };
 
 // Founder-locked PRODUCT-page CTA order per business (Docs/CTA_SPEC.md,
@@ -168,6 +169,7 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [selectedAddons, setSelectedAddons] = useState({}); // conditional Customize (food add-ons)
   const [selectedSize, setSelectedSize] = useState(null);     // conditional Variants (fashion size)
   const [selectedColour, setSelectedColour] = useState(null); // fashion/furniture colour (variants_json.colors[])
+  const { addItem, forceReplaceWith } = useCart();
 
   // Per-business accent: WAYFINDING tints only (hero / card image bg). Chrome,
   // CTAs, prices stay ink + yellow per the F0 design language.
@@ -343,11 +345,43 @@ export default function ProductDetailScreen({ navigation, route }) {
     campaign_influencer_id: trk?.campaign_influencer_id || ciId || null,
   } : null;
 
+  // Add-to-cart (online_order mode): push THIS product+variant to the persistent
+  // CartContext, carrying the 4-ID tracking + offer + creator handle so the eventual
+  // order writes follower_transactions + the influencer commission. Then → Cart.
+  function addToCart() {
+    const item = {
+      id: selected.id,
+      name: selected.name,
+      price: parseFloat(selected.price || finalPrice || 0),
+      image_url: selected.image_url,
+      variant_sku: variantSku,
+      variant_label: variantLabel,
+    };
+    const extra = { offer: offerFull, creatorHandle: influencer?.instagram_handle || store?.instagram_handle || null };
+    const res = addItem(item, brand?.id, brand?.name, txTracking, extra);
+    if (res?.requiresConfirmation) {
+      Alert.alert(
+        'Start a new cart?',
+        `Your cart has items from ${res.currentBrandName}. Replace them with items from ${res.newBrandName}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Replace', style: 'destructive', onPress: () => { forceReplaceWith(item, brand?.id, brand?.name, txTracking, extra); navigation.navigate('Cart'); } },
+        ]
+      );
+      return;
+    }
+    if (res?.ok) navigation.navigate('Cart');
+    else Alert.alert('Could not add to cart', 'Please try again.');
+  }
+
   function dispatchCta(cta) {
     if (!selected) return;
     // Block checkout until a size is chosen (when the product offers sizes) —
     // the brand can't fulfill "some size".
     if (needsSize) { Alert.alert('Select a size', 'Please pick a size before continuing.'); return; }
+    // online_order → add to the cart and open it (multi-item). The real order is
+    // placed from Cart → CHECKOUT → OnlineOrder (existing createOrder flow).
+    if (cta.mode === 'online_order') { addToCart(); return; }
     // Compose the cart for offer-type mechanics: BOGO adds the free item, bundle
     // adds all set products, free_gift adds the gift. Discount/Volume → just the
     // picked item. The SERVER re-prices authoritatively (resolveOfferDiscount).

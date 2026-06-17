@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFLX — Cart (Creators Vibe Yellow · screen 04)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+:root{
+  --bg:#F6F1EA;--bezel:#E6DCCF;--ink:#2A2520;--ink-2:#4A4038;--muted:#9C8E7F;--muted-2:#B6A899;
+  --terra:#F4B40D;--terra-d:#E0A100;--terra-soft:#FCEFC9;--accent-text:#C28A12;--sale:#D9663C;
+  --line:#ECE4DA;--line-2:#E2D8CC;--card:#FFFFFF;--beige:#D9CABA;--beige-2:#CDBBA6;--beige-3:#E3D6C7;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:#322B24;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;padding:46px 30px 80px;}
+.gallery-head{max-width:1200px;margin:0 auto 32px;color:#EBE2D6;}
+.gallery-head h1{font-size:22px;font-weight:800;letter-spacing:2px;}.gallery-head h1 span{color:var(--terra);}
+.gallery-head p{color:#A99C8D;font-size:13px;margin-top:7px;}
+.grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto;}
+.frame{display:flex;flex-direction:column;align-items:center;gap:13px;}
+.frame > .cap{color:#B7AA9B;font-size:13px;font-weight:600;}
+.phone{width:372px;background:var(--bezel);border-radius:50px;padding:11px;box-shadow:0 30px 70px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.12);}
+.screen{width:100%;background:var(--bg);border-radius:40px;overflow:hidden;position:relative;}
+.status{display:flex;align-items:center;justify-content:space-between;padding:15px 26px 4px;font-weight:700;font-size:15px;}
+.status .sigs{display:flex;align-items:center;gap:6px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 12px;}
+.appbar .grp{display:flex;align-items:center;gap:16px;}
+.appbar .logo{display:flex;align-items:center;gap:7px;}
+.appbar .logo .spark{width:18px;height:18px;}
+.appbar .logo b{font-size:14px;font-weight:800;letter-spacing:1.6px;}
+.ic{width:22px;height:22px;color:var(--ink);display:block;}
+.ic-btn{position:relative;display:flex;}
+.cart-badge{position:absolute;top:-7px;right:-8px;min-width:16px;height:16px;padding:0 4px;background:var(--terra);color:var(--ink);font-size:10px;font-weight:700;border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.pad{padding:0 20px;}
+.h-page{font-size:26px;font-weight:800;letter-spacing:-.3px;}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--terra);color:var(--ink);border:none;font-family:inherit;font-weight:700;font-size:14px;letter-spacing:1.2px;padding:15px;border-radius:12px;width:100%;}
+.ph{background:linear-gradient(150deg,var(--beige-3),var(--beige),var(--beige-2));position:relative;overflow:hidden;display:block;}
+/* cart item */
+.citem{display:flex;gap:14px;padding:18px 20px;border-bottom:1px solid var(--line);}
+.citem .ph{width:74px;height:84px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:30px;}
+.citem .cdet{flex:1;}
+.citem .cdet .nm{font-size:14.5px;font-weight:700;}
+.citem .cdet .var{font-size:12px;color:var(--muted);margin-top:2px;}
+.citem .cdet .by{font-size:11px;color:var(--accent-text);font-weight:700;margin-top:4px;}
+.citem .cright{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;}
+.citem .x .ic{width:16px;height:16px;color:var(--muted);}
+.qty{display:flex;align-items:center;gap:14px;margin-top:12px;border:1px solid var(--line-2);border-radius:9px;padding:6px 12px;width:fit-content;}
+.qty button{border:none;background:none;font-size:16px;font-weight:600;color:var(--ink);line-height:1;}
+.qty span{font-size:13.5px;font-weight:700;min-width:14px;text-align:center;}
+.cprice{font-size:14.5px;font-weight:700;}
+.maylike{padding:18px 20px;}
+.maylike h4{font-size:14.5px;font-weight:800;margin-bottom:12px;}
+.maylike .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.maylike .two .iw{position:relative;border-radius:12px;overflow:hidden;}
+.maylike .two .ph{width:100%;height:120px;display:flex;align-items:center;justify-content:center;font-size:34px;}
+.summary{padding:4px 20px 16px;}
+.summary h4{font-size:14.5px;font-weight:800;margin-bottom:14px;}
+.srow{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:11px;color:var(--ink-2);}
+.srow .mut{color:var(--muted);}
+.srow.disc span:last-child{color:var(--sale);font-weight:600;}
+.total{display:flex;justify-content:space-between;font-size:18px;font-weight:800;padding-top:14px;border-top:1px solid var(--line);}
+.cta-pad{padding:6px 20px 20px;}
+.bnav{display:flex;justify-content:space-around;align-items:center;padding:11px 6px 16px;background:#FBF8F3;border-top:1px solid var(--line);}
+.bnav .n{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted-2);font-size:11px;font-weight:600;position:relative;}
+.bnav .n .ic{width:23px;height:23px;color:var(--muted-2);}
+.bnav .n.active{color:var(--terra);}.bnav .n.active .ic{color:var(--terra);}
+.bnav .n .nbadge{position:absolute;top:-5px;right:1px;min-width:15px;height:15px;padding:0 3px;background:var(--terra);color:var(--ink);font-size:9px;font-weight:700;border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.home-ind{height:7px;display:flex;justify-content:center;align-items:center;background:#FBF8F3;padding-bottom:8px;}
+.home-ind::after{content:"";width:128px;height:5px;border-radius:3px;background:#221E19;}
+.note{max-width:1200px;margin:22px auto 0;color:#C9BCAD;font-size:12.5px;line-height:1.7;}.note b{color:var(--terra);}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="3.5" y1="12" x2="20.5" y2="12"/><line x1="12" y1="3.5" x2="12" y2="20.5"/><line x1="5.99" y1="5.99" x2="18.01" y2="18.01"/><line x1="18.01" y1="5.99" x2="5.99" y2="18.01"/></symbol>
+  <symbol id="menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h15l-1.3 9.2a1 1 0 0 1-1 .8H8.2a1 1 0 0 1-1-.85L5.5 5.2A1 1 0 0 0 4.5 4.3H3"/><circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></symbol>
+  <symbol id="heartfill" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.4-9.2-8.7C1.4 8 3 5 6 5c2 0 3.2 1.2 4 2.4C10.8 6.2 12 5 14 5c3 0 4.6 3 3.2 6.3C19 15.6 12 20 12 20Z"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
+  <symbol id="bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="sig" viewBox="0 0 18 13"><rect x="0" y="8" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="8" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="10.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="13" rx="1" fill="currentColor"/></symbol>
+  <symbol id="wifi" viewBox="0 0 18 13"><path d="M9 2.5c2.6 0 5 1 6.8 2.6l1.5-1.6C15.1 1.4 12.2 0 9 0S2.9 1.4.7 3.5l1.5 1.6C4 3.5 6.4 2.5 9 2.5Z" fill="currentColor"/></symbol>
+  <symbol id="batt" viewBox="0 0 26 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></symbol>
+</svg>
+
+<div class="gallery-head">
+  <h1>INFL<span>X</span> · CART</h1>
+  <p>Faithful to Creators Vibe Yellow screen 04 · adapted to ₹ + INFLX (creator-discount line visible)</p>
+</div>
+
+<div class="grid">
+  <div class="frame">
+    <div class="cap">04 · Cart</div>
+    <div class="phone"><div class="screen" data-screen-label="Cart">
+      <div class="status"><span>9:41</span><span class="sigs"><svg class="ic" style="width:17px;height:12px"><use href="#sig"/></svg><svg class="ic" style="width:17px;height:12px"><use href="#wifi"/></svg><svg class="ic" style="width:25px;height:12px"><use href="#batt"/></svg></span></div>
+      <div class="appbar">
+        <div class="grp"><svg class="ic"><use href="#menu"/></svg></div>
+        <div class="logo"><svg class="spark"><use href="#spark"/></svg><b>INFLX</b></div>
+        <div class="grp"><svg class="ic"><use href="#search"/></svg><span class="ic-btn"><svg class="ic"><use href="#cart"/></svg><span class="cart-badge">2</span></span></div>
+      </div>
+      <div class="pad" style="padding-top:4px;padding-bottom:8px"><div class="h-page">Your Cart (2)</div></div>
+
+      <div class="citem">
+        <span class="ph">👗</span>
+        <div class="cdet"><div class="nm">Floral Summer Dress</div><div class="var">Coral / M · Charvitha Fashions</div>
+          <div class="by">via @rikitafashion</div>
+          <div class="qty"><button>−</button><span>1</span><button>+</button></div>
+        </div>
+        <div class="cright"><span class="x"><svg class="ic"><use href="#x"/></svg></span><span class="cprice">₹1,499</span></div>
+      </div>
+      <div class="citem">
+        <span class="ph">👖</span>
+        <div class="cdet"><div class="nm">Denim Skirt</div><div class="var">Blue / M · Charvitha Fashions</div>
+          <div class="by">via @rikitafashion</div>
+          <div class="qty"><button>−</button><span>1</span><button>+</button></div>
+        </div>
+        <div class="cright"><span class="x"><svg class="ic"><use href="#x"/></svg></span><span class="cprice">₹799</span></div>
+      </div>
+
+      <div class="maylike">
+        <h4>You may also like</h4>
+        <div class="two">
+          <div class="iw"><span class="ph">👕</span></div>
+          <div class="iw"><span class="ph">👜</span></div>
+        </div>
+      </div>
+
+      <div class="summary">
+        <h4>Cart Summary</h4>
+        <div class="srow"><span class="mut">Subtotal</span><span>₹2,298</span></div>
+        <div class="srow"><span class="mut">Shipping</span><span>Free</span></div>
+        <div class="srow disc"><span class="mut">Creator discount (20%)</span><span>−₹460</span></div>
+        <div class="total"><span>Total</span><span>₹1,838</span></div>
+      </div>
+      <div class="cta-pad"><button class="btn">CHECKOUT</button></div>
+
+      <div class="bnav">
+        <div class="n"><svg class="ic"><use href="#home"/></svg>Home</div>
+        <div class="n"><svg class="ic"><use href="#bag"/></svg>Shop</div>
+        <div class="n"><svg class="ic"><use href="#heartfill"/></svg>Wishlist</div>
+        <div class="n active"><span class="nbadge">2</span><svg class="ic"><use href="#cart"/></svg>Cart</div>
+        <div class="n"><svg class="ic"><use href="#user"/></svg>Account</div>
+      </div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Faithful to your source screen 04:</b> item rows (image · name · variant · qty stepper · price · remove ✕), "You may also like", Cart Summary (Subtotal / Shipping / Discount / Total), full-width gold CHECKOUT, bottom nav with cart badge.<br>
+  <b>INFLX adaptations:</b> ₹ not $; each item shows its brand + the <b>"via @creator"</b> line (this is the attribution that earns the influencer commission — it rides through to the order); the discount line is labelled <b>"Creator discount"</b>. CHECKOUT routes into the existing real order flow (address → live Razorpay → order), so commission attribution fires automatically.
+</div>
+</body>
+</html>

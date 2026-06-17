@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-cart",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('ok lock it...make sure all will work in real' 2026-06-16)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('ok lock it' on cart.html 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Follower rebuild — generic multi-item CART (functional, not UI-only). Locked reference = Creators Vibe Yellow screen 04 (04-preview/mockups/cart.html). FUNCTIONAL BUILD: new generic CartScreen backed by the EXISTING CartContext (AsyncStorage, brand-scoped, add/qty/remove); PDP online_order CTA = Add to Cart -> CartContext -> Cart; Cart CHECKOUT -> existing OnlineOrderScreen (real address + live Razorpay + createOrder/verify). Commission attribution fires automatically because the 4-ID tracking (campaign/set/offer/campaign_influencer) is stored on the cart and carried into createOrder -> follower_transactions -> influencer pending_balance (audited working). Mobile-only OTA, no backend/migration (reuses real order+commission backend). released=false until founder verify (real test purchase + check influencer balance).",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

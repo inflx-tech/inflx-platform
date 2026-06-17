@@ -15,6 +15,7 @@ import AgencyNavigator from './src/navigation/AgencyNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import { checkForOtaUpdate, confirmAppliedVersion } from './src/services/otaUpdater';
 import { LocationProvider } from './src/contexts/LocationContext';
+import { CartProvider } from './src/services/CartContext';
 
 export const AuthContext = createContext({ setRole: () => {} });
 
@@ -126,17 +127,19 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ setRole }}>
       <LocationProvider>
-        {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
-        {!showSplash && (
-          <NavigationContainer>
-            {role === 'brand' ? <BrandNavigator /> :
-             role === 'influencer' ? <InfluencerNavigator /> :
-             role === 'agency' ? <AgencyNavigator /> :
-             role === 'follower' ? <FollowerNavigator /> :
-             isFollowerApp ? <FollowerNavigator /> :
-             <AuthNavigator />}
-          </NavigationContainer>
-        )}
+        <CartProvider>
+          {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+          {!showSplash && (
+            <NavigationContainer>
+              {role === 'brand' ? <BrandNavigator /> :
+               role === 'influencer' ? <InfluencerNavigator /> :
+               role === 'agency' ? <AgencyNavigator /> :
+               role === 'follower' ? <FollowerNavigator /> :
+               isFollowerApp ? <FollowerNavigator /> :
+               <AuthNavigator />}
+            </NavigationContainer>
+          )}
+        </CartProvider>
       </LocationProvider>
     </AuthContext.Provider>
   );
