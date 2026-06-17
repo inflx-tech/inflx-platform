@@ -1,0 +1,21 @@
+{
+  "feature": "follower-prod-verify-fixes",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('check all these and resolve first' — device-test bug reports 2026-06-17)",
+  "approved_at": "2026-06-17",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (fidelity fixes to already-locked product-detail.html + checkout.html)",
+  "mockup_locked_at": "2026-06-17",
+  "notes": "Four founder-reported device-test bugs (OTA v118): (1) PDP only name+price -> new GET /follower/products/:id full fetch + Product Details facets block; (2) 3 images not showing -> hero carousel from variants_json.cover_images + colour images + dots; (3) Pay-at-Store on fashion PDP -> removed (CATEGORY_CTA_ORDER fashion/furniture = online_order only, single Add to Cart); (4) save address 'session expired' -> FollowerLoginScreen now persists inflx_refresh_token (15-min token now refreshes silently; fixes ALL follower writes). Additive backend read endpoint (no migration); no order/money/commission change. Verified node --check + pnpm qa GREEN. released=false until founder device re-verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

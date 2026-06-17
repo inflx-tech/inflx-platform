@@ -500,6 +500,8 @@ export const followerApi = {
   // Library-offer detail (store-direct / showcase taps — no creator handle).
   // Contract: features/sprint1-offer-pipeline.
   getStoreOffer: (brandOfferId) => api.get(`/follower/store-offer/${brandOfferId}`),
+  // Full single-product detail for the PDP (description, facets, images, variants).
+  getProductDetail: (productId) => api.get(`/follower/products/${productId}`),
   // Phase Salon-2 — accepts an optional viaInfluencerId so the response
   // embeds a `creator` object the BrandStoreScreen sticky header renders.
   getBrandStore: (brandId, viaInfluencerId = null) => {

@@ -1320,6 +1320,24 @@ const getCreatorCategorySections = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
+// GET /v1/follower/products/:product_id — full single-product detail for the PDP.
+// A shelf/Results tap passes only the card fields (id/name/price/image); this returns
+// the listing detail the brand entered: description, facets (schema attributes),
+// variants_json (cover_images + per-colour images + sizes), section, tags, return policy.
+const getProductDetail = asyncHandler(async (req, res) => {
+  const { product_id } = req.params;
+  const { rows } = await db.query(
+    `SELECT id, name, price, image_url, description, section,
+            variants_json, facets, tags, category_node_id,
+            return_policy_days, veg_flag, stock
+       FROM brand_products
+      WHERE id = $1 AND is_active = true`,
+    [product_id]
+  );
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
+  return success(res, { product: rows[0] });
+});
+
 // GET /v1/follower/section-results — the shared "View all" full list for one shelf's rule.
 // Re-runs the shelf's rule with the SAME surface context (creator/category/brand/city) but a
 // larger limit. Generic: the app passes the shelf's rule + config + its context. v1 = capped
@@ -1378,6 +1396,7 @@ const getSectionResults = asyncHandler(async (req, res) => {
 module.exports = {
   creatorsEatingNow,
   getSectionResults,
+  getProductDetail,
   search,
   register,
   getMe,

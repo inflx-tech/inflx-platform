@@ -59,6 +59,10 @@ export default function FollowerLoginScreen({ navigation }) {
 
         if (token) {
           await AsyncStorage.setItem('inflx_token', token);
+          // Persist the refresh token so the API client can silently refresh the
+          // 15-min access token. Without this, every follower write (save address,
+          // place order) failed with "session expired" after 15 minutes.
+          if (res.data?.refresh_token) await AsyncStorage.setItem('inflx_refresh_token', res.data.refresh_token);
           await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...user, role: 'follower' }));
 
           // Check if this is a new user who needs follower registration
@@ -95,6 +99,7 @@ export default function FollowerLoginScreen({ navigation }) {
         const res = await api.post('/auth/verify-otp', { phone: fullPhone, otp, role: 'follower', name: name.trim() });
         if (res.success || res.data) {
           await AsyncStorage.setItem('inflx_token', res.data.access_token);
+          if (res.data?.refresh_token) await AsyncStorage.setItem('inflx_refresh_token', res.data.refresh_token);
           await AsyncStorage.setItem('inflx_user', JSON.stringify({ ...res.data.user, role: 'follower' }));
         } else {
           Alert.alert('Failed', res.error?.message || 'Could not verify');

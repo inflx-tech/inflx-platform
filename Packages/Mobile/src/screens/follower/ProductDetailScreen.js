@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Image, Alert,
+  ActivityIndicator, Image, Alert, Dimensions,
 } from 'react-native';
+
+const HERO_W = Dimensions.get('window').width;
 import { creatorVibe as C, fonts, fmtRupees, getBusinessAccentLight } from '../../theme/tokens';
 
 // Flow 52.4 — Creator Vibe recolor shim. Per-business accent stays wayfinding-only
@@ -121,10 +123,11 @@ const CATEGORY_LABELS = {
 // modes when it carries any; categories not listed keep availing-mode order.
 const CATEGORY_CTA_ORDER = {
   restaurant:     ['online_order', 'pay_at_store'],
-  fashion:        ['pay_at_store', 'online_order'],
-  fashion_walkin: ['pay_at_store', 'online_order'],
-  fashion_online: ['pay_at_store', 'online_order'],
-  furniture:      ['pay_at_store', 'online_order'],
+  // Fashion/furniture = Add-to-Cart only (locked PDP mockup has no Pay-at-Store).
+  fashion:        ['online_order'],
+  fashion_walkin: ['online_order'],
+  fashion_online: ['online_order'],
+  furniture:      ['online_order'],
   salon:          ['prebook', 'pay_at_store'],
   car_rental:     ['prebook'],
 };
@@ -169,6 +172,7 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [selectedAddons, setSelectedAddons] = useState({}); // conditional Customize (food add-ons)
   const [selectedSize, setSelectedSize] = useState(null);     // conditional Variants (fashion size)
   const [selectedColour, setSelectedColour] = useState(null); // fashion/furniture colour (variants_json.colors[])
+  const [imageIndex, setImageIndex] = useState(0); // hero carousel page
   const { addItem, forceReplaceWith } = useCart();
 
   // Per-business accent: WAYFINDING tints only (hero / card image bg). Chrome,
@@ -216,8 +220,16 @@ export default function ProductDetailScreen({ navigation, route }) {
         return;
       }
       // Path 3 — plain product tap (library / platform shelf, e.g. Section Results,
-      // banner-gateway, hero tile): no creator and no offer to fetch. Render the
-      // product we were handed directly instead of erroring.
+      // banner-gateway, hero tile): the card carries only id/name/price/image. Fetch
+      // the FULL product (description, facets, cover_images, variant matrix) so the
+      // PDP shows the real listing detail. Fall back to the card on failure.
+      if (previewProduct?.id) {
+        const res = await followerApi.getProductDetail?.(previewProduct.id);
+        setLoading(false);
+        if (res?.success && res.data?.product) setProducts([{ ...previewProduct, ...res.data.product }]);
+        else setProducts([previewProduct]);
+        return;
+      }
       if (previewProduct) {
         setProducts([previewProduct]);
         setLoading(false);
@@ -458,19 +470,46 @@ export default function ProductDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {/* Hero image */}
-        <View style={[styles.hero, { backgroundColor: accentPale }]}>
-          {selected.image_url ? (
-            <Image source={{ uri: selected.image_url }} style={styles.heroImage} resizeMode="cover" />
-          ) : (
-            <Text style={styles.heroEmoji}>{CATEGORY_EMOJI[brand?.category] || '📦'}</Text>
-          )}
-          {badgeLabel && (
-            <View style={[styles.heroBadge, { backgroundColor: P.ink }]}>
-              <Text style={styles.heroBadgeText}>{badgeLabel}</Text>
+        {/* Hero image carousel — image_url + variants_json.cover_images + selected
+            colour's images (deduped). Swipeable with page dots (source screen 03). */}
+        {(() => {
+          const vj = variantsJson || {};
+          const gallery = [
+            selected.image_url,
+            ...(Array.isArray(vj.cover_images) ? vj.cover_images : []),
+            ...((activeColour && Array.isArray(activeColour.images)) ? activeColour.images : []),
+          ].filter(Boolean);
+          const images = [...new Set(gallery)];
+          const idx = Math.min(imageIndex, Math.max(0, images.length - 1));
+          return (
+            <View style={[styles.hero, { backgroundColor: accentPale }]}>
+              {images.length > 0 ? (
+                <ScrollView
+                  horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={e => setImageIndex(Math.round(e.nativeEvent.contentOffset.x / HERO_W))}
+                >
+                  {images.map((uri, i) => (
+                    <Image key={i} source={{ uri }} style={styles.heroImage} resizeMode="cover" />
+                  ))}
+                </ScrollView>
+              ) : (
+                <Text style={styles.heroEmoji}>{CATEGORY_EMOJI[brand?.category] || '📦'}</Text>
+              )}
+              {images.length > 1 && (
+                <View style={styles.heroDots}>
+                  {images.map((_, i) => (
+                    <View key={i} style={[styles.heroDot, i === idx && styles.heroDotOn]} />
+                  ))}
+                </View>
+              )}
+              {badgeLabel && (
+                <View style={[styles.heroBadge, { backgroundColor: P.ink }]}>
+                  <Text style={styles.heroBadgeText}>{badgeLabel}</Text>
+                </View>
+              )}
             </View>
-          )}
-        </View>
+          );
+        })()}
 
         {/* Title + brand + creator note */}
         <View style={styles.body}>
@@ -600,6 +639,33 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
+          {/* Product details — the schema attributes entered while listing
+              (brand_products.facets) + section, rendered as a spec list. */}
+          {(() => {
+            const f = selected.facets;
+            const rows = (f && typeof f === 'object' && !Array.isArray(f))
+              ? Object.entries(f).filter(([, v]) => v != null && v !== '' && !(Array.isArray(v) && v.length === 0))
+              : [];
+            if (selected.section) rows.unshift(['Category', selected.section]);
+            if (!rows.length) return null;
+            const labelOf = (k) => String(k).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            const valueOf = (v) => Array.isArray(v) ? v.join(', ') : String(v);
+            return (
+              <View style={styles.descBlock}>
+                <Text style={styles.descTitle}>Product Details</Text>
+                {rows.map(([k, v], i) => (
+                  <View key={i} style={styles.specRow}>
+                    <Text style={styles.specKey}>{labelOf(k)}</Text>
+                    <Text style={styles.specVal}>{valueOf(v)}</Text>
+                  </View>
+                ))}
+                {selected.return_policy_days ? (
+                  <View style={styles.specRow}><Text style={styles.specKey}>Returns</Text><Text style={styles.specVal}>{selected.return_policy_days}-day return</Text></View>
+                ) : null}
+              </View>
+            );
+          })()}
+
           {/* More from this brand */}
           {others.length > 0 && (
             <View style={styles.moreBlock}>
@@ -700,8 +766,11 @@ const styles = StyleSheet.create({
   backFloatingText: { fontSize: 18, color: P.ink, fontWeight: '700' },
 
   hero: { height: 332, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
-  heroImage: { width: '100%', height: '100%' },
+  heroImage: { width: HERO_W, height: '100%' },
   heroEmoji: { fontSize: 96 },
+  heroDots: { position: 'absolute', bottom: 12, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  heroDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)' },
+  heroDotOn: { width: 18, backgroundColor: '#fff' },
   heroBadge: {
     position: 'absolute', top: 56, right: 16,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14,
@@ -754,6 +823,9 @@ const styles = StyleSheet.create({
   savings: { fontFamily: fonts.monoBold, fontSize: 12, marginTop: 4 },
 
   descBlock: { marginTop: 18, paddingTop: 18, borderTopWidth: 1, borderTopColor: P.border },
+  specRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: P.border },
+  specKey: { fontFamily: fonts.sansMedium, fontSize: 12.5, color: P.muted, flex: 1 },
+  specVal: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink, flex: 1.4, textAlign: 'right' },
   descTitle: { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   descBody: { fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink2, lineHeight: 20 },
 
