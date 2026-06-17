@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>INFLX — Product Detail (exact reproduction of Creators Vibe Yellow · screen 03)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+:root{
+  --bg:#F6F1EA;--bezel:#E6DCCF;--notch:#1E1A16;--ink:#2A2520;--ink-2:#4A4038;--muted:#9C8E7F;--muted-2:#B6A899;
+  --terra:#F4B40D;--terra-d:#E0A100;--terra-soft:#FCEFC9;--accent-text:#C28A12;--sale:#D9663C;
+  --line:#ECE4DA;--line-2:#E2D8CC;--card:#FFFFFF;--beige:#D9CABA;--beige-2:#CDBBA6;--beige-3:#E3D6C7;--announce:#E5DACB;--ok:#7C8A5A;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:#322B24;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;padding:46px 30px 80px;}
+.gallery-head{max-width:1500px;margin:0 auto 40px;color:#EBE2D6;}
+.gallery-head .mark{display:flex;align-items:center;gap:12px;}
+.gallery-head .spark{width:30px;height:30px;}
+.gallery-head h1{font-size:24px;font-weight:800;letter-spacing:3px;}
+.gallery-head p{color:#A99C8D;font-size:14px;margin-top:8px;letter-spacing:.3px;}
+.grid{display:flex;flex-wrap:wrap;gap:46px 40px;justify-content:center;align-items:flex-start;max-width:1640px;margin:0 auto;}
+.frame{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.frame > .cap{color:#B7AA9B;font-size:13px;font-weight:600;letter-spacing:.4px;}
+.phone{width:372px;background:var(--bezel);border-radius:50px;padding:11px;box-shadow:0 30px 70px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.12);}
+.screen{width:100%;background:var(--bg);border-radius:40px;overflow:hidden;position:relative;}
+.notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:118px;height:30px;background:var(--notch);border-radius:18px;z-index:60;}
+.status{display:flex;align-items:center;justify-content:space-between;padding:15px 26px 4px;font-weight:700;font-size:15px;color:var(--ink);}
+.status .sigs{display:flex;align-items:center;gap:6px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 12px;}
+.appbar .grp{display:flex;align-items:center;gap:16px;}
+.appbar .logo{display:flex;align-items:center;gap:7px;}
+.appbar .logo .spark{width:18px;height:18px;}
+.appbar .logo b{font-size:14px;font-weight:800;letter-spacing:1.6px;}
+.ic{width:22px;height:22px;color:var(--ink);display:block;cursor:pointer;}
+.ic-btn{position:relative;display:flex;cursor:pointer;}
+.cart-badge{position:absolute;top:-7px;right:-8px;min-width:16px;height:16px;padding:0 4px;background:var(--terra);color:var(--ink);font-size:10px;font-weight:700;border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--terra);color:var(--ink);border:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;letter-spacing:1.2px;padding:15px;border-radius:12px;width:100%;}
+.link{color:var(--accent-text);font-weight:700;font-size:13.5px;text-decoration:none;cursor:pointer;}
+.ph{background:radial-gradient(120% 120% at 70% 15%, rgba(255,255,255,.35), transparent 45%),linear-gradient(150deg,var(--beige-3),var(--beige),var(--beige-2));position:relative;overflow:hidden;display:block;}
+.ph::after{content:"";position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:30px;height:24px;border-radius:4px;background:radial-gradient(circle at 68% 36%, rgba(255,255,255,.6) 0 3px, transparent 4px),rgba(255,255,255,.28);box-shadow:inset 0 0 0 2px rgba(255,255,255,.4);opacity:.5;}
+.ph.plain::after{display:none;}
+.bnav{display:flex;justify-content:space-around;align-items:center;padding:11px 6px 16px;background:#FBF8F3;border-top:1px solid var(--line);}
+.bnav .n{display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--muted-2);font-size:11px;font-weight:600;cursor:pointer;position:relative;}
+.bnav .n .ic{width:23px;height:23px;color:var(--muted-2);}
+.bnav .n.active{color:var(--terra);}
+.bnav .n.active .ic{color:var(--terra);}
+.home-ind{height:7px;display:flex;justify-content:center;align-items:center;background:#FBF8F3;padding-bottom:8px;}
+.home-ind::after{content:"";width:128px;height:5px;border-radius:3px;background:#221E19;}
+/* PDP */
+.pdp-top{position:relative;}
+.pdp-img{height:332px;}
+.pdp-img .ph{width:100%;height:100%;}
+.pdp-actions{position:absolute;top:14px;right:14px;display:flex;flex-direction:column;gap:10px;align-items:center;}
+.rbtn{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.1);cursor:pointer;}
+.rbtn .ic{width:18px;height:18px;color:var(--ink);}
+.rbtn.terra{background:var(--terra);width:26px;height:26px;}
+.pdp-back{position:absolute;top:16px;left:16px;width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.1);cursor:pointer;}
+.dots{display:flex;gap:6px;justify-content:center;padding:14px 0 4px;}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line-2);}
+.dots i.on{width:18px;border-radius:3px;background:var(--muted);}
+.pdp-body{padding:8px 20px 18px;}
+.pdp-body h2{font-size:24px;font-weight:800;}
+.stars{display:flex;align-items:center;gap:7px;margin-top:8px;}
+.stars .s{display:flex;gap:2px;}
+.stars .s .ic{width:15px;height:15px;color:var(--terra);}
+.stars span{font-size:12.5px;color:var(--muted);}
+.price-lg{font-size:22px;font-weight:800;margin-top:12px;}
+.pdp-desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin-top:10px;}
+.opt-label{font-size:13.5px;font-weight:700;margin:18px 0 10px;}
+.opt-label .mut{color:var(--muted);font-weight:500;}
+.swatches{display:flex;gap:10px;}
+.swatch{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line-2);cursor:pointer;}
+.swatch.sel{box-shadow:0 0 0 2px var(--ink);}
+.sizes{display:flex;gap:10px;}
+.sizebox{flex:1;border:1px solid var(--line-2);border-radius:9px;padding:11px 0;text-align:center;font-size:13.5px;font-weight:700;cursor:pointer;background:#fff;}
+.sizebox.sel{background:var(--terra);color:var(--ink);border-color:var(--terra);}
+</style>
+</head>
+<body>
+
+<!-- ICON SPRITE (verbatim from source) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+    <line x1="3.5" y1="12" x2="20.5" y2="12"/><line x1="4.15" y1="8.75" x2="19.85" y2="15.25"/>
+    <line x1="5.99" y1="5.99" x2="18.01" y2="18.01"/><line x1="8.75" y1="4.15" x2="15.25" y2="19.85"/>
+    <line x1="12" y1="3.5" x2="12" y2="20.5"/><line x1="15.25" y1="4.15" x2="8.75" y2="19.85"/>
+    <line x1="18.01" y1="5.99" x2="5.99" y2="18.01"/><line x1="19.85" y1="8.75" x2="4.15" y2="15.25"/>
+  </symbol>
+  <symbol id="menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h15l-1.3 9.2a1 1 0 0 1-1 .8H8.2a1 1 0 0 1-1-.85L5.5 5.2A1 1 0 0 0 4.5 4.3H3"/><circle cx="9" cy="20" r="1.2"/><circle cx="18" cy="20" r="1.2"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.2-8.7C1.4 8 3 5 6 5c2 0 3.2 1.2 4 2.4C10.8 6.2 12 5 14 5c3 0 4.6 3 3.2 6.3C19 15.6 12 20 12 20Z"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.5 7 .6-5.3 4.6 1.6 6.9L12 17l-6 3.6 1.6-6.9L2.3 9.1l7-.6L12 2Z"/></symbol>
+  <symbol id="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/></symbol>
+  <symbol id="home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></symbol>
+  <symbol id="bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></symbol>
+  <symbol id="sig" viewBox="0 0 18 13"><rect x="0" y="8" width="3" height="5" rx="1" fill="currentColor"/><rect x="5" y="5" width="3" height="8" rx="1" fill="currentColor"/><rect x="10" y="2.5" width="3" height="10.5" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="13" rx="1" fill="currentColor"/></symbol>
+  <symbol id="wifi" viewBox="0 0 18 13"><path d="M9 2.5c2.6 0 5 1 6.8 2.6l1.5-1.6C15.1 1.4 12.2 0 9 0S2.9 1.4.7 3.5l1.5 1.6C4 3.5 6.4 2.5 9 2.5Z" fill="currentColor"/><path d="M9 6.2c1.5 0 2.9.6 3.9 1.6l1.5-1.6C13 4.8 11.1 4 9 4S5 4.8 3.6 6.2l1.5 1.6C6.1 6.8 7.5 6.2 9 6.2Z" fill="currentColor"/><path d="M9 9.8c.7 0 1.4.3 1.9.8L9 12.6 7.1 10.6c.5-.5 1.2-.8 1.9-.8Z" fill="currentColor"/></symbol>
+  <symbol id="batt" viewBox="0 0 26 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor" opacity=".5"/></symbol>
+</svg>
+
+<div class="gallery-head">
+  <div class="mark"><svg class="spark"><use href="#spark"/></svg><h1>INFLX · PRODUCT DETAIL</h1></div>
+  <p>Exact 1:1 reproduction of your source — Creators Vibe Yellow, screen 03. No changes.</p>
+</div>
+
+<div class="grid">
+  <!-- ============ 3 · PRODUCT DETAIL (verbatim) ============ -->
+  <div class="frame">
+    <div class="cap">03 · Product Detail</div>
+    <div class="phone"><div class="screen" data-screen-label="Product detail">
+      <div class="status"><span>9:41</span><span class="sigs"><svg class="ic" style="width:17px;height:12px"><use href="#sig"/></svg><svg class="ic" style="width:17px;height:12px"><use href="#wifi"/></svg><svg class="ic" style="width:25px;height:12px"><use href="#batt"/></svg></span></div>
+      <div class="appbar">
+        <div class="grp"><svg class="ic"><use href="#menu"/></svg></div>
+        <div class="logo"><svg class="spark"><use href="#spark"/></svg><b>CREATORS VIBE</b></div>
+        <div class="grp"><svg class="ic"><use href="#search"/></svg><span class="ic-btn"><svg class="ic"><use href="#cart"/></svg><span class="cart-badge">0</span></span></div>
+      </div>
+      <div class="pdp-top">
+        <div class="pdp-img"><span class="ph plain"></span></div>
+        <div class="pdp-back"><svg class="ic"><use href="#back"/></svg></div>
+        <div class="pdp-actions">
+          <div class="rbtn"><svg class="ic"><use href="#heart"/></svg></div>
+          <div class="rbtn"><svg class="ic"><use href="#share"/></svg></div>
+          <div class="rbtn terra"></div>
+        </div>
+      </div>
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      <div class="pdp-body">
+        <h2>Cozy Cloud Hoodie</h2>
+        <div class="stars"><span class="s"><svg class="ic"><use href="#star"/></svg><svg class="ic"><use href="#star"/></svg><svg class="ic"><use href="#star"/></svg><svg class="ic"><use href="#star"/></svg><svg class="ic"><use href="#star"/></svg></span><span>(128 reviews)</span></div>
+        <div class="price-lg">$69.00</div>
+        <p class="pdp-desc">Your new everyday essential. Soft, cozy, and made for creative minds.</p>
+        <div class="opt-label">Color: <span class="mut">Oat</span></div>
+        <div class="swatches"><span class="swatch sel" style="background:#C9B79E"></span><span class="swatch" style="background:#D8BE9C"></span><span class="swatch" style="background:#5A4632"></span></div>
+        <div class="opt-label">Size: <a class="link" style="font-size:12.5px">Size Guide</a></div>
+        <div class="sizes"><div class="sizebox">XS</div><div class="sizebox">S</div><div class="sizebox sel">M</div><div class="sizebox">L</div><div class="sizebox">XL</div></div>
+        <button class="btn" style="margin-top:20px">ADD TO CART</button>
+      </div>
+      <div class="bnav">
+        <div class="n"><svg class="ic"><use href="#home"/></svg>Home</div>
+        <div class="n active"><svg class="ic"><use href="#bag"/></svg>Shop</div>
+        <div class="n"><svg class="ic"><use href="#heart"/></svg>Wishlist</div>
+        <div class="n"><svg class="ic"><use href="#cart"/></svg>Cart</div>
+        <div class="n"><svg class="ic"><use href="#user"/></svg>Account</div>
+      </div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</div>
+</body>
+</html>

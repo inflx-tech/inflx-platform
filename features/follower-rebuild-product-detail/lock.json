@@ -1,0 +1,21 @@
+{
+  "feature": "follower-rebuild-product-detail",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('ok lock it' 2026-06-16, exact Creators Vibe Yellow screen 03)",
+  "approved_at": "2026-06-16",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('ok lock it' on the exact product-detail.html reproduction 2026-06-16)",
+  "mockup_locked_at": "2026-06-16",
+  "notes": "Follower visual rebuild — Product Detail. Locked reference = EXACT 1:1 reproduction of founder's 'CREATORS VIBE Yellow -standalone- (1).html' screen 03 (04-preview/mockups/product-detail.html): Plus Jakarta bold title, image header + 3 actions (heart/share/gold-dot), 5 carousel dots, single price, colour swatches, size boxes + Size Guide link, full-width gold CTA. IMPLEMENTATION RECONCILIATION (founder-approved approach): adopt this exact visual language + rupees + real data, but PRESERVE live functionality the single-brand source omits — offer/discount pricing (struck MRP + sale), creator-recommended chip (commission hook), and per-vertical CTAs (Pay-at-Store / Book / Add-to-Cart by availing-mode). NOT stripping working features (would break restaurant/salon/car). Mobile-only OTA, no backend/migration. released=false until founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

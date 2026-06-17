@@ -444,8 +444,9 @@ export default function ProductDetailScreen({ navigation, route }) {
 
           {ratingVal != null ? (
             <View style={styles.ratingRow}>
-              <Text style={styles.ratingStars}>★</Text>
-              <Text style={styles.ratingVal}>{Number(ratingVal).toFixed(1)}</Text>
+              <Text style={styles.ratingStars}>
+                {'★★★★★☆☆☆☆☆'.slice(5 - Math.max(0, Math.min(5, Math.round(Number(ratingVal)))), 10 - Math.max(0, Math.min(5, Math.round(Number(ratingVal)))))}
+              </Text>
               {reviewCount != null ? <Text style={styles.ratingCount}>({reviewCount} reviews)</Text> : null}
             </View>
           ) : null}
@@ -664,7 +665,7 @@ const styles = StyleSheet.create({
   },
   backFloatingText: { fontSize: 18, color: P.ink, fontWeight: '700' },
 
-  hero: { height: 280, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
+  hero: { height: 332, alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' },
   heroImage: { width: '100%', height: '100%' },
   heroEmoji: { fontSize: 96 },
   heroBadge: {
@@ -678,9 +679,10 @@ const styles = StyleSheet.create({
   heroIconGlyph: { fontSize: 16, color: P.ink },
 
   body: { padding: 20 },
-  productName: { fontFamily: fonts.serifDisplay, fontWeight: '600', fontSize: 22, color: P.ink, marginBottom: 6 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
-  ratingStars: { fontSize: 12, color: C.star },
+  // Source PDP title = Plus Jakarta bold (NOT serif) — founder-flagged exact match.
+  productName: { fontFamily: fonts.displayBold, fontWeight: '800', fontSize: 24, color: P.ink, marginBottom: 6 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 8, marginBottom: 2 },
+  ratingStars: { fontSize: 14, color: C.brown, letterSpacing: 1 },
   ratingVal: { fontFamily: fonts.sansBold, fontSize: 12, color: P.ink },
   ratingCount: { fontFamily: fonts.sansMedium, fontSize: 11, color: P.muted },
 
@@ -694,10 +696,11 @@ const styles = StyleSheet.create({
   toggleKnob: { width: 19, height: 19, borderRadius: 10, backgroundColor: '#fff', marginLeft: 3 },
   toggleKnobOn: { marginLeft: 22 },
   sizeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  sizeChip: { minWidth: 42, height: 42, paddingHorizontal: 10, borderRadius: 12, borderWidth: 1.5, borderColor: P.border, alignItems: 'center', justifyContent: 'center' },
-  sizeChipOn: { borderColor: C.brown, backgroundColor: C.soft },
-  sizeChipTxt: { fontFamily: fonts.sansBold, fontSize: 13, color: P.muted },
-  sizeChipTxtOn: { color: C.brown },
+  // Source `.sizebox` — full-width boxes; active = gold fill + ink text (`.sizebox.sel`).
+  sizeChip: { flex: 1, minWidth: 42, height: 44, paddingHorizontal: 10, borderRadius: 9, borderWidth: 1, borderColor: P.border, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card },
+  sizeChipOn: { borderColor: C.brown, backgroundColor: C.brown },
+  sizeChipTxt: { fontFamily: fonts.sansBold, fontSize: 13, color: P.ink },
+  sizeChipTxtOn: { color: C.onGold },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   brandLine: { fontFamily: fonts.sansMedium, fontSize: 13, color: P.muted, flexShrink: 1 },
   brandChevron: { fontSize: 16, fontWeight: '300' },
@@ -712,7 +715,7 @@ const styles = StyleSheet.create({
 
   priceBlock: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: P.border },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
-  priceFinal: { fontFamily: fonts.monoBold, fontSize: 28, color: P.ink },
+  priceFinal: { fontFamily: fonts.displayBold, fontSize: 22, fontWeight: '800', color: P.ink },
   priceMRP: { fontFamily: fonts.monoMedium, fontSize: 14, color: P.muted3, textDecorationLine: 'line-through' },
   savings: { fontFamily: fonts.monoBold, fontSize: 12, marginTop: 4 },
 
