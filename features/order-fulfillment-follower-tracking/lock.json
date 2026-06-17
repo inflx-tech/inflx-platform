@@ -1,0 +1,21 @@
+{
+  "feature": "order-fulfillment-follower-tracking",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('pls lock it' on order-tracking.html 2026-06-17)",
+  "approved_at": "2026-06-17",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('pls lock it' 2026-06-17)",
+  "mockup_locked_at": "2026-06-17",
+  "notes": "Order Fulfillment Engine Unit 4 — follower Order Tracking (Creators Vibe screen 09). OrderDetailScreen rebuilt to a vertical 5-step timeline (Confirmed→Packed→Shipped→Out for Delivery→Delivered, real per-step dates) + Shipment card (courier+AWB+Track-on-courier deep link) + via @creator + Return CTA. Backend getOrder SELECT extended: transaction_type (fixes latent Return-CTA bug), composed delivery_address, creator_handle. No migration. Render backend + follower OTA. released=false until founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

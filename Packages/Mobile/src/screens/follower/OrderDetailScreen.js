@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator,
+  ActivityIndicator, Linking,
 } from 'react-native';
 import { creatorVibe as Cv, fmtMoney, fmtRupees } from '../../theme/tokens';
 
@@ -18,15 +18,42 @@ const colors = {
 import { followerApi } from '../../services/api';
 import ReturnRequestModal from '../../components/ReturnRequestModal';
 
-const STATUS_STEPS = ['pending', 'confirmed', 'dispatched', 'delivered'];
+// 5-step fulfilment lifecycle (migration 105). Each node's timestamp drives its date.
+const LIFECYCLE = [
+  { key: 'confirmed',        label: 'Order Confirmed', icon: '✓',  tsKey: 'purchased_at' },
+  { key: 'packed',           label: 'Packed',          icon: '📦', tsKey: 'packed_at' },
+  { key: 'dispatched',       label: 'Shipped',         icon: '🚚', tsKey: 'dispatched_at' },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: '📍', tsKey: 'out_for_delivery_at' },
+  { key: 'delivered',        label: 'Delivered',       icon: '🎉', tsKey: 'delivered_at' },
+];
+const LC_IDX = { confirmed: 0, packed: 1, dispatched: 2, out_for_delivery: 3, delivered: 4 };
 
-const STATUS_LABELS = {
-  pending:    { icon: '🕐', label: 'Order Received',  color: colors.orange },
-  confirmed:  { icon: '✅', label: 'Confirmed',        color: colors.teal },
-  dispatched: { icon: '🚚', label: 'On the Way',       color: colors.navy },
-  delivered:  { icon: '🎉', label: 'Delivered',        color: colors.teal },
-  cancelled:  { icon: '❌', label: 'Cancelled',        color: colors.red },
+const STATUS_BADGE = {
+  confirmed:        { icon: '✅', label: 'Confirmed' },
+  packed:           { icon: '📦', label: 'Packed' },
+  dispatched:       { icon: '🚚', label: 'Shipped' },
+  out_for_delivery: { icon: '📍', label: 'Out for Delivery' },
+  delivered:        { icon: '🎉', label: 'Delivered' },
+  cancelled:        { icon: '❌', label: 'Cancelled' },
 };
+
+// Best-effort courier deep link; Google-search fallback (mirrors the brand panel).
+function trackUrl(courier, awb) {
+  if (!awb) return null;
+  const c = String(courier || '').toLowerCase();
+  if (c.includes('delhivery')) return `https://www.delhivery.com/track/package/${encodeURIComponent(awb)}`;
+  if (c.includes('dtdc'))      return `https://www.dtdc.in/tracking/tracking_results.asp?strCnno=${encodeURIComponent(awb)}`;
+  if (c.includes('blue'))      return `https://www.bluedart.com/tracking?trackingNo=${encodeURIComponent(awb)}`;
+  if (c.includes('xpress'))    return `https://www.xpressbees.com/track?awb=${encodeURIComponent(awb)}`;
+  if (c.includes('post'))      return 'https://www.indiapost.gov.in/_layouts/15/dop.portal.tracking/trackconsignment.aspx';
+  return `https://www.google.com/search?q=${encodeURIComponent(`${courier || ''} ${awb} tracking`)}`;
+}
+
+function fmtWhen(v) {
+  if (!v) return null;
+  try { return new Date(v).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }); }
+  catch { return null; }
+}
 
 export default function OrderDetailScreen({ navigation, route }) {
   const { orderId } = route.params || {};
@@ -57,8 +84,11 @@ export default function OrderDetailScreen({ navigation, route }) {
     );
   }
 
-  const statusCfg = STATUS_LABELS[order.order_status] || STATUS_LABELS.pending;
-  const currentStep = STATUS_STEPS.indexOf(order.order_status);
+  const statusCfg = STATUS_BADGE[order.order_status] || STATUS_BADGE.confirmed;
+  const curIdx = LC_IDX[order.order_status] ?? 0;
+  const cancelled = order.order_status === 'cancelled';
+  const creatorHandle = order.creator_handle || null;
+  const tUrl = trackUrl(order.courier_name, order.tracking_number);
   const items = (() => {
     try { return typeof order.items_json === 'string' ? JSON.parse(order.items_json) : (order.items_json || []); }
     catch { return []; }
@@ -73,39 +103,60 @@ export default function OrderDetailScreen({ navigation, route }) {
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <Text style={styles.title}>Order Details</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusCfg.color + '22' }]}>
-            <Text style={[styles.statusText, { color: statusCfg.color }]}>
+          <View style={[styles.statusBadge, { backgroundColor: Cv.soft }]}>
+            <Text style={[styles.statusText, { color: Cv.goldDeep }]}>
               {statusCfg.icon} {statusCfg.label}
             </Text>
           </View>
         </View>
-        <Text style={styles.sub}>#{(order.id || '').slice(-8).toUpperCase()}</Text>
+        <Text style={styles.sub}>#{(order.id || '').replace(/-/g, '').slice(0, 8).toUpperCase()}</Text>
+        {creatorHandle ? <Text style={styles.viaCreator}>via @{creatorHandle}</Text> : null}
       </View>
 
-      {/* Progress tracker */}
-      {order.order_status !== 'cancelled' && (
+      {/* Status timeline — 5-step fulfilment (or cancelled banner) */}
+      {cancelled ? (
+        <View style={styles.card}><Text style={[styles.cardTitle, { color: Cv.offer, marginBottom: 0 }]}>❌ This order was cancelled</Text></View>
+      ) : (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order Progress</Text>
-          <View style={styles.tracker}>
-            {STATUS_STEPS.map((step, i) => {
-              const isDone = i <= currentStep;
-              return (
-                <React.Fragment key={step}>
-                  <View style={styles.stepItem}>
-                    <View style={[styles.stepDot, isDone && styles.stepDotActive]}>
-                      {isDone && <Text style={styles.stepCheck}>✓</Text>}
-                    </View>
-                    <Text style={[styles.stepLabel, isDone && styles.stepLabelActive]}>
-                      {STATUS_LABELS[step]?.label}
-                    </Text>
+          <Text style={styles.cardTitle}>Order Status</Text>
+          {LIFECYCLE.map((node, i) => {
+            const done = i < curIdx;
+            const curr = i === curIdx;
+            const when = fmtWhen(order[node.tsKey]);
+            const extra = node.key === 'dispatched' && order.courier_name ? ` · ${order.courier_name}` : '';
+            return (
+              <View key={node.key} style={styles.tnode}>
+                <View style={styles.tcol}>
+                  <View style={[styles.tdot, (done || curr) && (done ? styles.tdotDone : styles.tdotCurr)]}>
+                    <Text style={[styles.tdotTxt, (done || curr) && { color: done ? '#fff' : Cv.brown }]}>{done ? '✓' : node.icon}</Text>
                   </View>
-                  {i < STATUS_STEPS.length - 1 && (
-                    <View style={[styles.stepLine, isDone && i < currentStep && styles.stepLineActive]} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </View>
+                  {i < LIFECYCLE.length - 1 ? <View style={[styles.tline, done && styles.tlineDone]} /> : null}
+                </View>
+                <View style={styles.tbody}>
+                  <Text style={[styles.tlabel, (done || curr) && styles.tlabelActive]}>{node.label}</Text>
+                  <Text style={styles.tdate}>{when ? `${when}${extra}` : (curr ? `In progress${extra}` : 'Pending')}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Shipment — courier + AWB + track-on-courier link */}
+      {(order.courier_name || order.tracking_number) && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Shipment</Text>
+          {order.courier_name ? (
+            <View style={styles.shipRow}><Text style={styles.shipL}>Courier</Text><Text style={styles.shipV}>{order.courier_name}</Text></View>
+          ) : null}
+          {order.tracking_number ? (
+            <View style={styles.shipRow}><Text style={styles.shipL}>Tracking / AWB</Text><Text style={styles.shipV}>{order.tracking_number}</Text></View>
+          ) : null}
+          {tUrl ? (
+            <TouchableOpacity style={styles.trackBtn} onPress={() => Linking.openURL(tUrl).catch(() => {})}>
+              <Text style={styles.trackBtnTxt}>TRACK ON {String(order.courier_name || 'COURIER').toUpperCase()} ↗</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       )}
 
@@ -138,27 +189,6 @@ export default function OrderDetailScreen({ navigation, route }) {
         </Text>
       </View>
 
-      {/* Timestamps */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Timeline</Text>
-        {[
-          { label: 'Order Placed',  value: order.purchased_at || order.created_at },
-          { label: 'Dispatched',    value: order.dispatched_at },
-          { label: 'Delivered',     value: order.delivered_at },
-        ].filter(r => r.value).map(r => (
-          <View key={r.label} style={styles.timeRow}>
-            <Text style={styles.timeLabel}>{r.label}</Text>
-            <Text style={styles.timeVal}>{new Date(r.value).toLocaleString('en-IN')}</Text>
-          </View>
-        ))}
-      </View>
-
-      {order.tracking_number && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Tracking</Text>
-          <Text style={styles.trackingNum}>{order.tracking_number}</Text>
-        </View>
-      )}
 
       {/* Fashion-1b — Request Return CTA. Only surfaces for online_order
           transactions in 'delivered' status (mirrors industry pattern; salon
@@ -279,6 +309,25 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 14, fontWeight: '700', color: colors.t1 },
   totalVal: { fontSize: 14, fontWeight: '800', color: colors.navy },
   addrText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
+  viaCreator: { fontSize: 12, color: Cv.goldDeep, fontWeight: '700', marginTop: 6 },
+  // vertical timeline
+  tnode: { flexDirection: 'row', gap: 12 },
+  tcol: { alignItems: 'center', width: 38 },
+  tdot: { width: 34, height: 34, borderRadius: 17, backgroundColor: Cv.soft, alignItems: 'center', justifyContent: 'center' },
+  tdotDone: { backgroundColor: Cv.brown },
+  tdotCurr: { backgroundColor: Cv.ink },
+  tdotTxt: { fontSize: 15, color: Cv.muted },
+  tline: { width: 2, flex: 1, minHeight: 18, backgroundColor: Cv.line, marginVertical: 2 },
+  tlineDone: { backgroundColor: Cv.brown },
+  tbody: { flex: 1, paddingBottom: 18, paddingTop: 5 },
+  tlabel: { fontSize: 14, fontWeight: '700', color: Cv.muted },
+  tlabelActive: { color: Cv.ink },
+  tdate: { fontSize: 12, color: Cv.muted, marginTop: 3 },
+  shipRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  shipL: { fontSize: 12.5, color: Cv.muted },
+  shipV: { fontSize: 12.5, color: Cv.ink, fontWeight: '700' },
+  trackBtn: { marginTop: 12, borderWidth: 1, borderColor: Cv.brown, borderRadius: 11, paddingVertical: 12, alignItems: 'center' },
+  trackBtnTxt: { fontSize: 12.5, fontWeight: '800', color: Cv.ink, letterSpacing: 0.5 },
   timeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border },
   timeLabel: { fontSize: 12, color: colors.t3, fontWeight: '600' },
   timeVal: { fontSize: 12, color: colors.t1 },

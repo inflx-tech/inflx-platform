@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>INFLX — Follower Order Tracking (screen 09)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&display=swap');
+:root{--bg:#F6F1EA;--bezel:#E6DCCF;--ink:#2A2520;--ink-2:#4A4038;--muted:#9C8E7F;--muted-2:#B6A899;
+--terra:#F4B40D;--terra-d:#E0A100;--terra-soft:#FCEFC9;--accent-text:#C28A12;--sale:#D9663C;
+--line:#ECE4DA;--line-2:#E2D8CC;--card:#FFFFFF;--beige:#D9CABA;--beige-3:#E3D6C7;--ok:#7C8A5A;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#322B24;}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;padding:42px 26px 70px;}
+.gh{max-width:900px;margin:0 auto 26px;color:#EBE2D6;}
+.gh h1{font-size:21px;font-weight:800;letter-spacing:2px;}.gh h1 span{color:var(--terra);}
+.gh p{color:#A99C8D;font-size:13px;margin-top:7px;}
+.grid{display:flex;flex-wrap:wrap;gap:40px;justify-content:center;align-items:flex-start;max-width:900px;margin:0 auto;}
+.frame{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.cap{color:#B7AA9B;font-size:13px;font-weight:600;}
+.phone{width:360px;background:var(--bezel);border-radius:46px;padding:10px;box-shadow:0 26px 60px rgba(0,0,0,.45);}
+.screen{width:100%;background:var(--bg);border-radius:38px;overflow:hidden;position:relative;height:760px;display:flex;flex-direction:column;}
+.scroll{flex:1;overflow-y:auto;}
+.status{display:flex;align-items:center;justify-content:space-between;padding:14px 22px 4px;font-weight:700;font-size:14px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 8px;}
+.appbar .grp{display:flex;align-items:center;gap:13px;font-size:17px;}
+.appbar .logo b{font-size:13px;font-weight:800;letter-spacing:1.4px;}.appbar .logo b span{color:var(--terra);}
+.pad{padding:6px 20px 2px;}
+.h-page{font-size:22px;font-weight:800;}
+.sub{font-size:12.5px;color:var(--muted);margin-top:5px;}
+.via{font-size:11.5px;color:var(--accent-text);font-weight:700;margin-top:4px;}
+/* timeline */
+.timeline{padding:18px 20px 6px;}
+.tnode{display:flex;gap:14px;position:relative;padding-bottom:20px;}
+.tnode:not(:last-child)::before{content:"";position:absolute;left:18px;top:38px;bottom:-2px;width:2px;background:var(--line-2);}
+.tnode.done:not(:last-child)::before{background:var(--terra);}
+.tnode .tic{width:38px;height:38px;border-radius:50%;background:var(--beige-3);display:flex;align-items:center;justify-content:center;flex:none;z-index:1;font-size:17px;color:var(--muted);}
+.tnode.done .tic{background:var(--terra);color:#fff;}
+.tnode.curr .tic{background:var(--ink);color:var(--terra);}
+.tnode .tx b{font-size:14px;font-weight:700;}
+.tnode .tx span{display:block;font-size:12px;color:var(--muted);margin-top:3px;}
+/* tracking details */
+.track-det{padding:16px 20px 8px;border-top:1px solid var(--line);}
+.track-det h4{font-size:14.5px;font-weight:800;margin-bottom:12px;}
+.tline{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:9px;}
+.tline .l{color:var(--muted);}.tline .v{font-weight:700;}
+.tnum{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-top:4px;}
+.tnum b{font-size:13.5px;font-weight:700;letter-spacing:.3px;}
+.tnum .cp{font-size:12px;color:var(--accent-text);font-weight:700;}
+.btn{display:flex;align-items:center;justify-content:center;background:var(--terra);color:var(--ink);border:none;font-weight:800;font-size:13px;letter-spacing:.6px;padding:14px;border-radius:11px;width:calc(100% - 40px);margin:14px 20px 0;}
+.btn.gh{background:var(--card);border:1px solid var(--terra);color:var(--ink);}
+.help{margin:14px 20px 18px;border:1px solid var(--line-2);border-radius:12px;text-align:center;padding:13px;font-size:12.5px;color:var(--ink-2);}
+.help a{color:var(--accent-text);font-weight:700;}
+.note{max-width:900px;margin:22px auto 0;color:#C9BCAD;font-size:12.5px;line-height:1.7;}.note b{color:var(--terra);}
+</style></head>
+<body>
+<div class="gh"><h1>INFL<span>X</span> — ORDER TRACKING</h1><p>Creators Vibe screen 09 · adapted to INFLX 5-step + courier/AWB</p></div>
+<div class="grid">
+
+  <!-- In progress: Shipped, out-for-delivery pending -->
+  <div class="frame"><div class="cap">09 · Order Tracking — in transit</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar"><div class="grp">←</div><div class="logo"><b>INFL<span>X</span></b></div><div class="grp">🛒</div></div>
+      <div class="scroll">
+        <div class="pad">
+          <div class="h-page">Order #INF10234</div>
+          <div class="sub">Placed on 17 Jun 2026 · ₹1,838 · 2 items</div>
+          <div class="via">via @rikitafashion</div>
+        </div>
+        <div class="timeline">
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Order Confirmed</b><span>17 Jun, 9:02 AM</span></div></div>
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Packed</b><span>17 Jun, 11:20 AM</span></div></div>
+          <div class="tnode curr"><div class="tic">🚚</div><div class="tx"><b>Shipped</b><span>17 Jun, 4:05 PM · Delhivery</span></div></div>
+          <div class="tnode"><div class="tic">📍</div><div class="tx"><b>Out for Delivery</b><span>Pending</span></div></div>
+          <div class="tnode"><div class="tic">📦</div><div class="tx"><b>Delivered</b><span>Expected 20 Jun</span></div></div>
+        </div>
+        <div class="track-det">
+          <h4>Shipment</h4>
+          <div class="tline"><span class="l">Courier</span><span class="v">Delhivery</span></div>
+          <div class="tline"><span class="l">Ship to</span><span class="v">Home · Vijayawada</span></div>
+          <div style="font-size:11px;color:var(--muted);margin:8px 0 4px;">Tracking / AWB</div>
+          <div class="tnum"><b>1234567890123</b><span class="cp">⧉ Copy</span></div>
+        </div>
+        <button class="btn">TRACK ON DELHIVERY ↗</button>
+        <div class="help">Need help with this order? <a>Contact us</a></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- Delivered: with return option -->
+  <div class="frame"><div class="cap">09b · Delivered (+ return)</div>
+    <div class="phone"><div class="screen">
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div class="appbar"><div class="grp">←</div><div class="logo"><b>INFL<span>X</span></b></div><div class="grp">🛒</div></div>
+      <div class="scroll">
+        <div class="pad">
+          <div class="h-page">Order #INF10211</div>
+          <div class="sub">Placed on 12 Jun 2026 · ₹1,199 · 1 item</div>
+          <div class="via">via @rikitafashion</div>
+        </div>
+        <div class="timeline">
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Order Confirmed</b><span>12 Jun</span></div></div>
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Packed</b><span>12 Jun</span></div></div>
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Shipped</b><span>13 Jun · DTDC</span></div></div>
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Out for Delivery</b><span>15 Jun</span></div></div>
+          <div class="tnode done"><div class="tic">✓</div><div class="tx"><b>Delivered</b><span>15 Jun, 6:40 PM</span></div></div>
+        </div>
+        <div class="track-det">
+          <h4>Shipment</h4>
+          <div class="tline"><span class="l">Courier</span><span class="v">DTDC</span></div>
+          <div class="tline"><span class="l">Tracking / AWB</span><span class="v">D998877665</span></div>
+        </div>
+        <button class="btn gh">REQUEST A RETURN</button>
+        <div class="help">Return window closes 25 Jun · <a>Return policy</a></div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+
+<div class="note">
+  <b>Faithful to your source screen 09:</b> vertical status timeline (icon + label + date per node, gold for done, ink for current), Shipment / Tracking-number block, and a primary track button.<br>
+  <b>INFLX adaptations:</b> our 5-step lifecycle (Confirmed → Packed → Shipped → Out for Delivery → Delivered) fed by the real per-step timestamps; <b>courier name + AWB</b> (entered by the brand in Unit 2) with a <b>"Track on &lt;courier&gt;"</b> deep link; <b>via @creator</b> attribution; and a <b>Request a Return</b> CTA on delivered orders within the return window. Reached from Orders → an order (the Confirmation screen's "VIEW ORDER" already routes to OrderDetail; this is OrderDetail rebuilt to the tracking timeline).
+</div>
+</body></html>

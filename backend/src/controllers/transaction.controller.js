@@ -1481,12 +1481,20 @@ const getOrder = asyncHandler(async (req, res) => {
 
   const { rows } = await db.query(
     `SELECT fo.*, ft.net_amount, ft.gross_amount, ft.discount_amount,
+            ft.transaction_type,
             ft.created_at AS purchased_at, b.business_name AS brand_name,
-            u_b.phone AS brand_contact
+            u_b.phone AS brand_contact,
+            inf.instagram_handle AS creator_handle, u_i.name AS creator_name,
+            a.label AS address_label,
+            NULLIF(CONCAT_WS(', ', a.line1, a.line2, a.city, a.state, a.pincode), '') AS delivery_address
      FROM follower_orders fo
      JOIN follower_transactions ft ON ft.id = fo.transaction_id
      JOIN brands b ON b.id = ft.brand_id
      JOIN users u_b ON u_b.id = b.user_id
+     LEFT JOIN follower_addresses a ON a.id = fo.address_id
+     LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+     LEFT JOIN influencers inf ON inf.id = ci.influencer_id
+     LEFT JOIN users u_i ON u_i.id = inf.user_id
      WHERE fo.id = $1 AND ft.follower_id = $2`,
     [req.params.id, follower.id]
   );
