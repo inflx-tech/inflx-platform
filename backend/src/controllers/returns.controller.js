@@ -261,6 +261,34 @@ const adminMarkRefunded = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Return not found or not in refundable state', 404);
 
+  // Reverse the influencer's HELD (unconfirmed) commission for this transaction — a
+  // refunded order must never pay out (founder rule: held till window closes, cancelled
+  // on return). The commission-confirm cron already SKIPS refunded returns; this cleans
+  // up the influencer's pending_balance/total_earned so their earnings read true. If the
+  // commission was somehow already confirmed (paid to wallet), leave it — clawing back a
+  // withdrawn balance is out of scope (the cron skip prevents this in practice).
+  const { rows: txRows } = await db.query(
+    `SELECT ft.id, ft.influencer_commission, ft.commission_confirmed_at, ci.influencer_id
+       FROM follower_returns fr
+       JOIN follower_transactions ft ON ft.id = fr.transaction_id
+       LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+      WHERE fr.id = $1`,
+    [rows[0].id]
+  );
+  const t = txRows[0];
+  if (t) {
+    if (t.influencer_id && !t.commission_confirmed_at && Number(t.influencer_commission) > 0) {
+      await db.query(
+        `UPDATE influencers
+            SET pending_balance = GREATEST(0, pending_balance - $1),
+                total_earned    = GREATEST(0, total_earned    - $1)
+          WHERE id = $2`,
+        [Number(t.influencer_commission), t.influencer_id]
+      );
+    }
+    await db.query(`UPDATE follower_transactions SET status = 'refunded' WHERE id = $1`, [t.id]);
+  }
+
   notifyFollowerOfReturnDecision(rows[0].id, 'refunded').catch(e =>
     console.error('[NOTIFY] return.refunded customer notify failed:', e.message)
   );

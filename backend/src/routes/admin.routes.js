@@ -8,8 +8,13 @@ const invitationCtrl = require('../controllers/creatorInvitation.controller');
 const masterDishCtrl = require('../controllers/adminMasterDish.controller');
 const dishQueueCtrl = require('../controllers/adminDishQueue.controller');
 const escrowFeeTiersCtrl = require('../controllers/escrowFeeTiers.controller');
+const adminOrdersCtrl = require('../controllers/adminOrders.controller');
 
 const router = Router();
+
+// Order Fulfillment Engine Unit 3 — platform-wide order oversight (any admin role).
+router.get('/orders',             authenticate, requireAnyAdminRole, adminOrdersCtrl.listOrders);
+router.patch('/orders/:id/status', authenticate, requireAnyAdminRole, adminOrdersCtrl.updateStatus);
 
 // All admin routes require a valid admin JWT
 // Minimum role is specified per-route based on the permission matrix (spec Section 5.2)

@@ -1,0 +1,21 @@
+{
+  "feature": "order-fulfillment-admin",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('pls proceed' on admin-orders.html 2026-06-17)",
+  "approved_at": "2026-06-17",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder ('pls proceed' 2026-06-17)",
+  "mockup_locked_at": "2026-06-17",
+  "notes": "Order Fulfillment Engine Unit 3 — admin oversight (finishes Phase 1). NEW adminOrders.controller (GET /admin/orders all-brands list + PATCH /admin/orders/:id/status override/cancel, requireAnyAdminRole) + admin.routes. returns.controller.adminMarkRefunded now reverses held (unconfirmed) commission (pending_balance+total_earned) + marks txn refunded. NEW app/admin/orders/page.js (+nav 📦 Orders) + adminApi.listOrders/updateOrderStatus. No migration. Render backend + Vercel brand-web. released=false until founder verify.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

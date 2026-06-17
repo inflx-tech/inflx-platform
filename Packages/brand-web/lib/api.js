@@ -531,6 +531,9 @@ export const notificationApi = {
 // machinery as brand users.
 export const adminApi = {
   getStats: () => api.get('/admin/stats'),
+  // Order Fulfillment Engine Unit 3 — platform order oversight.
+  listOrders: (params) => api.get(`/admin/orders${params ? '?' + new URLSearchParams(params) : ''}`),
+  updateOrderStatus: (id, data) => api.patch(`/admin/orders/${id}/status`, data),
   getBrands: (status, search, page) => api.get(`/admin/brands?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   getBrandQueue: () => api.get('/admin/queue/brands'),
   getInfluencerQueue: () => api.get('/admin/queue/influencers'),

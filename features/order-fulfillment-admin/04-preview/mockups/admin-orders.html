@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin — Orders Oversight</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,'Segoe UI',Roboto,sans-serif;}
+body{background:#F3F4F6;color:#111827;padding:24px;font-size:13px;}
+.wrap{max-width:1060px;margin:0 auto;}
+.h1{font-size:22px;font-weight:800;color:#1f2d4d;}
+.sub{font-size:12px;color:#6B7280;margin:4px 0 16px;}
+/* stat cards */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.stat{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:13px 15px;}
+.stat .n{font-size:20px;font-weight:800;color:#1f2d4d;}
+.stat .l{font-size:10.5px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.4px;margin-top:3px;}
+.stat.amber{background:#1f2d4d;}.stat.amber .n{color:#FBBF24;}.stat.amber .l{color:#cbd5e1;}
+/* filters */
+.bar{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.chip{padding:6px 12px;border-radius:99px;background:#fff;border:1px solid #E5E7EB;font-size:11.5px;font-weight:600;color:#6B7280;cursor:pointer;}
+.chip.act{background:#1f2d4d;color:#fff;border-color:#1f2d4d;}
+.search{margin-left:auto;border:1px solid #E5E7EB;border-radius:8px;padding:8px 11px;font-size:12px;min-width:200px;}
+/* table */
+.tbl{background:#fff;border:1px solid #E5E7EB;border-radius:12px;overflow:hidden;}
+.tr{display:grid;grid-template-columns:96px 1.4fr 1fr 90px 110px 90px;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid #F3F4F6;cursor:pointer;}
+.tr.head{background:#F9FAFB;font-size:10px;font-weight:800;color:#9CA3AF;text-transform:uppercase;letter-spacing:.4px;cursor:default;}
+.tr:last-child{border-bottom:0;}
+.oid{font-family:ui-monospace,monospace;font-size:11px;font-weight:700;color:#1f2d4d;}
+.cust{font-weight:700;font-size:13px;}
+.muted{font-size:11px;color:#6B7280;margin-top:1px;}
+.brand{font-size:12px;font-weight:600;}
+.amt{font-family:ui-monospace,monospace;font-weight:800;text-align:right;}
+.pill{font-family:ui-monospace,monospace;font-size:9px;font-weight:800;padding:3px 8px;border-radius:99px;text-transform:uppercase;text-align:center;}
+.pill.confirmed{background:#FEF3C7;color:#92400E;}
+.pill.packed{background:#EDE9FE;color:#6D28D9;}
+.pill.dispatched,.pill.out{background:#DBEAFE;color:#1D4ED8;}
+.pill.delivered{background:#D1FAE5;color:#047857;}
+.pill.cancelled,.pill.returned{background:#FEE2E2;color:#B91C1C;}
+.date{font-family:ui-monospace,monospace;font-size:11px;color:#6B7280;text-align:right;}
+/* expanded */
+.exp{background:#F9FAFB;border-bottom:1px solid #F3F4F6;padding:16px;}
+.exp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+.kv .l{font-size:9px;font-weight:800;color:#9CA3AF;text-transform:uppercase;letter-spacing:.4px;}
+.kv .v{font-size:12px;font-weight:700;margin-top:3px;}
+.kv .v a{color:#1D4ED8;text-decoration:none;}
+.adminbox{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:14px;}
+.adminbox h4{font-size:12px;font-weight:800;color:#1f2d4d;margin-bottom:10px;}
+.acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.acts select{border:1px solid #D1D5DB;border-radius:8px;padding:8px 10px;font-size:12px;}
+.btn{background:#1f2d4d;color:#fff;border:none;font-weight:700;font-size:12px;padding:9px 16px;border-radius:8px;cursor:pointer;}
+.btn.amber{background:#B45309;}
+.btn.gh{background:#fff;border:1px solid #D1D5DB;color:#374151;}
+.btn.danger{background:#fff;border:1px solid #FCA5A5;color:#B91C1C;}
+.warn{font-size:11px;color:#92400E;background:#FEF3C7;border-radius:8px;padding:8px 11px;margin-top:10px;}
+.note{font-size:12px;color:#6B7280;margin-top:16px;line-height:1.6;}.note b{color:#1f2d4d;}
+.tabs{display:flex;gap:6px;margin-bottom:14px;}
+.tab{padding:7px 14px;border-radius:8px 8px 0 0;font-size:12.5px;font-weight:700;color:#6B7280;cursor:pointer;}
+.tab.act{background:#fff;color:#1f2d4d;border:1px solid #E5E7EB;border-bottom-color:#fff;}
+</style></head>
+<body><div class="wrap">
+
+  <div class="h1">Orders &amp; Returns</div>
+  <div class="sub">Platform-wide oversight. View every order, override status, cancel, and process returns/refunds.</div>
+
+  <div class="stats">
+    <div class="stat"><div class="n">1,284</div><div class="l">Total orders</div></div>
+    <div class="stat amber"><div class="n">37</div><div class="l">In transit</div></div>
+    <div class="stat"><div class="n">₹4.8L</div><div class="l">GMV (30d)</div></div>
+    <div class="stat"><div class="n">6</div><div class="l">Returns pending</div></div>
+  </div>
+
+  <div class="tabs"><div class="tab act">Orders</div><div class="tab">Returns (6)</div></div>
+
+  <div class="bar">
+    <span class="chip act">All</span><span class="chip">Confirmed</span><span class="chip">Packed</span>
+    <span class="chip">Shipped</span><span class="chip">Delivered</span><span class="chip">Cancelled</span>
+    <input class="search" placeholder="Search order #, customer, brand…"/>
+  </div>
+
+  <div class="tbl">
+    <div class="tr head"><span>Order</span><span>Customer</span><span>Brand · Creator</span><span>Amount</span><span>Status</span><span>Date</span></div>
+
+    <div class="tr"><span class="oid">#INF10234</span>
+      <div><div class="cust">Ritika Gupta</div><div class="muted">2 items · 90000 00019</div></div>
+      <div><div class="brand">Charvitha Fashions</div><div class="muted">via @rikitafashion</div></div>
+      <div class="amt">₹1,838</div><span class="pill dispatched">Shipped</span><div class="date">17 Jun</div>
+    </div>
+
+    <!-- expanded admin row -->
+    <div class="tr" style="border-bottom:0"><span class="oid">#INF10211</span>
+      <div><div class="cust">Sagar T</div><div class="muted">1 item · 90000 00021</div></div>
+      <div><div class="brand">Charvitha Fashions</div><div class="muted">via @rikitafashion</div></div>
+      <div class="amt">₹1,199</div><span class="pill delivered">Delivered</span><div class="date">15 Jun</div>
+    </div>
+    <div class="exp">
+      <div class="exp-grid">
+        <div class="kv"><div class="l">Ship to</div><div class="v">Benz Circle, Vijayawada 520010</div></div>
+        <div class="kv"><div class="l">Courier / AWB</div><div class="v">DTDC · D998877665 · <a href="#">Track ↗</a></div></div>
+        <div class="kv"><div class="l">Commission (held)</div><div class="v">₹96 · releases 25 Jun</div></div>
+        <div class="kv"><div class="l">Platform fee</div><div class="v">₹96</div></div>
+      </div>
+      <div class="adminbox">
+        <h4>Admin controls</h4>
+        <div class="acts">
+          <select><option>Override status…</option><option>Confirmed</option><option>Packed</option><option>Shipped</option><option>Out for Delivery</option><option>Delivered</option></select>
+          <button class="btn gh">Apply</button>
+          <button class="btn danger">Cancel order</button>
+          <button class="btn amber">Process refund</button>
+        </div>
+        <div class="warn">⚠ Processing a refund returns money to the customer and <b>reverses the influencer's held commission</b> (it never releases). Cancelling notifies the customer.</div>
+      </div>
+    </div>
+
+    <div class="tr"><span class="oid">#INF10198</span>
+      <div><div class="cust">Meera K</div><div class="muted">1 item · return requested</div></div>
+      <div><div class="brand">Charvitha Fashions</div><div class="muted">via @rikitafashion</div></div>
+      <div class="amt">₹1,499</div><span class="pill returned">Return req</span><div class="date">11 Jun</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>How it maps:</b> Orders list = new <b>GET /admin/orders</b> (all brands, filter by status/brand/search). <b>Override status</b> / <b>Cancel</b> = new admin status endpoint (audited). <b>Process refund</b> reuses the existing admin returns flow (approve → refund) and now <b>reverses the held commission</b> + adjusts the influencer's pending balance. The <b>Returns tab</b> = the existing /admin/returns queue, surfaced here. Navy/amber admin theme, consistent with Section Library / App Sections.
+  </div>
+
+</div></body></html>
