@@ -33,3 +33,14 @@ out_for_delivery,delivered,cancelled} + 5 columns present. run-105 splitter fixe
 - Unit 3: admin Orders oversight screen (view all / force-status / cancel / refund +
   pending_balance cleanup on refund).
 - Unit 4: follower Order Tracking screen 09 (5-step timeline + courier + tracking#).
+
+## POST-AUDIT SIGNATURE HARDENING 2026-06-17
+4-agent adversarial wiring audit confirmed money path + commission attribution +
+fulfilment WIRED end-to-end (real follower_orders + follower_transactions rows +
+pending_balance credit, even in mock mode). ONE finding: `verifyOrder` never validated
+the Razorpay signature (verifyPaymentSignature defined/exported but uncalled) — harmless
+in mock, a real-money gap. FIX: verifyOrder now calls
+`txService.verifyPaymentSignature(order_id, payment_id, signature)` → 422 on mismatch.
+No-op today (RAZORPAY_MOCK → true); the gate for real-money go-live. Mobile already sends
+razorpay_signature (OnlineOrder + RestaurantCart; mock supplies 'mock_signature').
+node --check clean; pnpm qa GREEN.

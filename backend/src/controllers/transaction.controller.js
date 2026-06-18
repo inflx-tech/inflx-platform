@@ -1268,9 +1268,15 @@ const verifyOrder = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { razorpay_order_id, razorpay_payment_id } = req.body;
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
   if (!razorpay_order_id || !razorpay_payment_id) {
     throw new AppError('VALIDATION_ERROR', 'razorpay_order_id and razorpay_payment_id are required', 422);
+  }
+  // Verify the Razorpay signature before writing the order — without this, a client
+  // could "verify" a real pending order without actually paying. No-op in mock mode
+  // (RAZORPAY_MOCK → returns true), so this is inert today and the gate for real money.
+  if (!txService.verifyPaymentSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
+    throw new AppError('VALIDATION_ERROR', 'Payment signature verification failed', 422);
   }
 
   const { amountRupees: netAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
