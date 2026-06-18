@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--
+  Account / Profile (MeScreen) — Creators Vibe Yellow, FINAL gold palette.
+  Source: CREATORS VIBE Yellow -standalone- (1).html screen 12 (Account) is a bare
+  flat row-list; the REAL screen is the richer comprehensive profile
+  (design/wave4-creator-vibe/orders-profile-comprehensive.html) and is ALREADY built
+  + gold-themed in code. This mockup captures the final state + the two genuine
+  completions this contract delivers, WITHOUT downgrading to the bare source:
+    (1) wallet 💰 watermark to fully match the comprehensive mockup
+    (2) "Returns" row wired to the real MyReturns screen (was a dead dup of My Orders)
+  No data invented — every row maps to a live follower endpoint/route.
+-->
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Account — Creators Vibe Yellow</title>
+<style>
+:root{
+  --bg:#F7F4EC; --card:#FFFFFF; --soft:#FBF1D9;
+  --ink:#1A1A1A; --muted:#6B6B6B; --line:#EBE3D2;
+  --gold:#F6B11E; --gold-d:#E8A200; --onGold:#1A1A1A; --terra:#D9663C;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;}
+body{background:#cfc6ba;display:flex;justify-content:center;padding:34px 18px;}
+.frame{display:flex;flex-direction:column;align-items:center;gap:10px;}
+.cap{font-weight:700;font-size:13px;color:#5d564d;}
+.phone{width:340px;height:740px;background:var(--bg);border-radius:38px;border:10px solid #1c1916;overflow:hidden;position:relative;box-shadow:0 18px 50px rgba(0,0,0,.32);}
+.screen{height:100%;display:flex;flex-direction:column;}
+.status{display:flex;justify-content:space-between;align-items:center;padding:11px 22px 2px;font-size:13px;font-weight:700;color:var(--ink);}
+.scroll{flex:1;overflow:auto;padding-bottom:18px;}
+.title{font-size:24px;font-weight:700;color:var(--ink);padding:14px 18px 4px;font-family:'Fraunces',Georgia,serif;}
+
+.pcard{display:flex;align-items:center;gap:14px;margin:8px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;}
+.pav{width:58px;height:58px;border-radius:29px;background:#e6cfa6;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:var(--gold-d);}
+.pn{font-size:17px;font-weight:800;color:var(--ink);}
+.pp{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px;}
+.pcity{display:inline-block;font-size:9.5px;font-weight:800;color:var(--gold-d);background:var(--soft);border:1px solid var(--line);padding:2px 8px;border-radius:20px;margin-top:5px;}
+
+.stats{display:flex;margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.stat{flex:1;text-align:center;padding:13px 0;border-right:1px solid var(--line);}
+.stat:last-child{border-right:none;}
+.stat b{font-size:17px;font-weight:800;color:var(--ink);}
+.stat span{display:block;font-size:9.5px;color:var(--muted);font-weight:700;margin-top:1px;}
+
+.wallet{margin:12px 16px 0;background:var(--gold);color:var(--onGold);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;}
+.wallet .wl{font-size:10px;color:rgba(26,26,26,.65);font-weight:600;}
+.wallet .wb{font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600;margin-top:2px;}
+.wallet .wa{margin-left:auto;font-size:18px;color:rgba(26,26,26,.85);}
+.wallet .we{position:absolute;right:-2px;bottom:-10px;font-size:54px;opacity:.16;}  /* (1) watermark */
+
+.refer{margin:12px 16px 0;background:var(--soft);border:1px dashed var(--gold);border-radius:14px;padding:13px;display:flex;align-items:center;gap:11px;}
+.refer .ri{font-size:24px;}
+.refer .rt{font-size:12.5px;font-weight:800;color:var(--ink);}
+.refer .rs{font-size:10px;color:var(--muted);font-weight:600;margin-top:1px;}
+.refer .rb{margin-left:auto;font-size:11px;font-weight:800;color:var(--onGold);background:var(--gold);padding:7px 14px;border-radius:30px;}
+
+.menu{margin:14px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;}
+.mrow{display:flex;align-items:center;gap:13px;padding:13px;border-bottom:1px solid var(--soft);}
+.mrow:last-child{border-bottom:none;}
+.mic{width:34px;height:34px;border-radius:11px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.mlbl{font-size:13.5px;font-weight:700;color:var(--ink);}
+.msub{font-size:9.5px;color:var(--muted);font-weight:600;}
+.mch{margin-left:auto;color:var(--muted);font-size:18px;}
+.mrow .fix{margin-left:auto;font-size:8px;font-weight:800;color:var(--terra);background:#fff;border:1px solid var(--terra);border-radius:6px;padding:1px 5px;}
+
+.logout{margin:14px 16px 0;border:1.5px solid var(--terra);border-radius:14px;padding:13px;text-align:center;background:var(--card);font-size:13px;font-weight:800;color:var(--terra);letter-spacing:.3px;}
+
+.bnav{display:flex;align-items:flex-end;justify-content:space-around;background:#FBF8F3;border-top:1px solid var(--line);padding:9px 6px 14px;}
+.bnav .n{display:flex;flex-direction:column;align-items:center;gap:3px;color:#B6A899;font-size:9.5px;font-weight:800;}
+.bnav .n .ic{font-size:18px;}
+.bnav .n.active{color:var(--gold-d);}
+.bnav .reel{width:46px;height:46px;border-radius:50%;background:var(--terra);display:flex;align-items:center;justify-content:center;margin-top:-16px;font-size:20px;box-shadow:0 6px 14px rgba(217,102,60,.4);}
+</style></head>
+<body>
+<div class="frame">
+  <div class="cap">Account / Profile · final gold</div>
+  <div class="phone"><div class="screen">
+    <div class="status"><span>9:41</span><span>● ● ●</span></div>
+    <div class="scroll">
+      <div class="title">Profile</div>
+
+      <div class="pcard">
+        <div class="pav">RG</div>
+        <div>
+          <div class="pn">Ritika Gupta</div>
+          <div class="pp">+91 90000 00019</div>
+          <span class="pcity">📍 VIJAYAWADA</span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b>12</b><span>ORDERS</span></div>
+        <div class="stat"><b>8</b><span>FOLLOWING</span></div>
+        <div class="stat"><b>15</b><span>SAVED</span></div>
+      </div>
+
+      <div class="wallet">
+        <div>
+          <div class="wl">INFLX Wallet · cashback from creator visits</div>
+          <div class="wb">₹240</div>
+        </div>
+        <span class="wa">›</span>
+        <span class="we">💰</span>
+      </div>
+
+      <div class="refer">
+        <span class="ri">🎁</span>
+        <div>
+          <div class="rt">Refer &amp; Earn</div>
+          <div class="rs">Invite friends — you both earn wallet credit</div>
+        </div>
+        <span class="rb">Invite</span>
+      </div>
+
+      <div class="menu">
+        <div class="mrow"><div class="mic">📦</div><div><div class="mlbl">My Orders</div><div class="msub">history &amp; tracking</div></div><span class="mch">›</span></div>
+        <div class="mrow"><div class="mic">👥</div><div><div class="mlbl">Following</div><div class="msub">creators you follow</div></div><span class="mch">›</span></div>
+        <div class="mrow"><div class="mic">🔖</div><div><div class="mlbl">Saved Offers</div><div class="msub">bookmarked deals</div></div><span class="mch">›</span></div>
+        <div class="mrow"><div class="mic">📍</div><div><div class="mlbl">My Addresses</div><div class="msub">delivery addresses</div></div><span class="mch">›</span></div>
+        <div class="mrow"><div class="mic">↩️</div><div><div class="mlbl">Returns</div><div class="msub">requests &amp; status</div></div><span class="fix">→ MyReturns</span></div>
+        <div class="mrow"><div class="mic">⚙️</div><div><div class="mlbl">Settings &amp; Help</div><div class="msub">notifications · support</div></div><span class="mch">›</span></div>
+      </div>
+
+      <div class="logout">LOG OUT</div>
+    </div>
+
+    <div class="bnav">
+      <div class="n"><span class="ic">🏠</span>HOME</div>
+      <div class="n"><span class="ic">🏷️</span>OFFERS</div>
+      <div class="n"><div class="reel">🎬</div></div>
+      <div class="n"><span class="ic">🛍️</span>ORDERS</div>
+      <div class="n active"><span class="ic">👤</span>PROFILE</div>
+    </div>
+  </div></div>
+</div>
+</body></html>

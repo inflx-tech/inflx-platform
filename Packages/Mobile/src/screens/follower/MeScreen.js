@@ -59,7 +59,7 @@ function MeInner({ navigation }) {
     { icon: 'account-group-outline', label: 'Following', sub: 'creators you follow', onPress: () => navigation.navigate('FollowedInfluencers') },
     { icon: 'bookmark-outline', label: 'Saved Offers', sub: 'bookmarked deals', onPress: () => navigation.navigate('SavedList') },
     { icon: 'map-marker-outline', label: 'My Addresses', sub: 'delivery addresses', onPress: () => navigation.navigate('Address') },
-    { icon: 'keyboard-return', label: 'Returns', sub: 'requests & status', onPress: () => navigation.navigate('OrderHistory') },
+    { icon: 'keyboard-return', label: 'Returns', sub: 'requests & status', onPress: () => navigation.navigate('MyReturns') },
     { icon: 'cog-outline', label: 'Settings & Help', sub: 'notifications · support', onPress: () => Alert.alert('Settings & Help', 'Coming soon.') },
   ];
 
@@ -98,6 +98,7 @@ function MeInner({ navigation }) {
           <Text style={s.wb}>{wallet != null ? fmtRupees(wallet) : '—'}</Text>
         </View>
         <Text style={s.wa}>›</Text>
+        <Text style={s.we} pointerEvents="none">💰</Text>
       </TouchableOpacity>
 
       {/* refer & earn */}
@@ -157,10 +158,11 @@ const s = StyleSheet.create({
   statBorder: { borderRightWidth: 1, borderRightColor: C.line },
   statN: { fontSize: 17, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
   statL: { fontSize: 9.5, color: C.muted, fontWeight: '700', marginTop: 1, fontFamily: fonts.sansBold },
-  wallet: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12, backgroundColor: C.brown, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
+  wallet: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginTop: 12, backgroundColor: C.brown, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, position: 'relative', overflow: 'hidden' },
   wl: { fontSize: 10, color: 'rgba(26,26,26,0.65)', fontWeight: '600', fontFamily: fonts.sansMedium },
   wb: { fontSize: 22, fontWeight: '600', color: C.onGold, fontFamily: fonts.serifDisplay, marginTop: 2 },
   wa: { fontSize: 20, color: 'rgba(26,26,26,0.85)' },
+  we: { position: 'absolute', right: -2, bottom: -12, fontSize: 54, opacity: 0.16 },
   refer: { flexDirection: 'row', alignItems: 'center', gap: 11, marginHorizontal: 16, marginTop: 12, backgroundColor: C.soft, borderWidth: 1, borderColor: C.brown, borderStyle: 'dashed', borderRadius: 14, padding: 13 },
   rt: { fontSize: 12.5, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
   rs: { fontSize: 10, color: C.muted, fontWeight: '600', marginTop: 1, fontFamily: fonts.sansMedium },

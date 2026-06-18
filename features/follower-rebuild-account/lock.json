@@ -1,0 +1,23 @@
+{
+  "feature": "follower-rebuild-account",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('Go and complete this screen as well' = delegated lock, 2026-06-18)",
+  "approved_at": "2026-06-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (delegated — MeScreen already on the comprehensive gold mockup; this contract = verify + 2 genuine completions, 2026-06-18)",
+  "mockup_locked_at": "2026-06-18",
+  "notes": "Account/Profile (MeScreen) was ALREADY rebuilt to the Creators Vibe gold comprehensive profile mockup. Not a rebuild/downgrade. Two surgical completions: (1) Returns row -> real MyReturns screen (was a dead dup of My Orders; register MyReturns in ProfileStack), (2) wallet 13 watermark to match the comprehensive mockup. Mobile-only OTA, no backend/migration. released=false until founder prod-verify.",
+  "release": {
+    "qa_all_green": false,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

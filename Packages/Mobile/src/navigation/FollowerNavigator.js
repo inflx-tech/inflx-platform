@@ -145,6 +145,9 @@ function ProfileStack() {
       <Stack.Screen name="InfluencerStore" component={InfluencerStoreScreen} />
       <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
       <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
+      {/* Returns row on MeScreen targets this; ProfileStack does not spread
+          SHARED_SCREENS, so register it explicitly (no duplicate name here). */}
+      <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
     </Stack.Navigator>
   );
 }
