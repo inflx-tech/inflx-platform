@@ -1,0 +1,23 @@
+{
+  "feature": "follower-rebuild-wishlist",
+  "spec_version": "0.1.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder ('ok pls proceed' = lock, 2026-06-18)",
+  "approved_at": "2026-06-18",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "ui_governed": true,
+  "mobile_governed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder (locked the wishlist-recolored mockup as drawn — 2-col enriched offer tiles, 2026-06-18)",
+  "mockup_locked_at": "2026-06-18",
+  "notes": "Wishlist (SavedScreen) reskin to Creators Vibe Yellow source screen 10, adapted to real saved-OFFERS data. Mobile-only OTA, no backend/migration. Mockup locked as drawn (2-col, discount badge, via-creator, back arrow, dropped Edit, rupees). released=false until founder prod-verify.",
+  "release": {
+    "qa_all_green": false,
+    "maestro_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
