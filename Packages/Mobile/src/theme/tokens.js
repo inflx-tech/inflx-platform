@@ -260,7 +260,7 @@ export const toing = {
   hint:       '#9CA3AF',
 
   // Brand — yellow primary (fills), ink text on top, deep-gold for on-white accents
-  yellow:     '#F5A623',
+  yellow:     '#F8CB46',  // Blinkit yellow (locked 2026-06-20; was #F5A623)
   yellowInk:  '#1A1D1F',  // text/icon colour to use ON a yellow fill
   yellowDeep: '#C77A00',  // readable yellow for icons / outlines / text ON white
   yellowTint: '#FFF6E0',  // soft yellow background (chips / strips)
@@ -271,7 +271,7 @@ export const toing = {
   pinkTint:   '#FCE7F0',
 
   // Per-business accents (atmosphere only — never on Pay/ADD)
-  vFood:      '#F5A623',
+  vFood:      '#F8CB46',
   vFashion:   '#E11D6B',
   vFurniture: '#92400E',
   vBeauty:    '#7C3AED',
