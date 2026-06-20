@@ -1,0 +1,33 @@
+{
+  "feature": "follower-location-redesign",
+  "area": "mobile-follower-v2",
+  "spec_version": "1.0.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — delegated in chat 2026-06-20 ('we lock and go for implementation'); location mockups + toing yellow palette + OTA-first/map-in-APK sequencing all confirmed",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — approved the 5 location mockups + yellow/white system in chat (rendered widgets + 04-preview/mockups/location-flow.html)",
+  "mockup_locked_at": "2026-06-20",
+  "deploy_posture": "Wave A = OTA (JS reskin of working screens + toing tokens + follower-v2 flag). Wave B = APK (react-native-maps pin picker). No backend change. Production-impacting at OTA/APK publish time — surfaced for explicit founder go, never auto-deployed.",
+  "fix": "From-scratch follower-v2 location flow on the white/yellow toing palette: new Location-entry screen + reskinned Select-location / search / Add-address (Wave A, OTA), and the map pin picker (Wave B, APK). Reuses all existing location/Places/geocoding/address backend unchanged.",
+  "related": [
+    "features/follower-places-autocomplete (reused — Places proxy)",
+    "Packages/Mobile/src/theme/tokens.js (toing palette added)",
+    "Packages/Mobile/src/screens/follower/LocationSearchScreen.js",
+    "Packages/Mobile/src/screens/follower/AddressScreen.js"
+  ],
+  "result": "pending — implementation in progress (L0 tokens landed; L1–L4 step-gated).",
+  "regression_proof": "pending — Maestro location flow + zero-change check on non-migrated screens before release flip.",
+  "discipline": "Step-gated L0→L4 with founder green-signal between steps. toing palette is additive (creatorVibe/lightColors/brandPalette byte-unchanged) so non-v2 surfaces + brand/influencer apps see zero change. Behind follower-v2 flag; live app untouched until the slice is green.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "not yet released — WIP build, no deploy."
+  }
+}

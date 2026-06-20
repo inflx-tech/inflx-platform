@@ -234,6 +234,64 @@ export const creatorVibe = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Toing palette (Follower v2 redesign — white canvas + yellow accent)
+// ─────────────────────────────────────────────────────────────────────────────
+// FOLLOWER-V2-SCOPED. The from-scratch follower redesign moves OFF the gold+cream
+// `creatorVibe` theme (screenBg #F7F4EC) ONTO a pure-white canvas with a rationed
+// yellow accent + pink secondary. Locked with the founder in chat 2026-06-20
+// (contract: features/follower-location-redesign/). creatorVibe / lightColors /
+// brandPalette are intentionally left intact so every non-migrated follower
+// screen + the brand/influencer apps see ZERO change — v2 screens import `toing`
+// explicitly, behind the follower-v2 flag.
+//
+// THE ONE RULE: text on yellow = INK (never white — white vanishes on yellow).
+// `yellowDeep` is the readable yellow for icons/outlines/text ON white;
+// bright `yellow` is for fills (with ink text on top).
+
+export const toing = {
+  // Canvas — white-first, colour rationed
+  pageBg:     '#F4F5F7',
+  card:       '#FFFFFF',
+  line:       '#E8EAED',
+
+  // Ink ladder
+  ink:        '#1A1D1F',
+  muted:      '#6B7280',
+  hint:       '#9CA3AF',
+
+  // Brand — yellow primary (fills), ink text on top, deep-gold for on-white accents
+  yellow:     '#F5A623',
+  yellowInk:  '#1A1D1F',  // text/icon colour to use ON a yellow fill
+  yellowDeep: '#C77A00',  // readable yellow for icons / outlines / text ON white
+  yellowTint: '#FFF6E0',  // soft yellow background (chips / strips)
+
+  // Accent — pink (offers, savings, secondary highlights)
+  pink:       '#E11D6B',
+  pinkDark:   '#A1124B',
+  pinkTint:   '#FCE7F0',
+
+  // Per-business accents (atmosphere only — never on Pay/ADD)
+  vFood:      '#F5A623',
+  vFashion:   '#E11D6B',
+  vFurniture: '#92400E',
+  vBeauty:    '#7C3AED',
+  vCars:      '#1D4ED8',
+
+  // Semantic — green stays for veg/success, warning is orange (≠ brand yellow)
+  veg:        '#15803D',
+  nonVeg:     '#B91C1C',
+  egg:        '#CA8A04',
+  success:    '#15803D',
+  successTint:'#E6F6EC',
+  warning:    '#EA580C',
+  danger:     '#DC2626',
+  offer:      '#E11D6B',
+
+  white:      '#FFFFFF',
+  black:      '#000000',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Per-Business Accent Colors
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Follower v2 — Location flow (white + yellow)</title>
+<style>
+  :root{
+    --bg:#F4F5F7; --card:#fff; --line:#E8EAED; --ink:#1A1D1F; --muted:#6B7280;
+    --hint:#9CA3AF; --yellow:#F5A623; --yellowDeep:#C77A00; --yellowTint:#FFF6E0;
+    --veg:#15803D; --successTint:#E6F6EC;
+  }
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:var(--bg);padding:24px;color:var(--ink)}
+  h1{font-size:18px;font-weight:600;margin:0 0 4px}
+  p.sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;min-height:430px}
+  .cap{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+  .hdr{padding:14px;display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600}
+  .search{margin:0 14px;background:var(--bg);border-radius:12px;padding:11px 13px;color:var(--hint);font-size:13px}
+  .pillrow{display:flex;gap:9px;padding:11px 14px}
+  .pill{flex:1;border-radius:10px;padding:9px;font-size:12px;font-weight:600;text-align:center;color:var(--yellowDeep)}
+  .pill.tint{background:var(--yellowTint)} .pill.outline{border:1px solid var(--line)}
+  .label{padding:6px 14px 4px;font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--hint)}
+  .row{display:flex;gap:11px;padding:11px 14px;border-bottom:1px solid #f0f0f0}
+  .ico{width:34px;height:34px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .rmain{font-size:14px;font-weight:600} .rsub{font-size:12px;color:var(--muted)}
+  .btn{margin:14px;background:var(--yellow);color:var(--ink);text-align:center;font-size:15px;font-weight:600;padding:12px;border-radius:12px}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--yellowDeep)}
+  .field{margin:0 14px 12px} .field .l{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .field .i{border:1px solid var(--line);border-radius:10px;padding:11px;font-size:13px;color:var(--hint)}
+  .chip{display:inline-block;border:1px solid var(--line);color:var(--muted);font-size:12px;padding:6px 14px;border-radius:20px;margin-right:8px}
+  .chip.on{background:var(--yellowTint);border-color:var(--yellowDeep);color:var(--yellowDeep)}
+  .located{display:inline-flex;gap:6px;background:var(--successTint);color:var(--veg);font-size:12px;font-weight:600;padding:6px 11px;border-radius:8px;margin:0 14px 14px}
+  .map{height:300px;background:#EAEDEF;position:relative}
+  .pin{position:absolute;top:140px;left:50%;transform:translateX(-50%);font-size:34px;color:var(--yellowDeep)}
+</style>
+</head>
+<body>
+<h1>Follower v2 — Location flow</h1>
+<p class="sub">White canvas, yellow only on actions (ink text on yellow). 5 screens. Locked in chat 2026-06-20.</p>
+<div class="grid">
+
+  <div><div class="phone">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 22px;text-align:center;min-height:430px">
+      <div style="width:78px;height:78px;border-radius:50%;background:var(--yellowTint);display:flex;align-items:center;justify-content:center;font-size:34px;color:var(--yellowDeep)">◎</div>
+      <div style="font-size:18px;font-weight:600;margin:18px 0 7px">Where should we deliver?</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:24px">We'll show businesses, dishes and deals near you.</div>
+      <div class="btn" style="width:100%;margin:0 0 11px">Use current location</div>
+      <div class="btn ghost" style="width:100%;margin:0">Enter location manually</div>
+    </div>
+  </div><div class="cap">1 · Location entry / permission</div></div>
+
+  <div><div class="phone">
+    <div class="hdr">← Select your location</div>
+    <div class="search">🔍 Search for area, street or landmark</div>
+    <div class="pillrow"><div class="pill tint">Use current location</div><div class="pill outline">Add new address</div></div>
+    <div class="label">SAVED ADDRESSES</div>
+    <div class="row"><div class="ico">🏠</div><div><div class="rmain">Home · <span style="color:var(--muted);font-weight:400">2.1 km</span></div><div class="rsub">Flat 304, Bodduvani Palem, Medarametla…</div></div></div>
+    <div class="row"><div class="ico">💼</div><div><div class="rmain">Office · <span style="color:var(--muted);font-weight:400">8.4 km</span></div><div class="rsub">4th Floor, Enikepadu, Vijayawada…</div></div></div>
+    <div class="label">RECENTLY SEARCHED</div>
+    <div class="row" style="border:0"><div class="ico">🕘</div><div><div class="rmain">Bodduvani Palem</div><div class="rsub">Medarametla, Andhra Pradesh 523212</div></div></div>
+  </div><div class="cap">2 · Select your location</div></div>
+
+  <div><div class="phone">
+    <div class="hdr">← Select your location</div>
+    <div class="search" style="background:#fff;border:1.5px solid var(--yellowDeep);color:var(--ink)">🔍 kphb chai ✕</div>
+    <div class="label">SEARCH RESULTS</div>
+    <div class="row"><div class="ico">📍</div><div><div class="rmain">Chaitanya Food Court</div><div class="rsub">JNTU–Hitech City Rd, near Nexus Mall, KPHB…</div></div></div>
+    <div class="row"><div class="ico">📍</div><div><div class="rmain">Chaitanya Residency</div><div class="rsub">KPHB Phase 6, Kukatpally, Hyderabad</div></div></div>
+    <div class="row" style="border:0"><div class="ico">📍</div><div><div class="rmain">Chaitanya Banquet Hall</div><div class="rsub">Kukatpally Housing Board Rd, KPHB Phase 3</div></div></div>
+  </div><div class="cap">3 · Search → autocomplete</div></div>
+
+  <div><div class="phone">
+    <div class="map"><div class="pin">◉</div>
+      <div style="position:absolute;top:12px;left:12px;right:12px;background:#fff;border-radius:11px;padding:9px 12px;color:var(--hint);font-size:12px">← 🔍 Search an area or address</div>
+      <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:7px 14px;font-size:12px;font-weight:600;color:var(--yellowDeep)">◎ Current location</div>
+    </div>
+    <div style="padding:14px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Place the pin at exact delivery location</div>
+      <div style="font-size:15px;font-weight:600">Bodduvani Palem</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:13px">Medarametla, Andhra Pradesh 523212</div>
+      <div class="btn" style="margin:0">Confirm & proceed</div>
+    </div>
+  </div><div class="cap">4 · Map pin picker (Wave B / APK)</div></div>
+
+  <div><div class="phone">
+    <div class="hdr">← Add address</div>
+    <div class="located">✓ Located: Bodduvani Palem</div>
+    <div class="field"><div class="l">Flat / House / Block no.</div><div class="i">e.g. Flat 304, Sai Residency</div></div>
+    <div class="field"><div class="l">Area / Street / Landmark</div><div class="i">e.g. Near Prayer House</div></div>
+    <div class="field"><div class="l">Pincode</div><div class="i" style="color:var(--ink)">523212</div></div>
+    <div class="field"><div class="l">Save as</div><div><span class="chip on">🏠 Home</span><span class="chip">💼 Work</span><span class="chip">📍 Other</span></div></div>
+    <div class="btn">Save address</div>
+  </div><div class="cap">5 · Add new address</div></div>
+
+</div>
+</body>
+</html>

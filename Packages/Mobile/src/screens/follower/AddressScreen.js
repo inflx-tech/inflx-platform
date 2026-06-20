@@ -3,28 +3,29 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert,
 } from 'react-native';
-import { creatorVibe as Cv } from '../../theme/tokens';
-
-// Flow 52.D — Creator Vibe recolor shim. Legacy navy/teal `colors` → creatorVibe.
-// Visual only; address CRUD + nav unchanged.
-const colors = {
-  navy: Cv.brown, navyDeep: Cv.brownDark, navyMid: Cv.brown, navyPale: Cv.soft,
-  orange: Cv.brown, orangeDeep: Cv.brownDark, orangePale: Cv.soft,
-  gold: Cv.star, goldPale: Cv.soft, teal: Cv.brown, tealDeep: Cv.brown, tealPale: Cv.soft,
-  red: Cv.offer, redPale: Cv.soft, purple: Cv.brown, purplePale: Cv.soft,
-  bg: Cv.screenBg, surface: Cv.card, surface2: Cv.soft, border: Cv.line, border2: Cv.line,
-  t1: Cv.ink, t2: Cv.muted, t3: Cv.muted, white: Cv.card, black: Cv.ink,
-};
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { toing as T, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { isGpsAvailable, ensureLocationPermission, getCurrentPosition } from '../../utils/geolocation';
 
+/**
+ * AddressScreen — Follower v2, step L4 (white/yellow toing skin).
+ *
+ * Saved-address CRUD + add form. A saved address must be Google-locatable:
+ * verify (forward geocode) or "use current" (GPS + reverse geocode) sets the
+ * coords; save is blocked without resolvable coords (no null-coord persist).
+ * Logic unchanged from the prior version — visual + the auto-open-form on
+ * arrival via "Add new address". Contract: features/follower-location-redesign.
+ */
+
 const ADDRESS_TYPES = ['Home', 'Work', 'Other'];
+const typeIcon = (t) => (t === 'Work' ? 'briefcase-outline' : t === 'Home' ? 'home-outline' : 'map-marker-outline');
 
 export default function AddressScreen({ navigation, route }) {
-  const { onSave } = route.params || {};
+  const { onSave, add } = route.params || {};
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [showForm, setShowForm]   = useState(false);
+  const [showForm, setShowForm]   = useState(!!add);
   const [saving, setSaving]       = useState(false);
 
   // Form fields
@@ -41,9 +42,8 @@ export default function AddressScreen({ navigation, route }) {
 
   useEffect(() => { load(); }, []);
 
-  const addrQuery = () => [line1, line2, city, state, pincode].map(s => s.trim()).filter(Boolean).join(', ');
+  const addrQuery = () => [line1, line2, city, state, pincode].map((x) => x.trim()).filter(Boolean).join(', ');
 
-  // Verify the typed address against Google (Geocoding API) → show the match.
   async function verifyAddress() {
     const q = addrQuery();
     if (!q) return;
@@ -51,13 +51,12 @@ export default function AddressScreen({ navigation, route }) {
     try {
       const r = await followerApi.geocodeAddress(q);
       const d = r?.data || r;
-      if (d?.found) { setLocated({ lat: d.lat, lng: d.lng, area_name: d.area_name }); setLocMsg({ ok: true, text: `✓ Located: ${d.area_name || d.formatted_address || 'address found'}` }); }
+      if (d?.found) { setLocated({ lat: d.lat, lng: d.lng, area_name: d.area_name }); setLocMsg({ ok: true, text: `Located: ${d.area_name || d.formatted_address || 'address found'}` }); }
       else { setLocated(null); setLocMsg({ ok: false, text: "Couldn't locate this address — add area / city / pincode." }); }
     } catch { setLocated(null); setLocMsg({ ok: false, text: 'Could not verify right now. Try again.' }); }
     finally { setVerifying(false); }
   }
 
-  // One-tap: use device GPS → reverse-geocode → fill + lock coords.
   async function useCurrent() {
     setVerifying(true); setLocMsg(null);
     try {
@@ -71,7 +70,7 @@ export default function AddressScreen({ navigation, route }) {
       setLocated({ lat: c.latitude, lng: c.longitude, area_name: area });
       if (area && !city.trim()) setCity(area);
       if (!label) setLabel('Other');
-      setLocMsg({ ok: true, text: `📍 Current location${area ? ': ' + area : ''}` });
+      setLocMsg({ ok: true, text: `Current location${area ? ': ' + area : ''}` });
     } catch { setLocMsg({ ok: false, text: 'Could not get your location.' }); }
     finally { setVerifying(false); }
   }
@@ -88,8 +87,6 @@ export default function AddressScreen({ navigation, route }) {
       return;
     }
     setSaving(true);
-    // Address must be Google-locatable. Use the verified/current coords; else
-    // geocode now; if still not found, block (don't save an unlocatable address).
     let coords = located;
     if (!coords) {
       try {
@@ -122,105 +119,104 @@ export default function AddressScreen({ navigation, route }) {
   }
 
   if (loading) {
-    return <View style={styles.center}><ActivityIndicator color={colors.navy} /></View>;
+    return <View style={s.center}><ActivityIndicator color={T.yellowDeep} /></View>;
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Text style={styles.backText}>← Back</Text>
+    <ScrollView style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <Icon name="arrow-left" size={22} color={T.ink} />
         </TouchableOpacity>
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>Addresses</Text>
-          <TouchableOpacity onPress={() => setShowForm(!showForm)} style={styles.addBtn}>
-            <Text style={styles.addBtnText}>{showForm ? 'Cancel' : '+ Add New'}</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={s.title}>{showForm ? 'Add address' : 'Your addresses'}</Text>
+        <TouchableOpacity onPress={() => setShowForm(!showForm)} style={s.addBtn}>
+          <Text style={s.addBtnText}>{showForm ? 'Cancel' : '+ Add new'}</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Add address form */}
       {showForm && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>New Address</Text>
+        <View style={s.card}>
+          {locMsg && (
+            locMsg.ok ? (
+              <View style={s.locatedChip}>
+                <Icon name="check-circle-outline" size={15} color={T.veg} />
+                <Text style={s.locatedText}>{locMsg.text}</Text>
+              </View>
+            ) : (
+              <Text style={s.locErr}>{locMsg.text}</Text>
+            )
+          )}
 
-          {/* Type selector */}
-          <View style={styles.typeRow}>
-            {ADDRESS_TYPES.map(t => (
+          <TouchableOpacity style={s.currentBtn} onPress={useCurrent} disabled={verifying} activeOpacity={0.85}>
+            <Icon name="crosshairs-gps" size={16} color={T.yellowDeep} />
+            <Text style={s.currentBtnText}>Use current location</Text>
+          </TouchableOpacity>
+
+          <Text style={s.fieldLabel}>Flat / House / Block no.</Text>
+          <TextInput style={s.input} value={line1} onChangeText={(t) => { setLine1(t); setLocated(null); setLocMsg(null); }} placeholder="e.g. Flat 304, Sai Residency" placeholderTextColor={T.hint} />
+          <Text style={s.fieldLabel}>Area / Street / Landmark</Text>
+          <TextInput style={s.input} value={line2} onChangeText={(t) => { setLine2(t); setLocated(null); }} placeholder="e.g. Near Prayer House" placeholderTextColor={T.hint} />
+          <View style={s.row2}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.fieldLabel}>City</Text>
+              <TextInput style={s.input} value={city} onChangeText={(t) => { setCity(t); setLocated(null); }} placeholder="City" placeholderTextColor={T.hint} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.fieldLabel}>State</Text>
+              <TextInput style={s.input} value={state} onChangeText={(t) => { setState(t); setLocated(null); }} placeholder="State" placeholderTextColor={T.hint} />
+            </View>
+          </View>
+          <Text style={s.fieldLabel}>Pincode</Text>
+          <TextInput style={s.input} value={pincode} onChangeText={(t) => { setPincode(t); setLocated(null); }} placeholder="6-digit pincode" placeholderTextColor={T.hint} keyboardType="number-pad" maxLength={6} />
+
+          <TouchableOpacity style={s.verifyBtn} onPress={verifyAddress} disabled={verifying || !line1.trim()} activeOpacity={0.85}>
+            <Icon name="magnify" size={15} color={T.muted} />
+            <Text style={s.verifyBtnText}>{verifying ? 'Checking…' : 'Verify address'}</Text>
+          </TouchableOpacity>
+
+          <Text style={s.fieldLabel}>Save as</Text>
+          <View style={s.typeRow}>
+            {ADDRESS_TYPES.map((t) => (
               <TouchableOpacity
                 key={t}
-                style={[styles.typeChip, label === t && styles.typeChipActive]}
+                style={[s.typeChip, label === t && s.typeChipActive]}
                 onPress={() => setLabel(t)}
+                activeOpacity={0.85}
               >
-                <Text style={[styles.typeText, label === t && styles.typeTextActive]}>{t}</Text>
+                <Icon name={typeIcon(t)} size={14} color={label === t ? T.yellowDeep : T.muted} />
+                <Text style={[s.typeText, label === t && s.typeTextActive]}>{t}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* One-tap: fill from device GPS (guaranteed locatable). */}
-          <TouchableOpacity style={styles.currentBtn} onPress={useCurrent} disabled={verifying}>
-            <Text style={styles.currentBtnText}>📍 Use current location</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.fieldLabel}>Address Line 1</Text>
-          <TextInput style={styles.input} value={line1} onChangeText={t => { setLine1(t); setLocated(null); setLocMsg(null); }} placeholder="House no., Street name" placeholderTextColor={colors.t3} />
-          <Text style={styles.fieldLabel}>Address Line 2 (optional)</Text>
-          <TextInput style={styles.input} value={line2} onChangeText={t => { setLine2(t); setLocated(null); }} placeholder="Area, Landmark" placeholderTextColor={colors.t3} />
-          <View style={styles.row2}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.fieldLabel}>City</Text>
-              <TextInput style={styles.input} value={city} onChangeText={t => { setCity(t); setLocated(null); }} placeholder="City" placeholderTextColor={colors.t3} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.fieldLabel}>State</Text>
-              <TextInput style={styles.input} value={state} onChangeText={t => { setState(t); setLocated(null); }} placeholder="State" placeholderTextColor={colors.t3} />
-            </View>
-          </View>
-          <Text style={styles.fieldLabel}>Pincode</Text>
-          <TextInput style={styles.input} value={pincode} onChangeText={t => { setPincode(t); setLocated(null); }} placeholder="6-digit pincode" placeholderTextColor={colors.t3} keyboardType="number-pad" maxLength={6} />
-
-          {/* Verify against Google + show the match (Geocoding API). */}
-          <TouchableOpacity style={styles.verifyBtn} onPress={verifyAddress} disabled={verifying || !line1.trim()}>
-            <Text style={styles.verifyBtnText}>{verifying ? 'Checking…' : '🔎 Verify address'}</Text>
-          </TouchableOpacity>
-          {locMsg && (
-            <Text style={[styles.locMsg, { color: locMsg.ok ? '#1E9E5A' : colors.red }]}>{locMsg.text}</Text>
-          )}
-
           <TouchableOpacity
-            style={[styles.saveBtn, (saving || !line1 || !city || !pincode) && { opacity: 0.5 }]}
+            style={[s.saveBtn, (saving || !line1 || !city || !pincode) && { opacity: 0.5 }]}
             onPress={saveAddress}
             disabled={saving || !line1 || !city || !pincode}
+            activeOpacity={0.85}
           >
-            {saving ? <ActivityIndicator color={colors.white} /> : <Text style={styles.saveBtnText}>Save Address</Text>}
+            {saving ? <ActivityIndicator color={T.yellowInk} /> : <Text style={s.saveBtnText}>Save address</Text>}
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Address list */}
       {addresses.length === 0 && !showForm ? (
-        <View style={[styles.card, { alignItems: 'center', paddingVertical: 32 }]}>
-          <Text style={{ fontSize: 32, marginBottom: 8 }}>📍</Text>
-          <Text style={styles.emptyText}>No addresses saved</Text>
-          <TouchableOpacity style={styles.addFirstBtn} onPress={() => setShowForm(true)}>
-            <Text style={styles.addFirstBtnText}>Add Your First Address</Text>
+        <View style={[s.card, { alignItems: 'center', paddingVertical: 32 }]}>
+          <Icon name="map-marker-outline" size={32} color={T.hint} />
+          <Text style={s.emptyText}>No addresses saved</Text>
+          <TouchableOpacity style={s.addFirstBtn} onPress={() => setShowForm(true)} activeOpacity={0.85}>
+            <Text style={s.addFirstBtnText}>Add your first address</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        addresses.map(addr => (
-          <View key={addr.id} style={styles.card}>
-            <View style={styles.addrHeader}>
-              <View style={styles.addrTypeChip}>
-                <Text style={styles.addrTypeText}>{addr.label || addr.type || 'Home'}</Text>
-              </View>
+        addresses.map((addr) => (
+          <View key={addr.id} style={s.card}>
+            <View style={s.addrTypeChip}>
+              <Icon name={typeIcon(addr.label)} size={13} color={T.yellowDeep} />
+              <Text style={s.addrTypeText}>{addr.label || addr.type || 'Home'}</Text>
             </View>
-            <Text style={styles.addrText}>
-              {[addr.line1, addr.line2].filter(Boolean).join(', ')}
-            </Text>
-            <Text style={styles.addrCity}>
-              {[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}
-            </Text>
+            <Text style={s.addrText}>{[addr.line1, addr.line2].filter(Boolean).join(', ')}</Text>
+            <Text style={s.addrCity}>{[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}</Text>
           </View>
         ))
       )}
@@ -230,39 +226,36 @@ export default function AddressScreen({ navigation, route }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { backgroundColor: colors.navyDeep, padding: 20, paddingTop: 52 },
-  back: { marginBottom: 12 },
-  backText: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: '600' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.white },
-  addBtn: { backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  addBtnText: { fontSize: 12, fontWeight: '700', color: colors.white },
-  card: { margin: 16, marginBottom: 0, backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
-  cardTitle: { fontSize: 14, fontWeight: '700', color: colors.t1, marginBottom: 12 },
-  typeRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  typeChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border },
-  typeChipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  typeText: { fontSize: 12, fontWeight: '600', color: colors.t2 },
-  typeTextActive: { color: colors.white },
-  fieldLabel: { fontSize: 11, fontWeight: '700', color: colors.t3, textTransform: 'uppercase', marginBottom: 6, marginTop: 8 },
-  input: { borderWidth: 2, borderColor: colors.border2, borderRadius: 12, padding: 12, fontSize: 14, color: colors.t1 },
-  currentBtn: { borderWidth: 1.5, borderColor: colors.navy, borderRadius: 12, paddingVertical: 11, alignItems: 'center', marginBottom: 4 },
-  currentBtnText: { fontSize: 13, fontWeight: '800', color: colors.navy },
-  verifyBtn: { borderWidth: 1, borderColor: colors.border2, borderRadius: 10, paddingVertical: 9, alignItems: 'center', marginTop: 12 },
-  verifyBtnText: { fontSize: 12, fontWeight: '700', color: colors.t2 },
-  locMsg: { fontSize: 12, fontWeight: '700', marginTop: 8 },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: T.pageBg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: T.pageBg },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 52, paddingBottom: 12 },
+  title: { flex: 1, fontSize: 20, color: T.ink, fontFamily: fonts.displayBold },
+  addBtn: { backgroundColor: T.yellowTint, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  addBtnText: { fontSize: 12, color: T.yellowDeep, fontFamily: fonts.sansBold },
+  card: { marginHorizontal: 16, marginTop: 12, backgroundColor: T.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: T.line },
+  locatedChip: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', backgroundColor: T.successTint, paddingHorizontal: 11, paddingVertical: 6, borderRadius: 8, marginBottom: 14 },
+  locatedText: { fontSize: 12, color: T.veg, fontFamily: fonts.sansBold },
+  locErr: { fontSize: 12, color: T.danger, fontFamily: fonts.sansBold, marginBottom: 12 },
+  currentBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: T.line, borderRadius: 12, paddingVertical: 11, marginBottom: 6 },
+  currentBtnText: { fontSize: 13, color: T.yellowDeep, fontFamily: fonts.sansBold },
+  fieldLabel: { fontSize: 12, color: T.muted, fontFamily: fonts.sansMedium, marginBottom: 4, marginTop: 12 },
+  input: { borderWidth: 1, borderColor: T.line, borderRadius: 10, padding: 12, fontSize: 14, color: T.ink, fontFamily: fonts.sansRegular },
   row2: { flexDirection: 'row', gap: 10 },
-  saveBtn: { backgroundColor: colors.navy, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
-  saveBtnText: { fontSize: 15, fontWeight: '800', color: colors.white },
-  emptyText: { fontSize: 13, color: colors.t3, marginBottom: 12 },
-  addFirstBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: colors.navy, borderRadius: 12 },
-  addFirstBtnText: { fontSize: 13, fontWeight: '700', color: colors.white },
-  addrHeader: { marginBottom: 6 },
-  addrTypeChip: { backgroundColor: colors.navy + '18', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, alignSelf: 'flex-start' },
-  addrTypeText: { fontSize: 10, fontWeight: '700', color: colors.navy },
-  addrText: { fontSize: 13, color: colors.t1, fontWeight: '500', marginBottom: 2 },
-  addrCity: { fontSize: 12, color: colors.t3 },
+  verifyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingVertical: 10, marginTop: 14 },
+  verifyBtnText: { fontSize: 12, color: T.muted, fontFamily: fonts.sansBold },
+  typeRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  typeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: T.line, backgroundColor: T.card },
+  typeChipActive: { backgroundColor: T.yellowTint, borderColor: T.yellowDeep },
+  typeText: { fontSize: 12, color: T.muted, fontFamily: fonts.sansMedium },
+  typeTextActive: { color: T.yellowDeep, fontFamily: fonts.sansBold },
+  saveBtn: { backgroundColor: T.yellow, borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 18 },
+  saveBtnText: { fontSize: 15, color: T.yellowInk, fontFamily: fonts.sansBold },
+  emptyText: { fontSize: 13, color: T.muted, marginTop: 10, marginBottom: 12, fontFamily: fonts.sansMedium },
+  addFirstBtn: { paddingHorizontal: 20, paddingVertical: 12, backgroundColor: T.yellow, borderRadius: 12 },
+  addFirstBtnText: { fontSize: 13, color: T.yellowInk, fontFamily: fonts.sansBold },
+  addrTypeChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: T.yellowTint, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginBottom: 8 },
+  addrTypeText: { fontSize: 11, color: T.yellowDeep, fontFamily: fonts.sansBold },
+  addrText: { fontSize: 14, color: T.ink, fontFamily: fonts.sansMedium, marginBottom: 2 },
+  addrCity: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular },
 });
