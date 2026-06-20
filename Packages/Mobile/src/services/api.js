@@ -474,6 +474,7 @@ export const followerApi = {
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),
   getCategories: () => api.get('/follower/categories'),
+  getVerticals: () => api.get('/follower/verticals'), // v2 home: world tabs + category rails
   getCategoryStores: (superCategory, opts = {}) => {
     const params = [];
     if (opts.sub_category) params.push(`sub_category=${opts.sub_category}`);

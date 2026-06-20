@@ -7,6 +7,8 @@ import { creatorVibe as C, fonts } from '../theme/tokens';
 
 // V2 screens (products-first)
 import HomeScreenV2 from '../screens/follower/HomeScreenV2';
+// Follower v2 — main home (world switcher)
+import HomeScreen from '../screens/follower/HomeScreen';
 import FindScreen from '../screens/follower/FindScreen';
 import CategoryListScreen from '../screens/follower/CategoryListScreen';
 
@@ -109,7 +111,7 @@ const SHARED_SCREENS = (Stack) => (
 function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home" component={HomeScreenV2} />
+      <Stack.Screen name="Home" component={HomeScreen} />
       {SHARED_SCREENS(Stack)}
     </Stack.Navigator>
   );

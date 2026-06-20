@@ -1397,7 +1397,30 @@ const getSectionResults = asyncHandler(async (req, res) => {
   return success(res, { items, item_type: req.query.item_type || null, capped: items.length >= limit });
 });
 
+// Follower v2 home — the world switcher tabs + their "What's on your mind?"
+// category rails. Public (auth-optional). Admin manages the rows (name / image /
+// order / enabled) via follower_verticals + follower_vertical_categories (110).
+const getVerticals = asyncHandler(async (req, res) => {
+  const { rows: verts } = await db.query(
+    `SELECT key, name, icon, image_url, accent_hex
+       FROM follower_verticals WHERE enabled = true ORDER BY sort_order, name`
+  );
+  const { rows: cats } = await db.query(
+    `SELECT vertical_key, key, name, icon, image_url
+       FROM follower_vertical_categories WHERE enabled = true ORDER BY sort_order, name`
+  );
+  const byVert = {};
+  for (const c of cats) {
+    (byVert[c.vertical_key] = byVert[c.vertical_key] || []).push(
+      { key: c.key, name: c.name, icon: c.icon, image_url: c.image_url }
+    );
+  }
+  const verticals = verts.map((v) => ({ ...v, categories: byVert[v.key] || [] }));
+  return success(res, { verticals });
+});
+
 module.exports = {
+  getVerticals,
   creatorsEatingNow,
   getSectionResults,
   getProductDetail,

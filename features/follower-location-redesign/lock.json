@@ -19,7 +19,7 @@
     "Packages/Mobile/src/screens/follower/LocationSearchScreen.js",
     "Packages/Mobile/src/screens/follower/AddressScreen.js"
   ],
-  "result": "Location slice shipped (OTA v125–v127) + Wave B map pin picker (APK built/installed) + add-address map-search→details form (receiver/landmark). Migration 107 applied to prod 2026-06-20. Founder live-testing; release.released stays false until full sign-off.",
+  "result": "Location slice shipped (OTA v125–v127) + Wave B map pin picker (APK built/installed) + add-address map-search→details form (receiver/landmark, migration 107). Brand yellow → Blinkit #F8CB46 (OTA v129). Main-home world-switcher slice: migration 110 (follower_verticals + follower_vertical_categories, seeded 5 worlds + Food categories) + GET /follower/verticals + new white HomeScreen (folder-tab switcher, cycling search, veg toggle, sticky category rail). Admin image-upload for tabs/categories = next step. Founder live-testing; release.released stays false until full sign-off.",
   "regression_proof": "pending — Maestro location flow + zero-change check on non-migrated screens before release flip.",
   "discipline": "Step-gated L0→L4 with founder green-signal between steps. toing palette is additive (creatorVibe/lightColors/brandPalette byte-unchanged) so non-v2 surfaces + brand/influencer apps see zero change. Behind follower-v2 flag; live app untouched until the slice is green.",
   "release": {
