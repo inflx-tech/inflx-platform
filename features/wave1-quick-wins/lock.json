@@ -1,0 +1,20 @@
+{
+  "feature": "wave1-quick-wins",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session approval: 'Test then deploy all 5'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — bug-fixes, no new mockups; visual touches (A-2 remove legacy login widget, E-5 gallery image-fit) approved in-session",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "5 audit bug-fixes (A-1 login persistence, A-2 drop stale homepage auth, B-3/G-1 wire payment-config columns, C-1 mount L3 categories CRUD, E-5 gallery crop). Code-only, no migration. Reviewer pass clean; pnpm qa 79 passed STATE=GREEN.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
