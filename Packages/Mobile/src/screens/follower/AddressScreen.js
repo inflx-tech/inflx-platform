@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator, Alert,
@@ -20,6 +20,7 @@ import { isGpsAvailable, ensureLocationPermission, getCurrentPosition } from '..
 
 const ADDRESS_TYPES = ['Home', 'Work', 'Other'];
 const typeIcon = (t) => (t === 'Work' ? 'briefcase-outline' : t === 'Home' ? 'home-outline' : 'map-marker-outline');
+function newSession() { return `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`; }
 
 export default function AddressScreen({ navigation, route }) {
   const { onSave, add } = route.params || {};
@@ -40,7 +41,50 @@ export default function AddressScreen({ navigation, route }) {
   const [verifying, setVerifying] = useState(false);
   const [locMsg, setLocMsg] = useState(null);      // { ok, text }
 
+  // Google Places autocomplete for the address search bar.
+  const [searchQ, setSearchQ] = useState('');
+  const [searchPreds, setSearchPreds] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const session = useRef(newSession());
+  const sTimer = useRef(null);
+
   useEffect(() => { load(); }, []);
+
+  // Debounced autocomplete: type an area / building → Google suggestions.
+  useEffect(() => {
+    if (sTimer.current) clearTimeout(sTimer.current);
+    const term = searchQ.trim();
+    if (term.length < 2) { setSearchPreds([]); setSearching(false); return; }
+    setSearching(true);
+    sTimer.current = setTimeout(async () => {
+      try {
+        const r = await followerApi.placesAutocomplete(term, { session: session.current });
+        setSearchPreds((r?.data || r)?.predictions || []);
+      } catch { setSearchPreds([]); }
+      finally { setSearching(false); }
+    }, 320);
+    return () => sTimer.current && clearTimeout(sTimer.current);
+  }, [searchQ]);
+
+  // Pick a suggestion → fetch exact coords + components → pre-fill the form.
+  async function pickPrediction(pred) {
+    setSearching(true);
+    try {
+      const r = await followerApi.placeDetails(pred.place_id, session.current);
+      const d = r?.data || r;
+      if (d?.lat != null) {
+        setLocated({ lat: d.lat, lng: d.lng, area_name: d.area_name });
+        setLine2(d.area_name || pred.secondary || pred.main || '');
+        if (d.city) setCity(d.city);
+        if (d.state) setState(d.state);
+        if (d.pincode) setPincode(d.pincode);
+        setLocMsg({ ok: true, text: `Located: ${d.area_name || pred.main || d.formatted_address || 'address found'}` });
+        setSearchQ(''); setSearchPreds([]);
+        session.current = newSession();
+      }
+    } catch { /* keep form open */ }
+    finally { setSearching(false); }
+  }
 
   const addrQuery = () => [line1, line2, city, state, pincode].map((x) => x.trim()).filter(Boolean).join(', ');
 
@@ -123,7 +167,7 @@ export default function AddressScreen({ navigation, route }) {
   }
 
   return (
-    <ScrollView style={s.container}>
+    <ScrollView style={s.container} keyboardShouldPersistTaps="handled">
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
           <Icon name="arrow-left" size={22} color={T.ink} />
@@ -136,6 +180,31 @@ export default function AddressScreen({ navigation, route }) {
 
       {showForm && (
         <View style={s.card}>
+          <Text style={s.searchHint}>Search your location, then add flat / house details</Text>
+          <View style={s.searchBar}>
+            <Icon name="magnify" size={18} color={T.yellowDeep} />
+            <TextInput
+              style={s.searchInput} value={searchQ} onChangeText={setSearchQ}
+              placeholder="Search your area, building or street" placeholderTextColor={T.hint}
+            />
+            {searchQ.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQ('')} hitSlop={8}>
+                <Icon name="close" size={16} color={T.hint} />
+              </TouchableOpacity>
+            )}
+          </View>
+          {searching && <ActivityIndicator color={T.yellowDeep} style={{ marginTop: 8 }} />}
+          {searchPreds.map((p) => (
+            <TouchableOpacity key={p.place_id} style={s.predRow} onPress={() => pickPrediction(p)}>
+              <Icon name="map-marker-outline" size={16} color={T.muted} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.predMain} numberOfLines={1}>{p.main}</Text>
+                {p.secondary ? <Text style={s.predSub} numberOfLines={1}>{p.secondary}</Text> : null}
+              </View>
+            </TouchableOpacity>
+          ))}
+          <View style={s.searchDivider} />
+
           {locMsg && (
             locMsg.ok ? (
               <View style={s.locatedChip}>
@@ -258,4 +327,11 @@ const s = StyleSheet.create({
   addrTypeText: { fontSize: 11, color: T.yellowDeep, fontFamily: fonts.sansBold },
   addrText: { fontSize: 14, color: T.ink, fontFamily: fonts.sansMedium, marginBottom: 2 },
   addrCity: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular },
+  searchHint: { fontSize: 12, color: T.muted, fontFamily: fonts.sansMedium, marginBottom: 8 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: T.pageBg, borderWidth: 1, borderColor: T.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11 },
+  searchInput: { flex: 1, fontSize: 14, color: T.ink, fontFamily: fonts.sansRegular, padding: 0 },
+  predRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  predMain: { fontSize: 14, color: T.ink, fontFamily: fonts.sansBold },
+  predSub: { fontSize: 12, color: T.muted, marginTop: 2, fontFamily: fonts.sansRegular },
+  searchDivider: { height: 1, backgroundColor: T.line, marginVertical: 12 },
 });
