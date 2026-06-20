@@ -4,8 +4,10 @@
 change, zero functional disturbance to existing flows. Full mechanics below.
 
 ## Blast radius
-- **Backend:** none. No routes, controllers, migrations, or env touched. All
-  location/Places/geocoding/address endpoints are reused unchanged.
+- **Backend:** migration **107** (additive nullable columns receiver_name /
+  receiver_phone / landmark on follower_addresses) + `createAddress` controller
+  stores them. Production-impacting → run migration on prod, then deploy. All
+  other location/Places/geocoding endpoints reused unchanged.
 - **Other roles (brand/influencer):** none. `toing` is a new, separately-imported
   palette; `creatorVibe`/`lightColors`/`brandPalette` are byte-unchanged.
 - **Existing follower screens:** none until the `follower-v2` flag is flipped.

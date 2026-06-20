@@ -28,8 +28,11 @@ location. Role: **follower**.
 - Roles involved: follower (public + authed)
 
 ## Data / contracts
-- **New/changed tables/columns/migrations:** NONE. Reuses `follower_addresses`
-  (+ migration 093 lat/lng) and the existing Places/geocoding backend proxy.
+- **New/changed tables/columns/migrations:** migration **107** adds
+  `receiver_name`, `receiver_phone`, `landmark` (all nullable) to
+  `follower_addresses` for the v2 add-address details form (after the map pin).
+  Otherwise reuses `follower_addresses` (+ migration 093 lat/lng) and the
+  existing Places/geocoding backend proxy. (Entry-photo column deferred.)
 - **New/changed API endpoints:** NONE. Consumes existing
   `placesAutocomplete`, `placeDetails`, reverse/forward geocode, and
   `getAddresses` / `addAddress`.

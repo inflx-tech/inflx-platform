@@ -19,7 +19,7 @@ export default function LocationHeader({ navigation, title }) {
 
   return (
     <View>
-      <Pressable onPress={() => navigation ? navigation.navigate('LocationEntry') : setOpen(true)} hitSlop={6}>
+      <Pressable onPress={() => navigation ? navigation.navigate('LocationSearch') : setOpen(true)} hitSlop={6}>
         <Text style={styles.pill}>
           📍 {String(location.label || 'Set location').toUpperCase()}
         </Text>

@@ -256,7 +256,8 @@ const createAddress = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found', 404);
 
-  const { label, line1, line2, city, pincode, is_default } = req.body;
+  const { label, line1, line2, city, pincode, is_default,
+          receiver_name, receiver_phone, landmark } = req.body;
   if (!line1) throw new AppError('VALIDATION_ERROR', 'line1 is required', 422, 'line1');
 
   if (is_default) {
@@ -283,10 +284,13 @@ const createAddress = asyncHandler(async (req, res) => {
   }
 
   const { rows } = await db.query(
-    `INSERT INTO follower_addresses (follower_id, label, line1, line2, city, pincode, is_default, lat, lng)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO follower_addresses
+       (follower_id, label, line1, line2, city, pincode, is_default, lat, lng,
+        receiver_name, receiver_phone, landmark)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
-    [follower.id, label || null, line1, line2 || null, city || null, pincode || null, !!is_default, lat, lng]
+    [follower.id, label || null, line1, line2 || null, city || null, pincode || null, !!is_default, lat, lng,
+     receiver_name || null, receiver_phone || null, landmark || null]
   );
 
   if (is_default) {

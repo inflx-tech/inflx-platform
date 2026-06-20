@@ -7,6 +7,7 @@ import { toing as T, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { useAppLocation } from '../../contexts/LocationContext';
 import { getRecentLocations, pushRecentLocation } from '../../utils/recentLocations';
+import { isMapsAvailable } from '../../utils/maps';
 
 /**
  * LocationSearchScreen — Follower v2, steps L2 + L3.
@@ -108,7 +109,12 @@ export default function LocationSearchScreen({ navigation }) {
     });
     navigation.goBack();
   };
-  const addNew = () => navigation.navigate('Address', { add: true });
+  // "Add new address" → map pin picker (search + drag) on a maps-capable APK;
+  // else the plain form (current OTA build without the native map).
+  const addNew = () => {
+    if (isMapsAvailable()) navigation.navigate('MapPinPicker', { forAddress: true });
+    else navigation.navigate('Address', { add: true });
+  };
 
   const searching = q.trim().length >= 2;
 

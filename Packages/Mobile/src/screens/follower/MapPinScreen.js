@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { toing as T, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
@@ -10,29 +10,42 @@ import { RNMaps, isMapsAvailable } from '../../utils/maps';
 /**
  * MapPinScreen — Follower v2, Wave B (native, APK-gated).
  *
- * Drag-the-map-under-a-fixed-pin delivery-point picker (Swiggy/Zomato pattern).
- * The pin stays centred; the map moves; the centre coords reverse-geocode to an
- * address; "Confirm & proceed" sets the app location. Requires react-native-maps
- * + Maps SDK for Android (next APK). On the current OTA build isMapsAvailable()
- * is false → a fallback routes to manual search instead of crashing.
- *
- * Contract: features/follower-location-redesign.
+ * Add-address locate step: a search bar with Google autocomplete ON TOP of a
+ * draggable map. Type → pick a suggestion → the map flies there and the pin
+ * drops; drag the map to fine-tune. The centre always reverse-geocodes to an
+ * address. "Confirm & proceed":
+ *   - forAddress (from "Add new address") → AddressDetails form (receiver +
+ *     location details), carrying the picked coords + components.
+ *   - otherwise → sets the app location directly.
+ * OTA-safe: isMapsAvailable() checks the native view manager; the current build
+ * shows a fallback. Contract: features/follower-location-redesign.
  */
 
 const MapView = RNMaps?.default;
 const PROVIDER_GOOGLE = RNMaps?.PROVIDER_GOOGLE;
 
+function newSession() { return `${Date.now().toString(36)}-${Math.floor(Math.random() * 1e9).toString(36)}`; }
+
 export default function MapPinScreen({ navigation, route }) {
+  const forAddress = !!route.params?.forAddress;
   const { location, setLocation } = useAppLocation();
   const initLat = route.params?.latitude ?? location?.latitude ?? 16.5062;
   const initLng = route.params?.longitude ?? location?.longitude ?? 80.6480;
 
   const mapRef = useRef(null);
   const rgTimer = useRef(null);
+  const sTimer = useRef(null);
+  const session = useRef(newSession());
+
   const [center, setCenter] = useState({ latitude: initLat, longitude: initLng });
   const [zoomedOut, setZoomedOut] = useState(false);
-  const [addr, setAddr] = useState(null);   // { label, sub }
+  const [picked, setPicked] = useState(null);   // { area, formatted, city, state, pincode }
   const [busy, setBusy] = useState(false);
+
+  // Search
+  const [q, setQ] = useState('');
+  const [preds, setPreds] = useState([]);
+  const [searching, setSearching] = useState(false);
 
   const reverse = useCallback((lat, lng) => {
     if (rgTimer.current) clearTimeout(rgTimer.current);
@@ -40,15 +53,31 @@ export default function MapPinScreen({ navigation, route }) {
       try {
         const r = await followerApi.reverseGeocode(lat, lng);
         const d = r?.data || r;
-        setAddr({ label: d?.area_name || 'Selected location', sub: d?.formatted_address || d?.city || '' });
-      } catch { setAddr({ label: 'Selected location', sub: '' }); }
+        setPicked({ area: d?.area_name || 'Selected location', formatted: d?.formatted_address || d?.city || '', city: d?.city || '' });
+      } catch { setPicked({ area: 'Selected location', formatted: '', city: '' }); }
     }, 350);
   }, []);
 
   useEffect(() => {
     reverse(initLat, initLng);
-    return () => rgTimer.current && clearTimeout(rgTimer.current);
+    return () => { rgTimer.current && clearTimeout(rgTimer.current); sTimer.current && clearTimeout(sTimer.current); };
   }, []);
+
+  // Debounced autocomplete.
+  useEffect(() => {
+    if (sTimer.current) clearTimeout(sTimer.current);
+    const term = q.trim();
+    if (term.length < 2) { setPreds([]); setSearching(false); return; }
+    setSearching(true);
+    sTimer.current = setTimeout(async () => {
+      try {
+        const r = await followerApi.placesAutocomplete(term, { session: session.current, lat: center.latitude, lng: center.longitude });
+        setPreds((r?.data || r)?.predictions || []);
+      } catch { setPreds([]); }
+      finally { setSearching(false); }
+    }, 320);
+    return () => sTimer.current && clearTimeout(sTimer.current);
+  }, [q]);
 
   // Fallback when the native module isn't in this build (OTA on the old APK).
   if (!isMapsAvailable() || !MapView) {
@@ -70,6 +99,23 @@ export default function MapPinScreen({ navigation, route }) {
     reverse(region.latitude, region.longitude);
   };
 
+  const pickPrediction = async (pred) => {
+    setSearching(true);
+    try {
+      const r = await followerApi.placeDetails(pred.place_id, session.current);
+      const d = r?.data || r;
+      if (d?.lat != null && mapRef.current) {
+        mapRef.current.animateToRegion(
+          { latitude: d.lat, longitude: d.lng, latitudeDelta: 0.005, longitudeDelta: 0.005 }, 500,
+        );
+        setPicked({ area: d.area_name || pred.main, formatted: d.formatted_address || pred.secondary || '', city: d.city || '', state: d.state || '', pincode: d.pincode || '' });
+        setQ(''); setPreds([]);
+        session.current = newSession();
+      }
+    } catch { /* keep screen */ }
+    finally { setSearching(false); }
+  };
+
   const recenter = async () => {
     if (!isGpsAvailable()) return;
     setBusy(true);
@@ -78,18 +124,24 @@ export default function MapPinScreen({ navigation, route }) {
       if (ok) {
         const c = await getCurrentPosition();
         if (c && mapRef.current) {
-          mapRef.current.animateToRegion(
-            { latitude: c.latitude, longitude: c.longitude, latitudeDelta: 0.006, longitudeDelta: 0.006 }, 400,
-          );
+          mapRef.current.animateToRegion({ latitude: c.latitude, longitude: c.longitude, latitudeDelta: 0.006, longitudeDelta: 0.006 }, 400);
         }
       }
     } finally { setBusy(false); }
   };
 
   const confirm = () => {
+    if (forAddress) {
+      navigation.navigate('AddressDetails', {
+        latitude: center.latitude, longitude: center.longitude,
+        area: picked?.area || '', formatted: picked?.formatted || '',
+        city: picked?.city || '', state: picked?.state || '', pincode: picked?.pincode || '',
+      });
+      return;
+    }
     setLocation({
-      label: addr?.label || 'Selected location',
-      sublabel: addr?.sub || '',
+      label: picked?.area || 'Selected location',
+      sublabel: picked?.formatted || '',
       latitude: center.latitude, longitude: center.longitude,
       source: 'current', address_id: null,
     });
@@ -111,14 +163,37 @@ export default function MapPinScreen({ navigation, route }) {
         <Icon name="map-marker" size={42} color={T.yellowDeep} />
       </View>
 
+      {/* top: back + inline autocomplete search */}
       <View style={s.topBar}>
-        <TouchableOpacity style={s.circle} onPress={() => navigation.goBack()} activeOpacity={0.85}>
-          <Icon name="arrow-left" size={20} color={T.ink} />
-        </TouchableOpacity>
-        <TouchableOpacity style={s.searchPill} onPress={() => navigation.navigate('LocationSearch')} activeOpacity={0.85}>
-          <Icon name="magnify" size={16} color={T.yellowDeep} />
-          <Text style={s.searchTxt}>Search an area or address</Text>
-        </TouchableOpacity>
+        <View style={s.searchRow}>
+          <TouchableOpacity style={s.circle} onPress={() => navigation.goBack()} activeOpacity={0.85}>
+            <Icon name="arrow-left" size={20} color={T.ink} />
+          </TouchableOpacity>
+          <View style={s.searchBox}>
+            <Icon name="magnify" size={17} color={T.yellowDeep} />
+            <TextInput
+              style={s.searchInput} value={q} onChangeText={setQ}
+              placeholder="Search an area or address" placeholderTextColor={T.hint}
+            />
+            {q.length > 0 && (
+              <TouchableOpacity onPress={() => setQ('')} hitSlop={8}><Icon name="close" size={15} color={T.hint} /></TouchableOpacity>
+            )}
+          </View>
+        </View>
+        {(searching || preds.length > 0) && (
+          <View style={s.predCard}>
+            {searching && preds.length === 0 && <ActivityIndicator color={T.yellowDeep} style={{ paddingVertical: 12 }} />}
+            {preds.map((p) => (
+              <TouchableOpacity key={p.place_id} style={s.predRow} onPress={() => pickPrediction(p)}>
+                <Icon name="map-marker-outline" size={16} color={T.muted} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.predMain} numberOfLines={1}>{p.main}</Text>
+                  {p.secondary ? <Text style={s.predSub} numberOfLines={1}>{p.secondary}</Text> : null}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       <TouchableOpacity style={s.recenter} onPress={recenter} activeOpacity={0.85}>
@@ -131,8 +206,8 @@ export default function MapPinScreen({ navigation, route }) {
         <View style={s.addrRow}>
           <Icon name="map-marker" size={18} color={T.yellowDeep} />
           <View style={{ flex: 1 }}>
-            <Text style={s.addrLabel} numberOfLines={1}>{addr?.label || 'Locating…'}</Text>
-            {addr?.sub ? <Text style={s.addrSub} numberOfLines={2}>{addr.sub}</Text> : null}
+            <Text style={s.addrLabel} numberOfLines={1}>{picked?.area || 'Locating…'}</Text>
+            {picked?.formatted ? <Text style={s.addrSub} numberOfLines={2}>{picked.formatted}</Text> : null}
           </View>
         </View>
         {zoomedOut && <Text style={s.warn}>Zoom in to place the pin at exact delivery location</Text>}
@@ -147,10 +222,15 @@ export default function MapPinScreen({ navigation, route }) {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: T.pageBg },
   pinWrap: { position: 'absolute', top: '50%', left: '50%', marginLeft: -21, marginTop: -42 },
-  topBar: { position: 'absolute', top: 46, left: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  circle: { width: 38, height: 38, borderRadius: 19, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', elevation: 3 },
-  searchPill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.card, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, elevation: 3 },
-  searchTxt: { fontSize: 13, color: T.hint, fontFamily: fonts.sansRegular },
+  topBar: { position: 'absolute', top: 46, left: 14, right: 14 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  circle: { width: 40, height: 40, borderRadius: 20, backgroundColor: T.card, alignItems: 'center', justifyContent: 'center', elevation: 3 },
+  searchBox: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: T.card, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, elevation: 3 },
+  searchInput: { flex: 1, fontSize: 14, color: T.ink, fontFamily: fonts.sansRegular, padding: 0 },
+  predCard: { backgroundColor: T.card, borderRadius: 12, marginTop: 8, paddingHorizontal: 12, elevation: 3, overflow: 'hidden' },
+  predRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  predMain: { fontSize: 14, color: T.ink, fontFamily: fonts.sansBold },
+  predSub: { fontSize: 12, color: T.muted, marginTop: 2, fontFamily: fonts.sansRegular },
   recenter: { position: 'absolute', bottom: 210, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: T.card, borderWidth: 1, borderColor: T.line, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, elevation: 3 },
   recenterTxt: { fontSize: 12, color: T.yellowDeep, fontFamily: fonts.sansBold },
   sheet: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: T.card, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 16, paddingBottom: 24 },

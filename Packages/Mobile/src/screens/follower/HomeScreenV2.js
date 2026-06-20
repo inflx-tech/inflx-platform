@@ -155,7 +155,7 @@ export default function HomeScreenV2({ navigation }) {
     >
       {/* Header — location (tap to switch) · bell · profile avatar */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.loc} onPress={() => navigation.navigate('LocationEntry')} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.loc} onPress={() => navigation.navigate('LocationSearch')} activeOpacity={0.7}>
           <Text style={styles.locLabel}>📍 DISCOVER IN</Text>
           <Text style={styles.locCity} numberOfLines={1}>{location.label || areaName || 'Vijayawada'} <Text style={styles.locArrow}>▾</Text></Text>
         </TouchableOpacity>

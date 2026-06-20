@@ -398,7 +398,7 @@ export default function CategoryListScreen({ route, navigation }) {
         <TouchableOpacity style={s.ib} onPress={() => navigation.goBack()}>
           <Text style={s.ibTxt}>←</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.ttl} onPress={() => navigation.navigate('LocationEntry')} activeOpacity={0.7}>
+        <TouchableOpacity style={s.ttl} onPress={() => navigation.navigate('LocationSearch')} activeOpacity={0.7}>
           <Text style={s.t1} numberOfLines={1}>{icon} {label}</Text>
           <Text style={s.t2} numberOfLines={1}>📍 {location.label || 'Vijayawada'} · {placeCount} places ▾</Text>
         </TouchableOpacity>
