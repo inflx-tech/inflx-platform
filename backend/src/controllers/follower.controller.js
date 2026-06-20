@@ -1397,13 +1397,16 @@ const getSectionResults = asyncHandler(async (req, res) => {
   return success(res, { items, item_type: req.query.item_type || null, capped: items.length >= limit });
 });
 
-// Follower v2 home — the world switcher tabs + their "What's on your mind?"
-// category rails. Public (auth-optional). Admin manages the rows (name / image /
-// order / enabled) via follower_verticals + follower_vertical_categories (110).
+// Follower v2 home — world switcher tabs + their "What's on your mind?" rails.
+// Public (auth-optional). CONVERGED on the "one brain": the world tabs ARE the
+// active follower_categories tiles (food/fashion/furniture/beauty/car_rental),
+// already wired to real businesses via categoryTaxonomy. image_url (mig 111) =
+// the 3D tab image. The dish rail is the genuinely-new follower_vertical_
+// categories, keyed by tile key. (Replaces the duplicate follower_verticals.)
 const getVerticals = asyncHandler(async (req, res) => {
   const { rows: verts } = await db.query(
-    `SELECT key, name, icon, image_url, accent_hex
-       FROM follower_verticals WHERE enabled = true ORDER BY sort_order, name`
+    `SELECT key, label AS name, icon, image_url
+       FROM follower_categories WHERE status = 'active' ORDER BY sort_order, label`
   );
   const { rows: cats } = await db.query(
     `SELECT vertical_key, key, name, icon, image_url
