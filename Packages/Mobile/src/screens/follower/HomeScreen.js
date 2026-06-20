@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, Image, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator,
+  View, Text, Image, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { toing as T, fonts } from '../../theme/tokens';
@@ -26,6 +26,7 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [veg, setVeg] = useState(false);
   const [phIdx, setPhIdx] = useState(0);
+  const [seeAllOpen, setSeeAllOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -110,7 +111,14 @@ export default function HomeScreen({ navigation }) {
       <ScrollView style={{ flex: 1 }} stickyHeaderIndices={[0]} showsVerticalScrollIndicator={false}>
         {/* Sticky category rail */}
         <View style={s.railWrap}>
-          <Text style={s.railTitle}>What's on your mind?</Text>
+          <View style={s.railHeader}>
+            <Text style={s.railTitle}>What's on your mind?</Text>
+            {cats.length > 0 && (
+              <TouchableOpacity onPress={() => setSeeAllOpen(true)} hitSlop={8} activeOpacity={0.7}>
+                <Text style={s.seeAll}>See all ›</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           {cats.length === 0 ? (
             <Text style={s.railEmpty}>Categories for {active?.name || 'this'} coming soon.</Text>
           ) : (
@@ -138,6 +146,33 @@ export default function HomeScreen({ navigation }) {
           <View style={{ height: 24 }} />
         </View>
       </ScrollView>
+
+      {/* See-all category grid (bottom sheet) */}
+      <Modal visible={seeAllOpen} transparent animationType="slide" onRequestClose={() => setSeeAllOpen(false)}>
+        <View style={s.sheetWrap}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setSeeAllOpen(false)} />
+          <View style={s.sheet}>
+            <View style={s.sheetHeader}>
+              <Text style={s.sheetTitle}>What's on your mind?</Text>
+              <TouchableOpacity onPress={() => setSeeAllOpen(false)} hitSlop={10} style={s.sheetClose} activeOpacity={0.7}>
+                <Icon name="close" size={18} color={T.ink} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={s.sheetGrid} showsVerticalScrollIndicator={false}>
+              {cats.map((c) => (
+                <TouchableOpacity key={c.key} style={s.gridCat} onPress={() => { setSeeAllOpen(false); openCategory(c); }} activeOpacity={0.8}>
+                  <View style={s.catImgBox}>
+                    {c.image_url
+                      ? <Image source={{ uri: c.image_url }} style={s.catImg} resizeMode="contain" />
+                      : <Text style={s.catEmoji}>{c.icon || '🍽️'}</Text>}
+                  </View>
+                  <Text style={s.catName} numberOfLines={1}>{c.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -172,13 +207,22 @@ const s = StyleSheet.create({
   vegKnobOn: { marginLeft: 15 },
 
   railWrap: { backgroundColor: T.white, paddingTop: 6, paddingBottom: 12, paddingLeft: 14, borderTopWidth: 6, borderTopColor: T.pageBg },
-  railTitle: { fontSize: 16, color: T.ink, fontFamily: fonts.displayBold, marginBottom: 11 },
+  railHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11, paddingRight: 14 },
+  railTitle: { fontSize: 16, color: T.ink, fontFamily: fonts.displayBold },
+  seeAll: { fontSize: 12, color: T.yellowDeep, fontFamily: fonts.sansBold },
   railEmpty: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular, paddingRight: 14 },
   cat: { alignItems: 'center', width: 74 },
   catImgBox: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
   catImg: { width: 66, height: 66 },
   catEmoji: { fontSize: 42 },
   catName: { fontSize: 11, color: T.ink, fontFamily: fonts.sansMedium, marginTop: 6, textAlign: 'center' },
+  sheetWrap: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet: { backgroundColor: T.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '78%', paddingBottom: 20 },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  sheetTitle: { fontSize: 18, color: T.ink, fontFamily: fonts.displayBold },
+  sheetClose: { width: 30, height: 30, borderRadius: 15, backgroundColor: T.pageBg, alignItems: 'center', justifyContent: 'center' },
+  sheetGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingTop: 14 },
+  gridCat: { width: '25%', alignItems: 'center', marginBottom: 18 },
 
   feed: { backgroundColor: T.white, paddingHorizontal: 14, paddingTop: 14 },
   feedStub: { borderWidth: 1, borderStyle: 'dashed', borderColor: T.line, borderRadius: 12, paddingVertical: 26, alignItems: 'center', gap: 8 },
