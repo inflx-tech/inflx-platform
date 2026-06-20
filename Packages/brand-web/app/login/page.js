@@ -135,7 +135,7 @@ export default function LoginPage() {
     const { access_token, user } = res.data;
     localStorage.setItem('inflx_token', access_token);
     localStorage.setItem('inflx_user', JSON.stringify(user));
-    document.cookie = `inflx_token=${access_token}; path=/; max-age=900; SameSite=Strict`;
+    document.cookie = `inflx_token=${access_token}; path=/; max-age=2592000; SameSite=Strict`;
 
     if (user.role === 'admin') {
       router.push('/admin');

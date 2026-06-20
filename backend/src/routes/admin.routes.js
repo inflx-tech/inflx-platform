@@ -72,6 +72,13 @@ router.post  ('/escrow-fee-tiers',           authenticate, requireAdminRole('sup
 router.patch ('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.update);
 router.delete('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.remove);
 
+// L3 Marketplace fee categories (Phase A7-admin) — read by any admin, write by superadmin
+const categoriesCtrl = require('../controllers/categories.controller');
+router.get   ('/categories',              authenticate, requireAnyAdminRole,           categoriesCtrl.list);
+router.post  ('/categories',              authenticate, requireAdminRole('superadmin'), categoriesCtrl.create);
+router.patch ('/categories/:categoryKey', authenticate, requireAdminRole('superadmin'), categoriesCtrl.update);
+router.delete('/categories/:categoryKey', authenticate, requireAdminRole('superadmin'), categoriesCtrl.remove);
+
 // Per-brand L2 escrow fee override — finance+
 router.patch('/brands/:id/escrow-fee-override', authenticate, requireAdminRole('finance'), ctrl.setBrandEscrowFeeOverride);
 

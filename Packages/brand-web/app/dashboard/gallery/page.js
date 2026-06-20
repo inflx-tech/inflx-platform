@@ -163,7 +163,7 @@ const CSS = `
 .gal .ac{background:var(--white);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .15s}
 .gal .ac:hover{border-color:var(--muted-3)}
 .gal .ac-img{height:140px;background:linear-gradient(135deg,var(--bg2) 0%,var(--bg) 100%);position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.gal .ac-img img,.gal .ac-img video{width:100%;height:100%;object-fit:cover}
+.gal .ac-img img,.gal .ac-img video{width:100%;height:100%;object-fit:contain}
 .gal .ac-img .em{font-size:40px;opacity:.5}
 .gal .ac-body{padding:10px 12px;flex:1;display:flex;flex-direction:column;gap:4px}
 .gal .ac-title{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

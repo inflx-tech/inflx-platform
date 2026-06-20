@@ -601,12 +601,22 @@ const updatePaymentConfig = asyncHandler(async (req, res) => {
   const {
     platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
     tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr,
+    // Wave 1 — tax + identity (migration 072)
+    gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
+    platform_gstin, platform_business_name, platform_business_address,
+    platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
+    // Wave 1 — T3 release timing (migration 074)
+    tranche_3_release_after_days, tranche_3_release_time_ist,
   } = req.body;
 
   try {
     await paymentConfigSvc.updateConfig({
       platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
       tds_pct, offer_expiry_hours, return_window_days, min_withdrawal_inr,
+      gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
+      platform_gstin, platform_business_name, platform_business_address,
+      platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
+      tranche_3_release_after_days, tranche_3_release_time_ist,
     }, req.user.sub);
   } catch (err) {
     throw new AppError('VALIDATION_ERROR', err.message, 422);

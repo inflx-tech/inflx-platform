@@ -28,7 +28,11 @@ async function getConfig() {
     const { rows } = await db.query(
       `SELECT platform_fee_pct, tranche_1_pct, tranche_2_pct, tranche_3_pct,
               tds_pct, agency_tds_pct, offer_expiry_hours, return_window_days,
-              min_withdrawal_inr, allow_commission_negotiation
+              min_withdrawal_inr, allow_commission_negotiation,
+              gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
+              platform_gstin, platform_business_name, platform_business_address,
+              platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
+              tranche_3_release_after_days, tranche_3_release_time_ist
        FROM payment_config WHERE id = 1`
     );
     if (rows[0]) {
@@ -43,6 +47,21 @@ async function getConfig() {
         returnWindowDays: parseInt(rows[0].return_window_days, 10),
         minWithdrawalInr: parseFloat(rows[0].min_withdrawal_inr),
         allowCommissionNegotiation: rows[0].allow_commission_negotiation !== false,
+        // Wave 1 — tax + identity (migration 072)
+        gstPct:                  rows[0].gst_pct != null ? parseFloat(rows[0].gst_pct) : 18,
+        tcsPct:                  rows[0].tcs_pct != null ? parseFloat(rows[0].tcs_pct) : 1,
+        tcsActive:               rows[0].tcs_active === true,
+        tcsActiveFromDate:       rows[0].tcs_active_from_date || null,
+        platformGstin:           rows[0].platform_gstin || null,
+        platformBusinessName:    rows[0].platform_business_name || null,
+        platformBusinessAddress: rows[0].platform_business_address || null,
+        platformStateCode:       rows[0].platform_state_code || null,
+        invoicePrefixSubscription: rows[0].invoice_prefix_subscription || 'INF-SUB',
+        invoicePrefixCommerce:     rows[0].invoice_prefix_commerce || 'INF-COM',
+        // Wave 1 — T3 release timing (migration 074)
+        tranche3ReleaseAfterDays: rows[0].tranche_3_release_after_days != null
+          ? parseInt(rows[0].tranche_3_release_after_days, 10) : 30,
+        tranche3ReleaseTimeIst:   rows[0].tranche_3_release_time_ist || '03:00:00',
       };
       _cacheTime = now;
       return _cache;
@@ -63,6 +82,20 @@ async function getConfig() {
     returnWindowDays: env.RETURN_WINDOW_DAYS ?? 30,
     minWithdrawalInr: 100,
     allowCommissionNegotiation: true,
+    // Wave 1 — tax + identity (migration 072) safe defaults
+    gstPct:                  18,
+    tcsPct:                  1,
+    tcsActive:               false,
+    tcsActiveFromDate:       null,
+    platformGstin:           null,
+    platformBusinessName:    null,
+    platformBusinessAddress: null,
+    platformStateCode:       null,
+    invoicePrefixSubscription: 'INF-SUB',
+    invoicePrefixCommerce:     'INF-COM',
+    // Wave 1 — T3 release timing (migration 074) safe defaults
+    tranche3ReleaseAfterDays: 30,
+    tranche3ReleaseTimeIst:   '03:00:00',
   };
 }
 
@@ -75,6 +108,12 @@ async function updateConfig(fields, adminUserId) {
     'platform_fee_pct', 'tranche_1_pct', 'tranche_2_pct', 'tranche_3_pct',
     'tds_pct', 'offer_expiry_hours', 'return_window_days', 'min_withdrawal_inr',
     'allow_commission_negotiation',
+    // Wave 1 — tax + identity (migration 072)
+    'gst_pct', 'tcs_pct', 'tcs_active', 'tcs_active_from_date',
+    'platform_gstin', 'platform_business_name', 'platform_business_address',
+    'platform_state_code', 'invoice_prefix_subscription', 'invoice_prefix_commerce',
+    // Wave 1 — T3 release timing (migration 074)
+    'tranche_3_release_after_days', 'tranche_3_release_time_ist',
   ];
 
   const updates = {};
