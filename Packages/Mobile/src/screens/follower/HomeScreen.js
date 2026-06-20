@@ -119,7 +119,7 @@ export default function HomeScreen({ navigation }) {
                 <TouchableOpacity key={c.key} style={s.cat} onPress={() => openCategory(c)} activeOpacity={0.8}>
                   <View style={s.catImgBox}>
                     {c.image_url
-                      ? <Image source={{ uri: c.image_url }} style={s.catImg} />
+                      ? <Image source={{ uri: c.image_url }} style={s.catImg} resizeMode="contain" />
                       : <Text style={s.catEmoji}>{c.icon || '🍽️'}</Text>}
                   </View>
                   <Text style={s.catName} numberOfLines={1}>{c.name}</Text>
@@ -174,10 +174,10 @@ const s = StyleSheet.create({
   railWrap: { backgroundColor: T.white, paddingTop: 6, paddingBottom: 12, paddingLeft: 14, borderTopWidth: 6, borderTopColor: T.pageBg },
   railTitle: { fontSize: 16, color: T.ink, fontFamily: fonts.displayBold, marginBottom: 11 },
   railEmpty: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular, paddingRight: 14 },
-  cat: { alignItems: 'center', width: 64 },
-  catImgBox: { width: 56, height: 56, borderRadius: 14, backgroundColor: T.yellowTint, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  catImg: { width: 56, height: 56 },
-  catEmoji: { fontSize: 28 },
+  cat: { alignItems: 'center', width: 74 },
+  catImgBox: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
+  catImg: { width: 66, height: 66 },
+  catEmoji: { fontSize: 42 },
   catName: { fontSize: 11, color: T.ink, fontFamily: fonts.sansMedium, marginTop: 6, textAlign: 'center' },
 
   feed: { backgroundColor: T.white, paddingHorizontal: 14, paddingTop: 14 },
