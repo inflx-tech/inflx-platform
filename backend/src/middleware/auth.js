@@ -102,6 +102,53 @@ function requireAdminRole(requiredRole) {
 }
 
 /**
+ * requireCapability(capKey)
+ * Fine-grained, per-section admin gate (B-2). Sits AFTER `authenticate` and
+ * COEXISTS with requireAdminRole/requireAnyAdminRole (which are untouched).
+ *
+ * Behaviour:
+ *   - Requires req.user.role === 'admin' (any non-admin JWT → 403).
+ *   - Loads admin_role + capabilities + active from admin_profiles by the
+ *     JWT subject on EVERY request — capabilities are deliberately NOT read
+ *     from the JWT, so a superadmin's grant/revoke takes effect immediately
+ *     without the affected admin re-logging in.
+ *   - superadmin (admin_role === 'superadmin') bypasses the capability check
+ *     entirely → never section-locked-out.
+ *   - active === false → 403 (deactivated admin).
+ *   - Otherwise capKey must be present in capabilities[], else 403.
+ *
+ * Usage:
+ *   router.get('/escrow', authenticate, requireCapability('escrow'), ctrl.getEscrowOverview)
+ */
+function requireCapability(capKey) {
+  return asyncHandler(async (req, res, next) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return next(new AppError('FORBIDDEN', 'Admin access required', 403));
+    }
+    const { rows } = await db.query(
+      `SELECT admin_role, capabilities, active FROM admin_profiles WHERE user_id = $1`,
+      [req.user.sub]
+    );
+    const profile = rows[0];
+    if (!profile) {
+      return next(new AppError('FORBIDDEN', 'Admin profile not found', 403));
+    }
+    if (profile.active === false) {
+      return next(new AppError('FORBIDDEN', 'Your admin account has been deactivated', 403));
+    }
+    // superadmin has unrestricted access to every section.
+    if (profile.admin_role === 'superadmin') {
+      return next();
+    }
+    const caps = Array.isArray(profile.capabilities) ? profile.capabilities : [];
+    if (!caps.includes(capKey)) {
+      return next(new AppError('FORBIDDEN', 'You do not have access to this admin section', 403));
+    }
+    next();
+  });
+}
+
+/**
  * authenticateOptional
  * Like authenticate but does NOT throw if no token is present.
  * Sets req.user = decoded payload if valid token found, otherwise req.user = null.
@@ -177,4 +224,4 @@ function requireBrandFeature(featureKey) {
   });
 }
 
-module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, authenticateOptional, requireApproved, requireBrandFeature };
+module.exports = { authenticate, authenticateWithQuery, requireRole, requireAdminRole, requireAnyAdminRole, requireCapability, authenticateOptional, requireApproved, requireBrandFeature };

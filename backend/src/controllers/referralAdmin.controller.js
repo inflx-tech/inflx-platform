@@ -311,6 +311,121 @@ const getSummary = asyncHandler(async (req, res) => {
   });
 });
 
+// ── Applications (apply-to-become-referrer intake) ──────────────────────────
+
+// GET /admin/referrals/applications?status=&page=&limit=
+// D-2 intake — list apply-to-become-referrer requests with applicant info.
+const listApplications = asyncHandler(async (req, res) => {
+  const { page, limit, offset } = parsePaging(req.query);
+  const where = [];
+  const params = [];
+  if (req.query.status) {
+    params.push(req.query.status);
+    where.push(`a.status = $${params.length}`);
+  }
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int AS total FROM referral_applications a ${whereSql}`, params
+  );
+  const total = countRows[0].total;
+
+  const { rows } = await db.query(
+    `SELECT a.*,
+            CASE WHEN a.applicant_type = 'influencer' THEN i.instagram_handle END AS applicant_name
+       FROM referral_applications a
+       LEFT JOIN influencers i ON a.applicant_type = 'influencer' AND i.id = a.applicant_id
+       ${whereSql}
+      ORDER BY a.created_at DESC
+      LIMIT ${limit} OFFSET ${offset}`,
+    params
+  );
+
+  const data = rows.map(r => ({
+    id: r.id,
+    applicant_type: r.applicant_type,
+    applicant_id: r.applicant_id,
+    applicant_name: labelFor(r.applicant_type, r.applicant_id, r.applicant_name),
+    status: r.status,
+    note: r.note,
+    allocated_code: r.allocated_code,
+    created_at: r.created_at,
+    decided_at: r.decided_at,
+    decided_by: r.decided_by,
+  }));
+  return success(res, data, 200, { page, limit, total });
+});
+
+// POST /admin/referrals/applications/:id/decision  { action: approve|reject, note }
+// On APPROVE — allocate the applicant's code via referralService.getOrCreateCode,
+// stamp allocated_code + status. On REJECT — status rejected. superadmin only.
+const decideApplication = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const action = (req.body?.action || '').trim();
+  const note = (req.body?.note || '').trim() || null;
+  if (!['approve', 'reject'].includes(action)) {
+    throw new AppError('VALIDATION_ERROR', "action must be 'approve' or 'reject'", 422, 'action');
+  }
+
+  const { rows: appRows } = await db.query(
+    `SELECT * FROM referral_applications WHERE id = $1`, [id]
+  );
+  const app = appRows[0];
+  if (!app) throw new AppError('NOT_FOUND', 'Application not found', 404);
+  if (app.status !== 'requested') {
+    throw new AppError('VALIDATION_ERROR', `Application already ${app.status}.`, 409);
+  }
+
+  let allocatedCode = null;
+  if (action === 'approve') {
+    // Reuse the engine's code generator — one code per (referrer_type, referrer_id).
+    const codeRow = await referralService.getOrCreateCode(app.applicant_type, app.applicant_id);
+    allocatedCode = codeRow.code;
+  }
+
+  const { rows } = await db.query(
+    `UPDATE referral_applications
+        SET status = $1,
+            allocated_code = COALESCE($2, allocated_code),
+            note = COALESCE($3, note),
+            decided_at = now(),
+            decided_by = $4
+      WHERE id = $5
+      RETURNING *`,
+    [action === 'approve' ? 'approved' : 'rejected', allocatedCode, note, req.user?.sub || null, id]
+  );
+
+  return success(res, {
+    id: rows[0].id,
+    status: rows[0].status,
+    allocated_code: rows[0].allocated_code,
+    decided_at: rows[0].decided_at,
+    decided_by: rows[0].decided_by,
+  });
+});
+
+// ── D-3 — admin generate/allocate a referral code directly ──────────────────
+
+// POST /admin/referrals/codes  { referrer_type, referrer_id }
+// Ensures/returns a code for the given influencer/agency. superadmin only.
+const generateCode = asyncHandler(async (req, res) => {
+  const referrerType = (req.body?.referrer_type || '').trim();
+  const referrerId = (req.body?.referrer_id || '').trim();
+  if (!['influencer', 'agency'].includes(referrerType)) {
+    throw new AppError('VALIDATION_ERROR', "referrer_type must be 'influencer' or 'agency'", 422, 'referrer_type');
+  }
+  if (!referrerId) {
+    throw new AppError('VALIDATION_ERROR', 'referrer_id is required', 422, 'referrer_id');
+  }
+  const codeRow = await referralService.getOrCreateCode(referrerType, referrerId);
+  return success(res, {
+    code: codeRow.code,
+    referrer_type: codeRow.referrer_type,
+    referrer_id: codeRow.referrer_id,
+    created_at: codeRow.created_at,
+  }, 201);
+});
+
 module.exports = {
   getSettings,
   updateSettings,
@@ -319,4 +434,7 @@ module.exports = {
   updateEdge,
   listLedger,
   getSummary,
+  listApplications,
+  decideApplication,
+  generateCode,
 };

@@ -1,0 +1,20 @@
+{
+  "feature": "referral-intake",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'lets complete … referral system'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — brand login referral field + admin referrals panels use standard patterns, no new mockup; approved in-session",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "D-1 signup code capture (brand web now; influencer mobile follow-up; backend accepts both), D-2 apply-to-referrer + admin accept (allocates code), D-3 admin generate code. Migration 108 referral_applications. Capture best-effort (cannot break signup); reuses existing engine. Reviewer clean; pnpm qa GREEN. Mobile influencer field + apply button = follow-up OTA.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

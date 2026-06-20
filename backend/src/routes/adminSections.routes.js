@@ -7,11 +7,11 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireAnyAdminRole } = require('../middleware/auth');
+const { authenticate, requireCapability } = require('../middleware/auth');
 const ctrl = require('../controllers/adminSections.controller');
 
 const router = Router();
-const adminAuth = [authenticate, requireAnyAdminRole];
+const adminAuth = [authenticate, requireCapability('sections')];
 
 router.get('/:screen',    ...adminAuth, ctrl.listSections);
 router.put('/:screen',    ...adminAuth, ctrl.saveSections);

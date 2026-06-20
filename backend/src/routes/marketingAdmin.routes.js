@@ -9,39 +9,39 @@
  */
 
 const { Router } = require('express');
-const { authenticate, requireAdminRole, requireAnyAdminRole } = require('../middleware/auth');
+const { authenticate, requireAdminRole, requireCapability } = require('../middleware/auth');
 const ctrl = require('../controllers/marketingAdmin.controller');
 
 const router = Router();
 
 // ── Lead intake (single + bulk) — reviewer+ ─────────────────────────────────
-router.post('/leads/intake',      authenticate, requireAdminRole('reviewer'), ctrl.intakeLead);
-router.post('/leads/intake/bulk', authenticate, requireAdminRole('reviewer'), ctrl.intakeLeadBulk);
+router.post('/leads/intake',      authenticate, requireCapability('marketing'), ctrl.intakeLead);
+router.post('/leads/intake/bulk', authenticate, requireCapability('marketing'), ctrl.intakeLeadBulk);
 
 // ── Triage list — any admin role ────────────────────────────────────────────
-router.get('/leads', authenticate, requireAnyAdminRole, ctrl.listLeads);
+router.get('/leads', authenticate, requireCapability('marketing'), ctrl.listLeads);
 
 // ── Lead detail — any admin role ────────────────────────────────────────────
-router.get('/leads/:type/:id', authenticate, requireAnyAdminRole, ctrl.getLeadDetail);
+router.get('/leads/:type/:id', authenticate, requireCapability('marketing'), ctrl.getLeadDetail);
 
 // ── Activity logging — reviewer+ ────────────────────────────────────────────
-router.post('/leads/:type/:id/activity', authenticate, requireAdminRole('reviewer'), ctrl.logActivity);
+router.post('/leads/:type/:id/activity', authenticate, requireCapability('marketing'), ctrl.logActivity);
 
 // ── Quick status update — reviewer+ ─────────────────────────────────────────
-router.patch('/leads/:type/:id/status', authenticate, requireAdminRole('reviewer'), ctrl.updateStatus);
+router.patch('/leads/:type/:id/status', authenticate, requireCapability('marketing'), ctrl.updateStatus);
 
 // ── Inbox (today's follow-ups) — any admin role ────────────────────────────
-router.get('/inbox', authenticate, requireAnyAdminRole, ctrl.getInbox);
+router.get('/inbox', authenticate, requireCapability('marketing'), ctrl.getInbox);
 
 // ── Funnel (stage counts + conversion rates) — any admin role ──────────────
-router.get('/funnel', authenticate, requireAnyAdminRole, ctrl.getFunnel);
+router.get('/funnel', authenticate, requireCapability('marketing'), ctrl.getFunnel);
 
 // ── Settings — read any, write superadmin only ─────────────────────────────
-router.get('/settings',    authenticate, requireAnyAdminRole,           ctrl.getSettings);
+router.get('/settings',    authenticate, requireCapability('marketing'),       ctrl.getSettings);
 router.patch('/settings',  authenticate, requireAdminRole('superadmin'), ctrl.updateSettings);
 
 // ── Filter options for the Triage page dropdowns ───────────────────────────
-router.get('/filter-options', authenticate, requireAnyAdminRole, ctrl.getFilterOptions);
+router.get('/filter-options', authenticate, requireCapability('marketing'), ctrl.getFilterOptions);
 
 // ── One-shot maintenance: cache profile pics to R2 — any admin ──────────────
 // Walks creator_profiles + brand_profiles and pushes every profile_pic_url
@@ -49,6 +49,6 @@ router.get('/filter-options', authenticate, requireAnyAdminRole, ctrl.getFilterO
 // stale. Body: { type?: 'creator'|'brand'|'all', limit?: number, force?: bool }
 // Non-destructive (idempotent, only writes R2 keys + cached_at) so reviewer+
 // can run it without superadmin escalation.
-router.post('/backfill-profile-pics', authenticate, requireAnyAdminRole, ctrl.backfillProfilePics);
+router.post('/backfill-profile-pics', authenticate, requireCapability('marketing'), ctrl.backfillProfilePics);
 
 module.exports = router;

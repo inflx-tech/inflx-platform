@@ -1,0 +1,20 @@
+{
+  "feature": "admin-capabilities",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'lets complete B2'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — admin nav + users page use standard admin patterns, no new mockup; capabilities model approved in-session",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "B-2 capabilities model: per-admin section capabilities (20-key catalog), requireCapability enforced at API across admin.routes + adminSections/returns/marketing/referralAdmin, nav scoping, users CRUD + deactivate. Migration 109 (capabilities[]+active+backfill). Security review gap (4 section files unenforced) fixed before release. superadmin bypass; no escalation. pnpm qa GREEN. Follow-up: global deactivation enforcement.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

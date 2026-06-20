@@ -696,6 +696,14 @@ export const adminApi = {
     if (res.status === 401 && token) { clearSession(); return { success: false, error: { code: 'UNAUTHORIZED' } }; }
     try { return await res.json(); } catch { return { success: false, error: { code: 'PARSE_ERROR' } }; }
   },
+
+  // ─── Admin capabilities / permissions model (B-2) ──────────────────────────
+  // getMe drives nav scoping (caller's admin_role + capabilities + active);
+  // getCapabilityCatalog feeds the user-management checkbox builder; the user
+  // create/update calls are superadmin-only server-side.
+  getMe:                 () => api.get('/admin/me'),
+  getCapabilityCatalog:  () => api.get('/admin/capabilities'),
+  updateAdminUser:       (id, data) => api.patch(`/admin/users/${encodeURIComponent(id)}`, data),
 };
 
 // Marketing engine admin API (Phase 5 — /admin/marketing/*)
@@ -744,6 +752,21 @@ export const referralApi = {
     return api.get(`/admin/agencies?${q.toString()}`);
   },
   updateAgencyStatus: (id, data) => api.patch(`/admin/agencies/${id}/status`, data),
+
+  // ── Referral intake (D-2/D-3) ─────────────────────────────────────────────
+  // apply-to-become-referrer: influencer-side call (future mobile screen; the
+  // backend already accepts it). { note? }.
+  applyReferral: (data = {}) => api.post('/referrals/apply', data),
+  // admin: list apply-to-become-referrer applications.
+  adminListReferralApplications: (params = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, v); });
+    return api.get(`/admin/referrals/applications?${q.toString()}`);
+  },
+  // admin: approve|reject an application. { action, note? }.
+  adminDecideReferralApplication: (id, data) => api.post(`/admin/referrals/applications/${id}/decision`, data),
+  // admin: generate/allocate a code for an influencer/agency. { referrer_type, referrer_id }.
+  adminGenerateReferralCode: (data) => api.post('/admin/referrals/codes', data),
 };
 
 // (getStoredUser is already exported near the top of this file — duplicate

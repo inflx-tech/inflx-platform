@@ -243,6 +243,15 @@ const register = asyncHandler(async (req, res) => {
 
   const influencer = rows[0];
 
+  // D-1 intake — optional referral code attaches a referral edge at signup.
+  // Best-effort: a bad/missing/duplicate code is soft-noted, never aborts
+  // registration. Reuses the exact redeem path POST /referrals/redeem uses.
+  const referral = await referralService.redeemCodeForEntity({
+    code: req.body.referral_code,
+    referredType: 'influencer',
+    referredId: influencer.id,
+  });
+
   // Attempt to link to an existing scraped creator_profile.
   const claim = await tryClaimCreatorProfile({
     userId,
@@ -276,6 +285,8 @@ const register = asyncHandler(async (req, res) => {
   return success(res, {
     influencer: sanitiseInfluencer(full),
     user_status: full.user_status,
+    referral_applied: !!referral.edge,
+    ...(referral.note ? { referral_note: referral.note } : {}),
     claim: {
       match_count:        claim.match_count,
       // True when exactly one creator_profile is linked to this user

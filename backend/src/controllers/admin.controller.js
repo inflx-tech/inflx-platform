@@ -382,7 +382,8 @@ const adminReleaseEscrow = asyncHandler(async (req, res) => {
 
 const getAdminUsers = asyncHandler(async (req, res) => {
   const { rows: admin_users } = await db.query(
-    `SELECT u.id, u.phone, u.name, u.status, u.created_at, ap.admin_role
+    `SELECT u.id, u.phone, u.name, u.status, u.created_at,
+            ap.admin_role, ap.capabilities, ap.active
      FROM users u
      JOIN admin_profiles ap ON ap.user_id = u.id
      WHERE u.role = 'admin'
@@ -396,14 +397,48 @@ const getAdminUsers = asyncHandler(async (req, res) => {
 // POST /admin/users  (superadmin only)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─── Admin capability catalog (B-2) ──────────────────────────────────────────
+// Owned by config/adminCapabilities.js. createAdminUser/updateAdminUser
+// validate capabilities[] against it; GET /admin/capabilities exposes it so
+// the UI builds checkboxes without hardcoding keys.
+const adminCaps = require('../config/adminCapabilities');
+
+// Validate a capabilities payload → cleaned, deduped, catalog-valid array.
+// Throws VALIDATION_ERROR on any unknown key. Returns [] for null/undefined.
+function sanitizeCapabilities(raw) {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) {
+    throw new AppError('VALIDATION_ERROR', 'capabilities must be an array of keys', 422, 'capabilities');
+  }
+  const cleaned = [];
+  for (const k of raw) {
+    if (typeof k !== 'string') {
+      throw new AppError('VALIDATION_ERROR', 'capabilities must be an array of string keys', 422, 'capabilities');
+    }
+    if (!adminCaps.isValidCapability(k)) {
+      throw new AppError('VALIDATION_ERROR', `Unknown capability "${k}"`, 422, 'capabilities');
+    }
+    if (!cleaned.includes(k)) cleaned.push(k);
+  }
+  return cleaned;
+}
+
 const createAdminUser = asyncHandler(async (req, res) => {
-  const { phone, name, admin_role } = req.body;
+  const { phone, name, admin_role = 'reviewer', capabilities } = req.body;
 
   if (!phone) throw new AppError('VALIDATION_ERROR', 'phone is required', 422, 'phone');
   if (!name || !name.trim()) throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
   if (!['superadmin', 'reviewer', 'finance'].includes(admin_role)) {
     throw new AppError('VALIDATION_ERROR', 'admin_role must be superadmin, reviewer, or finance', 422, 'admin_role');
   }
+
+  // If capabilities omitted, seed from the base-role defaults so the new
+  // admin's section access matches the role they were given. superadmin
+  // bypasses checks regardless, but we still store the full key set for an
+  // honest UI.
+  const caps = capabilities === undefined
+    ? adminCaps.defaultCapsForRole(admin_role)
+    : sanitizeCapabilities(capabilities);
 
   const { rows: userRows } = await db.query(
     `INSERT INTO users (phone, role, name, status)
@@ -414,9 +449,9 @@ const createAdminUser = asyncHandler(async (req, res) => {
   const user = userRows[0];
 
   await db.query(
-    `INSERT INTO admin_profiles (user_id, admin_role, created_by)
-     VALUES ($1, $2, $3)`,
-    [user.id, admin_role, req.user.sub]
+    `INSERT INTO admin_profiles (user_id, admin_role, capabilities, created_by)
+     VALUES ($1, $2, $3, $4)`,
+    [user.id, admin_role, caps, req.user.sub]
   );
 
   return success(res, {
@@ -425,10 +460,111 @@ const createAdminUser = asyncHandler(async (req, res) => {
       phone: user.phone,
       name: user.name,
       admin_role,
+      capabilities: caps,
+      active: true,
       status: user.status,
       created_at: user.created_at,
     },
   }, 201);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PATCH /admin/users/:id  (superadmin only)
+// Change a staff admin's base role, capabilities, and/or active flag.
+// Privilege escalation is structurally impossible: this route is mounted
+// behind requireAdminRole('superadmin'), so only a superadmin can call it.
+// Body: { admin_role?, capabilities?[], active? } — any subset.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const updateAdminUser = asyncHandler(async (req, res) => {
+  const { admin_role, capabilities, active } = req.body;
+
+  const { rows: existRows } = await db.query(
+    `SELECT u.id, ap.admin_role
+     FROM users u JOIN admin_profiles ap ON ap.user_id = u.id
+     WHERE u.id = $1 AND u.role = 'admin'`,
+    [req.params.id]
+  );
+  if (!existRows[0]) throw new AppError('NOT_FOUND', 'Admin user not found', 404);
+
+  const sets = [];
+  const params = [];
+  let idx = 1;
+
+  if (admin_role !== undefined) {
+    if (!['superadmin', 'reviewer', 'finance'].includes(admin_role)) {
+      throw new AppError('VALIDATION_ERROR', 'admin_role must be superadmin, reviewer, or finance', 422, 'admin_role');
+    }
+    sets.push(`admin_role = $${idx++}`);
+    params.push(admin_role);
+  }
+
+  if (capabilities !== undefined) {
+    const caps = sanitizeCapabilities(capabilities);
+    sets.push(`capabilities = $${idx++}`);
+    params.push(caps);
+  }
+
+  if (active !== undefined) {
+    const flag = active === true || active === 'true';
+    sets.push(`active = $${idx++}`);
+    params.push(flag);
+  }
+
+  if (!sets.length) {
+    throw new AppError('VALIDATION_ERROR', 'Nothing to update — provide admin_role, capabilities, or active', 422);
+  }
+
+  params.push(req.params.id);
+  await db.query(
+    `UPDATE admin_profiles SET ${sets.join(', ')} WHERE user_id = $${idx}`,
+    params
+  );
+
+  const { rows } = await db.query(
+    `SELECT u.id, u.phone, u.name, u.status, u.created_at,
+            ap.admin_role, ap.capabilities, ap.active
+     FROM users u JOIN admin_profiles ap ON ap.user_id = u.id
+     WHERE u.id = $1`,
+    [req.params.id]
+  );
+
+  return success(res, { admin_user: rows[0] });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/me  (any admin)
+// The caller's own admin_role + capabilities + active. Drives nav scoping.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getMe = asyncHandler(async (req, res) => {
+  if (!req.user || req.user.role !== 'admin') {
+    throw new AppError('FORBIDDEN', 'Admin access required', 403);
+  }
+  const { rows } = await db.query(
+    `SELECT admin_role, capabilities, active FROM admin_profiles WHERE user_id = $1`,
+    [req.user.sub]
+  );
+  if (!rows[0]) throw new AppError('FORBIDDEN', 'Admin profile not found', 403);
+
+  return success(res, {
+    admin_role:   rows[0].admin_role,
+    capabilities: Array.isArray(rows[0].capabilities) ? rows[0].capabilities : [],
+    active:       rows[0].active,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /admin/capabilities  (any admin)
+// The canonical capability catalog so the UI builds checkboxes without
+// hardcoding keys, plus the role → default-caps map for "apply role defaults".
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getCapabilityCatalog = asyncHandler(async (req, res) => {
+  return success(res, {
+    capabilities:  adminCaps.CAPABILITIES,
+    defaults_by_role: adminCaps.DEFAULT_CAPS_BY_ROLE,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1595,6 +1731,9 @@ module.exports = {
   adminReleaseEscrow,
   getAdminUsers,
   createAdminUser,
+  updateAdminUser,
+  getMe,
+  getCapabilityCatalog,
   bulkUploadInfluencers,
   getPaymentConfig,
   updatePaymentConfig,

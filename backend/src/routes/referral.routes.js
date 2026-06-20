@@ -13,4 +13,7 @@ const router = Router();
 
 router.post('/redeem', authenticate, requireRole('brand', 'influencer'), ctrl.redeemCode);
 
+// D-2 intake — influencer applies to become a referrer (admin reviews it).
+router.post('/apply', authenticate, requireRole('influencer'), ctrl.applyAsReferrer);
+
 module.exports = router;

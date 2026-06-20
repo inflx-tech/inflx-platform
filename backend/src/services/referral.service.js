@@ -161,6 +161,61 @@ async function createEdge(opts, client = db) {
   return rows[0];
 }
 
+/**
+ * Redeem a referral code for a freshly-created referred entity, INLINE at
+ * registration. This is the same path POST /referrals/redeem uses
+ * (lookupCode → default pct → createEdge with source='signup'), factored here
+ * so the brand/influencer register handlers can attach the referral atomically
+ * without duplicating the referral math.
+ *
+ * BEST-EFFORT: a bad/missing code or a duplicate-edge clash must NEVER abort
+ * registration. Returns the new edge on success, or null with a soft reason.
+ *
+ * @param {object} opts
+ * @param {string} opts.code                    raw code the user typed
+ * @param {'brand'|'influencer'} opts.referredType
+ * @param {string} opts.referredId
+ * @param {object} [client]                      txn client (defaults to pool)
+ * @returns {Promise<{edge: object|null, note: string|null}>}
+ */
+async function redeemCodeForEntity({ code, referredType, referredId }, client = db) {
+  const trimmed = (code || '').trim();
+  if (!trimmed) return { edge: null, note: null };
+
+  try {
+    const codeRow = await lookupCode(trimmed, client);
+    if (!codeRow) return { edge: null, note: 'Referral code not found — ignored.' };
+
+    // pct defaults to the global setting (same as the redeem controller).
+    const { rows: cfg } = await client.query(
+      `SELECT default_pct FROM referral_settings WHERE id = 1`
+    );
+    const pct = cfg[0] ? parseFloat(cfg[0].default_pct) : 25.00;
+
+    const edge = await createEdge({
+      referrerType: codeRow.referrer_type,
+      referrerId: codeRow.referrer_id,
+      referredType,
+      referredId,
+      pct,
+      source: 'signup',
+      codeId: codeRow.id,
+    }, client);
+    return { edge, note: null };
+  } catch (err) {
+    // self/circular/duplicate-active/validation — never fail registration.
+    if (err && err.code === '23505') {
+      return { edge: null, note: 'A referrer is already attached — code ignored.' };
+    }
+    console.error(
+      `[referral] inline redeem at registration failed (code=${trimmed} ` +
+      `referred=${referredType}:${referredId}) — registration unaffected:`,
+      err && err.message
+    );
+    return { edge: null, note: 'Referral code could not be applied — ignored.' };
+  }
+}
+
 // ── Accrual ────────────────────────────────────────────────────────────────
 
 /**
@@ -287,6 +342,7 @@ module.exports = {
   lookupCode,
   resolveActiveEdge,
   createEdge,
+  redeemCodeForEntity,
   accrue,
   accrueWithClient,
 };

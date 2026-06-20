@@ -69,4 +69,39 @@ const redeemCode = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { redeemCode };
+// POST /referrals/apply   (requireRole('influencer'))
+// D-2 intake — an influencer applies to become a REFERRER. Creates a 'requested'
+// application; admin reviews it and on approve allocates the influencer's code.
+const applyAsReferrer = asyncHandler(async (req, res) => {
+  const { rows: inf } = await db.query(
+    `SELECT id FROM influencers WHERE user_id = $1`,
+    [req.user.sub]
+  );
+  if (!inf[0]) {
+    throw new AppError('VALIDATION_ERROR', 'Only a registered influencer can apply to become a referrer', 422);
+  }
+  const applicantId = inf[0].id;
+  const note = (req.body?.note || '').trim() || null;
+
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO referral_applications (applicant_type, applicant_id, status, note)
+       VALUES ('influencer', $1, 'requested', $2)
+       RETURNING *`,
+      [applicantId, note]
+    );
+    return success(res, {
+      id: rows[0].id,
+      status: rows[0].status,
+      created_at: rows[0].created_at,
+    }, 201);
+  } catch (err) {
+    // uniq_referral_application_pending — one open request at a time.
+    if (err && err.code === '23505') {
+      throw new AppError('VALIDATION_ERROR', 'You already have a pending referrer application.', 409);
+    }
+    throw err;
+  }
+});
+
+module.exports = { redeemCode, applyAsReferrer };

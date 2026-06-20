@@ -81,6 +81,7 @@ export default function LoginPage() {
   const [city, setCity]               = useState('');
   const [state, setStateField]        = useState('');
   const [pincode, setPincode]         = useState('');
+  const [referralCode, setReferralCode] = useState(''); // optional — D-1 intake
   // Location capture (contract: brand-register-location-picker).
   // 'search' (Places autocomplete) | 'link' (Google Maps URL) | 'manual'
   const [locMode, setLocMode]         = useState('search');
@@ -233,6 +234,7 @@ export default function LoginPage() {
         ...(locFormatted && { formatted_address: locFormatted }),
       } : {}),
       ...(locMode === 'link' && mapsUrl.trim() ? { google_maps_url: mapsUrl.trim() } : {}),
+      ...(referralCode.trim() ? { referral_code: referralCode.trim() } : {}),
     });
     setLoading(false);
 
@@ -541,6 +543,12 @@ export default function LoginPage() {
                     <option value="">Select your state</option>
                     {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
+                </div>
+                <div className="mb-4">
+                  <label className={labelClass}>Referral code <span className="text-[#A1A1AA] font-normal">(if any)</span></label>
+                  <input type="text" value={referralCode}
+                    onChange={e => setReferralCode(e.target.value.toUpperCase().trim())}
+                    placeholder="e.g. INFLX-7QK4M2" className={monoInputClass} />
                 </div>
               </div>
 

@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const ctrl = require('../controllers/returns.controller');
-const { authenticate, requireRole, requireAdminRole, requireAnyAdminRole } = require('../middleware/auth');
+const { authenticate, requireRole, requireAdminRole, requireAnyAdminRole, requireCapability } = require('../middleware/auth');
 
 const router = Router();
 
@@ -31,7 +31,7 @@ followerRouter.get( '/returns/:id', ctrl.getMyReturn);
 
 const adminRouter = Router();
 adminRouter.use(authenticate);
-adminRouter.use(requireAnyAdminRole);
+adminRouter.use(requireCapability('returns'));
 
 adminRouter.get(  '/returns',                       ctrl.adminListReturns);
 adminRouter.post( '/returns/:id/approve',           ctrl.adminApproveReturn);

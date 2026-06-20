@@ -9,6 +9,7 @@ const tagsService = require('../services/tags.service');
 const { success } = require('../utils/response');
 const AppError    = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
+const referralService = require('../services/referral.service');
 
 // Category-aware validation using schema
 function validateProductFields(schema, body) {
@@ -77,6 +78,7 @@ const register = asyncHandler(async (req, res) => {
     locality,
     formatted_address,
     google_maps_url,
+    referral_code,  // OPTIONAL — attaches a referral edge at signup (D-1 intake)
   } = req.body;
 
   if (!business_name || !business_name.trim()) {
@@ -149,10 +151,25 @@ const register = asyncHandler(async (req, res) => {
   );
 
   const brand = rows[0];
+
+  // D-1 intake — optional referral code attaches a referral edge at signup.
+  // Best-effort: a bad/missing/duplicate code is soft-noted, never aborts
+  // registration. Reuses the exact redeem path POST /referrals/redeem uses.
+  const referral = await referralService.redeemCodeForEntity({
+    code: referral_code,
+    referredType: 'brand',
+    referredId: brand.id,
+  });
+
   // Fetch with user status joined
   const full = await getBrandById(brand.id);
 
-  return success(res, { brand: sanitiseBrand(full), user_status: full.user_status }, 201);
+  return success(res, {
+    brand: sanitiseBrand(full),
+    user_status: full.user_status,
+    referral_applied: !!referral.edge,
+    ...(referral.note ? { referral_note: referral.note } : {}),
+  }, 201);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

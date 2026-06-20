@@ -1,7 +1,7 @@
 'use strict';
 
 const { Router } = require('express');
-const { authenticate, requireAdminRole, requireAnyAdminRole } = require('../middleware/auth');
+const { authenticate, requireAdminRole, requireAnyAdminRole, requireCapability } = require('../middleware/auth');
 const ctrl = require('../controllers/admin.controller');
 const verificationCtrl = require('../controllers/creatorVerification.controller');
 const invitationCtrl = require('../controllers/creatorInvitation.controller');
@@ -12,180 +12,192 @@ const adminOrdersCtrl = require('../controllers/adminOrders.controller');
 
 const router = Router();
 
-// Order Fulfillment Engine Unit 3 — platform-wide order oversight (any admin role).
-router.get('/orders',             authenticate, requireAnyAdminRole, adminOrdersCtrl.listOrders);
-router.patch('/orders/:id/status', authenticate, requireAnyAdminRole, adminOrdersCtrl.updateStatus);
+// ── B-2 capability/permission model (admin sections) ─────────────────────────
+// Section routes are gated by requireCapability('<key>') from the canonical
+// catalog in config/adminCapabilities.js (exposed via GET /admin/capabilities).
+// superadmin bypasses every capability check; deactivated admins are 403'd.
+// Generic dashboard/landing reads (GET /stats) stay on requireAnyAdminRole so
+// every admin can render the shell + badges. requireAdminRole/requireAnyAdminRole
+// remain in use here and untouched in the other route files.
+
+// Caller introspection + capability catalog (any admin).
+router.get('/me',           authenticate, requireAnyAdminRole, ctrl.getMe);
+router.get('/capabilities', authenticate, requireAnyAdminRole, ctrl.getCapabilityCatalog);
+
+// Order Fulfillment Engine Unit 3 — platform-wide order oversight.
+router.get('/orders',             authenticate, requireCapability('orders'), adminOrdersCtrl.listOrders);
+router.patch('/orders/:id/status', authenticate, requireCapability('orders'), adminOrdersCtrl.updateStatus);
 
 // All admin routes require a valid admin JWT
-// Minimum role is specified per-route based on the permission matrix (spec Section 5.2)
+// Section access is specified per-route via requireCapability (B-2).
 
-// Approval queues — reviewer+
-router.get('/queue/brands',      authenticate, requireAdminRole('reviewer'), ctrl.getBrandQueue);
-router.get('/queue/influencers', authenticate, requireAdminRole('reviewer'), ctrl.getInfluencerQueue);
+// Approval queues — 'approvals'
+router.get('/queue/brands',      authenticate, requireCapability('approvals'), ctrl.getBrandQueue);
+router.get('/queue/influencers', authenticate, requireCapability('approvals'), ctrl.getInfluencerQueue);
 
-// Status changes — reviewer+
-router.patch('/brands/:id/status',      authenticate, requireAdminRole('reviewer'), ctrl.updateBrandStatus);
-router.patch('/influencers/:id/status', authenticate, requireAdminRole('reviewer'), ctrl.updateInfluencerStatus);
+// Status changes — 'approvals'
+router.patch('/brands/:id/status',      authenticate, requireCapability('approvals'), ctrl.updateBrandStatus);
+router.patch('/influencers/:id/status', authenticate, requireCapability('approvals'), ctrl.updateInfluencerStatus);
 
-// Agency approval (Contract 3a) — reviewer+
-router.get('/queue/agencies',        authenticate, requireAdminRole('reviewer'), ctrl.getAgencyQueue);
-router.patch('/agencies/:id/status', authenticate, requireAdminRole('reviewer'), ctrl.updateAgencyStatus);
+// Agency approval (Contract 3a) — 'approvals'
+router.get('/queue/agencies',        authenticate, requireCapability('approvals'), ctrl.getAgencyQueue);
+router.patch('/agencies/:id/status', authenticate, requireCapability('approvals'), ctrl.updateAgencyStatus);
 
-// Agency directory (referral-agency-admin) — any admin can view
-router.get('/agencies',              authenticate, requireAnyAdminRole,          ctrl.getAgencies);
+// Agency directory (referral-agency-admin) — 'referrals'
+router.get('/agencies',              authenticate, requireCapability('referrals'), ctrl.getAgencies);
 
-// Platform stats — any admin role
+// Platform stats — any admin role (dashboard landing + nav badges)
 router.get('/stats', authenticate, requireAnyAdminRole, ctrl.getStats);
 
 // INFLX Meals — platform settings (radius + tolerance + lead time).
 // Any admin can read; any admin can update (founder's daily account
 // is not always superadmin per the admin-role-gate memory).
 const mealsCtrl = require('../controllers/meals.controller');
-router.get('/meals/settings',  authenticate, requireAnyAdminRole, mealsCtrl.adminGetSettings);
-router.put('/meals/settings',  authenticate, requireAnyAdminRole, mealsCtrl.adminPutSettings);
+router.get('/meals/settings',  authenticate, requireCapability('settings'), mealsCtrl.adminGetSettings);
+router.put('/meals/settings',  authenticate, requireCapability('settings'), mealsCtrl.adminPutSettings);
 
-// Escrow management — finance+
-router.get('/escrow',          authenticate, requireAdminRole('finance'), ctrl.getEscrowOverview);
-router.post('/escrow/:id/release', authenticate, requireAdminRole('finance'), ctrl.adminReleaseEscrow);
+// Escrow management — 'escrow'
+router.get('/escrow',          authenticate, requireCapability('escrow'), ctrl.getEscrowOverview);
+router.post('/escrow/:id/release', authenticate, requireCapability('escrow'), ctrl.adminReleaseEscrow);
 
-// Influencer bulk upload — reviewer+
+// Influencer bulk upload — 'influencers'
 // ctrl.bulkUploadInfluencers is [multerMiddleware, asyncHandler] — spread into route
-router.post('/influencers/bulk-upload', authenticate, requireAdminRole('reviewer'), ...ctrl.bulkUploadInfluencers);
+router.post('/influencers/bulk-upload', authenticate, requireCapability('influencers'), ...ctrl.bulkUploadInfluencers);
 
-// Admin user management — superadmin only
-router.get('/users',  authenticate, requireAdminRole('superadmin'), ctrl.getAdminUsers);
-router.post('/users', authenticate, requireAdminRole('superadmin'), ctrl.createAdminUser);
+// Admin user management — superadmin only (privilege-escalation guard: only a
+// superadmin can read/create/modify staff admins + grant capabilities).
+router.get('/users',      authenticate, requireAdminRole('superadmin'), ctrl.getAdminUsers);
+router.post('/users',     authenticate, requireAdminRole('superadmin'), ctrl.createAdminUser);
+router.patch('/users/:id', authenticate, requireAdminRole('superadmin'), ctrl.updateAdminUser);
 
-// Payment config — superadmin only (GET readable by all admins)
-router.get('/config/payments',   authenticate, requireAnyAdminRole,           ctrl.getPaymentConfig);
-router.patch('/config/payments', authenticate, requireAdminRole('superadmin'), ctrl.updatePaymentConfig);
+// Payment config — 'settings' (write); GET readable by all admins.
+router.get('/config/payments',   authenticate, requireAnyAdminRole,             ctrl.getPaymentConfig);
+router.patch('/config/payments', authenticate, requireCapability('settings'),   ctrl.updatePaymentConfig);
 
-// Brand directory — reviewer+
-router.get('/brands', authenticate, requireAdminRole('reviewer'), ctrl.getBrands);
+// Brand directory — 'brands'
+router.get('/brands', authenticate, requireCapability('brands'), ctrl.getBrands);
 
-// Per-brand platform fee override — finance+
-router.patch('/brands/:id/platform-fee', authenticate, requireAdminRole('finance'), ctrl.setBrandPlatformFee);
+// Per-brand platform fee override — 'brands' (finance-style edit, lives in brand directory)
+router.patch('/brands/:id/platform-fee', authenticate, requireCapability('brands'), ctrl.setBrandPlatformFee);
 
-// L2 Campaign Protection Fee tiers — read by any admin, write by superadmin
-router.get   ('/escrow-fee-tiers',           authenticate, requireAnyAdminRole,           escrowFeeTiersCtrl.list);
-router.post  ('/escrow-fee-tiers',           authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.create);
-router.patch ('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.update);
-router.delete('/escrow-fee-tiers/:tierKey',  authenticate, requireAdminRole('superadmin'), escrowFeeTiersCtrl.remove);
+// L2 Campaign Protection Fee tiers — 'pricing'
+router.get   ('/escrow-fee-tiers',           authenticate, requireCapability('pricing'), escrowFeeTiersCtrl.list);
+router.post  ('/escrow-fee-tiers',           authenticate, requireCapability('pricing'), escrowFeeTiersCtrl.create);
+router.patch ('/escrow-fee-tiers/:tierKey',  authenticate, requireCapability('pricing'), escrowFeeTiersCtrl.update);
+router.delete('/escrow-fee-tiers/:tierKey',  authenticate, requireCapability('pricing'), escrowFeeTiersCtrl.remove);
 
-// L3 Marketplace fee categories (Phase A7-admin) — read by any admin, write by superadmin
+// L3 Marketplace fee categories (Phase A7-admin) — 'pricing'
 const categoriesCtrl = require('../controllers/categories.controller');
-router.get   ('/categories',              authenticate, requireAnyAdminRole,           categoriesCtrl.list);
-router.post  ('/categories',              authenticate, requireAdminRole('superadmin'), categoriesCtrl.create);
-router.patch ('/categories/:categoryKey', authenticate, requireAdminRole('superadmin'), categoriesCtrl.update);
-router.delete('/categories/:categoryKey', authenticate, requireAdminRole('superadmin'), categoriesCtrl.remove);
+router.get   ('/categories',              authenticate, requireCapability('pricing'), categoriesCtrl.list);
+router.post  ('/categories',              authenticate, requireCapability('pricing'), categoriesCtrl.create);
+router.patch ('/categories/:categoryKey', authenticate, requireCapability('pricing'), categoriesCtrl.update);
+router.delete('/categories/:categoryKey', authenticate, requireCapability('pricing'), categoriesCtrl.remove);
 
-// Per-brand L2 escrow fee override — finance+
-router.patch('/brands/:id/escrow-fee-override', authenticate, requireAdminRole('finance'), ctrl.setBrandEscrowFeeOverride);
+// Per-brand L2 escrow fee override — 'brands'
+router.patch('/brands/:id/escrow-fee-override', authenticate, requireCapability('brands'), ctrl.setBrandEscrowFeeOverride);
 
-// Per-brand L3 commerce commission override — finance+ (Wave 1)
-router.patch('/brands/:id/commerce-commission-override', authenticate, requireAdminRole('finance'), ctrl.setBrandCommerceCommissionOverride);
+// Per-brand L3 commerce commission override — 'brands' (Wave 1)
+router.patch('/brands/:id/commerce-commission-override', authenticate, requireCapability('brands'), ctrl.setBrandCommerceCommissionOverride);
 
-// Per-influencer TDS controls (override + exempt) — finance+ (Wave 1)
-router.patch('/influencers/:id/tax-controls', authenticate, requireAdminRole('finance'), ctrl.setInfluencerTaxControls);
+// Per-influencer TDS controls (override + exempt) — 'tax' (Wave 1)
+router.patch('/influencers/:id/tax-controls', authenticate, requireCapability('tax'), ctrl.setInfluencerTaxControls);
 
-// Withdrawal / payout management — finance+
-router.get('/withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getWithdrawals);
-router.post('/withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processWithdrawal);
+// Withdrawal / payout management — 'payouts'
+router.get('/withdrawals',             authenticate, requireCapability('payouts'), ctrl.getWithdrawals);
+router.post('/withdrawals/:id/process', authenticate, requireCapability('payouts'), ctrl.processWithdrawal);
 
-// Brand wallet withdrawals (Wave 2 commit 2) — finance+
-router.get('/brand-withdrawals',             authenticate, requireAdminRole('finance'), ctrl.getBrandWithdrawals);
-router.post('/brand-withdrawals/:id/process', authenticate, requireAdminRole('finance'), ctrl.processBrandWithdrawal);
+// Brand wallet withdrawals (Wave 2 commit 2) — 'payouts'
+router.get('/brand-withdrawals',             authenticate, requireCapability('payouts'), ctrl.getBrandWithdrawals);
+router.post('/brand-withdrawals/:id/process', authenticate, requireCapability('payouts'), ctrl.processBrandWithdrawal);
 
-// Monthly tax summary (Wave 4 — compliance reporting) — finance+
-router.get('/tax-summary', authenticate, requireAdminRole('finance'), ctrl.getTaxSummary);
+// Monthly tax summary (Wave 4 — compliance reporting) — 'tax'
+router.get('/tax-summary', authenticate, requireCapability('tax'), ctrl.getTaxSummary);
 
-// Analytics — any admin role
-router.get('/analytics', authenticate, requireAnyAdminRole, ctrl.getAnalytics);
+// Analytics — 'analytics'
+router.get('/analytics', authenticate, requireCapability('analytics'), ctrl.getAnalytics);
 
-// Production queue — flag stuck production events to admin (Phase P.3)
-router.get('/production/queue', authenticate, requireAnyAdminRole, ctrl.getProductionQueue);
+// Production queue — flag stuck production events to admin (Phase P.3) — 'production'
+router.get('/production/queue', authenticate, requireCapability('production'), ctrl.getProductionQueue);
 
 // Influencer Instagram rescrape — already in influencer.routes.js (/influencers/:id/rescrape)
 
-// ── Creator verification queue (claimed creator_profiles) — reviewer+ ────────
-router.get('/creator-verifications',                 authenticate, requireAdminRole('reviewer'), verificationCtrl.listQueue);
-router.post('/creator-verifications/:id/verify',     authenticate, requireAdminRole('reviewer'), verificationCtrl.verify);
-router.post('/creator-verifications/:id/reject',     authenticate, requireAdminRole('reviewer'), verificationCtrl.reject);
-router.post('/creator-verifications/:id/reset',      authenticate, requireAdminRole('reviewer'), verificationCtrl.reset);
+// ── Creator verification queue (claimed creator_profiles) — 'marketing' ──────
+router.get('/creator-verifications',                 authenticate, requireCapability('marketing'), verificationCtrl.listQueue);
+router.post('/creator-verifications/:id/verify',     authenticate, requireCapability('marketing'), verificationCtrl.verify);
+router.post('/creator-verifications/:id/reject',     authenticate, requireCapability('marketing'), verificationCtrl.reject);
+router.post('/creator-verifications/:id/reset',      authenticate, requireCapability('marketing'), verificationCtrl.reset);
 
-// ── Creator invitations (brand → unclaimed creators outreach queue) ──────────
-router.get('/creator-invitations',                   authenticate, requireAdminRole('reviewer'), invitationCtrl.adminListInvitations);
-router.post('/creator-invitations/:id/contacted',    authenticate, requireAdminRole('reviewer'), invitationCtrl.adminMarkContacted);
-router.post('/creator-invitations/:id/expire',       authenticate, requireAdminRole('reviewer'), invitationCtrl.adminExpire);
+// ── Creator invitations (brand → unclaimed creators outreach queue) — 'marketing' ─
+router.get('/creator-invitations',                   authenticate, requireCapability('marketing'), invitationCtrl.adminListInvitations);
+router.post('/creator-invitations/:id/contacted',    authenticate, requireCapability('marketing'), invitationCtrl.adminMarkContacted);
+router.post('/creator-invitations/:id/expire',       authenticate, requireCapability('marketing'), invitationCtrl.adminExpire);
 
-// ── Master dishes CRUD (restaurant catalogue admin tool) ─────────────────────
-router.get   ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.listMasterDishes);
-router.get   ('/master-dishes/cuisines',  authenticate, requireAdminRole('reviewer'), masterDishCtrl.listCuisines);
+// ── Master dishes CRUD (restaurant catalogue admin tool) — 'master_data' ─────
+router.get   ('/master-dishes',           authenticate, requireCapability('master_data'), masterDishCtrl.listMasterDishes);
+router.get   ('/master-dishes/cuisines',  authenticate, requireCapability('master_data'), masterDishCtrl.listCuisines);
 // Dish Review Queue (flywheel) — registered before '/master-dishes/:id' so the
 // two-segment '/queue' paths aren't shadowed by the single-segment ':id' route.
-router.get   ('/master-dishes/queue',     authenticate, requireAdminRole('reviewer'), dishQueueCtrl.listQueue);
-router.patch ('/master-dishes/queue/:id', authenticate, requireAdminRole('reviewer'), dishQueueCtrl.resolveQueueItem);
-router.post  ('/master-dishes/stock-upload-url', authenticate, requireAdminRole('reviewer'), masterDishCtrl.getStockUploadUrl);
-router.post  ('/master-dishes',           authenticate, requireAdminRole('reviewer'), masterDishCtrl.createMasterDish);
-router.patch ('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.updateMasterDish);
-router.delete('/master-dishes/:id',       authenticate, requireAdminRole('reviewer'), masterDishCtrl.deleteMasterDish);
+router.get   ('/master-dishes/queue',     authenticate, requireCapability('master_data'), dishQueueCtrl.listQueue);
+router.patch ('/master-dishes/queue/:id', authenticate, requireCapability('master_data'), dishQueueCtrl.resolveQueueItem);
+router.post  ('/master-dishes/stock-upload-url', authenticate, requireCapability('master_data'), masterDishCtrl.getStockUploadUrl);
+router.post  ('/master-dishes',           authenticate, requireCapability('master_data'), masterDishCtrl.createMasterDish);
+router.patch ('/master-dishes/:id',       authenticate, requireCapability('master_data'), masterDishCtrl.updateMasterDish);
+router.delete('/master-dishes/:id',       authenticate, requireCapability('master_data'), masterDishCtrl.deleteMasterDish);
 
-// ── Features catalog + tier_features + subscription_prices — Phase A10 ───────
+// ── Features catalog + tier_features + subscription_prices — 'pricing' ───────
 const featuresCtrl = require('../controllers/features.controller');
-router.get   ('/features',                       authenticate, requireAnyAdminRole,            featuresCtrl.listFeatures);
-router.post  ('/features',                       authenticate, requireAdminRole('superadmin'), featuresCtrl.createFeature);
-router.patch ('/features/:feature_key',          authenticate, requireAdminRole('superadmin'), featuresCtrl.updateFeature);
-router.delete('/features/:feature_key',          authenticate, requireAdminRole('superadmin'), featuresCtrl.softDeleteFeature);
+router.get   ('/features',                       authenticate, requireCapability('pricing'), featuresCtrl.listFeatures);
+router.post  ('/features',                       authenticate, requireCapability('pricing'), featuresCtrl.createFeature);
+router.patch ('/features/:feature_key',          authenticate, requireCapability('pricing'), featuresCtrl.updateFeature);
+router.delete('/features/:feature_key',          authenticate, requireCapability('pricing'), featuresCtrl.softDeleteFeature);
 
-router.get   ('/tiers/:tier_key/features',       authenticate, requireAnyAdminRole,            featuresCtrl.listTierFeatures);
-router.put   ('/tiers/:tier_key/features',       authenticate, requireAdminRole('superadmin'), featuresCtrl.upsertTierFeatures);
+router.get   ('/tiers/:tier_key/features',       authenticate, requireCapability('pricing'), featuresCtrl.listTierFeatures);
+router.put   ('/tiers/:tier_key/features',       authenticate, requireCapability('pricing'), featuresCtrl.upsertTierFeatures);
 
-router.get   ('/tiers/:tier_key/prices',         authenticate, requireAnyAdminRole,            featuresCtrl.listTierPrices);
-router.post  ('/tiers/:tier_key/prices',         authenticate, requireAdminRole('superadmin'), featuresCtrl.createPrice);
-router.patch ('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.updatePrice);
-router.delete('/prices/:price_id',               authenticate, requireAdminRole('superadmin'), featuresCtrl.softDeletePrice);
+router.get   ('/tiers/:tier_key/prices',         authenticate, requireCapability('pricing'), featuresCtrl.listTierPrices);
+router.post  ('/tiers/:tier_key/prices',         authenticate, requireCapability('pricing'), featuresCtrl.createPrice);
+router.patch ('/prices/:price_id',               authenticate, requireCapability('pricing'), featuresCtrl.updatePrice);
+router.delete('/prices/:price_id',               authenticate, requireCapability('pricing'), featuresCtrl.softDeletePrice);
 
-// Phase A14 — per-brand feature overrides. requireAnyAdminRole on both —
-// override changes are per-brand and trivially reversible (admin can flip
-// back to tier default any time). Memory: feedback_admin_role_gates.
-router.get   ('/brands/:id/overrides',           authenticate, requireAnyAdminRole,            featuresCtrl.listBrandOverrides);
-router.put   ('/brands/:id/overrides',           authenticate, requireAnyAdminRole,            featuresCtrl.upsertBrandOverrides);
+// Phase A14 — per-brand feature overrides — 'brands' (per-brand edit, reversible).
+router.get   ('/brands/:id/overrides',           authenticate, requireCapability('brands'), featuresCtrl.listBrandOverrides);
+router.put   ('/brands/:id/overrides',           authenticate, requireCapability('brands'), featuresCtrl.upsertBrandOverrides);
 
 // ── Subscription admin (legacy A7-admin endpoints — finally wired in A10.5) ──
 // These have existed in subscription.controller.js since commit 3920772 but
 // were never mounted in any route file. Hence the empty tier list in prod.
 const subscriptionCtrl = require('../controllers/subscription.controller');
-router.get   ('/subscription-tiers',             authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListTiers);
-router.post  ('/subscription-tiers',             authenticate, requireAdminRole('superadmin'), subscriptionCtrl.adminCreateTier);
-router.patch ('/subscription-tiers/:tierKey',    authenticate, requireAdminRole('superadmin'), subscriptionCtrl.adminUpdateTier);
-router.get   ('/subscriptions',                  authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListSubscriptions);
-router.get   ('/subscription-invoices',          authenticate, requireAnyAdminRole,            subscriptionCtrl.adminListInvoices);
+router.get   ('/subscription-tiers',             authenticate, requireCapability('subscriptions'), subscriptionCtrl.adminListTiers);
+router.post  ('/subscription-tiers',             authenticate, requireCapability('subscriptions'), subscriptionCtrl.adminCreateTier);
+router.patch ('/subscription-tiers/:tierKey',    authenticate, requireCapability('subscriptions'), subscriptionCtrl.adminUpdateTier);
+router.get   ('/subscriptions',                  authenticate, requireCapability('subscriptions'), subscriptionCtrl.adminListSubscriptions);
+router.get   ('/subscription-invoices',          authenticate, requireCapability('subscriptions'), subscriptionCtrl.adminListInvoices);
 
-// ── Tag vocabulary (merch-engine Phase 1a) — any admin role (reversible) ─────
+// ── Tag vocabulary (merch-engine Phase 1a) — 'categories' ────────────────────
 const tagVocabCtrl = require('../controllers/adminTagVocabulary.controller');
-router.get   ('/tag-vocabulary',     authenticate, requireAnyAdminRole, tagVocabCtrl.listVocabulary);
-router.post  ('/tag-vocabulary',     authenticate, requireAnyAdminRole, tagVocabCtrl.createTag);
-router.patch ('/tag-vocabulary/:id', authenticate, requireAnyAdminRole, tagVocabCtrl.updateTag);
-router.delete('/tag-vocabulary/:id', authenticate, requireAnyAdminRole, tagVocabCtrl.deleteTag);
+router.get   ('/tag-vocabulary',     authenticate, requireCapability('categories'), tagVocabCtrl.listVocabulary);
+router.post  ('/tag-vocabulary',     authenticate, requireCapability('categories'), tagVocabCtrl.createTag);
+router.patch ('/tag-vocabulary/:id', authenticate, requireCapability('categories'), tagVocabCtrl.updateTag);
+router.delete('/tag-vocabulary/:id', authenticate, requireCapability('categories'), tagVocabCtrl.deleteTag);
 
-// ── Follower category tiles (merch-engine Phase 1b) — any admin (reversible) ─
+// ── Follower category tiles (merch-engine Phase 1b) — 'categories' ───────────
 const followerCatCtrl = require('../controllers/adminFollowerCategories.controller');
-router.get   ('/follower-categories',     authenticate, requireAnyAdminRole, followerCatCtrl.list);
-router.post  ('/follower-categories',     authenticate, requireAnyAdminRole, followerCatCtrl.create);
-router.patch ('/follower-categories/:id', authenticate, requireAnyAdminRole, followerCatCtrl.update);
-router.delete('/follower-categories/:id', authenticate, requireAnyAdminRole, followerCatCtrl.remove);
+router.get   ('/follower-categories',     authenticate, requireCapability('categories'), followerCatCtrl.list);
+router.post  ('/follower-categories',     authenticate, requireCapability('categories'), followerCatCtrl.create);
+router.patch ('/follower-categories/:id', authenticate, requireCapability('categories'), followerCatCtrl.update);
+router.delete('/follower-categories/:id', authenticate, requireCapability('categories'), followerCatCtrl.remove);
 
-// ── Section Library (merch-engine Phase 3b) — reusable data-driven sections ──
+// ── Section Library (merch-engine Phase 3b) — 'libraries' ────────────────────
 const sectionLibraryCtrl = require('../controllers/adminSectionLibrary.controller');
-router.get   ('/section-library',         authenticate, requireAnyAdminRole, sectionLibraryCtrl.list);
-router.post  ('/section-library',         authenticate, requireAnyAdminRole, sectionLibraryCtrl.create);
-router.post  ('/section-library/preview', authenticate, requireAnyAdminRole, sectionLibraryCtrl.preview);
-router.patch ('/section-library/:id',     authenticate, requireAnyAdminRole, sectionLibraryCtrl.update);
+router.get   ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.list);
+router.post  ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.create);
+router.post  ('/section-library/preview', authenticate, requireCapability('libraries'), sectionLibraryCtrl.preview);
+router.patch ('/section-library/:id',     authenticate, requireCapability('libraries'), sectionLibraryCtrl.update);
 
-// ── Collection Library (merch-engine Phase 4b) — group of sections ──────────
+// ── Collection Library (merch-engine Phase 4b) — 'libraries' ─────────────────
 const collectionLibraryCtrl = require('../controllers/adminCollectionLibrary.controller');
-router.get   ('/collection-library',     authenticate, requireAnyAdminRole, collectionLibraryCtrl.list);
-router.post  ('/collection-library',     authenticate, requireAnyAdminRole, collectionLibraryCtrl.create);
-router.patch ('/collection-library/:id', authenticate, requireAnyAdminRole, collectionLibraryCtrl.update);
+router.get   ('/collection-library',     authenticate, requireCapability('libraries'), collectionLibraryCtrl.list);
+router.post  ('/collection-library',     authenticate, requireCapability('libraries'), collectionLibraryCtrl.create);
+router.patch ('/collection-library/:id', authenticate, requireCapability('libraries'), collectionLibraryCtrl.update);
 
 module.exports = router;

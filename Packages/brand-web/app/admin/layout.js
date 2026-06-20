@@ -4,51 +4,70 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { authApi, tryRefreshToken } from '../../lib/api';
 
+// Each leaf nav item carries a `cap` — the capability key (B-2) that gates it.
+// Platform Stats has no `cap` (always visible — landing + badges). Section
+// headers are dropped automatically if every item under them is hidden.
 const NAV = [
   { section: 'OVERVIEW' },
   { href: '/admin', label: 'Platform Stats', icon: '📊' },
-  { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
+  { href: '/admin/analytics', label: 'Analytics', icon: '📈', cap: 'analytics' },
   { section: 'MANAGEMENT' },
-  { href: '/admin/approvals', label: 'Approvals', icon: '✅', badge: 'pending' },
-  { href: '/admin/brands', label: 'Brands', icon: '🏢' },
-  { href: '/admin/influencers', label: 'Influencers', icon: '⭐' },
-  { href: '/admin/production-queue', label: 'Production Queue', icon: '🚚' },
-  { href: '/admin/orders', label: 'Orders', icon: '📦' },
+  { href: '/admin/approvals', label: 'Approvals', icon: '✅', badge: 'pending', cap: 'approvals' },
+  { href: '/admin/brands', label: 'Brands', icon: '🏢', cap: 'brands' },
+  { href: '/admin/influencers', label: 'Influencers', icon: '⭐', cap: 'influencers' },
+  { href: '/admin/production-queue', label: 'Production Queue', icon: '🚚', cap: 'production' },
+  { href: '/admin/orders', label: 'Orders', icon: '📦', cap: 'orders' },
   { section: 'CONTENT' },
-  { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️' },
-  { href: '/admin/sections', label: 'App Sections', icon: '🎛️' },
-  { href: '/admin/section-library', label: 'Section Library', icon: '🧩' },
-  { href: '/admin/collection-library', label: 'Collection Library', icon: '🗂️' },
-  { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️' },
-  { href: '/admin/follower-categories', label: 'Follower Categories', icon: '🗂️' },
+  { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️', cap: 'master_data' },
+  { href: '/admin/sections', label: 'App Sections', icon: '🎛️', cap: 'sections' },
+  { href: '/admin/section-library', label: 'Section Library', icon: '🧩', cap: 'libraries' },
+  { href: '/admin/collection-library', label: 'Collection Library', icon: '🗂️', cap: 'libraries' },
+  { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
+  { href: '/admin/follower-categories', label: 'Follower Categories', icon: '🗂️', cap: 'categories' },
   { section: 'MARKETING' },
-  { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯' },
-  { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕' },
-  { href: '/admin/marketing/verifications', label: 'Verifications', icon: '🔍', badge: 'verifications' },
-  { href: '/admin/marketing/invitations',   label: 'Invitations',   icon: '📨', badge: 'invitations' },
-  { href: '/admin/marketing/inbox',         label: 'Inbox',         icon: '📥' },
-  { href: '/admin/marketing/funnel',        label: 'Funnel',        icon: '📊' },
-  { href: '/admin/marketing/settings',      label: 'M-Settings',    icon: '🛠️' },
+  { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯', cap: 'marketing' },
+  { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕', cap: 'marketing' },
+  { href: '/admin/marketing/verifications', label: 'Verifications', icon: '🔍', badge: 'verifications', cap: 'marketing' },
+  { href: '/admin/marketing/invitations',   label: 'Invitations',   icon: '📨', badge: 'invitations', cap: 'marketing' },
+  { href: '/admin/marketing/inbox',         label: 'Inbox',         icon: '📥', cap: 'marketing' },
+  { href: '/admin/marketing/funnel',        label: 'Funnel',        icon: '📊', cap: 'marketing' },
+  { href: '/admin/marketing/settings',      label: 'M-Settings',    icon: '🛠️', cap: 'marketing' },
   { section: 'REFERRALS' },
-  { href: '/admin/referrals/settings',      label: 'Settings',      icon: '🛠️' },
-  { href: '/admin/referrals/relationships', label: 'Relationships', icon: '🤝' },
-  { href: '/admin/referrals/earnings',      label: 'Earnings',      icon: '💰' },
-  { href: '/admin/referrals/agencies',      label: 'Agencies',      icon: '🏛️' },
+  { href: '/admin/referrals/settings',      label: 'Settings',      icon: '🛠️', cap: 'referrals' },
+  { href: '/admin/referrals/relationships', label: 'Relationships', icon: '🤝', cap: 'referrals' },
+  { href: '/admin/referrals/earnings',      label: 'Earnings',      icon: '💰', cap: 'referrals' },
+  { href: '/admin/referrals/agencies',      label: 'Agencies',      icon: '🏛️', cap: 'referrals' },
   { section: 'FINANCE' },
-  { href: '/admin/escrow', label: 'Escrow', icon: '🔒' },
-  { href: '/admin/payouts', label: 'Payouts', icon: '💸' },
-  { href: '/admin/returns', label: 'Returns', icon: '↩️' },
-  { href: '/admin/subscriptions',         label: 'Active Subs',     icon: '🔁' },
-  { href: '/admin/billing/invoices',      label: 'Sub Invoices',    icon: '🧾' },
+  { href: '/admin/escrow', label: 'Escrow', icon: '🔒', cap: 'escrow' },
+  { href: '/admin/payouts', label: 'Payouts', icon: '💸', cap: 'payouts' },
+  { href: '/admin/returns', label: 'Returns', icon: '↩️', cap: 'returns' },
+  { href: '/admin/subscriptions',         label: 'Active Subs',     icon: '🔁', cap: 'subscriptions' },
+  { href: '/admin/billing/invoices',      label: 'Sub Invoices',    icon: '🧾', cap: 'subscriptions' },
   { section: 'PRICING' },
-  { href: '/admin/pricing/tiers',         label: 'Tiers (L1)',      icon: '💎' },
-  { href: '/admin/pricing/features',      label: 'Features',        icon: '🧩' },
-  { href: '/admin/pricing/categories',    label: 'Categories (L3)', icon: '🏷️' },
+  { href: '/admin/pricing/tiers',         label: 'Tiers (L1)',      icon: '💎', cap: 'pricing' },
+  { href: '/admin/pricing/features',      label: 'Features',        icon: '🧩', cap: 'pricing' },
+  { href: '/admin/pricing/categories',    label: 'Categories (L3)', icon: '🏷️', cap: 'pricing' },
   { section: 'SETTINGS' },
-  { href: '/admin/settings/payments', label: 'Payment Config', icon: '⚙️' },
-  { href: '/admin/meals',             label: 'Meals',          icon: '🍽️' },
-  { href: '/admin/users',             label: 'Admin Users',    icon: '👥' },
+  { href: '/admin/settings/payments', label: 'Payment Config', icon: '⚙️', cap: 'settings' },
+  { href: '/admin/meals',             label: 'Meals',          icon: '🍽️', cap: 'settings' },
+  { href: '/admin/users',             label: 'Admin Users',    icon: '👥', cap: 'users' },
 ];
+
+// Drop nav leaves the admin lacks the capability for, then drop any section
+// header left with no following leaves. superadmin sees everything.
+// While caps haven't loaded yet (capabilities === null) show the full nav to
+// avoid a flash of empty sidebar — the server still enforces every route.
+function scopeNav(items, capabilities, isSuperadmin) {
+  const visible = (isSuperadmin || capabilities === null)
+    ? items
+    : items.filter(it => it.section || !it.cap || capabilities.includes(it.cap));
+  // Strip section headers that have no leaf after them.
+  return visible.filter((it, i) => {
+    if (!it.section) return true;
+    const next = visible[i + 1];
+    return next && !next.section;
+  });
+}
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
@@ -57,6 +76,10 @@ export default function DashboardLayout({ children }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [verificationCount, setVerificationCount] = useState(0);
   const [invitationCount, setInvitationCount] = useState(0);
+  // B-2 capability scoping. null = not yet loaded (show full nav to avoid a
+  // sidebar flash; server still enforces every route). isSuperadmin bypasses.
+  const [capabilities, setCapabilities] = useState(null);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -98,6 +121,25 @@ export default function DashboardLayout({ children }) {
     fetchPending();
   }, []);
 
+  // B-2 — fetch the caller's own capabilities to scope the nav. Runs after the
+  // proactive refresh above has had a chance to seat a fresh token. superadmin
+  // sees the full nav regardless of the capabilities array.
+  useEffect(() => {
+    async function fetchMe() {
+      try {
+        const { adminApi } = await import('../../lib/api');
+        const res = await adminApi.getMe();
+        if (res.success) {
+          setIsSuperadmin(res.data?.admin_role === 'superadmin');
+          setCapabilities(Array.isArray(res.data?.capabilities) ? res.data.capabilities : []);
+        }
+      } catch {}
+    }
+    fetchMe();
+  }, []);
+
+  const navItems = scopeNav(NAV, capabilities, isSuperadmin);
+
   async function logout() {
     // Best-effort server-side revoke. Backend clears the HttpOnly
     // refresh cookie + marks the token used so it can't be replayed.
@@ -127,7 +169,7 @@ export default function DashboardLayout({ children }) {
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-2">
-          {NAV.map((item, i) => {
+          {navItems.map((item, i) => {
             if (item.section) return (
               <div key={i} className="px-2 pt-3 pb-1 text-[9px] font-bold text-white/25 uppercase tracking-widest">{item.section}</div>
             );
