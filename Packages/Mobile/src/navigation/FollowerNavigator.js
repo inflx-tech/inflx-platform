@@ -48,6 +48,8 @@ import AddressScreen from '../screens/follower/AddressScreen';
 import LocationSearchScreen from '../screens/follower/LocationSearchScreen';
 // Follower v2 (L1) — white/yellow location entry gateway
 import LocationEntryScreen from '../screens/follower/LocationEntryScreen';
+// Follower v2 (Wave B) — map pin picker (native, APK-gated; OTA-safe fallback)
+import MapPinScreen from '../screens/follower/MapPinScreen';
 // Fashion-1b + Fashion-2 — returns + lookbooks
 import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
 import LookbookDetailScreen from '../screens/follower/LookbookDetailScreen';
@@ -79,6 +81,7 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="Address" component={AddressScreen} />
     <Stack.Screen name="LocationSearch" component={LocationSearchScreen} />
     <Stack.Screen name="LocationEntry" component={LocationEntryScreen} />
+    <Stack.Screen name="MapPinPicker" component={MapPinScreen} />
     <Stack.Screen name="Find" component={FindScreen} />
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
     <Stack.Screen name="CreatorCategory" component={CreatorCategoryScreen} />

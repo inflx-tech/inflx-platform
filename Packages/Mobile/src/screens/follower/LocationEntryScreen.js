@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'rea
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { toing as T, fonts } from '../../theme/tokens';
 import { useAppLocation } from '../../contexts/LocationContext';
+import { isMapsAvailable } from '../../utils/maps';
 
 /**
  * LocationEntryScreen — Follower v2, step L1.
@@ -20,6 +21,9 @@ export default function LocationEntryScreen({ navigation }) {
 
   const onUseCurrent = useCallback(async () => {
     if (detecting) return;
+    // On a maps-capable APK, open the drag-pin picker; else (current OTA build)
+    // fall back to one-tap GPS detect.
+    if (isMapsAvailable()) { navigation?.navigate?.('MapPinPicker'); return; }
     setDetecting(true);
     try {
       await useCurrentLocation();

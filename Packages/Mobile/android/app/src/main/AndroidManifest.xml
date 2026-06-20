@@ -23,5 +23,12 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- Maps SDK for Android key — value injected at build time from the
+           MAPS_SDK_ANDROID gradle property / env (see app/build.gradle
+           manifestPlaceholders). Restrict the key to in.inflx.app.* + SHA-1. -->
+      <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="${MAPS_SDK_ANDROID}" />
     </application>
 </manifest>

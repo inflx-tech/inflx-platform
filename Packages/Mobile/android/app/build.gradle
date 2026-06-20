@@ -84,6 +84,12 @@ android {
         versionName "1.0"
         // Default — overridden per flavor
         resValue "string", "app_role", "follower"
+        // Maps SDK for Android key — supplied at APK build time via the
+        // MAPS_SDK_ANDROID gradle property (gradle.properties / -P / CI env),
+        // NEVER committed. Restrict the key to in.inflx.app.* + signing SHA-1.
+        manifestPlaceholders = [
+            MAPS_SDK_ANDROID: (project.findProperty("MAPS_SDK_ANDROID") ?: System.getenv("MAPS_SDK_ANDROID") ?: "")
+        ]
     }
     flavorDimensions "role"
     productFlavors {
