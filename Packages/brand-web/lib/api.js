@@ -591,6 +591,15 @@ export const adminApi = {
   deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
   stockUploadUrl:     (meta) => api.post('/admin/master-dishes/stock-upload-url', meta),
 
+  // Follower v2 home builder — world verticals + their category rails
+  listHomeVerticals:   () => api.get('/admin/home-verticals'),
+  createHomeVertical:  (data) => api.post('/admin/home-verticals', data),
+  updateHomeVertical:  (id, data) => api.patch(`/admin/home-verticals/${id}`, data),
+  removeHomeVertical:  (id) => api.delete(`/admin/home-verticals/${id}`),
+  createHomeCategory:  (data) => api.post('/admin/home-vertical-categories', data),
+  updateHomeCategory:  (id, data) => api.patch(`/admin/home-vertical-categories/${id}`, data),
+  removeHomeCategory:  (id) => api.delete(`/admin/home-vertical-categories/${id}`),
+
   // Dish Review Queue (flywheel) — custom names sellers typed
   listDishQueue:      () => api.get('/admin/master-dishes/queue'),
   resolveDishQueue:   (id, data) => api.patch(`/admin/master-dishes/queue/${id}`, data),

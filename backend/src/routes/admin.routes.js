@@ -187,6 +187,16 @@ router.post  ('/follower-categories',     authenticate, requireCapability('categ
 router.patch ('/follower-categories/:id', authenticate, requireCapability('categories'), followerCatCtrl.update);
 router.delete('/follower-categories/:id', authenticate, requireCapability('categories'), followerCatCtrl.remove);
 
+// ── Follower v2 home: world-switcher verticals + their category rails ────────
+const homeVertCtrl = require('../controllers/adminFollowerVerticals.controller');
+router.get   ('/home-verticals',                authenticate, requireCapability('categories'), homeVertCtrl.listVerticals);
+router.post  ('/home-verticals',                authenticate, requireCapability('categories'), homeVertCtrl.createVertical);
+router.patch ('/home-verticals/:id',            authenticate, requireCapability('categories'), homeVertCtrl.updateVertical);
+router.delete('/home-verticals/:id',            authenticate, requireCapability('categories'), homeVertCtrl.removeVertical);
+router.post  ('/home-vertical-categories',      authenticate, requireCapability('categories'), homeVertCtrl.createCategory);
+router.patch ('/home-vertical-categories/:id',  authenticate, requireCapability('categories'), homeVertCtrl.updateCategory);
+router.delete('/home-vertical-categories/:id',  authenticate, requireCapability('categories'), homeVertCtrl.removeCategory);
+
 // ── Section Library (merch-engine Phase 3b) — 'libraries' ────────────────────
 const sectionLibraryCtrl = require('../controllers/adminSectionLibrary.controller');
 router.get   ('/section-library',         authenticate, requireCapability('libraries'), sectionLibraryCtrl.list);

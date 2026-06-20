@@ -24,6 +24,7 @@ const NAV = [
   { href: '/admin/collection-library', label: 'Collection Library', icon: '🗂️', cap: 'libraries' },
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
   { href: '/admin/follower-categories', label: 'Follower Categories', icon: '🗂️', cap: 'categories' },
+  { href: '/admin/home-builder', label: 'Home Builder', icon: '🏠', cap: 'categories' },
   { section: 'MARKETING' },
   { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯', cap: 'marketing' },
   { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕', cap: 'marketing' },
