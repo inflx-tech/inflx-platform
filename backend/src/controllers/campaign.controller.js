@@ -449,6 +449,22 @@ const getById = asyncHandler(async (req, res) => {
     txnMap[r.campaign_influencer_id] = r.transaction_count;
   }
 
+  // Pending per-creator date-change requests (migration 106). Latest pending
+  // request per campaign_influencer drives the brand's approve/reject card.
+  const { rows: dcrRows } = await db.query(
+    `SELECT DISTINCT ON (dcr.campaign_influencer_id)
+            dcr.id, dcr.campaign_influencer_id, dcr.requested_start, dcr.requested_end,
+            dcr.reason, dcr.status, dcr.created_at
+       FROM date_change_requests dcr
+       JOIN campaign_influencers ci ON ci.id = dcr.campaign_influencer_id
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+      WHERE cs.campaign_id = $1 AND dcr.status = 'requested'
+      ORDER BY dcr.campaign_influencer_id, dcr.created_at DESC`,
+    [campaign.id]
+  );
+  const dcrMap = {};
+  for (const r of dcrRows) dcrMap[r.campaign_influencer_id] = r;
+
   // Actionable deliverable rows for the brand UI: submitted / under_review
   // need review, approved-with-live_url need confirm-live. Other states (live,
   // pending, revision_requested) are surfaced via deliverable_counts only —
@@ -484,6 +500,11 @@ const getById = asyncHandler(async (req, res) => {
         revision_requested: 0, approved: 0, live: 0,
       };
       ci.deliverables = actionDelivMap[ci.id] || [];
+      // Effective posting window: per-creator (window_start/window_end from
+      // ci.*) overrides the set window; the page resolves the fallback.
+      ci.set_window_start = set.window_start;
+      ci.set_window_end   = set.window_end;
+      ci.pending_date_change = dcrMap[ci.id] || null;
       if (hasTransactions) ci.transaction_count = txnMap[ci.id] || 0;
     }
   }
@@ -2064,6 +2085,194 @@ const getCampaignProducts = asyncHandler(async (req, res) => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Command Center — Phase 2: store-clicks rollup
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /brands/me/campaigns/:id/clicks — link_clicks aggregated per-influencer
+// and per-set for this campaign. link_clicks (migration 007) stores
+// influencer_id, set_id, campaign_id; we GROUP BY each to mirror the engagement
+// payload shape (by_influencer / by_set) the Command Center already consumes.
+const getCampaignClicks = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  await getCampaignOrThrow(req.params.id, brand.id);
+  const campaignId = req.params.id;
+
+  const { rows: byInfluencer } = await db.query(
+    `SELECT influencer_id, COUNT(*)::int AS clicks
+       FROM link_clicks
+      WHERE campaign_id = $1 AND influencer_id IS NOT NULL
+      GROUP BY influencer_id`,
+    [campaignId]
+  );
+
+  const { rows: bySet } = await db.query(
+    `SELECT set_id, COUNT(*)::int AS clicks
+       FROM link_clicks
+      WHERE campaign_id = $1 AND set_id IS NOT NULL
+      GROUP BY set_id`,
+    [campaignId]
+  );
+
+  const { rows: totalRows } = await db.query(
+    `SELECT COUNT(*)::int AS clicks FROM link_clicks WHERE campaign_id = $1`,
+    [campaignId]
+  );
+
+  return success(res, {
+    total_clicks:  totalRows[0]?.clicks || 0,
+    by_influencer: byInfluencer,
+    by_set:        bySet,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Command Center — Phase 3: per-creator date-change request / approve flow
+// (migration 106: campaign_influencers.window_start/window_end +
+//  date_change_requests). The influencer-app screen that CREATES a request is a
+//  follow-up; the endpoint exists here so the flow is testable via API.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// POST /campaign-influencers/:id/date-change — influencer requests a new window.
+const createDateChangeRequest = asyncHandler(async (req, res) => {
+  const ciId = req.params.id;
+  const { requested_start, requested_end, reason } = req.body;
+
+  if (!requested_start || !requested_end) {
+    throw new AppError('VALIDATION_ERROR', 'requested_start and requested_end are required', 422);
+  }
+  if (new Date(requested_end) < new Date(requested_start)) {
+    throw new AppError('VALIDATION_ERROR', 'requested_end must be on or after requested_start', 422);
+  }
+
+  // Verify the influencer owns this campaign_influencer.
+  const { rows: infRows } = await db.query(`SELECT id FROM influencers WHERE user_id = $1`, [req.user.sub]);
+  if (!infRows[0]) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+  const influencerId = infRows[0].id;
+
+  const { rows: ciRows } = await db.query(
+    `SELECT id FROM campaign_influencers WHERE id = $1 AND influencer_id = $2`,
+    [ciId, influencerId]
+  );
+  if (!ciRows[0]) throw new AppError('NOT_FOUND', 'Campaign assignment not found', 404);
+
+  const { rows } = await db.query(
+    `INSERT INTO date_change_requests (campaign_influencer_id, requested_start, requested_end, reason)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [ciId, requested_start, requested_end, reason ? String(reason).trim() : null]
+  );
+
+  // Notify the brand that owns the campaign.
+  const { rows: ownerRows } = await db.query(
+    `SELECT b.user_id AS brand_user_id, c.id AS campaign_id, c.name AS campaign_name,
+            u.name AS influencer_name
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c      ON c.id = cs.campaign_id
+       JOIN brands b         ON b.id = c.brand_id
+       JOIN influencers i    ON i.id = ci.influencer_id
+       JOIN users u          ON u.id = i.user_id
+      WHERE ci.id = $1`,
+    [ciId]
+  );
+  const owner = ownerRows[0];
+  if (owner) {
+    notificationService.send({
+      userId: owner.brand_user_id,
+      type:   'date_change.requested',
+      title:  'Date-change request',
+      body:   `${owner.influencer_name || 'A creator'} requested new posting dates for ${owner.campaign_name}.`,
+      data:   { screen: 'CampaignCommandCenter', campaign_id: owner.campaign_id, campaign_influencer_id: ciId },
+    }).catch(err => console.error('[date-change] notify brand failed:', err.message));
+  }
+
+  return success(res, { request: rows[0] }, 201);
+});
+
+// GET /brands/me/campaigns/:id/date-change-requests — pending requests for this campaign.
+const listDateChangeRequests = asyncHandler(async (req, res) => {
+  const brand = await getBrandOrThrow(req.user.sub);
+  await getCampaignOrThrow(req.params.id, brand.id);
+
+  const { rows } = await db.query(
+    `SELECT dcr.*, ci.influencer_id, inf.instagram_handle, u.name AS influencer_name
+       FROM date_change_requests dcr
+       JOIN campaign_influencers ci ON ci.id = dcr.campaign_influencer_id
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+       JOIN influencers inf         ON inf.id = ci.influencer_id
+       JOIN users u                 ON u.id = inf.user_id
+      WHERE cs.campaign_id = $1 AND dcr.status = 'requested'
+      ORDER BY dcr.created_at ASC`,
+    [req.params.id]
+  );
+
+  return success(res, { requests: rows });
+});
+
+// POST /campaign-influencers/:id/date-change/:requestId/decision — brand approve|reject.
+const decideDateChangeRequest = asyncHandler(async (req, res) => {
+  const { id: ciId, requestId } = req.params;
+  const { action } = req.body;
+
+  if (!['approve', 'reject'].includes(action)) {
+    throw new AppError('VALIDATION_ERROR', "action must be 'approve' or 'reject'", 422);
+  }
+
+  const brand = await getBrandOrThrow(req.user.sub);
+
+  // Verify the brand owns the campaign this request belongs to + the request
+  // is still pending. One join confirms ownership end-to-end.
+  const { rows: reqRows } = await db.query(
+    `SELECT dcr.id, dcr.status, dcr.requested_start, dcr.requested_end,
+            ci.id AS ci_id, i.user_id AS influencer_user_id,
+            c.id AS campaign_id, c.name AS campaign_name
+       FROM date_change_requests dcr
+       JOIN campaign_influencers ci ON ci.id = dcr.campaign_influencer_id
+       JOIN campaign_sets cs        ON cs.id = ci.set_id
+       JOIN campaigns c             ON c.id = cs.campaign_id
+       JOIN influencers i           ON i.id = ci.influencer_id
+      WHERE dcr.id = $1 AND dcr.campaign_influencer_id = $2 AND c.brand_id = $3`,
+    [requestId, ciId, brand.id]
+  );
+  const reqRow = reqRows[0];
+  if (!reqRow) throw new AppError('NOT_FOUND', 'Date-change request not found', 404);
+  if (reqRow.status !== 'requested') {
+    throw new AppError('VALIDATION_ERROR', `Request already ${reqRow.status}`, 422);
+  }
+
+  const newStatus = action === 'approve' ? 'approved' : 'rejected';
+
+  if (action === 'approve') {
+    // Approval writes the per-creator window (overrides the set window).
+    await db.query(
+      `UPDATE campaign_influencers SET window_start = $1, window_end = $2 WHERE id = $3`,
+      [reqRow.requested_start, reqRow.requested_end, ciId]
+    );
+  }
+
+  const { rows } = await db.query(
+    `UPDATE date_change_requests
+        SET status = $1, decided_at = now(), decided_by = $2
+      WHERE id = $3
+      RETURNING *`,
+    [newStatus, req.user.sub, requestId]
+  );
+
+  // Notify the influencer of the decision.
+  notificationService.send({
+    userId: reqRow.influencer_user_id,
+    type:   `date_change.${newStatus}`,
+    title:  action === 'approve' ? 'New posting dates approved' : 'Date-change request declined',
+    body:   action === 'approve'
+      ? `Your posting window for ${reqRow.campaign_name} was updated.`
+      : `Your date-change request for ${reqRow.campaign_name} was declined.`,
+    data:   { screen: 'CampaignContent', campaign_id: reqRow.campaign_id, campaign_influencer_id: ciId },
+  }).catch(err => console.error('[date-change] notify influencer failed:', err.message));
+
+  return success(res, { request: rows[0] });
+});
+
 module.exports = {
   create,
   list,
@@ -2087,4 +2296,8 @@ module.exports = {
   searchInfluencers,
   openGroupMatches,
   getCampaignProducts,
+  getCampaignClicks,
+  createDateChangeRequest,
+  listDateChangeRequests,
+  decideDateChangeRequest,
 };

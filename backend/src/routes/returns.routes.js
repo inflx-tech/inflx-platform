@@ -6,6 +6,17 @@ const { authenticate, requireRole, requireAdminRole, requireAnyAdminRole } = req
 
 const router = Router();
 
+// ── Brand side (READ-ONLY) ───────────────────────────────────────────────────
+// Mounted under /brands/me (see routes/index.js), matching productVariants +
+// brandOffer routers. Brands SEE returns on their transactions but cannot
+// action them — admin owns approve/reject/refund.
+
+const brandRouter = Router();
+brandRouter.use(authenticate);
+brandRouter.use(requireRole('brand'));
+
+brandRouter.get('/returns', ctrl.listBrandReturns);
+
 // ── Customer side ────────────────────────────────────────────────────────────
 
 const followerRouter = Router();
@@ -27,4 +38,4 @@ adminRouter.post( '/returns/:id/approve',           ctrl.adminApproveReturn);
 adminRouter.post( '/returns/:id/reject',            ctrl.adminRejectReturn);
 adminRouter.post( '/returns/:id/mark-refunded',     ctrl.adminMarkRefunded);
 
-module.exports = { followerRouter, adminRouter };
+module.exports = { brandRouter, followerRouter, adminRouter };

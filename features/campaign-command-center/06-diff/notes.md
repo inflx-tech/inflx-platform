@@ -39,3 +39,15 @@ per-creator sales, stage tracker — all per the v2 mockup. Reach/impressions ex
   work inline; Confirm-live shows the released T2 amount.
 - Analytics tab → sales/revenue appear per set and per creator; campaign totals populate.
 - Existing hierarchy, Products tab, refresh-analytics, brief all still work.
+
+## Phase 2 + 3 (added 2026-06-20)
+- P2 store-clicks rollup: new GET /brands/me/campaigns/:id/clicks (aggregates link_clicks by
+  influencer + set); displayed per creator/set + Analytics L2/L3. Products already wired via /products.
+- P3 per-creator dates + date-change flow: migration 106 (campaign_influencers.window_start/end
+  nullable + date_change_requests table + enum) — APPLIED TO PROD 2026-06-20 via run-106.js.
+  New endpoints: POST /campaign-influencers/:id/date-change (influencer creates),
+  GET /brands/me/campaigns/:id/date-change-requests, POST /campaign-influencers/:id/date-change/:requestId/decision
+  (brand approve→writes per-creator window / reject). Brand approve/reject card added to the
+  creator detail; effective window shown (per-creator else set). Both reviewers clean; pnpm qa GREEN.
+- Follow-ups: influencer-app screen to CREATE a date-change request (backend endpoint ready,
+  testable via API); wrap the approve two-write in a transaction (low-risk, noted).

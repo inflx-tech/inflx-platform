@@ -37,6 +37,7 @@ const NAV = [
   { section: 'FINANCE' },
   { href: '/admin/escrow', label: 'Escrow', icon: '🔒' },
   { href: '/admin/payouts', label: 'Payouts', icon: '💸' },
+  { href: '/admin/returns', label: 'Returns', icon: '↩️' },
   { href: '/admin/subscriptions',         label: 'Active Subs',     icon: '🔁' },
   { href: '/admin/billing/invoices',      label: 'Sub Invoices',    icon: '🧾' },
   { section: 'PRICING' },

@@ -1,0 +1,20 @@
+{
+  "feature": "returns-visibility",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'continue other group … not required my word'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — read-only list view, no new mockup; standard fulfillment/payouts page pattern, approved in-session",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "G-4 returns visibility: brand read-only returns view + admin returns UI over existing follower_returns data. No migration, no money claw-back (G-3 separate). Reviewer clean; pnpm qa GREEN.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

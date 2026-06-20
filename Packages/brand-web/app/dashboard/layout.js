@@ -27,6 +27,7 @@ const NAV = [
   { href: '/dashboard/proposals',   label: 'Proposals',   icon: '✉' },
   { href: '/dashboard/offers',      label: 'Offers',      icon: '◆' },
   { href: '/dashboard/fulfillment', label: 'Fulfillment', icon: '📦' },
+  { href: '/dashboard/returns',     label: 'Returns',     icon: '↩' },
   { href: '/dashboard/conversions', label: 'Conversions', icon: '₹' },
   { href: '/dashboard/wallet',                 label: 'Wallet',   icon: '◫' },
   { href: '/dashboard/settings/profile',       label: 'Settings', icon: '⚙' },

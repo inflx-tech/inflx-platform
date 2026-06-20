@@ -19,6 +19,12 @@
  *     POST  /admin/returns/:id/reject         — admin rejects with admin_notes
  *     POST  /admin/returns/:id/mark-refunded  — admin records refund issued
  *
+ *   Brand side (READ-ONLY; mounted under /brands/me, requireRole('brand')):
+ *     GET   /brands/me/returns?filter=open|closed  — returns for this brand's
+ *           transactions. Visibility only — brands cannot action returns
+ *           (admin owns approve/reject/refund). Join hinge:
+ *           follower_returns.transaction_id → follower_transactions.brand_id.
+ *
  * Notifications fire at each state transition (customer + admin where
  * relevant) via notification.service.send.
  */
@@ -154,6 +160,66 @@ const getMyReturn = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Return not found', 404);
   return success(res, { return: rows[0] });
+});
+
+// ── Brand side (READ-ONLY) ───────────────────────────────────────────────────
+
+/**
+ * GET /brands/me/returns?filter=open|closed
+ *
+ * Lists returns that belong to the authenticated brand's transactions.
+ * Brand visibility is read-only — brands SEE returns but do not action them
+ * (admin owns approve/reject/refund). Customer PII is masked: we surface a
+ * first name + masked phone tail only, never the raw phone.
+ *
+ * Join hinge (verified against schema 001 + 048):
+ *   follower_returns.transaction_id → follower_transactions.id
+ *   follower_transactions.brand_id  → brands.id (NOT NULL)
+ *   brands.user_id                  → req.user.sub
+ *
+ * filter: 'open'   → return_status IN ('requested','approved','received')
+ *         'closed' → return_status IN ('rejected','refunded')
+ *         (default / anything else) → all
+ */
+const listBrandReturns = asyncHandler(async (req, res) => {
+  const { rows: brandRows } = await db.query(
+    `SELECT id FROM brands WHERE user_id = $1`,
+    [req.user.sub]
+  );
+  const brandId = brandRows[0]?.id;
+  if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const filter = req.query.filter;
+  const conds = ['ft.brand_id = $1'];
+  const params = [brandId];
+  if (filter === 'open') {
+    conds.push(`fr.return_status IN ('requested','approved','received')`);
+  } else if (filter === 'closed') {
+    conds.push(`fr.return_status IN ('rejected','refunded')`);
+  }
+
+  const { rows } = await db.query(
+    `SELECT fr.id, fr.transaction_id, fr.product_id, fr.variant_id,
+            fr.reason, fr.reason_text, fr.return_status, fr.refund_amount,
+            fr.admin_notes, fr.created_at, fr.reviewed_at, fr.refunded_at,
+            bp.name AS product_name, bp.image_url AS product_image_url,
+            pv.size AS variant_size, pv.color AS variant_color,
+            ft.net_amount AS transaction_amount,
+            -- Customer PII masked: first name + last 4 of phone only
+            split_part(u.name, ' ', 1) AS customer_first_name,
+            CASE WHEN u.phone IS NOT NULL
+                 THEN '••••' || RIGHT(u.phone, 4) ELSE NULL END AS customer_phone_masked
+       FROM follower_returns fr
+       JOIN follower_transactions ft ON ft.id = fr.transaction_id
+       JOIN followers f ON f.id = ft.follower_id
+       JOIN users u ON u.id = f.user_id
+       LEFT JOIN brand_products bp ON bp.id = fr.product_id
+       LEFT JOIN product_variants pv ON pv.id = fr.variant_id
+      WHERE ${conds.join(' AND ')}
+      ORDER BY fr.created_at DESC`,
+    params
+  );
+  return success(res, { returns: rows });
 });
 
 // ── Admin side ───────────────────────────────────────────────────────────────
@@ -363,6 +429,7 @@ module.exports = {
   initiateReturn,
   listMyReturns,
   getMyReturn,
+  listBrandReturns,
   adminListReturns,
   adminApproveReturn,
   adminRejectReturn,

@@ -230,6 +230,10 @@ export const brandApi = {
   // JWT in the query string so a plain <a>/new-tab can fetch the binary without
   // an Authorization header (same mechanism as contractApi.pdfUrl).
   invoicePdfUrl:         (id) => `${API_BASE}/brands/me/billing/invoices/${id}/pdf?download_token=${encodeURIComponent(getToken() || '')}`,
+  // ── Returns visibility (G-4) — READ-ONLY for brands ───────────────────────
+  // Brands see returns on their own transactions; admin actions them.
+  // filter: 'open' | 'closed' | undefined (all).
+  getReturns:            (filter) => api.get(`/brands/me/returns${filter ? `?filter=${encodeURIComponent(filter)}` : ''}`),
   // ── Wave 3 — commerce payout account (Razorpay Route) ─────────────────────
   getPayoutAccount:      () => api.get('/brands/me/payout-account'),
   createPayoutAccount:   (data = {}) => api.post('/brands/me/payout-account', data),
@@ -303,6 +307,15 @@ export const campaignApi = {
   // Analytics
   getEngagement: (id) => api.get(`/brands/me/campaigns/${id}/engagement`),
   getConversions: (id) => api.get(`/brands/me/campaigns/${id}/conversions`),
+  // Command Center Phase 2 — store-clicks rollup (per-influencer + per-set)
+  getClicks: (id) => api.get(`/brands/me/campaigns/${id}/clicks`),
+  // Command Center Phase 3 — per-creator date-change request/approve flow
+  getDateChangeRequests: (id) => api.get(`/brands/me/campaigns/${id}/date-change-requests`),
+  decideDateChange: (ciId, requestId, action) =>
+    api.post(`/campaign-influencers/${ciId}/date-change/${requestId}/decision`, { action }),
+  // Influencer-app create-request endpoint (brand-web doesn't call this; the
+  // mobile influencer screen is a follow-up — kept here for completeness):
+  // POST /campaign-influencers/:id/date-change { requested_start, requested_end, reason }
 };
 
 export const influencerApi = {
@@ -560,6 +573,13 @@ export const adminApi = {
   processWithdrawal: (id, action, reason) => api.post(`/admin/withdrawals/${id}/process`, { action, reason }),
   getBrandWithdrawals: (status, search, page) => api.get(`/admin/brand-withdrawals?status=${status || 'all'}&search=${encodeURIComponent(search || '')}&page=${page || 1}`),
   processBrandWithdrawal: (id, action, reason) => api.post(`/admin/brand-withdrawals/${id}/process`, { action, reason }),
+  // ── Returns workflow (G-4) — admin queue + actions. Paths match
+  //    returns.routes.js adminRouter (mounted at /admin). Gated server-side
+  //    by requireAnyAdminRole.
+  getReturns:        (status) => api.get(`/admin/returns${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  approveReturn:     (id, refund_amount, admin_notes) => api.post(`/admin/returns/${id}/approve`, { refund_amount, admin_notes }),
+  rejectReturn:      (id, admin_notes) => api.post(`/admin/returns/${id}/reject`, { admin_notes }),
+  markReturnRefunded: (id, razorpay_refund_id) => api.post(`/admin/returns/${id}/mark-refunded`, { razorpay_refund_id }),
   // Wave 4 — monthly tax summary (GST / TCS / TDS) for filing
   getTaxSummary: (month) => api.get(`/admin/tax-summary${month ? `?month=${encodeURIComponent(month)}` : ''}`),
   // Master dishes — admin CRUD for the restaurant dish catalogue

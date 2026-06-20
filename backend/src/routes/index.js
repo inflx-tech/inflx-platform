@@ -25,6 +25,10 @@ const commissionRoutes  = require('./commission.routes');
 const engagementRoutes      = require('./engagement.routes');
 const notificationRoutes    = require('./notification.routes');
 
+// Campaign Command Center Phase 2 + 3 — store-clicks rollup + per-creator
+// date-change request/approve flow (contract: campaign-command-center)
+const dateChangeRoutes      = require('./dateChange.routes');
+
 // Follower App Redesign
 const savedRoutes           = require('./saved.routes');
 const productNoteRoutes     = require('./productNote.routes');
@@ -135,6 +139,10 @@ router.use('/influencers', productNoteRoutes);
 // ── Phase 5 — Engagement analytics (brand) ───────────────────────────────────
 router.use('/brands', engagementRoutes);
 
+// ── Command Center Phase 2 + 3 — clicks rollup + date-change flow ────────────
+router.use('/brands',               dateChangeRoutes.brandRouter);   // /brands/me/campaigns/:id/clicks + /date-change-requests
+router.use('/campaign-influencers', dateChangeRoutes.ciRouter);      // /campaign-influencers/:id/date-change*
+
 // ── Phase 6 — Notifications (any authenticated user) ─────────────────────────
 router.use('/notifications', notificationRoutes);
 
@@ -176,6 +184,7 @@ router.get('/internal/places-health',             geocodingCtrl.placesHealth);
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);
+router.use('/brands/me', returnsRoutes.brandRouter);   // GET /brands/me/returns (read-only)
 
 // ── Offer Engine — brand-side reusable offer library (Sub-contract A) ────────
 router.use('/brands/me', brandOfferRoutes);

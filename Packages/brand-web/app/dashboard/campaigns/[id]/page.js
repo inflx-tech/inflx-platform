@@ -169,6 +169,7 @@ export default function CampaignCommandCenterPage() {
   const [engagement, setEngagement]   = useState(null);
   const [conversions, setConversions] = useState(null);
   const [productsData, setProductsData] = useState(null);
+  const [clicksData, setClicksData]   = useState(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState(null);
   const [tab, setTab]                 = useState('hier');
@@ -188,7 +189,8 @@ export default function CampaignCommandCenterPage() {
       campaignApi.getEngagement(id).catch(() => ({ success: false })),
       campaignApi.getConversions(id).catch(() => ({ success: false })),
       campaignApi.get(`${id}/products`).catch(() => ({ success: false })),
-    ]).then(([campRes, escRes, engRes, convRes, prodRes]) => {
+      campaignApi.getClicks(id).catch(() => ({ success: false })),
+    ]).then(([campRes, escRes, engRes, convRes, prodRes, clickRes]) => {
       if (cancelledRef?.cancelled) return;
       setLoading(false);
       if (campRes.success) setCampaign(campRes.data?.campaign || campRes.data);
@@ -197,6 +199,7 @@ export default function CampaignCommandCenterPage() {
       if (engRes?.success)  setEngagement(engRes.data);
       if (convRes?.success) setConversions(convRes.data);
       if (prodRes?.success) setProductsData(prodRes.data);
+      if (clickRes?.success) setClicksData(clickRes.data);
     });
   }, [id]);
 
@@ -276,6 +279,12 @@ export default function CampaignCommandCenterPage() {
     convBySetId[sid].revenue        += Number(c.revenue || 0);
     convBySetId[sid].commission_paid += Number(c.commission_paid || 0);
   }
+
+  // Store-clicks rollup (Phase 2). Backend GROUP BYs link_clicks per influencer
+  // and per set; key the same way the engagement maps do (influencer_id / set_id).
+  const clicksByInfId  = Object.fromEntries((clicksData?.by_influencer || []).map(c => [c.influencer_id, Number(c.clicks) || 0]));
+  const clicksBySetId  = Object.fromEntries((clicksData?.by_set || []).map(c => [c.set_id, Number(c.clicks) || 0]));
+  const totalClicks    = Number(clicksData?.total_clicks) || 0;
 
   const productsList = productsData?.products || [];
   const isBrandLevelOffer = !!productsData?.is_brand_level_offer;
@@ -372,6 +381,19 @@ export default function CampaignCommandCenterPage() {
     setBusyId(null);
   }
 
+  /* ── Date-change request decision (Phase 3) ─────────────────────────────── */
+  async function decideDateChange(ciId, requestId, action) {
+    setBusyId(requestId);
+    const res = await campaignApi.decideDateChange(ciId, requestId, action);
+    if (res?.success) {
+      showToast(action === 'approve' ? 'New posting dates approved.' : 'Date-change request declined.');
+      await loadAll();
+    } else {
+      showToast(res?.error?.message || 'Action failed');
+    }
+    setBusyId(null);
+  }
+
   /* ════ Render ════ */
   return (
     <div className="font-body">
@@ -439,6 +461,13 @@ export default function CampaignCommandCenterPage() {
             <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">CONVERSIONS</div>
             <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(convCount)}</div>
             <div className="text-[10px] text-[#A1A1AA] mt-0.5">{fmtRupees(convRevenue)} revenue · <Link href={`/dashboard/conversions?campaign=${id}`} className="text-[#6B5A00] font-bold no-underline">detail ↗</Link></div>
+          </div>
+        )}
+        {totalClicks > 0 && (
+          <div className="flex-1 min-w-[110px] px-4 border-r border-[#F4F4F5]">
+            <div className="text-[10px] font-extrabold text-[#71717A] tracking-[0.5px]">STORE CLICKS</div>
+            <div className="font-mono font-bold text-[19px] text-[#0A0A0A] mt-0.5">{nf(totalClicks)}</div>
+            <div className="text-[10px] text-[#A1A1AA] mt-0.5">from creator share links</div>
           </div>
         )}
         <div className="flex-1 min-w-[100px] px-4 border-r border-[#F4F4F5]">
@@ -510,6 +539,7 @@ export default function CampaignCommandCenterPage() {
                     <MiniStat v={nf(eng.likes)} k="LIKES" />
                     <MiniStat v={nf(eng.comments)} k="COMMENTS" />
                     <MiniStat v={eng.engagement_rate != null ? `${eng.engagement_rate}%` : '—'} k="ER" />
+                    <MiniStat v={nf(clicksBySetId[set.id] || 0)} k="CLICKS" />
                     {setWantsSales && <SalesStat v={nf(setConv?.sales_count || 0)} k="SALES" />}
                     {setWantsSales && <SalesStat v={fmtRupees(setConv?.revenue || 0)} k="REVENUE" />}
                   </span>
@@ -522,8 +552,14 @@ export default function CampaignCommandCenterPage() {
                       const ieng = engByInfId[ci.influencer_id] || {};
                       const handle = ci.instagram_handle || ci.handle || ieng.instagram_handle || ci.influencer_name || ci.name || '—';
                       const dels = ci.deliverables || [];
-                      const hasAction = dels.some(d => ['submitted', 'under_review'].includes(d.status) || (d.status === 'approved' && d.live_url));
+                      const pendingDateChange = ci.pending_date_change || null;
+                      const hasAction = !!pendingDateChange || dels.some(d => ['submitted', 'under_review'].includes(d.status) || (d.status === 'approved' && d.live_url));
                       const iOpen = isInfOpen(ci.id, hasAction || infs.length === 1);
+                      // Effective posting window: per-creator window (set via an
+                      // approved date-change) overrides the set window.
+                      const effStart = ci.window_start || ci.set_window_start;
+                      const effEnd   = ci.window_end   || ci.set_window_end;
+                      const hasCreatorWindow = !!(ci.window_start || ci.window_end);
                       const ciProducts = productsForCi(ci.id);
                       const ciConv = convByInf[ci.influencer_id];
                       const ciWantsSales = ['conversion', 'hybrid'].includes(set.goal) || (ciConv && ciConv.sales_count > 0);
@@ -554,6 +590,7 @@ export default function CampaignCommandCenterPage() {
                               <MiniStat v={nf(ieng.views)} k="VIEWS" />
                               <MiniStat v={nf(ieng.likes)} k="LIKES" />
                               <MiniStat v={ieng.engagement_rate != null ? `${ieng.engagement_rate}%` : '—'} k="ER" />
+                              <MiniStat v={nf(clicksByInfId[ci.influencer_id] || 0)} k="CLICKS" />
                               {ciWantsSales && <SalesStat v={nf(ciConv?.sales_count || 0)} k="SALES" />}
                               {ciWantsSales && <SalesStat v={fmtRupees(ciConv?.revenue || 0)} k="REVENUE" />}
                               {ciWantsSales && ciConv?.commission_paid > 0 && <SalesStat v={fmtRupees(ciConv.commission_paid)} k="COMM" />}
@@ -563,6 +600,48 @@ export default function CampaignCommandCenterPage() {
                           {iOpen && (
                             <div className="pb-3.5">
                               <StageTracker ci={ci} />
+
+                              {/* Effective posting window (per-creator overrides set window) */}
+                              {(effStart || effEnd) && (
+                                <div className="ml-[46px] mb-2 text-[11px] text-[#71717A]">
+                                  <span className="font-bold text-[#52525B]">Posting window:</span>{' '}
+                                  <span className="font-mono font-semibold text-[#0A0A0A]">{formatDate(effStart)} → {formatDate(effEnd)}</span>
+                                  {hasCreatorWindow && <span className="ml-1.5 text-[9.5px] font-extrabold rounded-[6px] px-1.5 py-0.5 bg-[#DBEAFE] text-[#1D4ED8] tracking-[0.3px]">CUSTOM</span>}
+                                </div>
+                              )}
+
+                              {/* Date-change request — brand approve / reject (Phase 3) */}
+                              {pendingDateChange && (
+                                <div className="ml-[46px] mb-2.5 rounded-[10px] border border-[#FFC107] bg-[#FFFDEB] px-3.5 py-3">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="text-base">📅</span>
+                                    <span className="text-[12.5px] font-extrabold text-[#0A0A0A]">Date-change request</span>
+                                    <span className="text-[9px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.4px] bg-[#FFF7CC] text-[#6B5A00]">PENDING</span>
+                                  </div>
+                                  <div className="text-[11.5px] text-[#52525B] mb-1">
+                                    Wants <span className="font-mono font-semibold text-[#0A0A0A]">{formatDate(pendingDateChange.requested_start)} → {formatDate(pendingDateChange.requested_end)}</span>
+                                    {(effStart || effEnd) && <span className="text-[#A1A1AA]"> (currently {formatDate(effStart)} → {formatDate(effEnd)})</span>}
+                                  </div>
+                                  {pendingDateChange.reason && (
+                                    <div className="text-[11.5px] text-[#1F1F22] mb-2 italic">“{pendingDateChange.reason}”</div>
+                                  )}
+                                  <div className="flex gap-2.5 mt-1">
+                                    <button
+                                      onClick={() => decideDateChange(ci.id, pendingDateChange.id, 'approve')}
+                                      disabled={busyId === pendingDateChange.id}
+                                      className="bg-[#0A0A0A] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#FFC107] hover:bg-[#1F1F22] disabled:opacity-50">
+                                      {busyId === pendingDateChange.id ? 'Working…' : 'Approve new dates'}
+                                    </button>
+                                    <button
+                                      onClick={() => decideDateChange(ci.id, pendingDateChange.id, 'reject')}
+                                      disabled={busyId === pendingDateChange.id}
+                                      className="bg-white border border-[#E4E4E7] rounded-[8px] px-3 py-1.5 text-[11.5px] font-bold text-[#0A0A0A] hover:border-[#0A0A0A] disabled:opacity-50">
+                                      Reject
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
                               {dels.map(d => {
                                 const pill = delPill(d);
                                 const stats = engByDelId[d.id] || {};
@@ -768,7 +847,7 @@ export default function CampaignCommandCenterPage() {
                 <div key={s.set_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-[13px] text-[#0A0A0A]">{s.set_name} <span className="text-[11px] text-[#71717A] font-medium">· {s.goal || '—'} · {s.influencers} influencer{s.influencers !== 1 ? 's' : ''}</span></span>
-                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(s.views)} views · {nf(s.likes)} likes · {nf(s.comments)} comments · ER {s.engagement_rate}%</span>
+                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(s.views)} views · {nf(s.likes)} likes · {nf(s.comments)} comments · ER {s.engagement_rate}% · {nf(clicksBySetId[s.set_id] || 0)} clicks</span>
                   </div>
                   {sConv && sConv.sales_count > 0 && (
                     <div className="font-mono text-[11.5px] text-[#7E22CE] mt-1">{nf(sConv.sales_count)} sales · {fmtRupees(sConv.revenue)} revenue · {fmtRupees(sConv.commission_paid)} commission</div>
@@ -790,7 +869,7 @@ export default function CampaignCommandCenterPage() {
                 <div key={i.influencer_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-[13px] text-[#0A0A0A]">{i.handle} <span className="text-[11px] text-[#71717A] font-medium">· {i.set_name} · {liveN} live{otherN > 0 ? ` + ${otherN} other` : ''}</span></span>
-                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(i.views)} views · {nf(i.likes)} likes · ER {i.engagement_rate}%</span>
+                    <span className="font-mono text-[11.5px] text-[#52525B]">{nf(i.views)} views · {nf(i.likes)} likes · ER {i.engagement_rate}% · {nf(clicksByInfId[i.influencer_id] || 0)} clicks</span>
                   </div>
                   {iConv && iConv.sales_count > 0 && (
                     <div className="font-mono text-[11.5px] text-[#7E22CE] mt-1">{nf(iConv.sales_count)} sales · {fmtRupees(iConv.revenue)} revenue · {fmtRupees(iConv.commission_paid)} commission{iConv.roi ? ` · ROI ${iConv.roi}×` : ''}</div>
