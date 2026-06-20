@@ -202,9 +202,9 @@ export default function CampaignReviewsPage() {
     const res = await deliverableApi.confirmLive(delId);
     setBusyId(null);
     if (res.success) {
-      const released = res.data?.tranche_released;
-      if (released?.amount) {
-        showToast(`Live confirmed. Tranche-2 of ${fmtRupees(released.amount)} released.`);
+      const amt = res.data?.t2_amount;
+      if (amt) {
+        showToast(`Live confirmed. Tranche-2 of ${fmtRupees(amt)} released.`);
       } else {
         showToast('Live confirmed.');
       }

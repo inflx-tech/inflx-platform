@@ -71,6 +71,93 @@ function MiniStat({ v, k }) {
   );
 }
 
+/* Sales ministat — purple accent to distinguish conversions from engagement */
+function SalesStat({ v, k }) {
+  return (
+    <div className="text-right min-w-[52px]">
+      <div className="font-mono font-bold text-[13.5px] text-[#7E22CE] leading-tight">{v}</div>
+      <div className="text-[9px] font-bold tracking-[0.4px] text-[#A1A1AA]">{k}</div>
+    </div>
+  );
+}
+
+/* ─── Inline media preview (signed R2 URL → <img>/<video>), copied from
+   reviews/page.js so content can be reviewed without leaving this page. ── */
+function MediaPreview({ deliverableId, mediaType }) {
+  const [url, setUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errored, setErrored] = useState(false);
+
+  useEffect(() => {
+    if (!deliverableId) return;
+    let cancelled = false;
+    deliverableApi.getMediaUrl(deliverableId).then(res => {
+      if (cancelled) return;
+      if (res.success && res.data?.url) setUrl(res.data.url);
+      else setErrored(true);
+    }).catch(() => { if (!cancelled) setErrored(true); }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [deliverableId]);
+
+  if (loading) {
+    return (
+      <div className="mb-2 bg-[#FAFAFA] border border-[#E4E4E7] rounded-[12px] p-5 text-center">
+        <div className="text-[11px] text-[#71717A]">Loading media…</div>
+      </div>
+    );
+  }
+  if (errored || !url) {
+    return <div className="mb-2 text-[11px] text-[#A1A1AA]">No preview available.</div>;
+  }
+
+  const isVideo = (mediaType || '').startsWith('video');
+  return (
+    <div className="mb-2 bg-[#0A0A0A] rounded-[12px] overflow-hidden">
+      {isVideo ? (
+        <video src={url} controls playsInline className="w-full max-h-[340px]" style={{ objectFit: 'contain' }} />
+      ) : (
+        <img src={url} alt="Submitted content" className="w-full max-h-[340px] object-contain" />
+      )}
+    </div>
+  );
+}
+
+/* Per-creator stage tracker — Allocated → Approval → Contract → Content → Live.
+   Derived purely from existing ci.status + deliverable statuses. */
+const STAGE_LABELS = ['Allocated', 'Approval', 'Contract', 'Content', 'Live'];
+function ciStageIndex(ci) {
+  const dels = ci.deliverables || [];
+  const anyLive = dels.some(d => d.status === 'live');
+  const anyContent = dels.some(d => ['submitted', 'under_review', 'approved', 'revision_requested', 'live'].includes(d.status));
+  if (anyLive) return 4;
+  if (anyContent) return 3;
+  if (['contracted', 'active', 'live'].includes(ci.status)) return 2;
+  if (['accepted', 'negotiating'].includes(ci.status)) return 1;
+  if (ci.status === 'completed') return 4;
+  return 0; // invited / applied / declined / default
+}
+function StageTracker({ ci }) {
+  const cur = ciStageIndex(ci);
+  return (
+    <div className="flex items-center gap-1.5 ml-[46px] mb-2.5">
+      {STAGE_LABELS.map((label, i) => {
+        const done = i < cur;
+        const here = i === cur;
+        return (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className={`flex items-center gap-1 text-[9.5px] font-extrabold rounded-[7px] px-2 py-1 tracking-[0.3px] ${
+              here ? 'bg-[#FFC107] text-[#0A0A0A]' : done ? 'bg-[#D1FAE5] text-[#047857]' : 'bg-[#F4F4F5] text-[#A1A1AA]'}`}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: here ? '#0A0A0A' : done ? '#10B981' : '#D4D4D8' }} />
+              {label}
+            </span>
+            {i < STAGE_LABELS.length - 1 && <span className={`text-[10px] ${done ? 'text-[#10B981]' : 'text-[#D4D4D8]'}`}>→</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ════ Page ════ */
 
 export default function CampaignCommandCenterPage() {
@@ -90,6 +177,9 @@ export default function CampaignCommandCenterPage() {
   const [briefOpen, setBriefOpen]     = useState(false);
   const [refreshingAll, setRefreshingAll] = useState('');
   const [refreshingOne, setRefreshingOne] = useState(null);
+  const [toast, setToast]             = useState('');
+  const [busyId, setBusyId]           = useState(null);
+  const [openContent, setOpenContent] = useState({});
 
   const loadAll = useCallback((cancelledRef) => {
     return Promise.all([
@@ -163,8 +253,29 @@ export default function CampaignCommandCenterPage() {
   const escrowReleased = escrowEntries.filter(e => e.status === 'released').reduce((s, e) => s + Number(e.amount || 0), 0);
 
   const convSummary = conversions?.summary || {};
-  const convCount   = conversions?.total_transactions ?? convSummary.total_transactions ?? 0;
-  const convRevenue = conversions?.total_revenue      ?? convSummary.total_revenue      ?? 0;
+  const convTotals  = conversions?.totals || {};
+  // backend shape (commission.service.getBrandConversions): totals.total_sales /
+  // total_revenue / total_commission_paid; by_influencer[] keyed by influencer_id.
+  const convCount      = conversions?.total_transactions ?? convSummary.total_transactions ?? convTotals.total_sales ?? 0;
+  const convRevenue    = conversions?.total_revenue      ?? convSummary.total_revenue      ?? convTotals.total_revenue ?? 0;
+  const convCommission = convTotals.total_commission_paid ?? 0;
+  const hasConversions = (convCount > 0 || convRevenue > 0);
+
+  // Per-influencer conversions, keyed by influencer_id (matches engByInfId key).
+  const convByInf = Object.fromEntries((conversions?.by_influencer || []).map(c => [c.influencer_id, c]));
+  // Per-set conversions computed CLIENT-SIDE (no by_set in payload): sum
+  // by_influencer rows grouped by the set each influencer belongs to.
+  const setIdByInfId = {};
+  for (const s of sets) for (const ci of (s.influencers || [])) if (ci.influencer_id != null) setIdByInfId[ci.influencer_id] = s.id;
+  const convBySetId = {};
+  for (const c of (conversions?.by_influencer || [])) {
+    const sid = setIdByInfId[c.influencer_id];
+    if (sid == null) continue;
+    if (!convBySetId[sid]) convBySetId[sid] = { sales_count: 0, revenue: 0, commission_paid: 0 };
+    convBySetId[sid].sales_count    += Number(c.sales_count || 0);
+    convBySetId[sid].revenue        += Number(c.revenue || 0);
+    convBySetId[sid].commission_paid += Number(c.commission_paid || 0);
+  }
 
   const productsList = productsData?.products || [];
   const isBrandLevelOffer = !!productsData?.is_brand_level_offer;
@@ -221,6 +332,44 @@ export default function CampaignCommandCenterPage() {
     const eng = await campaignApi.getEngagement(id);
     if (eng?.success) setEngagement(eng.data);
     setRefreshingAll('');
+  }
+
+  /* ── Inline content-review actions (no navigation away) ─────────────────── */
+  function showToast(msg) {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  }
+
+  async function inlineReview(delId, action) {
+    let feedback = null;
+    if (action === 'request_revision') {
+      feedback = window.prompt('What needs to change?');
+      if (feedback == null) return;
+      feedback = feedback.trim();
+      if (!feedback) { alert('Feedback is required to request revision.'); return; }
+    }
+    setBusyId(delId);
+    const res = await deliverableApi.review(delId, { action, feedback });
+    if (res?.success) {
+      showToast(action === 'approve' ? 'Content approved.' : 'Sent for revision.');
+      await loadAll();
+    } else {
+      showToast(res?.error?.message || 'Action failed');
+    }
+    setBusyId(null);
+  }
+
+  async function inlineConfirmLive(delId) {
+    setBusyId(delId);
+    const res = await deliverableApi.confirmLive(delId);
+    if (res?.success) {
+      const amt = res.data?.t2_amount;
+      showToast(amt ? `Live confirmed. Tranche-2 of ${fmtRupees(amt)} released.` : 'Live confirmed.');
+      await loadAll();
+    } else {
+      showToast(res?.error?.message || 'Failed to confirm');
+    }
+    setBusyId(null);
   }
 
   /* ════ Render ════ */
@@ -340,6 +489,8 @@ export default function CampaignCommandCenterPage() {
             const eng = engBySetId[set.id] || {};
             const open = isSetOpen(set.id);
             const infs = set.influencers || [];
+            const setConv = convBySetId[set.id];
+            const setWantsSales = ['conversion', 'hybrid'].includes(set.goal) || (setConv && setConv.sales_count > 0);
             return (
               <div key={set.id} className="bg-white border border-[#E4E4E7] rounded-[14px] mb-3 overflow-hidden">
                 <button onClick={() => setOpenSets(o => ({ ...o, [set.id]: !open }))}
@@ -359,6 +510,8 @@ export default function CampaignCommandCenterPage() {
                     <MiniStat v={nf(eng.likes)} k="LIKES" />
                     <MiniStat v={nf(eng.comments)} k="COMMENTS" />
                     <MiniStat v={eng.engagement_rate != null ? `${eng.engagement_rate}%` : '—'} k="ER" />
+                    {setWantsSales && <SalesStat v={nf(setConv?.sales_count || 0)} k="SALES" />}
+                    {setWantsSales && <SalesStat v={fmtRupees(setConv?.revenue || 0)} k="REVENUE" />}
                   </span>
                 </button>
 
@@ -372,6 +525,8 @@ export default function CampaignCommandCenterPage() {
                       const hasAction = dels.some(d => ['submitted', 'under_review'].includes(d.status) || (d.status === 'approved' && d.live_url));
                       const iOpen = isInfOpen(ci.id, hasAction || infs.length === 1);
                       const ciProducts = productsForCi(ci.id);
+                      const ciConv = convByInf[ci.influencer_id];
+                      const ciWantsSales = ['conversion', 'hybrid'].includes(set.goal) || (ciConv && ciConv.sales_count > 0);
                       const reviewCount = dels.filter(d => ['submitted', 'under_review'].includes(d.status)).length;
                       const statusPill = reviewCount > 0
                         ? { cls: 'bg-[#FFF7CC] text-[#6B5A00]', label: `${reviewCount} TO REVIEW` }
@@ -399,19 +554,26 @@ export default function CampaignCommandCenterPage() {
                               <MiniStat v={nf(ieng.views)} k="VIEWS" />
                               <MiniStat v={nf(ieng.likes)} k="LIKES" />
                               <MiniStat v={ieng.engagement_rate != null ? `${ieng.engagement_rate}%` : '—'} k="ER" />
+                              {ciWantsSales && <SalesStat v={nf(ciConv?.sales_count || 0)} k="SALES" />}
+                              {ciWantsSales && <SalesStat v={fmtRupees(ciConv?.revenue || 0)} k="REVENUE" />}
+                              {ciWantsSales && ciConv?.commission_paid > 0 && <SalesStat v={fmtRupees(ciConv.commission_paid)} k="COMM" />}
                             </span>
                           </button>
 
                           {iOpen && (
                             <div className="pb-3.5">
+                              <StageTracker ci={ci} />
                               {dels.map(d => {
                                 const pill = delPill(d);
                                 const stats = engByDelId[d.id] || {};
                                 const needsReview = ['submitted', 'under_review'].includes(d.status);
                                 const needsLiveConfirm = d.status === 'approved' && d.live_url;
+                                const isBusy = busyId === d.id;
+                                const contentOpen = !!openContent[d.id];
                                 return (
-                                  <div key={d.id}
-                                    className={`flex items-center gap-3 rounded-[10px] border px-3.5 py-2.5 my-1.5 ml-[46px] ${needsReview ? 'bg-[#FFFDEB] border-[#FFC107]' : 'bg-[#FAFAFA] border-[#F4F4F5]'}`}>
+                                  <div key={d.id} className="my-1.5 ml-[46px]">
+                                  <div
+                                    className={`flex items-center gap-3 rounded-[10px] border px-3.5 py-2.5 ${needsReview ? 'bg-[#FFFDEB] border-[#FFC107]' : 'bg-[#FAFAFA] border-[#F4F4F5]'}`}>
                                     <span className="text-base">{DEL_ICON[d.type] || '🎬'}</span>
                                     <span>
                                       <span className="block text-[12.5px] font-bold text-[#0A0A0A] capitalize">{(d.type || '').replace('_', ' ')}</span>
@@ -441,18 +603,56 @@ export default function CampaignCommandCenterPage() {
                                         </>
                                       )}
                                       {needsReview && (
-                                        <Link href={`/dashboard/campaigns/${id}/reviews?tab=reviews`}
-                                          className="bg-[#FFC107] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#0A0A0A] no-underline hover:bg-[#E0A800]">
-                                          Review now
-                                        </Link>
+                                        <>
+                                          <button
+                                            onClick={() => setOpenContent(o => ({ ...o, [d.id]: !o[d.id] }))}
+                                            className="bg-white border border-[#E4E4E7] rounded-[8px] px-3 py-1.5 text-[11.5px] font-bold text-[#0A0A0A] hover:border-[#0A0A0A]">
+                                            {contentOpen ? 'Hide content' : 'View content'}
+                                          </button>
+                                          <button
+                                            onClick={() => inlineReview(d.id, 'approve')}
+                                            disabled={isBusy}
+                                            className="bg-[#0A0A0A] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#FFC107] hover:bg-[#1F1F22] disabled:opacity-50">
+                                            {isBusy ? 'Working…' : 'Approve'}
+                                          </button>
+                                          <button
+                                            onClick={() => inlineReview(d.id, 'request_revision')}
+                                            disabled={isBusy}
+                                            className="bg-white border border-[#E4E4E7] rounded-[8px] px-3 py-1.5 text-[11.5px] font-bold text-[#0A0A0A] hover:border-[#0A0A0A] disabled:opacity-50">
+                                            Request revision
+                                          </button>
+                                          <Link href={`/dashboard/campaigns/${id}/reviews?tab=reviews`}
+                                            className="text-[10.5px] font-bold text-[#6B5A00] no-underline whitespace-nowrap">
+                                            full review ↗
+                                          </Link>
+                                        </>
                                       )}
                                       {needsLiveConfirm && (
-                                        <Link href={`/dashboard/campaigns/${id}/reviews?tab=live`}
-                                          className="bg-[#DBEAFE] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#1D4ED8] no-underline hover:opacity-80">
-                                          Confirm live
-                                        </Link>
+                                        <>
+                                          <button
+                                            onClick={() => inlineConfirmLive(d.id)}
+                                            disabled={isBusy}
+                                            className="bg-[#FFC107] rounded-[8px] px-3.5 py-1.5 text-[11.5px] font-extrabold text-[#0A0A0A] hover:bg-[#E0A800] disabled:opacity-50">
+                                            {isBusy ? 'Confirming…' : 'Confirm live · release T2'}
+                                          </button>
+                                          <Link href={`/dashboard/campaigns/${id}/reviews?tab=live`}
+                                            className="text-[10.5px] font-bold text-[#6B5A00] no-underline whitespace-nowrap">
+                                            full review ↗
+                                          </Link>
+                                        </>
                                       )}
                                     </span>
+                                  </div>
+                                  {needsReview && contentOpen && (
+                                    <div className="mt-1.5 px-1">
+                                      {d.caption && (
+                                        <div className="mb-2 p-2.5 rounded-[10px] bg-white border border-[#E4E4E7] text-[12px] text-[#1F1F22] leading-relaxed whitespace-pre-wrap">
+                                          {d.caption}
+                                        </div>
+                                      )}
+                                      <MediaPreview deliverableId={d.id} mediaType={d.media_type || d.type} />
+                                    </div>
+                                  )}
                                   </div>
                                 );
                               })}
@@ -544,16 +744,35 @@ export default function CampaignCommandCenterPage() {
             ))}
           </div>
 
+          {hasConversions && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+              {[
+                { k: 'SALES', v: nf(convCount) },
+                { k: 'REVENUE', v: fmtRupees(convRevenue) },
+                { k: 'COMMISSION PAID', v: fmtRupees(convCommission) },
+              ].map(c => (
+                <div key={c.k} className="bg-white border border-[#F3E8FF] rounded-[12px] p-4">
+                  <div className="text-[10px] font-extrabold text-[#7E22CE] tracking-[0.5px]">{c.k}</div>
+                  <div className="font-mono font-bold text-[24px] text-[#0A0A0A] mt-1">{c.v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {bySet.length > 0 && (<>
             <div className="text-[10.5px] font-extrabold text-[#71717A] tracking-[0.5px] mb-2">LEVEL 2 — BY SET</div>
             {bySet.map(s => {
               const maxViews = Math.max(...bySet.map(x => x.views || 0), 1);
+              const sConv = convBySetId[s.set_id];
               return (
                 <div key={s.set_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-[13px] text-[#0A0A0A]">{s.set_name} <span className="text-[11px] text-[#71717A] font-medium">· {s.goal || '—'} · {s.influencers} influencer{s.influencers !== 1 ? 's' : ''}</span></span>
                     <span className="font-mono text-[11.5px] text-[#52525B]">{nf(s.views)} views · {nf(s.likes)} likes · {nf(s.comments)} comments · ER {s.engagement_rate}%</span>
                   </div>
+                  {sConv && sConv.sales_count > 0 && (
+                    <div className="font-mono text-[11.5px] text-[#7E22CE] mt-1">{nf(sConv.sales_count)} sales · {fmtRupees(sConv.revenue)} revenue · {fmtRupees(sConv.commission_paid)} commission</div>
+                  )}
                   <div className="h-[6px] bg-[#F4F4F5] rounded-[3px] mt-2"><div className="h-[6px] bg-[#FFC107] rounded-[3px]" style={{ width: `${Math.round(((s.views || 0) / maxViews) * 100)}%` }} /></div>
                 </div>
               );
@@ -566,12 +785,16 @@ export default function CampaignCommandCenterPage() {
               const maxViews = Math.max(...byInf.map(x => x.views || 0), 1);
               const liveN = (i.deliverables || []).filter(d => d.status === 'live').length;
               const otherN = (i.deliverables || []).length - liveN;
+              const iConv = convByInf[i.influencer_id];
               return (
                 <div key={i.influencer_id} className="bg-white border border-[#E4E4E7] rounded-[12px] p-4 mb-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-[13px] text-[#0A0A0A]">{i.handle} <span className="text-[11px] text-[#71717A] font-medium">· {i.set_name} · {liveN} live{otherN > 0 ? ` + ${otherN} other` : ''}</span></span>
                     <span className="font-mono text-[11.5px] text-[#52525B]">{nf(i.views)} views · {nf(i.likes)} likes · ER {i.engagement_rate}%</span>
                   </div>
+                  {iConv && iConv.sales_count > 0 && (
+                    <div className="font-mono text-[11.5px] text-[#7E22CE] mt-1">{nf(iConv.sales_count)} sales · {fmtRupees(iConv.revenue)} revenue · {fmtRupees(iConv.commission_paid)} commission{iConv.roi ? ` · ROI ${iConv.roi}×` : ''}</div>
+                  )}
                   <div className="h-[6px] bg-[#F4F4F5] rounded-[3px] mt-2"><div className="h-[6px] bg-[#FFC107] rounded-[3px]" style={{ width: `${Math.round(((i.views || 0) / maxViews) * 100)}%` }} /></div>
                 </div>
               );
@@ -621,6 +844,12 @@ export default function CampaignCommandCenterPage() {
             <div className="mt-3 pt-3 border-t border-[#E4E4E7] text-[13px] text-[#1F1F22] leading-relaxed">{campaign.brief}</div>
           )}
         </button>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-[#0A0A0A] text-white text-[12px] font-semibold px-4 py-3 rounded-[12px] shadow-lg z-50">
+          {toast}
+        </div>
       )}
     </div>
   );

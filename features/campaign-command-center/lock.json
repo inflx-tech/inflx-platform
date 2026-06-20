@@ -1,0 +1,20 @@
+{
+  "feature": "campaign-command-center",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'Lock it' after v2 mockup review",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — locked v2 master-detail Command Center mockup (tree + per-creator lifecycle + content review + 3-level analytics)",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "Mockup locked in-chat (interactive v2). Design: master-detail; left tree sets+goals -> creators; right per-creator stage tracker + context action card (content review/contract/negotiation/date-change) + deliverables + offer/products + window/payout + per-creator performance; Needs-action inbox; 3-level analytics (creator -> set-average -> campaign-total) with per-creator sales/conversions. Reach/impressions EXCLUDED (not captured). Phased build: P1 re-wire existing data (engagement/conversions/campaign tree, re-surface content review) — no new backend; P2 clicks rollup + structured products; P3 per-creator date window + date-change request/approve (needs migration). Save standalone preview HTML into 04-preview before implement; author 06-diff/notes.md at push time per gov Rules 3/4.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
