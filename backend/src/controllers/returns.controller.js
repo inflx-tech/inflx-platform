@@ -34,6 +34,9 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const notificationService = require('../services/notification.service');
+const { appendInfluencerLedger } = require('../services/ledger.service');
+
+const _round2 = (n) => parseFloat((parseFloat(n) || 0).toFixed(2));
 
 // ── Customer side ────────────────────────────────────────────────────────────
 
@@ -327,39 +330,183 @@ const adminMarkRefunded = asyncHandler(async (req, res) => {
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Return not found or not in refundable state', 404);
 
-  // Reverse the influencer's HELD (unconfirmed) commission for this transaction — a
-  // refunded order must never pay out (founder rule: held till window closes, cancelled
-  // on return). The commission-confirm cron already SKIPS refunded returns; this cleans
-  // up the influencer's pending_balance/total_earned so their earnings read true. If the
-  // commission was somehow already confirmed (paid to wallet), leave it — clawing back a
-  // withdrawn balance is out of scope (the cron skip prevents this in practice).
-  const { rows: txRows } = await db.query(
-    `SELECT ft.id, ft.influencer_commission, ft.commission_confirmed_at, ci.influencer_id
-       FROM follower_returns fr
-       JOIN follower_transactions ft ON ft.id = fr.transaction_id
-       LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
-      WHERE fr.id = $1`,
-    [rows[0].id]
+  // ── Money G-3: PER-ITEM PRO-RATED commission claw-back ──────────────────────
+  // A refunded item must claw back only ITS share of the influencer commission +
+  // the brand's net (not the whole order). One return row = one item (product_id
+  // + variant_id). Pro-rate by the returned line's share of the order item total.
+  //   returnedShare      = line_total / itemsTotal   (line_total = price*qty from items_json)
+  //   reversedCommission = round(influencer_commission * share)
+  //   reversedBrandNet   = round(brand_net           * share)
+  // Idempotent: only runs when follower_returns.reversed_at IS NULL.
+  await clawbackOnRefund(rows[0].id).catch(e =>
+    console.error('[returns] claw-back failed for return', rows[0].id, e.message)
   );
-  const t = txRows[0];
-  if (t) {
-    if (t.influencer_id && !t.commission_confirmed_at && Number(t.influencer_commission) > 0) {
-      await db.query(
-        `UPDATE influencers
-            SET pending_balance = GREATEST(0, pending_balance - $1),
-                total_earned    = GREATEST(0, total_earned    - $1)
-          WHERE id = $2`,
-        [Number(t.influencer_commission), t.influencer_id]
-      );
-    }
-    await db.query(`UPDATE follower_transactions SET status = 'refunded' WHERE id = $1`, [t.id]);
-  }
 
   notifyFollowerOfReturnDecision(rows[0].id, 'refunded').catch(e =>
     console.error('[NOTIFY] return.refunded customer notify failed:', e.message)
   );
   return success(res, rows[0]);
 });
+
+// ── Money G-3: per-item pro-rated commission claw-back ───────────────────────
+
+/**
+ * Pro-rated claw-back for a just-refunded return. Idempotent on
+ * follower_returns.reversed_at. Runs atomically in one DB transaction:
+ *   - compute the returned item's line_total / itemsTotal share from the
+ *     order's items_json (single-brand single-category order → one window),
+ *   - reverse that share of influencer_commission (from pending_balance if the
+ *     commission is still HELD, else from wallet_balance if already confirmed),
+ *   - accumulate follower_transactions.commission_reversed / brand_net_reversed,
+ *   - stamp follower_returns.reversed_commission / reversed_at,
+ *   - flip the txn to status='refunded' + brand_settlement_status='reversed'
+ *     when the WHOLE order is gone, so the commerce-settlement job skips it;
+ *     otherwise leave it 'pending' so the job later settles the kept remainder,
+ *   - append an influencer_ledger 'return_clawback' debit row.
+ */
+async function clawbackOnRefund(returnId) {
+  await db.withTransaction(async (client) => {
+    // Lock the return row + its txn; pull the order's items_json for pro-ration.
+    const { rows: ctxRows } = await client.query(
+      `SELECT fr.id AS return_id, fr.product_id, fr.variant_id, fr.reversed_at,
+              ft.id AS txn_id, ft.influencer_commission, ft.brand_net,
+              ft.commission_confirmed_at, ft.commission_reversed, ft.brand_net_reversed,
+              ci.influencer_id,
+              fo.items_json
+         FROM follower_returns fr
+         JOIN follower_transactions ft ON ft.id = fr.transaction_id
+         LEFT JOIN campaign_influencers ci ON ci.id = ft.campaign_influencer_id
+         LEFT JOIN follower_orders fo ON fo.transaction_id = ft.id
+        WHERE fr.id = $1
+        FOR UPDATE OF fr, ft`,
+      [returnId]
+    );
+    const c = ctxRows[0];
+    if (!c) return;
+    if (c.reversed_at) return; // already clawed back — idempotent
+
+    const orderCommission = _round2(c.influencer_commission);
+    const orderBrandNet    = _round2(c.brand_net);
+
+    // Pro-ration: returned line's share of the order's item total.
+    let items = c.items_json;
+    if (typeof items === 'string') { try { items = JSON.parse(items); } catch (_) { items = null; } }
+    items = Array.isArray(items) ? items : [];
+
+    const lineTotal = (it) => (parseFloat(it.price) || 0) * (parseInt(it.quantity, 10) || 0);
+    const itemsTotal = _round2(items.reduce((s, it) => s + lineTotal(it), 0));
+
+    // Match the returned line by product_id (+ variant_id when present on items).
+    const matched = items.find((it) =>
+      String(it.product_id) === String(c.product_id) &&
+      (c.variant_id == null || it.variant_id == null || String(it.variant_id) === String(c.variant_id))
+    );
+
+    // returnedShare: matched line's share. Fallbacks keep money safe when
+    // items_json is absent/unmatched (e.g. single-item flows that don't write
+    // an order): treat the whole order as returned (share = 1).
+    let returnedShare;
+    if (matched && itemsTotal > 0) {
+      returnedShare = lineTotal(matched) / itemsTotal;
+    } else {
+      returnedShare = 1;
+    }
+    if (returnedShare > 1) returnedShare = 1;
+
+    let reversedCommission = _round2(orderCommission * returnedShare);
+    let reversedBrandNet   = _round2(orderBrandNet  * returnedShare);
+
+    // Never reverse more than what remains un-reversed on the txn.
+    const alreadyRevComm = _round2(c.commission_reversed);
+    const alreadyRevNet  = _round2(c.brand_net_reversed);
+    reversedCommission = _round2(Math.min(reversedCommission, Math.max(0, orderCommission - alreadyRevComm)));
+    reversedBrandNet   = _round2(Math.min(reversedBrandNet,   Math.max(0, orderBrandNet  - alreadyRevNet)));
+
+    // Stamp idempotency + the per-return reversed amount FIRST (the reversed_at
+    // guard above makes the whole block run-once).
+    await client.query(
+      `UPDATE follower_returns
+          SET reversed_commission = $1, reversed_at = NOW()
+        WHERE id = $2`,
+      [reversedCommission, returnId]
+    );
+
+    // Accumulate reversed totals on the transaction.
+    const newRevComm = _round2(alreadyRevComm + reversedCommission);
+    const newRevNet   = _round2(alreadyRevNet  + reversedBrandNet);
+    await client.query(
+      `UPDATE follower_transactions
+          SET commission_reversed = $1, brand_net_reversed = $2
+        WHERE id = $3`,
+      [newRevComm, newRevNet, c.txn_id]
+    );
+
+    // Reverse the influencer's commission share. If still HELD (unconfirmed),
+    // claw from pending_balance + total_earned. If already confirmed/paid to
+    // wallet, claw from wallet_balance instead (GREATEST(0,...) safety).
+    let balanceAfter = null;
+    let balanceField = 'pending_balance';
+    let ledgerNote = `Pro-rated return claw-back (share ${(returnedShare * 100).toFixed(1)}%)`;
+    if (c.influencer_id && reversedCommission > 0) {
+      if (!c.commission_confirmed_at) {
+        const { rows: ir } = await client.query(
+          `UPDATE influencers
+              SET pending_balance = GREATEST(0, pending_balance - $1),
+                  total_earned    = GREATEST(0, total_earned    - $1)
+            WHERE id = $2
+            RETURNING pending_balance`,
+          [reversedCommission, c.influencer_id]
+        );
+        balanceAfter = ir[0] ? parseFloat(ir[0].pending_balance) : null;
+      } else {
+        balanceField = 'wallet_balance';
+        ledgerNote += ' — confirmed commission reversed from wallet';
+        const { rows: ir } = await client.query(
+          `UPDATE influencers
+              SET wallet_balance = GREATEST(0, wallet_balance - $1),
+                  total_earned   = GREATEST(0, total_earned   - $1)
+            WHERE id = $2
+            RETURNING wallet_balance`,
+          [reversedCommission, c.influencer_id]
+        );
+        balanceAfter = ir[0] ? parseFloat(ir[0].wallet_balance) : null;
+      }
+
+      await appendInfluencerLedger({
+        client,
+        influencerId: c.influencer_id,
+        type: 'return_clawback',
+        amount: reversedCommission,
+        direction: 'debit',
+        balanceField,
+        balanceAfter,
+        source: 'return',
+        sourceRefId: returnId,
+        note: ledgerNote,
+      });
+    }
+
+    // Whole-order returned? Decide by BRAND NET remainder (the true signal for
+    // whether the brand is still owed anything), NOT by commission — commission can
+    // be unevenly distributed across lines, so a high-commission single-item return
+    // could otherwise mis-flag a multi-item order as whole and under-pay the brand
+    // for the kept lines. Fall back to commission only when there is no brand net.
+    const wholeOrder =
+      (orderBrandNet > 0 && newRevNet >= orderBrandNet) ||
+      (orderBrandNet === 0 && orderCommission > 0 && newRevComm >= orderCommission);
+    if (wholeOrder) {
+      // Fully gone: mark refunded + reversed so the settle job never pays the brand.
+      await client.query(
+        `UPDATE follower_transactions
+            SET status = 'refunded', brand_settlement_status = 'reversed'
+          WHERE id = $1 AND brand_settlement_status <> 'settled'`,
+        [c.txn_id]
+      );
+    }
+    // Partial: leave status='completed' + brand_settlement_status='pending' so the
+    // commerce-settlement job later settles the kept remainder (brand_net − reversed).
+  });
+}
 
 // ── Notification helpers ─────────────────────────────────────────────────────
 

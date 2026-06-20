@@ -429,11 +429,10 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
     }
   });
 
-  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
-  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
-  // purchase the customer already paid for.
-  await settlementService.settleCommerceTransaction(db, transactionId)
-    .catch(e => console.error('[settlement] failed:', e.message));
+  // Money G-3: brand commerce settlement is DEFERRED. The txn is left at
+  // brand_settlement_status='pending'; the commerce-settlement.job settles the
+  // brand's NET share (after any return claw-backs) only once the return window
+  // has closed. Do NOT settle at sale time. (Was: settleCommerceTransaction.)
 
   // Fire notification to influencer
   if (influencer) {
@@ -629,9 +628,9 @@ const verifyStoreOfferPay = asyncHandler(async (req, res) => {
     // No influencer commission credit, no attribution_clicks write — store-direct.
   });
 
-  // Settle the brand's net share (best-effort, post-commit) — unchanged path.
-  await settlementService.settleCommerceTransaction(db, transactionId)
-    .catch(e => console.error('[settlement] failed:', e.message));
+  // Money G-3: brand commerce settlement is DEFERRED to the commerce-settlement
+  // job once the return window closes. Left at brand_settlement_status='pending'.
+  // (Was: settleCommerceTransaction at sale time.)
 
   const txIdShort = transactionId.replace(/-/g, '').slice(-4).toUpperCase();
   const { rows: brandRows } = await db.query(`SELECT business_name FROM brands WHERE id = $1`, [meta.brand_id]);
@@ -851,11 +850,10 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     }
   });
 
-  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
-  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
-  // purchase the customer already paid for.
-  await settlementService.settleCommerceTransaction(db, transactionId)
-    .catch(e => console.error('[settlement] failed:', e.message));
+  // Money G-3: brand commerce settlement is DEFERRED to the commerce-settlement
+  // job once the return window closes. Left at brand_settlement_status='pending'
+  // so the brand is paid its NET (after any return claw-backs), never at sale.
+  // (Was: settleCommerceTransaction at sale time.)
 
   const { rows: brandRows } = await db.query(
     `SELECT b.business_name, u.phone AS brand_phone
@@ -1065,11 +1063,10 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
     }
   });
 
-  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
-  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
-  // purchase the customer already paid for.
-  await settlementService.settleCommerceTransaction(db, transactionId)
-    .catch(e => console.error('[settlement] failed:', e.message));
+  // Money G-3: brand commerce settlement is DEFERRED to the commerce-settlement
+  // job once the return window closes. Left at brand_settlement_status='pending'
+  // so the brand is paid its NET (after any return claw-backs), never at sale.
+  // (Was: settleCommerceTransaction at sale time.)
 
   const { rows: brandRows } = await db.query(
     `SELECT b.business_name, u.phone AS brand_phone
@@ -1369,11 +1366,10 @@ const verifyOrder = asyncHandler(async (req, res) => {
     }
   });
 
-  // Wave 3 commit 2 — settle the brand's net share (per-brand TCS + commission
-  // GST + Razorpay Route transfer). Best-effort + post-commit: never breaks the
-  // purchase the customer already paid for.
-  await settlementService.settleCommerceTransaction(db, transactionId)
-    .catch(e => console.error('[settlement] failed:', e.message));
+  // Money G-3: brand commerce settlement is DEFERRED to the commerce-settlement
+  // job once the return window closes. Left at brand_settlement_status='pending'
+  // so the brand is paid its NET (after any return claw-backs), never at sale.
+  // (Was: settleCommerceTransaction at sale time.)
 
   // Notifications
   notificationService.send({

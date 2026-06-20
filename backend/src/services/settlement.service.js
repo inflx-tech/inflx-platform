@@ -56,7 +56,7 @@ async function settleCommerceTransaction(runner, transactionId) {
   if (!transactionId) return null;
 
   const { rows } = await runner.query(
-    `SELECT ft.id, ft.brand_id, ft.brand_net, ft.marketplace_fee_amount,
+    `SELECT ft.id, ft.brand_id, ft.brand_net, ft.brand_net_reversed, ft.marketplace_fee_amount,
             ft.razorpay_payment_id, ft.tcs_amount,
             b.tcs_applicable, b.razorpay_linked_account_id
        FROM follower_transactions ft
@@ -69,7 +69,13 @@ async function settleCommerceTransaction(runner, transactionId) {
   // Idempotent: tcs_amount populated (0 or positive) means already settled.
   if (t.tcs_amount != null) return { skipped: true };
 
-  const brandNet       = _round2(t.brand_net);
+  // Money G-3: settle the brand's NET-OF-RETURNS share. Partial returns have
+  // already accumulated brand_net_reversed via the claw-back; the brand is paid
+  // only on the kept portion. (Whole-order returns are excluded upstream by the
+  // job's brand_settlement_status filter, so brandNet here is always >= 0.)
+  const grossBrandNet  = _round2(t.brand_net);
+  const reversed       = _round2(t.brand_net_reversed);
+  const brandNet       = _round2(Math.max(0, grossBrandNet - reversed));
   const fee            = _round2(t.marketplace_fee_amount);
   const tcs            = t.tcs_applicable ? await taxService.tcsOn(brandNet) : 0;
   const commissionGst  = await taxService.gstOn(fee);
@@ -110,7 +116,8 @@ async function settleCommerceTransaction(runner, transactionId) {
  */
 async function retryTransfer(runner, transactionId) {
   const { rows } = await runner.query(
-    `SELECT ft.id, ft.brand_net, ft.tcs_amount, ft.razorpay_payment_id, ft.razorpay_transfer_id,
+    `SELECT ft.id, ft.brand_net, ft.brand_net_reversed, ft.tcs_amount,
+            ft.razorpay_payment_id, ft.razorpay_transfer_id,
             b.razorpay_linked_account_id
        FROM follower_transactions ft
        JOIN brands b ON b.id = ft.brand_id
@@ -123,7 +130,9 @@ async function retryTransfer(runner, transactionId) {
   if (!t.razorpay_linked_account_id) return { skipped: 'no_linked_account' };
 
   const tcs            = parseFloat(t.tcs_amount) || 0;
-  const transferAmount = _round2(parseFloat(t.brand_net) - tcs);
+  // Net-of-returns, matching settleCommerceTransaction.
+  const netBrand       = Math.max(0, (parseFloat(t.brand_net) || 0) - (parseFloat(t.brand_net_reversed) || 0));
+  const transferAmount = _round2(netBrand - tcs);
   if (transferAmount <= 0) return { skipped: 'zero_amount' };
 
   const tr = await routeService.createTransfer({

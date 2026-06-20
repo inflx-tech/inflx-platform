@@ -6,6 +6,7 @@ const notificationService = require('../services/notification.service');
 // referred influencer's active referrer on confirmed (return-window-closed)
 // follower commission.
 const referralService = require('../services/referral.service');
+const ledgerService = require('../services/ledger.service');
 
 async function run() {
   console.log('[CRON commission-confirm] Running...');
@@ -19,17 +20,22 @@ async function run() {
      WHERE ft.return_window_ends_at <= NOW()
        AND ft.commission_confirmed_at IS NULL
        AND ft.status = 'completed'
-       -- Do NOT release commission for a cancelled order or an active/successful
-       -- return (founder rule: wallet isn't confirmed until the window closes, and
-       -- a return within the window cancels the pending commission). A later-REJECTED
-       -- return clears this guard so the next run confirms normally.
+       -- Do NOT release commission for a cancelled order or a STILL-OPEN return
+       -- (founder rule: wallet isn't confirmed until the window closes, and a
+       -- return within the window cancels the pending commission). A later-REJECTED
+       -- return clears the guard so the next run confirms normally.
        AND NOT EXISTS (
          SELECT 1 FROM follower_orders fo
           WHERE fo.transaction_id = ft.id AND fo.order_status = 'cancelled')
+       -- Money G-3: only an OPEN return blocks confirmation. A REFUNDED return has
+       -- ALREADY clawed its pro-rata share into commission_reversed, so the order
+       -- can still confirm the KEPT remainder (influencer_commission −
+       -- commission_reversed). This fixes the live bug where one partial return
+       -- froze the WHOLE order's commission forever.
        AND NOT EXISTS (
          SELECT 1 FROM follower_returns fr
           WHERE fr.transaction_id = ft.id
-            AND fr.return_status IN ('requested', 'approved', 'received', 'refunded'))`
+            AND fr.return_status IN ('requested', 'approved', 'received'))`
   );
 
   if (ready.length === 0) {
@@ -40,23 +46,44 @@ async function run() {
   let totalAmount = 0;
 
   for (const tx of ready) {
-    const commission = parseFloat(tx.influencer_commission);
+    // Money G-3: confirm the NET (kept) commission — gross minus any pro-rated
+    // return claw-backs already deducted from pending_balance at refund time.
+    const gross    = parseFloat(tx.influencer_commission) || 0;
+    const reversed = parseFloat(tx.commission_reversed) || 0;
+    const commission = parseFloat(Math.max(0, gross - reversed).toFixed(2));
     totalAmount += commission;
 
-    // 1. Mark commission confirmed
+    // 1. Mark commission confirmed (always, even if net is 0 — the window closed).
     await db.query(
       `UPDATE follower_transactions SET commission_confirmed_at = NOW() WHERE id = $1`,
       [tx.id]
     );
 
-    // 2. Move pending_balance → wallet_balance (do NOT touch total_earned — already added at transaction time)
-    await db.query(
-      `UPDATE influencers
-       SET wallet_balance  = wallet_balance  + $1,
-           pending_balance = pending_balance - $1
-       WHERE id = $2`,
-      [commission, tx.influencer_id]
-    );
+    // 2. Move pending_balance → wallet_balance for the kept amount (do NOT touch
+    //    total_earned — added at transaction time; claw-back already reduced it).
+    if (commission > 0) {
+      const { rows: balRows } = await db.query(
+        `UPDATE influencers
+         SET wallet_balance  = wallet_balance  + $1,
+             pending_balance = GREATEST(0, pending_balance - $1)
+         WHERE id = $2
+         RETURNING wallet_balance`,
+        [commission, tx.influencer_id]
+      );
+      // Ledger: pending → wallet confirm. Record the wallet credit (G-5).
+      await ledgerService.appendInfluencerLedger({
+        client: db,
+        influencerId: tx.influencer_id,
+        type: 'commission_confirm',
+        amount: commission,
+        direction: 'credit',
+        balanceField: 'wallet_balance',
+        balanceAfter: balRows[0] ? parseFloat(balRows[0].wallet_balance) : null,
+        source: 'follower_txn',
+        sourceRefId: tx.id,
+        note: reversed > 0 ? `Confirmed net of ₹${reversed.toFixed(2)} returned` : null,
+      });
+    }
 
     // 2b. Referral accrual (contract: features/referral-engine). The platform's
     // commission slice on this confirmed txn is marketplace_fee_amount (was

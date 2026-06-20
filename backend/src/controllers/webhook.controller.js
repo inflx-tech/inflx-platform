@@ -30,6 +30,7 @@ const taxService = require('../services/tax.service');
 // Contract: features/referral-engine — accrue referral commission to the
 // brand's active referrer on a confirmed (paid) subscription invoice.
 const referralService = require('../services/referral.service');
+const ledgerService = require('../services/ledger.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Signature verification
@@ -514,10 +515,25 @@ async function handlePayoutReversed(payload) {
     [payout.id]
   );
 
-  await db.query(
-    `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+  const { rows: revRows } = await db.query(
+    `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2
+     RETURNING wallet_balance`,
     [withdrawal.amount_requested, withdrawal.influencer_id]
   );
+  // G-5 ledger: payout reversed by Razorpay → wallet refund (once; guarded by
+  // the status='failed' idempotency check above).
+  await ledgerService.appendInfluencerLedger({
+    client: db,
+    influencerId: withdrawal.influencer_id,
+    type: 'withdrawal_reversal',
+    amount: parseFloat(withdrawal.amount_requested),
+    direction: 'credit',
+    balanceField: 'wallet_balance',
+    balanceAfter: revRows[0] ? parseFloat(revRows[0].wallet_balance) : null,
+    source: 'withdrawal',
+    sourceRefId: withdrawal.id,
+    note: 'Payout reversed by Razorpay — refunded to wallet',
+  });
 
   await notificationService.send({
     userId:   withdrawal.user_id,

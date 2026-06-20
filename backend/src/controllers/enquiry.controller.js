@@ -14,6 +14,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 const notificationService = require('../services/notification.service');
+const ledgerService = require('../services/ledger.service');
 
 async function getFollowerByUserId(userId) {
   const { rows } = await db.query(
@@ -146,10 +147,25 @@ const updateEnquiry = asyncHandler(async (req, res) => {
     commissionAmount = parseFloat((dealValueRupees * parseFloat(enquiry.commission_pct || 0) / 100).toFixed(2));
 
     if (commissionAmount > 0) {
-      await db.query(
-        `UPDATE influencers SET pending_balance = pending_balance + $1, total_earned = total_earned + $1 WHERE id = $2`,
+      const { rows: balRows } = await db.query(
+        `UPDATE influencers SET pending_balance = pending_balance + $1, total_earned = total_earned + $1 WHERE id = $2
+         RETURNING pending_balance`,
         [commissionAmount, enquiry.influencer_id]
       );
+      // G-5 ledger: enquiry conversion commission credited to pending_balance
+      // (once; guarded by the !commission_triggered check above).
+      await ledgerService.appendInfluencerLedger({
+        client: db,
+        influencerId: enquiry.influencer_id,
+        type: 'enquiry_commission',
+        amount: commissionAmount,
+        direction: 'credit',
+        balanceField: 'pending_balance',
+        balanceAfter: balRows[0] ? parseFloat(balRows[0].pending_balance) : null,
+        source: 'enquiry',
+        sourceRefId: id,
+        note: 'Enquiry converted — commission',
+      });
     }
     commissionTriggered = true;
   }

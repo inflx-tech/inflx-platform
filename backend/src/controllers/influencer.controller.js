@@ -744,6 +744,44 @@ const getEarnings = asyncHandler(async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET /influencers/me/ledger?limit=50&offset=0  (Money G-5)
+// Paginated earnings ledger for the authed influencer (forward-only audit
+// trail from influencer_ledger; written by sale/confirm/tranche/withdrawal/
+// enquiry/referral/return-clawback sites).
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getLedger = asyncHandler(async (req, res) => {
+  const inf = await getInfluencerByUserId(req.user.sub);
+  if (!inf) throw new AppError('NOT_FOUND', 'Influencer profile not found', 404);
+
+  const limit  = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+
+  const { rows: countRows } = await db.query(
+    `SELECT COUNT(*)::int AS total FROM influencer_ledger WHERE influencer_id = $1`,
+    [inf.id]
+  );
+  const total = countRows[0]?.total || 0;
+
+  const { rows } = await db.query(
+    `SELECT id, type, amount, direction, balance_field, balance_after,
+            source, source_ref_id, note, created_at
+       FROM influencer_ledger
+      WHERE influencer_id = $1
+      ORDER BY created_at DESC, id DESC
+      LIMIT $2 OFFSET $3`,
+    [inf.id, limit, offset]
+  );
+
+  return success(res, { entries: rows }, 200, {
+    total,
+    limit,
+    offset,
+    has_more: offset + rows.length < total,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET /influencers/me/tds-certificate?fy=2024-25
 // Returns a Form 16A-style PDF for the requested financial year
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1409,4 +1447,4 @@ const getReferralInfo = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo };
+module.exports = { register, getMe, updateMe, search, getPublicById, getInfluencerById, getEarnings, getLedger, getTdsCertificate, rescrape, getMyCampaigns, getMyCampaignDetail, storePreview, getCampaignProducts, getMyTransactions, getReferralInfo };

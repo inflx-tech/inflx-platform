@@ -15,6 +15,7 @@ const taxService        = require('./tax.service');
 // Contract: features/referral-engine — accrue referral commission to the
 // brand's active referrer on a released escrow tranche's protection fee.
 const referralService   = require('./referral.service');
+const ledgerService     = require('./ledger.service');
 
 // Tranche schedule — percents loaded from payment_config table at runtime
 function buildTranches(cfg) {
@@ -155,6 +156,20 @@ async function processTrancheRelease(client, escrowEntryId, influencerId, brandI
     `UPDATE influencers SET wallet_balance = $1, total_earned = $2 WHERE id = $3`,
     [newBalance, newEarned, influencerId]
   );
+
+  // G-5 ledger: tranche net credited to wallet_balance (campaign escrow release).
+  await ledgerService.appendInfluencerLedger({
+    client,
+    influencerId,
+    type: 'tranche_release',
+    amount: netAmount,
+    direction: 'credit',
+    balanceField: 'wallet_balance',
+    balanceAfter: newBalance,
+    source: 'escrow',
+    sourceRefId: escrowEntryId,
+    note: `Tranche ${entry.tranche_number} released`,
+  });
 
   // Audit: wallet_transactions for brand (type=payout, direction=debit)
   // balance_after = current brand balance (unchanged — escrow_lock already deducted it at publish)

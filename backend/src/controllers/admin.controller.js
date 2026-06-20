@@ -5,6 +5,7 @@ const multer              = require('multer');
 const { parse }           = require('csv-parse/sync');
 const notificationService = require('../services/notification.service');
 const paymentConfigSvc    = require('../services/paymentConfig.service');
+const ledgerService       = require('../services/ledger.service');
 const { success }         = require('../utils/response');
 const AppError            = require('../utils/AppError');
 const asyncHandler        = require('../utils/asyncHandler');
@@ -980,10 +981,25 @@ const processWithdrawal = asyncHandler(async (req, res) => {
 
   if (action === 'reject') {
     // Refund wallet balance
-    await db.query(
-      `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+    const { rows: revRows } = await db.query(
+      `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2
+       RETURNING wallet_balance`,
       [withdrawal.amount_requested, withdrawal.influencer_id]
     );
+    // G-5 ledger: admin-rejected withdrawal → wallet refund (once; guarded by
+    // the status='initiated' check above).
+    await ledgerService.appendInfluencerLedger({
+      client: db,
+      influencerId: withdrawal.influencer_id,
+      type: 'withdrawal_reversal',
+      amount: parseFloat(withdrawal.amount_requested),
+      direction: 'credit',
+      balanceField: 'wallet_balance',
+      balanceAfter: revRows[0] ? parseFloat(revRows[0].wallet_balance) : null,
+      source: 'withdrawal',
+      sourceRefId: withdrawal.id,
+      note: 'Withdrawal rejected by admin — refunded to wallet',
+    });
 
     await db.query(
       `UPDATE influencer_withdrawals SET status = 'failed', completed_at = now() WHERE id = $1`,

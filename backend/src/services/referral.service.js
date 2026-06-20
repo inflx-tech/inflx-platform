@@ -31,6 +31,7 @@
 const crypto = require('crypto');
 const db = require('../config/db');
 const AppError = require('../utils/AppError');
+const ledgerService = require('./ledger.service');
 
 const REFERRAL_WINDOW_MONTHS = 12;
 
@@ -274,9 +275,28 @@ async function _accrueOnClient(client, opts) {
       `UPDATE ${walletTable}
           SET wallet_balance        = wallet_balance        + $1,
               referral_earned_total = referral_earned_total + $1
-        WHERE id = $2`,
+        WHERE id = $2
+        RETURNING wallet_balance`,
       [amount, edge.referrer_id]
     );
+    // G-5 ledger: referral accrual credited to the INFLUENCER referrer's wallet.
+    // Agency referrers aren't influencers → not tracked in influencer_ledger.
+    // Idempotent because the referral_ledger ON CONFLICT above already returned
+    // null (no second credit) for a re-run, so we never reach here twice.
+    if (edge.referrer_type === 'influencer' && credited.rowCount === 1) {
+      await ledgerService.appendInfluencerLedger({
+        client,
+        influencerId: edge.referrer_id,
+        type: 'referral_accrual',
+        amount,
+        direction: 'credit',
+        balanceField: 'wallet_balance',
+        balanceAfter: credited.rows[0] ? parseFloat(credited.rows[0].wallet_balance) : null,
+        source: 'referral',
+        sourceRefId: sourceRefId,
+        note: `Referral accrual (${source})`,
+      });
+    }
     // Only mark the row 'paid' if the referrer's wallet was actually credited.
     // If the referrer row is missing (rowCount 0), leave it 'pending' — no
     // silent loss; a later settlement can still pay it idempotently.

@@ -29,6 +29,9 @@ router.get('/me/offers',   authenticate, requireRole('influencer'), offerCtrl.ge
 // ── Earnings overview (Phase 3 — Block E) ─────────────────────────────────────
 router.get('/me/earnings', authenticate, requireRole('influencer'), ctrl.getEarnings);
 
+// ── Earnings ledger (Money G-5) — paginated forward-only statement ────────────
+router.get('/me/ledger',   authenticate, requireRole('influencer'), ctrl.getLedger);
+
 // ── Refer & Earn (Contract 4) — own referral code + earnings ─────────────────
 router.get('/me/referral', authenticate, requireRole('influencer'), ctrl.getReferralInfo);
 

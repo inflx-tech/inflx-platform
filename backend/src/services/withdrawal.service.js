@@ -7,6 +7,7 @@ const { decrypt }       = require('../utils/encrypt');
 const { toPaise }       = require('../utils/money');
 const paymentConfigSvc  = require('./paymentConfig.service');
 const notificationService = require('./notification.service');
+const ledgerService     = require('./ledger.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Razorpay Payout API helper
@@ -154,10 +155,23 @@ async function initiateWithdrawal(influencer, amountRequested, method) {
   const netPaid     = parseFloat((amountRequested - tdsDeducted).toFixed(2));
 
   // ── Deduct wallet immediately (prevents double-withdrawal) ────────────────
-  await db.query(
-    `UPDATE influencers SET wallet_balance = wallet_balance - $1 WHERE id = $2`,
+  const { rows: deductRows } = await db.query(
+    `UPDATE influencers SET wallet_balance = wallet_balance - $1 WHERE id = $2
+     RETURNING wallet_balance`,
     [amountRequested, influencer.id]
   );
+  // G-5 ledger: withdrawal debit from wallet_balance.
+  await ledgerService.appendInfluencerLedger({
+    client: db,
+    influencerId: influencer.id,
+    type: 'withdrawal',
+    amount: amountRequested,
+    direction: 'debit',
+    balanceField: 'wallet_balance',
+    balanceAfter: deductRows[0] ? parseFloat(deductRows[0].wallet_balance) : null,
+    source: 'withdrawal',
+    note: 'Withdrawal requested',
+  });
 
   // ── Razorpay payout ───────────────────────────────────────────────────────
   let razorpayPayoutId;
@@ -183,10 +197,23 @@ async function initiateWithdrawal(influencer, amountRequested, method) {
       status = payoutRes.status === 'processed' ? 'completed' : 'processing';
     } catch (err) {
       // Rollback wallet deduction on payout failure
-      await db.query(
-        `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+      const { rows: revRows } = await db.query(
+        `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2
+         RETURNING wallet_balance`,
         [amountRequested, influencer.id]
       );
+      // G-5 ledger: withdrawal reversal credit back to wallet_balance.
+      await ledgerService.appendInfluencerLedger({
+        client: db,
+        influencerId: influencer.id,
+        type: 'withdrawal_reversal',
+        amount: amountRequested,
+        direction: 'credit',
+        balanceField: 'wallet_balance',
+        balanceAfter: revRows[0] ? parseFloat(revRows[0].wallet_balance) : null,
+        source: 'withdrawal',
+        note: 'Withdrawal reversed — Razorpay payout failed',
+      });
       const msg = err?.response?.data?.error?.description || err.message;
       const e   = new Error(`Razorpay payout failed: ${msg}`);
       e.code = 'PAYOUT_FAILED'; e.statusCode = 502;
@@ -245,10 +272,24 @@ async function retryWithdrawal(withdrawal, influencer) {
   }
 
   // Refund amount back to wallet
-  await db.query(
-    `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2`,
+  const { rows: refundRows } = await db.query(
+    `UPDATE influencers SET wallet_balance = wallet_balance + $1 WHERE id = $2
+     RETURNING wallet_balance`,
     [withdrawal.amount_requested, influencer.id]
   );
+  // G-5 ledger: failed-withdrawal refund back to wallet before re-initiation.
+  await ledgerService.appendInfluencerLedger({
+    client: db,
+    influencerId: influencer.id,
+    type: 'withdrawal_reversal',
+    amount: parseFloat(withdrawal.amount_requested),
+    direction: 'credit',
+    balanceField: 'wallet_balance',
+    balanceAfter: refundRows[0] ? parseFloat(refundRows[0].wallet_balance) : null,
+    source: 'withdrawal',
+    sourceRefId: withdrawal.id,
+    note: 'Failed withdrawal refunded for retry',
+  });
 
   await db.query(
     `UPDATE influencer_withdrawals SET status = 'initiated', razorpay_payout_id = NULL WHERE id = $1`,

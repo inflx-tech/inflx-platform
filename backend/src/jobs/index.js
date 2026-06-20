@@ -23,6 +23,7 @@ const negotiationExpiryJob = require('./negotiation-expiry.job');
 const productionReminderJob = require('./production-shipment-reminder.job');
 const subscriptionRenewalJob = require('./subscription-renewal.job');
 const settlementRetryJob     = require('./settlement-retry.job');
+const commerceSettlementJob  = require('./commerce-settlement.job');
 
 // Wrap offer-expiry to expose run() interface (it exports runOfferExpiryJob)
 const offerExpiryRun       = () => offerExpiryJob.runOfferExpiryJob();
@@ -78,6 +79,12 @@ function startAllJobs() {
   // failure). Dormant in practice until brands onboard + Route is enabled.
   cron.schedule('20 * * * *', settlementRetryJob.run, { timezone: tz });
 
+  // commerce-settlement (Money G-3) — 00:05 IST daily; pays brands their NET
+  // commerce share only AFTER the order return window has closed (deferred from
+  // sale time). Runs just after commission-confirm (00:01) so both honour the
+  // same window boundary on the same tick.
+  cron.schedule('5 0 * * *', commerceSettlementJob.run, { timezone: tz });
+
   console.log('[JOBS] All cron jobs scheduled.');
 }
 
@@ -95,4 +102,5 @@ module.exports = {
   productionReminderJob,
   subscriptionRenewalJob,
   settlementRetryJob,
+  commerceSettlementJob,
 };

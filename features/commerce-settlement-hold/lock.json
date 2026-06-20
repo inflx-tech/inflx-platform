@@ -1,0 +1,17 @@
+{
+  "feature": "commerce-settlement-hold",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'go for G3 and G5' + per-item hold rule",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "notes": "G-3 hold brand commerce payout until return window closes + per-item pro-rated claw-back; fixes the one-return-freezes-whole-order bug. G-5 influencer_ledger + write points + GET /influencers/me/ledger. Migration 112. Backend-only (UI follow-up). Two adversarial money reviewers + pnpm qa GREEN. CRITICAL C1 (Route double-pay on crash) is DORMANT (RAZORPAY_MOCK=true) and documented as a HARD gate before Route launch; MEDIUM-1 + LOW-3 fixed.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}

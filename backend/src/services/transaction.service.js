@@ -13,6 +13,7 @@ const db = require('../config/db');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
 const { toPaise } = require('../utils/money');
+const ledgerService = require('./ledger.service');
 
 // ── Razorpay client ──────────────────────────────────────────────────────────
 let _rzp = null;
@@ -210,14 +211,28 @@ function calcOnlineOrder(products, discountPct, commissionPct, platformFeePct, d
  * Credit influencer commission to pending_balance and total_earned.
  * commissionRupees is rupees (matches the new DB convention).
  */
-async function creditInfluencerCommission(client, influencerId, commissionRupees) {
-  await client.query(
+async function creditInfluencerCommission(client, influencerId, commissionRupees, sourceRefId = null) {
+  const { rows } = await client.query(
     `UPDATE influencers
      SET pending_balance = pending_balance + $1,
          total_earned    = total_earned    + $1
-     WHERE id = $2`,
+     WHERE id = $2
+     RETURNING pending_balance`,
     [commissionRupees, influencerId]
   );
+  // G-5 ledger: sale commission credited to pending_balance (held until window).
+  // Atomic on the same client/transaction; best-effort (never blocks the credit).
+  await ledgerService.appendInfluencerLedger({
+    client,
+    influencerId,
+    type: 'sale_commission_pending',
+    amount: commissionRupees,
+    direction: 'credit',
+    balanceField: 'pending_balance',
+    balanceAfter: rows[0] ? parseFloat(rows[0].pending_balance) : null,
+    source: 'follower_txn',
+    sourceRefId,
+  });
 }
 
 module.exports = {
