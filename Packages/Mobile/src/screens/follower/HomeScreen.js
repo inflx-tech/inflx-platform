@@ -111,14 +111,7 @@ export default function HomeScreen({ navigation }) {
       <ScrollView style={{ flex: 1 }} stickyHeaderIndices={[0]} showsVerticalScrollIndicator={false}>
         {/* Sticky category rail */}
         <View style={s.railWrap}>
-          <View style={s.railHeader}>
-            <Text style={s.railTitle}>What's on your mind?</Text>
-            {cats.length > 0 && (
-              <TouchableOpacity onPress={() => setSeeAllOpen(true)} hitSlop={8} activeOpacity={0.7}>
-                <Text style={s.seeAll}>See all ›</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <Text style={s.railTitle}>What's on your mind?</Text>
           {cats.length === 0 ? (
             <Text style={s.railEmpty}>Categories for {active?.name || 'this'} coming soon.</Text>
           ) : (
@@ -133,6 +126,12 @@ export default function HomeScreen({ navigation }) {
                   <Text style={s.catName} numberOfLines={1}>{c.name}</Text>
                 </TouchableOpacity>
               ))}
+              <TouchableOpacity style={s.cat} onPress={() => setSeeAllOpen(true)} activeOpacity={0.8}>
+                <View style={s.seeAllCircle}>
+                  <Icon name="view-grid-outline" size={26} color={T.yellowDeep} />
+                </View>
+                <Text style={s.seeAllLabel}>SEE ALL ⌄</Text>
+              </TouchableOpacity>
             </ScrollView>
           )}
         </View>
@@ -207,9 +206,9 @@ const s = StyleSheet.create({
   vegKnobOn: { marginLeft: 15 },
 
   railWrap: { backgroundColor: T.white, paddingTop: 6, paddingBottom: 12, paddingLeft: 14, borderTopWidth: 6, borderTopColor: T.pageBg },
-  railHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11, paddingRight: 14 },
-  railTitle: { fontSize: 16, color: T.ink, fontFamily: fonts.displayBold },
-  seeAll: { fontSize: 12, color: T.yellowDeep, fontFamily: fonts.sansBold },
+  railTitle: { fontSize: 16, color: T.ink, fontFamily: fonts.displayBold, marginBottom: 11 },
+  seeAllCircle: { width: 66, height: 66, borderRadius: 33, backgroundColor: T.yellowTint, alignItems: 'center', justifyContent: 'center' },
+  seeAllLabel: { fontSize: 11, color: T.yellowDeep, fontFamily: fonts.sansBold, marginTop: 6, textAlign: 'center', letterSpacing: 0.3 },
   railEmpty: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular, paddingRight: 14 },
   cat: { alignItems: 'center', width: 74 },
   catImgBox: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
