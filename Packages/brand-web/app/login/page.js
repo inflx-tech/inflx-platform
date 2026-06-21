@@ -293,11 +293,16 @@ export default function LoginPage() {
                   </span>
                   <input
                     type="tel"
-                    name="phone"
+                    name="login-phone"
                     value={phone}
                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     placeholder="9876543210"
                     className="flex-1 px-3.5 py-3 text-[15px] text-[#0A0A0A] outline-none bg-transparent font-['JetBrains_Mono',ui-monospace,monospace] tracking-wider"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    data-1p-ignore
+                    data-lpignore="true"
                     required
                   />
                 </div>
