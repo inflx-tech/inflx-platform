@@ -530,6 +530,12 @@ async function resolveBusinessStore(brandId, viaInfluencerId = null) {
       cost_for_two:              listingData.cost_for_two != null ? Number(listingData.cost_for_two) : null,
       locality_or_neighborhood:  listingData.locality_or_neighborhood || null,
       cuisines:                  Array.isArray(listingData.cuisines) ? listingData.cuisines : [],
+      // Food World P1 — restaurant storefront header. ETA + free-delivery ride
+      // in listing_data (consistent with cuisines/cost_for_two) — no brands
+      // schema change. Owner fills these in the Phase-2 editor; display-only now.
+      free_delivery:             listingData.free_delivery === true,
+      delivery_eta_min_mins:     listingData.delivery_eta_min_mins != null ? Number(listingData.delivery_eta_min_mins) : null,
+      delivery_eta_max_mins:     listingData.delivery_eta_max_mins != null ? Number(listingData.delivery_eta_max_mins) : null,
       open_status:               openStatus,
       // Pass through full listing_data so BrandActionRow's visible_if
       // expressions (e.g. "brand_data.accepts_table_booking == true") can

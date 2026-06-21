@@ -1333,13 +1333,59 @@ const getProductDetail = asyncHandler(async (req, res) => {
   const { rows } = await db.query(
     `SELECT id, name, price, image_url, description, section,
             variants_json, facets, tags, category_node_id,
-            return_policy_days, veg_flag, stock
+            return_policy_days, veg_flag, stock, badge
        FROM brand_products
       WHERE id = $1 AND is_active = true`,
     [product_id]
   );
   if (!rows[0]) throw new AppError('NOT_FOUND', 'Product not found', 404);
-  return success(res, { product: rows[0] });
+  const product = rows[0];
+
+  // Food World P1 — nested customisation groups for the ＋ popup + dish-detail
+  // popup. ONE model: variation groups (single/is_variation, set base price) +
+  // add-on groups (multi, +delta). Empty array for non-food / uncustomised dishes.
+  const { rows: groupRows } = await db.query(
+    `SELECT id, name, selection_type, is_variation, is_required,
+            min_select, max_select, sort_order
+       FROM product_addon_groups
+      WHERE product_id = $1
+      ORDER BY sort_order, name`,
+    [product_id]
+  );
+  let addonGroups = [];
+  if (groupRows.length) {
+    const groupIds = groupRows.map(g => g.id);
+    const { rows: itemRows } = await db.query(
+      `SELECT id, group_id, name, price, is_default, sort_order
+         FROM product_addon_items
+        WHERE group_id = ANY($1::uuid[]) AND is_active = true
+        ORDER BY sort_order, name`,
+      [groupIds]
+    );
+    const itemsByGroup = {};
+    for (const it of itemRows) {
+      (itemsByGroup[it.group_id] = itemsByGroup[it.group_id] || []).push({
+        id: it.id,
+        name: it.name,
+        price: parseFloat(it.price || 0),
+        is_default: it.is_default === true,
+        sort_order: it.sort_order,
+      });
+    }
+    addonGroups = groupRows.map(g => ({
+      id: g.id,
+      name: g.name,
+      selection_type: g.selection_type,
+      is_variation: g.is_variation === true,
+      is_required: g.is_required === true,
+      min_select: g.min_select,
+      max_select: g.max_select,
+      sort_order: g.sort_order,
+      items: itemsByGroup[g.id] || [],
+    }));
+  }
+
+  return success(res, { product: { ...product, addon_groups: addonGroups } });
 });
 
 // GET /v1/follower/section-results — the shared "View all" full list for one shelf's rule.

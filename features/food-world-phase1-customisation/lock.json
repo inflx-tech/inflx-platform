@@ -1,0 +1,29 @@
+{
+  "feature": "food-world-phase1-customisation",
+  "area": "backend-migration",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — lock decision delegated; founder said 'pls go and start implementation' after the Phase-1 spec (migrations 113 + payload + order change) was presented. Derives from the locked Food World ownership + scope decisions (see auto-memory project_food_world).",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING — backend/migrations/113_food_customisation.sql runs on Render→Supabase on push; backend/src changes redeploy. Additive only (2 new tables + 3 brand_products columns); no existing table/column altered or dropped; placeOrder line-pricing is customisation-aware but byte-identical when no customisation present. Applied to LOCAL first; pushed only on explicit founder go; never silent.",
+  "fix": "Phase 1 of Food World: product_addon_groups + product_addon_items (unified variation+add-on model), brand_products badge/is_featured/featured_sort, dish-section payload enrichment (rating/review_count/badge/has_addons), getProductDetail addon_groups, storefront free_delivery/ETA from listing_data, and order payload carrying variation/add-ons/note priced server-side.",
+  "related": [
+    "features/meals-schema"
+  ],
+  "result": "IMPLEMENTED + verified on LOCAL. Migration 113 applied + idempotent on dev DB. New tests/food-customisation.test.js (6 cases) all PASS against real Postgres: getProductDetail addon_groups shape, empty-for-plain-dish, section enrichment (rating 4.5/review_count 2/badge/has_addons), order pricing (variation Half ₹70 + add-on Coke ₹40 = ₹110 with snapshot variation/selected_addons/note preserved), regression (no customisation → ₹114 base), security (cross-product add-on → 422). pnpm qa GREEN (79). Awaiting explicit founder go before run-113.js on Supabase + push.",
+  "regression_proof": "Additive DDL only (2 tables + 3 cols; no existing object altered). placeOrder no-customisation path proven byte-identical (REGRESSION test → ₹114 base). pnpm qa GREEN (79). qa:db order tests pass in isolation; combined-run order failures are the documented Windows/Docker pg-pool connect-timeout flake (qa-db-truncate-flake), NOT this change — read-path tests in the same file pass.",
+  "discipline": "Contract-first per governance: spec/workflow/expected-outputs/impact locked before code. Production-impacting migration surfaced for explicit go, never pushed silently.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending founder go: node backend/scripts/run-113.js (Supabase prod) → git push → Render redeploys backend."
+  },
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — N/A for backend-only contract; attestation set to satisfy gov-check Rule 3 if bundled with a UI-governed changeset.",
+  "mockup_locked_at": "2026-06-21"
+}

@@ -574,6 +574,14 @@ function mapListedProductItem(r) {
     veg_flag: r.veg_flag,
     description: r.description,
     discount_value: null,           // no offer in listing-driven mode
+    // Food World P1 — dish-card enrichment. rating/review_count are BRAND-level
+    // (restaurant_reviews has no product_id); the card shows the restaurant's
+    // score. badge is owner-set. has_addons tells the card whether ＋ opens the
+    // customise popup vs a flat add.
+    rating: r.rating != null ? Number(r.rating) : null,
+    review_count: r.review_count != null ? Number(r.review_count) : 0,
+    badge: r.badge || null,
+    has_addons: r.has_addons === true,
     distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : null,
     brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category, city: r.brand_city },
     via_creator: null,
@@ -645,13 +653,20 @@ async function productsInCategory(ctx) {
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
-           bp.created_at,
+           bp.created_at, bp.badge,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
+           rev.rating, rev.review_count,
+           EXISTS (SELECT 1 FROM product_addon_groups g WHERE g.product_id = bp.id) AS has_addons,
            ${distExpr} AS dist_km
       FROM brand_products bp
       JOIN brands b   ON b.id = bp.brand_id
       JOIN users u_b  ON u_b.id = b.user_id
+      LEFT JOIN LATERAL (
+        SELECT ROUND(AVG(rr.rating)::numeric, 1) AS rating, COUNT(*)::int AS review_count
+          FROM restaurant_reviews rr
+         WHERE rr.brand_id = b.id AND rr.status = 'published'
+      ) rev ON true
      WHERE u_b.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}
      ORDER BY ${orderBy}
@@ -755,13 +770,20 @@ async function libraryProducts(ctx) {
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
-           bp.created_at,
+           bp.created_at, bp.badge,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
+           rev.rating, rev.review_count,
+           EXISTS (SELECT 1 FROM product_addon_groups g WHERE g.product_id = bp.id) AS has_addons,
            ${distExpr} AS dist_km
       FROM brand_products bp
       JOIN brands b   ON b.id = bp.brand_id
       JOIN users u_b  ON u_b.id = b.user_id
+      LEFT JOIN LATERAL (
+        SELECT ROUND(AVG(rr.rating)::numeric, 1) AS rating, COUNT(*)::int AS review_count
+          FROM restaurant_reviews rr
+         WHERE rr.brand_id = b.id AND rr.status = 'published'
+      ) rev ON true
      WHERE u_b.status = 'approved' AND bp.is_active = true
        ${creatorScoped ? '' : 'AND bp.pushed_to_store = true'}
        ${cats ? `AND b.category = ANY($${catIdx})` : ''}

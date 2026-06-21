@@ -1159,16 +1159,78 @@ const placeOrder = asyncHandler(async (req, res) => {
     fetchProductMetaMap(productIds),
   ]);
 
-  const safeItems = items.map(i => ({
-    product_id: i.product_id,
-    variant_id: i.variant_id || null,
-    quantity: parseInt(i.quantity, 10),
-    // Fashion/furniture variants live in variants_json.colors[] as SKUs (no
-    // product_variants rows). Carry the chosen colour·size + SKU as
-    // fulfillment metadata so the brand knows what to ship; price stays base.
-    variant_sku: i.variant_sku || null,
-    variant_label: i.variant_label || null,
-  }));
+  // Food World P1 — resolve dish customisation (variation + add-ons) server-side.
+  // The client sends only ids; names + PRICES come from the DB (never trust
+  // client-sent prices). Ownership is validated: an item_id must belong (via its
+  // group) to the same product, and a variation item must come from a variation
+  // group (and an add-on from a non-variation group).
+  const customisationIds = [...new Set(
+    items.flatMap(i => [
+      i.variation && i.variation.item_id,
+      ...(Array.isArray(i.addons) ? i.addons.map(a => a && a.item_id) : []),
+    ]).filter(Boolean)
+  )];
+  let addonItemMap = new Map();
+  if (customisationIds.length) {
+    const { rows: aRows } = await db.query(
+      `SELECT i.id, i.name, i.price, i.group_id, g.is_variation, g.product_id
+         FROM product_addon_items i
+         JOIN product_addon_groups g ON g.id = i.group_id
+        WHERE i.id = ANY($1::uuid[]) AND i.is_active = true`,
+      [customisationIds]
+    );
+    addonItemMap = new Map(aRows.map(r => [r.id, r]));
+  }
+
+  const safeItems = items.map(i => {
+    const productId = i.product_id;
+    // Variation (Half/Full) — single, sets the base price.
+    let variation = null;
+    if (i.variation && i.variation.item_id) {
+      const row = addonItemMap.get(i.variation.item_id);
+      if (!row || row.product_id !== productId || row.is_variation !== true) {
+        throw new AppError('VALIDATION_ERROR', 'Invalid variation for product', 422, 'variation');
+      }
+      variation = { group_id: row.group_id, item_id: row.id, name: row.name, price: parseFloat(row.price || 0) };
+    }
+    // Add-ons (Roti/Coke) — stack as +deltas.
+    const selectedAddons = [];
+    if (Array.isArray(i.addons)) {
+      for (const a of i.addons) {
+        if (!a || !a.item_id) continue;
+        const row = addonItemMap.get(a.item_id);
+        if (!row || row.product_id !== productId || row.is_variation === true) {
+          throw new AppError('VALIDATION_ERROR', 'Invalid add-on for product', 422, 'addons');
+        }
+        selectedAddons.push({ group_id: row.group_id, item_id: row.id, name: row.name, price: parseFloat(row.price || 0) });
+      }
+    }
+    const note = typeof i.note === 'string' ? (i.note.trim().slice(0, 280) || null) : null;
+    return {
+      product_id: productId,
+      variant_id: i.variant_id || null,
+      quantity: parseInt(i.quantity, 10),
+      // Fashion/furniture variants live in variants_json.colors[] as SKUs (no
+      // product_variants rows). Carry the chosen colour·size + SKU as
+      // fulfillment metadata so the brand knows what to ship; price stays base.
+      variant_sku: i.variant_sku || null,
+      variant_label: i.variant_label || null,
+      // Food World P1 — resolved customisation (server-priced).
+      variation,
+      selected_addons: selectedAddons,
+      note,
+    };
+  });
+
+  // Customisation-aware unit (per-one) price: a chosen variation SETS the base
+  // price; otherwise the product/variant base via lineItemPrice. Add-ons stack
+  // as +deltas. With NO customisation this equals offerService.lineItemPrice
+  // exactly → byte-identical pricing for non-food / uncustomised orders.
+  const lineUnitPrice = (i) => {
+    const base = i.variation ? i.variation.price : offerService.lineItemPrice(i, priceMap, variantPriceMap);
+    const add = (i.selected_addons || []).reduce((s, a) => s + Number(a.price || 0), 0);
+    return parseFloat((base + add).toFixed(2));
+  };
 
   // Discount via offer.service.js parser. Handles all 5 offer mechanics
   // (Discount / Volume / BOGO / Bundle / Free gift) with the 3-tier scope
@@ -1188,7 +1250,11 @@ const placeOrder = asyncHandler(async (req, res) => {
   const commissionPct  = parseFloat(record.commission_pct || 0);
   const deliveryFee    = parseFloat(delivery_fee || 0);
 
-  const itemsTotal = offerService.itemsTotal(safeItems, priceMap, variantPriceMap);
+  // Customisation-aware total (variation base + add-on deltas). Identical to
+  // offerService.itemsTotal when no item carries customisation.
+  const itemsTotal = parseFloat(
+    safeItems.reduce((s, i) => s + lineUnitPrice(i) * Number(i.quantity || 1), 0).toFixed(2)
+  );
   const discountedItems = parseFloat((itemsTotal - discountAmount).toFixed(2));
   const netAmount = parseFloat((discountedItems + deliveryFee).toFixed(2));
   const influencerCommission = parseFloat((discountedItems * commissionPct / 100).toFixed(2));
@@ -1214,7 +1280,12 @@ const placeOrder = asyncHandler(async (req, res) => {
     variant_sku: i.variant_sku,
     variant_label: i.variant_label,
     quantity: i.quantity,
-    price: offerService.lineItemPrice(i, priceMap, variantPriceMap),
+    price: lineUnitPrice(i),
+    // Food World P1 — customisation snapshot (untyped jsonb; no migration).
+    // Readers needing only product/variant/qty/price ignore these extra keys.
+    variation: i.variation,
+    selected_addons: i.selected_addons,
+    note: i.note,
   }));
 
   const orderId = await txService.createOrder(netAmount, {
