@@ -59,6 +59,9 @@ const referralAdminRoutes  = require('./referralAdmin.routes');
 const productVariantsRoutes = require('./productVariants.routes');
 const returnsRoutes         = require('./returns.routes');
 
+// Food World P2 — product add-on/variation authoring (brand-side)
+const productAddonsRoutes   = require('./productAddons.routes');
+
 // Offer Engine — brand-side reusable offer library (Sub-contract A)
 const brandOfferRoutes      = require('./brandOffer.routes');
 
@@ -184,6 +187,7 @@ router.get('/internal/places-health',             geocodingCtrl.placesHealth);
 
 // ── Fashion-1 — product variants (brand-side) + returns workflow ─────────────
 router.use('/brands/me', productVariantsRoutes);
+router.use('/brands/me', productAddonsRoutes);
 router.use('/brands/me', returnsRoutes.brandRouter);   // GET /brands/me/returns (read-only)
 
 // ── Offer Engine — brand-side reusable offer library (Sub-contract A) ────────

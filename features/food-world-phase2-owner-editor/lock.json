@@ -1,0 +1,26 @@
+{
+  "feature": "food-world-phase2-owner-editor",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — lock decision delegated; founder said 'modal is right option, choose and lock other items and start building'. Builds on food-world-phase1-customisation.",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. Slice A (backend addon-write API + updateProduct allow-list) → Render on push. Slice B (brand-web Customise modal) → Vercel on push. No migration (Phase-1 mig 113 already applied). Surfaced for explicit go; never silent.",
+  "fix": "Restaurant owner tooling: per-dish Customise modal (variations + add-on groups + pull-from-menu + badge + featured) and restaurant delivery settings (free-delivery + ETA via listing_data). Backend bulk-replace addon-groups endpoint mirrors productVariants.",
+  "related": [
+    "features/food-world-phase1-customisation"
+  ],
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — reviewed the rendered owner-editor mockup (modal layout, variations + add-on groups + pull-from-menu + badge/featured + delivery settings) and said 'modal is right option ... lock'.",
+  "mockup_locked_at": "2026-06-21",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Pending founder go per slice: Slice A push → Render; Slice B push → Vercel."
+  }
+}

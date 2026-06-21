@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Food World P2 — owner editor (locked mockup)</title>
+<style>
+  :root{--bg:#f3f3f1;--card:#fff;--bd:rgba(0,0,0,.14);--bd2:rgba(0,0,0,.28);--txt:#1a1d1f;--mut:#6b6f76;--hint:#9aa0a6;--ok:#0f6e56;--info:#185fa5;--rad:10px}
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  body{background:var(--bg);color:var(--txt);margin:0;padding:24px}
+  .wrap{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px 20px}
+  input{height:34px;border:1px solid var(--bd2);border-radius:8px;padding:0 8px;font-size:14px}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 0}
+  .btn{font-size:12px;padding:5px 10px;border:1px solid var(--bd2);border-radius:8px;background:#fff;cursor:pointer}
+  .toggle{width:38px;height:22px;border-radius:11px;background:var(--ok);position:relative;display:inline-block}
+  .toggle span{position:absolute;right:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff}
+  .pill{font-size:11px;padding:2px 8px;border-radius:8px}
+  .grp{border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .backdrop{background:rgba(0,0,0,.45);border-radius:12px;padding:18px}
+  .modal{background:#fff;border:1px solid var(--bd2);border-radius:12px;overflow:hidden}
+  .mhead,.mfoot{display:flex;align-items:center;gap:10px;padding:14px 18px}
+  .mhead{border-bottom:1px solid var(--bd)}.mfoot{border-top:1px solid var(--bd);justify-content:flex-end}
+  .sec{font-size:13px;font-weight:500}
+  h4{margin:0 0 4px;font-size:15px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h4>Restaurant delivery settings <span style="float:right;font-size:12px;color:var(--hint);font-weight:400">applies to whole restaurant</span></h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:8px;padding:10px 12px"><span style="font-size:14px">Free delivery</span><span class="toggle"><span></span></span></div>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:10px 12px"><span style="font-size:14px">Delivery time</span><input value="20" style="width:48px;text-align:center"/><span>–</span><input value="25" style="width:48px;text-align:center"/><span style="font-size:13px;color:var(--mut)">mins</span></div>
+    </div>
+  </div>
+
+  <div class="backdrop">
+    <div class="modal">
+      <div class="mhead">
+        <div><div style="font-size:15px;font-weight:500">Customise — Chicken curry</div><div style="font-size:12px;color:var(--hint)">base price ₹114</div></div>
+        <span style="margin-left:auto;color:var(--hint)">✕</span>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:18px">
+
+        <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center">
+          <div><div style="font-size:12px;color:var(--mut);margin-bottom:4px">Badge (optional)</div><input value="Popular" style="width:100%"/></div>
+          <div style="text-align:center"><div style="font-size:12px;color:var(--mut);margin-bottom:6px">Featured dish</div><span class="toggle"><span></span></span></div>
+        </div>
+
+        <div>
+          <div class="row"><span class="sec">Variations</span><span class="pill" style="color:#0c447c;background:#e6f1fb">pick one · sets price</span></div>
+          <div class="grp">
+            <div class="row"><input value="Portion" style="width:160px"/><span style="font-size:12px;color:var(--hint)">required · single-select</span></div>
+            <div class="row">◉ <input value="Half" style="flex:1"/><span style="color:var(--mut)">₹</span><input value="70" style="width:64px"/></div>
+            <div class="row">○ <input value="Full" style="flex:1"/><span style="color:var(--mut)">₹</span><input value="114" style="width:64px"/></div>
+            <button class="btn">+ Add option</button>
+          </div>
+          <button class="btn">+ Add variation group</button>
+        </div>
+
+        <div>
+          <div class="row"><span class="sec">Add-on groups</span><span class="pill" style="color:#0f6e56;background:#e1f5ee">stack on top</span></div>
+          <div class="grp">
+            <div class="row"><input value="Accompaniment" style="width:170px"/><span style="font-size:12px;color:var(--hint)">select up to</span><input value="3" style="width:48px;text-align:center"/><span style="font-size:12px;color:var(--hint)">· optional</span></div>
+            <div class="row"><input value="Roti" style="flex:1"/><span style="color:var(--mut)">+₹</span><input value="15" style="width:60px"/></div>
+            <div class="row"><input value="Chapathi" style="flex:1"/><span style="color:var(--mut)">+₹</span><input value="15" style="width:60px"/></div>
+            <div style="display:flex;gap:8px;margin-top:6px"><button class="btn">+ Add item</button><button class="btn">⊞ Pull from my menu</button></div>
+          </div>
+          <div class="grp">
+            <div class="row"><input value="Beverage" style="width:170px"/><span style="font-size:12px;color:var(--hint)">select up to</span><input value="2" style="width:48px;text-align:center"/><span style="font-size:12px;color:var(--hint)">· optional</span></div>
+            <div class="row"><input value="Coke" style="flex:1"/><span style="color:var(--mut)">+₹</span><input value="40" style="width:60px"/></div>
+            <div style="display:flex;gap:8px;margin-top:6px"><button class="btn">+ Add item</button><button class="btn">⊞ Pull from my menu</button></div>
+          </div>
+          <button class="btn">+ Add add-on group</button>
+        </div>
+
+        <div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--mut)">Customer sees: pick portion (Half / Full) → add Roti / Coke → live total updates</div>
+      </div>
+      <div class="mfoot"><button class="btn">Cancel</button><button class="btn" style="border:2px solid var(--info);color:var(--info)">Save customisation</button></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

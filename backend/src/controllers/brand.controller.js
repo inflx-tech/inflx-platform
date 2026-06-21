@@ -572,7 +572,8 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   const ALLOWED = ['name','description','price','section','veg_flag','duration_mins',
                    'variants_json','image_url','sku','is_active','is_bookable','stock',
-                   'availability_json','booking_config_json','pushed_to_store'];
+                   'availability_json','booking_config_json','pushed_to_store',
+                   'badge','is_featured','featured_sort'];
 
   const updates = {};
   ALLOWED.forEach(f => {
