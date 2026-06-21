@@ -1,0 +1,26 @@
+{
+  "feature": "food-store-offer-checkout",
+  "area": "backend",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — 'lets build pick from products also ... then check code for checkout wiring'; pick-from-products authoring already existed, the checkout wire was the gap. 'Yes pls build'. Lock delegated.",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING (order/money path) but INERT until a client sends brand_offer_id. Backend -> Render. No migration, no UI/OTA. Regression-clean.",
+  "fix": "Wire store-direct brand offers (BOGO/bundle/free-gift/discount) into the organic FOOD cart checkout: placeOrder accepts brand_offer_id, validates+resolves via existing fetchStoreOfferOrThrow + resolveOfferDiscount, persists brand_offer_id + offer_source='store'. The food cart offer-picker UI (mobile) rides with the follower cart build.",
+  "related": ["features/food-dish-groups", "features/offer-engine-store-direct"],
+  "result": "food-store-offer-checkout.test.js 3/3 (BOGO applies + persists store source; no-offer organic = 0; unpublished = 409). food-customisation order tests 3/3 (no regression).",
+  "regression_proof": "Organic-no-offer + creator-mediated paths unchanged (Phase-1 order tests green). New branch only fires when brand_offer_id is sent.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — backend-only wire, no UI in this changeset; attestation to satisfy gov-check Rule 3 if bundled with UI.",
+  "mockup_locked_at": "2026-06-21",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "git push -> Render. Inert until the food cart offer-picker (mobile) sends brand_offer_id."
+  }
+}

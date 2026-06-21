@@ -1113,7 +1113,7 @@ const placeOrder = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   requireFollowerProfile(follower);
 
-  const { offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, items, address_id, delivery_fee } = req.body;
+  const { offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, brand_offer_id, items, address_id, delivery_fee } = req.body;
   if (!items?.length) {
     throw new AppError('VALIDATION_ERROR', 'items are required', 422, 'items');
   }
@@ -1141,6 +1141,15 @@ const placeOrder = asyncHandler(async (req, res) => {
     if (!rows[0]) throw new AppError('NOT_FOUND', 'Business not found', 404, 'brand_id');
     record = { brand_id: rows[0].brand_id, brand_category: rows[0].brand_category,
                commission_pct: 0, ci_offer_type: null, offer_config_json: null };
+    // Offer Engine D2 — a STORE-DIRECT brand offer (BOGO / bundle / free-gift /
+    // discount the owner published to store) applied to an organic delivery
+    // cart. No influencer → no commission; validated active+published+window.
+    if (brand_offer_id) {
+      const so = await fetchStoreOfferOrThrow(brand_offer_id, record.brand_id);
+      record.ci_offer_type = so.offer_type;
+      record.offer_config_json = so.offer_config_json;
+      record.brand_offer_id = brand_offer_id;
+    }
   } else {
     if (!campaign_id || !set_id) {
       throw new AppError('VALIDATION_ERROR', 'campaign_id and set_id are required for a creator order', 422);
@@ -1235,16 +1244,25 @@ const placeOrder = asyncHandler(async (req, res) => {
   // Discount via offer.service.js parser. Handles all 5 offer mechanics
   // (Discount / Volume / BOGO / Bundle / Free gift) with the 3-tier scope
   // model (store / category / products) for Discount + Volume.
-  const offerResult = isOrganic
-    ? { discount_amount: 0, reason: null, adjustments: null }
-    : offerService.resolveOfferDiscount({
-        offerType: record.ci_offer_type,
-        offerConfig: record.offer_config_json,
-        items: safeItems,
-        priceMap,
-        variantPriceMap,
-        productMetaMap,
-      });
+  let offerResult;
+  if (!isOrganic) {
+    // Creator-mediated: offer from the contracted campaign chain.
+    offerResult = offerService.resolveOfferDiscount({
+      offerType: record.ci_offer_type, offerConfig: record.offer_config_json,
+      items: safeItems, priceMap, variantPriceMap, productMetaMap,
+    });
+  } else if (record.brand_offer_id) {
+    // Organic + a store-direct brand offer → apply it to the cart. billAmount
+    // (base item total) lets store-wide discount offers resolve too.
+    offerResult = offerService.resolveOfferDiscount({
+      offerType: record.ci_offer_type, offerConfig: record.offer_config_json,
+      items: safeItems, priceMap, variantPriceMap, productMetaMap,
+      billAmount: offerService.itemsTotal(safeItems, priceMap, variantPriceMap),
+    });
+  } else {
+    // Organic, no offer → plain direct order, zero discount.
+    offerResult = { discount_amount: 0, reason: null, adjustments: null };
+  }
 
   const discountAmount = parseFloat(offerResult.discount_amount || 0);
   const commissionPct  = parseFloat(record.commission_pct || 0);
@@ -1302,6 +1320,8 @@ const placeOrder = asyncHandler(async (req, res) => {
     follower_id: follower.id, brand_id: record.brand_id,
     commission_pct: commissionPct,
     offer_type: record.ci_offer_type || null,
+    brand_offer_id: record.brand_offer_id || null,
+    offer_source: record.brand_offer_id ? 'store' : 'influencer',
     discount_reason: offerResult.reason,
     adjustments: offerResult.adjustments || null,
     // L3 (Phase A5) classification — stashed for verifyOrder attribution write
@@ -1393,16 +1413,17 @@ const verifyOrder = asyncHandler(async (req, res) => {
     const { rows: txRows } = await client.query(
       `INSERT INTO follower_transactions
          (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
-          variant_id, offer_type,
+          variant_id, offer_type, brand_offer_id, offer_source,
           transaction_type, gross_amount, discount_amount, net_amount,
           influencer_commission, marketplace_fee_amount, brand_net,
           status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'online_order',$10,$11,$12,$13,$14,$15,'completed',$16,$17,$18)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'online_order',$12,$13,$14,$15,$16,$17,'completed',$18,$19,$20)
        RETURNING id`,
       [
         meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
         meta.campaign_influencer_id, meta.offer_id, primaryProductId,
         primaryVariantId, meta.offer_type || null,
+        meta.brand_offer_id || null, meta.offer_source || 'influencer',
         meta.items_total, meta.discount_amount, netAmount,
         commissionAmount, meta.platform_fee, meta.brand_net,
         couponCode, returnWindowEndsAt, razorpay_payment_id,
