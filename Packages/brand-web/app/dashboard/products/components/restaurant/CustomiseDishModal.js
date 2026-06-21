@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { brandApi } from '../../../../../lib/api';
+import GalleryPicker from '../../../gallery/components/GalleryPicker';
 
 /**
  * CustomiseDishModal — Food World Phase 2 owner editor.
@@ -45,6 +46,8 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
   const [isFeatured, setIsFeatured] = useState(init.is_featured === true);
   const [price, setPrice] = useState(init.price != null ? init.price : (dish?.price != null ? dish.price : ''));
   const [description, setDescription] = useState(init.description || '');
+  const [imageUrl, setImageUrl] = useState(init.image_url != null ? init.image_url : (dish?.image_url || ''));
+  const [showGallery, setShowGallery] = useState(false);
   const [groups, setGroups] = useState(() => {
     const g = Array.isArray(init.addon_groups) ? init.addon_groups : [];
     return g.map(x => ({
@@ -179,7 +182,7 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
     setErr(null);
     onSave({
       addon_groups: clean, badge: (badge || '').trim() || null, is_featured: isFeatured,
-      ...(showPrice ? { price: Number(price), description: description.trim() || null } : {}),
+      ...(showPrice ? { price: Number(price), description: description.trim() || null, image_url: imageUrl || null } : {}),
     });
   }
 
@@ -214,6 +217,21 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
                 <div className="text-[11px] text-gray-500 mb-1">Description (optional)</div>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
                   placeholder="Taste, ingredients, what's special…" className={`${inputCls} w-full resize-none`} />
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-500 mb-1">Photo</div>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    {imageUrl ? <img src={imageUrl} alt="" className="w-full h-full object-cover" /> : <span className="text-2xl">🍽️</span>}
+                  </div>
+                  <button type="button" onClick={() => setShowGallery(true)}
+                    className="text-xs border border-gray-200 rounded-lg px-3 py-1.5 hover:border-orange-300 hover:text-orange-600">
+                    {imageUrl ? 'Change photo' : 'Add photo'}
+                  </button>
+                  {imageUrl && (
+                    <button type="button" onClick={() => setImageUrl('')} className="text-xs text-red-400 hover:text-red-600">Remove</button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -366,6 +384,13 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
             className="text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-lg px-4 py-1.5">Save customisation</button>
         </div>
       </div>
+
+      <GalleryPicker
+        open={showGallery}
+        onClose={() => setShowGallery(false)}
+        onSelect={(picked) => { if (picked && picked[0]) setImageUrl(picked[0].download_url); setShowGallery(false); }}
+        multiple={false}
+      />
     </div>
   );
 }

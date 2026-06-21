@@ -318,6 +318,7 @@ export default function ListingTemplateLayout({
       is_featured: product.is_featured === true,
       price: product.price,
       description: product.description || '',
+      image_url: product.image_url || '',
     });
     setEditProduct(product);
   }
@@ -328,6 +329,7 @@ export default function ListingTemplateLayout({
       const patch = { badge: result.badge, is_featured: result.is_featured };
       if (result.price != null) patch.price = result.price;
       if (result.description !== undefined) patch.description = result.description;
+      if (result.image_url !== undefined) patch.image_url = result.image_url;
       const pr = await brandApi.patch(`/brands/me/products/${id}`, patch);
       if ((ag && ag.success === false) || (pr && pr.success === false)) alert('Some changes did not save.');
     } catch (e) { alert('Failed to save: ' + (e.message || e)); }

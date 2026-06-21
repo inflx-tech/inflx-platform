@@ -63,6 +63,13 @@ basis; functional parity confirmed by the matching field set + the locked mockup
   ("Sambar Rice (×2)") and asks the owner to remove the duplicates first.
 - brand-web only; next build exit 0.
 
+## Slice F — edit dish photo (founder, 2026-06-21)
+- CustomiseDishModal live-edit mode (Edit on a published dish) gains a Photo
+  field: current image + Add/Change (GalleryPicker) / Remove. Seeded from
+  product.image_url, saved via PATCH image_url. Lets an owner who skipped the
+  photo at listing — or wants to change it — do it in Edit.
+- brand-web only (image_url already in updateProduct allow-list); next build exit 0.
+
 ## Slice E — per-dish description box (founder, 2026-06-21)
 - Each added-dish row now has a Description textarea (RestaurantDishPicker), bound
   to item.description → saved via the existing storage_format mapping
