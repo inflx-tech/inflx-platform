@@ -94,10 +94,19 @@ async function searchMasterDishes(db, q, brandId, limit = 8) {
   } catch { customs = []; }
 
   // Merge canonical-first; drop customs whose normalized name a canonical hit
-  // already covers; rank by score; cap.
+  // already covers; rank: exact name match first, then similarity, then
+  // canonical-before-custom, then popularity, then name (deterministic).
   const canonNorms = new Set(canonical.map(c => normalizeName(c.name)));
   const merged = canonical.concat(customs.filter(c => !canonNorms.has(c.norm_name)));
-  merged.sort((a, b) => b.score - a.score);
+  const nq = normalizeName(q);
+  const exact = (x) => (normalizeName(x.name) === nq ? 1 : 0);
+  merged.sort((a, b) =>
+    exact(b) - exact(a)
+    || b.score - a.score
+    || (a.is_custom === b.is_custom ? 0 : a.is_custom ? 1 : -1)
+    || ((b.popularity_rank ?? -Infinity) - (a.popularity_rank ?? -Infinity))
+    || String(a.name).localeCompare(String(b.name))
+  );
   return merged.slice(0, limit);
 }
 

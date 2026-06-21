@@ -63,6 +63,20 @@ describe('Food flywheel — custom dishes surface to other restaurants', () => {
     expect(custom[0].restaurant_count).toBe(2);
   });
 
+  it('exact name match ranks first (type "upma" -> Upma before Rava Upma)', async () => {
+    const r = await restaurant('Resto Search');
+    const res = await request(app)
+      .get('/v1/brands/me/dishes/search?q=upma')
+      .set('Authorization', `Bearer ${r.token}`);
+    expect(res.status).toBe(200);
+    const names = res.body.data.matches.map(m => m.name);
+    expect(names).toContain('Upma');
+    expect(names[0]).toBe('Upma');                 // exact match on top
+    if (names.includes('Rava Upma')) {
+      expect(names.indexOf('Upma')).toBeLessThan(names.indexOf('Rava Upma'));
+    }
+  });
+
   it('canonical suggestions still work and are not duplicated by customs', async () => {
     const a = await restaurant('Resto A');
     const b = await restaurant('Resto B');

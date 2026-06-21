@@ -73,10 +73,19 @@ export default function ListingTemplateLayout({
   );
   // Active skip = auto-skip eligible AND user hasn't asked to edit setup.
   const skipBrand = autoSkipBrand && !editSetupMode;
-  const visibleSteps = useMemo(
-    () => skipBrand ? allSteps.filter(s => s.writes_to !== 'brand') : allSteps,
-    [allSteps, skipBrand]
-  );
+  // Registration already captures the store address; drop the redundant
+  // "Location" step when the brand already has location (unless they explicitly
+  // entered Edit-setup mode to change it).
+  const hasLocation = useMemo(() => {
+    const ld = brand?.listing_data || {};
+    return !!(brand?.lat && brand?.lng) || !!brand?.locality || !!brand?.formatted_address
+      || !!ld.google_maps_url || !!ld.locality;
+  }, [brand]);
+  const visibleSteps = useMemo(() => {
+    let steps = skipBrand ? allSteps.filter(s => s.writes_to !== 'brand') : allSteps;
+    if (hasLocation && !editSetupMode) steps = steps.filter(s => s.id !== 'location');
+    return steps;
+  }, [allSteps, skipBrand, hasLocation, editSetupMode]);
 
   // Drill-down templates (fashion/furniture) have NO in-page product-authoring
   // step — registration is store-profile only and products are added in the

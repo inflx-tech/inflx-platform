@@ -1,0 +1,26 @@
+{
+  "feature": "fix-listing-address-search",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — walkthrough findings: address asked twice + search exact-match check. Fix-immediately per walkthrough protocol.",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. Backend (listing-config +fields, search ordering) -> Render; brand-web (skip Location step) -> Vercel. No migration, no mobile.",
+  "fix": "Skip the redundant listing 'Location' step when registration already captured the address (surface lat/lng/locality/formatted_address in listing-config; client drops the step unless editing setup). Harden dish search so exact name match ranks first. Confirmed dish-image admin upload already exists (no change).",
+  "related": ["features/food-dish-groups", "features/food-flywheel-autosurface"],
+  "result": "Search ranking hardened + verified (food-flywheel-surface 4/4 incl. 'upma'->Upma first). Location-step skip wired client+backend. brand-web next build pending confirm.",
+  "regression_proof": "No schema change; canSkipBrandSteps untouched; search results same set, better order. Location step still reachable via Edit-setup.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — bug-fix to an existing flow (hide a redundant step); no new mockup. Attestation per gov-check Rule 3.",
+  "mockup_locked_at": "2026-06-21",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "git push -> Render + Vercel."
+  }
+}

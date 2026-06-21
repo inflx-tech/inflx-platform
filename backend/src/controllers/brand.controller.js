@@ -939,6 +939,12 @@ const getListingConfig = asyncHandler(async (req, res) => {
     business_name: brand.business_name,
     category: brand.category,
     listing_data: brand.listing_data || {},
+    // Surface the brand's stored location so the wizard can skip the redundant
+    // "Location" step when registration already captured the address.
+    lat: brand.lat,
+    lng: brand.lng,
+    locality: brand.locality,
+    formatted_address: brand.formatted_address,
   });
 });
 
