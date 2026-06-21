@@ -55,3 +55,10 @@ basis; functional parity confirmed by the matching field set + the locked mockup
   badge/is_featured/featured_sort so the editor pre-seeds.
 - Verified: food-addon-write 7/7 (incl. badge surfaced in product list); brand-web
   next build exit 0.
+
+## Slice D — duplicate-dish guard (founder walkthrough, 2026-06-21)
+- Adding a dish already in the list is now BLOCKED (RestaurantDishPicker, all add
+  paths — grid/search/custom) with an amber "already in your menu" notice.
+- Publish is BLOCKED if any duplicate dish names remain: handlePublish lists them
+  ("Sambar Rice (×2)") and asks the owner to remove the duplicates first.
+- brand-web only; next build exit 0.

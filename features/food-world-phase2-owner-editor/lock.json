@@ -19,7 +19,8 @@
   "slices": {
     "a_backend_addon_write_api": "SHIPPED 2026-06-21 (commit 67a2add) — Render live; 7/7 tests + brand.test 14/14.",
     "b_brandweb_customise_modal": "SHIPPED 2026-06-21 — CustomiseDishModal + dish-picker wiring + publishDriver + restaurant.json delivery fields; next build exit 0. Vercel + Render (schema).",
-    "c_owner_editor_polish": "2026-06-21 founder walkthrough refinements: badge is now a curated dropdown (Popular/Bestseller/Must Try/Chef's Special/Recommended/New) not free text; variation group name has datalist suggestions (Portion/Size/Quantity/Pieces/Plate/Servings); PUBLISHED dishes get an Edit button (RestaurantFleetRow) opening CustomiseDishModal in live mode (showPrice) to edit price+variations+add-ons+badge anytime (load via GET addon-groups, save via POST addon-groups + PATCH product); listProducts now returns badge/is_featured/featured_sort so the editor pre-seeds. Tests 7/7; next build exit 0."
+    "c_owner_editor_polish": "2026-06-21 founder walkthrough refinements: badge is now a curated dropdown (Popular/Bestseller/Must Try/Chef's Special/Recommended/New) not free text; variation group name has datalist suggestions (Portion/Size/Quantity/Pieces/Plate/Servings); PUBLISHED dishes get an Edit button (RestaurantFleetRow) opening CustomiseDishModal in live mode (showPrice) to edit price+variations+add-ons+badge anytime (load via GET addon-groups, save via POST addon-groups + PATCH product); listProducts now returns badge/is_featured/featured_sort so the editor pre-seeds. Tests 7/7; next build exit 0.",
+    "d_duplicate_guard": "2026-06-21 founder walkthrough: dishes could be added twice (e.g. Sambar Rice). Now RestaurantDishPicker BLOCKS re-adding a dish already in the list (normalized-name match, amber notice), and handlePublish BLOCKS publish if any duplicate names remain with a 'remove the duplicates' error. brand-web-only; next build exit 0."
   },
   "release": {
     "qa_all_green": true,

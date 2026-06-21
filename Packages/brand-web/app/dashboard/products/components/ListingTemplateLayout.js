@@ -198,6 +198,22 @@ export default function ListingTemplateLayout({
   // ── Publish ────────────────────────────────────────────────────────────────
 
   async function handlePublish() {
+    // Block publish on duplicate dishes (same name added more than once) so the
+    // owner removes them first — no silent double-listing.
+    const norm = (s) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const counts = new Map();
+    for (const it of wizardItems) {
+      const k = norm(it.name);
+      if (!k) continue;
+      if (!counts.has(k)) counts.set(k, { name: it.name, n: 0 });
+      counts.get(k).n += 1;
+    }
+    const dups = [...counts.values()].filter(c => c.n > 1);
+    if (dups.length) {
+      setErrors({ _publish: `Duplicate dishes: ${dups.map(d => `${d.name} (×${d.n})`).join(', ')}. Please remove the duplicates before publishing.` });
+      return;
+    }
+
     setSaving(true);
     try {
       const publishFn = tmpl?.customPublish || runPublish;

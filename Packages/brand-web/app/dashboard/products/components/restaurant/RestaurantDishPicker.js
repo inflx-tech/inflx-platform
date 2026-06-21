@@ -75,6 +75,19 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   // Per-dish "Customise" modal (variations + add-on groups + badge + featured)
   const [customiseIdx, setCustomiseIdx] = useState(null);
 
+  // Duplicate guard — block adding a dish already in the list (by normalized name).
+  const [dupNotice, setDupNotice] = useState(null);
+  const normName = (s) => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const alreadyAdded = (name) => {
+    const k = normName(name);
+    return !!k && wizardItems.some(it => normName(it.name) === k);
+  };
+  const guardDup = (name) => {
+    if (alreadyAdded(name)) { setDupNotice(`"${String(name).trim()}" is already in your menu.`); return true; }
+    setDupNotice(null);
+    return false;
+  };
+
   // Dish search (typeahead + custom add)
   const [searchQ, setSearchQ] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -183,6 +196,7 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
 
   function handleAddDish(masterRow) {
     if (masterRow.is_activated) return;   // prevent double-add per chat lock-in
+    if (guardDup(masterRow.name)) return;
 
     // Suggested price = mid-point of master row's range (rounded down to 5)
     const min = Number(masterRow.suggested_price_min) || 0;
@@ -207,6 +221,7 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   // _master_row so publishDriver maps master_dish_id (links to the catalogue).
   function handleAddFromSearch(match) {
     if (match.is_activated) return;
+    if (guardDup(match.name)) { setSearchQ(''); setSearchResults([]); return; }
     // Flywheel custom suggestion (another restaurant's typed dish): no canonical
     // id → add as a custom dish (master_dish_id stays null → re-captured into the
     // flywheel under this brand, growing the cross-restaurant count).
@@ -230,6 +245,7 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   function handleAddCustom() {
     const nm = searchQ.trim();
     if (!nm) return;
+    if (guardDup(nm)) { setSearchQ(''); setSearchResults([]); return; }
     onItemAdd({
       name: nm,
       price: 0,
@@ -254,6 +270,7 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   function handleAddCustomInSection() {
     const nm = customName.trim();
     if (!nm) return;
+    if (guardDup(nm)) { setCustomName(''); setCustomPrice(''); setShowCustomTile(false); return; }
     onItemAdd({
       name: nm,
       price: customPrice === '' ? 0 : Number(customPrice),
@@ -421,6 +438,13 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
         <h2 className="text-xl font-bold text-gray-900 flex-1">Add dishes</h2>
         <span className="text-xs text-gray-500">{wizardItems.length} added</span>
       </div>
+
+      {dupNotice && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg px-3 py-2 flex items-center gap-2">
+          <span className="flex-1">⚠ {dupNotice}</span>
+          <button type="button" onClick={() => setDupNotice(null)} className="text-amber-500 hover:text-amber-700">✕</button>
+        </div>
+      )}
 
       {/* Dish search — typeahead + add-your-own */}
       <div className="relative">
