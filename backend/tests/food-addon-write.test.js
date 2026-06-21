@@ -140,6 +140,15 @@ describe('Food World P2 — addon write API', () => {
     expect(rows[0].n).toBe(1);
   });
 
+  it('saving product groups auto-populates the reusable library', async () => {
+    const { token, productId } = await seedRestaurant();
+    await request(app).post(`/v1/brands/me/products/${productId}/addon-groups`)
+      .set('Authorization', `Bearer ${token}`).send(fullPayload());
+    const lib = await request(app).get('/v1/brands/me/addon-templates').set('Authorization', `Bearer ${token}`);
+    expect(lib.status).toBe(200);
+    expect(lib.body.data.templates.map(t => t.name).sort()).toEqual(['Accompaniment', 'Portion']);
+  });
+
   it('ownership guard — brand B cannot write brand A product (403)', async () => {
     const { productId } = await seedRestaurant('Brand A');
     const { token: tokenB } = await seedRestaurant('Brand B');

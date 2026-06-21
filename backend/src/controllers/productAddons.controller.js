@@ -226,6 +226,39 @@ const replaceAddonGroups = asyncHandler(async (req, res) => {
           ]
         );
       }
+
+      // Auto-add this group to the brand's reusable library (upsert by name) so
+      // a group built on one dish is instantly available via "Add from saved" on
+      // the next dish — matches how owners expect reuse to work. Explicit
+      // "Save as reusable" still works; this just removes the friction.
+      const defItems = items
+        .filter(it => String(it.name || '').trim())
+        .map((it, i) => ({
+          name: String(it.name).trim(),
+          price: it.price === '' || it.price == null ? 0 : parseFloat(it.price),
+          is_default: it.is_default === true,
+          sort_order: i,
+        }));
+      if (defItems.length) {
+        await client.query(
+          `INSERT INTO brand_addon_templates (brand_id, name, is_variation, definition)
+           VALUES ($1,$2,$3,$4)
+           ON CONFLICT (brand_id, lower(name))
+             DO UPDATE SET is_variation = EXCLUDED.is_variation,
+                           definition   = EXCLUDED.definition,
+                           updated_at   = now()`,
+          [
+            brandId, g.name.trim(), g.is_variation === true,
+            JSON.stringify({
+              selection_type: g.is_variation ? 'single' : (g.selection_type === 'single' ? 'single' : 'multi'),
+              is_required: g.is_variation === true ? true : g.is_required === true,
+              min_select: g.is_variation ? 1 : (g.min_select != null ? parseInt(g.min_select, 10) : 0),
+              max_select: g.is_variation ? 1 : (g.max_select != null && g.max_select !== '' ? parseInt(g.max_select, 10) : null),
+              items: defItems,
+            }),
+          ]
+        );
+      }
     }
   });
 

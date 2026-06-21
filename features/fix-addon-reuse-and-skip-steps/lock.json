@@ -1,0 +1,26 @@
+{
+  "feature": "fix-addon-reuse-and-skip-steps",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — walkthrough: 'Add from saved' empty for next product + wizard restarts from the beginning. Fix-immediately.",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. Backend (auto-fill library) -> Render; brand-web (skip-steps) -> Vercel. No migration. Prod backfill of existing groups already run. No mobile.",
+  "fix": "Reuse: saving a dish's groups now auto-upserts them into the brand's reusable library (Add from saved shows them on the next dish). Skip-steps: canSkipBrandSteps treats the required location fields (google_maps_url/locality) as satisfied from the brand's columns, so returning restaurants jump straight to the menu step.",
+  "related": ["features/food-addon-templates", "features/fix-listing-address-search"],
+  "result": "food-addon-write 9/9 (incl. auto-populate) + food-addon-templates 3/3. brand-web next build exit 0. Prod backfill: 2 existing groups added to the founder's library.",
+  "regression_proof": "Library fill is additive/idempotent; product save result unchanged. Skip-steps still shows the full wizard with no products / missing required non-location fields.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — backend + a predicate fix, no new UI surface. Attestation per gov-check Rule 3.",
+  "mockup_locked_at": "2026-06-21",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "git push -> Render + Vercel."
+  }
+}

@@ -45,8 +45,17 @@ export function canSkipBrandSteps(template, brand, myProducts) {
   const brandFields = template?.brand_config?.fields || {};
   const listingData = brand?.listing_data || {};
 
+  // Location (google_maps_url / locality) is captured at registration and lives
+  // in brand COLUMNS (lat/lng/locality/formatted_address), not listing_data — so
+  // a required location field would otherwise always read "empty" and force the
+  // whole wizard to re-ask every step on each new dish. Treat it as satisfied
+  // when the brand already has any location signal.
+  const hasLocation = !!(brand?.lat && brand?.lng) || !!brand?.locality
+    || !!brand?.formatted_address || !!listingData.google_maps_url || !!listingData.locality;
+
   for (const [key, fieldDef] of Object.entries(brandFields)) {
     if (!fieldDef?.required) continue;
+    if ((key === 'google_maps_url' || key === 'locality') && hasLocation) continue;
     const value = listingData[key];
     if (isEmptyValue(value)) return false;
   }
