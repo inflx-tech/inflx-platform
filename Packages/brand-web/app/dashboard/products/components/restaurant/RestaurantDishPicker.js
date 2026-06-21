@@ -207,14 +207,20 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
   // _master_row so publishDriver maps master_dish_id (links to the catalogue).
   function handleAddFromSearch(match) {
     if (match.is_activated) return;
-    onItemAdd({
-      _master_row: { id: match.id, name: match.name, section: match.section },
-      name: match.name,
-      price: 0,
-      image_url: null,
-      description: null,
-      section: match.section,
-    });
+    // Flywheel custom suggestion (another restaurant's typed dish): no canonical
+    // id → add as a custom dish (master_dish_id stays null → re-captured into the
+    // flywheel under this brand, growing the cross-restaurant count).
+    if (match.is_custom || !match.id) {
+      onItemAdd({
+        name: match.name, price: 0, image_url: null, description: null,
+        section: match.section || activeSection || null, _custom: true,
+      });
+    } else {
+      onItemAdd({
+        _master_row: { id: match.id, name: match.name, section: match.section },
+        name: match.name, price: 0, image_url: null, description: null, section: match.section,
+      });
+    }
     setSearchQ('');
     setSearchResults([]);
   }
@@ -438,7 +444,9 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
                     <span className="text-[10px] text-gray-400">{m.section}</span>
                     {m.is_activated
                       ? <span className="text-[10px] text-amber-600 font-semibold">on menu</span>
-                      : <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{Math.round((m.score || 0) * 100)}%</span>}
+                      : m.is_custom
+                        ? <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{m.restaurant_count > 1 ? `${m.restaurant_count} restaurants` : 'added by a restaurant'}</span>
+                        : <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">{Math.round((m.score || 0) * 100)}%</span>}
                   </button>
                 ))}
               </>

@@ -60,7 +60,45 @@ async function searchMasterDishes(db, q, brandId, limit = 8) {
      LIMIT $4`,
     [q, brandId, SUGGEST_CUTOFF, limit]
   );
-  return rows.map(r => ({ ...r, score: Number(r.score) }));
+  const canonical = rows.map(r => ({ ...r, score: Number(r.score), is_custom: false }));
+
+  // FLYWHEEL AUTO-SURFACE: also suggest custom dishes that OTHER restaurants
+  // have typed (pending_dishes, status='pending'), grouped by normalized name
+  // so each shows once with a restaurant count. Excludes names that already
+  // exist canonically (admin promotion consolidates those). Best-effort: a
+  // failure here must never break the canonical typeahead.
+  let customs = [];
+  try {
+    const { rows: cr } = await db.query(
+      `SELECT pd.norm_name,
+              (array_agg(pd.raw_name ORDER BY pd.created_at))[1] AS name,
+              (array_agg(pd.section ORDER BY pd.created_at))[1]  AS section,
+              COUNT(DISTINCT pd.brand_id)::int AS restaurant_count,
+              similarity(pd.norm_name, unaccent(lower($1))) AS score
+         FROM pending_dishes pd
+        WHERE pd.status = 'pending'
+        GROUP BY pd.norm_name
+       HAVING similarity(pd.norm_name, unaccent(lower($1))) >= $2
+          AND NOT EXISTS (
+              SELECT 1 FROM master_dishes md
+               WHERE unaccent(lower(md.name)) = pd.norm_name)
+        ORDER BY score DESC, restaurant_count DESC
+        LIMIT $3`,
+      [q, SUGGEST_CUTOFF, limit]
+    );
+    customs = cr.map(r => ({
+      id: null, name: r.name, section: r.section, cuisine: null,
+      popularity_rank: null, score: Number(r.score), is_activated: false,
+      is_custom: true, restaurant_count: r.restaurant_count, norm_name: r.norm_name,
+    }));
+  } catch { customs = []; }
+
+  // Merge canonical-first; drop customs whose normalized name a canonical hit
+  // already covers; rank by score; cap.
+  const canonNorms = new Set(canonical.map(c => normalizeName(c.name)));
+  const merged = canonical.concat(customs.filter(c => !canonNorms.has(c.norm_name)));
+  merged.sort((a, b) => b.score - a.score);
+  return merged.slice(0, limit);
 }
 
 /** Best single canonical match for a name (used when capturing a custom dish). */
