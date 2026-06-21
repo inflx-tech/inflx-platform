@@ -46,6 +46,9 @@ router.get('/following', ...followerAuth, ctrl.getFollowing);       // auth requ
 router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influencer story circles
 router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
 router.get('/verticals',  authenticateOptional, ctrl.getVerticals);  // v2 home: world tabs + category rails
+// Dish groups (food discovery tiles): list tiles + tap → nearby restaurants serving it.
+router.get('/dish-groups',                authenticateOptional, ctrl.getDishGroups);
+router.get('/dish-groups/:id/restaurants', authenticateOptional, ctrl.getDishGroupRestaurants);
 // Full single-product detail for the PDP (a shelf/Results tap carries only the
 // card fields; the PDP fetches description/facets/images/variants by id).
 router.get('/products/:product_id', authenticateOptional, ctrl.getProductDetail);

@@ -144,6 +144,18 @@ router.post  ('/master-dishes',           authenticate, requireCapability('maste
 router.patch ('/master-dishes/:id',       authenticate, requireCapability('master_data'), masterDishCtrl.updateMasterDish);
 router.delete('/master-dishes/:id',       authenticate, requireCapability('master_data'), masterDishCtrl.deleteMasterDish);
 
+// ── Dish groups (food discovery tiles) — 'master_data' ───────────────────────
+// Static sub-paths (/suggest, /:id/members) declared around the ':id' route;
+// '/suggest' before ':id' so it isn't shadowed.
+const dishGroupsCtrl = require('../controllers/adminDishGroups.controller');
+router.get   ('/dish-groups',             authenticate, requireCapability('master_data'), dishGroupsCtrl.listDishGroups);
+router.get   ('/dish-groups/suggest',     authenticate, requireCapability('master_data'), dishGroupsCtrl.suggestMembers);
+router.post  ('/dish-groups',             authenticate, requireCapability('master_data'), dishGroupsCtrl.createDishGroup);
+router.get   ('/dish-groups/:id/members', authenticate, requireCapability('master_data'), dishGroupsCtrl.getGroupMembers);
+router.put   ('/dish-groups/:id/members', authenticate, requireCapability('master_data'), dishGroupsCtrl.setGroupMembers);
+router.patch ('/dish-groups/:id',         authenticate, requireCapability('master_data'), dishGroupsCtrl.updateDishGroup);
+router.delete('/dish-groups/:id',         authenticate, requireCapability('master_data'), dishGroupsCtrl.deleteDishGroup);
+
 // ── Features catalog + tier_features + subscription_prices — 'pricing' ───────
 const featuresCtrl = require('../controllers/features.controller');
 router.get   ('/features',                       authenticate, requireCapability('pricing'), featuresCtrl.listFeatures);

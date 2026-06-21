@@ -591,6 +591,15 @@ export const adminApi = {
   deleteMasterDish:   (id) => api.delete(`/admin/master-dishes/${id}`),
   stockUploadUrl:     (meta) => api.post('/admin/master-dishes/stock-upload-url', meta),
 
+  // Dish groups — food discovery tiles (Biryani, Paratha, Pizza...)
+  listDishGroups:     () => api.get('/admin/dish-groups'),
+  createDishGroup:    (data) => api.post('/admin/dish-groups', data),
+  updateDishGroup:    (id, data) => api.patch(`/admin/dish-groups/${id}`, data),
+  deleteDishGroup:    (id) => api.delete(`/admin/dish-groups/${id}`),
+  getDishGroupMembers:(id) => api.get(`/admin/dish-groups/${id}/members`),
+  setDishGroupMembers:(id, master_dish_ids) => api.put(`/admin/dish-groups/${id}/members`, { master_dish_ids }),
+  suggestDishGroupMembers: (q) => api.get(`/admin/dish-groups/suggest?q=${encodeURIComponent(q || '')}`),
+
   // Follower v2 home builder — world verticals + their category rails
   listHomeVerticals:   () => api.get('/admin/home-verticals'),
   createHomeVertical:  (data) => api.post('/admin/home-verticals', data),

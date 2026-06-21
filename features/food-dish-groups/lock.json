@@ -1,0 +1,26 @@
+{
+  "feature": "food-dish-groups",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — 'first do admin group ... no need of UI mockup, build directly ... make sure tap and populating correct restaurants is fine'. Lock + mockup-waiver delegated.",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. Migration 115 (2 new tables, applied to prod). Backend (admin CRUD + follower discovery) -> Render; brand-web (/admin/dish-groups) -> Vercel. Follower mobile UI deferred (Slice 3C) -> no OTA.",
+  "fix": "Admin-built food discovery tiles: dish_groups + members + keyword; admin group-builder with auto-suggest; follower endpoints to list tiles and resolve a tile -> nearby restaurants serving it (members OR keyword), by distance + popularity, with varieties/from-price/rating.",
+  "related": ["features/food-dictionary-expand", "features/food-flywheel-autosurface"],
+  "result": "Migration 115 applied to prod (dish_groups + dish_group_dishes). Discovery verified by food-dish-groups.test.js 3/3 (members+keyword match, nearest-first, exclusions, varieties+from-price). brand-web next build exit 0.",
+  "regression_proof": "All-new tables/endpoints/page; no existing flow touched. Discovery filters approved+in-store restaurants. qa green.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — EXPLICITLY WAIVED the UI mockup ('no need of UI mock up, build directly'); attestation records that decision per gov-check Rule 3.",
+  "mockup_locked_at": "2026-06-21",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "git push -> Render (backend) + Vercel (admin). Migration 115 already applied."
+  }
+}

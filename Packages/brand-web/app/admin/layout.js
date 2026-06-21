@@ -25,6 +25,7 @@ const NAV = [
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
   { href: '/admin/follower-categories', label: 'Follower Categories', icon: '🗂️', cap: 'categories' },
   { href: '/admin/home-builder', label: 'Home Builder', icon: '🏠', cap: 'categories' },
+  { href: '/admin/dish-groups', label: 'Dish Groups', icon: '🍱', cap: 'master_data' },
   { section: 'MARKETING' },
   { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯', cap: 'marketing' },
   { href: '/admin/marketing/add',           label: 'Add Lead',      icon: '➕', cap: 'marketing' },

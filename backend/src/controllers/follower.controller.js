@@ -1468,8 +1468,98 @@ const getVerticals = asyncHandler(async (req, res) => {
   return success(res, { verticals });
 });
 
+// ── Dish groups (food discovery tiles) ───────────────────────────────────────
+// GET /follower/dish-groups — the active tiles for the food home rail.
+const getDishGroups = asyncHandler(async (req, res) => {
+  const { rows } = await db.query(
+    `SELECT id, name, image_url FROM dish_groups WHERE status='active' ORDER BY sort_order, name`
+  );
+  return success(res, { groups: rows });
+});
+
+// GET /follower/dish-groups/:id/restaurants?lat&lng — restaurants near the user
+// serving any dish in the group (explicit member master_dishes OR the group's
+// name keyword), ranked by distance then 30-day popularity. Each card carries
+// the restaurant's matching varieties + "from ₹X" + rating + delivery info.
+const getDishGroupRestaurants = asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) throw new AppError('VALIDATION_ERROR', 'bad id', 422);
+  const { rows: g } = await db.query(
+    `SELECT id, name, keyword FROM dish_groups WHERE id=$1 AND status='active'`, [id]);
+  if (!g[0]) throw new AppError('NOT_FOUND', 'dish group not found', 404);
+  const group = g[0];
+  const keyword = (group.keyword || '').trim();
+
+  const { rows: mem } = await db.query(
+    `SELECT master_dish_id FROM dish_group_dishes WHERE dish_group_id=$1`, [id]);
+  const memberIds = mem.map(m => m.master_dish_id);
+
+  if (!memberIds.length && !keyword) {
+    return success(res, { group: { id: group.id, name: group.name }, restaurants: [] });
+  }
+
+  const { lat, lng } = await resolveFollowerContext(req);
+  const geo = Number.isFinite(lat) && Number.isFinite(lng);
+
+  const params = [];
+  let p = 0;
+  const memIdx = ++p; params.push(memberIds.length ? memberIds : [0]); // int[] (0 matches nothing)
+  const kwIdx  = ++p; params.push(keyword);                            // '' when no keyword
+  let latIdx, lngIdx;
+  if (geo) { latIdx = ++p; params.push(lat); lngIdx = ++p; params.push(lng); }
+
+  const distSel = geo
+    ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN
+         (6371 * acos(LEAST(1, GREATEST(-1,
+           cos(radians($${latIdx}))*cos(radians(b.lat))*cos(radians(b.lng)-radians($${lngIdx}))
+           + sin(radians($${latIdx}))*sin(radians(b.lat)))))) END`
+    : `NULL::numeric`;
+  const matchClause =
+    `(bp.master_dish_id = ANY($${memIdx}::int[]) OR ($${kwIdx} <> '' AND bp.name ILIKE '%' || $${kwIdx} || '%'))`;
+
+  const { rows } = await db.query(
+    `SELECT b.id AS brand_id, b.business_name, u.city, b.lat, b.lng, b.listing_data,
+            ${distSel} AS dist_km,
+            (SELECT COUNT(*) FROM follower_transactions ft
+               WHERE ft.brand_id = b.id AND ft.created_at >= now() - interval '30 days')::int AS score,
+            MIN(bp.price) AS from_price,
+            (array_agg(DISTINCT bp.name))[1:4] AS varieties
+       FROM brands b
+       JOIN users u ON u.id = b.user_id
+       JOIN brand_products bp ON bp.brand_id = b.id AND bp.is_active = true AND bp.pushed_to_store = true
+      WHERE u.status = 'approved' AND b.category = 'restaurant'
+        AND ${matchClause}
+      GROUP BY b.id, b.business_name, u.city, b.lat, b.lng, b.listing_data
+      ORDER BY dist_km ASC NULLS LAST, score DESC, b.business_name
+      LIMIT 50`,
+    params
+  );
+
+  const ratingMap = await followerService.getBrandRatings(rows.map(r => r.brand_id));
+  const restaurants = rows.map(r => {
+    const ld = r.listing_data || {};
+    const rt = ratingMap[r.brand_id] || { avg_rating: null, review_count: 0 };
+    return {
+      brand_id: r.brand_id,
+      business_name: r.business_name,
+      city: r.city,
+      avg_rating: rt.avg_rating,
+      review_count: rt.review_count,
+      distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : null,
+      free_delivery: ld.free_delivery === true,
+      delivery_eta_min_mins: ld.delivery_eta_min_mins != null ? Number(ld.delivery_eta_min_mins) : null,
+      delivery_eta_max_mins: ld.delivery_eta_max_mins != null ? Number(ld.delivery_eta_max_mins) : null,
+      from_price: r.from_price != null ? parseFloat(r.from_price) : null,
+      varieties: r.varieties || [],
+    };
+  });
+  return success(res, { group: { id: group.id, name: group.name }, restaurants });
+});
+
 module.exports = {
   getVerticals,
+  getDishGroups,
+  getDishGroupRestaurants,
   creatorsEatingNow,
   getSectionResults,
   getProductDetail,
