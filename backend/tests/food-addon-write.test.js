@@ -156,7 +156,7 @@ describe('Food World P2 — addon write API', () => {
     expect(rows[0].n).toBe(0);
   });
 
-  it('badge/is_featured/featured_sort writable via updateProduct', async () => {
+  it('badge/is_featured/featured_sort writable via updateProduct + surfaced in product list', async () => {
     const { token, productId } = await seedRestaurant();
     const res = await request(app)
       .patch(`/v1/brands/me/products/${productId}`)
@@ -166,6 +166,13 @@ describe('Food World P2 — addon write API', () => {
     expect(res.body.data.product.badge).toBe('Popular');
     expect(res.body.data.product.is_featured).toBe(true);
     expect(res.body.data.product.featured_sort).toBe(2);
+
+    // The published-menu list must surface badge/is_featured so the live editor pre-seeds.
+    const list = await request(app).get('/v1/brands/me/products').set('Authorization', `Bearer ${token}`);
+    expect(list.status).toBe(200);
+    const p = list.body.data.products.find(x => x.id === productId);
+    expect(p.badge).toBe('Popular');
+    expect(p.is_featured).toBe(true);
   });
 
   it('snapshot safety — deleting an add-on leaves a prior order items_json intact', async () => {

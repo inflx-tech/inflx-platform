@@ -422,7 +422,8 @@ const listProducts = asyncHandler(async (req, res) => {
     `SELECT id, name, description, price, category_key, sku, section,
             veg_flag, duration_mins, variants_json, image_url,
             is_active, is_bookable, stock, availability_json,
-            booking_config_json, tags, pushed_to_store, created_at, updated_at
+            booking_config_json, tags, pushed_to_store,
+            badge, is_featured, featured_sort, created_at, updated_at
      FROM brand_products
      WHERE ${conditions.join(' AND ')}
      ORDER BY section NULLS LAST, name ASC`,

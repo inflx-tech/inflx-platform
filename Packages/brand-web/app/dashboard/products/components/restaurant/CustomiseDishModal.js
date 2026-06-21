@@ -21,6 +21,12 @@ import { useState, useMemo } from 'react';
  * rows — provenance only, never required.
  */
 
+// Curated badge labels — a constrained dropdown (no free text) so owners pick a
+// consistent, meaningful tag instead of typing something confusing.
+const BADGE_OPTIONS = ['Popular', 'Bestseller', 'Must Try', "Chef's Special", 'Recommended', 'New'];
+// Common variation group names (Half/Full → Portion; 250g/500g → Quantity; ...).
+const VARIATION_NAME_SUGGESTIONS = ['Portion', 'Size', 'Quantity', 'Pieces', 'Plate', 'Servings'];
+
 const blankVariationGroup = () => ({
   name: 'Portion', selection_type: 'single', is_variation: true, is_required: true,
   min_select: 1, max_select: 1,
@@ -32,10 +38,11 @@ const blankAddonGroup = () => ({
   items: [{ name: '', price: '' }],
 });
 
-export default function CustomiseDishModal({ dish, menuItems = [], initial, onSave, onClose }) {
+export default function CustomiseDishModal({ dish, menuItems = [], initial, onSave, onClose, showPrice = false }) {
   const init = initial || {};
   const [badge, setBadge] = useState(init.badge || '');
   const [isFeatured, setIsFeatured] = useState(init.is_featured === true);
+  const [price, setPrice] = useState(init.price != null ? init.price : (dish?.price != null ? dish.price : ''));
   const [groups, setGroups] = useState(() => {
     const g = Array.isArray(init.addon_groups) ? init.addon_groups : [];
     return g.map(x => ({
@@ -119,8 +126,12 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
         items: items.map((it, j) => ({ ...it, sort_order: j })),
       });
     }
+    if (showPrice && (price === '' || !(Number(price) >= 0))) { setErr('Enter a valid base price.'); return; }
     setErr(null);
-    onSave({ addon_groups: clean, badge: badge.trim() || null, is_featured: isFeatured });
+    onSave({
+      addon_groups: clean, badge: (badge || '').trim() || null, is_featured: isFeatured,
+      ...(showPrice ? { price: Number(price) } : {}),
+    });
   }
 
   const inputCls = 'border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400';
@@ -139,12 +150,25 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
         </div>
 
         <div className="px-5 py-4 space-y-5">
+          <datalist id="variation-name-suggestions">
+            {VARIATION_NAME_SUGGESTIONS.map(o => <option key={o} value={o} />)}
+          </datalist>
           {/* Badge + Featured */}
+          {showPrice && (
+            <div>
+              <div className="text-[11px] text-gray-500 mb-1">Base price (₹)</div>
+              <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0"
+                className={`${inputCls} w-40`} />
+            </div>
+          )}
+
           <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
             <div>
               <div className="text-[11px] text-gray-500 mb-1">Badge (optional)</div>
-              <input value={badge} onChange={e => setBadge(e.target.value)} placeholder="e.g. Popular"
-                className={`${inputCls} w-full`} />
+              <select value={badge} onChange={e => setBadge(e.target.value)} className={`${inputCls} w-full bg-white`}>
+                <option value="">No badge</option>
+                {BADGE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
             <label className="text-center cursor-pointer">
               <div className="text-[11px] text-gray-500 mb-1">Featured dish</div>
@@ -165,7 +189,7 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
               <div key={i} className="border border-gray-200 rounded-lg p-3 mb-2">
                 <div className="flex items-center gap-2 mb-2">
                   <input value={g.name} onChange={e => patchGroup(i, { name: e.target.value })}
-                    placeholder="Portion" className={`${inputCls} w-40`} />
+                    list="variation-name-suggestions" placeholder="Portion" className={`${inputCls} w-40`} />
                   <span className="text-[10px] text-gray-400">required · single-select</span>
                   <button type="button" onClick={() => removeGroup(i)} className="ml-auto text-[11px] text-red-400 hover:text-red-600">Remove</button>
                 </div>

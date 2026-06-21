@@ -23,7 +23,7 @@ function parseVariants(raw) {
   try { return JSON.parse(raw) || {}; } catch { return {}; }
 }
 
-export default function RestaurantFleetRow({ product, onRemove }) {
+export default function RestaurantFleetRow({ product, onRemove, onEdit }) {
   const v = parseVariants(product.variants_json);
   const veg = v.veg_flag;
   const isVeg = veg === 'veg' || veg === 'Veg' || veg === true;
@@ -78,6 +78,12 @@ export default function RestaurantFleetRow({ product, onRemove }) {
         </div>
       </div>
 
+      {onEdit && (
+        <button onClick={onEdit}
+          className="text-xs font-semibold ml-2 border border-gray-200 rounded-lg px-2 py-1 hover:border-orange-300 hover:text-orange-600">
+          Edit
+        </button>
+      )}
       <button onClick={onRemove}
         className="text-red-400 hover:text-red-600 text-xs font-semibold ml-2">Remove</button>
     </div>

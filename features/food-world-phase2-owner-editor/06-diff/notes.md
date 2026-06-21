@@ -41,3 +41,17 @@ Verification: `next build` compiles clean (exit 0; /dashboard/products built).
 After-capture vs mockup: to be done against the deployed wizard URL (needs a
 logged-in restaurant brand) post-deploy — recorded here as the diff sign-off
 basis; functional parity confirmed by the matching field set + the locked mockup.
+
+## Slice C — owner-editor polish (founder walkthrough, 2026-06-21)
+- Badge is now a CURATED DROPDOWN (Popular / Bestseller / Must Try / Chef's
+  Special / Recommended / New) instead of free text — owners no longer type a
+  confusing label.
+- Variation group name has DATALIST SUGGESTIONS (Portion / Size / Quantity /
+  Pieces / Plate / Servings) — guides naming while still allowing custom.
+- PUBLISHED dishes now have an EDIT button (RestaurantFleetRow) opening
+  CustomiseDishModal in live mode (showPrice): edit price + variations + add-ons
+  + badge/featured ANYTIME. Loads via GET /products/:id/addon-groups; saves via
+  POST /products/:id/addon-groups + PATCH /products/:id. listProducts surfaces
+  badge/is_featured/featured_sort so the editor pre-seeds.
+- Verified: food-addon-write 7/7 (incl. badge surfaced in product list); brand-web
+  next build exit 0.

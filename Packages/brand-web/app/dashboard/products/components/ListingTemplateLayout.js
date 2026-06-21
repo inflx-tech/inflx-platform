@@ -7,6 +7,7 @@ import * as builtins from './builtinStepComponents';
 import { runPublish, canSkipBrandSteps } from './publishDriver';
 import BulkUploadCard from './BulkUploadCard';
 import LivePreview from './LivePreview';
+import CustomiseDishModal from './restaurant/CustomiseDishModal';
 
 /**
  * ListingTemplateLayout — shared chrome for category-driven listing wizards.
@@ -66,6 +67,9 @@ export default function ListingTemplateLayout({
   //     profile" near the wizard header. Lets them edit one-time fields (vibes,
   //     hours, photos, etc.) without losing the rest of the flow.
   const [editSetupMode, setEditSetupMode] = useState(false);
+  // Edit-a-published-dish (price + variations + add-ons) via CustomiseDishModal.
+  const [editProduct, setEditProduct] = useState(null);
+  const [editInitial, setEditInitial] = useState(null);
   const allSteps = useMemo(() => template?.listing_steps || [], [template]);
   const autoSkipBrand = useMemo(
     () => canSkipBrandSteps(template, brand, myProducts),
@@ -284,6 +288,35 @@ export default function ListingTemplateLayout({
     }
   }
 
+  // Edit a PUBLISHED dish: load its current customisation, open the modal, and
+  // on save persist price + add-on groups + badge/featured to the live product.
+  async function openEditProduct(product) {
+    let groups = [];
+    try {
+      const r = await brandApi.get(`/brands/me/products/${product.id}/addon-groups`);
+      groups = r.data?.groups || [];
+    } catch { /* no groups yet */ }
+    setEditInitial({
+      addon_groups: groups,
+      badge: product.badge || '',
+      is_featured: product.is_featured === true,
+      price: product.price,
+    });
+    setEditProduct(product);
+  }
+  async function saveLiveCustomisation(result) {
+    const id = editProduct.id;
+    try {
+      const ag = await brandApi.post(`/brands/me/products/${id}/addon-groups`, { groups: result.addon_groups });
+      const patch = { badge: result.badge, is_featured: result.is_featured };
+      if (result.price != null) patch.price = result.price;
+      const pr = await brandApi.patch(`/brands/me/products/${id}`, patch);
+      if ((ag && ag.success === false) || (pr && pr.success === false)) alert('Some changes did not save.');
+    } catch (e) { alert('Failed to save: ' + (e.message || e)); }
+    setEditProduct(null); setEditInitial(null);
+    if (onRefreshProducts) await onRefreshProducts();
+  }
+
   // ── Step component dispatch ────────────────────────────────────────────────
 
   function renderStep() {
@@ -422,8 +455,20 @@ export default function ListingTemplateLayout({
           icon={template.icon}
           onRemove={handleRemoveProduct}
           onTogglePush={handleTogglePush}
+          onEdit={brand?.category === 'restaurant' ? openEditProduct : undefined}
           onAdd={() => { if (!hasProductStep) return gotoProductWizard(); setView('add'); resetWizard(); }}
           onUpload={() => { if (!hasProductStep) return gotoProductWizard(); setView('upload'); }}
+        />
+      )}
+
+      {editProduct && (
+        <CustomiseDishModal
+          dish={editProduct}
+          initial={editInitial}
+          showPrice
+          menuItems={myProducts.filter(p => p.id !== editProduct.id).map(p => ({ name: p.name, price: p.price, id: p.id }))}
+          onSave={saveLiveCustomisation}
+          onClose={() => { setEditProduct(null); setEditInitial(null); }}
         />
       )}
 
@@ -469,7 +514,7 @@ export default function ListingTemplateLayout({
 
 // ── Subviews ────────────────────────────────────────────────────────────────
 
-function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRemove, onTogglePush, onAdd, onUpload }) {
+function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRemove, onTogglePush, onEdit, onAdd, onUpload }) {
   if (!products || products.length === 0) {
     return (
       <div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
@@ -494,7 +539,7 @@ function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRem
     <div className="space-y-3">
       {products.map(product => (
         FleetRow
-          ? <FleetRow key={product.id} product={product} onRemove={() => onRemove(product.id)} onTogglePush={onTogglePush} />
+          ? <FleetRow key={product.id} product={product} onRemove={() => onRemove(product.id)} onTogglePush={onTogglePush} onEdit={onEdit ? () => onEdit(product) : undefined} />
           : <DefaultFleetRow key={product.id} product={product} icon={icon} onRemove={() => onRemove(product.id)} onTogglePush={onTogglePush} />
       ))}
     </div>
