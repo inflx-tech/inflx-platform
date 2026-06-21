@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { brandApi } from '../../../../../lib/api';
 
 /**
  * CustomiseDishModal — Food World Phase 2 owner editor.
@@ -53,6 +54,53 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
   });
   const [pullForGroup, setPullForGroup] = useState(null); // group index the picker is open for
   const [err, setErr] = useState(null);
+
+  // Reusable customisation library (saved add-on / variation groups).
+  const [templates, setTemplates] = useState([]);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [savedNote, setSavedNote] = useState(null);
+  useEffect(() => {
+    let on = true;
+    brandApi.getAddonTemplates().then(r => { if (on && r.success !== false) setTemplates(r.data?.templates || []); }).catch(() => {});
+    return () => { on = false; };
+  }, []);
+
+  function applyTemplate(t) {
+    const d = t.definition || {};
+    setGroups(gs => [...gs, {
+      name: t.name,
+      is_variation: t.is_variation === true,
+      selection_type: t.is_variation ? 'single' : (d.selection_type || 'multi'),
+      is_required: t.is_variation ? true : d.is_required === true,
+      min_select: t.is_variation ? 1 : (d.min_select ?? 0),
+      max_select: t.is_variation ? 1 : (d.max_select ?? ''),
+      items: (d.items || []).map(it => ({ name: it.name, price: it.price ?? '', is_default: it.is_default === true })),
+    }]);
+    setShowTemplates(false);
+  }
+
+  async function saveAsTemplate(g) {
+    const name = String(g.name || '').trim();
+    if (!name) { setErr('Name the group before saving it to your library.'); return; }
+    const items = (g.items || [])
+      .map(it => ({ name: String(it.name || '').trim(), price: it.price === '' || it.price == null ? 0 : Number(it.price), is_default: it.is_default === true }))
+      .filter(it => it.name);
+    if (!items.length) { setErr(`"${name}" needs at least one option before saving.`); return; }
+    try {
+      const r = await brandApi.saveAddonTemplate({
+        name, is_variation: g.is_variation === true,
+        definition: {
+          selection_type: g.is_variation ? 'single' : (g.selection_type || 'multi'),
+          is_required: g.is_required === true,
+          min_select: g.min_select, max_select: g.max_select, items,
+        },
+      });
+      if (r.success === false) { setErr(r.error?.message || 'Could not save to library'); return; }
+      const list = await brandApi.getAddonTemplates();
+      if (list.success !== false) setTemplates(list.data?.templates || []);
+      setErr(null); setSavedNote(`"${name}" saved to your library — reuse it on any dish.`);
+    } catch (e) { setErr(e.message || 'Could not save to library'); }
+  }
 
   const variations = useMemo(() => groups.map((g, i) => ({ g, i })).filter(x => x.g.is_variation), [groups]);
   const addons     = useMemo(() => groups.map((g, i) => ({ g, i })).filter(x => !x.g.is_variation), [groups]);
@@ -187,6 +235,27 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
             </label>
           </div>
 
+          {/* Reusable library — add a saved group, or save groups below for reuse */}
+          <div className="relative">
+            <button type="button" onClick={() => setShowTemplates(v => !v)}
+              className="text-xs font-semibold border border-dashed border-gray-300 rounded-lg px-3 py-1.5 hover:border-orange-400 hover:text-orange-600">
+              ⊞ Add from saved {templates.length ? `(${templates.length})` : ''}
+            </button>
+            {showTemplates && (
+              <div className="absolute z-10 top-9 left-0 w-72 max-h-60 overflow-auto bg-white border border-gray-200 rounded-xl shadow-lg p-1">
+                {templates.length === 0 && <div className="px-3 py-2 text-[11px] text-gray-400">No saved groups yet. Build a group below, then "Save as reusable".</div>}
+                {templates.map(t => (
+                  <button key={t.id} type="button" onClick={() => applyTemplate(t)}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-orange-50 rounded-lg">
+                    <span className="flex-1 text-sm font-semibold text-gray-800 truncate">{t.name}</span>
+                    <span className="text-[10px] text-gray-400">{t.is_variation ? 'variation' : 'add-on'} · {(t.definition?.items || []).length}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {savedNote && <span className="ml-2 text-[11px] text-green-600">{savedNote}</span>}
+          </div>
+
           {/* Variations */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -199,7 +268,8 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
                   <input value={g.name} onChange={e => patchGroup(i, { name: e.target.value })}
                     list="variation-name-suggestions" placeholder="Portion" className={`${inputCls} w-40`} />
                   <span className="text-[10px] text-gray-400">required · single-select</span>
-                  <button type="button" onClick={() => removeGroup(i)} className="ml-auto text-[11px] text-red-400 hover:text-red-600">Remove</button>
+                  <button type="button" onClick={() => saveAsTemplate(g)} className="ml-auto text-[11px] text-gray-500 hover:text-orange-600">Save as reusable</button>
+                  <button type="button" onClick={() => removeGroup(i)} className="text-[11px] text-red-400 hover:text-red-600">Remove</button>
                 </div>
                 {g.items.map((it, ii) => (
                   <div key={ii} className="flex items-center gap-2 py-1">
@@ -242,7 +312,8 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
                     <input type="checkbox" checked={g.is_required === true} onChange={e => patchGroup(i, { is_required: e.target.checked })} />
                     required
                   </label>
-                  <button type="button" onClick={() => removeGroup(i)} className="ml-auto text-[11px] text-red-400 hover:text-red-600">Remove</button>
+                  <button type="button" onClick={() => saveAsTemplate(g)} className="ml-auto text-[11px] text-gray-500 hover:text-orange-600">Save as reusable</button>
+                  <button type="button" onClick={() => removeGroup(i)} className="text-[11px] text-red-400 hover:text-red-600">Remove</button>
                 </div>
                 {g.items.map((it, ii) => (
                   <div key={ii} className="flex items-center gap-2 py-1">

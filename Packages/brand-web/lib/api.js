@@ -212,6 +212,10 @@ export const brandApi = {
   createProduct: (data) => api.post('/brands/me/products', data),
   updateProduct: (id, data) => api.patch(`/brands/me/products/${id}`, data),
   deleteProduct: (id) => api.delete(`/brands/me/products/${id}`),
+  // Reusable customisation templates (saved add-on / variation groups)
+  getAddonTemplates: () => api.get('/brands/me/addon-templates'),
+  saveAddonTemplate: (data) => api.post('/brands/me/addon-templates', data),
+  deleteAddonTemplate: (id) => api.delete(`/brands/me/addon-templates/${id}`),
   // Tag picker options — fixed vocabulary for this brand's business (+ 'ALL')
   getTagOptions: () => api.get('/brands/me/tag-options'),
   // ── Offer Engine — reusable offer library (Sub-contract A backend) ─────────

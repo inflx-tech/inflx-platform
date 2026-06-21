@@ -107,6 +107,12 @@ router.get('/me/quota-preflight',       authenticate, requireRole('brand'), subC
 router.patch('/me/products/:pid', authenticate, requireRole('brand'), ctrl.updateProduct);
 router.delete('/me/products/:pid',authenticate, requireRole('brand'), ctrl.deleteProduct);
 
+// Reusable customisation templates (saved add-on / variation groups) — food.
+const addonTemplatesCtrl = require('../controllers/brandAddonTemplates.controller');
+router.get   ('/me/addon-templates',     authenticate, requireRole('brand'), addonTemplatesCtrl.listTemplates);
+router.post  ('/me/addon-templates',     authenticate, requireRole('brand'), addonTemplatesCtrl.createTemplate);
+router.delete('/me/addon-templates/:id', authenticate, requireRole('brand'), addonTemplatesCtrl.deleteTemplate);
+
 // Wallet sub-router — all routes under /brands/me/wallet/*
 // Auth is applied here so wallet routes don't need to repeat it
 router.use('/me/wallet', authenticate, requireRole('brand'), walletRoutes);
