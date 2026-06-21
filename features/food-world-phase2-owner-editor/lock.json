@@ -16,11 +16,15 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder via Code-builder (2026-06-21) — reviewed the rendered owner-editor mockup (modal layout, variations + add-on groups + pull-from-menu + badge/featured + delivery settings) and said 'modal is right option ... lock'.",
   "mockup_locked_at": "2026-06-21",
+  "slices": {
+    "a_backend_addon_write_api": "SHIPPED 2026-06-21 (commit 67a2add) — Render live; 7/7 tests + brand.test 14/14.",
+    "b_brandweb_customise_modal": "SHIPPED 2026-06-21 — CustomiseDishModal + dish-picker wiring + publishDriver + restaurant.json delivery fields; next build exit 0. Vercel + Render (schema)."
+  },
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
     "released": false,
     "released_by": null,
     "released_at": null,
-    "deploy": "Pending founder go per slice: Slice A push → Render; Slice B push → Vercel."
+    "deploy": "Slice A pushed → Render (67a2add). Slice B pushed → Vercel (brand-web) + Render (restaurant.json schema). Visual before/after capture against live wizard pending a logged-in restaurant account."
   }
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { brandApi } from '../../../../../lib/api';
 import GalleryPicker from '../../../gallery/components/GalleryPicker';
 import BulkUploadCard from '../BulkUploadCard';
+import CustomiseDishModal from './CustomiseDishModal';
 
 /**
  * RestaurantDishPicker — step 4 component for restaurant authoring.
@@ -70,6 +71,9 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
 
   // Image-swap state for inline edit on added items
   const [swapTargetIdx, setSwapTargetIdx] = useState(null);
+
+  // Per-dish "Customise" modal (variations + add-on groups + badge + featured)
+  const [customiseIdx, setCustomiseIdx] = useState(null);
 
   // Dish search (typeahead + custom add)
   const [searchQ, setSearchQ] = useState('');
@@ -615,8 +619,17 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
                     onChange={e => onItemFieldChange(idx, 'price', e.target.value === '' ? null : Number(e.target.value))}
                     className="w-20 px-2 py-1 text-xs font-semibold outline-none bg-transparent" />
                 </div>
-                <button type="button" onClick={() => onItemRemove(idx)}
-                  className="text-red-400 hover:text-red-600 text-xs font-semibold">Remove</button>
+                <div className="flex flex-col items-end gap-1">
+                  <button type="button" onClick={() => setCustomiseIdx(idx)}
+                    className={`text-xs font-semibold px-2 py-1 rounded-lg border whitespace-nowrap ${
+                      (Array.isArray(item._addon_groups) && item._addon_groups.length) || item._badge || item._is_featured
+                        ? 'border-orange-300 bg-orange-50 text-orange-700'
+                        : 'border-gray-200 text-gray-600 hover:border-orange-300 hover:text-orange-600'}`}>
+                    {(Array.isArray(item._addon_groups) && item._addon_groups.length) ? '✓ Customised' : 'Customise'}
+                  </button>
+                  <button type="button" onClick={() => onItemRemove(idx)}
+                    className="text-red-400 hover:text-red-600 text-[11px] font-semibold">Remove</button>
+                </div>
               </div>
               );
             })}
@@ -631,6 +644,28 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
         onSelect={handleSwapImage}
         multiple={false}
       />
+
+      {/* Per-dish Customise modal — variations + add-on groups + badge + featured */}
+      {customiseIdx != null && wizardItems[customiseIdx] && (
+        <CustomiseDishModal
+          dish={wizardItems[customiseIdx]}
+          initial={{
+            addon_groups: wizardItems[customiseIdx]._addon_groups,
+            badge: wizardItems[customiseIdx]._badge,
+            is_featured: wizardItems[customiseIdx]._is_featured,
+          }}
+          menuItems={wizardItems
+            .filter((_, i) => i !== customiseIdx)
+            .map(it => ({ name: it.name, price: it.price, id: it._product_id || null }))}
+          onSave={(custom) => {
+            onItemFieldChange(customiseIdx, '_addon_groups', custom.addon_groups);
+            onItemFieldChange(customiseIdx, '_badge', custom.badge);
+            onItemFieldChange(customiseIdx, '_is_featured', custom.is_featured);
+            setCustomiseIdx(null);
+          }}
+          onClose={() => setCustomiseIdx(null)}
+        />
+      )}
     </div>
   );
 }

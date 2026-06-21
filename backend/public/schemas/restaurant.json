@@ -627,6 +627,24 @@
         "label": "Delivery fee",
         "unit": "₹",
         "default": 0
+      },
+      "free_delivery": {
+        "key": "free_delivery",
+        "type": "toggle",
+        "label": "Free delivery",
+        "help": "Show a 'Free Delivery' badge on your restaurant card"
+      },
+      "delivery_eta_min_mins": {
+        "key": "delivery_eta_min_mins",
+        "type": "number",
+        "label": "Delivery time — from (mins)",
+        "unit": "min"
+      },
+      "delivery_eta_max_mins": {
+        "key": "delivery_eta_max_mins",
+        "type": "number",
+        "label": "Delivery time — to (mins)",
+        "unit": "min"
       }
     },
     "actions": [

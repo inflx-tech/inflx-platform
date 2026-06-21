@@ -217,6 +217,27 @@ export async function runPublish({ template, brand, wizardState, wizardItems }) 
           errors.push(`Variants for "${payload.name}" didn't save: ${varRes?.error?.message || 'Unknown error'}`);
         }
       }
+
+      // Food World P2: dish customisation authored in the Customise modal rides
+      // on the wizard item under underscore keys. Write add-on/variation groups
+      // via the dedicated endpoint, and badge/featured via PATCH — both after
+      // the product row exists. Non-food items don't populate these → skipped.
+      const addonGroups = Array.isArray(item?._addon_groups) ? item._addon_groups : null;
+      if (addonGroups && addonGroups.length > 0 && newProductId) {
+        const agRes = await brandApi.post(`/brands/me/products/${newProductId}/addon-groups`, { groups: addonGroups });
+        if (!agRes || !(agRes.ok === true || agRes.success === true)) {
+          errors.push(`Customisation for "${payload.name}" didn't save: ${agRes?.error?.message || 'Unknown error'}`);
+        }
+      }
+      if (newProductId && (item?._badge != null || item?._is_featured != null)) {
+        const patch = {};
+        if (item._badge != null) patch.badge = item._badge;
+        if (item._is_featured != null) patch.is_featured = item._is_featured === true;
+        const pRes = await brandApi.patch(`/brands/me/products/${newProductId}`, patch);
+        if (!pRes || !(pRes.ok === true || pRes.success === true)) {
+          errors.push(`Badge/featured for "${payload.name}" didn't save: ${pRes?.error?.message || 'Unknown error'}`);
+        }
+      }
     } catch (err) {
       errors.push(`"${payload.name}" didn't save: ${err.message || err}`);
     }
