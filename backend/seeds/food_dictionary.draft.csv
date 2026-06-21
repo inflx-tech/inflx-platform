@@ -1,0 +1,361 @@
+cuisine,section,name,status
+North Indian,Breads,Naan,existing
+North Indian,Breads,Garlic Naan,existing
+North Indian,Breads,Tandoori Roti,existing
+North Indian,Breads,Lachha Paratha,existing
+North Indian,Breads,Aloo Paratha,existing
+North Indian,Breads,Butter Naan,NEW
+North Indian,Breads,Cheese Naan,NEW
+North Indian,Breads,Plain Roti,NEW
+North Indian,Breads,Missi Roti,NEW
+North Indian,Breads,Rumali Roti,NEW
+North Indian,Breads,Onion Kulcha,NEW
+North Indian,Breads,Paneer Paratha,NEW
+North Indian,Breads,Gobi Paratha,NEW
+North Indian,Curries,Butter Chicken,existing
+North Indian,Curries,Paneer Butter Masala,existing
+North Indian,Curries,Kadai Paneer,existing
+North Indian,Curries,Palak Paneer,existing
+North Indian,Curries,Dal Makhani,existing
+North Indian,Curries,Chole,existing
+North Indian,Curries,Rajma,existing
+North Indian,Curries,Shahi Paneer,NEW
+North Indian,Curries,Paneer Tikka Masala,NEW
+North Indian,Curries,Malai Kofta,NEW
+North Indian,Curries,Mix Veg,NEW
+North Indian,Curries,Chicken Curry,NEW
+North Indian,Curries,Chicken Tikka Masala,NEW
+North Indian,Curries,Kadai Chicken,NEW
+North Indian,Curries,Egg Curry,NEW
+North Indian,Curries,Mutton Curry,NEW
+North Indian,Curries,Mutton Rogan Josh,NEW
+North Indian,Curries,Dal Tadka,NEW
+North Indian,Curries,Dal Fry,NEW
+North Indian,Curries,Chana Masala,NEW
+North Indian,Rice,Jeera Rice,existing
+North Indian,Rice,Veg Pulao,existing
+North Indian,Rice,Plain Rice,NEW
+North Indian,Rice,Ghee Rice,NEW
+North Indian,Rice,Peas Pulao,NEW
+North Indian,Rice,Kashmiri Pulao,NEW
+North Indian,Starters & Tandoori,Tandoori Chicken,existing
+North Indian,Starters & Tandoori,Chicken Tikka,existing
+North Indian,Starters & Tandoori,Paneer Tikka,existing
+North Indian,Starters & Tandoori,Hara Bhara Kebab,existing
+North Indian,Starters & Tandoori,Aloo Tikki,existing
+North Indian,Starters & Tandoori,Chicken Malai Tikka,NEW
+North Indian,Starters & Tandoori,Seekh Kebab,NEW
+North Indian,Starters & Tandoori,Chicken Seekh Kebab,NEW
+North Indian,Starters & Tandoori,Tangdi Kebab,NEW
+North Indian,Starters & Tandoori,Reshmi Kebab,NEW
+North Indian,Starters & Tandoori,Chicken Wings,NEW
+North Indian,Starters & Tandoori,Tandoori Prawns,NEW
+North Indian,Sweets,Gulab Jamun,existing
+North Indian,Sweets,Jalebi,existing
+North Indian,Sweets,Rabri,NEW
+South Indian,Tiffins,Idli,existing
+South Indian,Tiffins,Plain Dosa,existing
+South Indian,Tiffins,Masala Dosa,existing
+South Indian,Tiffins,Mysore Masala Dosa,existing
+South Indian,Tiffins,Uttapam,existing
+South Indian,Tiffins,Medu Vada,existing
+South Indian,Tiffins,Rava Upma,existing
+South Indian,Tiffins,Ven Pongal,existing
+South Indian,Tiffins,Pesarattu,existing
+South Indian,Tiffins,Onion Dosa,NEW
+South Indian,Tiffins,Ghee Roast Dosa,NEW
+South Indian,Tiffins,Rava Dosa,NEW
+South Indian,Tiffins,Set Dosa,NEW
+South Indian,Tiffins,Paper Dosa,NEW
+South Indian,Tiffins,Egg Dosa,NEW
+South Indian,Tiffins,Podi Idli,NEW
+South Indian,Tiffins,Idli Vada Combo,NEW
+South Indian,Tiffins,Upma,NEW
+South Indian,Tiffins,Poha,NEW
+South Indian,Tiffins,Mysore Bajji,NEW
+South Indian,Tiffins,Bonda,NEW
+South Indian,Tiffins,Sambar Vada,NEW
+South Indian,Curries & Sambars,Sambar,existing
+South Indian,Curries & Sambars,Rasam,existing
+South Indian,Curries & Sambars,Avial,existing
+South Indian,Curries & Sambars,Kootu,existing
+South Indian,Curries & Sambars,Veg Kurma,NEW
+South Indian,Curries & Sambars,Chettinad Chicken,NEW
+South Indian,Curries & Sambars,Egg Curry,NEW
+South Indian,Rice,Curd Rice,existing
+South Indian,Rice,Lemon Rice,existing
+South Indian,Rice,Coconut Rice,existing
+South Indian,Rice,Tamarind Rice (Pulihora),existing
+South Indian,Rice,Bisi Bele Bath,existing
+South Indian,Rice,Sambar Rice,NEW
+South Indian,Rice,Tomato Rice,NEW
+South Indian,Rice,Ghee Pongal,NEW
+South Indian,Beverages,Filter Coffee,existing
+South Indian,Beverages,Buttermilk,existing
+South Indian,Beverages,Badam Milk,NEW
+South Indian,Sweets,Mysore Pak,existing
+South Indian,Sweets,Payasam,existing
+South Indian,Sweets,Boorelu,existing
+South Indian,Sweets,Rava Kesari,NEW
+Andhra,Curries,Andhra Chicken Curry,existing
+Andhra,Curries,Kodi Vepudu,existing
+Andhra,Curries,Natu Kodi Pulusu,existing
+Andhra,Curries,Gongura Mutton,existing
+Andhra,Curries,Royyala Iguru,existing
+Andhra,Curries,Bendakaya Ulli Karam,existing
+Andhra,Curries,Chicken Fry,NEW
+Andhra,Curries,Mutton Fry,NEW
+Andhra,Curries,Chepala Pulusu,NEW
+Andhra,Curries,Guthi Vankaya Kura,NEW
+Andhra,Curries,Kakarakaya Fry,NEW
+Andhra,Rice,Pulihora,existing
+Andhra,Rice,Bagara Annam,existing
+Andhra,Rice,Pesara Pappu Annam,existing
+Andhra,Rice,Ulavacharu Rice,existing
+Andhra,Rice,Ragi Sangati,NEW
+Andhra,Tiffins,Pesarattu,existing
+Andhra,Tiffins,Mirchi Bajji,existing
+Andhra,Tiffins,Punugulu,existing
+Andhra,Tiffins,Minapattu,NEW
+Andhra,Pickles & Sides,Avakaya,existing
+Andhra,Pickles & Sides,Gongura Pachadi,existing
+Andhra,Pickles & Sides,Tomato Pachadi,existing
+Andhra,Pickles & Sides,Pandu Mirchi,NEW
+Andhra,Meals,Andhra Veg Meals,NEW
+Andhra,Meals,Andhra Non-Veg Meals,NEW
+Hyderabadi,Biryanis,Hyderabadi Chicken Biryani,existing
+Hyderabadi,Biryanis,Hyderabadi Mutton Biryani,existing
+Hyderabadi,Biryanis,Hyderabadi Veg Biryani,existing
+Hyderabadi,Biryanis,Hyderabadi Egg Biryani,NEW
+Hyderabadi,Curries,Haleem,existing
+Hyderabadi,Curries,Bagara Baingan,existing
+Hyderabadi,Curries,Mirchi ka Salan,existing
+Hyderabadi,Curries,Nihari,existing
+Hyderabadi,Curries,Dum ka Chicken,NEW
+Hyderabadi,Curries,Mutton Marag,NEW
+Hyderabadi,Starters,Chicken 65,existing
+Hyderabadi,Starters,Boti Kebab,existing
+Hyderabadi,Starters,Pathar ka Gosht,existing
+Hyderabadi,Starters,Chicken Majestic,NEW
+Hyderabadi,Starters,Apollo Fish,NEW
+Hyderabadi,Sweets,Double ka Meetha,existing
+Hyderabadi,Sweets,Khubani ka Meetha,existing
+Hyderabadi,Sweets,Sheer Korma,existing
+Biryani,Chicken,Chicken Biryani,existing
+Biryani,Chicken,Chicken Dum Biryani,existing
+Biryani,Chicken,Chicken 65 Biryani,existing
+Biryani,Chicken,Boneless Chicken Biryani,NEW
+Biryani,Chicken,Chicken Fry Piece Biryani,NEW
+Biryani,Mutton,Mutton Biryani,existing
+Biryani,Mutton,Lucknowi Mutton Biryani,existing
+Biryani,Mutton,Keema Biryani,NEW
+Biryani,Veg,Veg Biryani,existing
+Biryani,Veg,Paneer Biryani,existing
+Biryani,Veg,Soya Biryani,existing
+Biryani,Veg,Mushroom Biryani,NEW
+Biryani,Veg,Veg Dum Biryani,NEW
+Biryani,Specialty,Egg Biryani,existing
+Biryani,Specialty,Fish Biryani,existing
+Biryani,Specialty,Prawn Biryani,existing
+Biryani,Specialty,Family Pack Biryani,NEW
+Chinese,Starters,Chicken Lollipop,existing
+Chinese,Starters,Chilli Chicken Dry,existing
+Chinese,Starters,Honey Chilli Potato,existing
+Chinese,Starters,Veg Spring Rolls,existing
+Chinese,Starters,Gobi Manchurian,NEW
+Chinese,Starters,Paneer 65,NEW
+Chinese,Starters,Chilli Mushroom,NEW
+Chinese,Starters,Crispy Corn,NEW
+Chinese,Starters,Drums of Heaven,NEW
+Chinese,Curries,Chicken Manchurian,existing
+Chinese,Curries,Chilli Paneer,existing
+Chinese,Curries,Veg Manchurian Gravy,existing
+Chinese,Curries,Chilli Chicken Gravy,NEW
+Chinese,Curries,Ginger Chicken,NEW
+Chinese,Curries,Schezwan Chicken,NEW
+Chinese,Noodles & Rice,Veg Fried Rice,existing
+Chinese,Noodles & Rice,Chicken Fried Rice,existing
+Chinese,Noodles & Rice,Schezwan Fried Rice,existing
+Chinese,Noodles & Rice,Hakka Noodles,existing
+Chinese,Noodles & Rice,Schezwan Noodles,existing
+Chinese,Noodles & Rice,Veg Noodles,NEW
+Chinese,Noodles & Rice,Chicken Noodles,NEW
+Chinese,Noodles & Rice,Egg Noodles,NEW
+Chinese,Noodles & Rice,Egg Fried Rice,NEW
+Chinese,Noodles & Rice,Paneer Fried Rice,NEW
+Chinese,Noodles & Rice,Triple Schezwan Rice,NEW
+Chinese,Soups,Sweet Corn Soup,existing
+Chinese,Soups,Hot & Sour Soup,existing
+Chinese,Soups,Manchow Soup,existing
+Chinese,Soups,Chicken Clear Soup,NEW
+Chinese,Soups,Chicken Hot & Sour Soup,NEW
+Chinese,Momos,Veg Momo,NEW
+Chinese,Momos,Paneer Momo,NEW
+Chinese,Momos,Chicken Momo,NEW
+Chinese,Momos,Steamed Momo,NEW
+Chinese,Momos,Fried Momo,NEW
+Chinese,Momos,Tandoori Momo,NEW
+Chinese,Momos,Schezwan Momo,NEW
+Continental,Mains & Grills,Grilled Chicken,existing
+Continental,Mains & Grills,Fish & Chips,existing
+Continental,Mains & Grills,Grilled Fish,NEW
+Continental,Mains & Grills,BBQ Chicken,NEW
+Continental,Mains & Grills,Chicken Steak,NEW
+Continental,Salads,Caesar Salad,existing
+Continental,Salads,Greek Salad,existing
+Continental,Salads,Chicken Salad,NEW
+Continental,Salads,Fruit Salad,NEW
+Continental,Salads,Sprout Salad,NEW
+Continental,Sandwiches,Club Sandwich,existing
+Continental,Sandwiches,Grilled Veg Sandwich,existing
+Continental,Sandwiches,Bombay Sandwich,NEW
+Continental,Sandwiches,Cheese Sandwich,NEW
+Continental,Sandwiches,Chicken Sandwich,NEW
+Continental,Sandwiches,Paneer Sandwich,NEW
+Continental,Sandwiches,Corn Sandwich,NEW
+Continental,Sides,French Fries,NEW
+Continental,Sides,Peri Peri Fries,NEW
+Continental,Sides,Potato Wedges,NEW
+Continental,Sides,Nachos,NEW
+Continental,Sides,Onion Rings,NEW
+Italian,Pizza,Margherita Pizza,existing
+Italian,Pizza,Farmhouse Pizza,existing
+Italian,Pizza,Veggie Supreme Pizza,existing
+Italian,Pizza,Chicken Pepperoni Pizza,existing
+Italian,Pizza,Cheese Burst Pizza,NEW
+Italian,Pizza,Double Cheese Pizza,NEW
+Italian,Pizza,Corn & Cheese Pizza,NEW
+Italian,Pizza,Veg Loaded Pizza,NEW
+Italian,Pizza,Mushroom Pizza,NEW
+Italian,Pizza,Onion Capsicum Pizza,NEW
+Italian,Pizza,Paneer Tikka Pizza,NEW
+Italian,Pizza,Tandoori Paneer Pizza,NEW
+Italian,Pizza,Chicken Tikka Pizza,NEW
+Italian,Pizza,BBQ Chicken Pizza,NEW
+Italian,Pizza,Peri Peri Chicken Pizza,NEW
+Italian,Pizza,Chicken Sausage Pizza,NEW
+Italian,Pasta,Pasta Alfredo,existing
+Italian,Pasta,Penne Arrabbiata,existing
+Italian,Pasta,Spaghetti Bolognese,existing
+Italian,Pasta,Mac & Cheese,existing
+Italian,Pasta,White Sauce Pasta,NEW
+Italian,Pasta,Red Sauce Pasta,NEW
+Italian,Pasta,Mixed Sauce Pasta,NEW
+Italian,Pasta,Chicken Alfredo Pasta,NEW
+Italian,Pasta,Veg Pasta,NEW
+Italian,Garlic Bread,Garlic Bread,existing
+Italian,Garlic Bread,Cheese Garlic Bread,NEW
+Italian,Garlic Bread,Stuffed Garlic Bread,NEW
+Fast Food,Burgers,Veg Burger,NEW
+Fast Food,Burgers,Aloo Tikki Burger,NEW
+Fast Food,Burgers,Paneer Burger,NEW
+Fast Food,Burgers,Veg Cheese Burger,NEW
+Fast Food,Burgers,Chicken Burger,NEW
+Fast Food,Burgers,Crispy Chicken Burger,NEW
+Fast Food,Burgers,Chicken Cheese Burger,NEW
+Fast Food,Burgers,Double Patty Burger,NEW
+Fast Food,Rolls & Wraps,Veg Roll,NEW
+Fast Food,Rolls & Wraps,Paneer Roll,NEW
+Fast Food,Rolls & Wraps,Egg Roll,NEW
+Fast Food,Rolls & Wraps,Chicken Roll,NEW
+Fast Food,Rolls & Wraps,Chicken Kathi Roll,NEW
+Fast Food,Rolls & Wraps,Egg Chicken Roll,NEW
+Fast Food,Rolls & Wraps,Veg Frankie,NEW
+Fast Food,Rolls & Wraps,Paneer Wrap,NEW
+Fast Food,Rolls & Wraps,Chicken Wrap,NEW
+Fast Food,Shawarma,Chicken Shawarma,NEW
+Fast Food,Shawarma,Chicken Shawarma Roll,NEW
+Fast Food,Shawarma,Chicken Shawarma Plate,NEW
+Fast Food,Shawarma,Paneer Shawarma,NEW
+Fast Food,Fries & Sides,French Fries,NEW
+Fast Food,Fries & Sides,Peri Peri Fries,NEW
+Fast Food,Fries & Sides,Cheese Fries,NEW
+Fast Food,Fries & Sides,Potato Wedges,NEW
+Fast Food,Fries & Sides,Nachos,NEW
+Fast Food,Fries & Sides,Onion Rings,NEW
+Fast Food,Fries & Sides,Chicken Nuggets,NEW
+Fast Food,Fries & Sides,Chicken Wings,NEW
+Eggs & Breakfast,Eggs,Omelette,NEW
+Eggs & Breakfast,Eggs,Bread Omelette,NEW
+Eggs & Breakfast,Eggs,Double Egg Omelette,NEW
+Eggs & Breakfast,Eggs,Egg Bhurji,NEW
+Eggs & Breakfast,Eggs,Egg Curry,NEW
+Eggs & Breakfast,Eggs,Egg Roast,NEW
+Eggs & Breakfast,Eggs,Boiled Egg,NEW
+Eggs & Breakfast,Eggs,Half Boil,NEW
+Eggs & Breakfast,Breakfast,Poha,NEW
+Eggs & Breakfast,Breakfast,Upma,NEW
+Eggs & Breakfast,Breakfast,Aloo Puri,NEW
+Eggs & Breakfast,Breakfast,Chole Bhature,NEW
+Eggs & Breakfast,Breakfast,Idli Vada,NEW
+Bowls & Meals,Bowls,Veg Bowl,NEW
+Bowls & Meals,Bowls,Chicken Bowl,NEW
+Bowls & Meals,Bowls,Paneer Bowl,NEW
+Bowls & Meals,Bowls,Egg Bowl,NEW
+Bowls & Meals,Bowls,Rice Bowl,NEW
+Bowls & Meals,Bowls,Biryani Bowl,NEW
+Bowls & Meals,Meals & Thali,Veg Meal,NEW
+Bowls & Meals,Meals & Thali,Non Veg Meal,NEW
+Bowls & Meals,Meals & Thali,Veg Thali,NEW
+Bowls & Meals,Meals & Thali,Non Veg Thali,NEW
+Bowls & Meals,Meals & Thali,South Indian Meal,NEW
+Bowls & Meals,Meals & Thali,North Indian Thali,NEW
+Bowls & Meals,Meals & Thali,Mini Meals,NEW
+Bowls & Meals,Meals & Thali,Tiffin Combo,NEW
+Desserts,Cakes & Pastries,Black Forest Pastry,existing
+Desserts,Cakes & Pastries,Red Velvet Pastry,existing
+Desserts,Cakes & Pastries,Cheesecake,existing
+Desserts,Cakes & Pastries,Chocolate Brownie,existing
+Desserts,Cakes & Pastries,Chocolate Cake,NEW
+Desserts,Cakes & Pastries,Vanilla Cake,NEW
+Desserts,Cakes & Pastries,Butterscotch Pastry,NEW
+Desserts,Cakes & Pastries,Pineapple Pastry,NEW
+Desserts,Cakes & Pastries,Choco Lava Cake,NEW
+Desserts,Cakes & Pastries,Cupcake,NEW
+Desserts,Cakes & Pastries,Donut,NEW
+Desserts,Ice Creams,Ice Cream Sundae,existing
+Desserts,Ice Creams,Tender Coconut Ice Cream,existing
+Desserts,Ice Creams,Vanilla Ice Cream,NEW
+Desserts,Ice Creams,Chocolate Ice Cream,NEW
+Desserts,Ice Creams,Butterscotch Ice Cream,NEW
+Desserts,Ice Creams,Ice Cream Scoop,NEW
+Desserts,Waffles,Belgian Waffle,NEW
+Desserts,Waffles,Chocolate Waffle,NEW
+Desserts,Waffles,Maple Waffle,NEW
+Desserts,Waffles,Mini Waffles,NEW
+Desserts,Cold,Falooda,existing
+Desserts,Cold,Kulfi Falooda,NEW
+Desserts,Cold,Royal Falooda,NEW
+Desserts,Indian Sweets,Gulab Jamun,existing
+Desserts,Indian Sweets,Ras Malai,existing
+Desserts,Indian Sweets,Rasgulla,existing
+Desserts,Indian Sweets,Kheer,existing
+Desserts,Indian Sweets,Gajar Halwa,existing
+Desserts,Indian Sweets,Kulfi,existing
+Desserts,Indian Sweets,Jalebi,NEW
+Desserts,Indian Sweets,Rabri,NEW
+Desserts,Pastries,Tiramisu,existing
+Desserts,Pastries,Pannacotta,existing
+Beverages,Juices,Mango Juice,NEW
+Beverages,Juices,Orange Juice,NEW
+Beverages,Juices,Watermelon Juice,NEW
+Beverages,Juices,Pineapple Juice,NEW
+Beverages,Juices,Mosambi Juice,NEW
+Beverages,Juices,Mixed Fruit Juice,NEW
+Beverages,Juices,ABC Juice,NEW
+Beverages,Shakes & Smoothies,Chocolate Milkshake,NEW
+Beverages,Shakes & Smoothies,Vanilla Milkshake,NEW
+Beverages,Shakes & Smoothies,Strawberry Milkshake,NEW
+Beverages,Shakes & Smoothies,Oreo Shake,NEW
+Beverages,Shakes & Smoothies,Banana Shake,NEW
+Beverages,Shakes & Smoothies,Mango Shake,NEW
+Beverages,Shakes & Smoothies,Cold Coffee,NEW
+Beverages,Shakes & Smoothies,Fruit Smoothie,NEW
+Beverages,Lassi & Milk,Sweet Lassi,NEW
+Beverages,Lassi & Milk,Mango Lassi,NEW
+Beverages,Lassi & Milk,Salt Lassi,NEW
+Beverages,Lassi & Milk,Badam Milk,NEW
+Beverages,Mocktails,Virgin Mojito,NEW
+Beverages,Mocktails,Blue Lagoon,NEW
+Beverages,Mocktails,Fresh Lime Soda,NEW
+Beverages,Mocktails,Lemon Soda,NEW
