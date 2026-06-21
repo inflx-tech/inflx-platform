@@ -622,7 +622,8 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
               const needsPhoto = !item.image_url;
               const needsPrice = item.price == null || Number(item.price) <= 0;
               return (
-              <div key={idx} className="bg-white border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+              <div key={idx} className="bg-white border border-gray-200 rounded-xl p-3">
+                <div className="flex items-center gap-3">
                 {/* Photo: owner's own — blank starts as an "Add photo" prompt, never a stock image */}
                 <button type="button" onClick={() => setSwapTargetIdx(idx)}
                   title={needsPhoto ? 'Add your own photo' : 'Change photo'}
@@ -662,6 +663,13 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
                   <button type="button" onClick={() => onItemRemove(idx)}
                     className="text-red-400 hover:text-red-600 text-[11px] font-semibold">Remove</button>
                 </div>
+                </div>
+                <textarea
+                  value={item.description || ''}
+                  onChange={e => onItemFieldChange(idx, 'description', e.target.value)}
+                  placeholder="Description (optional) — taste, ingredients, what's special…"
+                  rows={2}
+                  className="mt-2 w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-orange-400 resize-none" />
               </div>
               );
             })}

@@ -43,6 +43,7 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
   const [badge, setBadge] = useState(init.badge || '');
   const [isFeatured, setIsFeatured] = useState(init.is_featured === true);
   const [price, setPrice] = useState(init.price != null ? init.price : (dish?.price != null ? dish.price : ''));
+  const [description, setDescription] = useState(init.description || '');
   const [groups, setGroups] = useState(() => {
     const g = Array.isArray(init.addon_groups) ? init.addon_groups : [];
     return g.map(x => ({
@@ -130,7 +131,7 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
     setErr(null);
     onSave({
       addon_groups: clean, badge: (badge || '').trim() || null, is_featured: isFeatured,
-      ...(showPrice ? { price: Number(price) } : {}),
+      ...(showPrice ? { price: Number(price), description: description.trim() || null } : {}),
     });
   }
 
@@ -155,10 +156,17 @@ export default function CustomiseDishModal({ dish, menuItems = [], initial, onSa
           </datalist>
           {/* Badge + Featured */}
           {showPrice && (
-            <div>
-              <div className="text-[11px] text-gray-500 mb-1">Base price (₹)</div>
-              <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0"
-                className={`${inputCls} w-40`} />
+            <div className="space-y-3">
+              <div>
+                <div className="text-[11px] text-gray-500 mb-1">Base price (₹)</div>
+                <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="0"
+                  className={`${inputCls} w-40`} />
+              </div>
+              <div>
+                <div className="text-[11px] text-gray-500 mb-1">Description (optional)</div>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+                  placeholder="Taste, ingredients, what's special…" className={`${inputCls} w-full resize-none`} />
+              </div>
             </div>
           )}
 

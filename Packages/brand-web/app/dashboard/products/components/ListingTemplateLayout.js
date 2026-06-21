@@ -317,6 +317,7 @@ export default function ListingTemplateLayout({
       badge: product.badge || '',
       is_featured: product.is_featured === true,
       price: product.price,
+      description: product.description || '',
     });
     setEditProduct(product);
   }
@@ -326,6 +327,7 @@ export default function ListingTemplateLayout({
       const ag = await brandApi.post(`/brands/me/products/${id}/addon-groups`, { groups: result.addon_groups });
       const patch = { badge: result.badge, is_featured: result.is_featured };
       if (result.price != null) patch.price = result.price;
+      if (result.description !== undefined) patch.description = result.description;
       const pr = await brandApi.patch(`/brands/me/products/${id}`, patch);
       if ((ag && ag.success === false) || (pr && pr.success === false)) alert('Some changes did not save.');
     } catch (e) { alert('Failed to save: ' + (e.message || e)); }

@@ -62,3 +62,11 @@ basis; functional parity confirmed by the matching field set + the locked mockup
 - Publish is BLOCKED if any duplicate dish names remain: handlePublish lists them
   ("Sambar Rice (×2)") and asks the owner to remove the duplicates first.
 - brand-web only; next build exit 0.
+
+## Slice E — per-dish description box (founder, 2026-06-21)
+- Each added-dish row now has a Description textarea (RestaurantDishPicker), bound
+  to item.description → saved via the existing storage_format mapping
+  (description:wizard_state.description) — no backend change.
+- Published-dish Edit (CustomiseDishModal live mode) gains a Description field
+  too, seeded from product.description and saved via PATCH /products/:id.
+- brand-web only; next build exit 0.
