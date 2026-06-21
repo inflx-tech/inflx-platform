@@ -481,6 +481,7 @@ export default function ListingTemplateLayout({
 
       {editProduct && (
         <CustomiseDishModal
+          key={editProduct.id}
           dish={editProduct}
           initial={editInitial}
           showPrice

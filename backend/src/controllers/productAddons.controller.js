@@ -151,8 +151,20 @@ const replaceAddonGroups = asyncHandler(async (req, res) => {
   if (!brandId) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
   await assertProductOwnership(req.params.productId, brandId);
 
-  const groups = Array.isArray(req.body?.groups) ? req.body.groups : [];
-  validateGroups(groups);
+  const rawGroups = Array.isArray(req.body?.groups) ? req.body.groups : [];
+  validateGroups(rawGroups);
+
+  // Collapse duplicate-named groups (defensive: a buggy client could send the
+  // same group twice — keep the first per normalized name). The unique
+  // (product_id, name) index (mig 116) also guarantees this at the data layer.
+  const seenNames = new Set();
+  const groups = [];
+  for (const g of rawGroups) {
+    const k = String(g.name || '').trim().toLowerCase();
+    if (seenNames.has(k)) continue;
+    seenNames.add(k);
+    groups.push(g);
+  }
 
   // "Pull from my menu" records source_product_id. Defensive: any source id
   // provided must be one of this brand's own products, else drop it to null

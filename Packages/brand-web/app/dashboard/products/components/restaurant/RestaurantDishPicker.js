@@ -688,6 +688,7 @@ export default function RestaurantDishPicker({ step, template, brand, wizardStat
       {/* Per-dish Customise modal — variations + add-on groups + badge + featured */}
       {customiseIdx != null && wizardItems[customiseIdx] && (
         <CustomiseDishModal
+          key={customiseIdx}
           dish={wizardItems[customiseIdx]}
           initial={{
             addon_groups: wizardItems[customiseIdx]._addon_groups,

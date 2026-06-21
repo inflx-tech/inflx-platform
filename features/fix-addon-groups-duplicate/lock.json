@@ -1,0 +1,26 @@
+{
+  "feature": "fix-addon-groups-duplicate",
+  "area": "backend + brand-web",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "founder via Code-builder (2026-06-21) — walkthrough: 'save customization saving multiple things'. Fix-immediately per walkthrough protocol.",
+  "approved_at": "2026-06-21",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "deploy_posture": "PRODUCTION-IMPACTING. Migration 116 (dedupe + unique index, applied to prod 24->2). Backend (controller dedupe) -> Render; brand-web (modal key) -> Vercel. No mobile.",
+  "fix": "Stop duplicate addon/variation groups: migration 116 collapses existing dupes + UNIQUE(product_id,name); controller dedupes incoming groups by name; brand-web adds a key to CustomiseDishModal so it remounts fresh per dish (no stale-state carry-over). Root cause was client state carry-over sending a growing payload; backend bulk-replace was already correct.",
+  "related": ["features/food-world-phase2-owner-editor"],
+  "result": "Migration 116 applied to prod: product_addon_groups 24 -> 2, 0 duplicate (product,name) sets. food-addon-write 8/8 (incl. dedupe collapses to one; distinct-name saves still work). brand-web next build exit 0.",
+  "regression_proof": "Distinct-name multi-group saves unchanged (existing tests green with the unique index). Migration additive; duplicates were identical.",
+  "mockup_locked": true,
+  "mockup_locked_by": "founder via Code-builder (2026-06-21) — bug-fix to existing flow (dedupe + remount key), no new mockup. Attestation per gov-check Rule 3.",
+  "mockup_locked_at": "2026-06-21",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "deploy": "Migration 116 applied. git push -> Render + Vercel."
+  }
+}

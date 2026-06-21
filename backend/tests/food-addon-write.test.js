@@ -128,6 +128,18 @@ describe('Food World P2 — addon write API', () => {
     expect(rows[0].n).toBe(1);
   });
 
+  it('collapses duplicate-named groups (no doubling) — saved once', async () => {
+    const { token, productId } = await seedRestaurant();
+    const g = fullPayload().groups[1]; // the Portion variation group
+    const res = await request(app)
+      .post(`/v1/brands/me/products/${productId}/addon-groups`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ groups: [g, JSON.parse(JSON.stringify(g))] }); // same group twice
+    expect(res.status).toBe(200);
+    const { rows } = await query(`SELECT COUNT(*)::int n FROM product_addon_groups WHERE product_id=$1`, [productId]);
+    expect(rows[0].n).toBe(1);
+  });
+
   it('ownership guard — brand B cannot write brand A product (403)', async () => {
     const { productId } = await seedRestaurant('Brand A');
     const { token: tokenB } = await seedRestaurant('Brand B');
