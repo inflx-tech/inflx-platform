@@ -15,7 +15,7 @@ import { View, Text, ScrollView, Pressable, Image, StyleSheet } from 'react-nati
 import { toing as T, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 
-export default function DishGroupRail({ onPressTile }) {
+export default function DishGroupRail({ onPressTile, selectedId = null }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,21 +36,24 @@ export default function DishGroupRail({ onPressTile }) {
     <View>
       <Text style={styles.header}>What are you craving?</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
-        {tiles.map((g) => (
-          <Pressable
-            key={g.id}
-            style={styles.tile}
-            disabled={g._skel}
-            onPress={() => onPressTile?.(g)}
-          >
-            <View style={[styles.img, g._skel && styles.skel]}>
-              {!g._skel && (g.image_url
-                ? <Image source={{ uri: g.image_url }} style={styles.imgFill} resizeMode="cover" />
-                : <Text style={styles.fallback}>🍽️</Text>)}
-            </View>
-            {!g._skel && <Text style={styles.name} numberOfLines={1}>{g.name}</Text>}
-          </Pressable>
-        ))}
+        {tiles.map((g) => {
+          const on = !g._skel && selectedId === g.id;
+          return (
+            <Pressable
+              key={g.id}
+              style={styles.tile}
+              disabled={g._skel}
+              onPress={() => onPressTile?.(g)}
+            >
+              <View style={[styles.img, on && styles.imgOn, g._skel && styles.skel]}>
+                {!g._skel && (g.image_url
+                  ? <Image source={{ uri: g.image_url }} style={styles.imgFill} resizeMode="cover" />
+                  : <Text style={styles.fallback}>🍽️</Text>)}
+              </View>
+              {!g._skel && <Text style={[styles.name, on && styles.nameOn]} numberOfLines={1}>{g.name}</Text>}
+            </Pressable>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -61,8 +64,10 @@ const styles = StyleSheet.create({
   rail: { gap: 14, paddingHorizontal: 16, paddingBottom: 6 },
   tile: { width: 72, alignItems: 'center' },
   img: { width: 72, height: 72, borderRadius: 18, backgroundColor: T.yellowTint, borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  imgOn: { borderWidth: 2.5, borderColor: T.yellowDeep },
   imgFill: { width: '100%', height: '100%' },
   fallback: { fontSize: 30 },
   skel: { backgroundColor: '#EEF0F3' },
   name: { fontFamily: fonts.sansBold, fontSize: 11, color: T.ink, marginTop: 6, textAlign: 'center' },
+  nameOn: { color: T.yellowDeep },
 });

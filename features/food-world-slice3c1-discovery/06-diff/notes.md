@@ -23,6 +23,23 @@ pending a connected device — see release gate below).
 - Storefront reskin (search / MENU jump / collapsible / free-delivery bar) is **3C-2**.
 - Cart + offer-picker + organic ordering is **3C-3**.
 
+## Revision 2 (2026-06-22, founder live-test feedback)
+- **Craving tile → in-page filter (was: new screen).** Founder wanted Swiggy-style
+  behaviour. `DishGroupRail` now toggles a selected craving; `CategoryListScreen`
+  fetches `/dish-groups/:id/restaurants` and renders the results **inline**
+  (shared `RestaurantResultCard`, extracted from `DishGroupResultScreen` so both
+  reuse one card) with a "Clear" bar. Tapping the tile again clears. The
+  standalone `DishGroupResultScreen` stays registered for deep-links.
+- **Dish-group image upload added to `/admin/dish-groups`.** The builder had no
+  image field (so tiles fell back to the plate emoji); added a thumbnail upload
+  per row (reuses `uploadAdminStockImage` → `updateDishGroup{image_url}`; backend
+  already accepted it).
+- **Empty-restaurant finding:** the "restaurants with no dishes" the founder saw
+  were the legacy dining-card fallback that triggers only when the section engine
+  is empty (no approved restaurant had a menu). In section mode the brand rules
+  already gate on `EXISTS pushed_to_store` dishes, so no extra gate was needed
+  once restaurants were approved.
+
 ## Verification
 - Backend `food-discovery-3c1.test.js` 4/4 (ETA formula, Type-B rule featured-first
   + fallback + header, MRP surfaced); `pnpm qa` 79 GREEN (zero regression).

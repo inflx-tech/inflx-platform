@@ -26,6 +26,7 @@ import { CategoryCircle } from '../../components/vibe';
 import { useAppLocation } from '../../contexts/LocationContext';
 import LocationSheet from '../../components/LocationSheet';
 import DishGroupRail from '../../components/food/DishGroupRail';
+import RestaurantResultCard from '../../components/food/RestaurantResultCard';
 
 // Food World 3C-1 — home filter chips (client-side over the food shelves).
 const FOOD_CHIPS = [
@@ -191,6 +192,24 @@ export default function CategoryListScreen({ route, navigation }) {
   // card (only a known eta_max > 30 does).
   const [foodFilters, setFoodFilters] = useState({});
   const activeFoodKeys = Object.keys(foodFilters).filter((k) => foodFilters[k]);
+
+  // Food World 3C-1 — craving filter IN-PAGE (Swiggy-style; no new screen).
+  // Tapping a dish-group tile filters this page to restaurants serving it;
+  // tapping the same tile again clears it.
+  const [craving, setCraving] = useState(null);          // { id, name } or null
+  const [cravingResults, setCravingResults] = useState([]);
+  const [cravingLoading, setCravingLoading] = useState(false);
+
+  const onCraving = useCallback(async (g) => {
+    if (craving?.id === g.id) { setCraving(null); setCravingResults([]); return; }
+    setCraving({ id: g.id, name: g.name });
+    setCravingLoading(true);
+    try {
+      const r = await followerApi.getDishGroupRestaurants(g.id, { lat: latitude, lng: longitude });
+      setCravingResults((r?.data || r)?.restaurants || []);
+    } catch { setCravingResults([]); }
+    finally { setCravingLoading(false); }
+  }, [craving?.id, latitude, longitude]);
 
   const dishPasses = useCallback((p) => {
     if (foodFilters.veg && !(p.veg_flag === 'Veg' || p.veg_flag === 'veg' || p.veg_flag === true)) return false;
@@ -469,9 +488,7 @@ export default function CategoryListScreen({ route, navigation }) {
         {/* Food World 3C-1 — dish-group "craving" rail + filter chips (food home only) */}
         {isDining && (
           <>
-            <DishGroupRail
-              onPressTile={(g) => navigation.navigate('DishGroupResult', { groupId: g.id, groupName: g.name })}
-            />
+            <DishGroupRail onPressTile={onCraving} selectedId={craving?.id || null} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.foodChips}>
               {FOOD_CHIPS.map((c) => {
                 const on = !!foodFilters[c.key];
@@ -489,7 +506,37 @@ export default function CategoryListScreen({ route, navigation }) {
           </>
         )}
 
-        {sectionsActive ? (
+        {/* Craving selected → in-page results (replaces the normal feed) */}
+        {isDining && craving ? (
+          <>
+            <View style={s.cravingBar}>
+              <Text style={s.cravingTitle} numberOfLines={1}>
+                {craving.name}
+                {!cravingLoading ? <Text style={s.cravingCount}>  · {cravingResults.length} place{cravingResults.length !== 1 ? 's' : ''}</Text> : null}
+              </Text>
+              <TouchableOpacity onPress={() => onCraving(craving)} hitSlop={8}>
+                <Text style={s.cravingClear}>✕ Clear</Text>
+              </TouchableOpacity>
+            </View>
+            {cravingLoading ? (
+              <ActivityIndicator color={P.yellowText} style={{ marginTop: 30 }} />
+            ) : cravingResults.length === 0 ? (
+              <View style={s.empty}>
+                <Text style={s.emptyIcon}>🍱</Text>
+                <Text style={s.emptyTitle}>No one nearby serves this yet</Text>
+                <Text style={s.emptyText}>Try a wider area or another craving.</Text>
+              </View>
+            ) : (
+              cravingResults.map((r) => (
+                <RestaurantResultCard
+                  key={r.brand_id}
+                  restaurant={r}
+                  onOpen={(rest) => navigation.navigate('BrandStore', { brandId: rest.brand_id, brandName: rest.business_name })}
+                />
+              ))
+            )}
+          </>
+        ) : sectionsActive ? (
           <SectionRenderer sections={foodFilteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
         ) : (
         <>
@@ -655,6 +702,12 @@ const s = StyleSheet.create({
     height: 1, backgroundColor: P.border,
     marginHorizontal: 20, marginVertical: 12,
   },
+
+  // Food World 3C-1 — craving in-page result bar
+  cravingBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2 },
+  cravingTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: C.ink, letterSpacing: -0.3 },
+  cravingCount: { fontSize: 12, fontWeight: '600', color: P.muted },
+  cravingClear: { fontSize: 12, fontWeight: '800', color: P.yellowText },
 
   // Food World 3C-1 — home filter chips
   foodChips: { gap: 9, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },

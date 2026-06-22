@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { adminApi } from '../../../lib/api';
+import { adminApi, uploadAdminStockImage } from '../../../lib/api';
 
 // Admin dish-group builder: create food-discovery tiles (Biryani, Paratha...),
 // auto-suggest member dishes by name, tick to confirm, set an optional keyword.
@@ -41,6 +41,18 @@ export default function DishGroupsPage() {
       if (r.success) { await load(); await openMembers(r.data.group, true); }
       else setError(r.error?.message || 'Create failed');
     } finally { setBusy(false); }
+  };
+
+  const uploadImg = async (g, file) => {
+    if (!file) return;
+    setBusy(true); setError(null);
+    try {
+      const res = await uploadAdminStockImage(file);
+      if (res.error) { setError(res.error.message || 'Upload failed'); return; }
+      const r = await adminApi.updateDishGroup(g.id, { image_url: res.public_url });
+      if (r.success === false) setError(r.error?.message || 'Save failed');
+    } catch (e) { setError(e.message || 'Upload failed'); }
+    finally { setBusy(false); await load(); }
   };
 
   const rename = (g) => { const n = prompt('Rename group:', g.name); if (n && n.trim()) guard(() => adminApi.updateDishGroup(g.id, { name: n.trim() })); };
@@ -106,6 +118,13 @@ export default function DishGroupsPage() {
                 <button onClick={() => move(g, -1)} disabled={i === 0} className="text-gray-400 disabled:opacity-30 leading-none">▲</button>
                 <button onClick={() => move(g, 1)} disabled={i === groups.length - 1} className="text-gray-400 disabled:opacity-30 leading-none">▼</button>
               </div>
+              <label className="w-12 h-12 rounded-lg border bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer shrink-0" title="Upload tile image">
+                {g.image_url
+                  ? <img src={g.image_url} alt="" className="w-full h-full object-cover" />
+                  : <span className="text-lg text-gray-300">＋</span>}
+                <input type="file" accept="image/*" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; uploadImg(g, f); }} />
+              </label>
               <div className="flex-1">
                 <div className="font-bold text-sm">{g.name}</div>
                 <div className="text-[11px] text-gray-500">{g.member_count} dishes{g.keyword ? ` · keyword "${g.keyword}"` : ''}</div>
