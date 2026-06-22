@@ -15,15 +15,22 @@ import { sectionApi, adminApi } from '../../../lib/api';
  * (engine cache TTL). Contracts: features/admin-section-manager + …-v2.
  */
 
+// NOTE: the follower HOME screen is hardcoded (world tabs + "What's on your mind?"
+// rail) and managed in Home Builder — it does NOT read section_config['home'].
+// So the Home tab is intentionally removed here to avoid placing shelves that
+// never render. Per-screen shelves below DO render: Category = the page after
+// tapping a world (scope it per-world); Offers/Creator = those screens.
 const SCREENS = [
-  { key: 'home', label: 'Home' },
   { key: 'category', label: 'Category' },
   { key: 'offers', label: 'Offers' },
   { key: 'creator_store', label: 'Creator Store' },
   { key: 'creator_category', label: "Creator's Category" },
 ];
 
-const CATEGORIES = ['dining', 'shopping', 'groom', 'stay_fit', 'travel', 'home', 'events'];
+// Per-world scope values = the live follower worlds (follower_categories keys).
+// getCategorySections passes scopeType='vertical', scopeValue=<world>, so a
+// Category shelf scoped to 'food' shows ONLY on the food page.
+const CATEGORIES = ['food', 'fashion', 'furniture', 'beauty', 'car_rental'];
 const ITEM_TYPES = ['brands', 'products', 'offers'];
 const RULE_FOR_TYPE = { brands: 'top_by_engagement', products: 'top_by_sales', offers: 'top_by_conversions' };
 
@@ -53,7 +60,7 @@ function slug(t) {
 }
 
 export default function SectionsPage() {
-  const [screen, setScreen] = useState('home');
+  const [screen, setScreen] = useState('category');
   const [scopeType, setScopeType] = useState('global');
   const [scopeValue, setScopeValue] = useState('');   // committed
   const [cityDraft, setCityDraft] = useState('');

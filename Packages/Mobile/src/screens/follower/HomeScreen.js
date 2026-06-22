@@ -56,7 +56,7 @@ export default function HomeScreen({ navigation }) {
   const placeholder = cats.length ? `Search for '${cats[phIdx % cats.length].name}'` : 'Search';
 
   const openCategory = (cat) =>
-    navigation.navigate('CategoryList', { superCategory: active?.key, label: cat.name, icon: cat.icon });
+    navigation.navigate('CategoryList', { superCategory: active?.key, label: cat.name, icon: cat.icon, categoryKey: cat.key });
 
   if (loading) {
     return <View style={s.center}><ActivityIndicator color={T.yellowDeep} /></View>;

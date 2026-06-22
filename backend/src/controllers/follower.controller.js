@@ -1481,30 +1481,18 @@ const getDishGroups = asyncHandler(async (req, res) => {
 // serving any dish in the group (explicit member master_dishes OR the group's
 // name keyword), ranked by distance then 30-day popularity. Each card carries
 // the restaurant's matching varieties + "from ₹X" + rating + delivery info.
-const getDishGroupRestaurants = asyncHandler(async (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  if (!Number.isInteger(id)) throw new AppError('VALIDATION_ERROR', 'bad id', 422);
-  const { rows: g } = await db.query(
-    `SELECT id, name, keyword FROM dish_groups WHERE id=$1 AND status='active'`, [id]);
-  if (!g[0]) throw new AppError('NOT_FOUND', 'dish group not found', 404);
-  const group = g[0];
-  const keyword = (group.keyword || '').trim();
-
-  const { rows: mem } = await db.query(
-    `SELECT master_dish_id FROM dish_group_dishes WHERE dish_group_id=$1`, [id]);
-  const memberIds = mem.map(m => m.master_dish_id);
-
-  if (!memberIds.length && !keyword) {
-    return success(res, { group: { id: group.id, name: group.name }, restaurants: [] });
-  }
-
-  const { lat, lng } = await resolveFollowerContext(req);
+// Shared matcher: approved restaurants (in-store) serving any of `memberIds`
+// (master_dish) OR matching `keyword` on dish name — distance-ranked with
+// rating / ETA / free-delivery / from-price / varieties. Used by both the
+// dish-group endpoint and the category-tile (Home Builder) discovery endpoint.
+async function restaurantsServing({ memberIds = [], keyword = '', lat, lng }) {
+  const kw = (keyword || '').trim();
+  if (!memberIds.length && !kw) return [];
   const geo = Number.isFinite(lat) && Number.isFinite(lng);
-
   const params = [];
   let p = 0;
   const memIdx = ++p; params.push(memberIds.length ? memberIds : [0]); // int[] (0 matches nothing)
-  const kwIdx  = ++p; params.push(keyword);                            // '' when no keyword
+  const kwIdx  = ++p; params.push(kw);                                 // '' when no keyword
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(lat); lngIdx = ++p; params.push(lng); }
 
@@ -1536,11 +1524,10 @@ const getDishGroupRestaurants = asyncHandler(async (req, res) => {
   );
 
   const ratingMap = await followerService.getBrandRatings(rows.map(r => r.brand_id));
-  const restaurants = rows.map(r => {
+  return rows.map(r => {
     const ld = r.listing_data || {};
     const rt = ratingMap[r.brand_id] || { avg_rating: null, review_count: 0 };
-    // ETA is distance-derived (founder 2026-06-22), not the stored restaurant value.
-    const eta = etaFromDistanceKm(r.dist_km);
+    const eta = etaFromDistanceKm(r.dist_km); // distance-derived (founder 2026-06-22)
     return {
       brand_id: r.brand_id,
       business_name: r.business_name,
@@ -1555,13 +1542,54 @@ const getDishGroupRestaurants = asyncHandler(async (req, res) => {
       varieties: r.varieties || [],
     };
   });
+}
+
+const getDishGroupRestaurants = asyncHandler(async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (!Number.isInteger(id)) throw new AppError('VALIDATION_ERROR', 'bad id', 422);
+  const { rows: g } = await db.query(
+    `SELECT id, name, keyword FROM dish_groups WHERE id=$1 AND status='active'`, [id]);
+  if (!g[0]) throw new AppError('NOT_FOUND', 'dish group not found', 404);
+  const group = g[0];
+  const { rows: mem } = await db.query(
+    `SELECT master_dish_id FROM dish_group_dishes WHERE dish_group_id=$1`, [id]);
+  const memberIds = mem.map(m => m.master_dish_id);
+
+  const { lat, lng } = await resolveFollowerContext(req);
+  const restaurants = await restaurantsServing({ memberIds, keyword: group.keyword, lat, lng });
   return success(res, { group: { id: group.id, name: group.name }, restaurants });
+});
+
+// GET /follower/category-restaurants?name=&lat&lng — restaurants serving a
+// Home-Builder category tile (follower_vertical_categories). Cleanup 2026-06-22:
+// the craving rail is now driven by these tiles, not dish_groups. For precise
+// matching we reuse a same-named dish_group's members+keyword when one exists;
+// otherwise keyword = the tile name (dish-name match).
+const getCategoryRestaurants = asyncHandler(async (req, res) => {
+  const name = String(req.query.name || req.query.category || '').trim();
+  if (!name) throw new AppError('VALIDATION_ERROR', 'name is required', 422, 'name');
+  const { rows: dg } = await db.query(
+    `SELECT id, keyword FROM dish_groups
+      WHERE status='active' AND (name ILIKE $1 OR keyword ILIKE $1)
+      ORDER BY name LIMIT 1`, [name]);
+  let memberIds = [];
+  let keyword = name;
+  if (dg[0]) {
+    const { rows: mem } = await db.query(
+      `SELECT master_dish_id FROM dish_group_dishes WHERE dish_group_id=$1`, [dg[0].id]);
+    memberIds = mem.map(m => m.master_dish_id);
+    keyword = (dg[0].keyword || name).trim();
+  }
+  const { lat, lng } = await resolveFollowerContext(req);
+  const restaurants = await restaurantsServing({ memberIds, keyword, lat, lng });
+  return success(res, { category: { name }, restaurants });
 });
 
 module.exports = {
   getVerticals,
   getDishGroups,
   getDishGroupRestaurants,
+  getCategoryRestaurants,
   creatorsEatingNow,
   getSectionResults,
   getProductDetail,

@@ -1,0 +1,18 @@
+{
+  "feature": "food-discovery-cleanup",
+  "area": "admin + mobile-follower-v2 + backend",
+  "spec_version": "1.0.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — 'first make cleanup activity' in chat 2026-06-22, after the admin↔app audit laid out the 5 cleanup items (retire dead Home config, per-world food sections, retire dish_groups, merge Follower Categories, in-page craving rail)",
+  "approved_at": "2026-06-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — waived mockups for a structural cleanup (no new visual surface; reuses the locked 3C-1 toing cards/rail). Directed 'do cleanup' in chat 2026-06-22",
+  "mockup_locked_at": "2026-06-22",
+  "deploy_posture": "PRODUCTION-IMPACTING. No migration. brand-web admin (Vercel) + backend new read-only endpoint (Render) + mobile OTA. Non-destructive: dish_groups tables/endpoints kept (just unlinked from app+admin nav); section_config['home'] data kept (Home tab removed from admin only).",
+  "fix": "Cleanup of overlapping admin surfaces + duplicate craving rail uncovered in the admin↔app audit. (1) Remove dead 'App Sections > Home' tab (live home is Home-Builder-driven). (2) Fix App Sections scope keys to real worlds (food/fashion/...) so food sections scope to food. (3) Retire the dish_groups craving rail in the app; drive the craving rail from follower_vertical_categories (Home Builder) with in-page filtering. (4) Remove Dish Groups + Follower Categories admin nav (consolidate to Home Builder). New backend endpoint: restaurants serving a category tile.",
+  "notes": "Audit findings in chat 2026-06-22. dish_groups kept in DB (optional precise matcher) but removed from app+admin. Founder checks after deploy, then places 'Food under 400' on App Sections > Category (scope food).",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending build+test" }
+}

@@ -25,7 +25,7 @@ import SectionRenderer, { hasEngineContent } from '../../components/SectionRende
 import { CategoryCircle } from '../../components/vibe';
 import { useAppLocation } from '../../contexts/LocationContext';
 import LocationSheet from '../../components/LocationSheet';
-import DishGroupRail from '../../components/food/DishGroupRail';
+import CravingRail from '../../components/food/CravingRail';
 import RestaurantResultCard from '../../components/food/RestaurantResultCard';
 
 // Food World 3C-1 — home filter chips (client-side over the food shelves).
@@ -193,23 +193,49 @@ export default function CategoryListScreen({ route, navigation }) {
   const [foodFilters, setFoodFilters] = useState({});
   const activeFoodKeys = Object.keys(foodFilters).filter((k) => foodFilters[k]);
 
-  // Food World 3C-1 — craving filter IN-PAGE (Swiggy-style; no new screen).
-  // Tapping a dish-group tile filters this page to restaurants serving it;
-  // tapping the same tile again clears it.
-  const [craving, setCraving] = useState(null);          // { id, name } or null
+  // Craving filter IN-PAGE (Swiggy-style; no new screen). Cleanup 2026-06-22:
+  // the rail tiles come from the WORLD's Home-Builder categories
+  // (follower_vertical_categories — same as the main home), and a tap filters
+  // this page to restaurants serving that category. Tap again clears.
+  const [cravingTiles, setCravingTiles] = useState([]);
+  const [craving, setCraving] = useState(null);          // { key, name } or null
   const [cravingResults, setCravingResults] = useState([]);
   const [cravingLoading, setCravingLoading] = useState(false);
 
-  const onCraving = useCallback(async (g) => {
-    if (craving?.id === g.id) { setCraving(null); setCravingResults([]); return; }
-    setCraving({ id: g.id, name: g.name });
+  // Load this world's category tiles (only for the dining/food world).
+  useEffect(() => {
+    if (!isDining) return;
+    let alive = true;
+    followerApi.getVerticals?.()
+      .then((r) => {
+        const verts = (r?.data || r)?.verticals || [];
+        const world = verts.find((v) => v.key === superCategory) || null;
+        if (alive) setCravingTiles(world?.categories || []);
+      })
+      .catch(() => { if (alive) setCravingTiles([]); });
+    return () => { alive = false; };
+  }, [isDining, superCategory]);
+
+  const onCraving = useCallback(async (tile) => {
+    if (craving?.key === tile.key) { setCraving(null); setCravingResults([]); return; }
+    setCraving({ key: tile.key, name: tile.name });
     setCravingLoading(true);
     try {
-      const r = await followerApi.getDishGroupRestaurants(g.id, { lat: latitude, lng: longitude });
+      const r = await followerApi.getCategoryRestaurants(tile.name, { lat: latitude, lng: longitude });
       setCravingResults((r?.data || r)?.restaurants || []);
     } catch { setCravingResults([]); }
     finally { setCravingLoading(false); }
-  }, [craving?.id, latitude, longitude]);
+  }, [craving?.key, latitude, longitude]);
+
+  // Pre-select a craving when the home rail deep-linked into a specific tile
+  // (so tapping "Pizza" on home opens the food page already filtered).
+  const presetCat = route.params?.categoryKey || null;
+  useEffect(() => {
+    if (!isDining || !presetCat || craving || !cravingTiles.length) return;
+    const tile = cravingTiles.find((t) => t.key === presetCat);
+    if (tile) onCraving(tile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDining, presetCat, cravingTiles]);
 
   const dishPasses = useCallback((p) => {
     if (foodFilters.veg && !(p.veg_flag === 'Veg' || p.veg_flag === 'veg' || p.veg_flag === true)) return false;
@@ -488,7 +514,7 @@ export default function CategoryListScreen({ route, navigation }) {
         {/* Food World 3C-1 — dish-group "craving" rail + filter chips (food home only) */}
         {isDining && (
           <>
-            <DishGroupRail onPressTile={onCraving} selectedId={craving?.id || null} />
+            <CravingRail tiles={cravingTiles} onPressTile={onCraving} selectedKey={craving?.key || null} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.foodChips}>
               {FOOD_CHIPS.map((c) => {
                 const on = !!foodFilters[c.key];

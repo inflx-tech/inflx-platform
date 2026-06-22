@@ -512,6 +512,14 @@ export const followerApi = {
     if (loc.lat != null && loc.lng != null) qs.push(`lat=${loc.lat}`, `lng=${loc.lng}`);
     return api.get(`/follower/dish-groups/${id}/restaurants${qs.length ? `?${qs.join('&')}` : ''}`);
   },
+  // Cleanup 2026-06-22 — craving rail driven by Home-Builder category tiles.
+  // Restaurants serving a category tile (by name; reuses a same-named dish_group
+  // for precise matching server-side, else keyword match).
+  getCategoryRestaurants: (name, loc = {}) => {
+    const qs = [`name=${encodeURIComponent(name)}`];
+    if (loc.lat != null && loc.lng != null) qs.push(`lat=${loc.lat}`, `lng=${loc.lng}`);
+    return api.get(`/follower/category-restaurants?${qs.join('&')}`);
+  },
   // Phase Salon-2 — accepts an optional viaInfluencerId so the response
   // embeds a `creator` object the BrandStoreScreen sticky header renders.
   getBrandStore: (brandId, viaInfluencerId = null) => {

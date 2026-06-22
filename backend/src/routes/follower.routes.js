@@ -49,6 +49,9 @@ router.get('/verticals',  authenticateOptional, ctrl.getVerticals);  // v2 home:
 // Dish groups (food discovery tiles): list tiles + tap → nearby restaurants serving it.
 router.get('/dish-groups',                authenticateOptional, ctrl.getDishGroups);
 router.get('/dish-groups/:id/restaurants', authenticateOptional, ctrl.getDishGroupRestaurants);
+// Category-tile discovery (Home Builder follower_vertical_categories): the craving
+// rail taps here → restaurants serving that category. Cleanup 2026-06-22.
+router.get('/category-restaurants',        authenticateOptional, ctrl.getCategoryRestaurants);
 // Full single-product detail for the PDP (a shelf/Results tap carries only the
 // card fields; the PDP fetches description/facets/images/variants by id).
 router.get('/products/:product_id', authenticateOptional, ctrl.getProductDetail);
