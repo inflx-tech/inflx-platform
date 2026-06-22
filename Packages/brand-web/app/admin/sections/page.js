@@ -44,8 +44,12 @@ const ADD_PRESETS = [
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
   // Food 3C — the world's sub-category tiles as a placeable section (📌-able).
   { key: 'category_rail', label: 'Category rail (sticky-able)', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
-  // Template Catalog #1 — image tiles; each tile = upload image + wire to a group.
-  { key: 'tiles', label: 'Image tiles (wire each to a group)', shelf_type: 'tiles', rule: 'static', title: 'Featured' },
+  // Template Catalog — image tiles; each tile = upload image + wire to a group.
+  // All four are shelf_type 'tiles', differing only by config.style.
+  { key: 'tiles',          label: 'Image tiles (spotlight)',      shelf_type: 'tiles', rule: 'static', title: 'Spotlight',          config: { style: 'carousel' } },
+  { key: 'tiles_featured', label: 'Featured carousel',            shelf_type: 'tiles', rule: 'static', title: 'Featured',           config: { style: 'featured' } },
+  { key: 'tiles_grid',     label: 'Tile grid (shop by concern)',  shelf_type: 'tiles', rule: 'static', title: 'Shop by concern',     config: { style: 'grid' } },
+  { key: 'tiles_banner',   label: 'Themed banner + sub-tiles',    shelf_type: 'tiles', rule: 'static', title: 'Serums for healthy skin', config: { style: 'banner' } },
   // Food World 3C-1 — Type B: one card per restaurant + a nested carousel of its
   // featured dishes (is_featured/featured_sort, fallback first N in-stock).
   { key: 'restaurant_list', label: 'Restaurants + dishes (food)', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
@@ -168,7 +172,7 @@ export default function SectionsPage() {
       title: p.title, shelf_type: p.shelf_type, rule: p.rule,
       item_type: p.item_type || null, category_key: null,
       item_limit: 8, position: shelves.length, enabled: true,
-      config_json: { sub: '' },
+      config_json: { sub: '', ...(p.config || {}) },
     };
     setShelves(prev => [...prev, shelf]);
     setExpanded(tmp); setJsonDraft(JSON.stringify(shelf.config_json, null, 2)); setJsonErr(null);
@@ -342,6 +346,33 @@ export default function SectionsPage() {
                     {/* Template Catalog #1 — image tiles: per-tile image + label + wired group. */}
                     {s.shelf_type === 'tiles' && (
                       <div className="flex flex-col gap-2">
+                        {/* Layout style */}
+                        <label className="text-[11px] font-semibold text-gray-600">Layout
+                          <select value={cfg.style || 'carousel'} onChange={e => patchConfig(id, 'style', e.target.value)}
+                            className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                            <option value="carousel">Image tiles (spotlight)</option>
+                            <option value="featured">Featured carousel</option>
+                            <option value="grid">Tile grid (shop by concern)</option>
+                            <option value="banner">Themed banner + sub-tiles</option>
+                          </select>
+                        </label>
+                        {/* Banner background (banner style only) */}
+                        {cfg.style === 'banner' && (
+                          <label className="text-[11px] font-semibold text-gray-600">Banner background
+                            <div className="mt-1 flex items-center gap-2">
+                              <label className="w-16 h-10 rounded border bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer shrink-0">
+                                {cfg.banner_image_url ? <img src={cfg.banner_image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-300">＋</span>}
+                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                  const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+                                  const res = await uploadAdminStockImage(f);
+                                  if (res.error) { setMsg({ kind: 'err', text: res.error.message || 'Upload failed' }); return; }
+                                  patchConfig(id, 'banner_image_url', res.public_url);
+                                }} />
+                              </label>
+                              <span className="text-[11px] text-gray-400">Upload the banner background (3 sub-tiles below).</span>
+                            </div>
+                          </label>
+                        )}
                         <div className="text-[11px] font-semibold text-gray-600">Tiles — upload an image + wire each to a Section Library group</div>
                         {(cfg.tiles || []).map((t, ti) => (
                           <div key={ti} className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">

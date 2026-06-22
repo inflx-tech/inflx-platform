@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Section Template Catalog — how each looks</title>
+<style>
+  :root{
+    --pageBg:#F4F5F7; --card:#fff; --line:#E8EAED;
+    --ink:#1A1D1F; --muted:#6B7280; --hint:#9CA3AF;
+    --yellow:#F8CB46; --yellowInk:#1A1D1F; --yellowDeep:#C77A00; --yellowTint:#FFF6E0;
+    --pink:#E11D6B; --pinkTint:#FCE7F0; --veg:#15803D;
+  }
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:var(--pageBg);padding:24px;color:var(--ink)}
+  h1{font-size:19px;font-weight:800;margin:0 0 4px}
+  p.sub{color:var(--muted);font-size:13px;margin:0 0 22px;max-width:760px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+  .tmpl{width:380px}
+  .tlabel{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .tnum{width:22px;height:22px;border-radius:11px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .tname{font-size:15px;font-weight:800}
+  .twire{font-size:11px;color:var(--muted);margin:2px 0 10px 30px;line-height:1.45}
+  .twire b{color:var(--yellowDeep)}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;padding-bottom:12px}
+  .sec-title{font-size:16px;font-weight:800;padding:14px 14px 2px;letter-spacing:-.3px}
+  .sec-sub{font-size:11px;color:var(--muted);padding:0 14px 4px}
+
+  /* image placeholder */
+  .im(){}
+  .ph{background:linear-gradient(135deg,#ffe6c2,#ffd1e6);display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff}
+
+  /* 1 category rail */
+  .rail{display:flex;gap:14px;overflow-x:auto;padding:8px 14px 4px}
+  .crtile{flex:0 0 auto;width:66px;text-align:center}
+  .crimg{width:66px;height:66px;border-radius:33px;background:var(--yellowTint);display:flex;align-items:center;justify-content:center;font-size:30px}
+  .crtile.on .crimg{border:2.5px solid var(--yellowDeep)}
+  .crnm{font-size:11px;font-weight:600;margin-top:6px}
+  .stickytag{display:inline-block;font-size:9px;font-weight:800;color:var(--yellowDeep);background:var(--yellowTint);border-radius:6px;padding:2px 6px;margin-left:8px}
+
+  /* 2 product rail */
+  .prail{display:flex;gap:13px;overflow-x:auto;padding:12px 14px 4px}
+  .pcard{flex:0 0 auto;width:130px}
+  .pimg{width:130px;height:108px;border-radius:13px;position:relative;overflow:hidden}
+  .pplus{position:absolute;bottom:-12px;right:8px;width:30px;height:30px;border-radius:15px;background:#fff;border:1.5px solid var(--pink);color:var(--pink);font-size:20px;display:flex;align-items:center;justify-content:center}
+  .pnm{font-size:12.5px;font-weight:700;margin-top:14px;line-height:1.3}
+  .pprice{font-size:13px;font-weight:800;margin-top:3px}
+  .pmrp{font-size:11px;color:var(--hint);text-decoration:line-through;margin-left:5px}
+  .seeall{display:block;text-align:center;color:var(--pink);font-size:12px;font-weight:800;padding:10px;margin:8px 14px 0;border:1px solid var(--line);border-radius:10px}
+
+  /* 3 image tiles / spotlight */
+  .trail{display:flex;gap:13px;overflow-x:auto;padding:12px 14px 4px}
+  .itile{flex:0 0 auto;width:132px}
+  .iimg{width:132px;height:132px;border-radius:16px;position:relative;overflow:hidden}
+  .inm{font-size:13px;font-weight:800;margin-top:8px}
+
+  /* 4 featured carousel */
+  .ftile{flex:0 0 auto;width:150px}
+  .fimg{width:150px;height:120px;border-radius:14px;border:2px solid #c9d6ff;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+  .fbadge{position:absolute;top:0;left:50%;transform:translateX(-50%);background:#fff;color:var(--pink);font-size:10px;font-weight:800;padding:2px 10px;border-radius:0 0 8px 8px}
+  .ftxt{position:relative;color:#fff;font-size:15px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.4);padding-bottom:12px;text-align:center}
+
+  /* 5 tile grid (concern) */
+  .ggrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px 14px 4px}
+  .gtile{text-align:center}
+  .gimg{width:100%;aspect-ratio:1;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .gnm{font-size:10.5px;font-weight:600;margin-top:5px}
+
+  /* 6 themed banner + sub-tiles */
+  .tb{margin:12px 14px 4px;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#b4304f,#d6536f)}
+  .tbhead{color:#fff;text-align:center;padding:16px 0 8px}
+  .tbttl{font-size:20px;font-weight:800;letter-spacing:.5px}
+  .tbsub{font-size:11px;opacity:.85;margin-top:2px}
+  .tbtiles{display:flex;gap:10px;padding:6px 12px 16px}
+  .tbt{flex:1;background:var(--pinkTint);border-radius:12px;padding:10px 6px;text-align:center}
+  .tbt .pic{height:48px;display:flex;align-items:center;justify-content:center;font-size:26px}
+  .tbt .l{font-size:11px;font-weight:800;color:#b4304f;margin-top:4px}
+
+  /* 7 hero banner */
+  .hero{margin:12px 14px 4px;height:150px;border-radius:16px;overflow:hidden;background:linear-gradient(120deg,#1f6e44,#2fa564);position:relative;display:flex;flex-direction:column;justify-content:center;padding:0 18px}
+  .heroEy{color:#ffe08a;font-size:11px;font-weight:800;letter-spacing:1px}
+  .heroT{color:#fff;font-size:22px;font-weight:800;margin-top:4px;max-width:200px;line-height:1.15}
+  .heroBtn{margin-top:10px;align-self:flex-start;background:#fff;color:var(--ink);font-size:12px;font-weight:800;padding:7px 14px;border-radius:20px}
+</style>
+</head>
+<body>
+<h1>Section Template Catalog — how each looks</h1>
+<p class="sub">Each template = a fixed layout we build once. As admin you pick the template, <b>upload the image(s)</b>, and <b>wire</b> it to a Section-Library group (or each tile to its own group). Below: every template rendered with sample <b>Beauty</b> content (image placeholders = your uploads). Toing white + yellow; pink = ＋/savings.</p>
+
+<div class="grid">
+
+  <!-- 1 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">1</span><span class="tname">Category rail <span class="stickytag">📌 sticky-able</span></span></div>
+    <div class="twire">Upload: <b>nothing</b> (uses Home Builder tiles) · Wire: <b>auto</b> (the world's categories) · Tap → filters page in-place</div>
+    <div class="phone">
+      <div class="sec-title">What's on your mind?</div>
+      <div class="rail">
+        <div class="crtile on"><div class="crimg">🧴</div><div class="crnm">Skincare</div></div>
+        <div class="crtile"><div class="crimg">💄</div><div class="crnm">Makeup</div></div>
+        <div class="crtile"><div class="crimg">💇</div><div class="crnm">Haircare</div></div>
+        <div class="crtile"><div class="crimg">🌸</div><div class="crnm">Fragrance</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">2</span><span class="tname">Product rail</span></div>
+    <div class="twire">Upload: <b>nothing</b> (product images come from listings) · Wire: <b>one group</b> ("Under ₹99") · auto-fills + ＋ to cart + See all</div>
+    <div class="phone">
+      <div class="sec-title">Elevate your everyday glow</div>
+      <div class="sec-sub">Top beauty picks under ₹99</div>
+      <div class="prail">
+        <div class="pcard"><div class="pimg ph">🧴<div class="pplus">+</div></div><div class="pnm">Vit-C Face Serum</div><div class="pprice">₹99<span class="pmrp">₹299</span></div></div>
+        <div class="pcard"><div class="pimg ph">🧪<div class="pplus">+</div></div><div class="pnm">Glow Toner</div><div class="pprice">₹89<span class="pmrp">₹149</span></div></div>
+        <div class="pcard"><div class="pimg ph">🧼<div class="pplus">+</div></div><div class="pnm">Face Wash</div><div class="pprice">₹75</div></div>
+      </div>
+      <div class="seeall">See all products →</div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">3</span><span class="tname">Image tiles (Spotlight) <span class="stickytag">✅ built</span></span></div>
+    <div class="twire">Upload: <b>1 image per tile</b> · Wire: <b>each tile → its own group</b> (brand/concern) · Tap tile → that group</div>
+    <div class="phone">
+      <div class="sec-title">Brands in spotlight</div>
+      <div class="trail">
+        <div class="itile"><div class="iimg ph">💅</div><div class="inm">Miss Nails</div></div>
+        <div class="itile"><div class="iimg ph">🌿</div><div class="inm">MamaEarth</div></div>
+        <div class="itile"><div class="iimg ph">✨</div><div class="inm">Plum</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">4</span><span class="tname">Featured tile carousel</span></div>
+    <div class="twire">Upload: <b>1 banner image per tile</b> (+ "Featured" badge) · Wire: <b>each tile → a group</b></div>
+    <div class="phone">
+      <div class="trail" style="padding-top:14px">
+        <div class="ftile"><div class="fimg" style="background:linear-gradient(135deg,#3a3a3a,#111)"><div class="fbadge">Featured</div><div class="ftxt">Makeup Brushes</div></div></div>
+        <div class="ftile"><div class="fimg" style="background:linear-gradient(135deg,#7fb3ff,#bcd8ff)"><div class="fbadge">Featured</div><div class="ftxt">Derma Store</div></div></div>
+        <div class="ftile"><div class="fimg" style="background:linear-gradient(135deg,#d9c3a5,#efe2cf)"><div class="fbadge">Featured</div><div class="ftxt">DIY Hair Spa</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">5</span><span class="tname">Tile grid (Shop by concern)</span></div>
+    <div class="twire">Upload: <b>1 small image per tile</b> · Wire: <b>each → a concern group</b> (tag = acne / dark-spots…)</div>
+    <div class="phone">
+      <div class="sec-title">Shop by concern</div>
+      <div class="ggrid">
+        <div class="gtile"><div class="gimg ph">🔴</div><div class="gnm">Acne</div></div>
+        <div class="gtile"><div class="gimg ph">🟤</div><div class="gnm">Dark spots</div></div>
+        <div class="gtile"><div class="gimg ph">💧</div><div class="gnm">Dryness</div></div>
+        <div class="gtile"><div class="gimg ph">☀️</div><div class="gnm">Sun</div></div>
+        <div class="gtile"><div class="gimg ph">✨</div><div class="gnm">Glow</div></div>
+        <div class="gtile"><div class="gimg ph">🧓</div><div class="gnm">Ageing</div></div>
+        <div class="gtile"><div class="gimg ph">🌀</div><div class="gnm">Pores</div></div>
+        <div class="gtile"><div class="gimg ph">🌿</div><div class="gnm">Oily</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">6</span><span class="tname">Themed banner + sub-tiles</span></div>
+    <div class="twire">Upload: <b>1 banner background</b> + <b>1 image per sub-tile</b> · Wire: <b>each sub-tile → a group</b></div>
+    <div class="phone">
+      <div class="tb">
+        <div class="tbhead"><div class="tbttl">Serums</div><div class="tbsub">✦ FOR HEALTHY SKIN ✦</div></div>
+        <div class="tbtiles">
+          <div class="tbt"><div class="pic">🍊</div><div class="l">Vitamin C</div></div>
+          <div class="tbt"><div class="pic">🧪</div><div class="l">Niacinamide</div></div>
+          <div class="tbt"><div class="pic">⚗️</div><div class="l">Salicylic</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="tmpl">
+    <div class="tlabel"><span class="tnum">7</span><span class="tname">Hero banner</span></div>
+    <div class="twire">Upload: <b>1 full-width banner</b> · Wire: <b>one destination</b> (a group / offer) · whole banner is the tap</div>
+    <div class="phone">
+      <div class="hero">
+        <div class="heroEy">LIMITED TIME</div>
+        <div class="heroT">Up to 50% off Skincare</div>
+        <div class="heroBtn">Shop now →</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
