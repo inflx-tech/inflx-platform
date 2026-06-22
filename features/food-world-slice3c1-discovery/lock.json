@@ -19,7 +19,7 @@
     "Packages/Mobile/src/screens/follower/CategoryListScreen.js (rail insertion)",
     "Packages/Mobile/src/navigation/FollowerNavigator.js (new screen)"
   ],
-  "notes": "Step-5 gate. AWAITING FOUNDER LOCK on the discovery mockup (04-preview/mockups/discovery.html). On green: set approved + mockup_locked true, then implement. Sub-slices 3C-2 (storefront + customisation popup) and 3C-3 (cart + offer-picker + organic ordering) are separate contracts.",
+  "notes": "Step-5 gate locked + implemented 2026-06-22 (mig 118 + main push 658527d + follower OTA v134). REV2 (2026-06-22, founder live-test feedback): craving tile → in-page filter (was new screen); dish-group tile image upload added to /admin/dish-groups. See 06-diff/notes.md Revision 2. Sub-slices 3C-2 (storefront + customisation popup) and 3C-3 (cart + offer-picker + organic ordering) are separate contracts.",
   "regression_proof": "pending — Maestro discovery flow + zero-change check on existing food home before release flip.",
   "discipline": "Step-gated; mockup-first (UI + Mobile governed). Rail is additive to CategoryListScreen; existing layout/section-engine/tracking untouched.",
   "release": {
