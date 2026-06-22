@@ -44,6 +44,9 @@ import { followerApi, mealsApi } from '../../services/api';
 import {
   CreatorChip, VegDot, StatusPill, SagarStrip, FilterChip,
 } from '../../components/restaurant';
+import CustomiseSheet from '../../components/food/CustomiseSheet';
+import DishDetailSheet from '../../components/food/DishDetailSheet';
+import { useCart } from '../../services/CartContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const HERO_HEIGHT = 230;
@@ -157,49 +160,46 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
     }
   }
 
-  function onProductPress(product) {
-    navigation.navigate('ProductDetail', {
-      productId: product.id,
-      brandId: brand.id,
-      tracking,
-    });
-  }
+  // ── Food 3C-2 — unified cart + customise / dish-detail sheets ──────────────
+  // The storefront's old local cart is replaced by the global CartContext so
+  // the dish customisation (variation + add-ons + note) carries through to the
+  // order. ＋ → fetch the dish's addon_groups → CustomiseSheet (or add direct);
+  // image/name → DishDetailSheet.
+  const { cart: gCart, addItem, forceReplaceWith } = useCart();
+  const [customiseProduct, setCustomiseProduct] = useState(null);
+  const [detailProduct, setDetailProduct] = useState(null);
 
-  // ── Wave 5B cart (online-order restaurants only) ──────────────────────────
-  // cart: { [productId]: { product, qty } }. Single-restaurant scope, so a
-  // local state map is enough — no global provider needed (matches the
-  // schema's cart_scope: "brand").
-  const [cart, setCart] = useState({});
-  const cartCount = useMemo(
-    () => Object.values(cart).reduce((n, c) => n + c.qty, 0), [cart]);
-  const cartTotal = useMemo(
-    () => Object.values(cart).reduce((s, c) => s + c.qty * Number(c.product.price || 0), 0), [cart]);
+  const brandCartItems = gCart.brandId === brand.id ? gCart.items : [];
+  const cartCount = useMemo(() => brandCartItems.reduce((n, i) => n + i.qty, 0), [brandCartItems]);
+  const cartTotal = useMemo(() => brandCartItems.reduce((s, i) => s + i.qty * Number(i.price || 0), 0), [brandCartItems]);
 
-  const addToCart = useCallback((p) => {
-    setCart(prev => ({ ...prev, [p.id]: { product: p, qty: (prev[p.id]?.qty || 0) + 1 } }));
-  }, []);
-  const decFromCart = useCallback((p) => {
-    setCart(prev => {
-      const cur = prev[p.id]?.qty || 0;
-      if (cur <= 1) { const n = { ...prev }; delete n[p.id]; return n; }
-      return { ...prev, [p.id]: { product: p, qty: cur - 1 } };
-    });
-  }, []);
+  const addLine = useCallback((line) => {
+    const extra = { offer, creatorHandle: creator?.instagram_handle || null };
+    const res = addItem(line, brand.id, brand.business_name, tracking, extra);
+    if (res?.requiresConfirmation) {
+      Alert.alert('Start a new cart?',
+        `Your cart has items from ${res.currentBrandName}. Replace them with items from ${res.newBrandName}?`,
+        [{ text: 'Cancel', style: 'cancel' },
+         { text: 'Replace', style: 'destructive', onPress: () => forceReplaceWith(line, brand.id, brand.business_name, tracking, extra) }]);
+    }
+  }, [brand?.id, brand?.business_name, tracking, offer, creator?.instagram_handle, addItem, forceReplaceWith]);
 
-  function goToCart() {
-    navigation.navigate('RestaurantCart', {
-      brand,
-      tracking,
-      offer,
-      items: Object.values(cart).map(c => ({
-        product_id: c.product.id,
-        name: c.product.name,
-        price: Number(c.product.price || 0),
-        quantity: c.qty,
-        image_url: c.product.image_url,
-      })),
-    });
-  }
+  // Fetch full product (addon_groups) then open the right sheet (or add direct).
+  const openDish = useCallback(async (p, mode) => {
+    let full = p;
+    try {
+      const r = await followerApi.getProductDetail?.(p.id);
+      if (r?.success && r.data?.product) full = { ...p, ...r.data.product };
+    } catch { /* fall back to the card data */ }
+    const hasAddons = Array.isArray(full.addon_groups) && full.addon_groups.length > 0;
+    if (mode === 'detail') { setDetailProduct(full); return; }
+    if (hasAddons) setCustomiseProduct(full);
+    else addLine({ id: full.id, name: full.name, image_url: full.image_url, price: full.price, qty: 1 });
+  }, [addLine]);
+
+  function onProductPress(product) { openDish(product, 'detail'); }
+
+  function goToCart() { navigation.navigate('Cart'); }
 
   return (
     <View style={styles.root}>
@@ -358,7 +358,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
           <OverviewTab description={description} vibes={vibes} creator={creator} />
         )}
         {tab === 'menu' && (
-          <MenuTab cart={cart} onAdd={addToCart} onDec={decFromCart}
+          <MenuTab onAddPress={(p) => openDish(p, 'customise')}
             canOrder={showOnlineOrder}
             sections={sections} visibleSection={visibleSection}
             sectionKeys={sectionKeys} onSelectSection={setSection}
@@ -418,6 +418,25 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
         </View>
       </SafeAreaView>
       )}
+
+      {/* Food 3C-2 — dish-detail + customise bottom sheets */}
+      <DishDetailSheet
+        visible={!!detailProduct}
+        product={detailProduct}
+        onClose={() => setDetailProduct(null)}
+        onAdd={(p) => {
+          const hasAddons = Array.isArray(p.addon_groups) && p.addon_groups.length > 0;
+          setDetailProduct(null);
+          if (hasAddons) setCustomiseProduct(p);
+          else addLine({ id: p.id, name: p.name, image_url: p.image_url, price: p.price, qty: 1 });
+        }}
+      />
+      <CustomiseSheet
+        visible={!!customiseProduct}
+        product={customiseProduct}
+        onClose={() => setCustomiseProduct(null)}
+        onAdd={(line) => { addLine(line); setCustomiseProduct(null); }}
+      />
     </View>
   );
 }
@@ -464,7 +483,7 @@ function OverviewTab({ description, vibes, creator }) {
   );
 }
 
-function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks, onProductPress, creator, cart = {}, onAdd, onDec, canOrder }) {
+function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks, onProductPress, creator, onAddPress, canOrder }) {
   if (sectionKeys.length === 0) {
     return (
       <View style={styles.section}>
@@ -509,13 +528,15 @@ function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks
       <View style={styles.section}>
         {items.map(p => (
           <View key={p.id} style={styles.dishRow}>
-            {p.image_url ? (
-              <Image source={{ uri: p.image_url }} style={styles.dishImg} />
-            ) : (
-              <View style={[styles.dishImg, styles.dishImgFallback]}>
-                <Text>🍽️</Text>
-              </View>
-            )}
+            <Pressable onPress={() => onProductPress(p)}>
+              {p.image_url ? (
+                <Image source={{ uri: p.image_url }} style={styles.dishImg} />
+              ) : (
+                <View style={[styles.dishImg, styles.dishImgFallback]}>
+                  <Text>🍽️</Text>
+                </View>
+              )}
+            </Pressable>
             <View style={styles.dishBody}>
               <View style={styles.dishMetaRow}>
                 <VegDot veg={p.veg_flag === 'Veg' || p.veg_flag === true} size={11} />
@@ -537,21 +558,9 @@ function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks
               <View style={styles.dishPriceRow}>
                 <Text style={styles.dishPrice}>₹ {Math.round(p.price)}</Text>
                 {canOrder ? (
-                  (cart[p.id]?.qty || 0) > 0 ? (
-                    <View style={styles.qtyStepper}>
-                      <Pressable onPress={() => onDec(p)} hitSlop={8} style={styles.qtyBtn}>
-                        <Text style={styles.qtyBtnText}>−</Text>
-                      </Pressable>
-                      <Text style={styles.qtyNum}>{cart[p.id].qty}</Text>
-                      <Pressable onPress={() => onAdd(p)} hitSlop={8} style={styles.qtyBtn}>
-                        <Text style={styles.qtyBtnText}>+</Text>
-                      </Pressable>
-                    </View>
-                  ) : (
-                    <Pressable onPress={() => onAdd(p)} style={styles.dishAddBtn}>
-                      <Text style={styles.dishAddText}>+ ADD</Text>
-                    </Pressable>
-                  )
+                  <Pressable onPress={() => onAddPress(p)} style={styles.dishAddBtn}>
+                    <Text style={styles.dishAddText}>+ ADD</Text>
+                  </Pressable>
                 ) : null}
               </View>
             </View>

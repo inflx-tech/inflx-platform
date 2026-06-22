@@ -1,0 +1,25 @@
+{
+  "feature": "food-world-slice3c2-storefront",
+  "area": "mobile-follower-v2",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — Yes lock it, chat 2026-06-22 (Toing-exact; green Add/cart buttons)",
+  "approved_at": "2026-06-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — locked the Toing-exact storefront.html in chat 2026-06-22; green primary buttons",
+  "mockup_locked_at": "2026-06-22",
+  "deploy_posture": "Mobile OTA only, no backend/migration (getProductDetail.addon_groups + placeOrder add-on resolution already shipped in P1). Customise + dish-detail popups + storefront reskin + ＋→unified cart.",
+  "fix": "Slice 3C-2: ＋ → customisation popup (variation single-select sets base price + add-on groups multi 'select up to N' + Select All + live total, from addon_groups) · image/name → dish-detail popup (big image, veg, price+MRP, rating, free-text desc, ADD) · RestaurantDetailScreen reskin (toing: search dishes, veg/non-veg filter, collapsible categories, MENU jump, free-delivery cart bar) · ＋ writes to unified CartContext (replaces the separate local cart). Cart screen + offer-picker + organic ordering = 3C-3.",
+  "notes": "Toing-exact (img2/3/4). Green primary Add Item + cart bar (founder); dish-detail ADD stays pink-outline (Toing). Backend ready (no change). Building: CustomiseSheet + DishDetailSheet + CartContext customisation + RestaurantDetailScreen reskin.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "pending lock+build"
+  }
+}

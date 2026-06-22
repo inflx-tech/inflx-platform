@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Food World 3C-2 — Toing-exact (customise · detail · storefront)</title>
+<style>
+  :root{
+    --pageBg:#F4F5F7; --card:#fff; --line:#E8EAED; --soft:#F1F2F4;
+    --ink:#1A1D1F; --muted:#6B7280; --hint:#9CA3AF;
+    --yellow:#F8CB46; --yellowInk:#1A1D1F; --yellowDeep:#C77A00; --yellowTint:#FFF6E0;
+    --pink:#E11D6B; --pinkTint:#FCE7F0; --veg:#15803D; --nonveg:#B91C1C;
+  }
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:var(--pageBg);padding:24px;color:var(--ink)}
+  h1{font-size:18px;font-weight:800;margin:0 0 4px}
+  p.sub{color:var(--muted);font-size:13px;margin:0 0 20px;max-width:820px;line-height:1.5}
+  .grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
+  .phone{width:360px;background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:660px;position:relative}
+  .cap{text-align:center;font-size:12px;color:var(--muted);margin-top:8px;width:360px}
+  .vd{width:15px;height:15px;border:1.6px solid var(--veg);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .vd::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--veg)}
+  .vd.nv{border-color:var(--nonveg)} .vd.nv::after{background:var(--nonveg)}
+  .star{display:inline-flex;align-items:center;gap:3px;background:var(--veg);color:#fff;font-size:12px;font-weight:800;padding:2px 7px;border-radius:5px}
+  .strike{color:var(--hint);text-decoration:line-through}
+
+  .dim{position:absolute;inset:0;background:rgba(20,20,20,.5)}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--soft);border-radius:18px 18px 0 0;max-height:90%;display:flex;flex-direction:column}
+  .xclose{position:absolute;top:-44px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:17px;background:rgba(60,60,60,.85);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+  /* customise (Toing img2) */
+  .cuHead{display:flex;align-items:center;gap:12px;background:#fff;padding:14px 16px}
+  .cuThumb{width:46px;height:46px;border-radius:10px;background:var(--pinkTint);display:flex;align-items:center;justify-content:center;font-size:24px}
+  .cuName{font-size:16px;font-weight:800}
+  .cuBody{overflow:auto;padding:4px 0 8px}
+  .grpHd{display:flex;align-items:flex-start;justify-content:space-between;padding:16px 16px 8px}
+  .grpName{font-size:16px;font-weight:800}
+  .grpSub{font-size:12px;color:var(--muted);margin-top:1px}
+  .selall{font-size:13px;font-weight:800;color:var(--veg)}
+  .gcard{background:#fff;border-radius:14px;margin:0 12px;padding:2px 0}
+  .orow{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #f1f2f4}
+  .orow:last-child{border-bottom:0}
+  .orow .nm{flex:1;font-size:15px}
+  .orow .pr{font-size:14px;color:var(--ink);font-weight:600}
+  .box{width:22px;height:22px;border:2px solid #cfd3d8;border-radius:6px;flex-shrink:0}
+  .box.on{background:var(--veg);border-color:var(--veg);position:relative}
+  .box.on::after{content:"✓";color:#fff;font-size:14px;position:absolute;left:3px;top:-1px}
+  .rad{width:22px;height:22px;border:2px solid #cfd3d8;border-radius:50%;flex-shrink:0}
+  .rad.on{border-color:var(--yellowDeep);background:radial-gradient(circle,var(--yellowDeep) 0 6px,#fff 7px)}
+  .more{padding:12px 14px;font-size:13px;font-weight:800;color:var(--ink)}
+  .cuFoot{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border-top:1px solid var(--line)}
+  .qty{display:flex;align-items:center;border:1.5px solid var(--pink);border-radius:26px}
+  .qty button{border:0;background:#fff;color:var(--pink);font-size:20px;width:40px;height:42px;border-radius:26px}
+  .qty .n{width:30px;text-align:center;font-weight:800;font-size:16px;color:var(--pink)}
+  .addbtn{flex:1;background:var(--veg);color:#fff;font-size:15px;font-weight:800;text-align:center;padding:14px;border-radius:12px}
+
+  /* dish detail (Toing img3) */
+  .dHero{height:240px;background:linear-gradient(135deg,#ffe6c2,#ffd1e6);display:flex;align-items:center;justify-content:center;font-size:70px;position:relative}
+  .dPop{position:absolute;top:14px;left:14px;background:#fff;color:var(--veg);font-size:12px;font-weight:800;padding:4px 12px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .dBody{padding:16px 18px}
+  .dName{font-size:22px;font-weight:800;letter-spacing:-.3px;margin-top:6px}
+  .dPriceRow{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .dPrice{font-size:18px;font-weight:800;color:var(--pink)}
+  .dMrp{font-size:15px}
+  .dDesc{font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:14px}
+  .dFoot{position:absolute;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:14px 18px;display:flex;justify-content:flex-end}
+  .addPill{text-align:center}
+  .addOutline{border:1.6px solid var(--pink);color:var(--pink);font-weight:800;font-size:16px;padding:11px 44px;border-radius:12px}
+  .cust{font-size:11px;color:var(--muted);font-weight:700;margin-top:3px}
+
+  /* storefront (Toing img4) */
+  .hero{height:140px;background:linear-gradient(135deg,#ffe6c2,#ffd1e6);position:relative;display:flex;align-items:center;justify-content:center;font-size:46px}
+  .hbtn{position:absolute;top:12px;width:34px;height:34px;border-radius:17px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center}
+  .sHead{padding:14px 16px 4px}
+  .sName{font-size:22px;font-weight:800;letter-spacing:-.3px}
+  .sMeta{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:12px;color:var(--muted);font-weight:600;flex-wrap:wrap}
+  .fd{display:inline-flex;align-items:center;gap:5px;color:var(--veg);font-size:12px;font-weight:800;margin-top:9px}
+  .search{margin:12px 16px 8px;background:var(--soft);border-radius:24px;padding:11px 16px;color:var(--hint);font-size:13px}
+  .filters{display:flex;gap:9px;padding:0 16px 4px;overflow-x:auto}
+  .fchip{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:22px;padding:7px 12px;font-size:12px;font-weight:700;white-space:nowrap}
+  .tgl{width:26px;height:15px;border-radius:9px;background:#e6e6e6;position:relative}
+  .tgl.veg{background:var(--veg)} .tgl.veg::after{content:"";position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:#fff}
+  .catHd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-top:7px solid var(--soft);font-size:16px;font-weight:800}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:4px 16px}
+  .pc .img{height:120px;border-radius:14px;background:var(--pinkTint);display:flex;align-items:center;justify-content:center;font-size:36px;position:relative}
+  .pc .pop{position:absolute;top:8px;left:8px;background:#fff;color:var(--veg);font-size:10px;font-weight:800;padding:3px 8px;border-radius:7px;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+  .pc .plus{position:absolute;bottom:-14px;right:10px;width:34px;height:34px;border-radius:17px;background:#fff;border:1.5px solid var(--pink);color:var(--pink);font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+  .pc .cz{position:absolute;bottom:-27px;right:6px;font-size:9px;color:var(--muted)}
+  .pc .nm{font-size:13.5px;font-weight:800;margin-top:20px;display:flex;align-items:center;gap:5px}
+  .pc .pr{font-size:13px;font-weight:800;margin-top:4px}
+  .menuFab{position:absolute;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;font-weight:800;padding:10px 18px;border-radius:24px;display:flex;align-items:center;gap:7px;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+  .cartbar{position:absolute;left:12px;right:12px;bottom:12px;background:var(--veg);border-radius:14px;overflow:hidden;color:#fff}
+  .cartbar .top{font-size:12px;font-weight:800;padding:7px 16px 0}
+  .cartbar .bot{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 12px}
+  .cartbar .l{font-size:14px;font-weight:800} .cartbar .r{font-size:14px;font-weight:800}
+</style>
+</head>
+<body>
+<h1>Food World — Slice 3C-2 · Toing-exact</h1>
+<p class="sub">Layout/interaction mirror your Toing screenshots (img2 customise · img3 detail · img4 storefront), in our locked palette: white canvas · green veg dots + rating · pink ＋ &amp; struck price · yellow primary buttons (Toing uses green there — say the word if you want green instead). "Other apps / lowest-price" comparison stays dropped per your scope.</p>
+<div class="grid">
+
+  <!-- 1 · customise -->
+  <div><div class="phone">
+    <div class="dim"></div>
+    <div class="sheet">
+      <div style="position:relative"><div class="xclose">✕</div></div>
+      <div class="cuHead">
+        <div class="cuThumb">🍛</div>
+        <div class="cuName">Masala Chicken Curry &amp; Roti</div>
+      </div>
+      <div class="cuBody">
+        <div class="grpHd"><div><div class="grpName">Choose Portion</div><div class="grpSub">Select 1 · sets the price</div></div></div>
+        <div class="gcard">
+          <div class="orow"><span class="vd nv"></span><span class="nm">Half</span><span class="pr">₹99</span><span class="rad"></span></div>
+          <div class="orow"><span class="vd nv"></span><span class="nm">Full</span><span class="pr">₹169</span><span class="rad on"></span></div>
+        </div>
+
+        <div class="grpHd"><div><div class="grpName">Add a Accompaniment</div><div class="grpSub">Select upto 8</div></div><span class="selall">Select All</span></div>
+        <div class="gcard">
+          <div class="orow"><span class="vd"></span><span class="nm">Chapati (2Pc)</span><span class="pr">+ ₹29</span><span class="box on"></span></div>
+          <div class="orow"><span class="vd"></span><span class="nm">Flavourful Rice Tub</span><span class="pr">+ ₹69</span><span class="box"></span></div>
+          <div class="orow"><span class="vd"></span><span class="nm">Dal Makhani (80 gm)</span><span class="pr">+ ₹39</span><span class="box"></span></div>
+          <div class="more">+3 more</div>
+        </div>
+
+        <div class="grpHd"><div><div class="grpName">Add a Beverage</div><div class="grpSub">Select upto 5</div></div><span class="selall">Select All</span></div>
+        <div class="gcard">
+          <div class="orow"><span class="vd"></span><span class="nm">Jeera Masala Cola (250ml)</span><span class="pr">+ ₹50</span><span class="box"></span></div>
+        </div>
+        <div style="height:8px"></div>
+      </div>
+      <div class="cuFoot">
+        <div class="qty"><button>−</button><span class="n">1</span><button>+</button></div>
+        <div class="addbtn">Add Item · ₹198 &nbsp;<span style="font-weight:600;opacity:.6;text-decoration:line-through;font-size:13px">₹268</span></div>
+      </div>
+    </div>
+  </div><div class="cap">1 · ＋ → Customise (variation sets base + checkbox add-ons, Select All, +N more, live total)</div></div>
+
+  <!-- 2 · dish detail -->
+  <div><div class="phone">
+    <div class="dim"></div>
+    <div class="sheet" style="background:#fff;max-height:84%">
+      <div style="position:relative"><div class="xclose">✕</div></div>
+      <div class="dHero">🍛<div class="dPop">Popular</div></div>
+      <div class="dBody" style="padding-bottom:96px">
+        <div class="dName"><span class="vd nv"></span> Masala Chicken Curry &amp; Roti</div>
+        <div class="dPriceRow"><span class="dPrice">₹99</span><span class="dMrp strike">₹169</span><span class="star">★ 4.1</span></div>
+        <div class="dDesc">Rich, royal and oh-so-satisfying — Mughlai-style chicken gravy served with soft chapatis. (Energy: 633 KCal, Carbohydrates: 61gm, Proteins: 16gm, Fats: 35gm, Sodium: 1758mg.)</div>
+      </div>
+      <div class="dFoot">
+        <div class="addPill"><div class="addOutline">ADD</div><div class="cust">Customisable</div></div>
+      </div>
+    </div>
+  </div><div class="cap">2 · Image/name → Dish-detail (big image · veg · price+MRP · rating · description · ADD)</div></div>
+
+  <!-- 3 · storefront -->
+  <div><div class="phone">
+    <div class="hero">🍽️<div class="hbtn" style="left:12px">←</div><div class="hbtn" style="right:12px">↗</div></div>
+    <div class="sHead">
+      <div class="sName">Dabba &amp; Co.</div>
+      <div class="sMeta"><span class="star">★ 4.1</span> · 30–35 mins · Auto Nagar ▾</div>
+      <div class="fd">⚡ Free Delivery</div>
+    </div>
+    <div class="search">🔍 Search for dishes</div>
+    <div class="filters">
+      <div class="fchip">Veg <span class="tgl veg"></span></div>
+      <div class="fchip"><span class="vd nv"></span> Non-veg</div>
+      <div class="fchip">★ Bestseller</div>
+    </div>
+    <div class="catHd">Items starting at ₹89 (12) <span style="color:var(--muted)">▾</span></div>
+    <div class="pgrid">
+      <div class="pc"><div class="img">🍛<div class="pop">Popular</div><div class="plus">+</div><div class="cz">Customisable</div></div>
+        <div class="nm"><span class="vd nv"></span>Masala Chicken &amp; Roti</div><div class="pr">₹99 <span class="dMrp strike" style="font-size:11px">₹169</span></div></div>
+      <div class="pc"><div class="img">🥘<div class="pop">Popular</div><div class="plus">+</div></div>
+        <div class="nm"><span class="vd"></span>Paneer Butter Masala</div><div class="pr">₹149</div></div>
+    </div>
+    <div class="menuFab">📋 MENU</div>
+    <div class="cartbar">
+      <div class="top">Yay! You've unlocked Free Delivery</div>
+      <div class="bot"><span class="l">1 item · ₹198</span><span class="r">View cart 🛒</span></div>
+    </div>
+  </div><div class="cap">3 · Storefront (search · veg filter · collapsible category · 2-col cards · MENU fab · free-delivery cart bar)</div></div>
+
+</div>
+</body>
+</html>

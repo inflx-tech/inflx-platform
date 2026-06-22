@@ -39,15 +39,25 @@ function normalizeLine(item) {
   const image_url = item.cover?.image_url ?? item.image_url ?? null;
   const variant_sku = item.variant_sku ?? null;
   const variant_label = item.variant_label ?? null;
+  // Food 3C-2 — dish customisation (variation + add-ons + note). The line_key
+  // includes a customisation signature so two differently-built same-dish lines
+  // stay distinct; identical builds merge. Carries the ids placeOrder resolves.
+  const variation = item.variation && item.variation.item_id ? { item_id: item.variation.item_id } : null;
+  const selectedAddons = Array.isArray(item.selected_addons)
+    ? item.selected_addons.map((a) => ({ item_id: a.item_id })).filter((a) => a.item_id) : [];
+  const sig = [variation?.item_id || '', ...selectedAddons.map((a) => a.item_id).sort()].join('|');
   return {
     product_id: item.id,
-    line_key: `${item.id}::${variant_sku || ''}`,
+    line_key: `${item.id}::${variant_sku || ''}::${sig}`,
     name: item.name,
     price: Number(price) || 0,
     image_url,
     variant_sku,
     variant_label,
-    qty: 1,
+    variation,
+    selected_addons: selectedAddons,
+    note: item.note || null,
+    qty: Number(item.qty) > 0 ? Number(item.qty) : 1,
   };
 }
 const lineMatches = (i, key) => i.line_key === key || i.product_id === key;
@@ -104,7 +114,7 @@ export function CartProvider({ children }) {
       const line = normalizeLine(item);
       const existingIdx = prev.items.findIndex(i => i.line_key === line.line_key);
       const items = existingIdx >= 0
-        ? prev.items.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + 1 } : it)
+        ? prev.items.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + line.qty } : it)
         : [...prev.items, line];
       return {
         brandId, brandName, items,
