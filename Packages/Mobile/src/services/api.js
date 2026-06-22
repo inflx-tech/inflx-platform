@@ -503,6 +503,15 @@ export const followerApi = {
   getStoreOffer: (brandOfferId) => api.get(`/follower/store-offer/${brandOfferId}`),
   // Full single-product detail for the PDP (description, facets, images, variants).
   getProductDetail: (productId) => api.get(`/follower/products/${productId}`),
+
+  // Food World 3C-1 — dish-group discovery. Rail tiles + tap → nearby restaurants
+  // serving any dish in the group (mig 115; lat/lng optional → distance ranking).
+  getDishGroups: () => api.get('/follower/dish-groups'),
+  getDishGroupRestaurants: (id, loc = {}) => {
+    const qs = [];
+    if (loc.lat != null && loc.lng != null) qs.push(`lat=${loc.lat}`, `lng=${loc.lng}`);
+    return api.get(`/follower/dish-groups/${id}/restaurants${qs.length ? `?${qs.join('&')}` : ''}`);
+  },
   // Phase Salon-2 — accepts an optional viaInfluencerId so the response
   // embeds a `creator` object the BrandStoreScreen sticky header renders.
   getBrandStore: (brandId, viaInfluencerId = null) => {

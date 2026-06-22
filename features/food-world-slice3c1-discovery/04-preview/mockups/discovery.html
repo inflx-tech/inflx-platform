@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Food World 3C-1 — Food home (rail + Type A + Type B + chips) + result</title>
+<style>
+  :root{
+    /* toing palette (Packages/Mobile/src/theme/tokens.js) */
+    --pageBg:#F4F5F7; --card:#fff; --line:#E8EAED;
+    --ink:#1A1D1F; --muted:#6B7280; --hint:#9CA3AF;
+    --yellow:#F8CB46; --yellowInk:#1A1D1F; --yellowDeep:#C77A00; --yellowTint:#FFF6E0;
+    --pink:#E11D6B; --pinkTint:#FCE7F0;
+    --veg:#15803D; --nonveg:#B91C1C; --successTint:#E6F6EC; --warning:#EA580C;
+  }
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:var(--pageBg);padding:24px;color:var(--ink)}
+  h1{font-size:18px;font-weight:700;margin:0 0 4px}
+  p.sub{color:var(--muted);font-size:13px;margin:0 0 20px;max-width:820px;line-height:1.5}
+  code{background:#eef0f3;padding:1px 5px;border-radius:4px;font-size:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+  .phone{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;min-height:600px}
+  .cap{text-align:center;font-size:12px;color:var(--muted);margin-top:8px}
+
+  /* header */
+  .srch{display:flex;gap:10px;align-items:center;padding:14px 14px 8px}
+  .searchbox{flex:1;background:var(--pageBg);border:1px solid var(--line);border-radius:24px;padding:11px 16px;color:var(--hint);font-size:13px}
+  .vegtog{border:1px solid var(--line);border-radius:12px;padding:6px 10px;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .vegtog .l{font-size:8px;font-weight:800;letter-spacing:.5px;color:var(--muted)}
+  .vegtog .t{width:30px;height:16px;border-radius:10px;background:#e6e6e6;position:relative}
+  .vegtog .t::after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--veg)}
+
+  /* dish-group rail */
+  .railhdr{padding:16px 14px 10px;font-size:16px;font-weight:700;letter-spacing:-.3px}
+  .rail{display:flex;gap:14px;overflow-x:auto;padding:0 14px 6px}
+  .tile{flex:0 0 auto;width:72px;text-align:center}
+  .tile .img{width:72px;height:72px;border-radius:18px;background:var(--yellowTint);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:32px}
+  .tile.on .img{background:var(--veg);color:#fff}
+  .tile .nm{font-size:11px;font-weight:700;margin-top:6px}
+
+  /* section header */
+  .sechdr{display:flex;align-items:center;justify-content:space-between;padding:18px 14px 10px}
+  .sechdr .t{font-size:17px;font-weight:800;letter-spacing:-.3px}
+  .sechdr .all{font-size:12px;font-weight:800;color:var(--pink)}
+
+  /* Type A — dish card (horizontal) */
+  .hrail{display:flex;gap:13px;overflow-x:auto;padding:0 14px 8px}
+  .dcard{flex:0 0 auto;width:158px}
+  .dimg{position:relative;width:158px;height:130px;border-radius:14px;background:var(--pinkTint);display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden}
+  .pop{position:absolute;top:8px;left:8px;background:#fff;color:var(--veg);font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .plus{position:absolute;bottom:-14px;right:10px;width:34px;height:34px;border-radius:50%;background:#fff;border:1.5px solid var(--pink);color:var(--pink);font-size:22px;font-weight:600;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+  .dbody{padding:18px 2px 0}
+  .vegdot{display:inline-block;width:13px;height:13px;border:1.5px solid var(--veg);border-radius:3px;position:relative;vertical-align:middle;margin-right:5px}
+  .vegdot::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--veg)}
+  .vegdot.nv{border-color:var(--nonveg)} .vegdot.nv::after{background:var(--nonveg)}
+  .dname{font-size:14px;font-weight:800;letter-spacing:-.2px}
+  .dby{font-size:11px;color:var(--muted);margin-top:2px}
+  .dmeta{font-size:11px;color:var(--muted);font-weight:600;margin-top:3px}
+  .dmeta .star{color:var(--veg);font-weight:800}
+  .dprice{margin-top:5px;font-size:14px;font-weight:800}
+  .dprice .mrp{font-size:12px;font-weight:600;color:var(--hint);text-decoration:line-through;margin-left:6px}
+
+  /* filter chips */
+  .chips{display:flex;gap:9px;overflow-x:auto;padding:12px 14px}
+  .fchip{flex:0 0 auto;border:1px solid var(--line);border-radius:22px;padding:8px 14px;font-size:12px;font-weight:700;color:var(--ink);background:#fff}
+  .fchip.icon{padding:8px 11px}
+
+  /* Type B — restaurant card */
+  .rcard{margin:0 14px 16px;border:1px solid var(--line);border-radius:16px;padding:14px 0 14px;background:#fff}
+  .rhead{padding:0 14px}
+  .rname{font-size:17px;font-weight:800;letter-spacing:-.3px;display:flex;align-items:center;justify-content:space-between}
+  .rname .arr{color:var(--muted);font-size:18px}
+  .rmeta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);font-weight:600}
+  .rstar{display:inline-flex;align-items:center;gap:3px;background:var(--veg);color:#fff;font-size:11px;font-weight:800;padding:2px 6px;border-radius:5px}
+  .fd{display:inline-flex;align-items:center;gap:4px;color:var(--veg);font-size:11px;font-weight:800;margin-top:7px}
+  .fd .pc{width:14px;height:14px;border-radius:50%;background:var(--veg);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center}
+  .nest{display:flex;gap:12px;overflow-x:auto;padding:12px 14px 0}
+  .ncard{flex:0 0 auto;width:130px}
+  .nimg{position:relative;width:130px;height:108px;border-radius:13px;background:var(--pinkTint);display:flex;align-items:center;justify-content:center;font-size:34px}
+  .nname{font-size:12.5px;font-weight:700;margin-top:16px}
+  .nprice{font-size:13px;font-weight:800;margin-top:3px}
+
+  /* result screen */
+  .rhdr{display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid var(--line)}
+  .ib{width:34px;height:34px;border-radius:17px;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .rhdr .h1{font-size:17px;font-weight:800;letter-spacing:-.3px}
+  .rhdr .h2{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
+  .lcard{margin:12px 14px 0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+  .lhero{height:96px;background:var(--yellowTint);display:flex;align-items:center;justify-content:center;font-size:38px;position:relative}
+  .lbadge{position:absolute;top:8px;left:8px;background:var(--yellow);color:var(--yellowInk);font-size:10px;font-weight:800;padding:4px 8px;border-radius:8px}
+  .lbody{padding:11px 13px 13px}
+  .vchips{margin-top:9px;display:flex;gap:6px;flex-wrap:wrap}
+  .vchip{font-size:11px;font-weight:600;background:var(--pageBg);border:1px solid var(--line);border-radius:7px;padding:4px 8px}
+  .fromrow{margin-top:10px;padding-top:10px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .fromprice{font-size:13px;font-weight:800}.fromprice b{font-size:11px;font-weight:600;color:var(--muted)}
+  .gobtn{font-size:12px;font-weight:800;color:var(--yellowInk);background:var(--yellow);padding:7px 13px;border-radius:9px}
+
+  .note{background:var(--yellowTint);border:1px solid #f0dca6;border-radius:10px;margin:14px;padding:10px 12px;font-size:11.5px;color:#7a5b14;line-height:1.55}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:50px 30px}
+  .empty .e{font-size:44px;margin-bottom:10px}.empty .t{font-size:15px;font-weight:700}.empty .b{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>Food World — Slice 3C-1 · Food home + discovery</h1>
+<p class="sub">The food world home (<code>CategoryListScreen</code>, eat): dish-group <b>rail</b> + <b>Type A</b> cross-restaurant dish carousel + <b>Type B</b> restaurant cards with nested dish carousels + filter <b>chips</b>; plus the dish-group <b>result screen</b>. White canvas, yellow fills (ink text), pink ＋ &amp; savings, green veg/rating. <b>ETA is computed from distance</b> (≈ 10 min + 2 min/km, rounded to a 5-min range) — not restaurant-set. <b>Struck price = per-dish MRP</b> (<code>brand_products.mrp</code>, mig 118); shows MRP→price when MRP &gt; price. "Other apps" comparison dropped. ＋/image taps route to the current product screen in 3C-1; the popups land in 3C-2.</p>
+<div class="grid">
+
+  <!-- 1 · Food home top: search + rail + Type A -->
+  <div><div class="phone">
+    <div class="srch">
+      <div class="searchbox">🔍 Search for 'Pizza'</div>
+      <div class="vegtog"><div class="l">VEG</div><div class="t"></div></div>
+    </div>
+
+    <div class="railhdr">What are you craving?</div>
+    <div class="rail">
+      <div class="tile on"><div class="img">🍱</div><div class="nm">All</div></div>
+      <div class="tile"><div class="img">🥘</div><div class="nm">Biryani</div></div>
+      <div class="tile"><div class="img">🍰</div><div class="nm">Cakes</div></div>
+      <div class="tile"><div class="img">🍜</div><div class="nm">Noodles</div></div>
+      <div class="tile"><div class="img">🍕</div><div class="nm">Pizza</div></div>
+    </div>
+
+    <div class="sechdr"><div class="t">Meals under ₹99</div><div class="all">See All ›</div></div>
+    <div class="hrail">
+      <div class="dcard">
+        <div class="dimg">🍛<div class="pop">Popular</div><div class="plus">+</div></div>
+        <div class="dbody">
+          <div class="dname"><span class="vegdot"></span>Vada 4 PC</div>
+          <div class="dby">by Swagruha tiffins</div>
+          <div class="dmeta"><span class="star">★ 4.7</span> · 15–20 mins</div>
+          <div class="dprice">₹65</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dimg">🫓<div class="pop">Popular</div><div class="plus">+</div></div>
+        <div class="dbody">
+          <div class="dname"><span class="vegdot"></span>Plain Dosa</div>
+          <div class="dby">by Swagruha tiffins</div>
+          <div class="dmeta"><span class="star">★ 4.6</span> · 15–20 mins</div>
+          <div class="dprice">₹64</div>
+        </div>
+      </div>
+      <div class="dcard">
+        <div class="dimg">🍗<div class="pop">Popular</div><div class="plus">+</div></div>
+        <div class="dbody">
+          <div class="dname"><span class="vegdot nv"></span>Masala Chicken &amp; Roti</div>
+          <div class="dby">by Dabba &amp; Co.</div>
+          <div class="dmeta"><span class="star">★ 4.1</span> · 30–35 mins</div>
+          <div class="dprice">₹99<span class="mrp">₹169</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note" style="margin-top:6px"><b>Type A</b> — one admin <code>section_library</code> rule (price &lt; 99) → matching dishes from <i>all</i> restaurants, horizontal. Backend ready. Card: image · Popular badge · pink ＋ · veg dot · dish name · "by &lt;restaurant&gt;" · ★rating · ETA · price (+ struck MRP when set).</div>
+  </div><div class="cap">1 · Home — search · dish-group rail · Type A "Meals under ₹99"</div></div>
+
+  <!-- 2 · Food home: filter chips + Type B restaurant cards -->
+  <div><div class="phone">
+    <div class="chips">
+      <div class="fchip icon">⚙︎</div>
+      <div class="fchip">₹99 &amp; under</div>
+      <div class="fchip">delivery under 30 mins</div>
+      <div class="fchip">Veg</div>
+    </div>
+
+    <div class="rcard">
+      <div class="rhead">
+        <div class="rname">Swagruha tiffins <span class="arr">→</span></div>
+        <div class="rmeta"><span class="rstar">★ 4.6</span> · 15–20 mins · South Indian</div>
+        <div class="fd"><span class="pc">%</span> Free Delivery</div>
+      </div>
+      <div class="nest">
+        <div class="ncard"><div class="nimg">🍚<div class="pop">Popular</div><div class="plus">+</div></div><div class="nname"><span class="vegdot"></span>Idli 2PC</div><div class="nprice">₹51</div></div>
+        <div class="ncard"><div class="nimg">🍛<div class="pop">Popular</div><div class="plus">+</div></div><div class="nname"><span class="vegdot"></span>Vada 4 PC</div><div class="nprice">₹65</div></div>
+        <div class="ncard"><div class="nimg">🥘<div class="pop">Popular</div><div class="plus">+</div></div><div class="nname"><span class="vegdot"></span>Mysore Bonda</div><div class="nprice">₹65</div></div>
+      </div>
+    </div>
+
+    <div class="rcard">
+      <div class="rhead">
+        <div class="rname">Kalyani Chickens <span class="arr">→</span></div>
+        <div class="rmeta"><span class="rstar">★ 4.5</span> · 15–20 mins · Meat</div>
+        <div class="fd"><span class="pc">%</span> Free Delivery</div>
+      </div>
+      <div class="nest">
+        <div class="ncard"><div class="nimg">🍗<div class="pop">Popular</div><div class="plus">+</div></div><div class="nname"><span class="vegdot nv"></span>Chicken Breast Boneless</div><div class="nprice">₹224</div></div>
+        <div class="ncard"><div class="nimg">🍖<div class="pop">Popular</div><div class="plus">+</div></div><div class="nname"><span class="vegdot nv"></span>Skinless Chicken Biryani</div><div class="nprice">₹311</div></div>
+      </div>
+    </div>
+    <div class="note"><b>Type B</b> — one card per restaurant: header (name · ★rating · ETA · cuisine · Free Delivery · → storefront) + nested horizontal carousel of that restaurant's <b>featured dishes</b> (<code>is_featured</code>/<code>featured_sort</code>, fallback first N in-stock). <b>New backend rule</b> <code>restaurants_with_featured</code> + <b>new renderer</b> (both missing today).</div>
+  </div><div class="cap">2 · Home — filter chips · Type B restaurant cards (nested dish carousel)</div></div>
+
+  <!-- 3 · Dish-group result screen + empty -->
+  <div><div class="phone">
+    <div class="rhdr">
+      <div class="ib">←</div>
+      <div><div class="h1">Biryani</div><div class="h2">5 places near you serving it</div></div>
+    </div>
+    <div class="lcard">
+      <div class="lhero">🍽️<div class="lbadge">FREE DELIVERY</div></div>
+      <div class="lbody">
+        <div class="rname" style="font-size:15px">Paradise Biryani</div>
+        <div class="rmeta"><span class="rstar">★ 4.6</span> (980) · 2.0 km · 20–25 mins</div>
+        <div class="vchips"><span class="vchip">Chicken Dum Biryani</span><span class="vchip">Mutton Biryani</span><span class="vchip">Veg Biryani</span></div>
+        <div class="fromrow"><div class="fromprice"><b>from</b> ₹180</div><div class="gobtn">View menu →</div></div>
+      </div>
+    </div>
+    <div class="lcard">
+      <div class="lhero">🍽️</div>
+      <div class="lbody">
+        <div class="rname" style="font-size:15px">Bawarchi</div>
+        <div class="rmeta"><span class="rstar">★ 4.3</span> (640) · 3.4 km · 25–30 mins</div>
+        <div class="vchips"><span class="vchip">Chicken Biryani</span><span class="vchip">Family Pack</span></div>
+        <div class="fromrow"><div class="fromprice"><b>from</b> ₹150</div><div class="gobtn">View menu →</div></div>
+      </div>
+    </div>
+    <div class="note">ETA shown is <b>distance-derived</b> (2.0 km → 20–25 min; 3.4 km → 25–30 min). Zero matches → empty state below. No location → distance hidden, ranked by popularity.</div>
+    <div class="empty"><div class="e">🍱</div><div class="t">No one nearby serves this yet</div><div class="b">Try a wider area or another craving.</div></div>
+  </div><div class="cap">3 · Tap a tile → nearby restaurants serving it + empty state</div></div>
+
+</div>
+</body>
+</html>

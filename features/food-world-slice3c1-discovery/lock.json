@@ -1,0 +1,33 @@
+{
+  "feature": "food-world-slice3c1-discovery",
+  "area": "mobile-follower-v2",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — 'ok pls proceed to implementation' in chat 2026-06-22, after confirming requirements + Type A/B section types + the 3 decisions (distance ETA, per-dish MRP, drop other-apps)",
+  "approved_at": "2026-06-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — approved the rebuilt home mockup (rail + Type A + Type B + chips + result; 04-preview/mockups/discovery.html) in chat 2026-06-22",
+  "mockup_locked_at": "2026-06-22",
+  "deploy_posture": "PRODUCTION-IMPACTING. Carries migration 118 (brand_products.mrp, Supabase) + backend Type-B rule restaurants_with_featured + distance-based ETA helper (Render) + mobile OTA. Migration surfaced for explicit founder go before apply. mrp nullable → backward-compatible. HIGHEST MIGRATION → 118.",
+  "fix": "Slice 3C-1 (first of three): food-world home = dish-group rail + Type A cross-restaurant dish carousel (Meals under 99) + Type B restaurant-list cards with nested featured-dish carousel + functional filter chips, on CategoryListScreen (eat). New DishGroupResultScreen. Backend: mig 118 mrp (per-dish struck price), distance-based ETA, new restaurants_with_featured rule. Render+navigate only — popups/storefront=3C-2, cart/order=3C-3.",
+  "related": [
+    "features/food-dish-groups (backend + admin builder — mig 115)",
+    "features/food-world (parent ledger / 6-phase plan)",
+    "Packages/Mobile/src/screens/follower/CategoryListScreen.js (rail insertion)",
+    "Packages/Mobile/src/navigation/FollowerNavigator.js (new screen)"
+  ],
+  "notes": "Step-5 gate. AWAITING FOUNDER LOCK on the discovery mockup (04-preview/mockups/discovery.html). On green: set approved + mockup_locked true, then implement. Sub-slices 3C-2 (storefront + customisation popup) and 3C-3 (cart + offer-picker + organic ordering) are separate contracts.",
+  "regression_proof": "pending — Maestro discovery flow + zero-change check on existing food home before release flip.",
+  "discipline": "Step-gated; mockup-first (UI + Mobile governed). Rail is additive to CategoryListScreen; existing layout/section-engine/tracking untouched.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "not yet released — awaiting mockup lock + build."
+  }
+}

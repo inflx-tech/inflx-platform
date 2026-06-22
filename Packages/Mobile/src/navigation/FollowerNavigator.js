@@ -14,6 +14,7 @@ import CategoryListScreen from '../screens/follower/CategoryListScreen';
 
 // Wave 4 — dining redesign (replaces CategoryListScreen for eat)
 import DiningHomeScreen from '../screens/follower/DiningHomeScreen';
+import DishGroupResultScreen from '../screens/follower/DishGroupResultScreen';
 import DiningBrowseScreen from '../screens/follower/DiningBrowseScreen';
 import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
 import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
@@ -94,6 +95,8 @@ const SHARED_SCREENS = (Stack) => (
     {/* Wave 4 — restaurant discovery surface (only routed to from the 'eat'
         category tile on HomeScreenV2; other categories keep CategoryList). */}
     <Stack.Screen name="DiningHome" component={DiningHomeScreen} />
+    {/* Food World 3C-1 — dish-group craving → nearby restaurants result */}
+    <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
     <Stack.Screen name="DiningBrowse" component={DiningBrowseScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
     <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />

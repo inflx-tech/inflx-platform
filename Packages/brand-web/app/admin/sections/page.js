@@ -35,6 +35,9 @@ const ADD_PRESETS = [
   { key: 'offers',   label: 'Offers rail',     shelf_type: 'offers',   rule: 'top_by_conversions',     item_type: 'offers',   title: 'Best Deals' },
   { key: 'creators', label: 'Creators rail',   shelf_type: 'creators', rule: 'creators_listing',       title: 'Top Creators' },
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
+  // Food World 3C-1 — Type B: one card per restaurant + a nested carousel of its
+  // featured dishes (is_featured/featured_sort, fallback first N in-stock).
+  { key: 'restaurant_list', label: 'Restaurants + dishes (food)', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
   // Phase 3c — place a reusable Section Library section (data-driven). Pick which
   // section in the row editor; the engine fills it from that section's rule.
   { key: 'library',  label: 'Library Section',  shelf_type: 'products', rule: 'library_products',       item_type: 'products', title: 'New section' },

@@ -7,6 +7,8 @@ import {
   ShelfHeader, StoryRail, CategoryRail,
   ShelfBrandCard, ShelfBrandListRow, ShelfProductCard, DealCard, FeatureCard,
 } from './vibe';
+import FoodDishCard from './food/FoodDishCard';
+import RestaurantSection from './food/RestaurantSection';
 
 /**
  * SectionRenderer — renders the backend section-engine payload
@@ -180,7 +182,7 @@ function OfferGrid({ section, navigation }) {
 
 // ── content detection (unchanged contract — screens depend on this) ───────────
 
-const DATA_TYPES = ['offers', 'products', 'brands', 'creators', 'mixed'];
+const DATA_TYPES = ['offers', 'products', 'brands', 'creators', 'mixed', 'restaurant_list'];
 // Presentational shelves carry their content in config (not `items`) — a screen
 // composed only of these is still "engine content" (Phase 6 banner/hero-tiles).
 const PRESENTATION_TYPES = ['banner_gateway', 'hero_tiles'];
@@ -303,22 +305,53 @@ function renderSection(section, navigation, canFollow, context = {}) {
         </View>
       );
 
-    case 'products':
+    case 'products': {
+      // Food World 3C-1 — restaurant dish shelves (Type A, e.g. "Meals under
+      // ₹99") use the Toing FoodDishCard (veg dot, badge, ＋, by-restaurant,
+      // rating·ETA, struck MRP). Other verticals keep the shared ShelfProductCard.
+      const isFood = section.items[0]?.brand?.category === 'restaurant';
       return (
         <View>
           <ShelfHeader title={section.title} sub={sub} count={count} tag="products" onSeeAll={seeAll} />
           <Rail>
             {section.items.map((item, i) => (
-              <ShelfProductCard
-                key={item.id || i}
-                product={item.product || item}
-                brand={item.brand}
-                discountValue={item.discount_value}
-                distanceKm={item.distance_km}
-                onPress={() => goToProduct(navigation, item)}
-              />
+              isFood ? (
+                <FoodDishCard
+                  key={item.id || i}
+                  product={item.product || item}
+                  brand={item.brand}
+                  onPress={() => goToProduct(navigation, item)}
+                />
+              ) : (
+                <ShelfProductCard
+                  key={item.id || i}
+                  product={item.product || item}
+                  brand={item.brand}
+                  discountValue={item.discount_value}
+                  distanceKm={item.distance_km}
+                  onPress={() => goToProduct(navigation, item)}
+                />
+              )
             ))}
           </Rail>
+        </View>
+      );
+    }
+
+    case 'restaurant_list':
+      // Food World 3C-1 — Type B: one card per restaurant + nested featured-dish
+      // carousel. Fed by the `restaurants_with_featured` rule.
+      return (
+        <View>
+          <ShelfHeader title={section.title} sub={sub} count={count} tag="brands" onSeeAll={seeAll} />
+          {section.items.map((rest, i) => (
+            <RestaurantSection
+              key={rest.id || i}
+              restaurant={rest}
+              onOpenStore={(r) => goToBrand(navigation, r)}
+              onOpenDish={(p, r) => goToProduct(navigation, { ...p, brand: p.brand || { id: r.id, name: r.name, category: r.category, city: r.city } })}
+            />
+          ))}
         </View>
       );
 

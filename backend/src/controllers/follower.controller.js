@@ -30,7 +30,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const followerService = require('../services/follower.service');
 const sectionEngine = require('../services/sectionEngine.service');
 const sectionLibrary = require('../services/sectionLibrary.service');
-const { runRule } = require('../services/sectionRules.service');
+const { runRule, etaFromDistanceKm } = require('../services/sectionRules.service');
 const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
@@ -1331,7 +1331,7 @@ const getCreatorCategorySections = asyncHandler(async (req, res) => {
 const getProductDetail = asyncHandler(async (req, res) => {
   const { product_id } = req.params;
   const { rows } = await db.query(
-    `SELECT id, name, price, image_url, description, section,
+    `SELECT id, name, price, mrp, image_url, description, section,
             variants_json, facets, tags, category_node_id,
             return_policy_days, veg_flag, stock, badge
        FROM brand_products
@@ -1539,6 +1539,8 @@ const getDishGroupRestaurants = asyncHandler(async (req, res) => {
   const restaurants = rows.map(r => {
     const ld = r.listing_data || {};
     const rt = ratingMap[r.brand_id] || { avg_rating: null, review_count: 0 };
+    // ETA is distance-derived (founder 2026-06-22), not the stored restaurant value.
+    const eta = etaFromDistanceKm(r.dist_km);
     return {
       brand_id: r.brand_id,
       business_name: r.business_name,
@@ -1547,8 +1549,8 @@ const getDishGroupRestaurants = asyncHandler(async (req, res) => {
       review_count: rt.review_count,
       distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : null,
       free_delivery: ld.free_delivery === true,
-      delivery_eta_min_mins: ld.delivery_eta_min_mins != null ? Number(ld.delivery_eta_min_mins) : null,
-      delivery_eta_max_mins: ld.delivery_eta_max_mins != null ? Number(ld.delivery_eta_max_mins) : null,
+      eta_min_mins: eta.min,
+      eta_max_mins: eta.max,
       from_price: r.from_price != null ? parseFloat(r.from_price) : null,
       varieties: r.varieties || [],
     };

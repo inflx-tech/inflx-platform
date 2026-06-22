@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView,
   StyleSheet, ActivityIndicator, Image,
@@ -25,6 +25,14 @@ import SectionRenderer, { hasEngineContent } from '../../components/SectionRende
 import { CategoryCircle } from '../../components/vibe';
 import { useAppLocation } from '../../contexts/LocationContext';
 import LocationSheet from '../../components/LocationSheet';
+import DishGroupRail from '../../components/food/DishGroupRail';
+
+// Food World 3C-1 — home filter chips (client-side over the food shelves).
+const FOOD_CHIPS = [
+  { key: 'veg',     label: 'Veg' },
+  { key: 'under99', label: '₹99 & under' },
+  { key: 'fast',    label: 'delivery under 30 mins' },
+];
 
 /**
  * CategoryListScreen — stores in a super-category.
@@ -177,6 +185,37 @@ export default function CategoryListScreen({ route, navigation }) {
         return sec;
       });
   }, [sections, activeSubCat]);
+
+  // Food World 3C-1 — home filter chips. Client-side prune of the food shelves
+  // (Type A product shelves + Type B nested dishes). Unknown ETA never drops a
+  // card (only a known eta_max > 30 does).
+  const [foodFilters, setFoodFilters] = useState({});
+  const activeFoodKeys = Object.keys(foodFilters).filter((k) => foodFilters[k]);
+
+  const dishPasses = useCallback((p) => {
+    if (foodFilters.veg && !(p.veg_flag === 'Veg' || p.veg_flag === 'veg' || p.veg_flag === true)) return false;
+    if (foodFilters.under99 && !(Number(p.price) <= 99)) return false;
+    if (foodFilters.fast && p.eta_max != null && Number(p.eta_max) > 30) return false;
+    return true;
+  }, [foodFilters]);
+
+  const foodFilteredSections = useMemo(() => {
+    if (!isDining || !activeFoodKeys.length || !Array.isArray(filteredSections)) return filteredSections;
+    return filteredSections
+      .map((sec) => {
+        if (sec.type === 'products' && sec.items?.[0]?.brand?.category === 'restaurant') {
+          return { ...sec, items: (sec.items || []).filter(dishPasses) };
+        }
+        if (sec.type === 'restaurant_list') {
+          const items = (sec.items || [])
+            .map((r) => ({ ...r, products: (r.products || []).filter(dishPasses) }))
+            .filter((r) => r.products.length);
+          return { ...sec, items };
+        }
+        return sec;
+      })
+      .filter((sec) => !['products', 'restaurant_list'].includes(sec.type) || (Array.isArray(sec.items) && sec.items.length));
+  }, [filteredSections, isDining, foodFilters, dishPasses, activeFoodKeys.length]);
 
   // Header "N places" — in section-engine mode the businesses come from the
   // sections, not `stores`, so stores.length showed 0 (walkthrough P8). Count
@@ -427,8 +466,31 @@ export default function CategoryListScreen({ route, navigation }) {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {loading && <ActivityIndicator color={P.yellowText} size="large" style={{ marginTop: 40 }} />}
 
+        {/* Food World 3C-1 — dish-group "craving" rail + filter chips (food home only) */}
+        {isDining && (
+          <>
+            <DishGroupRail
+              onPressTile={(g) => navigation.navigate('DishGroupResult', { groupId: g.id, groupName: g.name })}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.foodChips}>
+              {FOOD_CHIPS.map((c) => {
+                const on = !!foodFilters[c.key];
+                return (
+                  <TouchableOpacity
+                    key={c.key}
+                    style={[s.foodChip, on && s.foodChipOn]}
+                    onPress={() => setFoodFilters((f) => ({ ...f, [c.key]: !f[c.key] }))}
+                  >
+                    <Text style={[s.foodChipTxt, on && s.foodChipTxtOn]}>{c.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </>
+        )}
+
         {sectionsActive ? (
-          <SectionRenderer sections={filteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
+          <SectionRenderer sections={foodFilteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
         ) : (
         <>
         {/* Layout dispatch (legacy fallback on engine error/empty) */}
@@ -593,6 +655,13 @@ const s = StyleSheet.create({
     height: 1, backgroundColor: P.border,
     marginHorizontal: 20, marginVertical: 12,
   },
+
+  // Food World 3C-1 — home filter chips
+  foodChips: { gap: 9, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 6 },
+  foodChip: { borderWidth: 1, borderColor: P.border, borderRadius: 22, paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#fff' },
+  foodChipOn: { borderColor: C.ink, backgroundColor: C.ink },
+  foodChipTxt: { fontSize: 12, fontWeight: '700', color: C.ink },
+  foodChipTxtOn: { color: '#fff' },
 
   // Empty state
   empty: { alignItems: 'center', paddingVertical: 40 },

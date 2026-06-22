@@ -563,12 +563,27 @@ async function creatorsInCategory(ctx) {
 // creators who picked them are discoverable BY CATEGORY without any campaign or
 // offer. Offers remain an overlay (deals shelves, discount badges), not a gate.
 
+// Food World 3C-1 — delivery ETA is DISTANCE-derived, not restaurant-set
+// (founder 2026-06-22). ~10 min prep + 2 min/km, rounded to a 5-min low with a
+// +5 window (e.g. 2.0 km → 20-25, 3.4 km → 25-30). km null → no ETA. Tunable.
+function etaFromDistanceKm(km) {
+  const n = Number(km);
+  if (km == null || !Number.isFinite(n)) return { min: null, max: null };
+  const PREP = 10, PER_KM = 2, WINDOW = 5;
+  const min = Math.max(5, Math.round((PREP + n * PER_KM) / 5) * 5);
+  return { min, max: min + WINDOW };
+}
+
 function mapListedProductItem(r) {
+  const eta = etaFromDistanceKm(r.dist_km);
   return {
     entity_type: 'product',
     id: r.id,
     name: r.name,
     price: r.price != null ? parseFloat(r.price) : null,
+    // Food World 3C-1 — per-dish MRP for the struck "was" price (mig 118). Card
+    // shows MRP→price only when mrp > price. Display-only (never order pricing).
+    mrp: r.mrp != null ? parseFloat(r.mrp) : null,
     image_url: r.image_url,
     section: r.section,
     veg_flag: r.veg_flag,
@@ -583,6 +598,9 @@ function mapListedProductItem(r) {
     badge: r.badge || null,
     has_addons: r.has_addons === true,
     distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : null,
+    // ETA computed from distance (3C-1); null when no geo.
+    eta_min: eta.min,
+    eta_max: eta.max,
     brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category, city: r.brand_city },
     via_creator: null,
     tracking: null,
@@ -652,7 +670,7 @@ async function productsInCategory(ctx) {
     : `${cityBoost(city, cityIdx)} bp.created_at DESC NULLS LAST`;
 
   const sql = `
-    SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
+    SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.created_at, bp.badge,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
@@ -769,7 +787,7 @@ async function libraryProducts(ctx) {
           AND bo.offer_type = 'discount' AND ${offerApplies} AND ${discPct} >= $${minDiscIdx})` : '';
 
   const sql = `
-    SELECT bp.id, bp.name, bp.price, bp.image_url, bp.section, bp.veg_flag, bp.description,
+    SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
            bp.created_at, bp.badge,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
            u_b.city AS brand_city,
@@ -799,6 +817,121 @@ async function libraryProducts(ctx) {
      LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);
   return rows.map(mapListedProductItem);
+}
+
+// ── Type B (Food 3C-1): restaurant-list section ─────────────────────────────
+// One item PER restaurant: a brand header (rating / distance-ETA / cuisine /
+// free-delivery) + a NESTED `products` array of that restaurant's FEATURED
+// dishes (is_featured by featured_sort; fallback = first N in-stock by recency).
+// Restaurants with no displayable dish are omitted. Category-scoped (restaurant
+// by default). The mobile renderer draws the header card + a nested dish rail.
+async function restaurantsWithFeatured(ctx) {
+  const { city, limit = 8 } = ctx;
+  const geo = hasCoords(ctx);
+  const cats = categoryFilter(ctx);
+  const perRestaurant = Math.min(Math.max(parseInt(ctx.featuredPerRestaurant, 10) || 8, 1), 12);
+
+  const params = [];
+  let p = 0;
+  const catIdx = cats ? ++p : null; if (cats) params.push(cats);
+  const cityIdx = (city && !geo) ? ++p : null; if (city && !geo) params.push(city);
+  let latIdx, lngIdx;
+  if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
+  const limIdx = ++p; params.push(limit);
+
+  const distExpr = geo
+    ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN ${haversineKm(latIdx, lngIdx)} END`
+    : `NULL::numeric`;
+  const orderBy = geo
+    ? `dist_km ASC NULLS LAST, score DESC, b.business_name ASC`
+    : `${cityBoost(city, cityIdx)} score DESC, b.business_name ASC`;
+
+  const brandSql = `
+    SELECT b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category,
+           u_b.city AS brand_city, b.listing_data,
+           ${distExpr} AS dist_km,
+           rev.rating, rev.review_count,
+           (SELECT COUNT(*) FROM follower_transactions ft
+              WHERE ft.brand_id = b.id AND ft.created_at >= now() - interval '30 days')::int AS score
+      FROM brands b
+      JOIN users u_b ON u_b.id = b.user_id
+      LEFT JOIN LATERAL (
+        SELECT ROUND(AVG(rr.rating)::numeric, 1) AS rating, COUNT(*)::int AS review_count
+          FROM restaurant_reviews rr
+         WHERE rr.brand_id = b.id AND rr.status = 'published'
+      ) rev ON true
+     WHERE u_b.status = 'approved'
+       AND ${cats ? `b.category = ANY($${catIdx})` : `b.category = 'restaurant'`}
+       AND EXISTS (SELECT 1 FROM brand_products bp
+                    WHERE bp.brand_id = b.id AND bp.is_active = true AND bp.pushed_to_store = true)
+     ORDER BY ${orderBy}
+     LIMIT $${limIdx}`;
+  const { rows: brands } = await db.query(brandSql, params);
+  if (!brands.length) return [];
+
+  const brandIds = brands.map(b => b.brand_id);
+  // Featured dishes per brand, windowed to perRestaurant: is_featured first
+  // (by featured_sort), then newest as the fallback fill.
+  const { rows: prods } = await db.query(
+    `SELECT id, name, price, mrp, image_url, section, veg_flag, description, badge, brand_id, has_addons
+       FROM (
+        SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag,
+               bp.description, bp.badge, bp.brand_id,
+               EXISTS (SELECT 1 FROM product_addon_groups g WHERE g.product_id = bp.id) AS has_addons,
+               ROW_NUMBER() OVER (
+                 PARTITION BY bp.brand_id
+                 ORDER BY bp.is_featured DESC, bp.featured_sort ASC, bp.created_at DESC
+               ) AS rn
+          FROM brand_products bp
+         WHERE bp.brand_id = ANY($1::uuid[]) AND bp.is_active = true AND bp.pushed_to_store = true
+       ) q WHERE q.rn <= $2`,
+    [brandIds, perRestaurant]
+  );
+
+  const byBrand = {};
+  for (const r of prods) {
+    (byBrand[r.brand_id] = byBrand[r.brand_id] || []).push({
+      entity_type: 'product',
+      id: r.id,
+      name: r.name,
+      price: r.price != null ? parseFloat(r.price) : null,
+      mrp: r.mrp != null ? parseFloat(r.mrp) : null,
+      image_url: r.image_url,
+      section: r.section,
+      veg_flag: r.veg_flag,
+      description: r.description,
+      badge: r.badge || null,
+      has_addons: r.has_addons === true,
+      discount_value: null,
+      via_creator: null,
+      tracking: null,
+    });
+  }
+
+  return brands.map((b) => {
+    const products = byBrand[b.brand_id] || [];
+    if (!products.length) return null;
+    const ld = b.listing_data || {};
+    const eta = etaFromDistanceKm(b.dist_km);
+    const brandRef = { id: b.brand_id, name: b.brand_name, category: b.brand_category, city: b.brand_city };
+    // Nested cards need the brand ref for nav + ETA mirrors the restaurant's.
+    products.forEach((pr) => { pr.brand = brandRef; pr.eta_min = eta.min; pr.eta_max = eta.max; });
+    return {
+      entity_type: 'brand',
+      id: b.brand_id,
+      name: b.brand_name,
+      category: b.brand_category,
+      city: b.brand_city,
+      rating: b.rating != null ? Number(b.rating) : null,
+      review_count: b.review_count != null ? Number(b.review_count) : 0,
+      distance_km: b.dist_km != null ? Math.round(Number(b.dist_km) * 10) / 10 : null,
+      cuisines: Array.isArray(ld.cuisines) ? ld.cuisines : [],
+      free_delivery: ld.free_delivery === true,
+      eta_min: eta.min,
+      eta_max: eta.max,
+      products,
+    };
+  }).filter(Boolean);
 }
 
 // Creators who PICKED products (influencer_product_notes) in a category. No live
@@ -925,6 +1058,7 @@ const RULES = {
   businesses_in_category: businessesInCategory,
   products_in_category: productsInCategory,
   library_products: libraryProducts,
+  restaurants_with_featured: restaurantsWithFeatured,   // Food 3C-1 Type B
   creators_in_category_listing: creatorsInCategoryListing,
   // nav / static / disabled
   nav_verticals: navVerticals,
@@ -945,4 +1079,4 @@ async function runRule(ruleKey, ctx) {
   return fn(ctx);
 }
 
-module.exports = { runRule, RULES, buildTracking };
+module.exports = { runRule, RULES, buildTracking, etaFromDistanceKm };
