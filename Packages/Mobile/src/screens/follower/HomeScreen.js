@@ -1,32 +1,47 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
-  View, Text, Image, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Modal,
+  View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { toing as T, fonts } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { useAppLocation } from '../../contexts/LocationContext';
+import SectionRenderer, { hasEngineContent } from '../../components/SectionRenderer';
+import RestaurantResultCard from '../../components/food/RestaurantResultCard';
 
 /**
- * HomeScreen — Follower v2 main home (world switcher).
+ * HomeScreen — Follower v2 main home = the per-world page (Swiggy model).
  *
- * Pure-white Swiggy-style home: address + avatar header · the 5-business
- * folder-tab switcher · search with a per-world cycling placeholder · veg/
- * non-veg toggle · sticky "What's on your mind?" category rail. Tabs + rails
- * come from /follower/verticals (admin-managed: name / image / order / enabled;
- * image_url falls back to the emoji icon until admin uploads a 3D image).
- * Deeper per-world sections (creators carousel, cards) = next pass.
- * Contract: features/follower-location-redesign (home slice).
+ * Pure-white home: address + avatar · 5-business folder-tab switcher · search ·
+ * veg toggle · sticky "What's on your mind?" craving rail · and the ACTIVE
+ * world's full section feed rendered inline (the section engine: category
+ * shelves like "Food under 400", Trending, restaurants…). Tapping a craving
+ * tile filters the page IN-PLACE to restaurants serving it; tapping it again
+ * clears. The tab IS the page — no separate tap-through screen.
+ * Tabs/rail/images come from /follower/verticals (Home Builder). Section feed
+ * comes from /follower/section/category/:world (App Sections, per-world scope).
+ * Contract: features/food-discovery-cleanup (home-as-page).
  */
 
 export default function HomeScreen({ navigation }) {
   const { location } = useAppLocation();
+  const latitude = location?.latitude;
+  const longitude = location?.longitude;
   const [verticals, setVerticals] = useState([]);
   const [activeKey, setActiveKey] = useState(null);
   const [loading, setLoading] = useState(true);
   const [veg, setVeg] = useState(false);
   const [phIdx, setPhIdx] = useState(0);
   const [seeAllOpen, setSeeAllOpen] = useState(false);
+
+  // Active world's section feed (the inline page body).
+  const [sections, setSections] = useState(null);
+  const [feedLoading, setFeedLoading] = useState(false);
+
+  // In-page craving filter.
+  const [craving, setCraving] = useState(null);          // { key, name } or null
+  const [cravingResults, setCravingResults] = useState([]);
+  const [cravingLoading, setCravingLoading] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -55,8 +70,46 @@ export default function HomeScreen({ navigation }) {
 
   const placeholder = cats.length ? `Search for '${cats[phIdx % cats.length].name}'` : 'Search';
 
-  const openCategory = (cat) =>
-    navigation.navigate('CategoryList', { superCategory: active?.key, label: cat.name, icon: cat.icon, categoryKey: cat.key });
+  // Load the active world's section feed; clear any craving on world switch.
+  useEffect(() => {
+    if (!activeKey) return;
+    setCraving(null); setCravingResults([]);
+    let alive = true;
+    setFeedLoading(true);
+    followerApi.getCategorySections?.(activeKey, { latitude, longitude })
+      .then((r) => { if (alive) setSections(r?.data?.sections || []); })
+      .catch(() => { if (alive) setSections([]); })
+      .finally(() => { if (alive) setFeedLoading(false); });
+    return () => { alive = false; };
+  }, [activeKey, latitude, longitude]);
+
+  const onCraving = useCallback(async (tile) => {
+    if (craving?.key === tile.key) { setCraving(null); setCravingResults([]); return; }
+    setCraving({ key: tile.key, name: tile.name });
+    setCravingLoading(true);
+    try {
+      const r = await followerApi.getCategoryRestaurants(tile.name, { lat: latitude, lng: longitude });
+      setCravingResults((r?.data || r)?.restaurants || []);
+    } catch { setCravingResults([]); }
+    finally { setCravingLoading(false); }
+  }, [craving?.key, latitude, longitude]);
+
+  // Veg toggle prunes restaurant dish shelves (Type A products + Type B nested).
+  const vegSections = useMemo(() => {
+    if (!veg || !Array.isArray(sections)) return sections;
+    const isVeg = (p) => p.veg_flag === 'veg' || p.veg_flag === 'Veg' || p.veg_flag === true;
+    return sections
+      .map((sec) => {
+        if (sec.type === 'products' && sec.items?.[0]?.brand?.category === 'restaurant')
+          return { ...sec, items: (sec.items || []).filter(isVeg) };
+        if (sec.type === 'restaurant_list')
+          return { ...sec, items: (sec.items || []).map((r) => ({ ...r, products: (r.products || []).filter(isVeg) })).filter((r) => r.products.length) };
+        return sec;
+      })
+      .filter((sec) => !['products', 'restaurant_list'].includes(sec.type) || (Array.isArray(sec.items) && sec.items.length));
+  }, [sections, veg]);
+
+  const feedActive = hasEngineContent(vegSections);
 
   if (loading) {
     return <View style={s.center}><ActivityIndicator color={T.yellowDeep} /></View>;
@@ -109,23 +162,26 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <ScrollView style={{ flex: 1 }} stickyHeaderIndices={[0]} showsVerticalScrollIndicator={false}>
-        {/* Sticky category rail */}
+        {/* Sticky category rail (craving filter) */}
         <View style={s.railWrap}>
           <Text style={s.railTitle}>What's on your mind?</Text>
           {cats.length === 0 ? (
             <Text style={s.railEmpty}>Categories for {active?.name || 'this'} coming soon.</Text>
           ) : (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingRight: 8 }}>
-              {cats.map((c) => (
-                <TouchableOpacity key={c.key} style={s.cat} onPress={() => openCategory(c)} activeOpacity={0.8}>
-                  <View style={s.catImgBox}>
-                    {c.image_url
-                      ? <Image source={{ uri: c.image_url }} style={s.catImg} resizeMode="contain" />
-                      : <Text style={s.catEmoji}>{c.icon || '🍽️'}</Text>}
-                  </View>
-                  <Text style={s.catName} numberOfLines={1}>{c.name}</Text>
-                </TouchableOpacity>
-              ))}
+              {cats.map((c) => {
+                const sel = craving?.key === c.key;
+                return (
+                  <TouchableOpacity key={c.key} style={s.cat} onPress={() => onCraving(c)} activeOpacity={0.8}>
+                    <View style={[s.catImgBox, sel && s.catImgBoxOn]}>
+                      {c.image_url
+                        ? <Image source={{ uri: c.image_url }} style={s.catImg} resizeMode="contain" />
+                        : <Text style={s.catEmoji}>{c.icon || '🍽️'}</Text>}
+                    </View>
+                    <Text style={[s.catName, sel && s.catNameOn]} numberOfLines={1}>{c.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
               <TouchableOpacity style={s.cat} onPress={() => setSeeAllOpen(true)} activeOpacity={0.8}>
                 <View style={s.seeAllCircle}>
                   <Icon name="view-grid-outline" size={26} color={T.yellowDeep} />
@@ -136,17 +192,50 @@ export default function HomeScreen({ navigation }) {
           )}
         </View>
 
-        {/* Next-pass sections placeholder */}
+        {/* Body — craving filter results OR the world's section feed */}
         <View style={s.feed}>
-          <View style={s.feedStub}>
-            <Icon name="layers-outline" size={26} color={T.hint} />
-            <Text style={s.feedStubText}>Creators · top picks · {active?.name || ''} stores — next pass</Text>
-          </View>
+          {craving ? (
+            <>
+              <View style={s.cravingBar}>
+                <Text style={s.cravingTitle} numberOfLines={1}>
+                  {craving.name}
+                  {!cravingLoading ? <Text style={s.cravingCount}>  · {cravingResults.length} place{cravingResults.length !== 1 ? 's' : ''}</Text> : null}
+                </Text>
+                <TouchableOpacity onPress={() => onCraving(craving)} hitSlop={8}>
+                  <Text style={s.cravingClear}>✕ Clear</Text>
+                </TouchableOpacity>
+              </View>
+              {cravingLoading ? (
+                <ActivityIndicator color={T.yellowDeep} style={{ marginTop: 26 }} />
+              ) : cravingResults.length === 0 ? (
+                <View style={s.stateBox}>
+                  <Text style={s.stateEmoji}>🍱</Text>
+                  <Text style={s.stateTitle}>No one nearby serves this yet</Text>
+                  <Text style={s.stateBody}>Try another craving.</Text>
+                </View>
+              ) : (
+                cravingResults.map((r) => (
+                  <RestaurantResultCard key={r.brand_id} restaurant={r}
+                    onOpen={(rest) => navigation.navigate('BrandStore', { brandId: rest.brand_id, brandName: rest.business_name })} />
+                ))
+              )}
+            </>
+          ) : feedLoading ? (
+            <ActivityIndicator color={T.yellowDeep} style={{ marginTop: 30 }} />
+          ) : feedActive ? (
+            <SectionRenderer sections={vegSections} navigation={navigation}
+              context={{ superCategory: activeKey, lat: latitude, lng: longitude }} />
+          ) : (
+            <View style={s.stateBox}>
+              <Icon name="storefront-outline" size={26} color={T.hint} />
+              <Text style={s.stateBody}>Nothing in {active?.name || 'this world'} near you yet.</Text>
+            </View>
+          )}
           <View style={{ height: 24 }} />
         </View>
       </ScrollView>
 
-      {/* See-all category grid (bottom sheet) */}
+      {/* See-all category grid (bottom sheet) — taps filter in-place */}
       <Modal visible={seeAllOpen} transparent animationType="slide" onRequestClose={() => setSeeAllOpen(false)}>
         <View style={s.sheetWrap}>
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setSeeAllOpen(false)} />
@@ -159,7 +248,7 @@ export default function HomeScreen({ navigation }) {
             </View>
             <ScrollView contentContainerStyle={s.sheetGrid} showsVerticalScrollIndicator={false}>
               {cats.map((c) => (
-                <TouchableOpacity key={c.key} style={s.gridCat} onPress={() => { setSeeAllOpen(false); openCategory(c); }} activeOpacity={0.8}>
+                <TouchableOpacity key={c.key} style={s.gridCat} onPress={() => { setSeeAllOpen(false); onCraving(c); }} activeOpacity={0.8}>
                   <View style={s.catImgBox}>
                     {c.image_url
                       ? <Image source={{ uri: c.image_url }} style={s.catImg} resizeMode="contain" />
@@ -211,10 +300,12 @@ const s = StyleSheet.create({
   seeAllLabel: { fontSize: 11, color: T.yellowDeep, fontFamily: fonts.sansBold, marginTop: 6, textAlign: 'center', letterSpacing: 0.3 },
   railEmpty: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular, paddingRight: 14 },
   cat: { alignItems: 'center', width: 74 },
-  catImgBox: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center' },
+  catImgBox: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center', borderRadius: 33 },
+  catImgBoxOn: { borderWidth: 2.5, borderColor: T.yellowDeep },
   catImg: { width: 66, height: 66 },
   catEmoji: { fontSize: 42 },
   catName: { fontSize: 11, color: T.ink, fontFamily: fonts.sansMedium, marginTop: 6, textAlign: 'center' },
+  catNameOn: { color: T.yellowDeep, fontFamily: fonts.sansBold },
   sheetWrap: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
   sheet: { backgroundColor: T.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '78%', paddingBottom: 20 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
@@ -223,7 +314,13 @@ const s = StyleSheet.create({
   sheetGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 8, paddingTop: 14 },
   gridCat: { width: '25%', alignItems: 'center', marginBottom: 18 },
 
-  feed: { backgroundColor: T.white, paddingHorizontal: 14, paddingTop: 14 },
-  feedStub: { borderWidth: 1, borderStyle: 'dashed', borderColor: T.line, borderRadius: 12, paddingVertical: 26, alignItems: 'center', gap: 8 },
-  feedStubText: { fontSize: 12, color: T.hint, fontFamily: fonts.sansRegular },
+  feed: { backgroundColor: T.white, paddingTop: 6, minHeight: 200 },
+  cravingBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 2 },
+  cravingTitle: { flex: 1, fontSize: 17, color: T.ink, fontFamily: fonts.displayBold, letterSpacing: -0.3 },
+  cravingCount: { fontSize: 12, color: T.muted, fontFamily: fonts.sansSemiBold },
+  cravingClear: { fontSize: 12, color: T.yellowDeep, fontFamily: fonts.sansBold },
+  stateBox: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 30, gap: 8 },
+  stateEmoji: { fontSize: 40 },
+  stateTitle: { fontSize: 15, color: T.ink, fontFamily: fonts.displayBold },
+  stateBody: { fontSize: 12, color: T.muted, fontFamily: fonts.sansRegular, textAlign: 'center' },
 });
