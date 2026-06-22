@@ -227,15 +227,10 @@ export default function CategoryListScreen({ route, navigation }) {
     finally { setCravingLoading(false); }
   }, [craving?.key, latitude, longitude]);
 
-  // Pre-select a craving when the home rail deep-linked into a specific tile
-  // (so tapping "Pizza" on home opens the food page already filtered).
-  const presetCat = route.params?.categoryKey || null;
-  useEffect(() => {
-    if (!isDining || !presetCat || craving || !cravingTiles.length) return;
-    const tile = cravingTiles.find((t) => t.key === presetCat);
-    if (tile) onCraving(tile);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDining, presetCat, cravingTiles]);
+  // NOTE: the food page defaults to the FULL section feed (Food under 400,
+  // Trending, restaurants…). The craving rail filters IN-PAGE only when the
+  // user taps a tile here — we deliberately do NOT auto-select a craving on
+  // entry, otherwise the section feed would be hidden behind a filter.
 
   const dishPasses = useCallback((p) => {
     if (foodFilters.veg && !(p.veg_flag === 'Veg' || p.veg_flag === 'veg' || p.veg_flag === true)) return false;
