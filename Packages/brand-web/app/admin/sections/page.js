@@ -42,6 +42,8 @@ const ADD_PRESETS = [
   { key: 'offers',   label: 'Offers rail',     shelf_type: 'offers',   rule: 'top_by_conversions',     item_type: 'offers',   title: 'Best Deals' },
   { key: 'creators', label: 'Creators rail',   shelf_type: 'creators', rule: 'creators_listing',       title: 'Top Creators' },
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
+  // Food 3C — the world's sub-category tiles as a placeable section (📌-able).
+  { key: 'category_rail', label: 'Category rail (sticky-able)', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
   // Food World 3C-1 — Type B: one card per restaurant + a nested carousel of its
   // featured dishes (is_featured/featured_sort, fallback first N in-stock).
   { key: 'restaurant_list', label: 'Restaurants + dishes (food)', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
@@ -304,6 +306,8 @@ export default function SectionsPage() {
                     <span className="w-8 text-center text-xs font-bold">{s.item_limit}</span>
                     <button onClick={() => changeCount(id, 1)} className="w-7 h-7 bg-gray-50 text-amber-700 font-bold">+</button>
                   </div>
+                  <button onClick={() => patchConfig(id, 'sticky', !cfg.sticky)} title="Sticky on scroll (pins to top)"
+                    className={`text-xs px-2 py-1 rounded border ${cfg.sticky ? 'bg-amber-100 border-amber-400 text-amber-800' : 'border-gray-300 text-gray-400'}`}>📌</button>
                   <button onClick={() => update(id, { enabled: !(s.enabled !== false) })}
                     className={`w-10 h-6 rounded-full relative transition-colors ${s.enabled !== false ? 'bg-amber-700' : 'bg-gray-300'}`} aria-label="toggle enabled">
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${s.enabled !== false ? 'left-[18px]' : 'left-0.5'}`} />

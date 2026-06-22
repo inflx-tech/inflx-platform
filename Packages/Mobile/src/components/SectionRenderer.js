@@ -182,7 +182,7 @@ function OfferGrid({ section, navigation }) {
 
 // ── content detection (unchanged contract — screens depend on this) ───────────
 
-const DATA_TYPES = ['offers', 'products', 'brands', 'creators', 'mixed', 'restaurant_list'];
+const DATA_TYPES = ['offers', 'products', 'brands', 'creators', 'mixed', 'restaurant_list', 'category_rail'];
 // Presentational shelves carry their content in config (not `items`) — a screen
 // composed only of these is still "engine content" (Phase 6 banner/hero-tiles).
 const PRESENTATION_TYPES = ['banner_gateway', 'hero_tiles'];
@@ -218,6 +218,10 @@ function renderSection(section, navigation, canFollow, context = {}) {
   });
 
   if (section.type === 'controls') return <ChipRow section={section} />;
+
+  // Category rail (food 3C) is rendered by the host home screen (it owns the
+  // in-page craving filter + sticky), so the generic renderer skips it.
+  if (section.type === 'category_rail') return null;
 
   // Collection header band (Phase 4a) — renders even with no items (it's a title,
   // not a data shelf); placed before the empty-items guard below.
@@ -455,6 +459,12 @@ function HeroTiles({ section, tiles, onTile }) {
       </Rail>
     </View>
   );
+}
+
+// Render ONE section as a standalone element — lets a host screen lay sections
+// out as direct ScrollView children (needed for per-section sticky headers).
+export function SectionItem({ section, navigation, canFollow, context }) {
+  return renderSection(section, navigation, canFollow, context);
 }
 
 export default function SectionRenderer({ sections, navigation, canFollow, context }) {

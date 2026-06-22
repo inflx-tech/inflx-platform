@@ -1,0 +1,18 @@
+{
+  "feature": "food-category-rail-section",
+  "area": "backend + admin + mobile-follower-v2",
+  "spec_version": "1.0.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — 'start building #1' in chat 2026-06-22 (category rail as a placeable sticky section + per-section sticky toggle)",
+  "approved_at": "2026-06-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — mockup waived; reuses the locked toing craving-rail visual, just made placeable. Directed in chat 2026-06-22",
+  "mockup_locked_at": "2026-06-22",
+  "deploy_posture": "PRODUCTION-IMPACTING, no migration. Backend new read-only rule world_categories (Render) + admin App Sections preset + per-section sticky toggle (Vercel) + mobile OTA (HomeScreen renders sections as direct children with per-section sticky; category rail is a placeable section).",
+  "fix": "Roadmap #1: the category rail becomes a PLACEABLE section (shelf_type 'category_rail', rule 'world_categories' = a world's follower_vertical_categories) instead of hardcoded; admin can mark ANY section sticky (config.sticky → stickyHeaderIndices). HomeScreen now lays sections out as direct scroll children (tabs+search scroll away, sticky sections pin); the rail's tile tap still drives the in-page craving filter.",
+  "notes": "Foundation for the template catalog (#2). Verified: backend food-category-rail 2/2, pnpm qa 79 GREEN, brand-web build exit 0, mobile HomeScreen 2/2.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending founder go" }
+}

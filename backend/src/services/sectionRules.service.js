@@ -1027,6 +1027,23 @@ async function navVerticals(ctx) {
   }));
 }
 
+// Category rail (Food 3C / discovery) — the world's sub-category tiles
+// (follower_vertical_categories, Home Builder). Lets admin PLACE the craving
+// rail as a section in any world's stack (shelf_type 'category_rail'), and mark
+// it sticky. ctx.categoryKey = the world (vertical) being viewed.
+async function worldCategories(ctx) {
+  const vk = ctx.categoryKey;
+  if (!vk) return [];
+  const { rows } = await db.query(
+    `SELECT key, name, icon, image_url FROM follower_vertical_categories
+      WHERE vertical_key = $1 AND enabled = true ORDER BY sort_order, name`,
+    [vk]
+  );
+  return rows.map(r => ({
+    entity_type: 'category', key: r.key, name: r.name, icon: r.icon || null, image_url: r.image_url || null,
+  }));
+}
+
 // Controls/chips/headers/profile/bio carry their payload in config_json; the
 // engine passes config through and these contribute no data items.
 async function staticRule() { return []; }
@@ -1062,6 +1079,7 @@ const RULES = {
   creators_in_category_listing: creatorsInCategoryListing,
   // nav / static / disabled
   nav_verticals: navVerticals,
+  world_categories: worldCategories,   // Food 3C — placeable category rail
   static: staticRule,
   top_by_sales: topBySales,
 };
