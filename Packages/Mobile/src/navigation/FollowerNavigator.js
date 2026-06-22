@@ -6,16 +6,13 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { creatorVibe as C, fonts } from '../theme/tokens';
 
 // V2 screens (products-first)
-import HomeScreenV2 from '../screens/follower/HomeScreenV2';
 // Follower v2 — main home (world switcher)
 import HomeScreen from '../screens/follower/HomeScreen';
 import FindScreen from '../screens/follower/FindScreen';
 import CategoryListScreen from '../screens/follower/CategoryListScreen';
 
 // Wave 4 — dining redesign (replaces CategoryListScreen for eat)
-import DiningHomeScreen from '../screens/follower/DiningHomeScreen';
 import DishGroupResultScreen from '../screens/follower/DishGroupResultScreen';
-import DiningBrowseScreen from '../screens/follower/DiningBrowseScreen';
 import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
 import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
 import RestaurantCartScreen from '../screens/follower/RestaurantCartScreen';
@@ -92,12 +89,8 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
     <Stack.Screen name="CreatorCategory" component={CreatorCategoryScreen} />
     <Stack.Screen name="SectionResults" component={SectionResultsScreen} />
-    {/* Wave 4 — restaurant discovery surface (only routed to from the 'eat'
-        category tile on HomeScreenV2; other categories keep CategoryList). */}
-    <Stack.Screen name="DiningHome" component={DiningHomeScreen} />
     {/* Food World 3C-1 — dish-group craving → nearby restaurants result */}
     <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
-    <Stack.Screen name="DiningBrowse" component={DiningBrowseScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
     <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
     <Stack.Screen name="RestaurantCart" component={RestaurantCartScreen} />

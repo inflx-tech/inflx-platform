@@ -115,7 +115,9 @@ export default function CategoryListScreen({ route, navigation }) {
       .catch(() => { if (alive) setSections(null); });
     return () => { alive = false; };
   }, [superCategory, latitude, longitude]);
-  const sectionsActive = isEnabled('SECTION_ENGINE_CATEGORY') && hasEngineContent(sections);
+  // Section-only (no legacy fallback): the page renders the admin-composed
+  // section feed; empty state when nothing is composed (founder 2026-06-22).
+  const sectionsActive = hasEngineContent(sections);
 
   useEffect(() => {
     async function load() {
@@ -559,22 +561,13 @@ export default function CategoryListScreen({ route, navigation }) {
           </>
         ) : sectionsActive ? (
           <SectionRenderer sections={foodFilteredSections} navigation={navigation} context={{ superCategory, lat: latitude, lng: longitude }} />
-        ) : (
-        <>
-        {/* Layout dispatch (legacy fallback on engine error/empty) */}
-        {isDining
-          ? stores.map(renderDiningCard)
-          : stores.map(renderInlineProductStore)}
-
-        {!loading && stores.length === 0 && (
+        ) : !loading ? (
           <View style={s.empty}>
-            <Text style={s.emptyIcon}>🏪</Text>
-            <Text style={s.emptyTitle}>No stores found</Text>
-            <Text style={s.emptyText}>Check back later for stores in this category</Text>
+            <Text style={s.emptyIcon}>🗂️</Text>
+            <Text style={s.emptyTitle}>Nothing here yet</Text>
+            <Text style={s.emptyText}>This space is being set up.</Text>
           </View>
-        )}
-        </>
-        )}
+        ) : null}
 
         <View style={{ height: 80 }} />
       </ScrollView>
