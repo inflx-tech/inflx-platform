@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { sectionApi, adminApi } from '../../../lib/api';
+import { sectionApi, adminApi, uploadAdminStockImage } from '../../../lib/api';
 
 /**
  * App Sections — Admin Section Manager v2 (Creator Vibe).
@@ -44,6 +44,8 @@ const ADD_PRESETS = [
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
   // Food 3C — the world's sub-category tiles as a placeable section (📌-able).
   { key: 'category_rail', label: 'Category rail (sticky-able)', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
+  // Template Catalog #1 — image tiles; each tile = upload image + wire to a group.
+  { key: 'tiles', label: 'Image tiles (wire each to a group)', shelf_type: 'tiles', rule: 'static', title: 'Featured' },
   // Food World 3C-1 — Type B: one card per restaurant + a nested carousel of its
   // featured dishes (is_featured/featured_sort, fallback first N in-stock).
   { key: 'restaurant_list', label: 'Restaurants + dishes (food)', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
@@ -104,6 +106,25 @@ export default function SectionsPage() {
   const setConfig = (id, nextConfig) => update(id, { config_json: nextConfig });
   const patchConfig = (id, key, value) =>
     setShelves(prev => prev.map(s => (rowId(s) === id ? { ...s, config_json: { ...(s.config_json || {}), [key]: value } } : s)));
+
+  // Template Catalog #1 — manage config_json.tiles[] (image + label + wired group).
+  const addTile = (id) =>
+    setShelves(prev => prev.map(s => (rowId(s) === id
+      ? { ...s, config_json: { ...(s.config_json || {}), tiles: [...((s.config_json || {}).tiles || []), { image_url: '', label: '', library_section_id: '' }] } }
+      : s)));
+  const updateTile = (id, idx, patch) =>
+    setShelves(prev => prev.map(s => {
+      if (rowId(s) !== id) return s;
+      const tiles = [...((s.config_json || {}).tiles || [])];
+      tiles[idx] = { ...tiles[idx], ...patch };
+      return { ...s, config_json: { ...(s.config_json || {}), tiles } };
+    }));
+  const removeTile = (id, idx) =>
+    setShelves(prev => prev.map(s => {
+      if (rowId(s) !== id) return s;
+      const tiles = ((s.config_json || {}).tiles || []).filter((_, i) => i !== idx);
+      return { ...s, config_json: { ...(s.config_json || {}), tiles } };
+    }));
   // Phase 6 — patch a nested config object (config_json.banner.*, config_json.hero.*).
   const patchNested = (id, parent, key, value) =>
     setShelves(prev => prev.map(s => (rowId(s) === id
@@ -318,6 +339,35 @@ export default function SectionsPage() {
                 {/* Config editor (v2) */}
                 {isOpen && (
                   <div className="px-3 pb-3 pt-1 border-t border-gray-100 flex flex-col gap-2">
+                    {/* Template Catalog #1 — image tiles: per-tile image + label + wired group. */}
+                    {s.shelf_type === 'tiles' && (
+                      <div className="flex flex-col gap-2">
+                        <div className="text-[11px] font-semibold text-gray-600">Tiles — upload an image + wire each to a Section Library group</div>
+                        {(cfg.tiles || []).map((t, ti) => (
+                          <div key={ti} className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
+                            <label className="w-12 h-12 rounded-lg border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0" title="Upload tile image">
+                              {t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-300 text-lg">＋</span>}
+                              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+                                const res = await uploadAdminStockImage(f);
+                                if (res.error) { setMsg({ kind: 'err', text: res.error.message || 'Upload failed' }); return; }
+                                updateTile(id, ti, { image_url: res.public_url });
+                              }} />
+                            </label>
+                            <input value={t.label || ''} onChange={e => updateTile(id, ti, { label: e.target.value })} placeholder="Label"
+                              className="w-28 text-xs border border-gray-300 rounded px-2 py-1" />
+                            <select value={t.library_section_id || ''} onChange={e => updateTile(id, ti, { library_section_id: e.target.value })}
+                              className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                              <option value="">(wire to a group)</option>
+                              {librarySections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
+                            </select>
+                            <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove tile">✕</button>
+                          </div>
+                        ))}
+                        <button onClick={() => addTile(id)} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">+ Add tile</button>
+                        {(cfg.tiles || []).length === 0 && <span className="text-[11px] text-gray-400">No tiles yet — add one. (Create the groups first in Section Library.)</span>}
+                      </div>
+                    )}
                     {/* Library Section placement (Phase 3c) — pick which reusable section fills this shelf. */}
                     {s.rule === 'library_products' && (
                       <label className="text-[11px] font-semibold text-gray-600">Library section

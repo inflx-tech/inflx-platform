@@ -1,0 +1,18 @@
+{
+  "feature": "section-template-catalog",
+  "area": "admin + mobile-follower-v2",
+  "spec_version": "1.0.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — 'ok start build' in chat 2026-06-22 (template catalog: pick template → upload image → wire to a Section Library group)",
+  "approved_at": "2026-06-22",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — mockups waived; toing styling reused. Confirmed the model (template + image + wiring) in chat 2026-06-22",
+  "mockup_locked_at": "2026-06-22",
+  "deploy_posture": "PRODUCTION-IMPACTING, no backend/migration. Admin App Sections (Vercel) + mobile OTA. Tiles live in section config_json (rule='static'); tap runs the wired Section Library group via the existing Results screen.",
+  "fix": "Template Catalog — slice 1: the 'Image tiles' template (shelf_type 'tiles'). Admin adds a tile section, uploads an image per tile + wires each tile to a Section Library group; mobile renders a toing image-tile carousel; tap → Results runs that group. Reusable for spotlight/featured/shop-by-concern styles. (Product rail + hero banner already exist via library_products / banner_gateway.)",
+  "notes": "Model = Template(layout) + Images(upload) + Wiring(Section Library rule/Collection). Slice 1 = image tiles. Next slices: themed banner + sub-tiles, product-rail themed header, more tile styles. Verified: mobile HomeScreen+DishGroup 4/4, brand-web build exit 0.",
+  "release": { "qa_all_green": true, "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending founder go" }
+}

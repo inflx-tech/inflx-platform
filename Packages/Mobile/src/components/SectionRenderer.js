@@ -9,6 +9,7 @@ import {
 } from './vibe';
 import FoodDishCard from './food/FoodDishCard';
 import RestaurantSection from './food/RestaurantSection';
+import TileSection from './sections/TileSection';
 
 /**
  * SectionRenderer — renders the backend section-engine payload
@@ -185,7 +186,7 @@ function OfferGrid({ section, navigation }) {
 const DATA_TYPES = ['offers', 'products', 'brands', 'creators', 'mixed', 'restaurant_list', 'category_rail'];
 // Presentational shelves carry their content in config (not `items`) — a screen
 // composed only of these is still "engine content" (Phase 6 banner/hero-tiles).
-const PRESENTATION_TYPES = ['banner_gateway', 'hero_tiles'];
+const PRESENTATION_TYPES = ['banner_gateway', 'hero_tiles', 'tiles'];
 export function hasEngineContent(sections) {
   return Array.isArray(sections) &&
     sections.some(s =>
@@ -230,6 +231,23 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // Banner-Gateway (Phase 6 B) — a tappable marketing banner; tap → the shared
   // Results screen re-runs THIS section's rule with the surface context.
   if (section.type === 'banner_gateway') return <BannerGateway section={section} onPress={seeAll} />;
+
+  // Template Catalog #1 — image-tile carousel; each tile is an uploaded image
+  // wired to a Section Library group (config.tiles[].library_section_id). Tap →
+  // Results runs that group. Renders before the empty-items guard (content is
+  // in config, not items).
+  if (section.type === 'tiles') {
+    const onTile = (t) => navigation.navigate('SectionResults', {
+      title: t.label || section.title,
+      rule: 'library_products',
+      item_type: 'products',
+      library_section_id: t.library_section_id || null,
+      category_key: ctx.superCategory || null,
+      lat: ctx.lat ?? null,
+      lng: ctx.lng ?? null,
+    });
+    return <TileSection section={section} onTile={onTile} />;
+  }
 
   // Hero + Tiles (Phase 6 C) — a hero band + one tile per collection member; each
   // tile taps through to Results for that member section's rule. Renders before the
