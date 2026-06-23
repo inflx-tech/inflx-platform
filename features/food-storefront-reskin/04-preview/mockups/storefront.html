@@ -1,0 +1,54 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Storefront redesign — menu-forward (toing)</title>
+<style>
+ :root{--card:#fff;--page:#F4F5F7;--line:#E8EAED;--ink:#1A1D1F;--muted:#6B7280;--hint:#9CA3AF;
+ --yellow:#F8CB46;--yellowDeep:#C77A00;--yellowTint:#FFF6E0;--pink:#E11D6B;--pinkDark:#A1124B;--pinkTint:#FCE7F0;--veg:#15803D;--greenTint:#E6F6EC;--nonveg:#B91C1C;}
+ *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+ body{background:#22252a;display:flex;justify-content:center;padding:24px}
+ .ph{width:360px;background:var(--page);border-radius:24px;overflow:hidden;color:var(--ink)}
+ .hero{height:130px;background:var(--yellowTint);position:relative;display:flex;align-items:center;justify-content:center;color:var(--yellowDeep);font-size:13px}
+ .hbtn{position:absolute;top:12px;width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
+ .hdr{background:#fff;padding:14px 16px 12px}
+ .name{font-size:21px;font-weight:800}.cuis{font-size:12.5px;color:var(--muted);margin-top:2px}
+ .meta{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;font-size:12.5px}
+ .rate{background:var(--veg);color:#fff;font-weight:800;padding:3px 8px;border-radius:6px;font-size:12px}
+ .badges{display:flex;gap:8px;margin-top:11px}
+ .bdg{background:var(--greenTint);color:var(--veg);font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:7px}
+ .offer{background:var(--pinkTint);padding:10px 16px;display:flex;align-items:center;gap:9px}
+ .offer .t{flex:1;font-size:12.5px;color:var(--pinkDark);font-weight:700}.offer .a{font-size:12px;color:var(--pink);font-weight:800}
+ .srch{background:#fff;padding:11px 16px;display:flex;gap:9px;align-items:center;border-top:1px solid var(--line)}
+ .sbox{flex:1;display:flex;align-items:center;gap:8px;background:var(--page);border-radius:10px;padding:9px 11px;color:var(--hint);font-size:13px}
+ .veg{border:1px solid var(--veg);color:var(--veg);font-size:12px;font-weight:700;padding:8px 11px;border-radius:10px}
+ .cat{background:#fff;margin-top:9px;padding:0 16px}
+ .cath{display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px;font-size:15px;font-weight:800}.cath .n{color:var(--hint);font-weight:700}
+ .row{display:flex;gap:12px;padding:11px 0;border-top:1px solid #F1F2F4}
+ .vd{display:inline-block;width:14px;height:14px;border:1.5px solid var(--veg);border-radius:3px;vertical-align:middle;position:relative}
+ .vd::after{content:'';position:absolute;top:3px;left:3px;width:6px;height:6px;border-radius:50%;background:var(--veg)}
+ .vd.nv{border-color:var(--nonveg)}.vd.nv::after{background:var(--nonveg)}
+ .dn{font-size:14px;font-weight:700;margin-left:5px}.dp{font-size:13px;margin-top:3px;font-weight:800}
+ .strike{color:var(--hint);text-decoration:line-through;font-size:11.5px;font-weight:600;margin-left:5px}
+ .dd{font-size:11.5px;color:var(--muted);margin-top:3px}
+ .img{width:74px;height:74px;border-radius:11px;background:var(--yellowTint)}
+ .add{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:var(--veg);color:#fff;font-size:11px;font-weight:800;padding:5px 16px;border-radius:8px}
+ .sec{background:#fff;margin-top:9px;padding:13px 16px;display:flex;gap:18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+ .bar{margin:10px 14px 14px;background:var(--veg);border-radius:13px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:14px;font-weight:800}
+</style></head><body>
+<div class="ph">
+ <div class="hero">Pizza House — photo<div class="hbtn" style="left:12px">←</div><div class="hbtn" style="right:12px">♡</div></div>
+ <div class="hdr">
+  <div class="name">Pizza House</div><div class="cuis">Continental · Chinese · Italian</div>
+  <div class="meta"><span class="rate">★ 4.3</span><span style="font-weight:700">⏱ 25–30 min</span><span style="color:var(--muted)">· 2.1 km · ₹250 for two</span></div>
+  <div class="badges"><span class="bdg">Free delivery</span><span class="bdg">Open till 11 PM</span></div>
+ </div>
+ <div class="offer"><span>🎟️</span><span class="t">FLAT ₹30 OFF over ₹299</span><span class="a">Apply</span></div>
+ <div class="srch"><div class="sbox">🔍 Search dishes</div><div class="veg">● Veg</div></div>
+ <div class="cat">
+  <div class="cath"><span>Pizzas <span class="n">(3)</span></span><span>▾</span></div>
+  <div class="row"><div style="flex:1"><span class="vd"></span><span class="dn">Margherita</span><div class="dp">₹199<span class="strike">₹240</span></div><div class="dd">Classic tomato, mozzarella, basil</div></div><div style="position:relative"><div class="img"></div><div class="add">ADD</div></div></div>
+  <div class="row"><div style="flex:1"><span class="vd nv"></span><span class="dn">Chicken Supreme</span><div class="dp">₹329</div><div class="dd">Loaded chicken, peppers, onion</div></div><div style="position:relative"><div class="img" style="background:var(--pinkTint)"></div><div class="add">ADD</div></div></div>
+ </div>
+ <div class="cat"><div class="cath"><span>Sides &amp; Drinks <span class="n">(2)</span></span><span>▸</span></div></div>
+ <div class="sec"><span>About</span><span>Reviews</span><span>Photos</span></div>
+ <div class="bar"><span>4 items · ₹975</span><span>View cart →</span></div>
+</div>
+</body></html>

@@ -1,0 +1,18 @@
+{
+  "feature": "food-storefront-reskin",
+  "area": "mobile-follower-v2",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'this is ok' on the menu-forward toing storefront mockup",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — chat 2026-06-23 ('this is ok' on the inline storefront redesign)",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "Mobile OTA only, no backend/migration. Reskin + restructure RestaurantDetailScreen to toing, menu-forward.",
+  "fix": "Reskin the restaurant storefront (RestaurantDetailScreen) to toing + make it MENU-FORWARD. (1) Repoint the lightColors shim (creatorVibe→toing) + fix hardcoded C.brown/C.ink (action bar, collab row). (2) Menu is the primary scroll content (search + veg filter + collapsible categories, always visible) — NOT behind a tab. (3) Overview/Offers/Reviews/Photos demoted to a compact secondary tab strip below the menu. (4) Header reskin: green rating pill, ETA+distance, free-delivery + open-status badges, offer strip (pink, tappable→cart). (5) Green ADD on menu rows + green cart bar (founder's green-primary decision; matches mockup). Keep creator-collab + Sagar's Table strips (reskinned). Shared dish-row/menu pattern carries to other verticals later.",
+  "notes": "Menu-forward per founder: storefront opens on the food, not Overview. Toing white/yellow + pink offers + green order buttons. Mobile-only OTA. Backend already supplies all fields (rating/eta/free_delivery/store_offers).",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending build+verify" }
+}

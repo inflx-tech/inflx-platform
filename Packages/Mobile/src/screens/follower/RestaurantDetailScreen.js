@@ -28,17 +28,19 @@ import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linki
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { creatorVibe as C, fonts, toing as TZ } from '../../theme/tokens';
 
-// Flow 52.D — Creator Vibe recolor shim for the dining sub-app (see DiningHome).
+// Food storefront reskin (2026-06-23) — the shim now maps onto the TOING palette
+// (white + yellow + pink + green) instead of creatorVibe gold/cream, so the whole
+// shell recolours to toing. Green is reserved for primary order actions.
 const lightColors = {
-  white: C.card, paper: C.card, bg: C.screenBg, bg2: C.soft, surface: C.soft, surface2: C.line,
-  ink: C.ink, ink2: C.ink, muted: C.muted, muted2: C.muted, muted3: C.muted, muted4: C.line,
-  border: C.line, borderSoft: C.line, border2: C.line,
-  yellow: C.brown, yellowHover: C.brownDark, yellowDeep: C.brownDark, yellowLight: C.star,
-  yellowPale: C.soft, yellow50: C.soft, yellow100: C.soft, yellow200: C.soft, yellowText: C.brown,
-  success: C.verify, successPale: C.soft, successText: C.brown, success50: C.soft, success100: C.soft,
-  warning: C.star, warning50: C.soft, warning100: C.soft,
-  danger: C.offer, dangerPale: C.soft, dangerText: C.offer, danger50: C.soft,
-  star: C.star, black: C.ink,
+  white: TZ.card, paper: TZ.card, bg: TZ.pageBg, bg2: TZ.pageBg, surface: TZ.pageBg, surface2: TZ.line,
+  ink: TZ.ink, ink2: TZ.ink, muted: TZ.muted, muted2: TZ.muted, muted3: TZ.hint, muted4: TZ.line,
+  border: TZ.line, borderSoft: TZ.line, border2: TZ.line,
+  yellow: TZ.yellow, yellowHover: TZ.yellowDeep, yellowDeep: TZ.yellowDeep, yellowLight: TZ.yellowTint,
+  yellowPale: TZ.yellowTint, yellow50: TZ.yellowTint, yellow100: TZ.yellowTint, yellow200: TZ.yellowTint, yellowText: TZ.yellowDeep,
+  success: TZ.veg, successPale: TZ.successTint, successText: TZ.veg, success50: TZ.successTint, success100: TZ.successTint,
+  warning: TZ.warning, warning50: TZ.yellowTint, warning100: TZ.yellowTint,
+  danger: TZ.pink, dangerPale: TZ.pinkTint, dangerText: TZ.pink, danger50: TZ.pinkTint,
+  star: TZ.veg, black: TZ.ink,
 };
 import { followerApi, mealsApi } from '../../services/api';
 import {
@@ -52,12 +54,13 @@ import { vegKind } from '../../utils/veg';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const HERO_HEIGHT = 230;
 
+// Menu is now the primary scroll content (rendered inline, always). These are
+// the SECONDARY sections, shown in a compact strip below the menu.
 const TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'menu',     label: 'Menu'     },
-  { key: 'offers',   label: 'Offers'   },
-  { key: 'reviews',  label: 'Reviews'  },
-  { key: 'photos',   label: 'Photos'   },
+  { key: 'overview', label: 'About'   },
+  { key: 'offers',   label: 'Offers'  },
+  { key: 'reviews',  label: 'Reviews' },
+  { key: 'photos',   label: 'Photos'  },
 ];
 
 const PARTY_LABELS = { single: '🧍 Single', duo: '👥 For 2', trio: '👨‍👩‍👦 For 3', family: '👨‍👩‍👧‍👦 Family', office: '🏢 Office' };
@@ -267,10 +270,18 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
           </View>
 
           <View style={styles.metaRow}>
+            {brand.delivery_eta_min_mins != null && brand.delivery_eta_max_mins != null && (
+              <Text style={styles.metaMono}>⏱ {brand.delivery_eta_min_mins}–{brand.delivery_eta_max_mins} min</Text>
+            )}
             {costForTwo != null && <Text style={styles.metaMono}>₹{costForTwo}/two</Text>}
             {locality && <Text style={styles.metaMono}>📍 {locality}</Text>}
-            <StatusPill variant="open" label="Open till 11 PM" />
+            <StatusPill variant="open" label={typeof brand.open_status === 'string' ? brand.open_status : 'Open now'} />
           </View>
+          {brand.free_delivery && (
+            <View style={styles.fdBadgeRow}>
+              <Text style={styles.fdBadge}>🚴 Free delivery</Text>
+            </View>
+          )}
 
           {offer && (
             <View style={styles.offerCard}>
@@ -305,6 +316,13 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
             </Pressable>
           </View>
         </View>
+
+        {/* ── MENU — primary content (menu-forward storefront) ── */}
+        <MenuTab onAddPress={(p) => openDish(p, 'customise')}
+          canOrder={canOrder}
+          sections={sections} visibleSection={visibleSection}
+          sectionKeys={sectionKeys} onSelectSection={setSection}
+          picks={picks} onProductPress={onProductPress} creator={creator} />
 
         {/* ── {Business} × Creators + trust line (platform differentiator) ── */}
         {influencers.length > 0 && (
@@ -342,7 +360,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
               id: p.id, name: p.name, price: p.price, image_url: p.image_url,
             }))}
             onItemPress={onProductPress}
-            onSeeAll={() => setTab('menu')}
+            onSeeAll={undefined}
           />
         )}
 
@@ -354,7 +372,6 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
               style={[styles.subTab, tab === t.key && styles.subTabActive]}>
               <Text style={[styles.subTabLabel, tab === t.key && styles.subTabLabelActive]}>
                 {t.label}
-                {t.key === 'menu' && products.length > 0 && ` (${products.length})`}
               </Text>
             </Pressable>
           ))}
@@ -363,13 +380,6 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
         {/* ── Tab content ─────────────────────────────────────────────── */}
         {tab === 'overview' && (
           <OverviewTab description={description} vibes={vibes} creator={creator} />
-        )}
-        {tab === 'menu' && (
-          <MenuTab onAddPress={(p) => openDish(p, 'customise')}
-            canOrder={canOrder}
-            sections={sections} visibleSection={visibleSection}
-            sectionKeys={sectionKeys} onSelectSection={setSection}
-            picks={picks} onProductPress={onProductPress} creator={creator} />
         )}
         {tab === 'offers'  && <MealsOffersTab data={mealStore} brand={brand} navigation={navigation} />}
         {tab === 'reviews' && <ReviewsTab brand={brand} />}
@@ -597,8 +607,8 @@ const mz = StyleSheet.create({
   imgWrap: { width: 96, alignItems: 'center' },
   img: { width: 96, height: 96, borderRadius: 12, backgroundColor: TZ.pinkTint },
   imgFallback: { alignItems: 'center', justifyContent: 'center' },
-  add: { marginTop: -16, backgroundColor: '#fff', borderWidth: 1.5, borderColor: TZ.pink, borderRadius: 9, paddingHorizontal: 22, paddingVertical: 6, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 },
-  addTxt: { color: TZ.pink, fontSize: 13, fontFamily: fonts.sansBold },
+  add: { marginTop: -16, backgroundColor: TZ.veg, borderRadius: 9, paddingHorizontal: 22, paddingVertical: 7, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 },
+  addTxt: { color: '#fff', fontSize: 13, fontFamily: fonts.sansBold },
 });
 
 function StarRow({ value, size = 14, color = '#FFB800' }) {
@@ -1031,20 +1041,20 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
   // action bar (Follow + Directions)
   actionBar: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  abtn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 30, backgroundColor: C.brown },
-  abtnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: C.brown },
-  abtnTxt: { fontSize: 13, fontWeight: '800', color: C.onGold, fontFamily: fonts.sansBold },
-  abtnOutTxt: { color: C.brown },
+  abtn: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 30, backgroundColor: TZ.yellow },
+  abtnOut: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: TZ.line },
+  abtnTxt: { fontSize: 13, fontWeight: '800', color: TZ.yellowInk, fontFamily: fonts.sansBold },
+  abtnOutTxt: { color: TZ.ink },
   // {Business} × Creators row + trust line
-  collabTitle: { fontSize: 14, fontWeight: '800', color: C.ink, marginBottom: 10, fontFamily: fonts.displayBold },
+  collabTitle: { fontSize: 14, fontWeight: '800', color: TZ.ink, marginBottom: 10, fontFamily: fonts.displayBold },
   collabRow: { gap: 14, paddingBottom: 2 },
   collabCell: { width: 64, alignItems: 'center', gap: 5 },
-  collabRing: { padding: 2, borderRadius: 28, backgroundColor: C.brown },
-  collabAv: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#ecdfc9', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: C.screenBg },
-  collabAvTxt: { fontSize: 18, fontWeight: '800', color: C.brown, fontFamily: fonts.sansBold },
-  collabNm: { fontSize: 9, fontWeight: '700', color: C.ink, textAlign: 'center', fontFamily: fonts.sansSemiBold },
-  trustLine: { marginTop: 10, backgroundColor: C.soft, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
-  trustLineTxt: { fontSize: 11, fontWeight: '700', color: '#5e5345', fontFamily: fonts.sansSemiBold },
+  collabRing: { padding: 2, borderRadius: 28, backgroundColor: TZ.yellow },
+  collabAv: { width: 50, height: 50, borderRadius: 25, backgroundColor: TZ.pinkTint, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: TZ.card },
+  collabAvTxt: { fontSize: 18, fontWeight: '800', color: TZ.yellowDeep, fontFamily: fonts.sansBold },
+  collabNm: { fontSize: 9, fontWeight: '700', color: TZ.ink, textAlign: 'center', fontFamily: fonts.sansSemiBold },
+  trustLine: { marginTop: 10, backgroundColor: TZ.successTint, borderWidth: 1, borderColor: TZ.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 9 },
+  trustLineTxt: { fontSize: 11, fontWeight: '700', color: TZ.veg, fontFamily: fonts.sansSemiBold },
 
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   brandName: {
@@ -1063,6 +1073,8 @@ const styles = StyleSheet.create({
 
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginTop: 8 },
   metaMono: { fontFamily: fonts.monoMedium, fontSize: 11, color: lightColors.muted },
+  fdBadgeRow: { flexDirection: 'row', marginTop: 10 },
+  fdBadge: { backgroundColor: TZ.successTint, color: TZ.veg, fontFamily: fonts.sansBold, fontSize: 11.5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, overflow: 'hidden' },
 
   offerCard: {
     flexDirection: 'row', alignItems: 'center',
@@ -1160,9 +1172,9 @@ const styles = StyleSheet.create({
   qtyBtn: { paddingHorizontal: 8, paddingVertical: 4 },
   qtyBtnText: { fontFamily: fonts.displayBlack, fontSize: 14, color: lightColors.ink },
   qtyNum: { fontFamily: fonts.monoBold, fontSize: 12, color: lightColors.ink, minWidth: 16, textAlign: 'center' },
-  cartBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: lightColors.yellow, marginHorizontal: 16, marginVertical: 8, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 12 },
-  cartBarLeft: { fontFamily: fonts.sansBold, fontSize: 14, color: lightColors.ink },
-  cartBarRight: { fontFamily: fonts.sansBold, fontSize: 14, color: lightColors.ink },
+  cartBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: TZ.veg, marginHorizontal: 16, marginVertical: 8, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 12 },
+  cartBarLeft: { fontFamily: fonts.sansBold, fontSize: 14, color: '#fff' },
+  cartBarRight: { fontFamily: fonts.sansBold, fontSize: 14, color: '#fff' },
   bestsellerChip: {
     backgroundColor: lightColors.yellow50,
     borderColor: lightColors.yellowPale, borderWidth: 1,
