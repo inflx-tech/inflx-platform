@@ -114,6 +114,10 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
   const showBookTable   = (brand.accepts_table_booking ?? ld.accepts_table_booking) !== false;
   const showPayAtStore  = (brand.pay_at_store_supported ?? ld.pay_at_store_supported) !== false;
   const showOnlineOrder = (brand.online_order_supported ?? ld.online_order_supported) === true;
+  // Food 3C-3 — organic ordering enabled: ANY restaurant dish is orderable,
+  // independent of the online_order_supported toggle. Other verticals keep the
+  // explicit toggle.
+  const canOrder = brand.category === 'restaurant' || showOnlineOrder;
   const showEnquiry     = (brand.enquiry_enabled ?? ld.enquiry_enabled) !== false;
   const callPhone       = brand.phone || ld.phone || null;
   const mapsUrl         = ld.google_maps_url || null;
@@ -174,7 +178,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
   const cartTotal = useMemo(() => brandCartItems.reduce((s, i) => s + i.qty * Number(i.price || 0), 0), [brandCartItems]);
 
   const addLine = useCallback((line) => {
-    const extra = { offer, creatorHandle: creator?.instagram_handle || null };
+    const extra = { offer, creatorHandle: creator?.instagram_handle || null, storeOffers: store?.store_offers || [] };
     const res = addItem(line, brand.id, brand.business_name, tracking, extra);
     if (res?.requiresConfirmation) {
       Alert.alert('Start a new cart?',
@@ -182,7 +186,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
         [{ text: 'Cancel', style: 'cancel' },
          { text: 'Replace', style: 'destructive', onPress: () => forceReplaceWith(line, brand.id, brand.business_name, tracking, extra) }]);
     }
-  }, [brand?.id, brand?.business_name, tracking, offer, creator?.instagram_handle, addItem, forceReplaceWith]);
+  }, [brand?.id, brand?.business_name, tracking, offer, creator?.instagram_handle, addItem, forceReplaceWith, store?.store_offers]);
 
   // Fetch full product (addon_groups) then open the right sheet (or add direct).
   const openDish = useCallback(async (p, mode) => {
@@ -359,7 +363,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
         )}
         {tab === 'menu' && (
           <MenuTab onAddPress={(p) => openDish(p, 'customise')}
-            canOrder={showOnlineOrder}
+            canOrder={canOrder}
             sections={sections} visibleSection={visibleSection}
             sectionKeys={sectionKeys} onSelectSection={setSection}
             picks={picks} onProductPress={onProductPress} creator={creator} />
@@ -371,7 +375,7 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
       </ScrollView>
 
       {/* ── Sticky bottom CTA bar ────────────────────────────────────── */}
-      {showOnlineOrder && cartCount > 0 ? (
+      {canOrder && cartCount > 0 ? (
         <SafeAreaView edges={['bottom']} style={styles.ctaBar}>
           <Pressable onPress={goToCart} style={styles.cartBar}>
             <Text style={styles.cartBarLeft}>

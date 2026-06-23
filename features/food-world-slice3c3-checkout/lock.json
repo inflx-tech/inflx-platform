@@ -1,0 +1,25 @@
+{
+  "feature": "food-world-slice3c3-checkout",
+  "area": "mobile-follower-v2",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: recommendations accepted (manual offer-apply, Edit reopens CustomiseSheet, drop order-note) + 'always land in storefront after a home add (with or without add-ons)'",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — chat 2026-06-23 ('Pls continue' on cart.html + flow)",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "Mobile OTA only, no backend/migration. placeOrder already resolves variation+add-ons server-side AND applies brand_offer_id (shipped P1); store_offers already surfaced by resolveBusinessStore. 3C-3 is purely the mobile cart screen + offer-picker + organic-ordering un-gate + carrying customisation into the order body.",
+  "fix": "Slice 3C-3 (last food slice), TWO parts. PART A (cart-side): (1) Cart screen reskinned to Toing rendering unified CartContext lines with variation + add-ons + note + qty + Edit(reopens CustomiseSheet pre-filled)/remove + bill (item total, MRP savings, offer savings, total). (2) Offer-picker over the brand's published store_offers (manual apply) → passes brand_offer_id to placeOrder. (3) Enable ORGANIC ordering — relax canOrder so brand.category==='restaurant' OR online_order_supported. (4) Carry each line's variation/selected_addons(->addons)/note + brand_offer_id into the placeOrder items body (today CartScreen.checkout AND OnlineOrderScreen.placeOrder DROP them). (5) Replace-cart cross-brand dialog (guarded in CartContext). PART B (home dish-add flow — founder 2026-06-23): unify the dish-add experience across discovery + storefront. New FoodOrderProvider hosts DishDetailSheet + CustomiseSheet app-wide; SectionRenderer wires FoodDishCard (Type A) + RestaurantSection nested dishes (Type B) → tap image=detail sheet, ＋=customise/add; on ADD (with OR without add-ons) the item enters the persistent cart AND the app navigates INTO that restaurant's storefront. Replaces the old ProductDetailScreen route for food dish cards.",
+  "notes": "Toing img5 + founder flow. Green Place Order (consistent w/ 3C-2). Cart persistence already works (CartContext AsyncStorage). Backend fully ready — NO migration, NO backend change. Mobile-only OTA. Edit-line reopens CustomiseSheet pre-filled (new `initial` prop). Whole-order note DROPPED (per-dish note only — no backend field).",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "pending lock+build"
+  }
+}

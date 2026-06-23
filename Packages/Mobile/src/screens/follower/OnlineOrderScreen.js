@@ -20,7 +20,7 @@ import { processPayment } from '../../services/payment';
  * are written at verify. On success → OrderConfirmation (not a plain alert).
  */
 export default function OnlineOrderScreen({ navigation, route }) {
-  const { products = [], offer, store, tracking, trackingParams, storeOffer } = route.params || {};
+  const { products = [], offer, store, tracking, trackingParams, storeOffer, brand_offer_id } = route.params || {};
   const trk = tracking || trackingParams || null;
   const brandId = storeOffer?.brand_id || store?.brand_id || store?.id || null;
 
@@ -80,10 +80,15 @@ export default function OnlineOrderScreen({ navigation, route }) {
       quantity: i.qty,
       variant_sku: i.variant_sku || null,
       variant_label: i.variant_label || null,
+      // Food customisation — placeOrder resolves these server-side from the DB
+      // (variation sets base price; add-ons stack). Maps selected_addons→addons.
+      variation: i.variation || null,
+      addons: Array.isArray(i.selected_addons) ? i.selected_addons : [],
+      note: i.note || null,
     }));
     const isOrganic = !trk?.campaign_influencer_id;
     const payload = isOrganic
-      ? { items, address_id: selectedAddr, brand_id: brandId }
+      ? { items, address_id: selectedAddr, brand_id: brandId, brand_offer_id: brand_offer_id || null }
       : {
           items, address_id: selectedAddr,
           campaign_id: trk.campaign_id,
@@ -221,7 +226,10 @@ export default function OnlineOrderScreen({ navigation, route }) {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.revNm} numberOfLines={1}>{item.name}</Text>
-                    {item.variant_label ? <Text style={s.revVar}>{item.variant_label}</Text> : null}
+                    {item.variation_name || (item.addon_names || []).length
+                      ? <Text style={s.revVar} numberOfLines={2}>{[item.variation_name, (item.addon_names || []).join(', ')].filter(Boolean).join(' · ')}</Text>
+                      : item.variant_label ? <Text style={s.revVar}>{item.variant_label}</Text> : null}
+                    {item.note ? <Text style={s.revVar}>“{item.note}”</Text> : null}
                     {creatorHandle ? <Text style={s.revBy}>via @{creatorHandle}</Text> : null}
                     <View style={s.qty}>
                       <TouchableOpacity onPress={() => updateQty(item.id, -1)}><Text style={s.qtyBtn}>−</Text></TouchableOpacity>

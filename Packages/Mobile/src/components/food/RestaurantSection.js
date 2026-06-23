@@ -49,8 +49,8 @@ export default function RestaurantSection({ restaurant: r, onOpenStore, onOpenDi
             product={p}
             brand={{ name: r.name }}
             showMeta={false}
-            onPress={() => onOpenDish?.(p, r)}
-            onAdd={() => onOpenDish?.(p, r)}
+            onPress={() => onOpenDish?.(p, r, 'detail')}
+            onAdd={() => onOpenDish?.(p, r, 'add')}
           />
         ))}
       </ScrollView>

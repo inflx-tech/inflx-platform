@@ -8,6 +8,7 @@ import {
   ShelfBrandCard, ShelfBrandListRow, ShelfProductCard, DealCard, FeatureCard,
 } from './vibe';
 import FoodDishCard from './food/FoodDishCard';
+import { useFoodOrder } from '../services/FoodOrderContext';
 import RestaurantSection from './food/RestaurantSection';
 import TileSection from './sections/TileSection';
 
@@ -86,6 +87,14 @@ export function goToProduct(navigation, item) {
 
 export function goToBrand(navigation, item) {
   navigation.navigate('BrandStore', { brandId: item.id, name: item.name, tracking: item.tracking || null });
+}
+
+// Food 3C-3 — the brand identity FoodOrderProvider.openDish needs to add a dish
+// to the cart + land in the storefront. store_offers is absent on home cards
+// (populated once the follower adds inside the storefront).
+function foodCardBrand(b) {
+  if (!b) return null;
+  return { id: b.id, name: b.name, category: b.category || 'restaurant', city: b.city, store_offers: b.store_offers };
 }
 
 // Horizontal rail wrapper for the card variants that don't bring their own scroll.
@@ -342,7 +351,12 @@ function renderSection(section, navigation, canFollow, context = {}) {
                   key={item.id || i}
                   product={item.product || item}
                   brand={item.brand}
-                  onPress={() => goToProduct(navigation, item)}
+                  onPress={ctx.openDish
+                    ? () => ctx.openDish(item.product || item, foodCardBrand(item.brand), navigation, 'detail')
+                    : () => goToProduct(navigation, item)}
+                  onAdd={ctx.openDish
+                    ? () => ctx.openDish(item.product || item, foodCardBrand(item.brand), navigation, 'add')
+                    : undefined}
                 />
               ) : (
                 <ShelfProductCard
@@ -371,7 +385,9 @@ function renderSection(section, navigation, canFollow, context = {}) {
               key={rest.id || i}
               restaurant={rest}
               onOpenStore={(r) => goToBrand(navigation, r)}
-              onOpenDish={(p, r) => goToProduct(navigation, { ...p, brand: p.brand || { id: r.id, name: r.name, category: r.category, city: r.city } })}
+              onOpenDish={(p, r, mode = 'add') => ctx.openDish
+                ? ctx.openDish(p, { id: r.id, name: r.name, category: r.category || 'restaurant', city: r.city, store_offers: r.store_offers }, navigation, mode)
+                : goToProduct(navigation, { ...p, brand: p.brand || { id: r.id, name: r.name, category: r.category, city: r.city } })}
             />
           ))}
         </View>
@@ -482,15 +498,18 @@ function HeroTiles({ section, tiles, onTile }) {
 // Render ONE section as a standalone element — lets a host screen lay sections
 // out as direct ScrollView children (needed for per-section sticky headers).
 export function SectionItem({ section, navigation, canFollow, context }) {
-  return renderSection(section, navigation, canFollow, context);
+  const { openDish } = useFoodOrder();
+  return renderSection(section, navigation, canFollow, { ...context, openDish });
 }
 
 export default function SectionRenderer({ sections, navigation, canFollow, context }) {
+  const { openDish } = useFoodOrder();
   if (!Array.isArray(sections)) return null;
+  const ctx = { ...context, openDish };
   return (
     <View>
       {sections.map((section, i) => (
-        <View key={section.key || i}>{renderSection(section, navigation, canFollow, context)}</View>
+        <View key={section.key || i}>{renderSection(section, navigation, canFollow, ctx)}</View>
       ))}
     </View>
   );

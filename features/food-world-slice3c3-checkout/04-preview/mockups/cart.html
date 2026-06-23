@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>3C-3 — Food Cart + Checkout (Toing)</title>
+<style>
+  :root{
+    --pageBg:#F4F5F7; --card:#FFFFFF; --line:#E8EAED;
+    --ink:#1A1D1F; --muted:#6B7280; --hint:#9CA3AF;
+    --yellow:#F8CB46; --yellowDeep:#C77A00; --yellowTint:#FFF6E0;
+    --pink:#E11D6B; --pinkTint:#FCE7F0;
+    --veg:#15803D; --nonVeg:#B91C1C; --green:#15803D; --greenTint:#E6F6EC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+  body{background:#22252a;display:flex;gap:28px;flex-wrap:wrap;justify-content:center;padding:28px 14px;color:var(--ink)}
+  .phone{width:390px;background:var(--pageBg);border-radius:34px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;height:840px;position:relative}
+  .label{position:absolute;top:-22px;left:6px;color:#cdd3da;font-size:12px;font-weight:700;letter-spacing:.4px}
+  /* top bar */
+  .top{background:var(--card);padding:46px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+  .back{font-size:20px;color:var(--ink)}
+  .top h1{font-size:17px;font-weight:800}
+  .top .sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+  /* scroll body */
+  .body{flex:1;overflow:auto}
+  .block{background:var(--card);margin:10px 0;padding:14px 16px}
+  .savingsStrip{background:var(--greenTint);color:var(--green);font-size:12px;font-weight:700;padding:9px 16px;display:flex;align-items:center;gap:7px}
+  /* cart line */
+  .line{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .line:last-child{border-bottom:none}
+  .thumb{width:54px;height:54px;border-radius:11px;background:#F1F2F4;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+  .veg{width:14px;height:14px;border:1.5px solid var(--veg);border-radius:3px;display:inline-flex;align-items:center;justify-content:center;margin-right:5px;vertical-align:middle}
+  .veg::after{content:'';width:7px;height:7px;border-radius:50%;background:var(--veg)}
+  .veg.nv{border-color:var(--nonVeg)} .veg.nv::after{background:var(--nonVeg)}
+  .ldet{flex:1;min-width:0}
+  .lname{font-size:14px;font-weight:700;display:flex;align-items:center}
+  .custom{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .note{font-size:11px;color:var(--yellowDeep);margin-top:3px;font-style:italic}
+  .edit{font-size:11px;color:var(--pink);font-weight:700;margin-top:5px;display:inline-block}
+  .lright{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .stepper span{padding:3px 9px;font-size:14px;font-weight:700;color:var(--pink)}
+  .stepper b{padding:3px 6px;font-size:12.5px;font-weight:800;min-width:24px;text-align:center}
+  .lprice{font-size:13.5px;font-weight:800;margin-top:10px}
+  .strike{color:var(--hint);text-decoration:line-through;font-weight:600;font-size:11.5px;margin-right:5px}
+  .addmore{color:var(--pink);font-size:13px;font-weight:700;padding:13px 0 3px;display:block}
+  /* offers */
+  .secTitle{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:11px}
+  .offerRow{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px dashed var(--pink);border-radius:11px;background:var(--pinkTint);margin-bottom:9px}
+  .offerRow.plain{border-style:solid;border-color:var(--line);background:#fff}
+  .offerRow.sel{border-style:solid;border-color:var(--green);background:var(--greenTint)}
+  .ticket{font-size:18px}
+  .oinfo{flex:1}
+  .oname{font-size:13px;font-weight:800}
+  .odesc{font-size:11px;color:var(--muted);margin-top:1px}
+  .oapply{font-size:12px;font-weight:800;color:var(--pink)}
+  .oapply.on{color:var(--green)}
+  /* bill */
+  .billRow{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:9px}
+  .billRow .v{color:var(--ink);font-weight:600}
+  .billRow.disc .v{color:var(--pink);font-weight:700}
+  .billTotal{display:flex;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);font-size:16px;font-weight:800}
+  /* note input mock */
+  .noteInput{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--hint);margin-top:4px}
+  /* footer */
+  .footer{background:var(--card);border-top:1px solid var(--line);padding:12px 16px 22px}
+  .place{background:var(--green);border-radius:13px;padding:15px;text-align:center;color:#fff;font-size:15px;font-weight:800;display:flex;justify-content:space-between;padding-left:20px;padding-right:20px}
+  .place .amt{font-weight:800}
+  /* replace dialog */
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;padding:26px}
+  .dialog{background:#fff;border-radius:18px;padding:22px;width:100%}
+  .dialog h3{font-size:16px;font-weight:800;margin-bottom:9px}
+  .dialog p{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:18px}
+  .dlgBtns{display:flex;gap:11px}
+  .dbtn{flex:1;border-radius:11px;padding:12px;text-align:center;font-size:13.5px;font-weight:800}
+  .dbtn.ghost{background:#F1F2F4;color:var(--ink)}
+  .dbtn.warn{background:var(--pink);color:#fff}
+</style>
+</head>
+<body>
+
+<!-- ───────────── SCREEN 1 : CART ───────────── -->
+<div class="phone">
+  <div class="label">Cart · customisation + bill + green Place Order</div>
+  <div class="top">
+    <span class="back">←</span>
+    <div><h1>Your Cart</h1><div class="sub">Sagar's Tiffins · 25–30 mins</div></div>
+  </div>
+
+  <div class="savingsStrip">🎉 You're saving ₹48 on this order</div>
+
+  <div class="body">
+    <!-- items -->
+    <div class="block">
+      <div class="line">
+        <div class="thumb">🍛</div>
+        <div class="ldet">
+          <div class="lname"><span class="veg"></span>Ghee Roast Dosa</div>
+          <div class="custom">Full · Extra cheese, Podi</div>
+          <div class="note">“Less spicy please”</div>
+          <span class="edit">Edit ›</span>
+        </div>
+        <div class="lright">
+          <div class="stepper"><span>−</span><b>1</b><span>+</span></div>
+          <div class="lprice"><span class="strike">₹160</span>₹148</div>
+        </div>
+      </div>
+
+      <div class="line">
+        <div class="thumb">🍲</div>
+        <div class="ldet">
+          <div class="lname"><span class="veg nv"></span>Chicken Biryani</div>
+          <div class="custom">Half · Raita</div>
+          <span class="edit">Edit ›</span>
+        </div>
+        <div class="lright">
+          <div class="stepper"><span>−</span><b>2</b><span>+</span></div>
+          <div class="lprice">₹220</div>
+        </div>
+      </div>
+
+      <span class="addmore">+ Add more items</span>
+    </div>
+
+    <!-- cooking note (whole order, optional) -->
+    <div class="block">
+      <div class="secTitle">Add a note for the restaurant</div>
+      <div class="noteInput">e.g. ring the bell, no cutlery…</div>
+    </div>
+
+    <!-- offers -->
+    <div class="block">
+      <div class="secTitle">Offers &amp; Coupons</div>
+      <div class="offerRow sel">
+        <div class="ticket">🎟️</div>
+        <div class="oinfo"><div class="oname">FLAT ₹30 OFF</div><div class="odesc">Applied · saving ₹30</div></div>
+        <div class="oapply on">Remove</div>
+      </div>
+      <div class="offerRow plain">
+        <div class="ticket">🎟️</div>
+        <div class="oinfo"><div class="oname">Buy 1 Get 1 — Dosas</div><div class="odesc">On select dishes</div></div>
+        <div class="oapply">Apply</div>
+      </div>
+    </div>
+
+    <!-- bill -->
+    <div class="block">
+      <div class="secTitle">Bill Details</div>
+      <div class="billRow"><span>Item total</span><span class="v">₹398</span></div>
+      <div class="billRow disc"><span>Item savings (MRP)</span><span class="v">−₹18</span></div>
+      <div class="billRow disc"><span>Offer · FLAT ₹30 OFF</span><span class="v">−₹30</span></div>
+      <div class="billRow"><span>Delivery fee</span><span class="v">Free</span></div>
+      <div class="billTotal"><span>To Pay</span><span>₹350</span></div>
+    </div>
+    <div style="height:14px"></div>
+  </div>
+
+  <div class="footer">
+    <div class="place"><span>Place Order</span><span class="amt">₹350 ›</span></div>
+  </div>
+</div>
+
+<!-- ───────────── SCREEN 2 : REPLACE-CART DIALOG (img5) ───────────── -->
+<div class="phone">
+  <div class="label">Cross-brand → Replace cart dialog</div>
+  <div class="top">
+    <span class="back">←</span>
+    <div><h1>Your Cart</h1><div class="sub">Sagar's Tiffins · 25–30 mins</div></div>
+  </div>
+  <div class="body" style="filter:blur(2px);opacity:.5">
+    <div class="block">
+      <div class="line">
+        <div class="thumb">🍛</div>
+        <div class="ldet"><div class="lname"><span class="veg"></span>Ghee Roast Dosa</div><div class="custom">Full · Extra cheese</div></div>
+        <div class="lright"><div class="stepper"><span>−</span><b>1</b><span>+</span></div><div class="lprice">₹148</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="scrim">
+    <div class="dialog">
+      <h3>Start a new cart?</h3>
+      <p>Your cart has items from <b>Sagar's Tiffins</b>. Adding a dish from <b>Pizza House</b> will replace them.</p>
+      <div class="dlgBtns">
+        <div class="dbtn ghost">Keep cart</div>
+        <div class="dbtn warn">Replace</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

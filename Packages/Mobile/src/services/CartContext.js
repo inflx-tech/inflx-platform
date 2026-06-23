@@ -22,12 +22,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'inflx_cart_v1';
 
+const EMPTY_CART = {
+  brandId: null, brandName: null, items: [], tracking: null,
+  offer: null, creatorHandle: null,
+  // Food 3C-3 — brand-direct store offers surfaced for the in-cart offer-picker
+  // (storeOffers = what the brand published) and appliedOffer = the one the
+  // follower chose (carries brand_offer_id → placeOrder).
+  storeOffers: [], appliedOffer: null,
+};
+
 const CartContext = createContext({
-  cart: { brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null },
+  cart: EMPTY_CART,
   addItem: () => ({ ok: false }),
   forceReplaceWith: () => {},
   updateQty: () => {},
   removeItem: () => {},
+  replaceLine: () => {},
+  applyOffer: () => {},
+  clearOffer: () => {},
   clear: () => {},
 });
 
@@ -46,24 +58,31 @@ function normalizeLine(item) {
   const selectedAddons = Array.isArray(item.selected_addons)
     ? item.selected_addons.map((a) => ({ item_id: a.item_id })).filter((a) => a.item_id) : [];
   const sig = [variation?.item_id || '', ...selectedAddons.map((a) => a.item_id).sort()].join('|');
+  // Food 3C-3 — per-dish MRP (mig 118) carried so the cart can show the struck
+  // price + sum "Item savings (MRP)". Display only; backend re-prices.
+  const mrp = item.mrp != null && Number(item.mrp) > 0 ? Number(item.mrp) : null;
   return {
     product_id: item.id,
     line_key: `${item.id}::${variant_sku || ''}::${sig}`,
     name: item.name,
     price: Number(price) || 0,
+    mrp,
     image_url,
     variant_sku,
     variant_label,
     variation,
     selected_addons: selectedAddons,
-    note: item.note || null,
+    // Display-only customisation labels (placeOrder resolves by item_id).
+    variation_name: item.variation_name || null,
+    addon_names: Array.isArray(item.addon_names) ? item.addon_names : [],
+    note: typeof item.note === 'string' && item.note.trim() ? item.note.trim() : null,
     qty: Number(item.qty) > 0 ? Number(item.qty) : 1,
   };
 }
 const lineMatches = (i, key) => i.line_key === key || i.product_id === key;
 
 export function CartProvider({ children }) {
-  const [cart, setCart] = useState({ brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null });
+  const [cart, setCart] = useState(EMPTY_CART);
   const [hydrated, setHydrated] = useState(false);
 
   // Hydrate from AsyncStorage on mount
@@ -117,10 +136,13 @@ export function CartProvider({ children }) {
         ? prev.items.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + line.qty } : it)
         : [...prev.items, line];
       return {
+        ...prev,
         brandId, brandName, items,
         tracking: tracking || prev.tracking,
         offer: extra?.offer ?? prev.offer ?? null,
         creatorHandle: extra?.creatorHandle ?? prev.creatorHandle ?? null,
+        // Latest store-offer list for the in-cart picker (overwrite when given).
+        storeOffers: extra?.storeOffers ?? prev.storeOffers ?? [],
       };
     });
     return { ok: true };
@@ -128,13 +150,37 @@ export function CartProvider({ children }) {
 
   const forceReplaceWith = useCallback((item, brandId, brandName, tracking, extra) => {
     setCart({
+      ...EMPTY_CART,
       brandId,
       brandName,
       tracking: tracking || null,
       offer: extra?.offer ?? null,
       creatorHandle: extra?.creatorHandle ?? null,
+      storeOffers: extra?.storeOffers ?? [],
       items: [normalizeLine(item)],
     });
+  }, []);
+
+  // Food 3C-3 — edit a customised line in place: drop the old line_key, add the
+  // rebuilt one (merges if the new build collides with another line). Same brand.
+  const replaceLine = useCallback((oldKey, item) => {
+    setCart(prev => {
+      const line = normalizeLine(item);
+      const kept = prev.items.filter(i => i.line_key !== oldKey);
+      const existingIdx = kept.findIndex(i => i.line_key === line.line_key);
+      const items = existingIdx >= 0
+        ? kept.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + line.qty } : it)
+        : [...kept, line];
+      return { ...prev, items };
+    });
+  }, []);
+
+  // Food 3C-3 — apply / clear a brand store offer (offer-picker → brand_offer_id).
+  const applyOffer = useCallback((offer) => {
+    setCart(prev => ({ ...prev, appliedOffer: offer || null }));
+  }, []);
+  const clearOffer = useCallback(() => {
+    setCart(prev => ({ ...prev, appliedOffer: null }));
   }, []);
 
   // key = line_key (preferred) OR product_id (back-compat for restaurant callers).
@@ -142,7 +188,7 @@ export function CartProvider({ children }) {
     setCart(prev => {
       if (qty <= 0) {
         const items = prev.items.filter(i => !lineMatches(i, key));
-        if (items.length === 0) return { brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null };
+        if (items.length === 0) return EMPTY_CART;
         return { ...prev, items };
       }
       return {
@@ -157,11 +203,11 @@ export function CartProvider({ children }) {
   }, [updateQty]);
 
   const clear = useCallback(() => {
-    setCart({ brandId: null, brandName: null, items: [], tracking: null, offer: null, creatorHandle: null });
+    setCart(EMPTY_CART);
   }, []);
 
   return (
-    <CartContext.Provider value={{ cart, addItem, forceReplaceWith, updateQty, removeItem, clear }}>
+    <CartContext.Provider value={{ cart, addItem, forceReplaceWith, updateQty, removeItem, replaceLine, applyOffer, clearOffer, clear }}>
       {children}
     </CartContext.Provider>
   );

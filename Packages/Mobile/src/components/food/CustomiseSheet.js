@@ -13,12 +13,14 @@
  */
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, Pressable, Modal, StyleSheet } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, Modal, StyleSheet, TextInput } from 'react-native';
 import { toing as T, fonts } from '../../theme/tokens';
 
 const isVegFlag = (v) => v === 'veg' || v === 'Veg' || v === true;
 
-export default function CustomiseSheet({ visible, product, onClose, onAdd }) {
+// `initial` (Food 3C-3) — when editing an existing cart line, pre-fill the sheet
+// with the line's current build: { variationId, addonIds:[id], qty, note }.
+export default function CustomiseSheet({ visible, product, onClose, onAdd, initial = null }) {
   const groups = Array.isArray(product?.addon_groups) ? product.addon_groups : [];
   const variationGroup = useMemo(() => groups.find((g) => g.is_variation) || null, [groups]);
   const addonGroups = useMemo(() => groups.filter((g) => !g.is_variation), [groups]);
@@ -26,18 +28,28 @@ export default function CustomiseSheet({ visible, product, onClose, onAdd }) {
   const [variationId, setVariationId] = useState(null);
   const [addonIds, setAddonIds] = useState(() => new Set());
   const [qty, setQty] = useState(1);
+  const [note, setNote] = useState('');
   const [expanded, setExpanded] = useState({}); // group_id → show all
 
-  // Default selections when the sheet opens / product changes.
+  // Default selections when the sheet opens / product changes. An `initial`
+  // build (edit mode) overrides the per-group defaults.
   useEffect(() => {
     if (!visible) return;
     const vg = groups.find((g) => g.is_variation) || null;
+    if (initial) {
+      setVariationId(initial.variationId ?? (vg ? (vg.items.find((i) => i.is_default) || vg.items[0])?.id : null) ?? null);
+      setAddonIds(new Set(Array.isArray(initial.addonIds) ? initial.addonIds : []));
+      setQty(initial.qty > 0 ? initial.qty : 1);
+      setNote(initial.note || '');
+      setExpanded({});
+      return;
+    }
     const def = vg ? (vg.items.find((i) => i.is_default) || vg.items[0]) : null;
     setVariationId(def ? def.id : null);
     const pre = new Set();
     groups.filter((g) => !g.is_variation).forEach((g) => g.items.forEach((i) => { if (i.is_default) pre.add(i.id); }));
     setAddonIds(pre);
-    setQty(1); setExpanded({});
+    setQty(1); setNote(''); setExpanded({});
   }, [visible, product?.id]);
 
   const itemById = useMemo(() => {
@@ -81,10 +93,14 @@ export default function CustomiseSheet({ visible, product, onClose, onAdd }) {
       name: product.name,
       image_url: product.image_url,
       price: unit,
+      mrp: product?.mrp != null ? product.mrp : null,
       variation: variationId ? { item_id: variationId } : null,
       selected_addons: [...addonIds].map((id) => ({ item_id: id })),
-      note: null,
+      note: note.trim() || null,
       qty,
+      // Display-only labels for the cart summary (placeOrder resolves by id).
+      variation_name: variationId ? (itemById.get(variationId)?.name || null) : null,
+      addon_names: [...addonIds].map((id) => itemById.get(id)?.name).filter(Boolean),
     });
   };
 
@@ -128,6 +144,20 @@ export default function CustomiseSheet({ visible, product, onClose, onAdd }) {
                 </Group>
               );
             })}
+
+            {/* Per-dish cooking note (Food 3C-3) */}
+            <View style={s.noteWrap}>
+              <Text style={s.noteLbl}>Add a note (optional)</Text>
+              <TextInput
+                style={s.noteInput}
+                placeholder="e.g. less spicy, no onion…"
+                placeholderTextColor={T.hint}
+                value={note}
+                onChangeText={setNote}
+                maxLength={200}
+                multiline
+              />
+            </View>
             <View style={{ height: 10 }} />
           </ScrollView>
 
@@ -202,6 +232,9 @@ const s = StyleSheet.create({
   boxOn: { backgroundColor: T.veg, borderColor: T.veg },
   boxTick: { color: '#fff', fontSize: 13, fontWeight: '800' },
   more: { paddingHorizontal: 14, paddingVertical: 12, fontSize: 13, color: T.ink, fontFamily: fonts.sansBold },
+  noteWrap: { paddingHorizontal: 16, paddingTop: 18 },
+  noteLbl: { fontSize: 14, fontFamily: fonts.displayBold, color: T.ink, marginBottom: 8 },
+  noteInput: { backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: T.line, paddingHorizontal: 13, paddingVertical: 11, fontSize: 14, color: T.ink, fontFamily: fonts.sansRegular, minHeight: 44, textAlignVertical: 'top' },
   foot: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: T.line },
   qty: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: T.pink, borderRadius: 26 },
   qtyBtn: { width: 40, height: 42, alignItems: 'center', justifyContent: 'center' },
