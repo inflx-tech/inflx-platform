@@ -117,7 +117,9 @@ export default function BrandStoreScreen({ navigation, route }) {
         setTab('products');
         break;
       case 'online_order':
-        navigation.navigate('OrderCart', { brandData });
+        // The live cart is the unified CartScreen ('Cart'); 'OrderCart' was a
+        // dead/unregistered route. Items are added via the product detail page.
+        navigation.navigate('Cart');
         break;
       case 'enquiry':
         navigation.navigate('Enquiry', { brand, brandId, tracking: ctx.tracking });

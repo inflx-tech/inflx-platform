@@ -12,9 +12,9 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, Pressable, Modal, StyleSheet, Dimensions } from 'react-native';
 import { toing as T, fonts } from '../../theme/tokens';
+import { vegKind } from '../../utils/veg';
 
 const W = Dimensions.get('window').width;
-const isVeg = (v) => v === 'veg' || v === 'Veg' || v === true;
 
 export default function DishDetailSheet({ visible, product, onClose, onAdd }) {
   if (!product) return null;
@@ -35,7 +35,7 @@ export default function DishDetailSheet({ visible, product, onClose, onAdd }) {
           </View>
           <ScrollView style={s.body} contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
             <View style={s.nameRow}>
-              <View style={[s.vd, !isVeg(product.veg_flag) && product.veg_flag ? s.vdnv : null]} />
+              <View style={[s.vd, vegKind(product.veg_flag) === 'nonveg' ? s.vdnv : vegKind(product.veg_flag) === 'unknown' ? s.vdna : null]} />
               <Text style={s.name}>{product.name}</Text>
             </View>
             <View style={s.priceRow}>
@@ -70,6 +70,7 @@ const s = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   vd: { width: 16, height: 16, borderWidth: 1.6, borderColor: T.veg, borderRadius: 3 },
   vdnv: { borderColor: T.nonVeg },
+  vdna: { borderColor: '#9CA3AF' },
   name: { flex: 1, fontSize: 22, fontFamily: fonts.displayBold, color: T.ink, letterSpacing: -0.3 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
   price: { fontSize: 18, fontFamily: fonts.displayBold, color: T.pink },

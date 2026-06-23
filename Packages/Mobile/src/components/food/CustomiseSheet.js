@@ -15,8 +15,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, Pressable, Modal, StyleSheet, TextInput } from 'react-native';
 import { toing as T, fonts } from '../../theme/tokens';
-
-const isVegFlag = (v) => v === 'veg' || v === 'Veg' || v === true;
+import { vegKind } from '../../utils/veg';
 
 // `initial` (Food 3C-3) — when editing an existing cart line, pre-fill the sheet
 // with the line's current build: { variationId, addonIds:[id], qty, note }.
@@ -195,7 +194,7 @@ function Group({ group, sub, required, onSelectAll, children }) {
 function Row({ item, kind, plus, on, onPress }) {
   return (
     <Pressable onPress={onPress} style={s.row}>
-      <View style={[s.vd, !isVegFlag(item.veg_flag) && item.veg_flag ? s.vdnv : null]} />
+      <View style={[s.vd, vegKind(item.veg_flag) === 'nonveg' ? s.vdnv : vegKind(item.veg_flag) === 'unknown' ? s.vdna : null]} />
       <Text style={s.rowNm} numberOfLines={1}>{item.name}</Text>
       {item.price > 0 ? <Text style={s.rowPr}>{plus ? '+ ' : ''}₹{Math.round(item.price)}</Text> : null}
       {kind === 'radio'
@@ -224,6 +223,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: '#f1f2f4' },
   vd: { width: 15, height: 15, borderWidth: 1.6, borderColor: T.veg, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   vdnv: { borderColor: T.nonVeg },
+  vdna: { borderColor: '#9CA3AF' },
   rowNm: { flex: 1, fontSize: 15, color: T.ink, fontFamily: fonts.sansMedium },
   rowPr: { fontSize: 14, color: T.ink, fontFamily: fonts.sansSemiBold },
   rad: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#cfd3d8' },

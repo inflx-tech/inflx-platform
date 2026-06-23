@@ -15,7 +15,6 @@ import CategoryListScreen from '../screens/follower/CategoryListScreen';
 import DishGroupResultScreen from '../screens/follower/DishGroupResultScreen';
 import BookingConfirmedScreen from '../screens/follower/BookingConfirmedScreen';
 import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
-import RestaurantCartScreen from '../screens/follower/RestaurantCartScreen';
 import DiningSearchScreen from '../screens/follower/DiningSearchScreen';
 
 // Existing screens
@@ -52,9 +51,8 @@ import LocationEntryScreen from '../screens/follower/LocationEntryScreen';
 import MapPinScreen from '../screens/follower/MapPinScreen';
 // Follower v2 — address-details form (after the map pin)
 import AddressDetailsScreen from '../screens/follower/AddressDetailsScreen';
-// Fashion-1b + Fashion-2 — returns + lookbooks
+// Fashion-1b — returns
 import MyReturnsScreen from '../screens/follower/MyReturnsScreen';
-import LookbookDetailScreen from '../screens/follower/LookbookDetailScreen';
 
 // Flow 52.0 — Creator Vibe: Reels center tab (placeholder until 52.8 backend)
 import ReelsScreen from '../screens/follower/ReelsScreen';
@@ -93,14 +91,12 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />
     <Stack.Screen name="FollowerWallet" component={FollowerWalletScreen} />
-    <Stack.Screen name="RestaurantCart" component={RestaurantCartScreen} />
     <Stack.Screen name="DiningSearch" component={DiningSearchScreen} />
     <Stack.Screen name="CarDetail" component={CarDetailScreen} />
     <Stack.Screen name="CarBooking" component={CarBookingScreen} />
     <Stack.Screen name="FollowerLogin" component={FollowerLoginScreen} />
-    {/* Fashion-1b + Fashion-2 */}
+    {/* Fashion-1b */}
     <Stack.Screen name="MyReturns" component={MyReturnsScreen} />
-    <Stack.Screen name="LookbookDetail" component={LookbookDetailScreen} />
   </>
 );
 

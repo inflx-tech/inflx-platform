@@ -109,7 +109,7 @@ export default function FollowerLoginScreen({ navigation }) {
       }
 
       // Register as follower
-      const regRes = await api.post('/followers/register', { name: name.trim(), city: 'Vijayawada', state: 'AP' });
+      const regRes = await api.post('/followers/register', { name: name.trim() });
       if (regRes.success || regRes.data) {
         finishLogin();
       } else {
@@ -195,7 +195,7 @@ export default function FollowerLoginScreen({ navigation }) {
               maxLength={6}
               autoFocus
             />
-            <Text style={s.hint}>For testing use: 000000</Text>
+            <Text style={s.hint}>Enter the 6-digit code sent to your phone</Text>
             <TouchableOpacity
               style={[s.btn, otp.length < 6 && s.btnDisabled]}
               onPress={handleVerifyOtp}

@@ -19,11 +19,18 @@
 import React from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { toing as T, fonts } from '../../theme/tokens';
+import { vegKind } from '../../utils/veg';
 
-function VegDot({ veg }) {
+// kind: 'veg' | 'nonveg' | 'unknown' — unknown ('na') renders neutral grey,
+// never a false red non-veg mark.
+function VegDot({ kind }) {
+  if (kind === 'unknown') {
+    return <View style={[styles.veg, styles.vegNA]}><View style={[styles.vegInner, styles.vegInnerNA]} /></View>;
+  }
+  const nv = kind === 'nonveg';
   return (
-    <View style={[styles.veg, !veg && styles.vegNV]}>
-      <View style={[styles.vegInner, !veg && styles.vegInnerNV]} />
+    <View style={[styles.veg, nv && styles.vegNV]}>
+      <View style={[styles.vegInner, nv && styles.vegInnerNV]} />
     </View>
   );
 }
@@ -33,7 +40,7 @@ export default function FoodDishCard({ product, brand, showMeta = true, onPress,
   const price = Number(product.price) || 0;
   const mrp = product.mrp != null ? Number(product.mrp) : null;
   const struck = mrp != null && mrp > price;
-  const isVeg = product.veg_flag === 'Veg' || product.veg_flag === 'veg' || product.veg_flag === true;
+  const veg = vegKind(product.veg_flag);
   const rating = product.rating != null ? Number(product.rating) : null;
   const eta = (product.eta_min != null && product.eta_max != null)
     ? `${product.eta_min}–${product.eta_max} mins` : null;
@@ -53,7 +60,7 @@ export default function FoodDishCard({ product, brand, showMeta = true, onPress,
       </View>
       <View style={styles.body}>
         <View style={styles.nameRow}>
-          <VegDot veg={isVeg} />
+          <VegDot kind={veg} />
           <Text style={styles.name} numberOfLines={1}>{product.name}</Text>
         </View>
         {showMeta && brand?.name ? <Text style={styles.by} numberOfLines={1}>by {brand.name}</Text> : null}
@@ -84,8 +91,10 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   veg: { width: 13, height: 13, borderWidth: 1.5, borderColor: T.veg, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   vegNV: { borderColor: T.nonVeg },
+  vegNA: { borderColor: '#9CA3AF' },
   vegInner: { width: 6, height: 6, borderRadius: 3, backgroundColor: T.veg },
   vegInnerNV: { backgroundColor: T.nonVeg },
+  vegInnerNA: { backgroundColor: '#9CA3AF' },
   name: { flex: 1, fontFamily: fonts.displayBold, fontSize: 14, color: T.ink, letterSpacing: -0.2 },
   by: { fontFamily: fonts.sansMedium, fontSize: 11, color: T.muted, marginTop: 2 },
   meta: { fontFamily: fonts.sansSemiBold, fontSize: 11, color: T.muted, marginTop: 3 },

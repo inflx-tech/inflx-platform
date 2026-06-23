@@ -1,0 +1,25 @@
+{
+  "feature": "follower-step0-cleanup",
+  "area": "mobile-follower-v2",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'ok go to step 0' (cleanup + cheap functional fixes, described as one low-risk mobile OTA)",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — non-visual cleanup + bugfix (no new screen design); 'go to step 0' covers it. Only visual delta = veg 'na' dot turns neutral grey instead of false red.",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "Mobile OTA only, no backend/migration. Deletes 6 dead screens + 1 dead component + 1 dead test; removes broken OrderCart route; fixes veg-mark display bug (5 sites); removes prod test-OTP hint + hardcoded register city.",
+  "fix": "Step 0 from the follower-app map (Docs/FOLLOWER_APP_MAP.md). (1) DELETE dead/orphaned screens: OrderCartScreen, RestaurantCartScreen (+its test), SchemaDetailScreen, SalonDetailScreen, SlotPickerScreen, LookbookDetailScreen + LookbookCard component; remove their nav imports/registrations. (2) Repoint the broken `OrderCart` route — RestaurantDetailScreen 'order' → Menu tab; BrandStoreScreen 'online_order' → 'Cart'. (3) VEG-MARK fix: new utils/veg.js vegKind() → 'veg'/'nonveg'/'unknown'; unmarked ('na') renders NEUTRAL grey instead of false red non-veg. Applied to FoodDishCard, RestaurantDetailScreen MenuTab (+veg filter), DishDetailSheet, CustomiseSheet, components/restaurant/VegDot. (4) FollowerLogin: drop hardcoded city:'Vijayawada'/state:'AP' on register; replace prod-visible 'For testing use: 000000' hint with a real instruction.",
+  "notes": "Cleanup + cheap bugfix pass; no new UI design. Deferred (their own tasks, surfaced separately): mock-payments→real Razorpay (PreBook/RestaurantBooking/RestaurantBill); CarBooking date picker; storefront/order-journey reskins. Mobile-only OTA.",
+  "release": {
+    "qa_all_green": null,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "pending build+verify"
+  }
+}

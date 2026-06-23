@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { brandPalette as lightColors } from '../../theme/tokens';
+import { vegKind } from '../../utils/veg';
 
 /**
  * VegDot — square Indian veg/non-veg indicator.
@@ -17,8 +18,11 @@ import { brandPalette as lightColors } from '../../theme/tokens';
  */
 
 export default function VegDot({ veg, size = 12 }) {
-  const isVeg = veg === true || veg === 'Veg' || veg === 'veg';
-  const color = isVeg ? lightColors.success : lightColors.danger;
+  const kind = vegKind(veg);
+  // Unknown ('na'/unmarked) → neutral grey, never a false non-veg claim.
+  const color = kind === 'veg' ? lightColors.success
+    : kind === 'nonveg' ? lightColors.danger
+    : '#9CA3AF';
   const dotSize = Math.max(4, Math.floor(size * 0.45));
 
   return (

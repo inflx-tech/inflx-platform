@@ -47,6 +47,7 @@ import {
 import CustomiseSheet from '../../components/food/CustomiseSheet';
 import DishDetailSheet from '../../components/food/DishDetailSheet';
 import { useCart } from '../../services/CartContext';
+import { vegKind } from '../../utils/veg';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const HERO_HEIGHT = 230;
@@ -155,7 +156,9 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
       return;
     }
     if (actionKey === 'order') {
-      navigation.navigate('OrderCart', { brandData: brand });
+      // Order = browse the menu and add dishes; the cart bar → Cart handles
+      // checkout. (Was a dead 'OrderCart' route.)
+      setTab('menu');
       return;
     }
     if (actionKey === 'enquiry') {
@@ -489,7 +492,7 @@ function OverviewTab({ description, vibes, creator }) {
 
 // Food 3C-2b — Toing storefront menu: in-store search · veg/non-veg filter ·
 // collapsible category sections · toing dish rows · pink ＋ (→ customise).
-const isVegP = (p) => p.veg_flag === 'veg' || p.veg_flag === 'Veg' || p.veg_flag === true;
+const vegKindP = (p) => vegKind(p.veg_flag);
 
 function MenuTab({ sections, sectionKeys, picks, onProductPress, creator, onAddPress, canOrder }) {
   const [q, setQ] = useState('');
@@ -503,7 +506,7 @@ function MenuTab({ sections, sectionKeys, picks, onProductPress, creator, onAddP
   const ql = q.trim().toLowerCase();
   const passes = (p) =>
     (!ql || (p.name || '').toLowerCase().includes(ql)) &&
-    (veg == null || (veg === 'veg' ? isVegP(p) : !isVegP(p)));
+    (veg == null || (veg === 'veg' ? vegKindP(p) === 'veg' : vegKindP(p) === 'nonveg'));
 
   const visibleCats = sectionKeys
     .map((cat) => ({ cat, items: (sections[cat] || []).filter(passes) }))
@@ -540,7 +543,7 @@ function MenuTab({ sections, sectionKeys, picks, onProductPress, creator, onAddP
               <View key={p.id} style={mz.row}>
                 <View style={mz.rowBody}>
                   <View style={mz.metaRow}>
-                    <View style={[mz.vd, !isVegP(p) && mz.vdnv]} />
+                    <View style={[mz.vd, vegKindP(p) === 'nonveg' && mz.vdnv, vegKindP(p) === 'unknown' && mz.vdna]} />
                     {p.badge ? <View style={mz.badge}><Text style={mz.badgeTxt}>{p.badge}</Text></View> : null}
                   </View>
                   <Text style={mz.name} numberOfLines={1}>{p.name}</Text>
@@ -584,6 +587,7 @@ const mz = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   vd: { width: 14, height: 14, borderWidth: 1.6, borderColor: TZ.veg, borderRadius: 3 },
   vdnv: { borderColor: TZ.nonVeg },
+  vdna: { borderColor: '#9CA3AF' },
   badge: { backgroundColor: '#fff', borderWidth: 1, borderColor: TZ.line, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 },
   badgeTxt: { fontSize: 9, color: TZ.veg, fontFamily: fonts.monoBold },
   name: { fontSize: 14.5, fontFamily: fonts.displayBold, color: TZ.ink },
