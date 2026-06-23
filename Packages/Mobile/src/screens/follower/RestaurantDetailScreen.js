@@ -26,7 +26,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, Pressable, Image, StyleSheet, Dimensions, Linking, Alert, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { creatorVibe as C, fonts } from '../../theme/tokens';
+import { creatorVibe as C, fonts, toing as TZ } from '../../theme/tokens';
 
 // Flow 52.D — Creator Vibe recolor shim for the dining sub-app (see DiningHome).
 const lightColors = {
@@ -483,93 +483,115 @@ function OverviewTab({ description, vibes, creator }) {
   );
 }
 
-function MenuTab({ sections, visibleSection, sectionKeys, onSelectSection, picks, onProductPress, creator, onAddPress, canOrder }) {
+// Food 3C-2b — Toing storefront menu: in-store search · veg/non-veg filter ·
+// collapsible category sections · toing dish rows · pink ＋ (→ customise).
+const isVegP = (p) => p.veg_flag === 'veg' || p.veg_flag === 'Veg' || p.veg_flag === true;
+
+function MenuTab({ sections, sectionKeys, picks, onProductPress, creator, onAddPress, canOrder }) {
+  const [q, setQ] = useState('');
+  const [veg, setVeg] = useState(null);        // null | 'veg' | 'nonveg'
+  const [collapsed, setCollapsed] = useState({});
+
   if (sectionKeys.length === 0) {
-    return (
-      <View style={styles.section}>
-        <Text style={styles.muted}>Menu not yet published.</Text>
-      </View>
-    );
+    return <View style={styles.section}><Text style={styles.muted}>Menu not yet published.</Text></View>;
   }
 
-  const isPicksView = visibleSection === '__picks__';
-  const items = isPicksView ? picks : (sections[visibleSection] || []);
-  const pickIds = new Set(picks.map(p => p.id));
+  const ql = q.trim().toLowerCase();
+  const passes = (p) =>
+    (!ql || (p.name || '').toLowerCase().includes(ql)) &&
+    (veg == null || (veg === 'veg' ? isVegP(p) : !isVegP(p)));
+
+  const visibleCats = sectionKeys
+    .map((cat) => ({ cat, items: (sections[cat] || []).filter(passes) }))
+    .filter((c) => c.items.length > 0);
 
   return (
-    <View>
-      {creator && picks.length > 0 && (
-        <View style={styles.sagarQuoteBar}>
-          <CreatorChip handle={creator.instagram_handle} name={creator.name}
-            verified={creator.is_verified !== false} size="sm" />
-          <Text style={styles.sagarQuoteText} numberOfLines={2}>
-            "These are non-negotiable."
-          </Text>
-        </View>
-      )}
+    <View style={mz.wrap}>
+      <View style={mz.searchRow}>
+        <Text style={mz.searchIcon}>🔍</Text>
+        <TextInput value={q} onChangeText={setQ} placeholder="Search for dishes"
+          placeholderTextColor={TZ.hint} style={mz.searchInput} />
+      </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.sectionChips}>
-        {picks.length > 0 && (
-          <FilterChip label={`★ Picks`}
-            count={picks.length}
-            selected={isPicksView}
-            onPress={() => onSelectSection('__picks__')} />
-        )}
-        {sectionKeys.map(k => (
-          <FilterChip key={k}
-            label={k}
-            count={sections[k].length}
-            selected={visibleSection === k && !isPicksView}
-            onPress={() => onSelectSection(k)} />
-        ))}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={mz.filters}>
+        <Pressable onPress={() => setVeg((v) => v === 'veg' ? null : 'veg')} style={[mz.fchip, veg === 'veg' && mz.fchipVeg]}>
+          <Text style={[mz.fchipTxt, veg === 'veg' && { color: '#fff' }]}>● Veg</Text>
+        </Pressable>
+        <Pressable onPress={() => setVeg((v) => v === 'nonveg' ? null : 'nonveg')} style={[mz.fchip, veg === 'nonveg' && mz.fchipNv]}>
+          <Text style={[mz.fchipTxt, veg === 'nonveg' && { color: '#fff' }]}>▲ Non-veg</Text>
+        </Pressable>
       </ScrollView>
 
-      <View style={styles.section}>
-        {items.map(p => (
-          <View key={p.id} style={styles.dishRow}>
-            <Pressable onPress={() => onProductPress(p)}>
-              {p.image_url ? (
-                <Image source={{ uri: p.image_url }} style={styles.dishImg} />
-              ) : (
-                <View style={[styles.dishImg, styles.dishImgFallback]}>
-                  <Text>🍽️</Text>
-                </View>
-              )}
+      {visibleCats.length === 0 ? (
+        <View style={styles.section}><Text style={styles.muted}>No dishes match.</Text></View>
+      ) : visibleCats.map(({ cat, items }) => {
+        const open = !collapsed[cat];
+        return (
+          <View key={cat}>
+            <Pressable onPress={() => setCollapsed((c) => ({ ...c, [cat]: !c[cat] }))} style={mz.catHd}>
+              <Text style={mz.catTitle}>{cat} ({items.length})</Text>
+              <Text style={mz.catCaret}>{open ? '▾' : '▸'}</Text>
             </Pressable>
-            <View style={styles.dishBody}>
-              <View style={styles.dishMetaRow}>
-                <VegDot veg={p.veg_flag === 'Veg' || p.veg_flag === true} size={11} />
-                {p.variants_json?.bestseller && (
-                  <View style={styles.bestsellerChip}>
-                    <Text style={styles.bestsellerText}>⭐ BESTSELLER</Text>
+            {open && items.map((p) => (
+              <View key={p.id} style={mz.row}>
+                <View style={mz.rowBody}>
+                  <View style={mz.metaRow}>
+                    <View style={[mz.vd, !isVegP(p) && mz.vdnv]} />
+                    {p.badge ? <View style={mz.badge}><Text style={mz.badgeTxt}>{p.badge}</Text></View> : null}
                   </View>
-                )}
-                {!isPicksView && pickIds.has(p.id) && (
-                  <View style={styles.pickChip}>
-                    <Text style={styles.pickChipText}>★ Pick</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.dishName} numberOfLines={1}>{p.name}</Text>
-              {p.description && (
-                <Text style={styles.dishDesc} numberOfLines={2}>{p.description}</Text>
-              )}
-              <View style={styles.dishPriceRow}>
-                <Text style={styles.dishPrice}>₹ {Math.round(p.price)}</Text>
-                {canOrder ? (
-                  <Pressable onPress={() => onAddPress(p)} style={styles.dishAddBtn}>
-                    <Text style={styles.dishAddText}>+ ADD</Text>
+                  <Text style={mz.name} numberOfLines={1}>{p.name}</Text>
+                  {p.description ? <Text style={mz.desc} numberOfLines={2}>{p.description}</Text> : null}
+                  <Text style={mz.price}>₹{Math.round(p.price)}{p.mrp && p.mrp > p.price ? <Text style={mz.mrp}>  ₹{Math.round(p.mrp)}</Text> : null}</Text>
+                </View>
+                <View style={mz.imgWrap}>
+                  <Pressable onPress={() => onProductPress(p)}>
+                    {p.image_url ? <Image source={{ uri: p.image_url }} style={mz.img} />
+                      : <View style={[mz.img, mz.imgFallback]}><Text style={{ fontSize: 28 }}>🍽️</Text></View>}
                   </Pressable>
-                ) : null}
+                  {canOrder ? (
+                    <Pressable onPress={() => onAddPress(p)} style={mz.add}><Text style={mz.addTxt}>ADD</Text></Pressable>
+                  ) : null}
+                </View>
               </View>
-            </View>
+            ))}
           </View>
-        ))}
-      </View>
+        );
+      })}
+      <View style={{ height: 90 }} />
     </View>
   );
 }
+
+const mz = StyleSheet.create({
+  wrap: { backgroundColor: '#fff' },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 12, marginBottom: 8, backgroundColor: TZ.pageBg, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 4 },
+  searchIcon: { fontSize: 14 },
+  searchInput: { flex: 1, fontSize: 13, color: TZ.ink, paddingVertical: 8, fontFamily: fonts.sansMedium },
+  filters: { gap: 9, paddingHorizontal: 12, paddingBottom: 8 },
+  fchip: { borderWidth: 1, borderColor: TZ.line, borderRadius: 22, paddingHorizontal: 13, paddingVertical: 7 },
+  fchipVeg: { backgroundColor: TZ.veg, borderColor: TZ.veg },
+  fchipNv: { backgroundColor: TZ.nonVeg, borderColor: TZ.nonVeg },
+  fchipTxt: { fontSize: 12, fontFamily: fonts.sansBold, color: TZ.ink },
+  catHd: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 7, borderTopColor: TZ.pageBg },
+  catTitle: { fontSize: 16, fontFamily: fonts.displayBold, color: TZ.ink },
+  catCaret: { fontSize: 14, color: TZ.muted },
+  row: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
+  rowBody: { flex: 1, minWidth: 0, paddingRight: 12 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  vd: { width: 14, height: 14, borderWidth: 1.6, borderColor: TZ.veg, borderRadius: 3 },
+  vdnv: { borderColor: TZ.nonVeg },
+  badge: { backgroundColor: '#fff', borderWidth: 1, borderColor: TZ.line, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 },
+  badgeTxt: { fontSize: 9, color: TZ.veg, fontFamily: fonts.monoBold },
+  name: { fontSize: 14.5, fontFamily: fonts.displayBold, color: TZ.ink },
+  desc: { fontSize: 11.5, color: TZ.muted, marginTop: 3, lineHeight: 15, fontFamily: fonts.sansRegular },
+  price: { fontSize: 13.5, fontFamily: fonts.sansBold, color: TZ.ink, marginTop: 5 },
+  mrp: { fontSize: 11.5, color: TZ.hint, textDecorationLine: 'line-through', fontFamily: fonts.sansMedium },
+  imgWrap: { width: 96, alignItems: 'center' },
+  img: { width: 96, height: 96, borderRadius: 12, backgroundColor: TZ.pinkTint },
+  imgFallback: { alignItems: 'center', justifyContent: 'center' },
+  add: { marginTop: -16, backgroundColor: '#fff', borderWidth: 1.5, borderColor: TZ.pink, borderRadius: 9, paddingHorizontal: 22, paddingVertical: 6, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 4, elevation: 2 },
+  addTxt: { color: TZ.pink, fontSize: 13, fontFamily: fonts.sansBold },
+});
 
 function StarRow({ value, size = 14, color = '#FFB800' }) {
   const full = Math.round(Number(value) || 0);

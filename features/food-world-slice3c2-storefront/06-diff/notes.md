@@ -17,3 +17,7 @@ Verified: CustomiseSheet 1/1 (total math + resolved line), TileSection 5/5, Home
 2/2, DishGroupResult 2/2. Pre-existing failures (FollowerWalletScreen transform,
 RestaurantCartScreen happy-path) confirmed baseline, spawned a separate fix task.
 Maestro pending device.
+
+## 3C-2b (storefront menu reskin)
+
+MenuTab rebuilt to Toing: in-store search + veg/non-veg filter + collapsible category sections + toing-recolored dish rows + pink ＋ (→ customise). MENU-jump fab deferred (collapsible categories cover navigation). Mobile-only, no backend. Verified: my 4 component suites 10/10; metro bundle compiles. Maestro pending device.
