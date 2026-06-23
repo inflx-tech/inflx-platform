@@ -194,7 +194,9 @@ function Group({ group, sub, required, onSelectAll, children }) {
 function Row({ item, kind, plus, on, onPress }) {
   return (
     <Pressable onPress={onPress} style={s.row}>
-      <View style={[s.vd, vegKind(item.veg_flag) === 'nonveg' ? s.vdnv : vegKind(item.veg_flag) === 'unknown' ? s.vdna : null]} />
+      <View style={[s.vd, vegKind(item.veg_flag) === 'nonveg' ? s.vdnv : vegKind(item.veg_flag) === 'unknown' ? s.vdna : null]}>
+        <View style={[s.vdDot, vegKind(item.veg_flag) === 'nonveg' ? s.vdDotNv : vegKind(item.veg_flag) === 'unknown' ? s.vdDotNa : null]} />
+      </View>
       <Text style={s.rowNm} numberOfLines={1}>{item.name}</Text>
       {item.price > 0 ? <Text style={s.rowPr}>{plus ? '+ ' : ''}₹{Math.round(item.price)}</Text> : null}
       {kind === 'radio'
@@ -224,6 +226,9 @@ const s = StyleSheet.create({
   vd: { width: 15, height: 15, borderWidth: 1.6, borderColor: T.veg, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   vdnv: { borderColor: T.nonVeg },
   vdna: { borderColor: '#9CA3AF' },
+  vdDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: T.veg },
+  vdDotNv: { backgroundColor: T.nonVeg },
+  vdDotNa: { backgroundColor: '#9CA3AF' },
   rowNm: { flex: 1, fontSize: 15, color: T.ink, fontFamily: fonts.sansMedium },
   rowPr: { fontSize: 14, color: T.ink, fontFamily: fonts.sansSemiBold },
   rad: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#cfd3d8' },

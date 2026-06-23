@@ -35,7 +35,9 @@ export default function DishDetailSheet({ visible, product, onClose, onAdd }) {
           </View>
           <ScrollView style={s.body} contentContainerStyle={{ paddingBottom: 96 }} showsVerticalScrollIndicator={false}>
             <View style={s.nameRow}>
-              <View style={[s.vd, vegKind(product.veg_flag) === 'nonveg' ? s.vdnv : vegKind(product.veg_flag) === 'unknown' ? s.vdna : null]} />
+              <View style={[s.vd, vegKind(product.veg_flag) === 'nonveg' ? s.vdnv : vegKind(product.veg_flag) === 'unknown' ? s.vdna : null]}>
+              <View style={[s.vdDot, vegKind(product.veg_flag) === 'nonveg' ? s.vdDotNv : vegKind(product.veg_flag) === 'unknown' ? s.vdDotNa : null]} />
+            </View>
               <Text style={s.name}>{product.name}</Text>
             </View>
             <View style={s.priceRow}>
@@ -68,9 +70,12 @@ const s = StyleSheet.create({
   popTxt: { fontSize: 12, color: T.veg, fontFamily: fonts.monoBold },
   body: { paddingHorizontal: 18, paddingTop: 14 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  vd: { width: 16, height: 16, borderWidth: 1.6, borderColor: T.veg, borderRadius: 3 },
+  vd: { width: 16, height: 16, borderWidth: 1.6, borderColor: T.veg, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   vdnv: { borderColor: T.nonVeg },
   vdna: { borderColor: '#9CA3AF' },
+  vdDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: T.veg },
+  vdDotNv: { backgroundColor: T.nonVeg },
+  vdDotNa: { backgroundColor: '#9CA3AF' },
   name: { flex: 1, fontSize: 22, fontFamily: fonts.displayBold, color: T.ink, letterSpacing: -0.3 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
   price: { fontSize: 18, fontFamily: fonts.displayBold, color: T.pink },

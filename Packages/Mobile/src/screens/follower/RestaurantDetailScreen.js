@@ -553,7 +553,9 @@ function MenuTab({ sections, sectionKeys, picks, onProductPress, creator, onAddP
               <View key={p.id} style={mz.row}>
                 <View style={mz.rowBody}>
                   <View style={mz.metaRow}>
-                    <View style={[mz.vd, vegKindP(p) === 'nonveg' && mz.vdnv, vegKindP(p) === 'unknown' && mz.vdna]} />
+                    <View style={[mz.vd, vegKindP(p) === 'nonveg' && mz.vdnv, vegKindP(p) === 'unknown' && mz.vdna]}>
+                      <View style={[mz.vdDot, vegKindP(p) === 'nonveg' && mz.vdDotNv, vegKindP(p) === 'unknown' && mz.vdDotNa]} />
+                    </View>
                     {p.badge ? <View style={mz.badge}><Text style={mz.badgeTxt}>{p.badge}</Text></View> : null}
                   </View>
                   <Text style={mz.name} numberOfLines={1}>{p.name}</Text>
@@ -595,9 +597,12 @@ const mz = StyleSheet.create({
   row: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#f3f4f6' },
   rowBody: { flex: 1, minWidth: 0, paddingRight: 12 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  vd: { width: 14, height: 14, borderWidth: 1.6, borderColor: TZ.veg, borderRadius: 3 },
+  vd: { width: 14, height: 14, borderWidth: 1.6, borderColor: TZ.veg, borderRadius: 3, alignItems: 'center', justifyContent: 'center' },
   vdnv: { borderColor: TZ.nonVeg },
   vdna: { borderColor: '#9CA3AF' },
+  vdDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: TZ.veg },
+  vdDotNv: { backgroundColor: TZ.nonVeg },
+  vdDotNa: { backgroundColor: '#9CA3AF' },
   badge: { backgroundColor: '#fff', borderWidth: 1, borderColor: TZ.line, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5 },
   badgeTxt: { fontSize: 9, color: TZ.veg, fontFamily: fonts.monoBold },
   name: { fontSize: 14.5, fontFamily: fonts.displayBold, color: TZ.ink },
