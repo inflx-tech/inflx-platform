@@ -216,10 +216,6 @@ router.post  ('/section-library',         authenticate, requireCapability('libra
 router.post  ('/section-library/preview', authenticate, requireCapability('libraries'), sectionLibraryCtrl.preview);
 router.patch ('/section-library/:id',     authenticate, requireCapability('libraries'), sectionLibraryCtrl.update);
 
-// ── Collection Library (merch-engine Phase 4b) — 'libraries' ─────────────────
-const collectionLibraryCtrl = require('../controllers/adminCollectionLibrary.controller');
-router.get   ('/collection-library',     authenticate, requireCapability('libraries'), collectionLibraryCtrl.list);
-router.post  ('/collection-library',     authenticate, requireCapability('libraries'), collectionLibraryCtrl.create);
-router.patch ('/collection-library/:id', authenticate, requireCapability('libraries'), collectionLibraryCtrl.update);
+// Collection Library removed 2026-06-23 (dead/dormant — superseded by Section Library).
 
 module.exports = router;

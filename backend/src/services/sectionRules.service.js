@@ -1048,8 +1048,6 @@ async function worldCategories(ctx) {
 // engine passes config through and these contribute no data items.
 async function staticRule() { return []; }
 
-// Product-level sales is not attributable in Phase A (see file header).
-async function topBySales() { return []; }
 
 // ── registry ────────────────────────────────────────────────────────────────
 
@@ -1081,7 +1079,9 @@ const RULES = {
   nav_verticals: navVerticals,
   world_categories: worldCategories,   // Food 3C — placeable category rail
   static: staticRule,
-  top_by_sales: topBySales,
+  // Deprecated: product-level sales isn't attributable; alias to the working
+  // product rule so any legacy 'top_by_sales' row renders instead of empty.
+  top_by_sales: productsInCategory,
 };
 
 /**

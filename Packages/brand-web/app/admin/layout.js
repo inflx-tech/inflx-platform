@@ -21,7 +21,6 @@ const NAV = [
   { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️', cap: 'master_data' },
   { href: '/admin/sections', label: 'App Sections', icon: '🎛️', cap: 'sections' },
   { href: '/admin/section-library', label: 'Section Library', icon: '🧩', cap: 'libraries' },
-  { href: '/admin/collection-library', label: 'Collection Library', icon: '🗂️', cap: 'libraries' },
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
   { href: '/admin/home-builder', label: 'Home Builder', icon: '🏠', cap: 'categories' },
   { section: 'MARKETING' },

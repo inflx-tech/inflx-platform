@@ -18,7 +18,7 @@ const asyncHandler = require('../utils/asyncHandler');
 
 const SCREENS = ['home', 'category', 'offers', 'creator_store', 'creator_category'];
 const SCOPE_TYPES = ['global', 'city', 'vertical'];
-const SHELF_TYPES = ['creators', 'nav_tiles', 'offers', 'products', 'brands', 'mixed', 'controls'];
+const SHELF_TYPES = ['creators', 'nav_tiles', 'offers', 'products', 'brands', 'mixed', 'controls', 'tiles', 'category_rail', 'restaurant_list'];
 const ITEM_TYPES = ['brands', 'products', 'offers'];
 
 function assertScreen(screen) {

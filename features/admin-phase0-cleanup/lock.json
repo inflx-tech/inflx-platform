@@ -1,0 +1,18 @@
+{
+  "feature": "admin-phase0-cleanup",
+  "area": "admin-section-engine",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'start phase 0' (admin clean-up, first phase of the App Builder program)",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — non-visual cleanup + bugfix (deletions, no new admin screen design); 'start phase 0' covers it",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "Backend (Render) + admin-web (Vercel). No mobile/OTA, no migration. Deletions + the blocking section-type bug fix.",
+  "fix": "Phase 0 of the App Builder program (Docs/ADMIN_SECTION_ENGINE.md). (1) Fix the blocking bug: add tiles/category_rail/restaurant_list to SHELF_TYPES (adminSections.controller.js) so those presets can finally be saved (were rejected → why category rail + Type-B never appeared). (2) Kill dead top_by_sales: delete the function, alias the RULES key to productsInCategory (legacy rows render not empty), change admin RULE_FOR_TYPE.products default to products_in_category. (3) DELETE Collections entirely (dead, 0 placements, dup of Section Library): admin collection-library page + nav link + 'collection' preset + publish guard + placement editor + lib/api helpers; backend collection-library routes + adminCollectionLibrary.controller + collectionLibrary.service + sectionEngine collection expansion/post-pass/import. Engine degrades gracefully (unknown rule → empty, logged).",
+  "notes": "Car rentals: founder toggles off in Home Builder (auto-hides; confirmed) — data action, not in this code slice. Redundant offer-gated creator rules left for Phase 3 (smart creator rule supersedes). Verified: backend modules load, pnpm qa GREEN(79), brand-web next build exit 0.",
+  "release": { "qa_all_green": "pnpm qa GREEN 79; brand-web build exit 0; backend require OK", "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending push" }
+}

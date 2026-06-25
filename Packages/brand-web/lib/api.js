@@ -637,11 +637,6 @@ export const adminApi = {
   previewSectionLibrary: (data) => api.post('/admin/section-library/preview', data),
   getListingTree:        (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
 
-  // Collection Library (merch-engine Phase 4b) — group of sections.
-  listCollectionLibrary:   () => api.get('/admin/collection-library'),
-  createCollectionLibrary: (data) => api.post('/admin/collection-library', data),
-  updateCollectionLibrary: (id, data) => api.patch(`/admin/collection-library/${id}`, data),
-
   // Creator verification queue (claimed → verified / rejected / reset).
   // Backed by /v1/admin/creator-verifications/* — admin queue surfaces
   // creator_profiles rows in 'claimed' state (either auto-claimed from a

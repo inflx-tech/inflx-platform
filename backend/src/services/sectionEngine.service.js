@@ -20,7 +20,6 @@ const { runRule } = require('./sectionRules.service');
 const cache = require('../utils/ttlCache');
 const categoryTaxonomy = require('./categoryTaxonomy.service');
 const sectionLibrary = require('./sectionLibrary.service');
-const collectionLibrary = require('./collectionLibrary.service');
 
 // Last-resort labels for {category} interpolation if a key isn't in the taxonomy
 // (e.g. a legacy section_config key during transition). The tile's real label from
@@ -120,52 +119,10 @@ async function buildSections(opts) {
   const creatorHandle = influencer?.instagram_handle || null;
   const sections = [];
 
-  // Collections (Phase 4a): expand a `rule='collection'` placement into a
-  // collection_header row + one synthetic library_products row per member section,
-  // tagged with a group id. The normal loop then renders each (members reuse the
-  // Phase-3 evaluator + context). Unresolved/empty collection → nothing.
-  const expandedRows = [];
+  // (Collections feature removed 2026-06-23 — dead/dormant, 0 live placements.
+  // A stray rule='collection' config row falls through to the rule lookup →
+  // empty + logged; no special expansion.)
   for (const row of rows) {
-    if (row.rule === 'collection' && (row.config_json || {}).collection_id) {
-      const ccfg = row.config_json || {};
-      let coll = null;
-      try { coll = await collectionLibrary.getForRender(ccfg.collection_id); }
-      catch (e) { console.error('[sectionEngine] collection render failed:', e.message); }
-      if (coll && coll.sections.length) {
-        // Phase 6 — Hero+Tiles (C): render the collection as ONE hero block whose
-        // tiles are its member sections (each tile taps through to Results running
-        // that member's rule), instead of the inline header + member rows.
-        if (ccfg.presentation_type === 'hero_tiles') {
-          const hero = ccfg.hero || {};
-          expandedRows.push({
-            ...row, shelf_type: 'hero_tiles', rule: 'static', item_type: null, category_key: null,
-            title: hero.title || coll.name,
-            config_json: {
-              ...ccfg,
-              hero: { title: hero.title || coll.name, eyebrow: hero.eyebrow || null, image_url: hero.image_url || coll.image_url || null },
-              tiles: coll.sections.map(s => ({ library_section_id: s.id, label: s.name, image_url: s.image_url || null })),
-            },
-          });
-          continue;
-        }
-        const grp = row.shelf_key;
-        expandedRows.push({
-          ...row, shelf_key: `${row.shelf_key}__hdr`, shelf_type: 'collection_header',
-          rule: 'static', item_type: null, category_key: null, title: coll.name,
-          config_json: { collection_header: true, image_url: coll.image_url }, _collGroup: grp,
-        });
-        coll.sections.forEach((sec, i) => expandedRows.push({
-          ...row, id: null, shelf_key: `${row.shelf_key}__m${i}`, shelf_type: 'products',
-          item_type: 'products', rule: 'library_products', category_key: null, title: sec.name,
-          config_json: { library_section_id: sec.id }, _collGroup: grp,
-        }));
-      }
-      continue; // unresolved/empty → emit nothing
-    }
-    expandedRows.push(row);
-  }
-
-  for (const row of expandedRows) {
     const cfg = row.config_json || {};
     let rowCategoryKey = row.category_key || categoryKey || null;
     let categoryCats = rowCategoryKey ? (taxMaps.membersByKey[rowCategoryKey] || null) : null;
@@ -265,23 +222,10 @@ async function buildSections(opts) {
       rule: row.rule,
       config: cfg,
       items,
-      _collGroup: row._collGroup || null,   // internal: collection grouping (stripped below)
     });
   }
 
-  // Collections post-pass: drop a collection_header whose members all rendered
-  // empty (no empty titled band). Then strip the internal grouping marker.
-  const groupHasItems = {};
-  for (const s of sections) {
-    if (s._collGroup && s.type !== 'collection_header' && Array.isArray(s.items) && s.items.length) {
-      groupHasItems[s._collGroup] = true;
-    }
-  }
-  const out = sections.filter(s =>
-    !(s.type === 'collection_header' && s._collGroup && !groupHasItems[s._collGroup]));
-  out.forEach(s => { delete s._collGroup; });
-
-  return { sections: out };
+  return { sections };
 }
 
 module.exports = {

@@ -32,7 +32,7 @@ const SCREENS = [
 // Category shelf scoped to 'food' shows ONLY on the food page.
 const CATEGORIES = ['food', 'fashion', 'furniture', 'beauty', 'car_rental'];
 const ITEM_TYPES = ['brands', 'products', 'offers'];
-const RULE_FOR_TYPE = { brands: 'top_by_engagement', products: 'top_by_sales', offers: 'top_by_conversions' };
+const RULE_FOR_TYPE = { brands: 'top_by_engagement', products: 'products_in_category', offers: 'top_by_conversions' };
 
 // ＋ Add Section presets → valid {shelf_type, rule, item_type?} (rules exist in
 // sectionRules.service.js). Listing-driven rules populate without offers.
@@ -56,8 +56,6 @@ const ADD_PRESETS = [
   // Phase 3c — place a reusable Section Library section (data-driven). Pick which
   // section in the row editor; the engine fills it from that section's rule.
   { key: 'library',  label: 'Library Section',  shelf_type: 'products', rule: 'library_products',       item_type: 'products', title: 'New section' },
-  // Phase 4b — place a Collection (group of sections). Pick which in the row editor.
-  { key: 'collection', label: 'Collection',     shelf_type: 'products', rule: 'collection',            item_type: 'products', title: 'New collection' },
 ];
 
 function hasTypeControls(s) {
@@ -81,15 +79,11 @@ export default function SectionsPage() {
   const [jsonErr, setJsonErr] = useState(null);
   const [addPreset, setAddPreset] = useState('brands');
   const [librarySections, setLibrarySections] = useState([]);
-  const [collections, setCollections] = useState([]);
 
-  // Section Library (3c) + Collection Library (4b) options for the placement pickers.
+  // Section Library (3c) options for the placement picker.
   useEffect(() => {
     adminApi.listSectionLibrary().then(res => {
       if (res.success) setLibrarySections((res.data?.sections || []).filter(s => s.status === 'active'));
-    });
-    adminApi.listCollectionLibrary().then(res => {
-      if (res.success) setCollections((res.data?.collections || []).filter(c => c.status === 'active'));
     });
   }, []);
 
@@ -190,9 +184,6 @@ export default function SectionsPage() {
     // Phase 3c — a Library Section placement must reference a section.
     const unset = shelves.find(s => s.rule === 'library_products' && !(s.config_json || {}).library_section_id);
     if (unset) { setMsg({ kind: 'err', text: `"${unset.title || 'Library Section'}" — pick a library section before publishing.` }); return; }
-    // Phase 4b — a Collection placement must reference a collection.
-    const unsetColl = shelves.find(s => s.rule === 'collection' && !(s.config_json || {}).collection_id);
-    if (unsetColl) { setMsg({ kind: 'err', text: `"${unsetColl.title || 'Collection'}" — pick a collection before publishing.` }); return; }
     // Phase 6 — a Banner-Gateway placement needs a headline.
     const unsetBanner = shelves.find(s => (s.config_json || {}).presentation_type === 'banner' && !((s.config_json || {}).banner || {}).headline);
     if (unsetBanner) { setMsg({ kind: 'err', text: `"${unsetBanner.title || 'Banner'}" — add a banner headline before publishing.` }); return; }
@@ -421,37 +412,14 @@ export default function SectionsPage() {
                         {librarySections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No sections yet — create them in Section Library.</span>}
                       </label>
                     )}
-                    {/* Collection placement (Phase 4b) — pick which collection fills this shelf. */}
-                    {s.rule === 'collection' && (
-                      <label className="text-[11px] font-semibold text-gray-600">Collection
-                        <select value={cfg.collection_id || ''}
-                          onChange={e => {
-                            const cid = e.target.value;
-                            const coll = collections.find(x => x.id === cid);
-                            update(id, {
-                              config_json: { ...(s.config_json || {}), collection_id: cid },
-                              ...((!s.title || s.title === 'New collection') && coll ? { title: coll.name } : {}),
-                            });
-                          }}
-                          className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
-                          <option value="">(pick a collection)</option>
-                          {collections.map(coll => (
-                            <option key={coll.id} value={coll.id}>{coll.name} · {(coll.section_ids || []).length} sections</option>
-                          ))}
-                        </select>
-                        {!cfg.collection_id && <span className="block mt-0.5 text-[11px] text-red-600 font-semibold">Pick a collection — required before publishing.</span>}
-                        {collections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No collections yet — create them in Collection Library.</span>}
-                      </label>
-                    )}
-                    {/* Presentation (Phase 6) — how this placement is shown.
-                        library_products → Row | Banner-Gateway; collection → Row | Hero+Tiles. */}
-                    {(s.rule === 'library_products' || s.rule === 'collection') && (
+                    {/* Presentation (Phase 6) — library_products → Row | Banner-Gateway. */}
+                    {s.rule === 'library_products' && (
                       <div className="text-[11px] font-semibold text-gray-600">
                         Presentation
                         <div className="flex gap-1.5 mt-1">
-                          {(s.rule === 'library_products' ? ['row', 'banner'] : ['row', 'hero_tiles']).map(pt => {
+                          {['row', 'banner'].map(pt => {
                             const active = (cfg.presentation_type || 'row') === pt;
-                            const lbl = pt === 'row' ? 'Row' : pt === 'banner' ? 'Banner' : 'Hero + Tiles';
+                            const lbl = pt === 'row' ? 'Row' : 'Banner';
                             return (
                               <button key={pt} type="button"
                                 onClick={() => update(id, { config_json: { ...(s.config_json || {}), presentation_type: pt } })}
@@ -462,7 +430,7 @@ export default function SectionsPage() {
                           })}
                         </div>
                         {/* Banner fields */}
-                        {s.rule === 'library_products' && cfg.presentation_type === 'banner' && (
+                        {cfg.presentation_type === 'banner' && (
                           <div className="mt-2 flex flex-col gap-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
                             <input value={cfg.banner?.eyebrow || ''} onChange={e => patchNested(id, 'banner', 'eyebrow', e.target.value)}
                               className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Eyebrow — e.g. SUMMER SALE" />
@@ -473,18 +441,6 @@ export default function SectionsPage() {
                             <input value={cfg.banner?.image_url || ''} onChange={e => patchNested(id, 'banner', 'image_url', e.target.value)}
                               className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Banner image URL (optional)" />
                             {!cfg.banner?.headline && <span className="text-[11px] text-red-600 font-semibold">Headline required before publishing.</span>}
-                          </div>
-                        )}
-                        {/* Hero+Tiles fields (tiles come from the collection's member sections) */}
-                        {s.rule === 'collection' && cfg.presentation_type === 'hero_tiles' && (
-                          <div className="mt-2 flex flex-col gap-1.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
-                            <input value={cfg.hero?.eyebrow || ''} onChange={e => patchNested(id, 'hero', 'eyebrow', e.target.value)}
-                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hero eyebrow — e.g. CURATED FOR YOU" />
-                            <input value={cfg.hero?.title || ''} onChange={e => patchNested(id, 'hero', 'title', e.target.value)}
-                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hero title — defaults to collection name" />
-                            <input value={cfg.hero?.image_url || ''} onChange={e => patchNested(id, 'hero', 'image_url', e.target.value)}
-                              className="w-full text-xs border border-gray-300 rounded px-2 py-1" placeholder="Hero image URL (optional)" />
-                            <span className="text-[11px] text-gray-500">Tiles = this collection&apos;s member sections (each taps to its own results).</span>
                           </div>
                         )}
                       </div>
