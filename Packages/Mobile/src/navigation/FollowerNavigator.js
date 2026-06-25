@@ -18,7 +18,6 @@ import FollowerWalletScreen from '../screens/follower/FollowerWalletScreen';
 import DiningSearchScreen from '../screens/follower/DiningSearchScreen';
 
 // Existing screens
-import DealsScreen from '../screens/follower/DealsScreen';
 import SavedScreen from '../screens/follower/SavedScreen';
 import MeScreen from '../screens/follower/MeScreen';
 import InfluencerStoreScreen from '../screens/follower/InfluencerStoreScreen';
@@ -109,15 +108,7 @@ function HomeStack() {
   );
 }
 
-// 🏷️ Offers — platform-wide creator-backed deals (was the DEALS tab).
-function OffersStack() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="OffersHome" component={DealsScreen} />
-      {SHARED_SCREENS(Stack)}
-    </Stack.Navigator>
-  );
-}
+// Offers tab removed 2026-06-23 (founder — not required in the follower app).
 
 // 🛍️ Orders — order/booking history (was MY STUFF; Saved moves to Profile).
 // NOTE: do NOT register "OrderDetail" here — SHARED_SCREENS already provides it.
@@ -197,16 +188,6 @@ export default function FollowerNavigator() {
           tabBarLabel: 'HOME',
           tabBarIcon: ({ focused, color }) => (
             <Icon name={focused ? 'home-variant' : 'home-variant-outline'} size={22} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="OffersTab"
-        component={OffersStack}
-        options={{
-          tabBarLabel: 'OFFERS',
-          tabBarIcon: ({ focused, color }) => (
-            <Icon name={focused ? 'tag' : 'tag-outline'} size={22} color={color} />
           ),
         }}
       />

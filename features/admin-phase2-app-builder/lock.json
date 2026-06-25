@@ -1,0 +1,18 @@
+{
+  "feature": "admin-phase2-app-builder",
+  "area": "admin-section-engine",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'lock the design and build'; drop Offers scope + delete the Offers page in the follower app",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — chat 2026-06-23 ('lock the design and build')",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "admin-web (Vercel) + mobile OTA (delete Offers tab). No migration. Rebuild admin into one App Builder; retire App Sections + Home Builder + legacy follower-categories pages; remove the Offers tab/DealsScreen from the follower app.",
+  "fix": "App Builder Phase 2 — ONE admin tool replacing App Sections + Home Builder. Flow: pick Scope (Home / Creator Store / Business page — NO Offers) → pick World → arrange Sections (each = Template + Rule) → publish. Absorbs Home Builder (worlds list/order/enable-disable/tile images) under a 'Manage worlds' panel. Account icon + search = fixed chrome. One Template+Rule picker; one vocabulary. Uses Phase-1 'business' scope + context-aware engine. ALSO: delete the Offers bottom tab + DealsScreen from the follower app (founder: 'not required at all').",
+  "notes": "Mockup locked inline 2026-06-23 (app_builder_admin) + desktop HTML app-builder.html. Offers DROPPED (no admin scope + follower Offers tab deleted).",
+  "release": { "qa_all_green": null, "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending lock+build" }
+}

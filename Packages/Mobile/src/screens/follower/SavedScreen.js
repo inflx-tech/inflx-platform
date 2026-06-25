@@ -180,8 +180,8 @@ export default function SavedScreen({ navigation }) {
             <View style={s.blob}><Text style={s.blobHeart}>♥</Text></View>
             <Text style={s.emptyTitle}>Nothing saved yet</Text>
             <Text style={s.emptyText}>Tap the heart on any offer to keep it here for later.</Text>
-            <TouchableOpacity style={s.emptyCta} onPress={() => navigation.navigate('OffersTab')}>
-              <Text style={s.emptyCtaTxt}>Browse offers</Text>
+            <TouchableOpacity style={s.emptyCta} onPress={() => navigation.navigate('HomeTab')}>
+              <Text style={s.emptyCtaTxt}>Browse</Text>
             </TouchableOpacity>
           </View>
         }

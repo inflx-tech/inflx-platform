@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>App Builder (Phase 2)</title>
+<style>
+ *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif}
+ body{background:#F3F4F6;color:#111827;padding:22px}
+ .wrap{max-width:1040px;margin:0 auto;background:#fff;border:1px solid #E5E7EB;border-radius:14px;overflow:hidden;display:flex;min-height:560px}
+ .nav{width:220px;border-right:1px solid #E5E7EB;background:#FAFAFA;padding:16px}
+ .h{font-size:18px;font-weight:700;margin-bottom:2px}.sub{font-size:12px;color:#6B7280;margin-bottom:16px}
+ .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#9CA3AF;margin:14px 0 7px}
+ .scope{display:block;padding:9px 12px;border-radius:9px;font-size:13.5px;margin-bottom:6px;border:1px solid transparent;cursor:pointer}
+ .scope.on{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE;font-weight:600}
+ .scope.dim{color:#9CA3AF}
+ .worlds{display:flex;flex-wrap:wrap;gap:6px}
+ .wpill{padding:5px 11px;border-radius:16px;font-size:12.5px;border:1px solid #E5E7EB;background:#fff}
+ .wpill.on{background:#EFF6FF;color:#1D4ED8;border-color:#BFDBFE;font-weight:600}
+ .wpill.off{border-style:dashed;color:#9CA3AF}
+ .manage{font-size:12px;color:#1D4ED8;font-weight:600;margin-top:10px;display:inline-block}
+ .fixed{font-size:11.5px;color:#9CA3AF;margin-top:14px;line-height:1.5}
+ .main{flex:1;padding:18px 20px}
+ .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+ .bar .t{font-size:15px;font-weight:700}
+ .btn{border:1px solid #D1D5DB;background:#fff;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer}
+ .btn.pri{background:#1D4ED8;color:#fff;border-color:#1D4ED8}
+ .row{border:1px solid #E5E7EB;border-radius:11px;padding:12px 14px;margin-bottom:9px;display:flex;align-items:center;gap:12px;background:#fff}
+ .row.edit{border-color:#BFDBFE;background:#F8FBFF;display:block}
+ .grip{color:#D1D5DB;font-size:18px}
+ .rn{font-size:14px;font-weight:600}
+ .chips{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+ .chip{font-size:11px;background:#F3F4F6;border-radius:6px;padding:2px 8px;color:#374151}
+ .ico{color:#9CA3AF;font-size:16px;margin-left:auto}
+ .ico+.ico{margin-left:10px}
+ .editrow{display:flex;gap:12px;margin-top:10px}
+ .editrow label{flex:1;font-size:11px;color:#6B7280}
+ select{width:100%;margin-top:4px;padding:7px;border:1px solid #D1D5DB;border-radius:7px;font-size:12.5px;background:#fff}
+ .note{font-size:11px;color:#6B7280;margin-top:9px;background:#EFF6FF;border-radius:7px;padding:8px 10px}
+</style></head><body>
+<div class="wrap">
+ <div class="nav">
+  <div class="h">App Builder</div><div class="sub">Scope → World → Sections</div>
+  <div class="lbl">Scope</div>
+  <span class="scope on">🏠 Home</span>
+  <span class="scope">🧑‍🎤 Creator Store</span>
+  <span class="scope">🏪 Business page</span>
+  <span class="scope dim">🏷️ Offers</span>
+  <div class="lbl">World</div>
+  <div class="worlds">
+   <span class="wpill on">Food</span><span class="wpill">Fashion</span><span class="wpill">Furniture</span><span class="wpill">Beauty</span>
+   <span class="wpill off">🙈 Car rentals</span>
+  </div>
+  <span class="manage">⚙ Manage worlds (order · enable · tile images)</span>
+  <div class="fixed">🔒 Top bar (account · search) is fixed — not editable.</div>
+ </div>
+ <div class="main">
+  <div class="bar"><div class="t">Home · Food — sections</div><div><button class="btn">+ Add section</button> <button class="btn pri">Publish</button></div></div>
+
+  <div class="row"><span class="grip">⠿</span><div><div class="rn">What's on your mind?</div><div class="chips"><span class="chip">Template · Category rail</span><span class="chip">Rule · world categories</span></div></div><span class="ico">📌</span><span class="ico">✏️</span></div>
+
+  <div class="row"><span class="grip">⠿</span><div><div class="rn">Food under ₹400</div><div class="chips"><span class="chip">Template · Product rail</span><span class="chip">Rule · library: under ₹400</span></div></div><span class="ico">📌</span><span class="ico">✏️</span></div>
+
+  <div class="row edit">
+   <div style="display:flex;align-items:center;gap:12px"><span class="grip">⠿</span><div class="rn" style="flex:1;color:#1D4ED8">Creators you'd love</div><span class="ico">▴</span></div>
+   <div class="editrow">
+    <label>Template<select><option>Creator carousel</option><option>Product rail</option><option>Image tiles</option><option>Restaurant list</option></select></label>
+    <label>Rule<select><option>Smart creators (promote · near · famous · followed)</option><option>Creators in category</option></select></label>
+   </div>
+   <div class="note">ℹ Same section auto-adapts by where it's placed — on a Business page this shows only that brand's collaborators.</div>
+  </div>
+
+  <div class="row"><span class="grip">⠿</span><div><div class="rn">Famous restaurants</div><div class="chips"><span class="chip">Template · Restaurant list</span><span class="chip">Rule · restaurants + featured</span></div></div><span class="ico">📌</span><span class="ico">✏️</span></div>
+ </div>
+</div>
+</body></html>

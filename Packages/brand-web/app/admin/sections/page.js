@@ -20,11 +20,15 @@ import { sectionApi, adminApi, uploadAdminStockImage } from '../../../lib/api';
 // So the Home tab is intentionally removed here to avoid placing shelves that
 // never render. Per-screen shelves below DO render: Category = the page after
 // tapping a world (scope it per-world); Offers/Creator = those screens.
-const SCREENS = [
-  { key: 'category', label: 'Category' },
-  { key: 'offers', label: 'Offers' },
-  { key: 'creator_store', label: 'Creator Store' },
-  { key: 'creator_category', label: "Creator's Category" },
+// The App Builder's three scopes (founder's model). Each maps to the underlying
+// engine `screen`, and all three are per-WORLD (scope_type='vertical').
+//   Home          → the world page (HomeScreen renders screen='category' per world)
+//   Creator Store → a creator's world (screen='creator_category')
+//   Business page → an individual business page (screen='business', Phase 1)
+const SCOPES = [
+  { key: 'category',         label: 'Home' },
+  { key: 'creator_category', label: 'Creator Store' },
+  { key: 'business',         label: 'Business page' },
 ];
 
 // Per-world scope values = the live follower worlds (follower_categories keys).
@@ -67,7 +71,8 @@ function slug(t) {
 
 export default function SectionsPage() {
   const [screen, setScreen] = useState('category');
-  const [scopeType, setScopeType] = useState('global');
+  // App Builder: all three scopes are per-world → always 'vertical'.
+  const [scopeType, setScopeType] = useState('vertical');
   const [scopeValue, setScopeValue] = useState('');   // committed
   const [cityDraft, setCityDraft] = useState('');
   const [shelves, setShelves] = useState([]);
@@ -79,13 +84,34 @@ export default function SectionsPage() {
   const [jsonErr, setJsonErr] = useState(null);
   const [addPreset, setAddPreset] = useState('brands');
   const [librarySections, setLibrarySections] = useState([]);
+  // Manage Worlds (absorbed Home Builder) — the follower worlds (tabs).
+  const [worlds, setWorlds] = useState([]);
+  const [showWorlds, setShowWorlds] = useState(false);
 
-  // Section Library (3c) options for the placement picker.
+  const loadWorlds = useCallback(() => {
+    adminApi.listHomeVerticals().then(res => {
+      if (res.success) setWorlds((res.data?.verticals || []).sort((a, b) => a.sort_order - b.sort_order));
+    });
+  }, []);
+
+  // Section Library (3c) options for the placement picker + the worlds list.
   useEffect(() => {
     adminApi.listSectionLibrary().then(res => {
       if (res.success) setLibrarySections((res.data?.sections || []).filter(s => s.status === 'active'));
     });
-  }, []);
+    loadWorlds();
+  }, [loadWorlds]);
+
+  // Manage Worlds actions (reuse the home-verticals API).
+  const worldToggle = async (w) => { await adminApi.updateHomeVertical(w.id, { enabled: !w.enabled }); loadWorlds(); };
+  const worldRename = async (w) => { const n = prompt('World name', w.name); if (n && n.trim()) { await adminApi.updateHomeVertical(w.id, { name: n.trim() }); loadWorlds(); } };
+  const worldMove = async (i, dir) => {
+    const j = i + dir; if (j < 0 || j >= worlds.length) return;
+    const a = worlds[i], b = worlds[j];
+    await adminApi.updateHomeVertical(a.id, { sort_order: b.sort_order });
+    await adminApi.updateHomeVertical(b.id, { sort_order: a.sort_order });
+    loadWorlds();
+  };
 
   const load = useCallback(async (scr, sType, sVal) => {
     setLoading(true); setMsg(null); setExpanded(null);
@@ -213,72 +239,84 @@ export default function SectionsPage() {
   return (
     <div className="p-6 max-w-4xl">
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-bold text-gray-900">🎛️ App Sections</h1>
+        <h1 className="text-xl font-bold text-gray-900">🧱 App Builder</h1>
         <button onClick={publish} disabled={saving || loading}
           className="px-4 py-2 rounded-lg bg-amber-700 text-white text-sm font-bold disabled:opacity-50">
           {saving ? 'Publishing…' : 'Publish'}
         </button>
       </div>
       <p className="text-xs text-gray-500 mb-4">
-        Rename, edit captions/labels, add sections, reorder, show/hide, set count, and pick
-        category + item-type per shelf. Scope to a city or vertical for overrides. Changes go
-        live in the follower app within ~60s — no app update.
+        Pick a <b>scope</b> → a <b>world</b> → arrange <b>sections</b> (each = a template + a rule).
+        The account icon + search are fixed. Changes go live in the follower app within ~60s — no app update.
       </p>
 
-      {/* Screen tabs */}
+      {/* 1 · Scope */}
+      <div className="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">1 · Scope</div>
       <div className="flex flex-wrap gap-2 mb-3">
-        {SCREENS.map(s => (
-          <button key={s.key} onClick={() => setScreen(s.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
+        {SCOPES.map(s => (
+          <button key={s.key} onClick={() => { setScreen(s.key); setScopeValue(''); }}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border ${
               screen === s.key ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>
             {s.label}
           </button>
         ))}
       </div>
 
-      {/* Scope selector */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 rounded-lg bg-gray-50 border border-gray-200">
-        <span className="text-[11px] font-bold text-gray-500 uppercase">Scope</span>
-        <select value={scopeType}
-          onChange={e => { setScopeType(e.target.value); setScopeValue(''); setCityDraft(''); }}
-          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white">
-          <option value="global">Global (all)</option>
-          <option value="city">City</option>
-          <option value="vertical">Vertical</option>
-        </select>
-        {scopeType === 'city' && (
-          <>
-            <input value={cityDraft} onChange={e => setCityDraft(e.target.value)} placeholder="e.g. Vijayawada"
-              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white" />
-            <button onClick={() => setScopeValue(cityDraft.trim())}
-              className="text-xs font-semibold px-2.5 py-1 rounded bg-gray-800 text-white">Load city</button>
-          </>
-        )}
-        {scopeType === 'vertical' && (
-          <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
-            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white">
-            <option value="">(pick vertical)</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-        {scopeNeedsValue && scopeValue
-          ? <span className="text-[11px] text-green-700 font-semibold">editing {scopeType}: {scopeValue}</span>
-          : scopeNeedsValue
-            ? <span className="text-[11px] text-gray-400">pick a {scopeType} to edit its overrides</span>
-            : null}
+      {/* 2 · World */}
+      <div className="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">2 · World</div>
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        {CATEGORIES.map(c => {
+          const w = worlds.find(x => x.key === c);
+          const hidden = w && w.enabled === false;
+          return (
+            <button key={c} onClick={() => setScopeValue(c)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${
+                scopeValue === c ? 'bg-amber-700 text-white border-amber-700'
+                : hidden ? 'bg-white text-gray-400 border-gray-200 border-dashed'
+                : 'bg-white text-gray-600 border-gray-300'}`}>
+              {hidden ? '🙈 ' : ''}{c}
+            </button>
+          );
+        })}
+        <button onClick={() => setShowWorlds(v => !v)}
+          className="ml-1 text-[11px] font-semibold text-amber-700">⚙ Manage worlds</button>
       </div>
+
+      {/* Manage Worlds (absorbed Home Builder) — order, show/hide, rename */}
+      {showWorlds && (
+        <div className="mb-4 p-3 rounded-lg bg-gray-50 border border-gray-200 flex flex-col gap-1.5">
+          <div className="text-[11px] text-gray-500 mb-1">Worlds are the app's top tabs. Hide one (e.g. car rentals) to remove it from the follower home.</div>
+          {worlds.map((w, i) => (
+            <div key={w.id} className={`flex items-center gap-2 text-xs ${w.enabled === false ? 'opacity-50' : ''}`}>
+              <button onClick={() => worldMove(i, -1)} disabled={i === 0} className="text-gray-400 disabled:opacity-30">▲</button>
+              <button onClick={() => worldMove(i, 1)} disabled={i === worlds.length - 1} className="text-gray-400 disabled:opacity-30">▼</button>
+              <span className="font-semibold text-gray-800 flex-1">{w.name} <span className="text-gray-400">· {w.key}</span></span>
+              <button onClick={() => worldRename(w)} className="text-gray-500">✏️</button>
+              <button onClick={() => worldToggle(w)} title="Show/hide">{w.enabled === false ? '👁' : '🙈'}</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {!showWorlds && (
+        scopeValue
+          ? <div className="text-[11px] text-green-700 font-semibold mb-3">editing {SCOPES.find(s => s.key === screen)?.label} · {scopeValue}</div>
+          : <div className="text-[11px] text-gray-400 mb-3">pick a world above to arrange its sections</div>
+      )}
 
       {msg && (
         <div className={`mb-3 px-3 py-2 rounded-lg text-xs font-semibold ${
           msg.kind === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{msg.text}</div>
       )}
 
+      {scopeValue && !loading && (
+        <div className="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">3 · Sections — top to bottom</div>
+      )}
       {loading ? (
         <div className="text-sm text-gray-500 py-10 text-center">Loading…</div>
       ) : (scopeNeedsValue && !scopeValue) ? (
-        <div className="text-sm text-gray-500 py-10 text-center">Pick a {scopeType} above to edit its shelves.</div>
+        <div className="text-sm text-gray-500 py-10 text-center">Pick a world above to arrange its sections.</div>
       ) : shelves.length === 0 ? (
-        <div className="text-sm text-gray-500 py-10 text-center">No shelves for this scope yet — add one below.</div>
+        <div className="text-sm text-gray-500 py-10 text-center">No sections here yet — add one below.</div>
       ) : (
         <div className="flex flex-col gap-2">
           {shelves.map((s, idx) => {
