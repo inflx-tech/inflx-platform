@@ -16,7 +16,7 @@ const { success } = require('../utils/response');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../utils/asyncHandler');
 
-const SCREENS = ['home', 'category', 'offers', 'creator_store', 'creator_category'];
+const SCREENS = ['home', 'category', 'offers', 'creator_store', 'creator_category', 'business'];
 const SCOPE_TYPES = ['global', 'city', 'vertical'];
 const SHELF_TYPES = ['creators', 'nav_tiles', 'offers', 'products', 'brands', 'mixed', 'controls', 'tiles', 'category_rail', 'restaurant_list'];
 const ITEM_TYPES = ['brands', 'products', 'offers'];

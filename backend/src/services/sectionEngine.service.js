@@ -108,7 +108,7 @@ async function resolveInfluencerByHandle(handle) {
 async function buildSections(opts) {
   const { screen, scopeType = 'global', scopeValue = null,
           city = null, followerId = null, categoryKey = null, influencer = null,
-          lat = null, lng = null } = opts;
+          lat = null, lng = null, brandId = null } = opts;
 
   const [rows, followedIds, taxMaps] = await Promise.all([
     loadConfig(screen, scopeType, scopeValue),
@@ -171,9 +171,16 @@ async function buildSections(opts) {
     }
 
     const ctx = {
+      // ── Standardized placement context (App Builder Phase 1) ──────────────
+      // Every rule receives WHERE it is placed so it can self-filter: the same
+      // section behaves differently by scope/world/business/viewer. Existing
+      // rules ignore the fields they don't use.
+      scope: screen,                                       // home | category | offers | creator_store | creator_category | business
+      vertical: scopeType === 'vertical' ? scopeValue : (rowCategoryKey || null), // the world (food/fashion/…)
+      brandId,                                             // set when rendering a business page → brand-scoped rules
       city,
       followerId,
-      followedIds,
+      followedIds,                                         // viewer's followed creator ids
       categoryKey: rowCategoryKey,
       // admin-linked member businesses for this key, from the single taxonomy source
       categoryCats,
@@ -191,6 +198,7 @@ async function buildSections(opts) {
     const key = JSON.stringify([
       screen, scopeType, scopeValue, sectionKey(row), row.rule, ctx.itemType,
       ctx.categoryKey, ctx.limit, city, followerId, influencer?.id || null,
+      brandId || null,                  // distinct cache per business page
       cfg.library_section_id || null,   // distinct cache per placed library section
       // round coords to ~100m so nearby followers share a cache entry
       lat != null ? Math.round(lat * 1000) / 1000 : null,

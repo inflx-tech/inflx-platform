@@ -1,0 +1,18 @@
+{
+  "feature": "admin-phase1-context-engine",
+  "area": "admin-section-engine",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'go to phase 1' + 'pls run' (migration go)",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — backend-only foundation (no UI); 'go to phase 1' covers it",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "Migration 119 (APPLIED to prod) + backend/src (Render). No mobile/OTA. No admin-web UI (that is Phase 2).",
+  "fix": "App Builder Phase 1 — context-aware engine + business scope. (1) Migration 119: widen section_config CHECKs — screen += 'business' (third section-stack scope); shelf_type += tiles/category_rail/restaurant_list (the DB second gate that, with Phase 0's controller fix, fully unblocks saving those sections). Idempotent drop+re-add named constraints. (2) sectionEngine.buildSections: standardized placement context on every rule's ctx — scope(=screen), vertical(=world), brandId(business page), plus existing viewer location + followedIds; brandId added to cache key. Additive — existing rules ignore new fields. (3) adminSections SCREENS += 'business'.",
+  "notes": "Migration 119 applied to Supabase prod (constraints verified via applier output). Backend additive; pnpm qa GREEN(79); admin-sections.test 8/8. section-engine.test has 3 PRE-EXISTING stale-fixture fails (091 header at pos0, 102 → 5 verticals, truncateAll seeding) — NOT this change (additive ctx); tracked as backend-test-debt. Phase 2 = the App Builder UI consumes these scopes.",
+  "release": { "qa_all_green": "pnpm qa GREEN 79; admin-sections 8/8; migration 119 applied+verified on prod", "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "migration applied; backend push pending" }
+}
