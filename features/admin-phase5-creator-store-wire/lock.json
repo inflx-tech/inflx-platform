@@ -1,0 +1,18 @@
+{
+  "feature": "admin-phase5-creator-store-wire",
+  "area": "mobile-follower-v2",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'go with phase 5'",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — wiring an existing screen to the section engine (no new screen design); 'go with phase 5'",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "Mobile OTA only. No backend (getCreatorSections endpoint already exists), no migration.",
+  "fix": "App Builder Phase 5 (final) — wire the Creator Store to the section engine. InfluencerStoreScreen now fetches followerApi.getCreatorSections(handle) (the creator_store scope, influencer in ctx) and renders the admin-composed section stack (via SectionItem) after the profile hero/collabs. The legacy picks/collabs remain as fallback when nothing is composed → zero regression. Closes the audit gap (getCreatorSections had no mobile consumer; live screen used only the legacy resolveStore).",
+  "notes": "Safe hybrid (mirrors Phase 4): hero spine kept; composed creator sections render when present, legacy picks carry it otherwise. Verified: metro bundle compiles, mobile jest 20/20. Creator Store reskin to toing is a separate future concern (this phase wires the engine, not the palette). PROGRAM COMPLETE: P0–P5 all shipped.",
+  "release": { "qa_all_green": "metro bundle compiles; mobile jest 20/20", "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending OTA" }
+}

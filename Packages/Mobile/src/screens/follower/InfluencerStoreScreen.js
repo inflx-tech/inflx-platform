@@ -27,6 +27,7 @@ import { followerApi } from '../../services/api';
 import { shareTarget } from '../../utils/shareUrl';
 import { DealCard, ShelfProductCard, ShelfHeader, Gradient } from '../../components/vibe';
 import { emojiFor } from '../../components/vibe/palette';
+import { SectionItem } from '../../components/SectionRenderer';
 
 const CATEGORY_LABELS = {
   restaurant: 'Restaurants', bakery: 'Bakery', salon: 'Salon', car_rental: 'Car Rental',
@@ -44,6 +45,10 @@ export default function InfluencerStoreScreen({ route, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [isFollowing, setFollow] = useState(false);
   const [tab, setTab] = useState('all');
+  // App Builder Phase 5 — admin-composed creator_store section stack (the engine
+  // consumer the Creator Store was missing). Empty until composed → legacy picks
+  // below carry the screen (no regression).
+  const [creatorSections, setCreatorSections] = useState([]);
 
   const fetchStore = useCallback(async () => {
     try {
@@ -57,6 +62,14 @@ export default function InfluencerStoreScreen({ route, navigation }) {
   }, [handle]);
 
   useEffect(() => { setLoading(true); fetchStore().finally(() => setLoading(false)); }, [fetchStore]);
+  useEffect(() => {
+    let alive = true;
+    if (!handle) return undefined;
+    followerApi.getCreatorSections?.(handle)
+      .then((res) => { if (alive && res?.success) setCreatorSections(res.data?.sections || []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [handle]);
   const onRefresh = useCallback(async () => { setRefreshing(true); await fetchStore(); setRefreshing(false); }, [fetchStore]);
 
   const influencer = store?.influencer || {};
@@ -218,6 +231,13 @@ export default function InfluencerStoreScreen({ route, navigation }) {
             </ScrollView>
           </View>
         )}
+
+        {/* Admin-composed creator_store sections (App Builder Phase 5).
+            Render the creator's composed stack; the legacy picks below remain
+            the fallback when nothing is composed. */}
+        {creatorSections.map((sec, i) => (
+          <SectionItem key={sec.key || `cs_${i}`} section={sec} navigation={navigation} />
+        ))}
 
         {/* category tabs */}
         {cats.length > 0 && (
