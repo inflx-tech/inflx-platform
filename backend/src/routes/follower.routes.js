@@ -61,6 +61,7 @@ router.get('/products/:product_id', authenticateOptional, ctrl.getProductDetail)
 // Contract: features/follower-section-engine/.
 router.get('/home',                                  authenticateOptional, ctrl.getHomeSections);
 router.get('/section/category/:key',                 authenticateOptional, ctrl.getCategorySections);
+router.get('/business/:brand_id/sections',           authenticateOptional, ctrl.getBusinessSections);
 router.get('/section/offers',                        authenticateOptional, ctrl.getOffersSections);
 router.get('/section/creator/:handle',               authenticateOptional, ctrl.getCreatorSections);
 router.get('/section/creator/:handle/category/:cat', authenticateOptional, ctrl.getCreatorCategorySections);

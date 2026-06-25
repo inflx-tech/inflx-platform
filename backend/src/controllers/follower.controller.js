@@ -1294,6 +1294,26 @@ const getCategorySections = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
+// GET /v1/follower/business/:brand_id/sections
+// App Builder Phase 4 — the business page as an admin-composed section stack.
+// Resolves the brand's WORLD (category → tile key) and renders the 'business'
+// scope for that vertical with brandId in context (so creator/offers sections
+// auto-scope to this brand). The Menu section is a vertical-specific marker the
+// mobile screen renders from its own store payload.
+const getBusinessSections = asyncHandler(async (req, res) => {
+  const { followerId, city, lat, lng } = await resolveFollowerContext(req);
+  const brandId = req.params.brand_id;
+  const { rows } = await db.query(`SELECT category FROM brands WHERE id = $1`, [brandId]);
+  if (!rows[0]) throw new AppError('NOT_FOUND', 'Business not found', 404, 'brand_id');
+  const tile = await categoryTaxonomy.tileForBusinessType(rows[0].category);
+  const worldKey = tile?.key || null;
+  const data = await sectionEngine.buildSections({
+    screen: 'business', scopeType: 'vertical', scopeValue: worldKey,
+    categoryKey: worldKey, brandId, city, followerId, lat, lng,
+  });
+  return success(res, data);
+});
+
 // GET /v1/follower/section/offers
 const getOffersSections = asyncHandler(async (req, res) => {
   const { followerId, city, lat, lng } = await resolveFollowerContext(req);
@@ -1621,6 +1641,7 @@ module.exports = {
   placeDetails,
   getHomeSections,
   getCategorySections,
+  getBusinessSections,
   getOffersSections,
   getCreatorSections,
   getCreatorCategorySections,

@@ -450,6 +450,13 @@ export const followerApi = {
     const qs = p.length ? `?${p.join('&')}` : '';
     return api.get(`/follower/section/category/${encodeURIComponent(key)}${qs}`);
   },
+  // App Builder Phase 4 — the business page's admin-composed section stack.
+  getBusinessSections: (brandId, loc = null) => {
+    const p = [];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    const qs = p.length ? `?${p.join('&')}` : '';
+    return api.get(`/follower/business/${encodeURIComponent(brandId)}/sections${qs}`);
+  },
   getOffersSections: (loc = null) => {
     const p = [];
     if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);

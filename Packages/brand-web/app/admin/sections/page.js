@@ -63,6 +63,10 @@ const ADD_PRESETS = [
   // Phase 3c — place a reusable Section Library section (data-driven). Pick which
   // section in the row editor; the engine fills it from that section's rule.
   { key: 'library',  label: 'Library Section',  shelf_type: 'products', rule: 'library_products',       item_type: 'products', title: 'New section' },
+  // Business-page core listing — VERTICAL-SPECIFIC. Food = the collapsible Menu
+  // (the mobile screen renders dishes from the brand's own catalogue). `biz`
+  // limits where the preset is offered (Business scope + that world only).
+  { key: 'food_menu', label: 'Menu (food — collapsible dishes)', shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' }, biz: 'food' },
 ];
 
 function hasTypeControls(s) {
@@ -553,7 +557,9 @@ export default function SectionsPage() {
         <div className="flex items-center gap-2 mt-4">
           <select value={addPreset} onChange={e => setAddPreset(e.target.value)}
             className="text-xs border border-gray-300 rounded px-2 py-1.5 bg-white">
-            {ADD_PRESETS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+            {ADD_PRESETS
+              .filter(p => !p.biz || (screen === 'business' && scopeValue === p.biz))
+              .map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
           </select>
           <button onClick={addSection}
             className="px-3 py-1.5 rounded-lg border-2 border-dashed border-amber-600 text-amber-700 text-xs font-bold">

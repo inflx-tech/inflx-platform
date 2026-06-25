@@ -1,0 +1,18 @@
+{
+  "feature": "admin-phase4-business-page",
+  "area": "follower-section-engine",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'ok pls build phase 4' (hybrid locked: header spine + composed body incl. Menu as a FOOD section; per-vertical section templates)",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — chat 2026-06-23 (business_page_sections mockup; hybrid; vertical-aware sections)",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "backend/src (Render) + admin-web (Vercel) + mobile OTA. No migration (Phase 1 added the 'business' scope + widened CHECKs).",
+  "fix": "App Builder Phase 4 — the food business page as an admin-composed section stack. Backend: GET /follower/business/:brand_id/sections → resolves brand.category → world tile → buildSections(screen='business', scopeType='vertical', scopeValue=world, brandId, viewer); brandId in ctx so creator/offers sections auto-scope to the brand. Admin: 'Menu (food — collapsible dishes)' preset (shelf_type products, rule static, config.kind=menu) shown ONLY for Business→food (vertical-aware preset filter); shared sections placeable in business scope. Mobile: RestaurantDetailScreen fetches getBusinessSections + renders header spine + the composed stack — Menu marker → the collapsible MenuTab, other sections → SectionItem; DEFAULTS to Menu-only when uncomposed (no regression).",
+  "notes": "Hybrid per founder: header fixed spine; body = composed stack incl. Menu (a FOOD-specific section template; fashion gets its own catalogue section later). Verified: backend loads + business build executes on DB (empty until composed), brand→world resolves on prod (follower_categories), brand-web build exit 0, metro bundle compiles, mobile jest 20/20, pnpm qa GREEN(79). Existing creator-collab + Sagar strips kept (intrinsic). Per-section RULE dropdown still preset-based.",
+  "release": { "qa_all_green": "pnpm qa GREEN 79; mobile jest 20/20; brand-web build exit 0; bundle compiles; business build executes", "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending push + OTA" }
+}

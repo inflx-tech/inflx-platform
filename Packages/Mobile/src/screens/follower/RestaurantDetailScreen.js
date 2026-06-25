@@ -50,6 +50,7 @@ import CustomiseSheet from '../../components/food/CustomiseSheet';
 import DishDetailSheet from '../../components/food/DishDetailSheet';
 import { useCart } from '../../services/CartContext';
 import { vegKind } from '../../utils/veg';
+import { SectionItem } from '../../components/SectionRenderer';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const HERO_HEIGHT = 230;
@@ -111,6 +112,18 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
     if (!brand.id) return undefined;
     mealsApi.getStore(brand.id)
       .then((res) => { if (alive && (res?.success || res?.data)) setMealStore(res.data || res); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [brand.id]);
+
+  // App Builder Phase 4 — the admin-composed business-page section stack (menu +
+  // banner/creator/offers sections), rendered around the fixed header spine.
+  const [bizSections, setBizSections] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    if (!brand.id) return undefined;
+    followerApi.getBusinessSections?.(brand.id)
+      .then((res) => { if (alive && res?.success) setBizSections(res.data?.sections || []); })
       .catch(() => {});
     return () => { alive = false; };
   }, [brand.id]);
@@ -317,12 +330,26 @@ export default function RestaurantDetailScreen({ store, navigation, tracking }) 
           </View>
         </View>
 
-        {/* ── MENU — primary content (menu-forward storefront) ── */}
-        <MenuTab onAddPress={(p) => openDish(p, 'customise')}
-          canOrder={canOrder}
-          sections={sections} visibleSection={visibleSection}
-          sectionKeys={sectionKeys} onSelectSection={setSection}
-          picks={picks} onProductPress={onProductPress} creator={creator} />
+        {/* ── Business page = admin-composed section stack (App Builder Phase 4).
+             The Menu is the food core section; banner/creator/offers sections
+             render around it via SectionItem. Defaults to Menu-only when the
+             admin hasn't composed a Business→Food stack (no regression). ── */}
+        {(() => {
+          const isMenu = (sec) => sec?.config?.kind === 'menu' || sec?.type === 'menu';
+          const menuEl = (
+            <MenuTab key="__menu" onAddPress={(p) => openDish(p, 'customise')}
+              canOrder={canOrder}
+              sections={sections} visibleSection={visibleSection}
+              sectionKeys={sectionKeys} onSelectSection={setSection}
+              picks={picks} onProductPress={onProductPress} creator={creator} />
+          );
+          const stack = (bizSections && bizSections.length) ? bizSections : [];
+          const rendered = stack.map((sec, i) => isMenu(sec)
+            ? menuEl
+            : <SectionItem key={sec.key || i} section={sec} navigation={navigation} />);
+          // Menu always shows, even if the admin didn't explicitly place it.
+          return stack.some(isMenu) ? rendered : [menuEl, ...rendered];
+        })()}
 
         {/* ── {Business} × Creators + trust line (platform differentiator) ── */}
         {influencers.length > 0 && (
