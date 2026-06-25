@@ -1,0 +1,18 @@
+{
+  "feature": "admin-phase3-smart-creator-rule",
+  "area": "admin-section-engine",
+  "spec_version": "0.1.0",
+  "status": "in-progress",
+  "approved": true,
+  "approved_by": "founder — chat 2026-06-23: 'move to phase 3' (smart creator rule, locked definition)",
+  "approved_at": "2026-06-23",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder — backend rule + one admin preset entry (no new screen design); locked definition in chat",
+  "mockup_locked_at": "2026-06-23",
+  "deploy_posture": "backend/src (Render) + admin-web preset (Vercel). No mobile/OTA, no migration.",
+  "fix": "App Builder Phase 3 — the smart creator-carousel RULE. New sectionRules.creatorsSmart (registered as RULES.creators_smart): context-aware via the Phase-1 ctx — promotes-this-world (picks OR active collaborations with brands in ctx.vertical/categoryFilter), near the viewer (nearest such business to ctx.lat/lng via haversine; sort not gate), active (recent campaign_influencers), famous (followers_count), followed (ctx.followedIds); ORDER followed-first then strong un-followed (near · active · famous) to drive new follows. BUSINESS scope (ctx.brandId) → only creators collaborating with that brand. Admin: new 'Creator carousel (smart)' preset (shelf_type creators, rule creators_smart).",
+  "notes": "Validated: runRule('creators_smart') executes on local DB — world scope returns ranked creators (is_followed/distance_km), business scope returns brand-collaborators. pnpm qa GREEN(79); brand-web build exit 0; sectionRules load OK. Data note: 'top-selling nearby' is business-level (follower_transactions has offer_id not product_id) — 'active' uses recent collaboration for now.",
+  "release": { "qa_all_green": "pnpm qa GREEN 79; brand-web build exit 0; rule executes on DB", "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending push" }
+}

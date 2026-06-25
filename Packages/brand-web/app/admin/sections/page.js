@@ -45,6 +45,9 @@ const ADD_PRESETS = [
   { key: 'products', label: 'Products rail',   shelf_type: 'products', rule: 'products_in_category',   item_type: 'products', title: 'Trending Products' },
   { key: 'offers',   label: 'Offers rail',     shelf_type: 'offers',   rule: 'top_by_conversions',     item_type: 'offers',   title: 'Best Deals' },
   { key: 'creators', label: 'Creators rail',   shelf_type: 'creators', rule: 'creators_listing',       title: 'Top Creators' },
+  // Smart creator carousel — context-aware (promote-world · near · active · famous ·
+  // followed-first; auto-narrows to a brand's collaborators on a Business page).
+  { key: 'creators_smart', label: 'Creator carousel (smart)', shelf_type: 'creators', rule: 'creators_smart', title: "Creators you'd love" },
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
   // Food 3C — the world's sub-category tiles as a placeable section (📌-able).
   { key: 'category_rail', label: 'Category rail (sticky-able)', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },

@@ -1001,6 +1001,80 @@ async function creatorsListing(ctx) {
   return rows.map(r => ({ ...mapCreatorItem(r), is_followed: r.is_followed === true, has_live_deal: r.has_live_deal === true }));
 }
 
+// Smart creator carousel (App Builder Phase 3) — ONE context-aware creator rule.
+//  • promotes THIS world: has product picks OR active collaborations with brands
+//    in the placement's vertical (categoryFilter / ctx.vertical).
+//  • near the VIEWER: nearest such business to ctx.lat/lng (creators have no own
+//    geo — they ride their businesses' locations). Distance is a sort, not a gate.
+//  • active: has a recent collaboration (campaign_influencers).
+//  • famous: followers_count.   • followed: ctx.followedIds.
+//  • BUSINESS scope (ctx.brandId set): ONLY creators collaborating with THAT brand.
+// Order: followed first (personalization), then strong un-followed (near · active ·
+// famous) — to nudge the follower to follow more creators → more deals.
+async function creatorsSmart(ctx) {
+  const { limit = 12, followedIds, lat, lng, brandId } = ctx;
+  let cats = brandId ? null : categoryFilter(ctx);
+  if (!cats && !brandId && ctx.vertical) {
+    const m = categoryTaxonomy.membersForSync(ctx.vertical);
+    cats = m && m.length ? m : null;
+  }
+  const params = [];
+  let p = 0;
+  const followArr = followedIds && followedIds.size ? Array.from(followedIds) : [];
+  const followIdx = ++p; params.push(followArr);
+  const catIdx = cats ? ++p : null; if (cats) params.push(cats);
+  const brandIdx = brandId ? ++p : null; if (brandId) params.push(brandId);
+  const hasGeo = lat != null && lng != null;
+  let latIdx = null, lngIdx = null;
+  if (hasGeo) { latIdx = ++p; params.push(lat); lngIdx = ++p; params.push(lng); }
+  const limIdx = ++p; params.push(limit);
+
+  const brandWhere = `ub.status = 'approved'`
+    + (cats ? ` AND b.category = ANY($${catIdx})` : '')
+    + (brandId ? ` AND b.id = $${brandIdx}` : '');
+  const distSel = hasGeo
+    ? `CASE WHEN b.lat IS NOT NULL AND b.lng IS NOT NULL THEN ${haversineKm(latIdx, lngIdx)} END`
+    : 'NULL::numeric';
+
+  const sql = `
+    WITH rel AS (
+      SELECT ci.influencer_id, ${distSel} AS dist, ci.created_at AS collab_at, true AS is_collab
+        FROM campaign_influencers ci
+        JOIN campaign_sets cs ON cs.id = ci.set_id
+        JOIN campaigns c      ON c.id  = cs.campaign_id
+        JOIN brands b         ON b.id  = c.brand_id
+        JOIN users ub         ON ub.id = b.user_id
+       WHERE ci.status IN ('contracted','active','completed') AND ${brandWhere}
+      UNION ALL
+      SELECT ipn.influencer_id, ${distSel} AS dist, NULL::timestamptz AS collab_at, false AS is_collab
+        FROM influencer_product_notes ipn
+        JOIN brand_products bp ON bp.id = ipn.product_id AND bp.is_active = true
+        JOIN brands b          ON b.id  = bp.brand_id
+        JOIN users ub          ON ub.id = b.user_id
+       WHERE ${brandWhere}
+    )
+    SELECT i.id AS influencer_id, i.instagram_handle AS handle, i.followers_count,
+           i.profile_image_url AS profile_pic_url, u_i.name AS influencer_name,
+           (i.id = ANY($${followIdx})) AS is_followed,
+           max(rel.collab_at) AS last_collab_at,
+           min(rel.dist) AS dist_km
+      FROM rel
+      JOIN influencers i ON i.id = rel.influencer_id
+      JOIN users u_i     ON u_i.id = i.user_id
+     GROUP BY i.id, i.instagram_handle, i.followers_count, i.profile_image_url, u_i.name
+     ORDER BY (i.id = ANY($${followIdx})) DESC,
+              ${hasGeo ? 'min(rel.dist) ASC NULLS LAST,' : ''}
+              (max(rel.collab_at) IS NOT NULL) DESC,
+              i.followers_count DESC NULLS LAST
+     LIMIT $${limIdx}`;
+  const { rows } = await db.query(sql, params);
+  return rows.map(r => ({
+    ...mapCreatorItem(r),
+    is_followed: r.is_followed === true,
+    distance_km: r.dist_km != null ? Math.round(Number(r.dist_km) * 10) / 10 : undefined,
+  }));
+}
+
 // ── nav / static / disabled ─────────────────────────────────────────────────
 
 async function navVerticals(ctx) {
@@ -1069,6 +1143,8 @@ const RULES = {
   stories,
   creators_listing: creatorsListing,
   creators_in_category: creatorsInCategory,
+  creators_smart: creatorsSmart,   // App Builder Phase 3 — context-aware creator carousel
+
   // listing-driven discovery (offer-independent)
   businesses_in_category: businessesInCategory,
   products_in_category: productsInCategory,
