@@ -13,6 +13,13 @@
   "mockup_locked_at": "2026-06-26",
   "deploy_posture": "admin-web (Vercel) only. No mobile, no migration. App renders identically — authoring UX only.",
   "fix": "App Builder section-editor redesign (founder feedback the Phase-2 evolution kept legacy). DELETED legacy: per-row category_key + item_type dropdowns (re-asked the world already picked) + their helpers (hasTypeControls, changeType, ITEM_TYPES, RULE_FOR_TYPE). ADDED the guided flow: friendly template name on the row (templateLabel) + on expand a TemplatePreview wireframe (see the shape) THEN a 'What fills it? (rule)' dropdown for data templates (RULES_BY_SHELF: creators→smart/top/in-category, products→library/in-category, brands→businesses) — template→rule now explicit. Per-tile image-upload + wire-to-group already existed (kept). Neutralized beauty default titles (tiles_banner 'Serums for healthy skin'→'Banner', tiles_grid→'Tile grid'). Raw JSON already behind an Advanced flap.",
-  "notes": "Founder: 'you did not design as we agreed' — Phase 2 relabeled the top but kept the old per-row editor. This rebuild delivers: template dropdown → preview → required inputs (images per tile, then rule). Preview = shape only (real-data preview later). New sections keep a sensible default rule. Build exit 0. FOUNDER ACTION: delete the stray 'Healthy skin' banner on Food home via ✕ + Publish (test content, not code).",
-  "release": { "qa_all_green": "brand-web build exit 0", "released": false, "released_by": null, "released_at": null, "maestro_green": false, "deploy": "pending push" }
+  "notes": "Founder: 'you did not design as we agreed' — Phase 2 relabeled the top but kept the old per-row editor. This rebuild delivers: template dropdown → preview → required inputs (images per tile, then rule). Preview = shape only (real-data preview later). New sections keep a sensible default rule. Build exit 0. FOUNDER ACTION: delete the stray 'Healthy skin' banner on Food home via ✕ + Publish (test content, not code). | R2 2026-06-26: 4 founder fixes (Advanced flap deleted, library dropdown world-filtered, wider layout, obvious Delete). Template-list pruning deferred to founder discussion.",
+  "release": {
+    "qa_all_green": "brand-web build exit 0",
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false,
+    "deploy": "pending push"
+  }
 }

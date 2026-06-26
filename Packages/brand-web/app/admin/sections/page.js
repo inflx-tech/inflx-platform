@@ -227,11 +227,6 @@ export default function SectionsPage() {
     setJsonDraft(JSON.stringify(s.config_json || {}, null, 2));
     setJsonErr(null);
   };
-  const onJsonChange = (id, v) => {
-    setJsonDraft(v);
-    try { const parsed = v.trim() ? JSON.parse(v) : {}; setConfig(id, parsed); setJsonErr(null); }
-    catch { setJsonErr('Invalid JSON — not applied'); }
-  };
 
   const addSection = () => {
     const p = ADD_PRESETS.find(x => x.key === addPreset) || ADD_PRESETS[0];
@@ -285,9 +280,14 @@ export default function SectionsPage() {
   };
 
   const scopeNeedsValue = scopeType !== 'global';
+  // Only show Section Library groups for the world being edited (+ ALL-world
+  // groups). On Home→Food you see food groups, not All Fashion / Men's Jeans.
+  const worldSections = librarySections.filter(
+    sec => !scopeValue || sec.business_type === scopeValue || sec.business_type === 'ALL'
+  );
 
   return (
-    <div className="p-6 max-w-4xl">
+    <div className="p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-bold text-gray-900">🧱 App Builder</h1>
         <button onClick={publish} disabled={saving || loading}
@@ -402,7 +402,8 @@ export default function SectionsPage() {
                     className={`w-10 h-6 rounded-full relative transition-colors ${s.enabled !== false ? 'bg-amber-700' : 'bg-gray-300'}`} aria-label="toggle enabled">
                     <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${s.enabled !== false ? 'left-[18px]' : 'left-0.5'}`} />
                   </button>
-                  <button onClick={() => removeShelf(s)} className="text-gray-300 hover:text-red-500 text-sm" aria-label="remove">✕</button>
+                  <button onClick={() => removeShelf(s)} title="Delete this section"
+                    className="text-xs font-semibold px-2 py-1 rounded border border-red-200 text-red-600 hover:bg-red-50" aria-label="delete section">🗑 Delete</button>
                 </div>
 
                 {/* Config editor (v2) — preview → rule → images */}
@@ -466,7 +467,7 @@ export default function SectionsPage() {
                             <select value={t.library_section_id || ''} onChange={e => updateTile(id, ti, { library_section_id: e.target.value })}
                               className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 bg-white">
                               <option value="">(wire to a group)</option>
-                              {librarySections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
+                              {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
                             </select>
                             <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove tile">✕</button>
                           </div>
@@ -481,7 +482,7 @@ export default function SectionsPage() {
                         <select value={cfg.library_section_id || ''}
                           onChange={e => {
                             const secId = e.target.value;
-                            const sec = librarySections.find(x => x.id === secId);
+                            const sec = worldSections.find(x => x.id === secId);
                             update(id, {
                               config_json: { ...(s.config_json || {}), library_section_id: secId },
                               ...((!s.title || s.title === 'New section') && sec ? { title: sec.name } : {}),
@@ -489,12 +490,12 @@ export default function SectionsPage() {
                           }}
                           className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
                           <option value="">(pick a section)</option>
-                          {librarySections.map(sec => (
+                          {worldSections.map(sec => (
                             <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>
                           ))}
                         </select>
                         {!cfg.library_section_id && <span className="block mt-0.5 text-[11px] text-red-600 font-semibold">Pick a section — required before publishing.</span>}
-                        {librarySections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No sections yet — create them in Section Library.</span>}
+                        {worldSections.length === 0 && <span className="block mt-0.5 text-[11px] text-gray-400">No {scopeValue || ''} groups yet — create them in Section Library.</span>}
                       </label>
                     )}
                     {/* Presentation (Phase 6) — library_products → Row | Banner-Gateway. */}
@@ -578,12 +579,6 @@ export default function SectionsPage() {
                       </div>
                     )}
 
-                    <details>
-                      <summary className="text-[11px] font-semibold text-gray-500 cursor-pointer">Advanced — raw config JSON</summary>
-                      <textarea value={isOpen ? jsonDraft : ''} onChange={e => onJsonChange(id, e.target.value)}
-                        rows={6} className="mt-1 w-full text-[11px] font-mono border border-gray-300 rounded px-2 py-1" />
-                      {jsonErr && <div className="text-[11px] text-red-600 font-semibold">{jsonErr}</div>}
-                    </details>
                   </div>
                 )}
               </div>
