@@ -35,8 +35,6 @@ const SCOPES = [
 // getCategorySections passes scopeType='vertical', scopeValue=<world>, so a
 // Category shelf scoped to 'food' shows ONLY on the food page.
 const CATEGORIES = ['food', 'fashion', 'furniture', 'beauty', 'car_rental'];
-const ITEM_TYPES = ['brands', 'products', 'offers'];
-const RULE_FOR_TYPE = { brands: 'top_by_engagement', products: 'products_in_category', offers: 'top_by_conversions' };
 
 // ＋ Add Section presets → valid {shelf_type, rule, item_type?} (rules exist in
 // sectionRules.service.js). Listing-driven rules populate without offers.
@@ -55,8 +53,8 @@ const ADD_PRESETS = [
   // All four are shelf_type 'tiles', differing only by config.style.
   { key: 'tiles',          label: 'Image tiles (spotlight)',      shelf_type: 'tiles', rule: 'static', title: 'Spotlight',          config: { style: 'carousel' } },
   { key: 'tiles_featured', label: 'Featured carousel',            shelf_type: 'tiles', rule: 'static', title: 'Featured',           config: { style: 'featured' } },
-  { key: 'tiles_grid',     label: 'Tile grid (shop by concern)',  shelf_type: 'tiles', rule: 'static', title: 'Shop by concern',     config: { style: 'grid' } },
-  { key: 'tiles_banner',   label: 'Themed banner + sub-tiles',    shelf_type: 'tiles', rule: 'static', title: 'Serums for healthy skin', config: { style: 'banner' } },
+  { key: 'tiles_grid',     label: 'Tile grid',                    shelf_type: 'tiles', rule: 'static', title: 'Tile grid',  config: { style: 'grid' } },
+  { key: 'tiles_banner',   label: 'Themed banner + sub-tiles',    shelf_type: 'tiles', rule: 'static', title: 'Banner',     config: { style: 'banner' } },
   // Food World 3C-1 — Type B: one card per restaurant + a nested carousel of its
   // featured dishes (is_featured/featured_sort, fallback first N in-stock).
   { key: 'restaurant_list', label: 'Restaurants + dishes (food)', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
@@ -69,9 +67,57 @@ const ADD_PRESETS = [
   { key: 'food_menu', label: 'Menu (food — collapsible dishes)', shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' }, biz: 'food' },
 ];
 
-function hasTypeControls(s) {
-  return s.shelf_key === 'top_in' || s.item_type != null;
+// Friendly template name for a section row (replaces the raw shelf_type·rule).
+const TEMPLATE_NAMES = {
+  products: 'Product rail', creators: 'Creator rail', brands: 'Business rail',
+  tiles: 'Image tiles', category_rail: 'Category rail', restaurant_list: 'Restaurant list',
+  banner_gateway: 'Hero banner', offers: 'Offers rail', mixed: 'Mixed rail',
+  nav_tiles: 'Nav tiles', controls: 'Filter chips',
+};
+function templateLabel(s) {
+  if ((s.config_json || {}).kind === 'menu') return 'Menu (food)';
+  return TEMPLATE_NAMES[s.shelf_type] || s.shelf_type;
 }
+
+// template → which RULES it can use (the explicit "what fills it" step). Templates
+// with a single fixed rule (category_rail / restaurant_list / tiles per-tile / menu)
+// don't show a picker.
+const RULES_BY_SHELF = {
+  creators: [
+    { v: 'creators_smart', l: 'Smart creators (promote · near · famous · followed)' },
+    { v: 'creators_listing', l: 'Top creators' },
+    { v: 'creators_in_category', l: 'Creators in this world' },
+  ],
+  products: [
+    { v: 'library_products', l: 'A Section Library group' },
+    { v: 'products_in_category', l: 'Products in this world' },
+  ],
+  brands: [
+    { v: 'businesses_in_category', l: 'Businesses in this world' },
+  ],
+};
+
+// A light wireframe of how a template renders — the "see it" step (shape only;
+// real-data preview is a later upgrade).
+function TemplatePreview({ s }) {
+  const cfg = s.config_json || {};
+  const g = 'bg-gray-100 rounded';
+  let inner;
+  if (cfg.kind === 'menu') inner = <div className="space-y-1"><div className={`${g} h-2.5 w-1/3`} /><div className={`${g} h-5`} /><div className={`${g} h-5`} /></div>;
+  else if (s.shelf_type === 'creators' || s.shelf_type === 'category_rail') inner = <div className="flex gap-2">{[0,1,2,3].map(i => <span key={i} className="w-7 h-7 rounded-full bg-gray-200" />)}</div>;
+  else if (s.shelf_type === 'tiles' && cfg.style === 'banner') inner = <div className={`${g} h-12`} />;
+  else if (s.shelf_type === 'tiles' || s.shelf_type === 'nav_tiles') inner = <div className="flex gap-1.5">{[0,1,2,3].map(i => <span key={i} className="w-9 h-9 rounded-lg bg-gray-200" />)}</div>;
+  else if (s.shelf_type === 'banner_gateway') inner = <div className={`${g} h-12`} />;
+  else if (s.shelf_type === 'restaurant_list') inner = <div className="space-y-1"><div className={`${g} h-2.5 w-1/2`} /><div className="flex gap-1.5">{[0,1,2].map(i => <span key={i} className="w-12 h-9 rounded bg-gray-200" />)}</div></div>;
+  else inner = <div className="flex gap-1.5">{[0,1,2].map(i => <span key={i} className="w-12 h-14 rounded bg-gray-200" />)}</div>;
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-2">
+      <div className="text-[10px] text-gray-400 mb-1.5">PREVIEW · {templateLabel(s)}</div>
+      {inner}
+    </div>
+  );
+}
+
 function slug(t) {
   return String(t || 'section').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 36) || 'section';
 }
@@ -174,9 +220,6 @@ export default function SectionsPage() {
   const changeCount = (id, delta) =>
     setShelves(prev => prev.map(s =>
       rowId(s) === id ? { ...s, item_limit: Math.max(0, Math.min(50, (s.item_limit || 0) + delta)) } : s));
-  const changeType = (id, item_type) =>
-    update(id, { item_type, rule: RULE_FOR_TYPE[item_type] || undefined });
-
   const toggleExpand = (s) => {
     const id = rowId(s);
     if (expanded === id) { setExpanded(null); return; }
@@ -343,22 +386,8 @@ export default function SectionsPage() {
                     <input value={s.title || ''} onChange={e => update(id, { title: e.target.value })}
                       className="w-full text-sm font-bold text-gray-900 border-b border-transparent hover:border-gray-200 focus:border-amber-500 focus:outline-none bg-transparent" />
                     <div className="text-[11px] text-gray-500 truncate">
-                      {s.shelf_type} · {s.rule}{s.id ? '' : ' · NEW'}
+                      {templateLabel(s)}{s.id ? '' : ' · NEW'}
                     </div>
-                    {hasTypeControls(s) && (
-                      <div className="flex gap-2 mt-1.5">
-                        <select value={s.category_key || ''} onChange={e => update(id, { category_key: e.target.value || null })}
-                          className="text-[11px] border border-gray-300 rounded px-1.5 py-0.5 bg-gray-50">
-                          <option value="">(no category)</option>
-                          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                        <select value={s.item_type || ''} onChange={e => changeType(id, e.target.value || null)}
-                          className="text-[11px] border border-gray-300 rounded px-1.5 py-0.5 bg-gray-50">
-                          <option value="">(type)</option>
-                          {ITEM_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                    )}
                   </div>
                   <button onClick={() => toggleExpand(s)} title="Edit details"
                     className={`text-xs px-2 py-1 rounded border ${isOpen ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-300 text-gray-500'}`}>⚙</button>
@@ -376,9 +405,20 @@ export default function SectionsPage() {
                   <button onClick={() => removeShelf(s)} className="text-gray-300 hover:text-red-500 text-sm" aria-label="remove">✕</button>
                 </div>
 
-                {/* Config editor (v2) */}
+                {/* Config editor (v2) — preview → rule → images */}
                 {isOpen && (
                   <div className="px-3 pb-3 pt-1 border-t border-gray-100 flex flex-col gap-2">
+                    {/* See it */}
+                    <TemplatePreview s={s} />
+                    {/* What fills it (rule) — only for data-driven templates with a choice */}
+                    {RULES_BY_SHELF[s.shelf_type] && (s.config_json || {}).kind !== 'menu' && (
+                      <label className="text-[11px] font-semibold text-gray-600">What fills it? (rule)
+                        <select value={s.rule} onChange={e => update(id, { rule: e.target.value })}
+                          className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                          {RULES_BY_SHELF[s.shelf_type].map(r => <option key={r.v} value={r.v}>{r.l}</option>)}
+                        </select>
+                      </label>
+                    )}
                     {/* Template Catalog #1 — image tiles: per-tile image + label + wired group. */}
                     {s.shelf_type === 'tiles' && (
                       <div className="flex flex-col gap-2">

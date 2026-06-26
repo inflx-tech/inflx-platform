@@ -1,0 +1,1 @@
+# 02-workflow — App Builder section-editor redesign (admin-web). Guided flow: template dropdown → TemplatePreview → images (per tile) / rule (data templates, RULES_BY_SHELF). Deleted legacy category/item-type dropdowns + dead helpers; neutralized beauty default titles. admin-web only, no mobile/migration. Verified brand-web build exit 0.
