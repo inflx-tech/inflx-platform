@@ -38,37 +38,36 @@ const CATEGORIES = ['food', 'fashion', 'furniture', 'beauty', 'car_rental'];
 
 // ＋ Add Section presets → valid {shelf_type, rule, item_type?} (rules exist in
 // sectionRules.service.js). Listing-driven rules populate without offers.
+// kind: 'data' = no rule (fills from context) · 'frame' = image/banner, rule per
+// banner · 'control' = chips bar. `world` limits a preset to one world; `biz`
+// limits it to the Business scope of that world.
 const ADD_PRESETS = [
-  { key: 'brands',   label: 'Businesses rail', shelf_type: 'brands',   rule: 'businesses_in_category', item_type: 'brands',   title: 'Top Businesses' },
-  { key: 'products', label: 'Products rail',   shelf_type: 'products', rule: 'products_in_category',   item_type: 'products', title: 'Trending Products' },
-  { key: 'offers',   label: 'Offers rail',     shelf_type: 'offers',   rule: 'top_by_conversions',     item_type: 'offers',   title: 'Best Deals' },
-  { key: 'creators', label: 'Creators rail',   shelf_type: 'creators', rule: 'creators_listing',       title: 'Top Creators' },
-  // Smart creator carousel — context-aware (promote-world · near · active · famous ·
-  // followed-first; auto-narrows to a brand's collaborators on a Business page).
-  { key: 'creators_smart', label: 'Creator carousel (smart)', shelf_type: 'creators', rule: 'creators_smart', title: "Creators you'd love" },
-  { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
-  // Food 3C — the world's sub-category tiles as a placeable section (📌-able).
-  { key: 'category_rail', label: 'Category rail (sticky-able)', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
-  // Category rail from the CATALOGUE tree — admin drills fashion/furniture
-  // (Men → Bottomwear → Jeans, any level) and picks nodes; each tile opens the
-  // Type-1 category browser at that node (contract: admin-category-rail).
-  { key: 'category_picker', label: 'Category rail (pick from catalogue)', shelf_type: 'nav_tiles', rule: 'category_nodes', title: 'Shop by category' },
-  // Template Catalog — image tiles; each tile = upload image + wire to a group.
-  // All four are shelf_type 'tiles', differing only by config.style.
-  { key: 'tiles',          label: 'Image tiles (spotlight)',      shelf_type: 'tiles', rule: 'static', title: 'Spotlight',          config: { style: 'carousel' } },
-  { key: 'tiles_featured', label: 'Featured carousel',            shelf_type: 'tiles', rule: 'static', title: 'Featured',           config: { style: 'featured' } },
-  { key: 'tiles_grid',     label: 'Tile grid',                    shelf_type: 'tiles', rule: 'static', title: 'Tile grid',  config: { style: 'grid' } },
-  { key: 'tiles_banner',   label: 'Themed banner + sub-tiles',    shelf_type: 'tiles', rule: 'static', title: 'Banner',     config: { style: 'banner' } },
-  // Food World 3C-1 — Type B: one card per restaurant + a nested carousel of its
-  // featured dishes (is_featured/featured_sort, fallback first N in-stock).
-  { key: 'restaurant_list', label: 'Restaurants + dishes (food)', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants' },
-  // Phase 3c — place a reusable Section Library section (data-driven). Pick which
-  // section in the row editor; the engine fills it from that section's rule.
-  { key: 'library',  label: 'Library Section',  shelf_type: 'products', rule: 'library_products',       item_type: 'products', title: 'New section' },
-  // Business-page core listing — VERTICAL-SPECIFIC. Food = the collapsible Menu
-  // (the mobile screen renders dishes from the brand's own catalogue). `biz`
-  // limits where the preset is offered (Business scope + that world only).
-  { key: 'food_menu', label: 'Menu (food — collapsible dishes)', shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' }, biz: 'food' },
+  // ── DATA — no rule; the list fills itself from context ──
+  { key: 'category_picker', kind: 'data', label: 'Category rail (pick categories)', shelf_type: 'nav_tiles', rule: 'category_nodes', title: 'Shop by category' },
+  { key: 'products', kind: 'data', label: 'Products rail', shelf_type: 'products', rule: 'products_in_category', item_type: 'products', title: 'Trending Products' },
+  { key: 'brands',   kind: 'data', label: 'Businesses rail', shelf_type: 'brands', rule: 'businesses_in_category', item_type: 'brands', title: 'Top Businesses' },
+  { key: 'creators', kind: 'data', label: 'Creators rail', shelf_type: 'creators', rule: 'creators_smart', title: "Creators you'd love" },
+  { key: 'offers',   kind: 'data', label: 'Offers rail', shelf_type: 'offers', rule: 'top_by_conversions', item_type: 'offers', title: 'Best Deals' },
+  { key: 'restaurant_list', kind: 'data', label: 'Restaurants + dishes', shelf_type: 'restaurant_list', rule: 'restaurants_with_featured', item_type: 'brands', title: 'Famous Restaurants', world: 'food' },
+  { key: 'category_rail', kind: 'data', label: 'Food cravings rail', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?", world: 'food' },
+  { key: 'food_menu', kind: 'data', label: 'Menu — collapsible dishes', shelf_type: 'products', rule: 'static', title: 'Menu', config: { kind: 'menu' }, biz: 'food' },
+  // ── FRAME — image / banner; admin sets a rule PER banner (style chosen inside) ──
+  { key: 'frame', kind: 'frame', label: 'Image / banner frame', shelf_type: 'tiles', rule: 'static', title: 'Spotlight', config: { style: 'carousel' } },
+  // ── CONTROLS ──
+  { key: 'controls', kind: 'control', label: 'Chips / filter bar', shelf_type: 'controls', rule: 'static', title: 'Filters' },
+];
+
+// A section's kind (for the no-rule / needs-rule tag) — derived from shelf_type so
+// it works for already-saved rows too. Only the image/banner Frame needs a rule.
+function sectionKind(s) {
+  if (s.shelf_type === 'tiles') return 'frame';
+  if (s.shelf_type === 'controls') return 'control';
+  return 'data';
+}
+const KIND_GROUPS = [
+  { k: 'data', label: 'Data sections — no rule (fills from context)' },
+  { k: 'frame', label: 'Frame — image / banner (set a rule)' },
+  { k: 'control', label: 'Controls' },
 ];
 
 // Friendly template name for a section row (replaces the raw shelf_type·rule).
@@ -137,6 +136,84 @@ function TemplatePreview({ s }) {
 
 function slug(t) {
   return String(t || 'section').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 36) || 'section';
+}
+
+const PREVIEW_TINTS = ['#FBEAF0', '#EEEDFE', '#E6F1FB', '#EAF3DE', '#FAEEDA', '#FAECE7'];
+
+function PreviewBanner({ t, h }) {
+  return (
+    <div className="rounded-lg overflow-hidden relative" style={{ height: h, background: '#2C2C2A' }}>
+      {t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : null}
+      {t.label ? <div className="absolute bottom-1 left-1.5 text-[8px] font-bold text-white">{t.label}</div> : null}
+    </div>
+  );
+}
+
+// One section rendered the way the follower app shows it — faithful for the
+// config-driven sections (categories + image/banner frames), representative
+// placeholders for the auto data rails.
+function PreviewSection({ s }) {
+  const cfg = s.config_json || {};
+  const Title = s.title ? <div className="text-[11px] font-bold text-gray-900 px-3 pt-3 pb-1.5">{s.title}</div> : null;
+
+  if (s.shelf_type === 'tiles') {
+    const tiles = (cfg.tiles || []).filter(t => t && (t.image_url || t.label));
+    const list = tiles.length ? tiles : [{}, {}];
+    if ((cfg.style || 'carousel') === 'grid') {
+      return <div>{Title}<div className="grid grid-cols-3 gap-1.5 px-3 pb-2">{(tiles.length ? tiles : [{}, {}, {}]).slice(0, 6).map((t, i) => <PreviewBanner key={i} t={t} h={54} />)}</div></div>;
+    }
+    const w = (cfg.style === 'carousel') ? 150 : 110;
+    return <div>{Title}<div className="flex gap-2 px-3 pb-2 overflow-hidden">{list.slice(0, 4).map((t, i) => <div key={i} className="shrink-0" style={{ width: w }}><PreviewBanner t={t} h={84} /></div>)}</div></div>;
+  }
+  if (s.shelf_type === 'nav_tiles' && s.rule === 'category_nodes') {
+    const labels = [...(cfg.nodes || []).map(n => n.label || 'Category'), 'All'];
+    return <div>{Title}<div className="flex gap-2 px-3 pb-2 overflow-hidden">{(labels.length ? labels : ['Category', 'All']).slice(0, 6).map((lbl, i) => (
+      <div key={i} className="shrink-0 text-center" style={{ width: 46 }}>
+        <div className="w-10 h-10 mx-auto rounded-xl" style={{ background: lbl === 'All' ? '#FEF4D6' : PREVIEW_TINTS[i % PREVIEW_TINTS.length] }} />
+        <div className="text-[8px] text-gray-600 mt-1 truncate">{lbl}</div>
+      </div>
+    ))}</div></div>;
+  }
+  if (s.shelf_type === 'category_rail') {
+    return <div>{Title}<div className="flex gap-1.5 px-3 pb-2">{['Biryani', 'Pizza', 'Dosa', 'Cakes'].map((c, i) => <div key={i} className="text-[8px] text-gray-600 border border-gray-200 rounded-full px-2 py-1">{c}</div>)}</div></div>;
+  }
+  if (s.shelf_type === 'creators') {
+    return <div>{Title}<div className="flex gap-3 px-3 pb-2">{[0, 1, 2, 3].map(i => <div key={i} className="text-center"><div className="w-11 h-11 rounded-full bg-gray-200" /><div className="text-[8px] text-gray-400 mt-1">@creator</div></div>)}</div></div>;
+  }
+  if (s.shelf_type === 'products') {
+    if (cfg.kind === 'menu') return <div>{Title}<div className="px-3 pb-2 space-y-1.5">{[0, 1].map(i => <div key={i} className="h-8 rounded bg-gray-100" />)}</div></div>;
+    return <div>{Title}<div className="flex gap-2 px-3 pb-2">{[0, 1, 2].map(i => <div key={i} className="shrink-0" style={{ width: 78 }}><div className="rounded-lg bg-gray-100" style={{ height: 78 }} /><div className="h-2 w-12 bg-gray-100 rounded mt-1.5" /><div className="h-2 w-8 bg-gray-100 rounded mt-1" /></div>)}</div></div>;
+  }
+  if (s.shelf_type === 'brands' || s.shelf_type === 'restaurant_list') {
+    return <div>{Title}<div className="flex gap-2 px-3 pb-2">{[0, 1].map(i => <div key={i} className="shrink-0 rounded-lg bg-gray-100" style={{ width: 120, height: 64 }} />)}</div></div>;
+  }
+  if (s.shelf_type === 'offers' || s.shelf_type === 'mixed') {
+    return <div>{Title}<div className="flex gap-2 px-3 pb-2">{[0, 1].map(i => <div key={i} className="shrink-0 rounded-lg bg-pink-50 border border-pink-100" style={{ width: 140, height: 70 }} />)}</div></div>;
+  }
+  if (s.shelf_type === 'controls') {
+    const chips = Array.isArray(cfg.filters) && cfg.filters.length ? cfg.filters : ['Nearest', 'Offers', 'Top rated'];
+    return <div className="flex gap-1.5 px-3 py-2">{chips.map((c, i) => <div key={i} className="text-[8px] text-gray-600 border border-gray-200 rounded-full px-2 py-1">{String(c)}</div>)}</div>;
+  }
+  return <div className="px-3 py-2 text-[9px] text-gray-300">{s.title}</div>;
+}
+
+// The phone-frame live preview pane (sticky beside the builder).
+function MobilePreview({ shelves, scopeValue }) {
+  const visible = (shelves || []).filter(s => s.enabled !== false);
+  return (
+    <div className="hidden xl:block shrink-0 w-[300px] sticky top-4">
+      <div className="text-[10.5px] text-gray-400 text-center mb-1.5">Live preview · {scopeValue || 'world'}</div>
+      <div className="rounded-[26px] border-[7px] border-gray-900 bg-white overflow-hidden" style={{ height: 600 }}>
+        <div className="h-4 bg-gray-100" />
+        <div className="mx-2 my-2 h-6 rounded-full bg-gray-100 flex items-center px-3 text-[9px] text-gray-400">Search products, brands…</div>
+        <div className="overflow-y-auto" style={{ height: 540 }}>
+          {visible.length === 0
+            ? <div className="text-center text-[11px] text-gray-300 mt-10">Add sections to preview</div>
+            : visible.map((s, i) => <PreviewSection key={s.id || s._tmp || i} s={s} />)}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function SectionsPage() {
@@ -248,6 +325,23 @@ export default function SectionsPage() {
       tiles[idx] = { ...tiles[idx], rule_json: rj };
       return { ...s, config_json: { ...(s.config_json || {}), tiles } };
     }));
+
+  // Save this banner's inline rule into the Section Library for reuse, then wire
+  // the banner to it (folds the old Section Library tab into the Frame editor).
+  const saveRuleForReuse = async (id, idx) => {
+    const sh = shelves.find(s => rowId(s) === id); if (!sh) return;
+    const tile = ((sh.config_json || {}).tiles || [])[idx]; if (!tile) return;
+    const rj = { ...(tile.rule_json || {}) }; delete rj.business_type;
+    if (!Object.keys(rj).length) { setMsg({ kind: 'err', text: 'Add a condition before saving.' }); return; }
+    const name = (tile.__saveName || '').trim() || sh.title || 'Saved rule';
+    const res = await adminApi.createSectionLibrary({ business_type: scopeValue || 'ALL', name, image_url: null, rule_json: rj });
+    if (!res.success) { setMsg({ kind: 'err', text: res.error?.message || 'Save failed' }); return; }
+    const lib = await adminApi.listSectionLibrary();
+    if (lib.success) setLibrarySections((lib.data?.sections || []).filter(x => x.status === 'active'));
+    const newId = res.data?.section?.id || res.data?.id || '';
+    updateTile(id, idx, { library_section_id: newId, rule_mode: 'saved', rule_json: {}, __saveName: '' });
+    setMsg({ kind: 'ok', text: `Saved "${name}" — reuse it under "Use a saved rule".` });
+  };
   // Category rail (catalogue) — manage config_json.nodes[] (picked tree nodes).
   const hasNode = (s, nodeId) => ((s.config_json || {}).nodes || []).some(n => n.category_node_id === nodeId);
   const toggleNode = (id, node) =>
@@ -358,7 +452,8 @@ export default function SectionsPage() {
   );
 
   return (
-    <div className="p-6 max-w-6xl">
+    <div className="p-6 flex gap-6 items-start">
+      <div className="flex-1 min-w-0 max-w-4xl">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-bold text-gray-900">🧱 App Builder</h1>
         <button onClick={publish} disabled={saving || loading}
@@ -456,8 +551,13 @@ export default function SectionsPage() {
                     {/* Title — inline editable (v2) */}
                     <input value={s.title || ''} onChange={e => update(id, { title: e.target.value })}
                       className="w-full text-sm font-bold text-gray-900 border-b border-transparent hover:border-gray-200 focus:border-amber-500 focus:outline-none bg-transparent" />
-                    <div className="text-[11px] text-gray-500 truncate">
-                      {templateLabel(s)}{s.id ? '' : ' · NEW'}
+                    <div className="text-[11px] text-gray-500 truncate flex items-center gap-1.5">
+                      <span className="truncate">{templateLabel(s)}{s.id ? '' : ' · NEW'}</span>
+                      {sectionKind(s) === 'frame'
+                        ? <span className="shrink-0 text-[9px] font-bold rounded px-1.5 py-0.5 bg-pink-50 text-pink-600">NEEDS A RULE</span>
+                        : sectionKind(s) === 'data'
+                        ? <span className="shrink-0 text-[9px] font-bold rounded px-1.5 py-0.5 bg-green-50 text-green-700">NO RULE</span>
+                        : null}
                     </div>
                   </div>
                   <button onClick={() => toggleExpand(s)} title="Edit details"
@@ -521,13 +621,14 @@ export default function SectionsPage() {
                             </div>
                           </label>
                         )}
-                        <div className="text-[11px] font-semibold text-gray-600">Tiles — upload an image + wire each to a Section Library group</div>
+                        <div className="text-[11px] font-semibold text-gray-600">Banners — upload an image + set a rule for each</div>
                         {(cfg.tiles || []).map((t, ti) => {
                           const rj = t.rule_json || {};
+                          const mode = t.rule_mode || (t.library_section_id ? 'saved' : 'create');
                           return (
                           <div key={ti} className="flex flex-col gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
                             <div className="flex items-center gap-2">
-                              <label className="w-12 h-12 rounded-lg border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0" title="Upload tile image">
+                              <label className="w-12 h-12 rounded-lg border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0" title="Upload banner image">
                                 {t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-300 text-lg">＋</span>}
                                 <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                                   const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
@@ -536,32 +637,44 @@ export default function SectionsPage() {
                                   updateTile(id, ti, { image_url: res.public_url });
                                 }} />
                               </label>
-                              <input value={t.label || ''} onChange={e => updateTile(id, ti, { label: e.target.value })} placeholder="Label"
-                                className="w-28 text-xs border border-gray-300 rounded px-2 py-1" />
-                              <select value={t.library_section_id || ''} onChange={e => updateTile(id, ti, { library_section_id: e.target.value })}
-                                className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 bg-white">
-                                <option value="">(wire to a group)</option>
+                              <input value={t.label || ''} onChange={e => updateTile(id, ti, { label: e.target.value })} placeholder="Label (optional)"
+                                className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
+                              <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove banner">✕</button>
+                            </div>
+                            {/* Rule — create here OR use a saved one (Section Library folded in). */}
+                            <div className="flex gap-1.5">
+                              {[['create', 'Create a rule'], ['saved', 'Use a saved rule']].map(([m, lbl]) => (
+                                <button key={m} type="button" onClick={() => updateTile(id, ti, { rule_mode: m })}
+                                  className={`text-[11px] font-semibold rounded px-2.5 py-1 border ${mode === m ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>{lbl}</button>
+                              ))}
+                            </div>
+                            {mode === 'create' ? (
+                              <div className="p-2 rounded-md bg-amber-50 border border-amber-200 flex flex-col gap-1.5">
+                                <div className="text-[10px] font-semibold text-amber-800">Show products where… (all optional)</div>
+                                <div className="flex gap-1.5 flex-wrap items-center">
+                                  <input type="number" value={rj.price_max ?? ''} onChange={e => patchTileRule(id, ti, 'price_max', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Under ₹" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
+                                  <input type="number" value={rj.min_discount_pct ?? ''} onChange={e => patchTileRule(id, ti, 'min_discount_pct', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Min % off" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
+                                  <input value={rj.brand ?? ''} onChange={e => patchTileRule(id, ti, 'brand', e.target.value)} placeholder="Brand" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
+                                  <input value={(rj.tags || []).join(', ')} onChange={e => patchTileRule(id, ti, 'tags', e.target.value.split(',').map(x => x.trim()).filter(Boolean))} placeholder="tags" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
+                                  <label className="text-[11px] text-gray-600 flex items-center gap-1"><input type="checkbox" checked={!!rj.has_offer} onChange={e => patchTileRule(id, ti, 'has_offer', e.target.checked)} /> has offer</label>
+                                </div>
+                                <div className="flex items-center gap-1.5 pt-1.5 border-t border-amber-200">
+                                  <input value={t.__saveName || ''} onChange={e => updateTile(id, ti, { __saveName: e.target.value })} placeholder="Save as… (e.g. Adidas 40%)" className="flex-1 text-[11px] border border-gray-300 rounded px-2 py-1" />
+                                  <button type="button" onClick={() => saveRuleForReuse(id, ti)} className="text-[10px] font-semibold text-amber-700 border border-amber-300 rounded px-2 py-1 whitespace-nowrap">Save for reuse</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <select value={t.library_section_id || ''} onChange={e => updateTile(id, ti, { library_section_id: e.target.value, rule_mode: 'saved' })}
+                                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                                <option value="">(pick a saved rule)</option>
                                 {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
                               </select>
-                              <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove tile">✕</button>
-                            </div>
-                            {/* Inline rule — what this banner shows when tapped (App Builder Frame). All optional. */}
-                            <div className="p-2 rounded-md bg-amber-50 border border-amber-200 flex flex-col gap-1.5">
-                              <div className="text-[10px] font-semibold text-amber-800">When tapped, show products where… (all optional)</div>
-                              <div className="flex gap-1.5 flex-wrap items-center">
-                                <input type="number" value={rj.price_max ?? ''} onChange={e => patchTileRule(id, ti, 'price_max', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Under ₹" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
-                                <input type="number" value={rj.min_discount_pct ?? ''} onChange={e => patchTileRule(id, ti, 'min_discount_pct', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Min % off" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
-                                <input value={rj.brand ?? ''} onChange={e => patchTileRule(id, ti, 'brand', e.target.value)} placeholder="Brand" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
-                                <input value={(rj.tags || []).join(', ')} onChange={e => patchTileRule(id, ti, 'tags', e.target.value.split(',').map(x => x.trim()).filter(Boolean))} placeholder="tags" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
-                                <label className="text-[11px] text-gray-600 flex items-center gap-1"><input type="checkbox" checked={!!rj.has_offer} onChange={e => patchTileRule(id, ti, 'has_offer', e.target.checked)} /> has offer</label>
-                              </div>
-                              <div className="text-[10px] text-gray-400">Leave all blank to use the wired group above.</div>
-                            </div>
+                            )}
                           </div>
                           );
                         })}
-                        <button onClick={() => addTile(id)} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">+ Add tile</button>
-                        {(cfg.tiles || []).length === 0 && <span className="text-[11px] text-gray-400">No tiles yet — add one. (Create the groups first in Section Library.)</span>}
+                        <button onClick={() => addTile(id)} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">+ Add banner</button>
+                        {(cfg.tiles || []).length === 0 && <span className="text-[11px] text-gray-400">No banners yet — add one.</span>}
                       </div>
                     )}
                     {/* Category rail (catalogue) — drill the tree + pick nodes (contract: admin-category-rail). */}
@@ -718,9 +831,17 @@ export default function SectionsPage() {
         <div className="flex items-center gap-2 mt-4">
           <select value={addPreset} onChange={e => setAddPreset(e.target.value)}
             className="text-xs border border-gray-300 rounded px-2 py-1.5 bg-white">
-            {ADD_PRESETS
-              .filter(p => !p.biz || (screen === 'business' && scopeValue === p.biz))
-              .map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+            {KIND_GROUPS.map(g => {
+              const opts = ADD_PRESETS.filter(p => p.kind === g.k
+                && (!p.biz || (screen === 'business' && scopeValue === p.biz))
+                && (!p.world || scopeValue === p.world));
+              if (!opts.length) return null;
+              return (
+                <optgroup key={g.k} label={g.label}>
+                  {opts.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                </optgroup>
+              );
+            })}
           </select>
           <button onClick={addSection}
             className="px-3 py-1.5 rounded-lg border-2 border-dashed border-amber-600 text-amber-700 text-xs font-bold">
@@ -729,6 +850,10 @@ export default function SectionsPage() {
           <span className="text-[11px] text-gray-400">added shelves save on Publish</span>
         </div>
       )}
+      </div>
+
+      {/* Live mobile preview — how the sections look in the app */}
+      <MobilePreview shelves={shelves} scopeValue={scopeValue} />
     </div>
   );
 }

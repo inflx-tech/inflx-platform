@@ -20,7 +20,6 @@ const NAV = [
   { section: 'CONTENT' },
   { href: '/admin/master-dishes', label: 'Master Dishes', icon: '🍽️', cap: 'master_data' },
   { href: '/admin/sections', label: 'App Builder', icon: '🧱', cap: 'sections' },
-  { href: '/admin/section-library', label: 'Section Library', icon: '🧩', cap: 'libraries' },
   { href: '/admin/tag-vocabulary', label: 'Tag Vocabulary', icon: '🏷️', cap: 'categories' },
   { section: 'MARKETING' },
   { href: '/admin/marketing/leads',         label: 'Triage',        icon: '🎯', cap: 'marketing' },

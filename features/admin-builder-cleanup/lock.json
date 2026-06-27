@@ -1,0 +1,21 @@
+{
+  "feature": "admin-builder-cleanup",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-27",
+  "notes": "App Builder cleanup: clear NO-RULE/NEEDS-A-RULE tags, grouped+pruned Add-section menu (4 tile presets→one Frame; Library Section + duplicate creators removed; food rail relabelled), Frame rule = Create/Use-saved + Save-for-reuse (Section Library folded into the Frame, nav link removed), live mobile preview pane (real content), category rail 'All' tile. Founder approved 'go and build' 2026-06-27 (lock delegated). UI-governed (admin) + backend tweak. No migration, no OTA. release.released false (admin-only).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

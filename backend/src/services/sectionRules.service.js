@@ -1137,7 +1137,7 @@ async function worldCategories(ctx) {
 async function categoryNodes(ctx) {
   const nodes = ctx.config && Array.isArray(ctx.config.nodes) ? ctx.config.nodes : [];
   const limit = ctx.limit || nodes.length;
-  return nodes
+  const out = nodes
     .filter(n => n && n.category_node_id)
     .slice(0, limit)
     .map(n => ({
@@ -1149,6 +1149,12 @@ async function categoryNodes(ctx) {
       category_node_id: n.category_node_id,
       vertical: n.vertical || ctx.vertical || null,
     }));
+  // Append an "All" tile for the leftover categories (the chosen ones show; the
+  // rest live under "All"). Admin can suppress via config.hide_all.
+  if (out.length && !(ctx.config && ctx.config.hide_all)) {
+    out.push({ entity_type: 'category', key: 'all', label: 'All', icon: null, image_url: null, category_node_id: null, vertical: ctx.vertical || null });
+  }
+  return out;
 }
 
 // Controls/chips/headers/profile/bio carry their payload in config_json; the

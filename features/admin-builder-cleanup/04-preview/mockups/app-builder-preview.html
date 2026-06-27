@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>App Builder — clear kinds + live mobile preview</title>
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:#F3F4F6;padding:16px;color:#1A1A1A}
+  .row{display:flex;gap:16px;align-items:flex-start;max-width:900px;margin:0 auto}
+  .L{flex:1.35}.R{width:250px;flex:none}
+  .h{font-size:14px;font-weight:600;margin-bottom:8px}
+  .pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+  .p{font-size:11.5px;border:1px solid #D1D5DB;border-radius:8px;padding:4px 10px}.p.on{background:#B45309;color:#fff;border-color:#B45309}
+  .sec{border:1px solid #E5E7EB;border-radius:10px;padding:10px 11px;margin-bottom:8px;background:#fff}
+  .sh{display:flex;align-items:center;gap:8px}.st{font-size:13px;font-weight:600}.ss{font-size:11px;color:#6B7280}
+  .tag{font-size:9px;font-weight:700;border-radius:6px;padding:1px 7px;margin-left:auto}
+  .auto{background:#ECFDF3;color:#15803D}.needs{background:#FBEAF0;color:#C1376A}
+  .ed{margin-top:9px;border-top:1px solid #eee;padding-top:9px}
+  .ban{display:flex;gap:9px;border:1px solid #E5E7EB;border-radius:8px;padding:8px;margin-top:7px}
+  .bimg{width:48px;height:48px;flex:none;border-radius:7px;background:#2C2C2A}
+  .tog{display:flex;gap:6px;margin-bottom:6px}.tb{font-size:11px;border:1px solid #D1D5DB;border-radius:6px;padding:3px 9px}.tb.on{background:#B45309;color:#fff;border-color:#B45309}
+  .cond{display:inline-block;font-size:11px;font-weight:600;background:#FBEAF0;color:#C1376A;border-radius:7px;padding:3px 8px;margin:0 5px 5px 0}
+  .save{font-size:10px;color:#6B7280;margin-top:6px;padding-top:6px;border-top:1px solid #f0e0c0}
+  .phlabel{font-size:10.5px;color:#9CA3AF;text-align:center;margin-bottom:6px}
+  .phone{background:#fff;border:6px solid #1A1A1A;border-radius:24px;overflow:hidden}
+  .pbar{height:16px;background:#F4F5F7}.psearch{margin:8px;height:22px;border-radius:11px;background:#F1F1F3}
+  .ph2{font-size:10.5px;font-weight:700;padding:8px 9px 5px}
+  .crow{display:flex;gap:7px;padding:0 9px 8px}.cat{width:42px;text-align:center}.cc{width:40px;height:40px;border-radius:10px}.cl{font-size:8px;color:#52525B;margin-top:3px}
+  .frame{margin:2px 9px 9px;border-radius:11px;background:#EEF1F6;padding:8px}.ft{font-size:9.5px;font-weight:700;text-align:center;margin-bottom:6px}
+  .brow{display:flex;gap:6px}.bcard{width:150px;height:74px;border-radius:9px;background:#15406E;padding:8px;display:flex;flex-direction:column;justify-content:flex-end}.bcard.two{width:40px;background:#3a2740}
+  .bb{font-size:11px;font-weight:700;color:#fff}.bo{font-size:9px;font-weight:700;color:#F8CB46}
+</style></head><body>
+<div class="row">
+  <div class="L">
+    <div class="h">🧱 App Builder</div>
+    <div class="pills"><span class="p on">Home</span><span class="p">Creator Store</span><span class="p">Business page</span></div>
+    <div class="pills"><span class="p">food</span><span class="p on">fashion</span><span class="p">furniture</span><span class="p">beauty</span></div>
+    <div class="sec"><div class="sh"><div><div class="st">Shop by category</div><div class="ss">Category rail (catalogue)</div></div><span class="tag auto">NO RULE</span></div></div>
+    <div class="sec"><div class="sh"><div><div class="st">Spotlight</div><div class="ss">Image / banner frame</div></div><span class="tag needs">NEEDS A RULE</span></div>
+      <div class="ed">
+        <div style="font-size:10.5px;font-weight:600;color:#6B7280">STYLE: Spotlight ▾</div>
+        <div class="ban"><div class="bimg"></div><div style="flex:1">
+          <div class="tog"><span class="tb on">Create a rule</span><span class="tb">Use a saved rule</span></div>
+          <span class="cond">Brand: adidas</span><span class="cond">40% off</span>
+          <div class="save">Save as… [Adidas 40%]  ·  <b>Save for reuse</b></div>
+        </div></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#B45309;border:1px dashed #D6A45f;border-radius:8px;padding:7px 10px;display:inline-block">＋ Add section — Data · Frame · Controls</div>
+  </div>
+  <div class="R">
+    <div class="phlabel">Live preview · fashion</div>
+    <div class="phone">
+      <div class="pbar"></div><div class="psearch"></div>
+      <div class="ph2">Shop by category</div>
+      <div class="crow">
+        <div class="cat"><div class="cc" style="background:#FBEAF0"></div><div class="cl">Men</div></div>
+        <div class="cat"><div class="cc" style="background:#EEEDFE"></div><div class="cl">Women</div></div>
+        <div class="cat"><div class="cc" style="background:#E6F1FB"></div><div class="cl">Footwear</div></div>
+        <div class="cat"><div class="cc" style="background:#EAF3DE"></div><div class="cl">Jeans</div></div>
+        <div class="cat"><div class="cc" style="background:#FEF4D6"></div><div class="cl">All</div></div>
+      </div>
+      <div class="frame"><div class="ft">SPOTLIGHT</div><div class="brow"><div class="bcard"><div class="bb">adidas</div><div class="bo">MIN 40% OFF</div></div><div class="bcard two"></div></div></div>
+    </div>
+  </div>
+</div>
+</body></html>
