@@ -1,0 +1,21 @@
+{
+  "feature": "follower-browse-fixes",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-27",
+  "notes": "Walkthrough batch 1: (#1) 'All' tile reroutes from the legacy Find screen to the in-world category browser (vertical entry); (#3) filter sheet restyled (handle, rounded pills, solid-pink selected). Founder reported live + said 'proceed' (lock delegated). Mobile-only, OTA, no backend/migration. #2 store-page rebuild is a separate mock-first contract. release.released false (no Maestro).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

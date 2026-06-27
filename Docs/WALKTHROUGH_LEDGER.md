@@ -48,3 +48,16 @@
 | W7 | 2026-06-11 | CTA spec — 5 phase-1 businesses | Founder locked per-page CTAs (restaurant/fashion/furniture/salon/car) | Schema audit found real holes: fashion_walkin has NO actions (root of P4 fallback), salon + car missing their PRIMARY book actions, vocab split walkin_pay/pay_at_store | — | **LOCKED** → Docs/CTA_SPEC.md; schema edits land with Business Page Engine sprint |
 | W9 | 2026-06-11 | Post-sprint-2 walk: business/product/cart chain | (a) walk-in store shows 2 CTAs, wants Pay-at-Store only; (b) product tap dead on Charvitha; (c) stray "Visit & Pay via INFLX" button; (d) furniture product shows Pay-at-Store only; (e) Add to Cart → cart page pay disabled | VERIFIED all 5 (causes in fix-plan report). Founder clarified the purchase model → CTA spec REV 3 | F | **FIX-PACK A BUILT** (a-d + organic direct pay end-to-end, journey 31/31 incl. new S6.3b): rev-3 schemas, INFLX banner removed, organic product taps open detail with store products, spec-wins CTAs, in-store discount nudge, store-offer/pay accepts offer-less direct payments. (e) cart rebuild = **BUILT** (contract sprint3-cart-rebuild): full 3-step order (create→pay→verify), 6-key payload fix, working address add, colour+size variant lines, + NEW organic brand-direct delivery order. qa 79/79 + journey 32/32 (incl S6.4b organic). Awaiting prod backend go + OTA + founder verify |
 | W5e | 2026-06-11 | Submitted content not visible for review | Brand can't see submitted content | DATA CHECK: zero deliverables in submitted/under_review in ALL of prod right now (founder's test deliverable was submitted 07:05 + live-confirmed 07:08 on Jun 9 — already through). BUT the UX truth stands: Content tile counts ONLY live+approved (page.js:144-145) — a submitted item would be invisible on the hub except in the right-rail action list. 3 'approved' awaiting live-confirm also not surfaced on tile | D | W5 redesign: tile shows "X to review · Y awaiting live · Z live"; SUBMITTED badge in hierarchy |
+
+## Fashion E2E walkthrough — 2026-06-27 (seeded [FTW] test world)
+
+> Sequence agreed: legacy-screen cleanup → UI issues → product page → cars → orders.
+> Shopping (fashion+furniture+beauty) share BrandStore/ProductDetail/cart/orders →
+> fix once = all three. Food + cars are bespoke. Creator store = Home + creator context.
+
+| # | Date | Screen | Issue | Class | Status | Fix / contract |
+|---|------|--------|-------|-------|--------|----------------|
+| F1 | 06-27 | Category rail | Tapping **All** opened the legacy Find screen; should show the world's other categories | N | **FIXED** (OTA pending) | reroute → in-world category browser (vertical entry) · `follower-browse-fixes` |
+| F2 | 06-27 | Business/store page | Tapping a business shows the **old store page** (creatorVibe BrandStore) — rebuild | legacy | 🟡 mock-first | rebuild the shared shopping store page (fashion+furniture+beauty) |
+| F3 | 06-27 | Category browser | **Filter sheet** looked rough/ugly | D/U | **FIXED** (OTA pending) | restyle: handle · rounded pills · solid-pink selected · `follower-browse-fixes` |
+| F4 | 06-27 | Cart | Cart is **food-flavoured** (🍽️ / "dishes") on the shopping verticals | D/U | 🔴 queued | de-food the shared cart (shopping batch) |

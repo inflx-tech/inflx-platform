@@ -35,6 +35,11 @@ function navigateCategory(navigation, cat) {
   if (cat?.category_node_id) {
     return navigation.navigate('CategoryBrowser', { nodeId: cat.category_node_id, vertical: cat.vertical, title: cat.label });
   }
+  // The "All" tile on a category rail → ALL categories of that world (stays in
+  // the world's browser), not the legacy global Find screen.
+  if (key === 'all' && cat?.vertical) {
+    return navigation.navigate('CategoryBrowser', { vertical: cat.vertical, title: 'All categories' });
+  }
   if (!key || key === 'all') return navigation.navigate('Find');
   return navigation.navigate('CategoryList', { superCategory: key, label: cat.label, icon: cat.icon });
 }

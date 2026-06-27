@@ -76,6 +76,28 @@ export default function CategoryBrowserScreen({ navigation, route }) {
     (async () => {
       setLoading(true);
       try {
+        // "All categories" entry (from a rail's All tile) — no nodeId, just a
+        // world. Show the world's top categories, drilled into the first so the
+        // grid isn't empty.
+        if (!params.nodeId && params.vertical) {
+          const tr = await followerApi.listingTree(params.vertical);
+          const td = tr.data || tr;
+          const roots = (td.tree || []).map((r) => ({ id: r.id, name: r.name || r.segment || r.category || 'Category', is_leaf: !!r.is_leaf, segment: r.segment }));
+          if (cancelled) return;
+          const firstBranch = roots.find((r) => !r.is_leaf) || roots[0];
+          if (firstBranch && !firstBranch.is_leaf) {
+            const r2 = await followerApi.listingNodeChildren(firstBranch.id);
+            const d2 = r2.data || r2;
+            if (cancelled) return;
+            setRailNode(d2.node); setRail(d2.children || []);
+            const firstLeaf = (d2.children || []).find((k) => k.is_leaf) || null;
+            setSelected(firstLeaf);
+            if (firstLeaf) await loadGrid(firstLeaf, { sort: 'new', filters: {} });
+          } else {
+            setRailNode({ category: 'All categories' }); setRail(roots);
+          }
+          return;
+        }
         const res = await followerApi.listingNodeChildren(params.nodeId);
         const d = res.data || res;
         const node = d.node;
@@ -100,7 +122,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [params.nodeId, loadGrid]);
+  }, [params.nodeId, params.vertical, loadGrid]);
 
   const onSelectRail = useCallback(async (child) => {
     if (child.is_leaf) {
@@ -240,6 +262,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <View style={s.sheetWrap}>
           <View style={s.sheet}>
+            <View style={s.handle} />
             <View style={s.sheetHead}>
               <Text style={s.sheetTitle}>Filter &amp; sort</Text>
               <TouchableOpacity onPress={clearSheet}><Text style={s.clear}>Clear all</Text></TouchableOpacity>
@@ -341,17 +364,18 @@ const s = StyleSheet.create({
   poff: { fontSize: 11, fontWeight: '700', color: TZ.success, marginLeft: 6, fontFamily: fonts.sansBold },
   prate: { fontSize: 10.5, color: '#52525B', marginTop: 3, fontFamily: fonts.sansRegular },
 
-  sheetWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: TZ.card, borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 22 },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  sheetTitle: { fontSize: 15, fontWeight: '800', color: TZ.ink, fontFamily: fonts.sansBold },
-  clear: { fontSize: 12, color: TZ.pink, fontWeight: '700', fontFamily: fonts.sansBold },
-  fsec: { fontSize: 12, fontWeight: '700', color: TZ.muted, marginTop: 12, marginBottom: 7, fontFamily: fonts.sansBold },
+  sheetWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: TZ.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 24 },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E2E2E6', alignSelf: 'center', marginBottom: 14 },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  sheetTitle: { fontSize: 17, fontWeight: '800', color: TZ.ink, fontFamily: fonts.sansBold },
+  clear: { fontSize: 12.5, color: TZ.pink, fontWeight: '700', fontFamily: fonts.sansBold },
+  fsec: { fontSize: 12.5, fontWeight: '700', color: TZ.ink, marginTop: 16, marginBottom: 9, fontFamily: fonts.sansBold },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  vpill: { borderWidth: 1, borderColor: TZ.line, borderRadius: 9, paddingHorizontal: 11, paddingVertical: 7, marginRight: 8, marginBottom: 8 },
-  vpillOn: { backgroundColor: TZ.pinkTint, borderColor: '#EDA9C2' },
-  vpillTxt: { fontSize: 12, color: TZ.ink, fontFamily: fonts.sansRegular },
-  vpillTxtOn: { color: TZ.pinkDark, fontWeight: '700', fontFamily: fonts.sansBold },
+  vpill: { borderWidth: 1, borderColor: '#E6E6EA', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 9, backgroundColor: TZ.card },
+  vpillOn: { backgroundColor: TZ.pink, borderColor: TZ.pink },
+  vpillTxt: { fontSize: 12.5, color: TZ.ink, fontFamily: fonts.sansRegular },
+  vpillTxtOn: { color: '#fff', fontWeight: '700', fontFamily: fonts.sansBold },
   sheetActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   cancelBtn: { flex: 1, borderWidth: 1, borderColor: TZ.line, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
   cancelTxt: { fontSize: 13, color: TZ.ink, fontWeight: '700', fontFamily: fonts.sansBold },
