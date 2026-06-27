@@ -170,11 +170,12 @@ export default function CategoryBrowserScreen({ navigation, route }) {
     const bId = item.brand?.id, bName = item.brand?.name;
     if (!bId) return;
     const payload = { id: item.id, name: item.name, price: item.price, mrp: item.mrp, image_url: item.image_url, qty: 1 };
-    const res = addItem(payload, bId, bName, null, {});
+    // Shopping cart → multi-brand allowed (no cross-brand prompt). Food keeps single-brand.
+    const res = addItem(payload, bId, bName, null, { cartKind: 'shop' });
     if (res?.requiresConfirmation) {
       Alert.alert('Start a new cart?', `Your cart has items from ${res.currentBrandName}. Replace them with ${res.newBrandName}?`, [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Replace', onPress: () => forceReplaceWith(payload, bId, bName, null, {}) },
+        { text: 'Replace', onPress: () => forceReplaceWith(payload, bId, bName, null, { cartKind: 'shop' }) },
       ]);
     }
   };
@@ -236,7 +237,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
             </View>
           ))}
         </ScrollView>
-        {cartCount > 0 ? <CartBar count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
+        {cartCount > 0 ? <CartBar items={cart.items} count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
       </View>
     );
   }
@@ -307,7 +308,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         </View>
       </View>
 
-      {cartCount > 0 ? <CartBar count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
+      {cartCount > 0 ? <CartBar items={cart.items} count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
 
       {/* Filter + sort sheet */}
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
@@ -368,27 +369,41 @@ export default function CategoryBrowserScreen({ navigation, route }) {
 
 function AddButton({ onAdd }) {
   const scale = useRef(new Animated.Value(1)).current;
+  const [added, setAdded] = useState(false);
   const onPress = () => {
-    Vibration.vibrate(10);
+    Vibration.vibrate(20);   // takes effect once the VIBRATE permission ships in an APK
     Animated.sequence([
-      Animated.timing(scale, { toValue: 0.82, duration: 70, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 0.7, duration: 90, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 3, tension: 140, useNativeDriver: true }),
     ]).start();
+    setAdded(true);
+    setTimeout(() => setAdded(false), 900);
     onAdd();
   };
   return (
-    <TouchableOpacity style={s.addWrap} activeOpacity={0.7} onPress={onPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-      <Animated.View style={[s.addBtn, { transform: [{ scale }] }]}>
-        <Text style={s.addTxt}>＋</Text>
+    <TouchableOpacity style={s.addWrap} activeOpacity={0.7} onPress={onPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <Animated.View style={[s.addBtn, added && s.addBtnOn, { transform: [{ scale }] }]}>
+        <Text style={[s.addTxt, added && s.addTxtOn]}>{added ? '✓' : '＋'}</Text>
       </Animated.View>
     </TouchableOpacity>
   );
 }
 
-function CartBar({ count, total, onPress }) {
+function CartBar({ items, count, total, onPress }) {
+  const thumbs = (items || []).slice(0, 3);
   return (
     <TouchableOpacity style={s.cartBar} activeOpacity={0.9} onPress={onPress}>
-      <Text style={s.cartL}>{count} item{count > 1 ? 's' : ''} · {fmtMoney(total)}</Text>
+      <View style={s.cartThumbs}>
+        {thumbs.map((it, i) => (
+          <View key={it.line_key || i} style={[s.cartThumb, i > 0 && { marginLeft: -12 }]}>
+            {it.image_url ? <Image source={{ uri: it.image_url }} style={s.cartThumbImg} resizeMode="cover" /> : <Text style={{ fontSize: 14 }}>🛍️</Text>}
+          </View>
+        ))}
+      </View>
+      <View style={{ flex: 1, marginLeft: 11 }}>
+        <Text style={s.cartL}>{count} item{count > 1 ? 's' : ''}</Text>
+        <Text style={s.cartSub}>{fmtMoney(total)}</Text>
+      </View>
       <Text style={s.cartR}>View cart →</Text>
     </TouchableOpacity>
   );
@@ -454,7 +469,9 @@ const s = StyleSheet.create({
 
   addWrap: { position: 'absolute', right: 7, bottom: 7 },
   addBtn: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#fff', borderWidth: 1, borderColor: TZ.yellow, alignItems: 'center', justifyContent: 'center', elevation: 2 },
+  addBtnOn: { backgroundColor: TZ.veg, borderColor: TZ.veg },
   addTxt: { fontSize: 17, color: TZ.ink, fontWeight: '700', lineHeight: 19 },
+  addTxtOn: { color: '#fff', fontSize: 16 },
 
   segHd: { fontSize: 13, fontWeight: '800', color: TZ.ink, marginBottom: 10, fontFamily: fonts.sansBold },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -462,8 +479,12 @@ const s = StyleSheet.create({
   catImg: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
   catLbl: { fontSize: 10.5, color: '#52525B', textAlign: 'center', lineHeight: 13, fontFamily: fonts.sansRegular },
 
-  cartBar: { position: 'absolute', left: 12, right: 12, bottom: 14, backgroundColor: TZ.ink, borderRadius: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 13, elevation: 6 },
-  cartL: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: fonts.sansBold },
+  cartBar: { position: 'absolute', left: 12, right: 12, bottom: 14, backgroundColor: TZ.ink, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 13, paddingVertical: 10, elevation: 6 },
+  cartThumbs: { flexDirection: 'row', alignItems: 'center' },
+  cartThumb: { width: 34, height: 34, borderRadius: 8, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  cartThumbImg: { width: '100%', height: '100%' },
+  cartL: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: fonts.sansBold },
+  cartSub: { color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 1, fontFamily: fonts.sansRegular },
   cartR: { color: TZ.yellow, fontSize: 13, fontWeight: '800', fontFamily: fonts.sansBold },
 
   sheetWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },

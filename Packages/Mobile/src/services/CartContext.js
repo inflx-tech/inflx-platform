@@ -115,10 +115,15 @@ export function CartProvider({ children }) {
   const addItem = useCallback((item, brandId, brandName, tracking, extra) => {
     if (!item?.id || !brandId) return { ok: false, reason: 'invalid_item' };
 
-    // Cross-brand detection — per contracts-v1.3 §1 cart_scope: "brand"
-    // behavior contract. Caller must show confirmation modal then call
-    // forceReplaceWith if user accepts.
-    if (cart.brandId && cart.brandId !== brandId) {
+    // Cart "kind" decides the cross-brand rule:
+    //   food → ONE restaurant per cart (you can't deliver from two kitchens).
+    //   shop → MULTI-BRAND allowed (fashion/furniture/beauty/… like Amazon).
+    // First add sets the kind from extra.cartKind (defaults to food for back-compat).
+    const kind = cart.items.length ? (cart.kind || 'food') : (extra?.cartKind || 'food');
+
+    // Single-brand restriction is FOOD-ONLY. Caller shows the confirm modal then
+    // calls forceReplaceWith if accepted (contracts-v1.3 §1, now food-scoped).
+    if (kind === 'food' && cart.brandId && cart.brandId !== brandId) {
       return {
         ok: false,
         requiresConfirmation: true,
@@ -127,37 +132,39 @@ export function CartProvider({ children }) {
       };
     }
 
-    // Same brand (or empty cart) — add normally (merge by line_key so a different
-    // size/colour of the same product is its own line).
+    // Add normally (merge by line_key + brand so a different size/brand is its own line).
     setCart(prev => {
-      const line = normalizeLine(item);
-      const existingIdx = prev.items.findIndex(i => i.line_key === line.line_key);
+      const line = { ...normalizeLine(item), brand_id: brandId, brand_name: brandName };
+      const existingIdx = prev.items.findIndex(i => i.line_key === line.line_key && (i.brand_id || brandId) === brandId);
       const items = existingIdx >= 0
         ? prev.items.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + line.qty } : it)
         : [...prev.items, line];
       return {
         ...prev,
-        brandId, brandName, items,
+        kind,
+        // Primary brand stays the FIRST brand (food = the only one; shop = the lead).
+        brandId: prev.brandId || brandId, brandName: prev.brandName || brandName,
+        items,
         tracking: tracking || prev.tracking,
         offer: extra?.offer ?? prev.offer ?? null,
         creatorHandle: extra?.creatorHandle ?? prev.creatorHandle ?? null,
-        // Latest store-offer list for the in-cart picker (overwrite when given).
         storeOffers: extra?.storeOffers ?? prev.storeOffers ?? [],
       };
     });
     return { ok: true };
-  }, [cart.brandId, cart.brandName]);
+  }, [cart.brandId, cart.brandName, cart.kind, cart.items.length]);
 
   const forceReplaceWith = useCallback((item, brandId, brandName, tracking, extra) => {
     setCart({
       ...EMPTY_CART,
+      kind: extra?.cartKind || 'food',
       brandId,
       brandName,
       tracking: tracking || null,
       offer: extra?.offer ?? null,
       creatorHandle: extra?.creatorHandle ?? null,
       storeOffers: extra?.storeOffers ?? [],
-      items: [normalizeLine(item)],
+      items: [{ ...normalizeLine(item), brand_id: brandId, brand_name: brandName }],
     });
   }, []);
 

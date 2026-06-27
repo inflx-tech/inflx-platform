@@ -30,6 +30,18 @@ flex column). Founder gave two reference screenshots (Myntra/Flipkart). Rebuilt:
   ₹total · View cart") floats at the bottom when the cart has items.
 - **Tap feedback** — ＋ fires `Vibration.vibrate(10)` + a quick scale-bounce animation.
 
+## Batch 3 (founder live-test 2026-06-27)
+- **Cross-brand prompt is now FOOD-ONLY.** `CartContext` gains a cart `kind`: food =
+  one restaurant per cart (delivery), shop = multi-brand allowed (fashion/furniture/…).
+  Shopping adds pass `cartKind:'shop'` → no "Start a new cart?" prompt; lines tagged with
+  `brand_id`/`brand_name`. **NOTE: multi-brand CHECKOUT (split into per-brand orders) is
+  the follow-up — the cart now accumulates multiple brands.**
+- **＋ feedback** — `Vibration` needs the VIBRATE permission, which was MISSING from the
+  manifest (added now, but native → only works after an APK rebuild). So the OTA feedback
+  is a strong **visual**: the ＋ scale-bounces and briefly turns into a green ✓.
+- **Cart bar** redesigned to show small **product thumbnails** (overlapping) + item count +
+  total + "View cart →" (matches the founder's reference).
+
 ## Verification
 - Mobile babel-compile clean; jest 20/20 (FollowerWallet baseline excluded).
-- Capture after OTA + founder re-test.
+- Capture after OTA + founder re-test. (VIBRATE = next APK.)

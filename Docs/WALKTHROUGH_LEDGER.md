@@ -63,4 +63,6 @@
 | F4 | 06-27 | Cart | Cart is **food-flavoured** (🍽️ / "dishes") on the shopping verticals | D/U | 🔴 queued | de-food the shared cart (shopping batch) |
 | F5 | 06-27 | "All categories" | Broken — opened empty sidebar+grid ("0 items"); expected a rounded category list | F | **FIXED · OTA v157** | rebuilt as a grouped grid of rounded category tiles → tap opens the browser · `follower-browse-fixes` |
 | F6 | 06-27 | Category browser grid | No way to add to cart from products | N | **FIXED · OTA v157** | ＋ quick-add on each product (organic qty1; cross-brand confirm) + floating cart bar |
-| F7 | 06-27 | ＋ button | Wanted tap feedback (vibration/animation) | U | **FIXED · OTA v157** | Vibration.vibrate(10) + scale-bounce on ＋ |
+| F7 | 06-27 | ＋ button | Tap feedback not working | U | **FIXED · OTA v158** | vibration needed VIBRATE permission (MISSING → added, works next APK); OTA feedback = strong scale-bounce + green ✓ flash |
+| F8 | 06-27 | Cart cross-brand | "Start a new cart?" prompt wrongly applied to shopping; should be FOOD-ONLY (shopping = multi-brand like Amazon) | F | **FIXED · OTA v158** | CartContext cart `kind` (food=single-brand, shop=multi-brand); lines tagged w/ brand. **Multi-brand CHECKOUT split = follow-up** |
+| F9 | 06-27 | Cart bar | Wanted product thumbnails + count (per ref) | D/U | **FIXED · OTA v158** | cart bar shows overlapping product thumbs + count + total |
