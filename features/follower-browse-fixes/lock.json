@@ -10,7 +10,7 @@
   "mockup_locked": true,
   "mockup_locked_by": "founder",
   "mockup_locked_at": "2026-06-27",
-  "notes": "Walkthrough batch 1: (#1) 'All' tile reroutes from the legacy Find screen to the in-world category browser (vertical entry); (#3) filter sheet restyled (handle, rounded pills, solid-pink selected). Founder reported live + said 'proceed' (lock delegated). Mobile-only, OTA, no backend/migration. #2 store-page rebuild is a separate mock-first contract. release.released false (no Maestro).",
+  "notes": "Walkthrough batch 1: (#1) 'All' tile reroutes from the legacy Find screen to the in-world category browser (vertical entry); (#3) filter sheet restyled (handle, rounded pills, solid-pink selected). Founder reported live + said 'proceed' (lock delegated). Mobile-only, OTA, no backend/migration. #2 store-page rebuild is a separate mock-first contract. release.released false (no Maestro). FILTER UI REBUILD (founder live-test 2026-06-27: chips rendered as ugly tall boxes; gave 2 reference screenshots): fixed the tall-box bug (fixed-height chipRow → compact dropdown chips) + rebuilt the filter modal to the LEFT-NAV pattern (facets down the left, selected facet's values on the right — radio for Sort, checkboxes for filters — Clear filters / Apply). Matches the founder's Myntra/Flipkart-style references.",
   "release": {
     "qa_all_green": false,
     "released": false,

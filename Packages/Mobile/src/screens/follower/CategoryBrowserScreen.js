@@ -50,6 +50,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [draftFilters, setDraftFilters] = useState({});
   const [draftSort, setDraftSort] = useState('new');
+  const [sheetFacet, setSheetFacet] = useState('sort');  // which facet the left-nav modal is showing
 
   const loadGrid = useCallback(async (node, opts = {}) => {
     if (!node) { setProducts([]); setTotal(0); setFilters([]); return; }
@@ -141,7 +142,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
     }
   }, [loadGrid]);
 
-  const openSheet = () => { setDraftFilters({ ...activeFilters }); setDraftSort(sort); setSheetOpen(true); };
+  const openSheet = (facet = 'sort') => { setDraftFilters({ ...activeFilters }); setDraftSort(sort); setSheetFacet(facet); setSheetOpen(true); };
   const toggleDraft = (key, value) => {
     setDraftFilters((prev) => {
       const cur = prev[key] || [];
@@ -223,22 +224,24 @@ export default function CategoryBrowserScreen({ navigation, route }) {
             <Text style={s.pct}>{total} item{total === 1 ? '' : 's'}</Text>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
-            <TouchableOpacity style={[s.chip, s.chipDark]} activeOpacity={0.8} onPress={openSheet}>
-              <Text style={s.chipDarkTxt}>⚙  Filters{activeCount ? ` · ${activeCount}` : ''}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={s.chip} activeOpacity={0.8} onPress={openSheet}>
-              <Text style={s.chipTxt}>Sort: {SORTS.find((x) => x.key === sort)?.label || 'Newest'} ▾</Text>
-            </TouchableOpacity>
-            {filters.map((f) => {
-              const n = (activeFilters[f.key] || []).length;
-              return (
-                <TouchableOpacity key={f.key} style={[s.chip, n > 0 && s.chipOn]} activeOpacity={0.8} onPress={openSheet}>
-                  <Text style={[s.chipTxt, n > 0 && s.chipOnTxt]}>{f.label}{n ? `: ${n}` : ''} ▾</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          <View style={s.chipRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
+              <TouchableOpacity style={[s.chip, s.chipDark]} activeOpacity={0.8} onPress={() => openSheet('sort')}>
+                <Text style={s.chipDarkTxt}>⚙ Filters{activeCount ? ` · ${activeCount}` : ''}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.chip} activeOpacity={0.8} onPress={() => openSheet('sort')}>
+                <Text style={s.chipTxt}>{SORTS.find((x) => x.key === sort)?.label || 'Sort'} ▾</Text>
+              </TouchableOpacity>
+              {filters.map((f) => {
+                const n = (activeFilters[f.key] || []).length;
+                return (
+                  <TouchableOpacity key={f.key} style={[s.chip, n > 0 && s.chipOn]} activeOpacity={0.8} onPress={() => openSheet(f.key)}>
+                    <Text style={[s.chipTxt, n > 0 && s.chipOnTxt]}>{f.label}{n ? ` · ${n}` : ''} ▾</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
 
           {gridLoading ? (
             <View style={s.center}><ActivityIndicator color={TZ.pink} /></View>
@@ -262,42 +265,50 @@ export default function CategoryBrowserScreen({ navigation, route }) {
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <View style={s.sheetWrap}>
           <View style={s.sheet}>
-            <View style={s.handle} />
             <View style={s.sheetHead}>
-              <Text style={s.sheetTitle}>Filter &amp; sort</Text>
-              <TouchableOpacity onPress={clearSheet}><Text style={s.clear}>Clear all</Text></TouchableOpacity>
+              <Text style={s.sheetTitle}>Filter</Text>
+              <TouchableOpacity onPress={() => setSheetOpen(false)} style={s.xbtn}><Text style={s.xtxt}>✕</Text></TouchableOpacity>
             </View>
-            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
-              <Text style={s.fsec}>Sort by</Text>
-              <View style={s.wrap}>
-                {SORTS.map((o) => {
-                  const on = draftSort === o.key;
+            <View style={s.mBody}>
+              {/* left — facet nav */}
+              <ScrollView style={s.fnav} showsVerticalScrollIndicator={false}>
+                {[{ key: 'sort', label: 'Sort' }, ...filters.map((f) => ({ key: f.key, label: f.label }))].map((fn) => {
+                  const on = sheetFacet === fn.key;
+                  const cnt = fn.key === 'sort' ? 0 : (draftFilters[fn.key] || []).length;
                   return (
-                    <TouchableOpacity key={o.key} style={[s.vpill, on && s.vpillOn]} onPress={() => setDraftSort(o.key)}>
-                      <Text style={[s.vpillTxt, on && s.vpillTxtOn]}>{o.label}</Text>
+                    <TouchableOpacity key={fn.key} style={[s.fnItem, on && s.fnItemOn]} activeOpacity={0.8} onPress={() => setSheetFacet(fn.key)}>
+                      <Text style={[s.fnTxt, on && s.fnTxtOn]} numberOfLines={2}>{fn.label}{cnt ? ` (${cnt})` : ''}</Text>
                     </TouchableOpacity>
                   );
                 })}
-              </View>
-              {filters.map((f) => (
-                <View key={f.key}>
-                  <Text style={s.fsec}>{f.label}</Text>
-                  <View style={s.wrap}>
-                    {f.values.map((v) => {
-                      const on = (draftFilters[f.key] || []).includes(v.value);
-                      return (
-                        <TouchableOpacity key={v.value} style={[s.vpill, on && s.vpillOn]} onPress={() => toggleDraft(f.key, v.value)}>
-                          <Text style={[s.vpillTxt, on && s.vpillTxtOn]}>{v.value}{v.count ? ` (${v.count})` : ''}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              ))}
-              {filters.length === 0 ? <Text style={s.empty}>No filters for this selection.</Text> : null}
-            </ScrollView>
+              </ScrollView>
+              {/* right — values of the selected facet */}
+              <ScrollView style={s.fvals} showsVerticalScrollIndicator={false}>
+                {sheetFacet === 'sort' ? (
+                  SORTS.map((o) => {
+                    const on = draftSort === o.key;
+                    return (
+                      <TouchableOpacity key={o.key} style={s.valRow} activeOpacity={0.8} onPress={() => setDraftSort(o.key)}>
+                        <View style={[s.radio, on && s.radioOn]}>{on ? <View style={s.radioDot} /> : null}</View>
+                        <Text style={[s.valTxt, on && s.valTxtOn]}>{o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                ) : (
+                  (filters.find((f) => f.key === sheetFacet)?.values || []).map((v) => {
+                    const on = (draftFilters[sheetFacet] || []).includes(v.value);
+                    return (
+                      <TouchableOpacity key={v.value} style={s.valRow} activeOpacity={0.8} onPress={() => toggleDraft(sheetFacet, v.value)}>
+                        <View style={[s.cbox, on && s.cboxOn]}>{on ? <Text style={s.tick}>✓</Text> : null}</View>
+                        <Text style={[s.valTxt, on && s.valTxtOn]}>{v.value}{v.count ? `  (${v.count})` : ''}</Text>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </ScrollView>
+            </View>
             <View style={s.sheetActions}>
-              <TouchableOpacity style={s.cancelBtn} onPress={() => setSheetOpen(false)}><Text style={s.cancelTxt}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={s.cancelBtn} onPress={clearSheet}><Text style={s.cancelTxt}>Clear filters</Text></TouchableOpacity>
               <TouchableOpacity style={s.applyBtn} onPress={applySheet}><Text style={s.applyTxt}>Apply</Text></TouchableOpacity>
             </View>
           </View>
@@ -343,11 +354,12 @@ const s = StyleSheet.create({
   pnm: { fontSize: 13.5, fontWeight: '700', color: TZ.ink, flex: 1, fontFamily: fonts.sansBold },
   pct: { fontSize: 11, color: TZ.muted, marginLeft: 8, fontFamily: fonts.sansRegular },
 
-  chips: { paddingHorizontal: 12, paddingBottom: 10, gap: 7 },
-  chip: { borderWidth: 1, borderColor: TZ.line, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 6, marginRight: 7, backgroundColor: TZ.card },
-  chipTxt: { fontSize: 11.5, color: TZ.ink, fontFamily: fonts.sansRegular },
+  chipRow: { height: 48, justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: TZ.line },
+  chips: { paddingHorizontal: 12, alignItems: 'center' },
+  chip: { borderWidth: 1, borderColor: '#E3E3E7', borderRadius: 18, paddingHorizontal: 13, paddingVertical: 7, marginRight: 8, backgroundColor: TZ.card },
+  chipTxt: { fontSize: 12, color: TZ.ink, fontFamily: fonts.sansRegular },
   chipDark: { backgroundColor: TZ.ink, borderColor: TZ.ink },
-  chipDarkTxt: { fontSize: 11.5, color: '#fff', fontFamily: fonts.sansBold, fontWeight: '700' },
+  chipDarkTxt: { fontSize: 12, color: '#fff', fontFamily: fonts.sansBold, fontWeight: '700' },
   chipOn: { backgroundColor: TZ.pinkTint, borderColor: '#EDA9C2' },
   chipOnTxt: { color: TZ.pinkDark, fontWeight: '700' },
 
@@ -365,20 +377,30 @@ const s = StyleSheet.create({
   prate: { fontSize: 10.5, color: '#52525B', marginTop: 3, fontFamily: fonts.sansRegular },
 
   sheetWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: TZ.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 24 },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E2E2E6', alignSelf: 'center', marginBottom: 14 },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  sheetTitle: { fontSize: 17, fontWeight: '800', color: TZ.ink, fontFamily: fonts.sansBold },
-  clear: { fontSize: 12.5, color: TZ.pink, fontWeight: '700', fontFamily: fonts.sansBold },
-  fsec: { fontSize: 12.5, fontWeight: '700', color: TZ.ink, marginTop: 16, marginBottom: 9, fontFamily: fonts.sansBold },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  vpill: { borderWidth: 1, borderColor: '#E6E6EA', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, marginBottom: 9, backgroundColor: TZ.card },
-  vpillOn: { backgroundColor: TZ.pink, borderColor: TZ.pink },
-  vpillTxt: { fontSize: 12.5, color: TZ.ink, fontFamily: fonts.sansRegular },
-  vpillTxtOn: { color: '#fff', fontWeight: '700', fontFamily: fonts.sansBold },
-  sheetActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  sheet: { backgroundColor: TZ.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 18, overflow: 'hidden' },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 18, paddingTop: 16, paddingBottom: 13, borderBottomWidth: 1, borderBottomColor: TZ.line },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: TZ.ink, fontFamily: fonts.sansBold },
+  xbtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: TZ.pageBg, alignItems: 'center', justifyContent: 'center' },
+  xtxt: { fontSize: 13, color: TZ.muted },
+  mBody: { flexDirection: 'row', height: 360 },
+  fnav: { width: 138, backgroundColor: '#FAFAFB', borderRightWidth: 1, borderRightColor: TZ.line },
+  fnItem: { paddingVertical: 14, paddingHorizontal: 14 },
+  fnItemOn: { backgroundColor: TZ.card, borderLeftWidth: 3, borderLeftColor: TZ.pink, paddingLeft: 11 },
+  fnTxt: { fontSize: 13, color: '#52525B', fontFamily: fonts.sansRegular },
+  fnTxtOn: { color: TZ.pink, fontWeight: '700', fontFamily: fonts.sansBold },
+  fvals: { flex: 1, paddingHorizontal: 16, paddingTop: 4 },
+  valRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: '#C9C9D0', alignItems: 'center', justifyContent: 'center' },
+  radioOn: { borderColor: TZ.pink },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: TZ.pink },
+  cbox: { width: 20, height: 20, borderRadius: 5, borderWidth: 1.5, borderColor: '#C9C9D0', alignItems: 'center', justifyContent: 'center' },
+  cboxOn: { borderColor: TZ.pink, backgroundColor: TZ.pink },
+  tick: { fontSize: 12, color: '#fff', fontWeight: '900' },
+  valTxt: { fontSize: 13.5, color: TZ.ink, fontFamily: fonts.sansRegular, flex: 1 },
+  valTxtOn: { color: TZ.ink, fontWeight: '700', fontFamily: fonts.sansBold },
+  sheetActions: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: TZ.line },
   cancelBtn: { flex: 1, borderWidth: 1, borderColor: TZ.line, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
   cancelTxt: { fontSize: 13, color: TZ.ink, fontWeight: '700', fontFamily: fonts.sansBold },
-  applyBtn: { flex: 2, backgroundColor: TZ.pink, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
+  applyBtn: { flex: 1.4, backgroundColor: TZ.pink, borderRadius: 11, paddingVertical: 13, alignItems: 'center' },
   applyTxt: { fontSize: 13, color: '#fff', fontWeight: '800', fontFamily: fonts.sansBold },
 });
