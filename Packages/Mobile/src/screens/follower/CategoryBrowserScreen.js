@@ -199,7 +199,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   function renderProduct({ item }) {
     const showMrp = item.mrp != null && item.price != null && item.mrp > item.price;
     return (
-      <TouchableOpacity style={s.pc} activeOpacity={0.85} onPress={() => goToProduct(navigation, item)}>
+      <TouchableOpacity style={s.pc} activeOpacity={0.85} onPress={() => goToProduct(navigation, { ...item, discount_value: null })}>
         <View style={s.pthumb}>
           {item.image_url
             ? <Image source={{ uri: item.image_url }} style={s.pimg} resizeMode="cover" />
