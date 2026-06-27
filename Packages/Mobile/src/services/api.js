@@ -478,6 +478,23 @@ export const followerApi = {
     return api.get(`/follower/section-results?${p.join('&')}`);
   },
 
+  // Category browser (Type-1) — contract: listing-category-browser.
+  // children = the sidebar rail; products = the grid + aggregated filter values.
+  listingNodeChildren: (id) => api.get(`/listing/nodes/${encodeURIComponent(id)}/children`),
+  listingNodeProducts: (id, opts = {}) => {
+    const p = [];
+    const add = (k, v) => { if (v != null && v !== '') p.push(`${k}=${encodeURIComponent(v)}`); };
+    if (opts.filters) {
+      for (const [k, vals] of Object.entries(opts.filters)) {
+        if (Array.isArray(vals) && vals.length) add(`f_${k}`, vals.join(','));
+      }
+    }
+    add('price_min', opts.price_min); add('price_max', opts.price_max);
+    add('sort', opts.sort); add('page', opts.page); add('page_size', opts.page_size);
+    return api.get(`/listing/nodes/${encodeURIComponent(id)}/products${p.length ? `?${p.join('&')}` : ''}`);
+  },
+  listingTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
+
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),
   getCategories: () => api.get('/follower/categories'),

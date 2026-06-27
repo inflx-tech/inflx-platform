@@ -112,6 +112,21 @@ export default function FindScreen({ navigation }) {
     loadCounts();
   }, []);
 
+  // Beta entry to the Type-1 category browser (contract: listing-category-browser).
+  // Opens the fashion catalogue at its first category so the rail shows leaves +
+  // the grid populates. Full wiring onto category tiles lands in Phase 2/5.
+  async function openCatalogueBrowser(vertical) {
+    try {
+      const res = await followerApi.listingTree(vertical);
+      const tree = res?.data?.tree || [];
+      const seg = tree[0];
+      const start = (seg?.children || [])[0] || seg;
+      if (start) navigation.navigate('CategoryBrowser', { nodeId: start.id, vertical, title: start.category || start.segment || start.name });
+    } catch (err) {
+      console.error('openCatalogueBrowser error:', err?.message);
+    }
+  }
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -132,6 +147,18 @@ export default function FindScreen({ navigation }) {
           placeholder="Search stores, products, services..."
           placeholderTextColor={P.muted2}
         />
+      </View>
+
+      {/* Beta — category browser launcher (Type-1) */}
+      <View style={styles.browseRow}>
+        <TouchableOpacity style={styles.browseBtn} onPress={() => openCatalogueBrowser('fashion')}>
+          <Text style={styles.browseTxt}>👗  Browse fashion by category</Text>
+          <Text style={styles.browseArrow}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.browseBtn} onPress={() => openCatalogueBrowser('furniture')}>
+          <Text style={styles.browseTxt}>🪴  Browse furniture by category</Text>
+          <Text style={styles.browseArrow}>→</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Super-categories */}
@@ -238,6 +265,32 @@ const styles = StyleSheet.create({
     color: P.ink,
     padding: 0,
     fontFamily: fonts.sansRegular,
+  },
+  browseRow: {
+    paddingHorizontal: 20,
+    marginBottom: 18,
+    gap: 8,
+  },
+  browseBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    backgroundColor: C.yellowTint || '#FFF6E0',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.yellow || '#F8CB46',
+  },
+  browseTxt: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: P.ink,
+    fontFamily: fonts.sansBold,
+  },
+  browseArrow: {
+    fontSize: 15,
+    color: P.ink,
   },
   categorySection: {
     marginBottom: 16,

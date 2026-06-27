@@ -359,4 +359,194 @@ const setProductCoverPhotos = asyncHandler(async (req, res) => {
   return success(res, { id: req.params.id, image_url: cover, cover_images: vj.cover_images });
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos };
+// ─────────────────────────────────────────────────────────────────────────────
+// Category browser (Type-1 result page) — contract: listing-category-browser.
+// Powers the follower "sidebar + product grid + filter chips" screen on the
+// SAME category_nodes tree the listing wizard writes to. Two public reads:
+//   GET /listing/nodes/:id/children   → the sidebar rail (a node + its children)
+//   GET /listing/nodes/:id/products   → the grid (subtree products) + the
+//        available filter values aggregated over the live set + price range.
+// Live gate mirrors the section engine's productsInCategory: approved brand,
+// is_active, pushed_to_store.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PAGE_MAX = 50;
+// facet_role values that a follower can filter by (skip media/price defs).
+const FILTERABLE_ROLES = new Set(['variant', 'descriptive', 'discovery']);
+
+// Map a product row → the card shape the follower grid renders. Mirrors
+// sectionRules.mapListedProductItem; discount_value derived from mrp (display
+// only — mig 118; a live brand_offer overlays an extra discount at checkout).
+function mapBrowseProduct(r) {
+  const price = r.price != null ? parseFloat(r.price) : null;
+  const mrp = r.mrp != null ? parseFloat(r.mrp) : null;
+  const discount = (mrp != null && price != null && mrp > price)
+    ? Math.round(((mrp - price) / mrp) * 100) : null;
+  return {
+    entity_type: 'product',
+    id: r.id, name: r.name, price, mrp, discount_value: discount,
+    image_url: r.image_url, section: r.section, veg_flag: r.veg_flag, description: r.description,
+    badge: r.badge || null, has_addons: r.has_addons === true,
+    rating: r.rating != null ? Number(r.rating) : null,
+    review_count: r.review_count != null ? Number(r.review_count) : 0,
+    brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category, city: r.brand_city },
+    via_creator: null, tracking: null,
+  };
+}
+
+// ── GET /listing/nodes/:id/children ───────────────────────────────────────────
+// The left rail: a node + its direct children (sub-categories / leaves).
+const getNodeChildren = asyncHandler(async (req, res) => {
+  const node = await taxonomy.getNode(req.params.id);
+  if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  const { rows } = await db.query(
+    `SELECT id, parent_id, segment, category, name, slug, depth, is_leaf, sort_order
+       FROM category_nodes WHERE parent_id = $1 ORDER BY sort_order, name`,
+    [node.id]
+  );
+  return success(res, {
+    node: {
+      id: node.id, parent_id: node.parent_id, vertical: node.vertical,
+      segment: node.segment, category: node.category, name: node.name,
+      depth: node.depth, is_leaf: node.is_leaf,
+    },
+    children: rows,
+  });
+});
+
+// ── GET /listing/nodes/:id/products ───────────────────────────────────────────
+// Subtree product grid + facet filtering + price range + sort + pagination, AND
+// the available filter values aggregated over the live set (drives the chips).
+// Filters arrive as f_<facet_key>=v1,v2 (keys validated against the node's facet
+// schema). price_min/price_max, sort (new|price_asc|price_desc|discount),
+// page, page_size.
+const getNodeProducts = asyncHandler(async (req, res) => {
+  const node = await taxonomy.getNode(req.params.id);
+  if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+
+  // Allowed filter keys = this node's facet schema (+ the always-present brand).
+  // Guards the jsonb key against arbitrary input.
+  const facetDefs = await taxonomy.getNodeFacets(node);
+  const defByKey = new Map(facetDefs.map((f) => [f.facet_key, f]));
+  const allowKeys = new Set([...defByKey.keys(), 'brand']);
+
+  const chosen = [];
+  for (const [qk, qv] of Object.entries(req.query)) {
+    if (!qk.startsWith('f_')) continue;
+    const key = qk.slice(2);
+    if (!allowKeys.has(key)) continue;
+    const vals = String(qv).split(',').map((s) => s.trim()).filter(Boolean);
+    if (vals.length) chosen.push({ key, vals });
+  }
+  const priceMin = req.query.price_min != null && req.query.price_min !== '' ? Number(req.query.price_min) : null;
+  const priceMax = req.query.price_max != null && req.query.price_max !== '' ? Number(req.query.price_max) : null;
+  const sort = String(req.query.sort || 'new');
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const pageSize = Math.min(PAGE_MAX, Math.max(1, parseInt(req.query.page_size, 10) || 20));
+
+  const subtree = `WITH RECURSIVE sub AS (
+      SELECT id FROM category_nodes WHERE id = $1
+      UNION ALL
+      SELECT cn.id FROM category_nodes cn JOIN sub ON cn.parent_id = sub.id)`;
+
+  // ── filtered, paginated page ──
+  const params = [node.id];
+  let p = 1;
+  const clauses = [];
+  for (const { key, vals } of chosen) {
+    const ki = ++p; params.push(key);
+    const vi = ++p; params.push(vals);
+    // Matches a jsonb array (?| over elements) OR a scalar string (= ANY).
+    clauses.push(`((bp.facets -> $${ki}) ?| $${vi}::text[] OR (bp.facets ->> $${ki}) = ANY($${vi}::text[]))`);
+  }
+  if (priceMin != null) { const i = ++p; params.push(priceMin); clauses.push(`bp.price >= $${i}`); }
+  if (priceMax != null) { const i = ++p; params.push(priceMax); clauses.push(`bp.price <= $${i}`); }
+  const filterSql = clauses.length ? `AND ${clauses.join(' AND ')}` : '';
+
+  const orderBy = sort === 'price_asc' ? 'bp.price ASC NULLS LAST'
+    : sort === 'price_desc' ? 'bp.price DESC NULLS LAST'
+    : sort === 'discount' ? 'CASE WHEN bp.mrp IS NOT NULL AND bp.mrp > bp.price THEN (bp.mrp - bp.price) / NULLIF(bp.mrp, 0) ELSE 0 END DESC, bp.created_at DESC NULLS LAST'
+    : 'bp.created_at DESC NULLS LAST';
+
+  const limIdx = ++p; params.push(pageSize);
+  const offIdx = ++p; params.push((page - 1) * pageSize);
+
+  const pageSql = `${subtree}
+    SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
+           bp.created_at, bp.badge,
+           b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category, u_b.city AS brand_city,
+           rev.rating, rev.review_count,
+           EXISTS (SELECT 1 FROM product_addon_groups g WHERE g.product_id = bp.id) AS has_addons,
+           COUNT(*) OVER() AS _total
+      FROM brand_products bp
+      JOIN brands b  ON b.id = bp.brand_id
+      JOIN users u_b ON u_b.id = b.user_id
+      LEFT JOIN LATERAL (
+        SELECT ROUND(AVG(rr.rating)::numeric, 1) AS rating, COUNT(*)::int AS review_count
+          FROM restaurant_reviews rr WHERE rr.brand_id = b.id AND rr.status = 'published'
+      ) rev ON true
+     WHERE bp.category_node_id IN (SELECT id FROM sub)
+       AND u_b.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
+       ${filterSql}
+     ORDER BY ${orderBy}
+     LIMIT $${limIdx} OFFSET $${offIdx}`;
+  const { rows } = await db.query(pageSql, params);
+  const total = rows.length ? Number(rows[0]._total) : 0;
+  const items = rows.map(mapBrowseProduct);
+
+  // ── facet aggregation over the live set (filters themselves not applied, so
+  //    the chips always show every available option) ──
+  const aggSql = `${subtree}
+    SELECT bp.facets, bp.price
+      FROM brand_products bp
+      JOIN brands b  ON b.id = bp.brand_id
+      JOIN users u_b ON u_b.id = b.user_id
+     WHERE bp.category_node_id IN (SELECT id FROM sub)
+       AND u_b.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true`;
+  const { rows: aggRows } = await db.query(aggSql, [node.id]);
+
+  const valueCounts = new Map();   // facet_key → Map(value → count)
+  let pmin = null, pmax = null;
+  for (const ar of aggRows) {
+    const f = ar.facets && typeof ar.facets === 'object' ? ar.facets : {};
+    for (const key of allowKeys) {
+      const raw = f[key];
+      if (raw == null) continue;
+      const vals = Array.isArray(raw) ? raw : [raw];
+      if (!valueCounts.has(key)) valueCounts.set(key, new Map());
+      const m = valueCounts.get(key);
+      for (const v of vals) {
+        const sv = String(v).trim();
+        if (sv) m.set(sv, (m.get(sv) || 0) + 1);
+      }
+    }
+    const pr = ar.price != null ? parseFloat(ar.price) : null;
+    if (pr != null) { pmin = pmin == null ? pr : Math.min(pmin, pr); pmax = pmax == null ? pr : Math.max(pmax, pr); }
+  }
+
+  const filters = [];
+  for (const key of allowKeys) {
+    const m = valueCounts.get(key);
+    if (!m || m.size === 0) continue;
+    const def = defByKey.get(key);
+    if (def && !FILTERABLE_ROLES.has(def.facet_role)) continue;   // skip media/price defs
+    const label = key === 'brand' ? 'Brand' : (def?.label || key);
+    const values = [...m.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([value, count]) => ({ value, count }));
+    filters.push({ key, label, role: def?.facet_role || 'descriptive', input_type: def?.input_type || 'multi_select', values });
+  }
+
+  return success(res, {
+    node: {
+      id: node.id, vertical: node.vertical, segment: node.segment,
+      category: node.category, name: node.name, is_leaf: node.is_leaf,
+    },
+    total, page, page_size: pageSize,
+    items,
+    filters,
+    price: { min: pmin, max: pmax },
+  });
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts };

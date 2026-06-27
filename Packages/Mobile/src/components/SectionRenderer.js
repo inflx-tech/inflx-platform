@@ -28,9 +28,13 @@ import TileSection from './sections/TileSection';
 
 // ── navigation helpers (targets preserved; Eat re-pointed to agreed Category) ──
 
-// all → Find; dining/eat → the AGREED Category screen (was DiningHome); else CategoryList.
+// all → Find; a category carrying a category_node_id → the Type-1 browser
+// (contract: listing-category-browser; populated by Phase 2/5); else CategoryList.
 function navigateCategory(navigation, cat) {
   const key = cat?.key;
+  if (cat?.category_node_id) {
+    return navigation.navigate('CategoryBrowser', { nodeId: cat.category_node_id, vertical: cat.vertical, title: cat.label });
+  }
   if (!key || key === 'all') return navigation.navigate('Find');
   return navigation.navigate('CategoryList', { superCategory: key, label: cat.label, icon: cat.icon });
 }

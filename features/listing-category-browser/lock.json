@@ -1,0 +1,21 @@
+{
+  "feature": "listing-category-browser",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-27",
+  "notes": "Program A Phase 1 (Type-1 category browser). Founder locked the in-chat mock 2026-06-27 ('lock phase 1 mock and start'). UI-governed + Mobile-governed. No migration. release.released stays false (no Maestro device, per program precedent); OTA ships with released=false.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

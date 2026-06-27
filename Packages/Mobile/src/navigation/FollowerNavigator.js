@@ -59,6 +59,8 @@ import ReelsScreen from '../screens/follower/ReelsScreen';
 import CreatorCategoryScreen from '../screens/follower/CreatorCategoryScreen';
 // merch-engine — shared "View all" full-list results screen
 import SectionResultsScreen from '../screens/follower/SectionResultsScreen';
+// listing-category-browser (Type-1) — sidebar + product grid + facet filters
+import CategoryBrowserScreen from '../screens/follower/CategoryBrowserScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -86,6 +88,8 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="CategoryList" component={CategoryListScreen} />
     <Stack.Screen name="CreatorCategory" component={CreatorCategoryScreen} />
     <Stack.Screen name="SectionResults" component={SectionResultsScreen} />
+    {/* listing-category-browser (Type-1): tap a category → sidebar + grid + filters */}
+    <Stack.Screen name="CategoryBrowser" component={CategoryBrowserScreen} />
     {/* Food World 3C-1 — dish-group craving → nearby restaurants result */}
     <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />

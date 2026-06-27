@@ -22,6 +22,8 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 *
 const publicRouter = Router();
 publicRouter.get('/tree', ctrl.getTree);
 publicRouter.get('/nodes/:id/facets', ctrl.getNodeFacets);
+publicRouter.get('/nodes/:id/children', ctrl.getNodeChildren);   // contract: listing-category-browser (Type-1 rail)
+publicRouter.get('/nodes/:id/products', ctrl.getNodeProducts);   // contract: listing-category-browser (Type-1 grid + filters)
 publicRouter.get('/nodes/:id/template.xlsx', ctrl.downloadTemplate);   // contract: listing-excel-bulk
 publicRouter.post('/nodes/:id/import', authenticate, requireRole('brand'), upload.single('file'), ctrl.importProducts);
 publicRouter.post('/ingest-image', authenticate, requireRole('brand'), ctrl.ingestImage);   // contract: listing-image-urls
