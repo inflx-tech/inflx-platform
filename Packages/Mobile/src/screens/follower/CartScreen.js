@@ -1,12 +1,30 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Pressable, Image, StyleSheet, ActivityIndicator,
+  Modal, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { toing as T, fonts } from '../../theme/tokens';
 import { useCart } from '../../services/CartContext';
 import { followerApi } from '../../services/api';
+import { processPayment } from '../../services/payment';
 import CustomiseSheet from '../../components/food/CustomiseSheet';
+
+// follower-checkout Slice B — payment methods in the cart's payment selector.
+// UI only (mock payment); the first is the default. Real Razorpay multi-method
+// is the separate money task (Program B P10).
+const PAY_METHODS = [
+  { key: 'phonepe', icon: '📱', label: 'PhonePe UPI', sub: 'UPI' },
+  { key: 'gpay', icon: '📱', label: 'Google Pay', sub: 'UPI' },
+  { key: 'upi', icon: '🏦', label: 'Other UPI', sub: 'Enter any UPI ID' },
+  { key: 'card', icon: '💳', label: 'Credit / Debit Card', sub: 'Visa · Mastercard · RuPay' },
+  { key: 'netbanking', icon: '🏛️', label: 'Netbanking', sub: 'All major banks' },
+];
+
+function addrLine(a) {
+  if (!a) return '';
+  return [a.line1, a.line2, a.city, a.state, a.pincode].filter(Boolean).join(', ');
+}
 
 /**
  * CartScreen — Food 3C-3. The unified multi-item cart (route `Cart`), reskinned
@@ -48,12 +66,43 @@ function lineSummary(item) {
 }
 
 export default function CartScreen({ navigation }) {
-  const { cart, updateQty, removeItem, replaceLine, applyOffer, clearOffer } = useCart();
+  const { cart, updateQty, removeItem, replaceLine, applyOffer, clearOffer, clear } = useCart();
   const items = cart.items || [];
+
+  // follower-checkout Slice B — the shopping cart (fashion/furniture/beauty) IS
+  // the checkout: address + payment bar + inline Place Order, splitting per brand
+  // server-side. Food keeps its existing 3-step OnlineOrder flow (untouched).
+  const isShop = cart.kind === 'shop';
 
   const [editing, setEditing] = useState(null); // { product, lineKey, initial }
   const [editLoading, setEditLoading] = useState(false);
   const [offersOpen, setOffersOpen] = useState(false);
+
+  // Checkout-bar state (shop only)
+  const [addresses, setAddresses] = useState([]);
+  const [selectedAddr, setSelectedAddr] = useState(null);
+  const [addrOpen, setAddrOpen] = useState(false);
+  const [payKey, setPayKey] = useState(PAY_METHODS[0].key);
+  const [payOpen, setPayOpen] = useState(false);
+  const [placing, setPlacing] = useState(false);
+  const payMethod = PAY_METHODS.find((m) => m.key === payKey) || PAY_METHODS[0];
+
+  const loadAddresses = useCallback((preferId) => {
+    return followerApi.getAddresses?.().then((res) => {
+      if (!res?.success) return;
+      const addrs = res.data?.addresses || [];
+      setAddresses(addrs);
+      setSelectedAddr((prev) => {
+        if (preferId && addrs.some((a) => a.id === preferId)) return preferId;
+        if (prev && addrs.some((a) => a.id === prev)) return prev;
+        return addrs.length ? addrs[0].id : null;
+      });
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => { if (isShop) loadAddresses(); }, [isShop, loadAddresses]);
+
+  const addrObj = addresses.find((a) => a.id === selectedAddr) || null;
 
   const count = items.reduce((s, i) => s + i.qty, 0);
   const subtotal = items.reduce((s, i) => s + (Number(i.price) || 0) * i.qty, 0);
@@ -132,6 +181,106 @@ export default function CartScreen({ navigation }) {
       tracking: cart.tracking || null,
       trackingParams: cart.tracking || null,
     });
+  }
+
+  // Map a cart line → the backend order item shape (server re-prices + resolves
+  // customisation; client prices are never trusted).
+  const toOrderItem = (i) => ({
+    product_id: i.product_id,
+    quantity: i.qty,
+    variant_sku: i.variant_sku || null,
+    variant_label: i.variant_label || null,
+    variation: i.variation || null,
+    addons: Array.isArray(i.selected_addons) ? i.selected_addons : [],
+    note: i.note || null,
+  });
+
+  // follower-checkout Slice B — inline shopping checkout. Builds the order
+  // payload (single brand → legacy single payload; multiple brands → brand_groups
+  // for the per-brand split), runs createOrder → (mock) pay → verifyOrder, then
+  // clears the cart and shows the confirmation. The follower pays ONCE.
+  async function placeShopOrder() {
+    if (!items.length) return;
+    if (!selectedAddr) {
+      navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) });
+      return;
+    }
+
+    // Group lines by brand. Cart-level offer + creator tracking belong to the
+    // lead brand (cart.brandId); other brands are organic.
+    const byBrand = new Map();
+    for (const i of items) {
+      const bid = i.brand_id || cart.brandId;
+      if (!byBrand.has(bid)) byBrand.set(bid, []);
+      byBrand.get(bid).push(i);
+    }
+    const trk = cart.tracking || null;
+    const leadOfferId = applied?.brand_offer_id || null;
+
+    let payload;
+    if (byBrand.size > 1) {
+      payload = {
+        address_id: selectedAddr,
+        brand_groups: [...byBrand.entries()].map(([bid, lines]) => {
+          const g = { brand_id: bid, items: lines.map(toOrderItem) };
+          if (bid === cart.brandId) {
+            if (leadOfferId) g.brand_offer_id = leadOfferId;
+            if (trk?.campaign_influencer_id) {
+              g.campaign_id = trk.campaign_id;
+              g.set_id = trk.set_id;
+              g.campaign_influencer_id = trk.campaign_influencer_id;
+              g.offer_id = trk.offer_id || null;
+            }
+          }
+          return g;
+        }),
+      };
+    } else {
+      const bid = cart.brandId || items[0]?.brand_id || null;
+      const isOrganic = !trk?.campaign_influencer_id;
+      payload = isOrganic
+        ? { items: items.map(toOrderItem), address_id: selectedAddr, brand_id: bid, brand_offer_id: leadOfferId }
+        : {
+            items: items.map(toOrderItem), address_id: selectedAddr,
+            campaign_id: trk.campaign_id, set_id: trk.set_id,
+            campaign_influencer_id: trk.campaign_influencer_id, offer_id: trk.offer_id || null,
+          };
+    }
+
+    setPlacing(true);
+    try {
+      const res = await followerApi.createOrder(payload);
+      if (!res.success && !res.data) {
+        Alert.alert('Order failed', res.error?.message || 'Please try again'); return;
+      }
+      const payResult = await processPayment({
+        amount: Math.round((res.data?.net_amount || total) * 100), // paise
+        orderId: res.data?.razorpay_order_id,
+        keyId: res.data?.razorpay_key_id,
+        description: `Order via ${payMethod.label}`,
+        brandName: cart.brandName,
+      });
+      if (!payResult) { Alert.alert('Payment cancelled', 'You can try again anytime.'); return; }
+
+      const verifyRes = await followerApi.verifyOrder?.({
+        razorpay_order_id: payResult.razorpay_order_id,
+        razorpay_payment_id: payResult.razorpay_payment_id,
+        razorpay_signature: payResult.razorpay_signature,
+      });
+      if (verifyRes?.success || verifyRes?.data) {
+        const orderId = verifyRes?.data?.order_id;
+        clear?.();
+        navigation.replace('OrderConfirmation', {
+          orderId, total: res.data?.net_amount || total, brandName: cart.brandName,
+        });
+      } else {
+        Alert.alert('Verification failed', verifyRes?.error?.message || 'Payment received but verification failed. Contact support.');
+      }
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Something went wrong');
+    } finally {
+      setPlacing(false);
+    }
   }
 
   if (items.length === 0) {
@@ -283,13 +432,101 @@ export default function CartScreen({ navigation }) {
         ) : null}
       </ScrollView>
 
-      {/* ── Footer: green Place Order ── */}
-      <SafeAreaView edges={['bottom']} style={s.footer}>
-        <Pressable style={s.place} onPress={checkout}>
-          <Text style={s.placeTxt}>Place Order</Text>
-          <Text style={s.placeAmt}>₹{Math.round(total)} ›</Text>
+      {/* ── Footer ── */}
+      {isShop ? (
+        // Shopping checkout bar: delivery address + payment method + Place Order.
+        // The follower pays once; the backend splits per brand silently.
+        <SafeAreaView edges={['bottom']} style={s.footer}>
+          <Pressable style={s.frow} onPress={() => (addresses.length ? setAddrOpen(true) : navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) }))}>
+            <Text style={s.fic}>🏠</Text>
+            <View style={{ flex: 1 }}>
+              {addrObj ? (
+                <>
+                  <Text style={s.ft} numberOfLines={1}>Delivering to {addrObj.label || addrObj.type || 'Address'}</Text>
+                  <Text style={s.fs} numberOfLines={1}>{addrLine(addrObj)}</Text>
+                </>
+              ) : (
+                <Text style={s.ft}>Add a delivery address</Text>
+              )}
+            </View>
+            <Text style={s.fc}>{addrObj ? 'Change' : 'Add'}</Text>
+          </Pressable>
+          <Pressable style={s.frow} onPress={() => setPayOpen(true)}>
+            <Text style={s.fic}>{payMethod.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={s.ft} numberOfLines={1}>Pay using {payMethod.label}</Text>
+              <Text style={s.fs} numberOfLines={1}>Tap to change · UPI · Cards · Netbanking</Text>
+            </View>
+            <Text style={s.fchev}>⌄</Text>
+          </Pressable>
+          <Pressable style={[s.place, placing && { opacity: 0.7 }]} onPress={placeShopOrder} disabled={placing}>
+            {placing ? <ActivityIndicator color="#fff" /> : (
+              <>
+                <View>
+                  <Text style={s.placeTotalLbl}>TOTAL</Text>
+                  <Text style={s.placeAmt}>₹{Math.round(total)}</Text>
+                </View>
+                <Text style={s.placeTxt}>Place Order →</Text>
+              </>
+            )}
+          </Pressable>
+        </SafeAreaView>
+      ) : (
+        // Food / legacy cart: existing 3-step OnlineOrder checkout (untouched).
+        <SafeAreaView edges={['bottom']} style={s.footer}>
+          <Pressable style={s.place} onPress={checkout}>
+            <Text style={s.placeTxt}>Place Order</Text>
+            <Text style={s.placeAmt}>₹{Math.round(total)} ›</Text>
+          </Pressable>
+        </SafeAreaView>
+      )}
+
+      {/* Address picker (shop) */}
+      <Modal visible={addrOpen} transparent animationType="slide" onRequestClose={() => setAddrOpen(false)}>
+        <Pressable style={s.sheetBg} onPress={() => setAddrOpen(false)}>
+          <Pressable style={s.sheet} onPress={() => {}}>
+            <Text style={s.sheetTitle}>Delivery address</Text>
+            {addresses.map((a) => {
+              const on = a.id === selectedAddr;
+              return (
+                <Pressable key={a.id} style={[s.optRow, on && s.optRowOn]} onPress={() => { setSelectedAddr(a.id); setAddrOpen(false); }}>
+                  <View style={[s.radio, !on && s.radioOff]}>{on ? <View style={s.radioIn} /> : null}</View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.optLabel}>{a.label || a.type || 'Address'}</Text>
+                    <Text style={s.optSub} numberOfLines={2}>{addrLine(a)}</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+            <Pressable onPress={() => { setAddrOpen(false); navigation.navigate('Address', { onSave: (a) => loadAddresses(a?.id) }); }}>
+              <Text style={s.addLink}>+ Add new address</Text>
+            </Pressable>
+          </Pressable>
         </Pressable>
-      </SafeAreaView>
+      </Modal>
+
+      {/* Payment method picker (shop) — UI only; mock payment */}
+      <Modal visible={payOpen} transparent animationType="slide" onRequestClose={() => setPayOpen(false)}>
+        <Pressable style={s.sheetBg} onPress={() => setPayOpen(false)}>
+          <Pressable style={s.sheet} onPress={() => {}}>
+            <Text style={s.sheetTitle}>Pay using</Text>
+            {PAY_METHODS.map((m) => {
+              const on = m.key === payKey;
+              return (
+                <Pressable key={m.key} style={[s.optRow, on && s.optRowOn]} onPress={() => { setPayKey(m.key); setPayOpen(false); }}>
+                  <Text style={s.fic}>{m.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.optLabel}>{m.label}</Text>
+                    <Text style={s.optSub}>{m.sub}</Text>
+                  </View>
+                  <View style={[s.radio, !on && s.radioOff]}>{on ? <View style={s.radioIn} /> : null}</View>
+                </Pressable>
+              );
+            })}
+            <Text style={s.payNote}>You'll confirm payment securely. INFLX never stores your card details.</Text>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Edit a customised line */}
       <CustomiseSheet
@@ -359,10 +596,33 @@ const s = StyleSheet.create({
   recMrp: { fontSize: 10.5, color: T.hint, textDecorationLine: 'line-through', marginLeft: 5, fontFamily: fonts.sansRegular },
   estimate: { fontSize: 10.5, color: T.hint, marginTop: 8, marginBottom: 4, fontStyle: 'italic' },
 
-  footer: { backgroundColor: T.card, borderTopWidth: 1, borderTopColor: T.line, paddingHorizontal: 16, paddingTop: 12 },
-  place: { backgroundColor: T.veg, borderRadius: 13, paddingVertical: 15, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  footer: { backgroundColor: T.card, borderTopWidth: 1, borderTopColor: T.line, paddingHorizontal: 12, paddingTop: 4 },
+  place: { backgroundColor: T.veg, borderRadius: 13, paddingVertical: 13, paddingHorizontal: 18, marginHorizontal: 4, marginTop: 8, marginBottom: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   placeTxt: { color: '#fff', fontSize: 15, fontFamily: fonts.sansBold },
-  placeAmt: { color: '#fff', fontSize: 15, fontFamily: fonts.displayBold },
+  placeAmt: { color: '#fff', fontSize: 16, fontFamily: fonts.displayBold },
+  placeTotalLbl: { color: '#fff', fontSize: 9, fontFamily: fonts.sansBold, opacity: 0.85, letterSpacing: 0.5 },
+
+  // Shop checkout bar rows (address / payment)
+  frow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 11, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: T.line },
+  fic: { width: 26, textAlign: 'center', fontSize: 16 },
+  ft: { fontSize: 12.5, fontFamily: fonts.sansBold, color: T.ink },
+  fs: { fontSize: 10.5, color: T.muted, marginTop: 1, fontFamily: fonts.sansMedium },
+  fc: { fontSize: 12.5, fontFamily: fonts.sansBold, color: T.pink },
+  fchev: { fontSize: 14, color: T.muted, paddingHorizontal: 4 },
+
+  // Bottom-sheet pickers (address / payment)
+  sheetBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: T.card, borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 28 },
+  sheetTitle: { fontSize: 15.5, fontFamily: fonts.displayBold, color: T.ink, marginBottom: 14 },
+  optRow: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: T.line, borderRadius: 11, marginBottom: 9 },
+  optRowOn: { borderColor: T.veg, backgroundColor: T.successTint },
+  optLabel: { fontSize: 13, fontFamily: fonts.sansBold, color: T.ink },
+  optSub: { fontSize: 11, color: T.muted, marginTop: 1, fontFamily: fonts.sansMedium, lineHeight: 15 },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: T.veg, alignItems: 'center', justifyContent: 'center' },
+  radioOff: { borderColor: T.hint },
+  radioIn: { width: 8, height: 8, borderRadius: 4, backgroundColor: T.veg },
+  addLink: { fontSize: 13, fontFamily: fonts.sansBold, color: T.pink, paddingVertical: 8, paddingHorizontal: 4 },
+  payNote: { fontSize: 11, color: T.hint, marginTop: 4, fontFamily: fonts.sansMedium, lineHeight: 16 },
 
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
   emptyTitle: { fontSize: 17, fontFamily: fonts.displayBold, color: T.ink, marginBottom: 6 },

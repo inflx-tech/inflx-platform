@@ -1109,11 +1109,13 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
 
 // ── POST /follower/orders ─────────────────────────────────────────────────────
 
-const placeOrder = asyncHandler(async (req, res) => {
-  const follower = await getFollowerByUserId(req.user.sub);
-  requireFollowerProfile(follower);
-
-  const { offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, brand_offer_id, items, address_id, delivery_fee } = req.body;
+// follower-checkout Slice B — price ONE brand's slice of a checkout. Returns the
+// per-brand { subMeta, netAmount, breakdown }. The single-order path (food /
+// single-brand shop / creator-mediated) calls it once; the multi-brand shopping
+// cart calls it per brand and the follower pays the SUMMED total ONCE (a single
+// Razorpay order holding sub_orders[] → verifyOrder writes one order per brand).
+async function priceOrderForGroup(follower, group) {
+  const { offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, brand_offer_id, items, address_id, delivery_fee } = group;
   if (!items?.length) {
     throw new AppError('VALIDATION_ERROR', 'items are required', 422, 'items');
   }
@@ -1306,7 +1308,7 @@ const placeOrder = asyncHandler(async (req, res) => {
     note: i.note,
   }));
 
-  const orderId = await txService.createOrder(netAmount, {
+  const subMeta = {
     type: 'online_order',
     // Organic orders carry NO creator attribution — keep these explicitly null
     // so the pending-order meta round-trips cleanly into the verify INSERT.
@@ -1329,7 +1331,60 @@ const placeOrder = asyncHandler(async (req, res) => {
     l3_category_key:  l3.category_key,
     l3_source:        l3.source,
     l3_influencer_id: l3.influencer_id,
+  };
+
+  const breakdown = {
+    items_total: itemsTotal,
+    discount_amount: discountAmount,
+    discount_reason: offerResult.reason,
+    delivery_fee: deliveryFee,
+    influencer_commission: influencerCommission,
+    platform_fee: platformFee,
+    brand_net: brandNet,
+  };
+
+  return { subMeta, netAmount, breakdown };
+}
+
+const placeOrder = asyncHandler(async (req, res) => {
+  const follower = await getFollowerByUserId(req.user.sub);
+  requireFollowerProfile(follower);
+
+  const { brand_groups, address_id } = req.body;
+
+  // ── Multi-brand shopping checkout (follower-checkout Slice B) ──────────────
+  // The shopping cart (fashion/furniture/beauty) can hold lines from several
+  // brands. The follower sees ONE flat list + bill and pays ONCE; the backend
+  // splits into one order per brand (each brand gets only its items + the
+  // customer's delivery info). One Razorpay order is created for the summed
+  // total, stashing the per-brand sub_orders[] → verifyOrder writes them all.
+  if (Array.isArray(brand_groups) && brand_groups.length) {
+    const priced = [];
+    for (const g of brand_groups) {
+      priced.push(await priceOrderForGroup(follower, { ...g, address_id }));
+    }
+    const grandTotal = parseFloat(priced.reduce((s, p) => s + p.netAmount, 0).toFixed(2));
+    const orderId = await txService.createOrder(grandTotal, {
+      type: 'online_order_multi',
+      follower_id: follower.id,
+      address_id: address_id || null,
+      sub_orders: priced.map(p => p.subMeta),
+    });
+    return success(res, {
+      razorpay_order_id: orderId,
+      razorpay_key_id: txService.getRazorpayKeyId(),
+      net_amount: grandTotal,
+      brand_count: priced.length,
+      breakdowns: priced.map(p => p.breakdown),
+    }, 201);
+  }
+
+  // ── Single-order path (food, single-brand shop, creator-mediated) ─────────
+  const { offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, brand_offer_id, items, delivery_fee } = req.body;
+  const { subMeta, netAmount, breakdown } = await priceOrderForGroup(follower, {
+    offer_id, campaign_id, set_id, campaign_influencer_id, brand_id, brand_offer_id, items, address_id, delivery_fee,
   });
+  const orderId = await txService.createOrder(netAmount, subMeta);
 
   return success(res, {
     razorpay_order_id: orderId,
@@ -1338,19 +1393,102 @@ const placeOrder = asyncHandler(async (req, res) => {
     // undefined key → native hard-crash on Place Order (no payment, no order).
     razorpay_key_id: txService.getRazorpayKeyId(),
     net_amount: netAmount,
-    breakdown: {
-      items_total: itemsTotal,
-      discount_amount: discountAmount,
-      discount_reason: offerResult.reason,
-      delivery_fee: deliveryFee,
-      influencer_commission: influencerCommission,
-      platform_fee: platformFee,
-      brand_net: brandNet,
-    },
+    breakdown,
   }, 201);
 });
 
 // ── POST /follower/orders/verify ──────────────────────────────────────────────
+
+// follower-checkout Slice B — read-side enrichment for ONE order (one brand).
+// Pulls the per-brand return window, coupon, influencer, brand contact + the
+// primary product/variant for single-row analytics. Done OUTSIDE the write
+// transaction (reads only) so the transaction stays short. `sm` is the per-brand
+// sub-meta (the whole meta on the single-order path).
+async function prepareSubOrder(sm) {
+  // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
+  // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
+  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, sm.brand_id);
+  const commissionAmount = parseFloat(sm.influencer_commission);
+
+  const { rows: ciRows } = await db.query(
+    `SELECT coupon_code FROM campaign_influencers WHERE id = $1`,
+    [sm.campaign_influencer_id]
+  );
+  const couponCode = ciRows[0]?.coupon_code || null;
+
+  const influencer = await getInfluencerByCiId(sm.campaign_influencer_id);
+  const { rows: brandRows } = await db.query(
+    `SELECT b.business_name, u.phone AS brand_phone FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+    [sm.brand_id]
+  );
+
+  const estimatedDelivery = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // Phase Salon-3 Q3 / Tier-1 — denormalize the first cart item's product +
+  // variant onto the row for single-JOIN analytics (full per-item attribution
+  // lives in follower_orders.items_json).
+  const primaryProductId = Array.isArray(sm.items_json) && sm.items_json[0]?.product_id ? sm.items_json[0].product_id : null;
+  const primaryVariantId = Array.isArray(sm.items_json) && sm.items_json[0]?.variant_id ? sm.items_json[0].variant_id : null;
+
+  return { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId };
+}
+
+// follower-checkout Slice B — write ONE order (one brand) inside the caller's
+// transaction. Identical to the legacy single-order write; the multi-brand path
+// calls it once per brand under the same transaction + single pending-order claim.
+async function writeSubOrder(client, prepared, razorpay_payment_id) {
+  const { sm, returnWindowEndsAt, commissionAmount, couponCode, influencer, brandRows, estimatedDelivery, primaryProductId, primaryVariantId } = prepared;
+  const netAmount = parseFloat(sm.net_amount);
+
+  const { rows: txRows } = await client.query(
+    `INSERT INTO follower_transactions
+       (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
+        variant_id, offer_type, brand_offer_id, offer_source,
+        transaction_type, gross_amount, discount_amount, net_amount,
+        influencer_commission, marketplace_fee_amount, brand_net,
+        status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'online_order',$12,$13,$14,$15,$16,$17,'completed',$18,$19,$20)
+     RETURNING id`,
+    [
+      sm.follower_id, sm.brand_id, sm.campaign_id, sm.set_id,
+      sm.campaign_influencer_id, sm.offer_id, primaryProductId,
+      primaryVariantId, sm.offer_type || null,
+      sm.brand_offer_id || null, sm.offer_source || 'influencer',
+      sm.items_total, sm.discount_amount, netAmount,
+      commissionAmount, sm.platform_fee, sm.brand_net,
+      couponCode, returnWindowEndsAt, razorpay_payment_id,
+    ]
+  );
+  const transactionId = txRows[0].id;
+
+  const { rows: orderRows } = await client.query(
+    `INSERT INTO follower_orders
+       (transaction_id, address_id, order_status, estimated_delivery_date, whatsapp_number, items_json)
+     VALUES ($1, $2, 'confirmed', $3, $4, $5)
+     RETURNING id`,
+    [transactionId, sm.address_id || null, estimatedDelivery, brandRows[0]?.brand_phone, JSON.stringify(sm.items_json)]
+  );
+  const orderRowId = orderRows[0].id;
+
+  // Organic orders have no influencer → nothing to credit.
+  if (influencer?.id && commissionAmount > 0) {
+    await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
+  }
+
+  // L3 attribution write (Phase A5) — Path B (CI present) opens a 30-day
+  // attribution window so future direct buys by this follower from this brand
+  // fall into Path C and the influencer keeps earning.
+  if (sm.campaign_influencer_id && influencer?.id) {
+    await client.query(
+      `INSERT INTO attribution_clicks
+         (follower_id, influencer_id, brand_id, campaign_id, expires_at)
+       VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
+      [sm.follower_id, influencer.id, sm.brand_id, sm.campaign_id]
+    );
+  }
+
+  return { transactionId, orderRowId, brandPhone: brandRows[0]?.brand_phone, brandName: brandRows[0]?.business_name, influencer, estimatedDelivery };
+}
 
 const verifyOrder = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
@@ -1367,126 +1505,64 @@ const verifyOrder = asyncHandler(async (req, res) => {
     throw new AppError('VALIDATION_ERROR', 'Payment signature verification failed', 422);
   }
 
-  const { amountRupees: netAmount, meta } = await txService.getPendingOrder(razorpay_order_id);
+  const { meta } = await txService.getPendingOrder(razorpay_order_id);
 
-  // Wave 3 commit 2 — commission-release window is per-category (admin-editable),
-  // falling back to the global default. Replaces the flat RETURN_WINDOW_MS.
-  const returnWindowEndsAt = await settlementService.resolveReturnWindowEndsAt(db, meta.brand_id);
-  const commissionAmount = parseFloat(meta.influencer_commission);
+  // Multi-brand checkout (Slice B): meta.sub_orders holds one sub-meta per brand;
+  // the single-order path (food / single-brand / creator) has no sub_orders → the
+  // whole meta IS the one sub. The follower paid ONCE; we write one order per brand.
+  const subMetas = Array.isArray(meta.sub_orders) && meta.sub_orders.length ? meta.sub_orders : [meta];
 
-  const { rows: ciRows } = await db.query(
-    `SELECT coupon_code FROM campaign_influencers WHERE id = $1`,
-    [meta.campaign_influencer_id]
-  );
-  const couponCode = ciRows[0]?.coupon_code || null;
+  // Reads first (per brand), then the writes inside ONE transaction with a single
+  // pending-order claim — a failed verify rolls back every sub-order (no partial
+  // orders), a concurrent double-verify loses the claim race (no double spend).
+  const prepared = [];
+  for (const sm of subMetas) prepared.push(await prepareSubOrder(sm));
 
-  const influencer = await getInfluencerByCiId(meta.campaign_influencer_id);
-  const { rows: brandRows } = await db.query(
-    `SELECT b.business_name, u.phone AS brand_phone FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
-    [meta.brand_id]
-  );
-
-  const estimatedDelivery = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
-  let transactionId, orderRowId;
-
-  // Phase Salon-3 Q3 — for online_order, the "primary" product is the first
-  // (highest-priced) item in the cart. Per-item attribution lives in
-  // follower_orders.items_json — this denormalizes one row for single-JOIN
-  // analytics.
-  const primaryProductId = Array.isArray(meta.items_json) && meta.items_json[0]?.product_id
-    ? meta.items_json[0].product_id
-    : null;
-
-  // Tier-1: pull primary variant_id from items_json[0] alongside primary
-  // product_id, so single-row analytics can answer "Size M, Black T-shirt
-  // — how much revenue?".
-  const primaryVariantId = Array.isArray(meta.items_json) && meta.items_json[0]?.variant_id
-    ? meta.items_json[0].variant_id
-    : null;
-
+  const written = [];
   await db.withTransaction(async (client) => {
-    // Claim the pending order atomically with the business rows below — a
-    // failed verify rolls the claim back (retryable); a concurrent double-
-    // verify loses this claim race and rolls back (no double spend).
     await txService.consumePendingOrder(client, razorpay_order_id);
-    const { rows: txRows } = await client.query(
-      `INSERT INTO follower_transactions
-         (follower_id, brand_id, campaign_id, set_id, campaign_influencer_id, offer_id, product_id,
-          variant_id, offer_type, brand_offer_id, offer_source,
-          transaction_type, gross_amount, discount_amount, net_amount,
-          influencer_commission, marketplace_fee_amount, brand_net,
-          status, coupon_code_used, return_window_ends_at, razorpay_payment_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'online_order',$12,$13,$14,$15,$16,$17,'completed',$18,$19,$20)
-       RETURNING id`,
-      [
-        meta.follower_id, meta.brand_id, meta.campaign_id, meta.set_id,
-        meta.campaign_influencer_id, meta.offer_id, primaryProductId,
-        primaryVariantId, meta.offer_type || null,
-        meta.brand_offer_id || null, meta.offer_source || 'influencer',
-        meta.items_total, meta.discount_amount, netAmount,
-        commissionAmount, meta.platform_fee, meta.brand_net,
-        couponCode, returnWindowEndsAt, razorpay_payment_id,
-      ]
-    );
-    transactionId = txRows[0].id;
-
-    const { rows: orderRows } = await client.query(
-      `INSERT INTO follower_orders
-         (transaction_id, address_id, order_status, estimated_delivery_date, whatsapp_number, items_json)
-       VALUES ($1, $2, 'confirmed', $3, $4, $5)
-       RETURNING id`,
-      [transactionId, meta.address_id || null, estimatedDelivery, brandRows[0]?.brand_phone, JSON.stringify(meta.items_json)]
-    );
-    orderRowId = orderRows[0].id;
-
-    // Organic orders have no influencer → nothing to credit.
-    if (influencer?.id && commissionAmount > 0) {
-      await txService.creditInfluencerCommission(client, influencer.id, commissionAmount);
-    }
-
-    // L3 attribution write (Phase A5) — Path B (CI present) opens a
-    // 30-day attribution window so future direct buys by this follower
-    // from this brand fall into Path C and the influencer keeps earning.
-    if (meta.campaign_influencer_id && influencer?.id) {
-      await client.query(
-        `INSERT INTO attribution_clicks
-           (follower_id, influencer_id, brand_id, campaign_id, expires_at)
-         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
-        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id]
-      );
-    }
+    for (const p of prepared) written.push(await writeSubOrder(client, p, razorpay_payment_id));
   });
 
   // Money G-3: brand commerce settlement is DEFERRED to the commerce-settlement
   // job once the return window closes. Left at brand_settlement_status='pending'
   // so the brand is paid its NET (after any return claw-backs), never at sale.
-  // (Was: settleCommerceTransaction at sale time.)
 
-  // Notifications
+  const primary = written[0];
+
+  // One confirmation notification — the follower sees ONE order (locked: no
+  // brand grouping). Estimated delivery is the same across sub-orders.
   notificationService.send({
     userId: req.user.sub,
     type: 'order.confirmed',
     title: 'Order confirmed!',
-    body: `Order confirmed! Expected delivery: ${estimatedDelivery}`,
+    body: `Order confirmed! Expected delivery: ${primary.estimatedDelivery}`,
     sendSms: true,
     phone: follower.phone,
   }).catch(e => console.error('[NOTIFY] order.confirmed failed:', e.message));
 
-  // Phase Salon-3 — follow-creator prompt to the follower
-  if (influencer) {
-    notificationService.notifyFollowCreatorPrompt({
-      followerUserId: req.user.sub,
-      influencer,
-      brandName: brandRows[0]?.business_name,
-    }).catch(e => console.error('[NOTIFY] follow_creator_prompt failed:', e.message));
+  // Phase Salon-3 — follow-creator prompt, once per distinct influencer across
+  // the split (a multi-brand cart can carry more than one creator allocation).
+  const promptedInfluencers = new Set();
+  for (const w of written) {
+    if (w.influencer?.id && !promptedInfluencers.has(w.influencer.id)) {
+      promptedInfluencers.add(w.influencer.id);
+      notificationService.notifyFollowCreatorPrompt({
+        followerUserId: req.user.sub,
+        influencer: w.influencer,
+        brandName: w.brandName,
+      }).catch(e => console.error('[NOTIFY] follow_creator_prompt failed:', e.message));
+    }
   }
 
   return success(res, {
-    order_id: orderRowId,
-    transaction_id: transactionId,
-    estimated_delivery_date: estimatedDelivery,
-    brand_contact_whatsapp: brandRows[0]?.brand_phone,
+    // Primary order drives the confirmation screen; order_ids lists every
+    // per-brand order so the orders list shows them all.
+    order_id: primary.orderRowId,
+    order_ids: written.map(w => w.orderRowId),
+    transaction_id: primary.transactionId,
+    estimated_delivery_date: primary.estimatedDelivery,
+    brand_contact_whatsapp: primary.brandPhone,
   });
 });
 

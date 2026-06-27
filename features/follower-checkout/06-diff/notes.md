@@ -14,3 +14,41 @@ below the bill — same-category cross-sell from the cart items, excluding what'
 - backend load ok; `pnpm qa` GREEN 79; CartScreen babel-compile clean; jest 20/20
   (CartScreen test mock updated for the new api method).
 - Capture after Render + OTA + founder re-test.
+
+---
+
+# 06 — Before / after notes (Slice B)
+
+**Before:** the cart's footer was a single green **Place Order** that navigated to
+the 3-step `OnlineOrder` screen (one brand only). A multi-brand shop cart could be
+built (F8) but checkout assumed one brand.
+**After (`04-preview/mockups/shopping-checkout.html`):** for the **shopping** cart
+(`cart.kind === 'shop'`) the cart **is** the checkout — a bottom bar with a saved
+**Address + Change**, a **payment-method selector** (PhonePe UPI default → other
+methods; UI only, mock pay), and **Place Order** that runs the order inline. The
+backend **splits the cart per brand** into one order each while the follower sees
+**one flat list + bill** and pays **once**. Food / legacy carts keep the existing
+3-step `OnlineOrder` flow untouched.
+
+## Delivered
+- Backend `placeOrder` extended: pricing extracted to `priceOrderForGroup`; an
+  optional `brand_groups[]` prices each brand and creates **one** Razorpay order
+  for the summed total holding `sub_orders[]` in the pending-order meta. The
+  single-order path (food / single-brand / creator) is unchanged.
+- Backend `verifyOrder` restructured (`prepareSubOrder` + `writeSubOrder`): loops
+  `meta.sub_orders` (single path = the whole meta), claims the **one** pending
+  order atomically, writes one `follower_transactions` + `follower_orders` per
+  brand (each with the customer's `address_id`), credits commission + opens the
+  attribution window per creator-allocated brand, sends one confirmation + one
+  follow-prompt per distinct influencer. Returns `order_id` (primary) + `order_ids[]`.
+- `CartScreen` shop checkout bar (address picker sheet · payment picker sheet ·
+  inline `createOrder → mock pay → verifyOrder → clear cart → OrderConfirmation`),
+  grouping lines by `brand_id` → `brand_groups` when >1 brand, else the legacy
+  single payload. Payment selector is UI-only (mock until real Razorpay, P10).
+
+## Verification (Slice B)
+- backend loads ok; `pnpm qa` **GREEN 79**; CartScreen transforms clean under the
+  RN babel preset (jest); mobile jest **20/20** (FollowerWallet suite = known
+  pre-existing baseline transform-fail).
+- Single-brand path byte-identical (food/creator unaffected); multi-brand split
+  to be founder-verified on the live [FTW] world after Render + OTA.
