@@ -49,6 +49,10 @@ const ADD_PRESETS = [
   { key: 'controls', label: 'Chips / controls bar', shelf_type: 'controls', rule: 'static',            title: 'Filters' },
   // Food 3C — the world's sub-category tiles as a placeable section (📌-able).
   { key: 'category_rail', label: 'Category rail (sticky-able)', shelf_type: 'category_rail', rule: 'world_categories', title: "What's on your mind?" },
+  // Category rail from the CATALOGUE tree — admin drills fashion/furniture
+  // (Men → Bottomwear → Jeans, any level) and picks nodes; each tile opens the
+  // Type-1 category browser at that node (contract: admin-category-rail).
+  { key: 'category_picker', label: 'Category rail (pick from catalogue)', shelf_type: 'nav_tiles', rule: 'category_nodes', title: 'Shop by category' },
   // Template Catalog — image tiles; each tile = upload image + wire to a group.
   // All four are shelf_type 'tiles', differing only by config.style.
   { key: 'tiles',          label: 'Image tiles (spotlight)',      shelf_type: 'tiles', rule: 'static', title: 'Spotlight',          config: { style: 'carousel' } },
@@ -76,8 +80,21 @@ const TEMPLATE_NAMES = {
 };
 function templateLabel(s) {
   if ((s.config_json || {}).kind === 'menu') return 'Menu (food)';
+  if (s.rule === 'category_nodes') return 'Category rail (catalogue)';
   return TEMPLATE_NAMES[s.shelf_type] || s.shelf_type;
 }
+
+// Flatten the nested /listing/tree into an indented pick list (id + name + depth).
+function flattenTree(roots, depth = 0, out = []) {
+  for (const n of roots || []) {
+    out.push({ id: n.id, name: n.name || n.category || n.segment || 'Category', depth, is_leaf: n.is_leaf });
+    if (n.children && n.children.length) flattenTree(n.children, depth + 1, out);
+  }
+  return out;
+}
+
+// Worlds that have a drill-down catalogue tree (category_nodes).
+const CAT_TREE_WORLDS = new Set(['fashion', 'furniture']);
 
 // template → which RULES it can use (the explicit "what fills it" step). Templates
 // with a single fixed rule (category_rail / restaurant_list / tiles per-tile / menu)
@@ -140,6 +157,9 @@ export default function SectionsPage() {
   // Manage Worlds (absorbed Home Builder) — the follower worlds (tabs).
   const [worlds, setWorlds] = useState([]);
   const [showWorlds, setShowWorlds] = useState(false);
+  // Catalogue tree for the current world (fashion/furniture) — feeds the
+  // "Category rail (pick from catalogue)" node picker.
+  const [catTree, setCatTree] = useState([]);
 
   const loadWorlds = useCallback(() => {
     adminApi.listHomeVerticals().then(res => {
@@ -176,6 +196,17 @@ export default function SectionsPage() {
 
   useEffect(() => { load(screen, scopeType, scopeValue); }, [screen, scopeType, scopeValue, load]);
 
+  // Load the catalogue tree when the world has one (fashion/furniture).
+  useEffect(() => {
+    if (CAT_TREE_WORLDS.has(scopeValue)) {
+      adminApi.getListingTree(scopeValue).then(res => {
+        if (res.success) setCatTree(flattenTree(res.data?.tree || res.data || []));
+      });
+    } else {
+      setCatTree([]);
+    }
+  }, [scopeValue]);
+
   const rowId = (s) => s.id || s._tmp;
   const update = (id, patch) =>
     setShelves(prev => prev.map(s => (rowId(s) === id ? { ...s, ...patch } : s)));
@@ -202,6 +233,31 @@ export default function SectionsPage() {
       const tiles = ((s.config_json || {}).tiles || []).filter((_, i) => i !== idx);
       return { ...s, config_json: { ...(s.config_json || {}), tiles } };
     }));
+  // Category rail (catalogue) — manage config_json.nodes[] (picked tree nodes).
+  const hasNode = (s, nodeId) => ((s.config_json || {}).nodes || []).some(n => n.category_node_id === nodeId);
+  const toggleNode = (id, node) =>
+    setShelves(prev => prev.map(s => {
+      if (rowId(s) !== id) return s;
+      const nodes = [...((s.config_json || {}).nodes || [])];
+      const i = nodes.findIndex(n => n.category_node_id === node.id);
+      if (i >= 0) nodes.splice(i, 1);
+      else nodes.push({ category_node_id: node.id, vertical: scopeValue, label: node.name, icon: '' });
+      return { ...s, config_json: { ...(s.config_json || {}), nodes } };
+    }));
+  const updateNode = (id, idx, patch) =>
+    setShelves(prev => prev.map(s => {
+      if (rowId(s) !== id) return s;
+      const nodes = [...((s.config_json || {}).nodes || [])];
+      nodes[idx] = { ...nodes[idx], ...patch };
+      return { ...s, config_json: { ...(s.config_json || {}), nodes } };
+    }));
+  const removeNode = (id, idx) =>
+    setShelves(prev => prev.map(s => {
+      if (rowId(s) !== id) return s;
+      const nodes = ((s.config_json || {}).nodes || []).filter((_, i) => i !== idx);
+      return { ...s, config_json: { ...(s.config_json || {}), nodes } };
+    }));
+
   // Phase 6 — patch a nested config object (config_json.banner.*, config_json.hero.*).
   const patchNested = (id, parent, key, value) =>
     setShelves(prev => prev.map(s => (rowId(s) === id
@@ -474,6 +530,44 @@ export default function SectionsPage() {
                         ))}
                         <button onClick={() => addTile(id)} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">+ Add tile</button>
                         {(cfg.tiles || []).length === 0 && <span className="text-[11px] text-gray-400">No tiles yet — add one. (Create the groups first in Section Library.)</span>}
+                      </div>
+                    )}
+                    {/* Category rail (catalogue) — drill the tree + pick nodes (contract: admin-category-rail). */}
+                    {s.rule === 'category_nodes' && (
+                      <div className="flex flex-col gap-2">
+                        {!CAT_TREE_WORLDS.has(scopeValue) ? (
+                          <div className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-3 py-2">
+                            Category picking is available for the <b>fashion</b> &amp; <b>furniture</b> worlds (they have a catalogue tree).
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-[11px] font-semibold text-gray-600">Pick categories — tap to add (any level; not individual products)</div>
+                            <div className="border border-gray-200 rounded-lg p-2 max-h-44 overflow-auto text-xs bg-white">
+                              {catTree.map(n => {
+                                const on = hasNode(s, n.id);
+                                return (
+                                  <div key={n.id} onClick={() => toggleNode(id, n)}
+                                    style={{ paddingLeft: 6 + n.depth * 14 }}
+                                    className={`py-1 rounded cursor-pointer ${on ? 'bg-amber-100 font-bold text-amber-800' : 'text-gray-600 hover:bg-gray-50'}`}>
+                                    {n.name}{on ? ' ✓' : ''}
+                                  </div>
+                                );
+                              })}
+                              {catTree.length === 0 && <div className="px-2 py-1 text-gray-400 italic">Loading the catalogue…</div>}
+                            </div>
+                            <div className="text-[11px] font-semibold text-gray-600">Selected tiles — rename / icon optional</div>
+                            {(cfg.nodes || []).map((nd, ni) => (
+                              <div key={nd.category_node_id || ni} className="flex items-center gap-2">
+                                <input value={nd.label || ''} onChange={e => updateNode(id, ni, { label: e.target.value })}
+                                  className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" placeholder="Tile label" />
+                                <input value={nd.icon || ''} onChange={e => updateNode(id, ni, { icon: e.target.value })}
+                                  className="w-14 text-xs border border-gray-300 rounded px-2 py-1 text-center" placeholder="icon" />
+                                <button onClick={() => removeNode(id, ni)} className="text-gray-300 hover:text-red-500" aria-label="remove category">✕</button>
+                              </div>
+                            ))}
+                            {(cfg.nodes || []).length === 0 && <span className="text-[11px] text-gray-400">No categories picked yet — tap nodes above.</span>}
+                          </>
+                        )}
                       </div>
                     )}
                     {/* Library Section placement (Phase 3c) — pick which reusable section fills this shelf. */}

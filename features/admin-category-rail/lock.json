@@ -1,0 +1,21 @@
+{
+  "feature": "admin-category-rail",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-27",
+  "notes": "Node-backed category rail: admin drills the catalogue tree, picks category_nodes, each tile opens the Phase-1 CategoryBrowser. Founder approved the plan + said 'start building' 2026-06-27 (lock delegated). UI-governed (brand-web admin) + Mobile-governed (1-line render passthrough). No migration. release.released stays false (no Maestro, per program precedent).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

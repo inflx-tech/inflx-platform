@@ -311,7 +311,7 @@ function renderSection(section, navigation, canFollow, context = {}) {
         <View>
           <ShelfHeader title={section.title} sub={sub} count={count} tag="nav_tiles" />
           <CategoryRail
-            items={section.items.map(n => ({ key: n.key, label: n.label, icon: n.icon }))}
+            items={section.items.map(n => ({ key: n.key, label: n.label, icon: n.icon, category_node_id: n.category_node_id, vertical: n.vertical }))}
             onPressCategory={(cat) => navigateCategory(navigation, cat)}
           />
         </View>

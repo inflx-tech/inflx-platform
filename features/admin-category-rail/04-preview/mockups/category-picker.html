@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>App Builder — Category rail node picker</title>
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:#F3F4F6;padding:18px;color:#1A1A1A}
+  .card{max-width:560px;margin:0 auto;background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:14px}
+  .crumbs{font-size:12px;color:#6B7280;margin-bottom:10px}
+  .crumbs b{color:#1A1A1A}
+  .sec{border:1px solid #E5E7EB;border-radius:10px;padding:11px}
+  .sechead{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+  .pill{font-size:10px;background:#F3F4F6;color:#6B7280;border-radius:8px;padding:2px 7px}
+  .lbl{font-size:11px;font-weight:600;color:#4B5563;margin:12px 0 5px}
+  .tree{border:1px solid #E5E7EB;border-radius:8px;padding:6px;max-height:190px;overflow:auto;font-size:12px;background:#fff}
+  .n{padding:4px 6px;border-radius:5px;cursor:pointer;color:#4B5563}
+  .n:hover{background:#F9FAFB}
+  .n.on{background:#FEF3C7;color:#92400E;font-weight:700}
+  .tile{display:flex;align-items:center;gap:8px;margin-top:7px}
+  .tile input{font-size:12px;border:1px solid #D1D5DB;border-radius:6px;padding:6px 8px}
+  .tile .lab{flex:1}
+  .tile .ico{width:48px;text-align:center}
+  .x{color:#D1D5DB;cursor:pointer}
+  .pub{margin-top:14px;background:#B45309;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:700;float:right}
+</style></head><body>
+<div class="card">
+  <div class="crumbs"><b>Home</b> › World <b>Fashion</b> › Section <b>Category rail (catalogue)</b></div>
+  <div class="sec">
+    <div class="sechead">Shop by category <span class="pill">Category rail (catalogue)</span></div>
+
+    <div class="lbl">Pick categories — tap to add (any level; not individual products)</div>
+    <div class="tree">
+      <div class="n" style="padding-left:6px">Men</div>
+      <div class="n" style="padding-left:20px">Topwear</div>
+      <div class="n on" style="padding-left:34px">T-Shirt ✓</div>
+      <div class="n" style="padding-left:34px">Shirt</div>
+      <div class="n" style="padding-left:20px">Bottomwear</div>
+      <div class="n on" style="padding-left:34px">Jeans ✓</div>
+      <div class="n" style="padding-left:34px">Trousers / Chinos</div>
+      <div class="n on" style="padding-left:20px">Footwear ✓</div>
+      <div class="n" style="padding-left:6px">Women</div>
+      <div class="n" style="padding-left:20px">Ethnic Wear</div>
+    </div>
+
+    <div class="lbl">Selected tiles — rename / icon optional</div>
+    <div class="tile"><input class="lab" value="T-Shirt"/><input class="ico" value="👕"/><span class="x">✕</span></div>
+    <div class="tile"><input class="lab" value="Jeans"/><input class="ico" value=""/><span class="x">✕</span></div>
+    <div class="tile"><input class="lab" value="Footwear"/><input class="ico" value="👟"/><span class="x">✕</span></div>
+
+    <button class="pub">Publish</button>
+    <div style="clear:both"></div>
+  </div>
+</div>
+</body></html>

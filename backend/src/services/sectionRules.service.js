@@ -1118,6 +1118,28 @@ async function worldCategories(ctx) {
   }));
 }
 
+// Admin-picked category tiles (App Builder "Category rail — pick from catalogue").
+// Each tile = a category_nodes node the admin drilled to (Men → Bottomwear →
+// Jeans, any level). Emits it carrying its node id + vertical so a tap opens the
+// Type-1 CategoryBrowser at that node. Members live in config_json.nodes[] — no
+// DB table, no migration (contract: admin-category-rail).
+async function categoryNodes(ctx) {
+  const nodes = ctx.config && Array.isArray(ctx.config.nodes) ? ctx.config.nodes : [];
+  const limit = ctx.limit || nodes.length;
+  return nodes
+    .filter(n => n && n.category_node_id)
+    .slice(0, limit)
+    .map(n => ({
+      entity_type: 'category',
+      key: String(n.category_node_id),
+      label: n.label || n.name || 'Category',
+      icon: n.icon || null,
+      image_url: n.image_url || null,
+      category_node_id: n.category_node_id,
+      vertical: n.vertical || ctx.vertical || null,
+    }));
+}
+
 // Controls/chips/headers/profile/bio carry their payload in config_json; the
 // engine passes config through and these contribute no data items.
 async function staticRule() { return []; }
@@ -1154,6 +1176,7 @@ const RULES = {
   // nav / static / disabled
   nav_verticals: navVerticals,
   world_categories: worldCategories,   // Food 3C — placeable category rail
+  category_nodes: categoryNodes,       // App Builder — admin-picked catalogue category tiles → CategoryBrowser
   static: staticRule,
   // Deprecated: product-level sales isn't attributable; alias to the working
   // product rule so any legacy 'top_by_sales' row renders instead of empty.
