@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, FlatList, ScrollView, TouchableOpacity, Image, ActivityIndicator,
-  Modal, StyleSheet,
+  Modal, StyleSheet, Animated, Vibration, Alert,
 } from 'react-native';
 import { toing as TZ, fonts, fmtMoney } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { goToProduct } from '../../components/SectionRenderer';
+import { useCart } from '../../services/CartContext';
 
 /**
  * CategoryBrowserScreen — the Type-1 result page (contract: listing-category-browser).
@@ -43,6 +44,9 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [gridLoading, setGridLoading] = useState(false);
+  const [isAllMode, setIsAllMode] = useState(false);   // "All categories" entry → a category grid, not the sidebar browser
+  const [allSegments, setAllSegments] = useState([]);
+  const { cart, addItem, forceReplaceWith } = useCart();
 
   const [activeFilters, setActiveFilters] = useState({});  // { facet_key: [values] }
   const [sort, setSort] = useState('new');
@@ -81,22 +85,17 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         // world. Show the world's top categories, drilled into the first so the
         // grid isn't empty.
         if (!params.nodeId && params.vertical) {
+          // "All categories" — a clean grid of the world's categories (grouped by
+          // segment); tap a category → the browser for it. Not the sidebar+grid.
           const tr = await followerApi.listingTree(params.vertical);
           const td = tr.data || tr;
-          const roots = (td.tree || []).map((r) => ({ id: r.id, name: r.name || r.segment || r.category || 'Category', is_leaf: !!r.is_leaf, segment: r.segment }));
+          const segs = (td.tree || []).map((seg) => ({
+            segment: seg.segment || seg.name || '',
+            cats: (seg.children || []).map((c) => ({ id: c.id, name: c.name, is_leaf: c.is_leaf })),
+          })).filter((sg) => sg.cats.length);
           if (cancelled) return;
-          const firstBranch = roots.find((r) => !r.is_leaf) || roots[0];
-          if (firstBranch && !firstBranch.is_leaf) {
-            const r2 = await followerApi.listingNodeChildren(firstBranch.id);
-            const d2 = r2.data || r2;
-            if (cancelled) return;
-            setRailNode(d2.node); setRail(d2.children || []);
-            const firstLeaf = (d2.children || []).find((k) => k.is_leaf) || null;
-            setSelected(firstLeaf);
-            if (firstLeaf) await loadGrid(firstLeaf, { sort: 'new', filters: {} });
-          } else {
-            setRailNode({ category: 'All categories' }); setRail(roots);
-          }
+          setAllSegments(segs);
+          setIsAllMode(true);
           return;
         }
         const res = await followerApi.listingNodeChildren(params.nodeId);
@@ -163,6 +162,23 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   const breadcrumb = [railNode?.segment, railNode?.category, selected?.name]
     .filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join('  ›  ');
 
+  const cartCount = cart.items.reduce((n, i) => n + i.qty, 0);
+  const cartTotal = cart.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
+
+  // Quick-add from the grid (organic, no size — "for now"). Cross-brand → confirm.
+  const handleAdd = (item) => {
+    const bId = item.brand?.id, bName = item.brand?.name;
+    if (!bId) return;
+    const payload = { id: item.id, name: item.name, price: item.price, mrp: item.mrp, image_url: item.image_url, qty: 1 };
+    const res = addItem(payload, bId, bName, null, {});
+    if (res?.requiresConfirmation) {
+      Alert.alert('Start a new cart?', `Your cart has items from ${res.currentBrandName}. Replace them with ${res.newBrandName}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Replace', onPress: () => forceReplaceWith(payload, bId, bName, null, {}) },
+      ]);
+    }
+  };
+
   function renderProduct({ item }) {
     const showMrp = item.mrp != null && item.price != null && item.mrp > item.price;
     return (
@@ -171,6 +187,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
           {item.image_url
             ? <Image source={{ uri: item.image_url }} style={s.pimg} resizeMode="cover" />
             : <Text style={{ fontSize: 26, color: TZ.hint }}>🛍️</Text>}
+          <AddButton onAdd={() => handleAdd(item)} />
         </View>
         <Text style={s.pname} numberOfLines={2}>{item.name}</Text>
         {item.brand?.name ? <Text style={s.pbrand} numberOfLines={1}>{item.brand.name}</Text> : null}
@@ -191,6 +208,35 @@ export default function CategoryBrowserScreen({ navigation, route }) {
       <View style={s.container}>
         <Header navigation={navigation} title={params.title || 'Browse'} />
         <View style={s.center}><ActivityIndicator size="large" color={TZ.pink} /></View>
+      </View>
+    );
+  }
+
+  // "All categories" — a grouped grid of rounded category tiles (not the browser).
+  if (isAllMode) {
+    return (
+      <View style={s.container}>
+        <Header navigation={navigation} title={params.title || 'All categories'} />
+        <ScrollView contentContainerStyle={{ padding: 14, paddingBottom: 90 }} showsVerticalScrollIndicator={false}>
+          {allSegments.map((seg) => (
+            <View key={seg.segment} style={{ marginBottom: 16 }}>
+              <Text style={s.segHd}>{seg.segment}</Text>
+              <View style={s.catGrid}>
+                {seg.cats.map((c, i) => {
+                  const [bg, fg] = tint(i);
+                  return (
+                    <TouchableOpacity key={c.id} style={s.catTile} activeOpacity={0.8}
+                      onPress={() => navigation.push('CategoryBrowser', { nodeId: c.id, vertical: params.vertical, title: c.name })}>
+                      <View style={[s.catImg, { backgroundColor: bg }]}><Text style={{ color: fg, fontSize: 22 }}>▸</Text></View>
+                      <Text style={s.catLbl} numberOfLines={2}>{c.name}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+        {cartCount > 0 ? <CartBar count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
       </View>
     );
   }
@@ -261,6 +307,8 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         </View>
       </View>
 
+      {cartCount > 0 ? <CartBar count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
+
       {/* Filter + sort sheet */}
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <View style={s.sheetWrap}>
@@ -315,6 +363,34 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         </View>
       </Modal>
     </View>
+  );
+}
+
+function AddButton({ onAdd }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const onPress = () => {
+    Vibration.vibrate(10);
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.82, duration: 70, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start();
+    onAdd();
+  };
+  return (
+    <TouchableOpacity style={s.addWrap} activeOpacity={0.7} onPress={onPress} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <Animated.View style={[s.addBtn, { transform: [{ scale }] }]}>
+        <Text style={s.addTxt}>＋</Text>
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+function CartBar({ count, total, onPress }) {
+  return (
+    <TouchableOpacity style={s.cartBar} activeOpacity={0.9} onPress={onPress}>
+      <Text style={s.cartL}>{count} item{count > 1 ? 's' : ''} · {fmtMoney(total)}</Text>
+      <Text style={s.cartR}>View cart →</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -375,6 +451,20 @@ const s = StyleSheet.create({
   pmrp: { fontSize: 11, color: TZ.hint, textDecorationLine: 'line-through', marginLeft: 5, fontFamily: fonts.sansRegular },
   poff: { fontSize: 11, fontWeight: '700', color: TZ.success, marginLeft: 6, fontFamily: fonts.sansBold },
   prate: { fontSize: 10.5, color: '#52525B', marginTop: 3, fontFamily: fonts.sansRegular },
+
+  addWrap: { position: 'absolute', right: 7, bottom: 7 },
+  addBtn: { width: 30, height: 30, borderRadius: 9, backgroundColor: '#fff', borderWidth: 1, borderColor: TZ.yellow, alignItems: 'center', justifyContent: 'center', elevation: 2 },
+  addTxt: { fontSize: 17, color: TZ.ink, fontWeight: '700', lineHeight: 19 },
+
+  segHd: { fontSize: 13, fontWeight: '800', color: TZ.ink, marginBottom: 10, fontFamily: fonts.sansBold },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  catTile: { width: '25%', alignItems: 'center', marginBottom: 14, paddingHorizontal: 3 },
+  catImg: { width: 56, height: 56, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
+  catLbl: { fontSize: 10.5, color: '#52525B', textAlign: 'center', lineHeight: 13, fontFamily: fonts.sansRegular },
+
+  cartBar: { position: 'absolute', left: 12, right: 12, bottom: 14, backgroundColor: TZ.ink, borderRadius: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 13, elevation: 6 },
+  cartL: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: fonts.sansBold },
+  cartR: { color: TZ.yellow, fontSize: 13, fontWeight: '800', fontFamily: fonts.sansBold },
 
   sheetWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: TZ.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 18, overflow: 'hidden' },

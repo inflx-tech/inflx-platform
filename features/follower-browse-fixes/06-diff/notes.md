@@ -20,6 +20,16 @@ flex column). Founder gave two reference screenshots (Myntra/Flipkart). Rebuilt:
   the selected facet's values on the right (radio rows for Sort, checkbox rows for
   filters), `Clear filters` / `Apply` footer. Replaces the single-scroll sheet.
 
+## Batch 2 (founder live-test 2026-06-27)
+- **"All categories" was broken** — the vertical entry drilled into the first segment and
+  showed an empty product grid ("0 items"). Rebuilt: "All categories" now renders a clean
+  **grid of rounded category tiles grouped by segment**; tapping one opens the browser for
+  that category. (`isAllMode` render path.)
+- **＋ quick-add to cart** — every product card in the grid gets a ＋ button → adds to cart
+  (organic, qty 1; cross-brand → "Start a new cart?" confirm). A **cart bar** ("N items ·
+  ₹total · View cart") floats at the bottom when the cart has items.
+- **Tap feedback** — ＋ fires `Vibration.vibrate(10)` + a quick scale-bounce animation.
+
 ## Verification
-- Mobile babel-compile clean (both files); jest 20/20 (FollowerWallet baseline excluded).
+- Mobile babel-compile clean; jest 20/20 (FollowerWallet baseline excluded).
 - Capture after OTA + founder re-test.

@@ -57,7 +57,10 @@
 
 | # | Date | Screen | Issue | Class | Status | Fix / contract |
 |---|------|--------|-------|-------|--------|----------------|
-| F1 | 06-27 | Category rail | Tapping **All** opened the legacy Find screen; should show the world's other categories | N | **FIXED** (OTA pending) | reroute → in-world category browser (vertical entry) · `follower-browse-fixes` |
+| F1 | 06-27 | Category rail | Tapping **All** opened the legacy Find screen; should show the world's other categories | N | **FIXED · OTA v155** | reroute → in-world category browser (vertical entry) · `follower-browse-fixes` |
 | F2 | 06-27 | Business/store page | Tapping a business shows the **old store page** (creatorVibe BrandStore) — rebuild | legacy | 🟡 mock-first | rebuild the shared shopping store page (fashion+furniture+beauty) |
-| F3 | 06-27 | Category browser | **Filter sheet** looked rough/ugly | D/U | **FIXED** (OTA pending) | restyle: handle · rounded pills · solid-pink selected · `follower-browse-fixes` |
+| F3 | 06-27 | Category browser | **Filter chips = ugly tall "long boxes"** + sheet rough; founder gave Myntra/Flipkart refs | D/U | **FIXED · OTA v156** | fixed tall-box bug (fixed-height chipRow → compact chips) + rebuilt modal to **left-nav** (facets left, values right, radio/checkbox, Clear/Apply) · `follower-browse-fixes` |
 | F4 | 06-27 | Cart | Cart is **food-flavoured** (🍽️ / "dishes") on the shopping verticals | D/U | 🔴 queued | de-food the shared cart (shopping batch) |
+| F5 | 06-27 | "All categories" | Broken — opened empty sidebar+grid ("0 items"); expected a rounded category list | F | **FIXED · OTA v157** | rebuilt as a grouped grid of rounded category tiles → tap opens the browser · `follower-browse-fixes` |
+| F6 | 06-27 | Category browser grid | No way to add to cart from products | N | **FIXED · OTA v157** | ＋ quick-add on each product (organic qty1; cross-brand confirm) + floating cart bar |
+| F7 | 06-27 | ＋ button | Wanted tap feedback (vibration/animation) | U | **FIXED · OTA v157** | Vibration.vibrate(10) + scale-bounce on ＋ |
