@@ -250,15 +250,21 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // Results runs that group. Renders before the empty-items guard (content is
   // in config, not items).
   if (section.type === 'tiles') {
-    const onTile = (t) => navigation.navigate('SectionResults', {
-      title: t.label || section.title,
-      rule: 'library_products',
-      item_type: 'products',
-      library_section_id: t.library_section_id || null,
-      category_key: ctx.superCategory || null,
-      lat: ctx.lat ?? null,
-      lng: ctx.lng ?? null,
-    });
+    const onTile = (t) => {
+      // Inline banner rule (App Builder Frame) wins; else the wired library group.
+      const rj = t.rule_json && typeof t.rule_json === 'object'
+        && Object.keys(t.rule_json).filter(k => k !== 'business_type').length > 0 ? t.rule_json : null;
+      navigation.navigate('SectionResults', {
+        title: t.label || section.title,
+        rule: 'library_products',
+        item_type: 'products',
+        rule_json: rj,
+        library_section_id: rj ? null : (t.library_section_id || null),
+        category_key: ctx.superCategory || null,
+        lat: ctx.lat ?? null,
+        lng: ctx.lng ?? null,
+      });
+    };
     return <TileSection section={section} onTile={onTile} />;
   }
 

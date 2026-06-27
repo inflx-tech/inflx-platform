@@ -27,6 +27,7 @@ export default function SectionResultsScreen({ navigation, route }) {
     try {
       const res = await followerApi.getSectionResults({
         rule: p.rule, item_type: p.item_type, library_section_id: p.library_section_id,
+        rule_json: p.rule_json,
         category_key: p.category_key, creator_handle: p.creator_handle, brand_id: p.brand_id,
         lat: p.lat, lng: p.lng, limit: 100,
       });

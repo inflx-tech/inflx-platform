@@ -1435,6 +1435,20 @@ const getSectionResults = asyncHandler(async (req, res) => {
     sectionBusinessType = (lib && lib.business_type && lib.business_type !== 'ALL') ? lib.business_type : null;
   }
 
+  // Inline rule (App Builder Frame banner) — the banner carries its OWN rule_json
+  // (any of: price_min/max, min_discount_pct, brand, subcategory_node_id, tags,
+  // has_offer) + business_type (the world it was placed in), instead of wiring to
+  // a saved library section. Generic conditions; none mandatory.
+  if (!ruleDef && req.query.rule_json) {
+    try {
+      const parsed = JSON.parse(req.query.rule_json);
+      if (parsed && typeof parsed === 'object') {
+        ruleDef = parsed;
+        if (parsed.business_type && parsed.business_type !== 'ALL') sectionBusinessType = parsed.business_type;
+      }
+    } catch { /* ignore malformed rule_json — falls through to an empty rule */ }
+  }
+
   let categoryKey = category_key || null;
   let categoryCats = null;
   if (categoryKey || sectionBusinessType) {

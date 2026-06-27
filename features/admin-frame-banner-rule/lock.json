@@ -1,0 +1,21 @@
+{
+  "feature": "admin-frame-banner-rule",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-27",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-27",
+  "notes": "Frame tool ENGINE: generic per-banner rule (any optional conditions) + the missing brand-label condition. Founder corrected the brand-first mock to a generic rule, confirmed 'yes pls go' 2026-06-27 (lock delegated). Frame STYLES (5 looks/countdown/mosaic) deferred to the design pass per engine-first call. UI-governed (admin) + Mobile-governed. No migration. release.released stays false (no Maestro).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

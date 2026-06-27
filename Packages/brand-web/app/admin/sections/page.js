@@ -233,6 +233,21 @@ export default function SectionsPage() {
       const tiles = ((s.config_json || {}).tiles || []).filter((_, i) => i !== idx);
       return { ...s, config_json: { ...(s.config_json || {}), tiles } };
     }));
+  // Inline banner rule (App Builder Frame) — patch tiles[idx].rule_json. Empty
+  // clears the condition; any condition present stamps business_type (= the world)
+  // so the result list stays scoped to it. Generic — every condition optional.
+  const patchTileRule = (id, idx, key, value) =>
+    setShelves(prev => prev.map(s => {
+      if (rowId(s) !== id) return s;
+      const tiles = [...((s.config_json || {}).tiles || [])];
+      const rj = { ...(tiles[idx].rule_json || {}) };
+      const empty = value === '' || value == null || value === false || (Array.isArray(value) && value.length === 0);
+      if (empty) delete rj[key]; else rj[key] = value;
+      const conds = Object.keys(rj).filter(k => k !== 'business_type');
+      if (conds.length) rj.business_type = scopeValue; else delete rj.business_type;
+      tiles[idx] = { ...tiles[idx], rule_json: rj };
+      return { ...s, config_json: { ...(s.config_json || {}), tiles } };
+    }));
   // Category rail (catalogue) — manage config_json.nodes[] (picked tree nodes).
   const hasNode = (s, nodeId) => ((s.config_json || {}).nodes || []).some(n => n.category_node_id === nodeId);
   const toggleNode = (id, node) =>
@@ -507,27 +522,44 @@ export default function SectionsPage() {
                           </label>
                         )}
                         <div className="text-[11px] font-semibold text-gray-600">Tiles — upload an image + wire each to a Section Library group</div>
-                        {(cfg.tiles || []).map((t, ti) => (
-                          <div key={ti} className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
-                            <label className="w-12 h-12 rounded-lg border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0" title="Upload tile image">
-                              {t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-300 text-lg">＋</span>}
-                              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
-                                const res = await uploadAdminStockImage(f);
-                                if (res.error) { setMsg({ kind: 'err', text: res.error.message || 'Upload failed' }); return; }
-                                updateTile(id, ti, { image_url: res.public_url });
-                              }} />
-                            </label>
-                            <input value={t.label || ''} onChange={e => updateTile(id, ti, { label: e.target.value })} placeholder="Label"
-                              className="w-28 text-xs border border-gray-300 rounded px-2 py-1" />
-                            <select value={t.library_section_id || ''} onChange={e => updateTile(id, ti, { library_section_id: e.target.value })}
-                              className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 bg-white">
-                              <option value="">(wire to a group)</option>
-                              {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
-                            </select>
-                            <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove tile">✕</button>
+                        {(cfg.tiles || []).map((t, ti) => {
+                          const rj = t.rule_json || {};
+                          return (
+                          <div key={ti} className="flex flex-col gap-2 p-2 rounded-lg border border-gray-200 bg-gray-50">
+                            <div className="flex items-center gap-2">
+                              <label className="w-12 h-12 rounded-lg border bg-white flex items-center justify-center overflow-hidden cursor-pointer shrink-0" title="Upload tile image">
+                                {t.image_url ? <img src={t.image_url} alt="" className="w-full h-full object-cover" /> : <span className="text-gray-300 text-lg">＋</span>}
+                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                  const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+                                  const res = await uploadAdminStockImage(f);
+                                  if (res.error) { setMsg({ kind: 'err', text: res.error.message || 'Upload failed' }); return; }
+                                  updateTile(id, ti, { image_url: res.public_url });
+                                }} />
+                              </label>
+                              <input value={t.label || ''} onChange={e => updateTile(id, ti, { label: e.target.value })} placeholder="Label"
+                                className="w-28 text-xs border border-gray-300 rounded px-2 py-1" />
+                              <select value={t.library_section_id || ''} onChange={e => updateTile(id, ti, { library_section_id: e.target.value })}
+                                className="flex-1 text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                                <option value="">(wire to a group)</option>
+                                {worldSections.map(sec => <option key={sec.id} value={sec.id}>{sec.name} · {sec.business_type}</option>)}
+                              </select>
+                              <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove tile">✕</button>
+                            </div>
+                            {/* Inline rule — what this banner shows when tapped (App Builder Frame). All optional. */}
+                            <div className="p-2 rounded-md bg-amber-50 border border-amber-200 flex flex-col gap-1.5">
+                              <div className="text-[10px] font-semibold text-amber-800">When tapped, show products where… (all optional)</div>
+                              <div className="flex gap-1.5 flex-wrap items-center">
+                                <input type="number" value={rj.price_max ?? ''} onChange={e => patchTileRule(id, ti, 'price_max', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Under ₹" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
+                                <input type="number" value={rj.min_discount_pct ?? ''} onChange={e => patchTileRule(id, ti, 'min_discount_pct', e.target.value === '' ? '' : Number(e.target.value))} placeholder="Min % off" className="w-20 text-xs border border-gray-300 rounded px-2 py-1" />
+                                <input value={rj.brand ?? ''} onChange={e => patchTileRule(id, ti, 'brand', e.target.value)} placeholder="Brand" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
+                                <input value={(rj.tags || []).join(', ')} onChange={e => patchTileRule(id, ti, 'tags', e.target.value.split(',').map(x => x.trim()).filter(Boolean))} placeholder="tags" className="w-24 text-xs border border-gray-300 rounded px-2 py-1" />
+                                <label className="text-[11px] text-gray-600 flex items-center gap-1"><input type="checkbox" checked={!!rj.has_offer} onChange={e => patchTileRule(id, ti, 'has_offer', e.target.checked)} /> has offer</label>
+                              </div>
+                              <div className="text-[10px] text-gray-400">Leave all blank to use the wired group above.</div>
+                            </div>
                           </div>
-                        ))}
+                          );
+                        })}
                         <button onClick={() => addTile(id)} className="self-start text-[11px] font-semibold text-amber-700 border border-amber-300 rounded px-2.5 py-1">+ Add tile</button>
                         {(cfg.tiles || []).length === 0 && <span className="text-[11px] text-gray-400">No tiles yet — add one. (Create the groups first in Section Library.)</span>}
                       </div>

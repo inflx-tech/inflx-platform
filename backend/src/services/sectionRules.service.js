@@ -737,6 +737,12 @@ async function libraryProducts(ctx) {
   let minDiscIdx = null;
   if (def.min_discount_pct != null) { minDiscIdx = ++p; params.push(def.min_discount_pct); }
 
+  // brand-label filter (facets.brand) — App Builder Frame-banner condition. The
+  // product's catalogue brand (Adidas/Nike), NOT the seller. Matches a jsonb
+  // array (?|) or a scalar string (=). One of the generic banner-rule conditions.
+  let brandFacetIdx = null;
+  if (def.brand) { brandFacetIdx = ++p; params.push(String(def.brand)); }
+
   const cityIdx = (city && !geo) ? ++p : null; if (city && !geo) params.push(city);
   let latIdx, lngIdx;
   if (geo) { latIdx = ++p; params.push(ctx.lat); lngIdx = ++p; params.push(ctx.lng); }
@@ -813,6 +819,7 @@ async function libraryProducts(ctx) {
        ${brandIdx ? `AND b.id = $${brandIdx}` : ''}
        ${hasOfferClause}
        ${minDiscClause}
+       ${brandFacetIdx ? `AND (lower(bp.facets->>'brand') = lower($${brandFacetIdx}) OR (bp.facets->'brand') ?| ARRAY[$${brandFacetIdx}]::text[])` : ''}
      ORDER BY ${orderBy}
      LIMIT $${limIdx}`;
   const { rows } = await db.query(sql, params);

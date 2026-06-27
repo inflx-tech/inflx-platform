@@ -470,6 +470,7 @@ export const followerApi = {
     add('rule', opts.rule);
     add('item_type', opts.item_type);
     add('library_section_id', opts.library_section_id);
+    if (opts.rule_json && typeof opts.rule_json === 'object') add('rule_json', JSON.stringify(opts.rule_json));
     add('category_key', opts.category_key);
     add('creator_handle', opts.creator_handle);
     add('brand_id', opts.brand_id);
