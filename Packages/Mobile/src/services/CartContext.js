@@ -118,12 +118,15 @@ export function CartProvider({ children }) {
     // Cart "kind" decides the cross-brand rule:
     //   food → ONE restaurant per cart (you can't deliver from two kitchens).
     //   shop → MULTI-BRAND allowed (fashion/furniture/beauty/… like Amazon).
-    // First add sets the kind from extra.cartKind (defaults to food for back-compat).
-    const kind = cart.items.length ? (cart.kind || 'food') : (extra?.cartKind || 'food');
+    // Decide by the INCOMING add's kind, falling back to the cart's tag — so a
+    // pre-existing (untagged) cart isn't wrongly treated as food. A shop add
+    // therefore NEVER triggers the cross-brand prompt, even on a legacy cart.
+    const incomingKind = extra?.cartKind || 'food';
+    const kind = cart.items.length ? (cart.kind || incomingKind) : incomingKind;
 
     // Single-brand restriction is FOOD-ONLY. Caller shows the confirm modal then
     // calls forceReplaceWith if accepted (contracts-v1.3 §1, now food-scoped).
-    if (kind === 'food' && cart.brandId && cart.brandId !== brandId) {
+    if (incomingKind === 'food' && cart.brandId && cart.brandId !== brandId) {
       return {
         ok: false,
         requiresConfirmation: true,
