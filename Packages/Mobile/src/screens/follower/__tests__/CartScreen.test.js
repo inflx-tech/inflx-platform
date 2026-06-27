@@ -10,7 +10,7 @@ import { render, screen, fireEvent } from '@testing-library/react-native';
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }) => children,
 }));
-jest.mock('../../../services/api', () => ({ followerApi: { getProductDetail: jest.fn() } }));
+jest.mock('../../../services/api', () => ({ followerApi: { getProductDetail: jest.fn(), getCartRecommendations: jest.fn(() => Promise.resolve({ data: { items: [] } })) } }));
 jest.mock('../../../components/food/CustomiseSheet', () => 'CustomiseSheet');
 
 let mockCart;

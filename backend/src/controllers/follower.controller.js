@@ -1477,6 +1477,46 @@ const getSectionResults = asyncHandler(async (req, res) => {
   return success(res, { items, item_type: req.query.item_type || null, capped: items.length >= limit });
 });
 
+// GET /follower/cart-recommendations?product_ids=a,b&limit=8
+// "You might also like" at checkout — live products in the SAME categories
+// (section) as the cart items, ranked by markdown then newest, excluding what's
+// already in the cart. Cross-sell rule; no fabricated data.
+const getCartRecommendations = asyncHandler(async (req, res) => {
+  const ids = String(req.query.product_ids || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const limit = Math.min(parseInt(req.query.limit, 10) || 8, 20);
+  if (!ids.length) return success(res, { items: [] });
+  const { rows: cats } = await db.query(
+    `SELECT DISTINCT section FROM brand_products WHERE id = ANY($1::uuid[]) AND section IS NOT NULL AND section <> ''`,
+    [ids]
+  );
+  const sections = cats.map((c) => c.section).filter(Boolean);
+  if (!sections.length) return success(res, { items: [] });
+  const { rows } = await db.query(
+    `SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section,
+            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category
+       FROM brand_products bp
+       JOIN brands b ON b.id = bp.brand_id
+       JOIN users u ON u.id = b.user_id
+      WHERE u.status = 'approved' AND bp.is_active = true AND bp.pushed_to_store = true
+        AND bp.section = ANY($1) AND NOT (bp.id = ANY($2::uuid[]))
+      ORDER BY CASE WHEN bp.mrp IS NOT NULL AND bp.mrp > bp.price THEN (bp.mrp - bp.price) / NULLIF(bp.mrp, 0) ELSE 0 END DESC,
+               bp.created_at DESC NULLS LAST
+      LIMIT $3`,
+    [sections, ids, limit]
+  );
+  const items = rows.map((r) => {
+    const price = r.price != null ? parseFloat(r.price) : null;
+    const mrp = r.mrp != null ? parseFloat(r.mrp) : null;
+    const discount = (mrp != null && price != null && mrp > price) ? Math.round(((mrp - price) / mrp) * 100) : null;
+    return {
+      entity_type: 'product', id: r.id, name: r.name, price, mrp, discount_value: discount,
+      image_url: r.image_url, section: r.section,
+      brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category },
+    };
+  });
+  return success(res, { items });
+});
+
 // Follower v2 home — world switcher tabs + their "What's on your mind?" rails.
 // Public (auth-optional). CONVERGED on the "one brain": the world tabs ARE the
 // active follower_categories tiles (food/fashion/furniture/beauty/car_rental),
@@ -1626,6 +1666,7 @@ module.exports = {
   getCategoryRestaurants,
   creatorsEatingNow,
   getSectionResults,
+  getCartRecommendations,
   getProductDetail,
   search,
   register,

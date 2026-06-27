@@ -495,6 +495,9 @@ export const followerApi = {
     return api.get(`/listing/nodes/${encodeURIComponent(id)}/products${p.length ? `?${p.join('&')}` : ''}`);
   },
   listingTree: (vertical) => api.get(`/listing/tree?vertical=${encodeURIComponent(vertical)}`),
+  // "You might also like" at checkout — same-category cross-sell, excluding cart items.
+  getCartRecommendations: (productIds, limit = 8) =>
+    api.get(`/follower/cart-recommendations?product_ids=${encodeURIComponent((productIds || []).join(','))}&limit=${limit}`),
 
   // Listing Engine — new endpoints
   getStories: () => api.get('/follower/stories'),

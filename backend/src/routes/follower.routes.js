@@ -46,6 +46,7 @@ router.get('/following', ...followerAuth, ctrl.getFollowing);       // auth requ
 router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influencer story circles
 router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
 router.get('/verticals',  authenticateOptional, ctrl.getVerticals);  // v2 home: world tabs + category rails
+router.get('/cart-recommendations', authenticateOptional, ctrl.getCartRecommendations); // "You might also like" at checkout
 // Dish groups (food discovery tiles): list tiles + tap → nearby restaurants serving it.
 router.get('/dish-groups',                authenticateOptional, ctrl.getDishGroups);
 router.get('/dish-groups/:id/restaurants', authenticateOptional, ctrl.getDishGroupRestaurants);

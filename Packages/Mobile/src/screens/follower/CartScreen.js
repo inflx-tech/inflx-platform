@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Pressable, Image, StyleSheet, ActivityIndicator,
 } from 'react-native';
@@ -68,6 +68,20 @@ export default function CartScreen({ navigation }) {
   const applied = cart.appliedOffer || null;
   const offerSaving = estimateOfferDiscount(applied, subtotal);
   const total = Math.max(0, subtotal - offerSaving);
+
+  // "You might also like" — same-category cross-sell from the cart's items.
+  const [recs, setRecs] = useState([]);
+  const cartIdKey = items.map((i) => i.product_id).join(',');
+  useEffect(() => {
+    let on = true;
+    const ids = items.map((i) => i.product_id).filter(Boolean);
+    if (!ids.length) { setRecs([]); return undefined; }
+    const p = followerApi.getCartRecommendations?.(ids, 10);
+    if (p && typeof p.then === 'function') {
+      p.then((res) => { if (on) setRecs(((res.data || res).items) || []); }).catch(() => {});
+    }
+    return () => { on = false; };
+  }, [cartIdKey]);
 
   // ── Edit a customised line → reopen CustomiseSheet pre-filled ──────────────
   const onEdit = useCallback(async (line) => {
@@ -243,6 +257,30 @@ export default function CartScreen({ navigation }) {
           <View style={s.billTotal}><Text style={s.billTotalLbl}>To Pay</Text><Text style={s.billTotalVal}>₹{Math.round(total)}</Text></View>
           <Text style={s.estimate}>Final price &amp; savings confirmed at checkout.</Text>
         </View>
+
+        {/* You might also like — same-category cross-sell */}
+        {recs.length > 0 ? (
+          <View style={s.block}>
+            <Text style={s.secTitle}>You might also like</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 11, paddingTop: 6 }}>
+              {recs.map((p) => {
+                const showMrp = p.mrp != null && p.price != null && p.mrp > p.price;
+                return (
+                  <TouchableOpacity key={p.id} style={s.rec} activeOpacity={0.85} onPress={() => navigation.navigate('ProductDetail', { selectedProductId: p.id, product: p, brand: p.brand || null, offer: null, tracking: null })}>
+                    <View style={s.recImg}>
+                      {p.image_url ? <Image source={{ uri: p.image_url }} style={s.recImgFill} resizeMode="cover" /> : <Text style={{ fontSize: 22 }}>🛍️</Text>}
+                    </View>
+                    <Text style={s.recNm} numberOfLines={2}>{p.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <Text style={s.recPr}>₹{Math.round(p.price)}</Text>
+                      {showMrp ? <Text style={s.recMrp}>₹{Math.round(p.mrp)}</Text> : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
       </ScrollView>
 
       {/* ── Footer: green Place Order ── */}
@@ -313,6 +351,12 @@ const s = StyleSheet.create({
   billTotal: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12, marginTop: 3, borderTopWidth: 1, borderTopColor: T.line },
   billTotalLbl: { fontSize: 15.5, fontFamily: fonts.displayBold, color: T.ink },
   billTotalVal: { fontSize: 15.5, fontFamily: fonts.displayBold, color: T.ink },
+  rec: { width: 104 },
+  recImg: { width: 104, height: 104, borderRadius: 11, backgroundColor: T.pageBg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  recImgFill: { width: '100%', height: '100%' },
+  recNm: { fontSize: 11.5, color: T.ink, marginTop: 6, lineHeight: 14, fontFamily: fonts.sansMedium },
+  recPr: { fontSize: 12.5, fontWeight: '700', color: T.ink, marginTop: 2, fontFamily: fonts.sansBold },
+  recMrp: { fontSize: 10.5, color: T.hint, textDecorationLine: 'line-through', marginLeft: 5, fontFamily: fonts.sansRegular },
   estimate: { fontSize: 10.5, color: T.hint, marginTop: 8, marginBottom: 4, fontStyle: 'italic' },
 
   footer: { backgroundColor: T.card, borderTopWidth: 1, borderTopColor: T.line, paddingHorizontal: 16, paddingTop: 12 },

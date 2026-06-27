@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Shopping checkout — one flat list</title>
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:#F4F5F7;padding:14px;color:#1A1D1F}
+  .ph{max-width:392px;margin:0 auto;background:#F4F5F7}
+  .hd{background:#fff;display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px 12px 0 0}
+  .hd .t{font-size:16px;font-weight:600}
+  .card{background:#fff;margin-top:9px;border-radius:12px;padding:11px 12px}
+  .item{display:flex;gap:10px;padding:9px 0;border-top:.5px solid #ECECEF}
+  .item:first-child{border-top:none}
+  .ith{width:46px;height:52px;border-radius:8px;background:#F1F1F4;display:flex;align-items:center;justify-content:center;font-size:18px;flex:none}
+  .inm{font-size:12.5px;font-weight:500}.ivar{font-size:10.5px;color:#6B7280;margin-top:2px}
+  .ip{font-size:12.5px;font-weight:600;margin-top:3px}.imrp{color:#9CA3AF;text-decoration:line-through;margin-left:5px;font-size:10.5px}.ioff{color:#159B6E;font-weight:600;margin-left:5px;font-size:10.5px}
+  .qty{display:flex;align-items:center;border:1px solid #E3E3E7;border-radius:8px;align-self:flex-start;font-size:13px}.qb{width:24px;height:26px;display:flex;align-items:center;justify-content:center;color:#E11D6B;font-weight:700}.qn{width:18px;text-align:center;font-weight:600;font-size:12px}
+  .secT{font-size:13px;font-weight:600;margin-bottom:9px}
+  .br{display:flex;justify-content:space-between;margin-bottom:7px;font-size:12.5px}.br .l{color:#6B7280}.br .v{font-weight:500}.br .d{color:#159B6E;font-weight:600}
+  .btot{display:flex;justify-content:space-between;border-top:1px solid #ECECEF;padding-top:9px;margin-top:3px;font-weight:700}
+  .rec{display:flex;gap:9px;overflow:hidden}.r{width:96px}.rimg{height:96px;border-radius:9px;background:#F1F1F4;display:flex;align-items:center;justify-content:center;font-size:20px}.rnm{font-size:10.5px;margin-top:5px}.rpr{font-size:11px;font-weight:600;margin-top:2px}
+  .foot{background:#fff;border-radius:0 0 12px 12px;margin-top:9px}
+  .frow{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:.5px solid #ECECEF}.fic{width:26px;text-align:center;font-size:15px}.fm{flex:1}.ft{font-size:12px;font-weight:600}.fs{font-size:10.5px;color:#6B7280}.fc{font-size:12px;font-weight:600;color:#E11D6B}
+  .place{display:flex;justify-content:space-between;align-items:center;background:#159B6E;margin:9px 12px 12px;border-radius:12px;padding:11px 16px;color:#fff}.pt .tl{font-size:9px;opacity:.85}.pt b{font-size:16px}.pc{font-weight:700}
+</style></head><body>
+<div class="ph">
+  <div class="hd"><span style="font-size:18px">←</span><span class="t">Checkout</span></div>
+  <div class="card">
+    <div class="secT">3 items</div>
+    <div class="item"><div class="ith">🛍️</div><div style="flex:1"><div class="inm">Slim Fit Jeans</div><div class="ivar">Black · M</div><div class="ip">₹1,374<span class="imrp">₹2,748</span><span class="ioff">50% off</span></div></div><div class="qty"><span class="qb">−</span><span class="qn">1</span><span class="qb">＋</span></div></div>
+    <div class="item"><div class="ith">🛍️</div><div style="flex:1"><div class="inm">Cotton T-Shirt</div><div class="ivar">Black · L</div><div class="ip">₹672<span class="imrp">₹961</span><span class="ioff">30% off</span></div></div><div class="qty"><span class="qb">−</span><span class="qn">1</span><span class="qb">＋</span></div></div>
+    <div class="item"><div class="ith">🛍️</div><div style="flex:1"><div class="inm">Polo T-Shirt</div><div class="ivar">Navy · M</div><div class="ip">₹899<span class="imrp">₹1,499</span><span class="ioff">40% off</span></div></div><div class="qty"><span class="qb">−</span><span class="qn">1</span><span class="qb">＋</span></div></div>
+  </div>
+  <div class="card">
+    <div class="secT">Bill details</div>
+    <div class="br"><span class="l">Item total</span><span class="v">₹5,208</span></div>
+    <div class="br"><span class="l">Item savings (MRP)</span><span class="d">−₹2,263</span></div>
+    <div class="br"><span class="l">Offer · Flat 50%</span><span class="d">−₹258</span></div>
+    <div class="br"><span class="l">Delivery</span><span class="v" style="color:#159B6E">Free</span></div>
+    <div class="btot"><span>To pay</span><span>₹2,945</span></div>
+  </div>
+  <div class="card">
+    <div class="secT">You might also like</div>
+    <div class="rec"><div class="r"><div class="rimg">🛍️</div><div class="rnm">Casual Shirt</div><div class="rpr">₹899</div></div><div class="r"><div class="rimg">🛍️</div><div class="rnm">Sneakers</div><div class="rpr">₹1,999</div></div><div class="r"><div class="rimg">🛍️</div><div class="rnm">Kurta</div><div class="rpr">₹1,124</div></div></div>
+  </div>
+  <div class="foot">
+    <div class="frow"><span class="fic">🏠</span><div class="fm"><div class="ft">Delivering to Home</div><div class="fs">Aveen, 4th Floor, RTIH Vijayawada…</div></div><span class="fc">Change</span></div>
+    <div class="frow"><span class="fic">📱</span><div class="fm"><div class="ft">Pay using PhonePe UPI</div><div class="fs">Tap to change · UPI · Cards · Netbanking</div></div><span class="fc">⌄</span></div>
+    <div class="place"><div class="pt"><div class="tl">TOTAL</div><b>₹2,945</b></div><div class="pc">Place Order →</div></div>
+  </div>
+</div>
+</body></html>
