@@ -788,9 +788,13 @@ async function libraryProducts(ctx) {
         ELSE NULL END)`;
   const hasOfferClause = def.has_offer
     ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate} AND ${offerApplies})` : '';
+  // "% off" = the struck-MRP markdown (price vs mrp, what the card shows) OR a live
+  // brand_offer of that discount. Matches what a shopper sees (founder call 2026-06-27).
   const minDiscClause = minDiscIdx
-    ? `AND EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate}
-          AND bo.offer_type = 'discount' AND ${offerApplies} AND ${discPct} >= $${minDiscIdx})` : '';
+    ? `AND (
+          (bp.mrp IS NOT NULL AND bp.mrp > 0 AND bp.price IS NOT NULL AND ((bp.mrp - bp.price) / bp.mrp * 100) >= $${minDiscIdx})
+          OR EXISTS (SELECT 1 FROM brand_offers bo WHERE ${offerLiveGate}
+              AND bo.offer_type = 'discount' AND ${offerApplies} AND ${discPct} >= $${minDiscIdx}))` : '';
 
   const sql = `
     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
