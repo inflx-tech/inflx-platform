@@ -68,3 +68,4 @@
 | F9 | 06-27 | Cart bar | Wanted product thumbnails + count (per ref) | D/U | **FIXED · OTA v158** | cart bar shows overlapping product thumbs + count + total |
 | F10 | 06-27 | ＋ on variant product | Need a "Select variant" popup (colour/size/price/stock) on ＋, any world | N | **BUILT · Render + OTA v159** | VariantSheet (colour swatches + size pills w/ price+stock + ADD); backend surfaces variants in grid · `follower-browse-fixes` |
 | F11 | 06-27 | Multi-brand cart/order | Customer sees ONE list (items/discounts/total); split per brand internally | F | 🟡 confirmed → **checkout batch** | unified cart/order view + backend per-brand order split |
+| F12 | 06-27 | Product page | Want main details up front + "View details" for full specs (2 refs) | D/U | **BUILT · OTA v161** | Highlights tile grid + "View details" popup (All details tiles + description) · `follower-product-page` |

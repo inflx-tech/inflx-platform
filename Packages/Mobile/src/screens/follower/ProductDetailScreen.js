@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Image, Alert, Dimensions,
+  ActivityIndicator, Image, Alert, Dimensions, Modal,
 } from 'react-native';
 
 const HERO_W = Dimensions.get('window').width;
@@ -184,6 +184,7 @@ export default function ProductDetailScreen({ navigation, route }) {
   const [selectedAddons, setSelectedAddons] = useState({}); // conditional Customize (food add-ons)
   const [selectedSize, setSelectedSize] = useState(null);     // conditional Variants (fashion size)
   const [selectedColour, setSelectedColour] = useState(null); // fashion/furniture colour (variants_json.colors[])
+  const [detailsOpen, setDetailsOpen] = useState(false);      // "View details" — full specs + description popup
   const [imageIndex, setImageIndex] = useState(0); // hero carousel page
   const { addItem, forceReplaceWith } = useCart();
 
@@ -647,37 +648,66 @@ export default function ProductDetailScreen({ navigation, route }) {
             </View>
           ) : null}
 
-          {/* Description */}
-          {selected.description ? (
-            <View style={styles.descBlock}>
-              <Text style={styles.descTitle}>Details</Text>
-              <Text style={styles.descBody}>{selected.description}</Text>
-            </View>
-          ) : null}
-
-          {/* Product details — the schema attributes entered while listing
-              (brand_products.facets) + section, rendered as a spec list. */}
+          {/* Highlights — key attributes as tiles; "View details" → all specs + description */}
           {(() => {
             const f = selected.facets;
             const rows = (f && typeof f === 'object' && !Array.isArray(f))
               ? Object.entries(f).filter(([k, v]) => !FACET_HIDE.has(String(k).toLowerCase()) && v != null && v !== '' && !(Array.isArray(v) && v.length === 0))
               : [];
             if (selected.section) rows.unshift(['Category', selected.section]);
-            if (!rows.length) return null;
+            if (selected.return_policy_days) rows.push(['Returns', `${selected.return_policy_days}-day return`]);
+            const hasDesc = !!selected.description;
+            if (!rows.length && !hasDesc) return null;
             const labelOf = (k) => String(k).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
             const valueOf = (v) => Array.isArray(v) ? v.join(', ') : String(v);
+            const Tile = ([k, v], i, lines) => (
+              <View key={i} style={styles.hlTile}>
+                <View style={styles.hlCard}>
+                  <Text style={styles.hlKey} numberOfLines={1}>{labelOf(k)}</Text>
+                  <Text style={styles.hlVal} numberOfLines={lines}>{valueOf(v)}</Text>
+                </View>
+              </View>
+            );
+            const highlights = rows.slice(0, 9);
+            const more = rows.length > highlights.length || hasDesc;
             return (
               <View style={styles.descBlock}>
-                <Text style={styles.descTitle}>Product Details</Text>
-                {rows.map(([k, v], i) => (
-                  <View key={i} style={styles.specRow}>
-                    <Text style={styles.specKey}>{labelOf(k)}</Text>
-                    <Text style={styles.specVal}>{valueOf(v)}</Text>
+                {rows.length ? (
+                  <>
+                    <View style={styles.hlHead}>
+                      <Text style={styles.descTitle}>Highlights</Text>
+                      {more ? <TouchableOpacity onPress={() => setDetailsOpen(true)}><Text style={styles.viewDetails}>View details ›</Text></TouchableOpacity> : null}
+                    </View>
+                    <View style={styles.hlGrid}>{highlights.map((r, i) => Tile(r, i, 2))}</View>
+                  </>
+                ) : (
+                  <TouchableOpacity onPress={() => setDetailsOpen(true)}><Text style={styles.viewDetails}>View details ›</Text></TouchableOpacity>
+                )}
+
+                <Modal visible={detailsOpen} transparent animationType="slide" onRequestClose={() => setDetailsOpen(false)}>
+                  <View style={styles.dmWrap}>
+                    <View style={styles.dmSheet}>
+                      <View style={styles.dmHead}>
+                        <Text style={styles.dmTitle} numberOfLines={1}>{selected.name}</Text>
+                        <TouchableOpacity onPress={() => setDetailsOpen(false)} style={styles.dmX}><Text style={styles.dmXtxt}>✕</Text></TouchableOpacity>
+                      </View>
+                      <ScrollView style={{ maxHeight: 480 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+                        {rows.length ? (
+                          <>
+                            <Text style={styles.dmSec}>All details</Text>
+                            <View style={styles.hlGrid}>{rows.map((r, i) => Tile(r, i, 3))}</View>
+                          </>
+                        ) : null}
+                        {hasDesc ? (
+                          <>
+                            <Text style={[styles.dmSec, rows.length ? { marginTop: 18 } : null]}>About this product</Text>
+                            <Text style={styles.descBody}>{selected.description}</Text>
+                          </>
+                        ) : null}
+                      </ScrollView>
+                    </View>
                   </View>
-                ))}
-                {selected.return_policy_days ? (
-                  <View style={styles.specRow}><Text style={styles.specKey}>Returns</Text><Text style={styles.specVal}>{selected.return_policy_days}-day return</Text></View>
-                ) : null}
+                </Modal>
               </View>
             );
           })()}
@@ -852,6 +882,20 @@ const styles = StyleSheet.create({
   specVal: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink, flex: 1.4, textAlign: 'right' },
   descTitle: { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   descBody: { fontFamily: fonts.sansRegular, fontSize: 13, color: P.ink2, lineHeight: 20 },
+  hlHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 },
+  viewDetails: { fontFamily: fonts.sansBold, fontSize: 12.5, color: '#E11D6B' },
+  hlGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -4.5 },
+  hlTile: { width: '33.333%', paddingHorizontal: 4.5, marginBottom: 9 },
+  hlCard: { backgroundColor: '#F5F6F8', borderRadius: 10, padding: 9, minHeight: 58 },
+  hlKey: { fontFamily: fonts.sansMedium, fontSize: 10.5, color: P.muted, marginBottom: 4 },
+  hlVal: { fontFamily: fonts.sansBold, fontSize: 12.5, color: P.ink, lineHeight: 16 },
+  dmWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  dmSheet: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden' },
+  dmHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: P.border },
+  dmTitle: { flex: 1, fontFamily: fonts.sansBold, fontSize: 15, color: P.ink },
+  dmX: { width: 30, height: 30, borderRadius: 15, backgroundColor: '#F1F1F3', alignItems: 'center', justifyContent: 'center', marginLeft: 10 },
+  dmXtxt: { fontSize: 13, color: P.muted },
+  dmSec: { fontFamily: fonts.monoBold, fontSize: 11, color: P.muted2, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   secondaryCtaRow: { flexDirection: 'row', gap: 8, marginTop: 18, flexWrap: 'wrap' },
   secondaryCta: {
