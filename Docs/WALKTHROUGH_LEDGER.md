@@ -66,3 +66,5 @@
 | F7 | 06-27 | ＋ button | Tap feedback not working | U | **FIXED · OTA v158** | vibration needed VIBRATE permission (MISSING → added, works next APK); OTA feedback = strong scale-bounce + green ✓ flash |
 | F8 | 06-27 | Cart cross-brand | "Start a new cart?" prompt wrongly applied to shopping; should be FOOD-ONLY (shopping = multi-brand like Amazon) | F | **FIXED · OTA v158** | CartContext cart `kind` (food=single-brand, shop=multi-brand); lines tagged w/ brand. **Multi-brand CHECKOUT split = follow-up** |
 | F9 | 06-27 | Cart bar | Wanted product thumbnails + count (per ref) | D/U | **FIXED · OTA v158** | cart bar shows overlapping product thumbs + count + total |
+| F10 | 06-27 | ＋ on variant product | Need a "Select variant" popup (colour/size/price/stock) on ＋, any world | N | **BUILT · Render + OTA v159** | VariantSheet (colour swatches + size pills w/ price+stock + ADD); backend surfaces variants in grid · `follower-browse-fixes` |
+| F11 | 06-27 | Multi-brand cart/order | Customer sees ONE list (items/discounts/total); split per brand internally | F | 🟡 confirmed → **checkout batch** | unified cart/order view + backend per-brand order split |

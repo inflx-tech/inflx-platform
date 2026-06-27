@@ -42,6 +42,17 @@ flex column). Founder gave two reference screenshots (Myntra/Flipkart). Rebuilt:
 - **Cart bar** redesigned to show small **product thumbnails** (overlapping) + item count +
   total + "View cart →" (matches the founder's reference).
 
+## Batch 4 (founder live-test 2026-06-27 — variant popup)
+- **＋ on a product with variants → a "Select variant" sheet** (founder reference): colour
+  swatches (sold-out dimmed), size pills with per-size price + "N left" stock, a product
+  summary, and ADD → adds the chosen colour + size (`variant_sku`/`variant_label`).
+  Vertical-agnostic (any world with `variants_json.colors[]`). No-variant products keep
+  the direct ＋ add.
+- Backend `getNodeProducts`/`mapBrowseProduct` now surface a `variants` summary +
+  `has_variants` (added `bp.variants_json` to the SELECT).
+- Founder CONFIRMED the multi-brand model: one customer-facing cart/order list (items,
+  discounts, total), backend splits per brand internally → **checkout batch** (queued).
+
 ## Verification
-- Mobile babel-compile clean; jest 20/20 (FollowerWallet baseline excluded).
-- Capture after OTA + founder re-test. (VIBRATE = next APK.)
+- Backend load ok; `pnpm qa` GREEN 79; mobile babel-compile clean; jest 20/20.
+- Capture after Render + OTA + founder re-test. (VIBRATE = next APK.)

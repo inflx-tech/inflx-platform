@@ -382,6 +382,21 @@ function mapBrowseProduct(r) {
   const mrp = r.mrp != null ? parseFloat(r.mrp) : null;
   const discount = (mrp != null && price != null && mrp > price)
     ? Math.round(((mrp - price) / mrp) * 100) : null;
+  // Variant summary (colour → sizes w/ price + stock) for the quick-add
+  // "Select variant" sheet — any world with variants_json.colors[] surfaces it.
+  let vj = r.variants_json;
+  if (typeof vj === 'string') { try { vj = JSON.parse(vj); } catch { vj = null; } }
+  const variants = (vj && Array.isArray(vj.colors)) ? vj.colors.map((c) => ({
+    color: c.color || null,
+    image_url: (Array.isArray(c.images) && c.images[0]) || null,
+    sizes: (Array.isArray(c.sizes) ? c.sizes : []).map((sz) => ({
+      size: sz.size,
+      stock: sz.stock != null ? Number(sz.stock) : null,
+      price: sz.price != null ? Number(sz.price) : null,
+      sku: sz.sku || null,
+    })),
+  })) : [];
+  const has_variants = variants.some((c) => c.sizes.length > 0);
   return {
     entity_type: 'product',
     id: r.id, name: r.name, price, mrp, discount_value: discount,
@@ -390,6 +405,7 @@ function mapBrowseProduct(r) {
     rating: r.rating != null ? Number(r.rating) : null,
     review_count: r.review_count != null ? Number(r.review_count) : 0,
     brand: { id: r.brand_id, name: r.brand_name, category: r.brand_category, city: r.brand_city },
+    variants, has_variants,
     via_creator: null, tracking: null,
   };
 }
@@ -473,7 +489,7 @@ const getNodeProducts = asyncHandler(async (req, res) => {
 
   const pageSql = `${subtree}
     SELECT bp.id, bp.name, bp.price, bp.mrp, bp.image_url, bp.section, bp.veg_flag, bp.description,
-           bp.created_at, bp.badge,
+           bp.created_at, bp.badge, bp.variants_json,
            b.id AS brand_id, b.business_name AS brand_name, b.category AS brand_category, u_b.city AS brand_city,
            rev.rating, rev.review_count,
            EXISTS (SELECT 1 FROM product_addon_groups g WHERE g.product_id = bp.id) AS has_addons,

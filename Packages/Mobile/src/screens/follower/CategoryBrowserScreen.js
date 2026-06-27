@@ -46,6 +46,7 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   const [gridLoading, setGridLoading] = useState(false);
   const [isAllMode, setIsAllMode] = useState(false);   // "All categories" entry → a category grid, not the sidebar browser
   const [allSegments, setAllSegments] = useState([]);
+  const [variantProduct, setVariantProduct] = useState(null);   // product whose "Select variant" sheet is open
   const { cart, addItem, forceReplaceWith } = useCart();
 
   const [activeFilters, setActiveFilters] = useState({});  // { facet_key: [values] }
@@ -165,18 +166,33 @@ export default function CategoryBrowserScreen({ navigation, route }) {
   const cartCount = cart.items.reduce((n, i) => n + i.qty, 0);
   const cartTotal = cart.items.reduce((sum, i) => sum + (i.price * i.qty), 0);
 
-  // Quick-add from the grid (organic, no size — "for now"). Cross-brand → confirm.
-  const handleAdd = (item) => {
+  // Add to cart (organic). variant = { color, size, price, sku, image_url } | null.
+  // Shopping cart → multi-brand allowed (no cross-brand prompt). Food keeps single-brand.
+  const doAdd = (item, variant) => {
     const bId = item.brand?.id, bName = item.brand?.name;
     if (!bId) return;
-    const payload = { id: item.id, name: item.name, price: item.price, mrp: item.mrp, image_url: item.image_url, qty: 1 };
-    // Shopping cart → multi-brand allowed (no cross-brand prompt). Food keeps single-brand.
+    const price = variant?.price != null ? variant.price : item.price;
+    const payload = {
+      id: item.id, name: item.name, price, mrp: item.mrp,
+      image_url: variant?.image_url || item.image_url, qty: 1,
+      variant_sku: variant?.sku || null,
+      variant_label: variant ? [variant.color, variant.size].filter(Boolean).join(' · ') : null,
+    };
     const res = addItem(payload, bId, bName, null, { cartKind: 'shop' });
     if (res?.requiresConfirmation) {
       Alert.alert('Start a new cart?', `Your cart has items from ${res.currentBrandName}. Replace them with ${res.newBrandName}?`, [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Replace', onPress: () => forceReplaceWith(payload, bId, bName, null, { cartKind: 'shop' }) },
       ]);
+    }
+  };
+
+  // ＋ on a product WITH variants → the "Select variant" sheet; else a direct add.
+  const handleAdd = (item) => {
+    if (item.has_variants && Array.isArray(item.variants) && item.variants.length) {
+      setVariantProduct(item);
+    } else {
+      doAdd(item, null);
     }
   };
 
@@ -310,6 +326,11 @@ export default function CategoryBrowserScreen({ navigation, route }) {
 
       {cartCount > 0 ? <CartBar items={cart.items} count={cartCount} total={cartTotal} onPress={() => navigation.navigate('Cart')} /> : null}
 
+      {variantProduct ? (
+        <VariantSheet product={variantProduct} onClose={() => setVariantProduct(null)}
+          onConfirm={(v) => { doAdd(variantProduct, v); setVariantProduct(null); }} />
+      ) : null}
+
       {/* Filter + sort sheet */}
       <Modal visible={sheetOpen} transparent animationType="slide" onRequestClose={() => setSheetOpen(false)}>
         <View style={s.sheetWrap}>
@@ -364,6 +385,93 @@ export default function CategoryBrowserScreen({ navigation, route }) {
         </View>
       </Modal>
     </View>
+  );
+}
+
+// "Select variant" sheet — colour + size (price + stock) picker on quick-add, for
+// any product with variants_json.colors[] (fashion/furniture/… — vertical-agnostic).
+function VariantSheet({ product, onClose, onConfirm }) {
+  const colors = Array.isArray(product.variants) ? product.variants : [];
+  const soldOut = (c) => (c.sizes || []).length > 0 && (c.sizes || []).every((sz) => sz.stock === 0);
+  const [ci, setCi] = useState(() => { const ok = colors.findIndex((c) => !soldOut(c)); return ok >= 0 ? ok : 0; });
+  const [si, setSi] = useState(0);
+  const color = colors[ci] || {};
+  const sizes = color.sizes || [];
+  useEffect(() => { const f = (colors[ci]?.sizes || []).findIndex((sz) => sz.stock == null || sz.stock > 0); setSi(f >= 0 ? f : 0); }, [ci]);
+  const size = sizes[si] || {};
+  const price = size.price != null ? size.price : product.price;
+  const canAdd = sizes.length === 0 || size.stock !== 0;
+
+  return (
+    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+      <View style={s.sheetWrap}>
+        <View style={s.sheet}>
+          <View style={s.sheetHead}>
+            <Text style={s.sheetTitle}>Select variant</Text>
+            <TouchableOpacity onPress={onClose} style={s.xbtn}><Text style={s.xtxt}>✕</Text></TouchableOpacity>
+          </View>
+          <ScrollView style={{ maxHeight: 410 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+            {colors.length > 0 ? (
+              <>
+                <Text style={s.vLabel}>Colour: <Text style={s.vLabelVal}>{color.color}</Text></Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 2 }}>
+                  {colors.map((c, i) => {
+                    const out = soldOut(c);
+                    return (
+                      <TouchableOpacity key={i} style={[s.vColor, ci === i && s.vColorOn, out && s.vColorDim]} activeOpacity={0.85} disabled={out} onPress={() => setCi(i)}>
+                        <View style={s.vColorImg}>
+                          {c.image_url ? <Image source={{ uri: c.image_url }} style={s.vColorPic} resizeMode="cover" /> : <Text style={{ fontSize: 22, color: TZ.hint }}>👕</Text>}
+                          {out ? <Text style={s.soldOut}>SOLD OUT</Text> : null}
+                        </View>
+                        <Text style={[s.vColorLbl, ci === i && s.vColorLblOn]} numberOfLines={1}>{c.color}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            ) : null}
+            {sizes.length > 0 ? (
+              <>
+                <View style={s.vSizeHead}>
+                  <Text style={s.vLabel}>Size: <Text style={s.vLabelVal}>{size.size}</Text></Text>
+                  <Text style={s.vGuide}>Size Guide ›</Text>
+                </View>
+                <View style={s.vSizes}>
+                  {sizes.map((sz, i) => {
+                    const oos = sz.stock === 0;
+                    return (
+                      <TouchableOpacity key={i} style={[s.vSize, si === i && s.vSizeOn, oos && s.vSizeDim]} activeOpacity={0.85} disabled={oos} onPress={() => setSi(i)}>
+                        <Text style={[s.vSizeLbl, si === i && s.vSizeLblOn]}>{sz.size}</Text>
+                        <Text style={s.vSizePrice}>{fmtMoney(sz.price != null ? sz.price : product.price)}</Text>
+                        {sz.stock != null ? <Text style={s.vSizeStock}>{oos ? 'Out' : `${sz.stock} left`}</Text> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+            <View style={s.vSummary}>
+              <View style={s.vSumImg}>
+                {(color.image_url || product.image_url)
+                  ? <Image source={{ uri: color.image_url || product.image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  : <Text style={{ fontSize: 18 }}>🛍️</Text>}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.vSumName} numberOfLines={1}>{product.name}</Text>
+                <Text style={s.vSumSub} numberOfLines={1}>{[product.section, color.color].filter(Boolean).join(' • ')}</Text>
+              </View>
+            </View>
+          </ScrollView>
+          <View style={s.vFoot}>
+            <Text style={s.vPrice}>{fmtMoney(price)}</Text>
+            <TouchableOpacity style={[s.vAddBtn, !canAdd && { opacity: 0.5 }]} disabled={!canAdd} activeOpacity={0.85}
+              onPress={() => onConfirm({ color: color.color, size: size.size, price, sku: size.sku, image_url: color.image_url || product.image_url })}>
+              <Text style={s.vAddTxt}>ADD</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -486,6 +594,35 @@ const s = StyleSheet.create({
   cartL: { color: '#fff', fontSize: 13, fontWeight: '800', fontFamily: fonts.sansBold },
   cartSub: { color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 1, fontFamily: fonts.sansRegular },
   cartR: { color: TZ.yellow, fontSize: 13, fontWeight: '800', fontFamily: fonts.sansBold },
+
+  vLabel: { fontSize: 13, color: TZ.muted, fontFamily: fonts.sansRegular, marginBottom: 9 },
+  vLabelVal: { color: TZ.ink, fontWeight: '700', fontFamily: fonts.sansBold },
+  vColor: { width: 84, borderWidth: 1.5, borderColor: TZ.line, borderRadius: 12, padding: 6, alignItems: 'center' },
+  vColorOn: { borderColor: TZ.pink },
+  vColorDim: { borderStyle: 'dashed', opacity: 0.7 },
+  vColorImg: { width: '100%', height: 76, borderRadius: 8, backgroundColor: TZ.pageBg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative' },
+  vColorPic: { width: '100%', height: '100%' },
+  vColorLbl: { fontSize: 12, color: TZ.ink, marginTop: 6, fontFamily: fonts.sansRegular },
+  vColorLblOn: { color: TZ.pink, fontWeight: '700', fontFamily: fonts.sansBold },
+  soldOut: { position: 'absolute', fontSize: 8.5, fontWeight: '900', color: TZ.danger, backgroundColor: 'rgba(255,255,255,0.88)', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, transform: [{ rotate: '-8deg' }] },
+  vSizeHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18, marginBottom: 2 },
+  vGuide: { fontSize: 12, color: TZ.pink, fontWeight: '700', fontFamily: fonts.sansBold, marginBottom: 9 },
+  vSizes: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  vSize: { minWidth: 76, borderWidth: 1.5, borderColor: TZ.line, borderRadius: 11, paddingVertical: 9, paddingHorizontal: 12, alignItems: 'center' },
+  vSizeOn: { borderColor: TZ.pink },
+  vSizeDim: { opacity: 0.4 },
+  vSizeLbl: { fontSize: 14, fontWeight: '700', color: TZ.ink, fontFamily: fonts.sansBold },
+  vSizeLblOn: { color: TZ.pink },
+  vSizePrice: { fontSize: 12, color: TZ.ink, marginTop: 2, fontFamily: fonts.sansRegular },
+  vSizeStock: { fontSize: 9.5, color: TZ.muted, marginTop: 1, fontFamily: fonts.sansRegular },
+  vSummary: { flexDirection: 'row', alignItems: 'center', gap: 11, marginTop: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: TZ.line },
+  vSumImg: { width: 42, height: 42, borderRadius: 8, backgroundColor: TZ.pageBg, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  vSumName: { fontSize: 13, fontWeight: '700', color: TZ.ink, fontFamily: fonts.sansBold },
+  vSumSub: { fontSize: 11.5, color: TZ.muted, marginTop: 1, fontFamily: fonts.sansRegular },
+  vFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: TZ.line },
+  vPrice: { fontSize: 18, fontWeight: '800', color: TZ.ink, fontFamily: fonts.sansBold },
+  vAddBtn: { backgroundColor: TZ.pink, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 48 },
+  vAddTxt: { color: '#fff', fontSize: 15, fontWeight: '800', fontFamily: fonts.sansBold },
 
   sheetWrap: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: TZ.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 18, overflow: 'hidden' },
