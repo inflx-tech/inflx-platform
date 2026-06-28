@@ -16,6 +16,7 @@ import { shareTarget } from '../../utils/shareUrl';
 import ProductCard from '../../components/cards/ProductCard';
 import BrandActionRow from '../../components/BrandActionRow';
 import RestaurantDetailScreen from './RestaurantDetailScreen';
+import { SectionItem } from '../../components/SectionRenderer';
 
 export default function BrandStoreScreen({ navigation, route }) {
   const { brandId, brandName, tracking: routeTracking } = route.params;
@@ -34,6 +35,10 @@ export default function BrandStoreScreen({ navigation, route }) {
   const [tab, setTab] = useState('products');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // App Builder — admin-composed 'business' section stack (same generic engine
+  // the food page uses). When the admin has composed a business page for this
+  // brand, the store renders THAT; otherwise it falls back to the product grid.
+  const [bizSections, setBizSections] = useState([]);
 
   // Phase Salon-2 — pass the entry-creator's influencer_id to the backend so
   // the response embeds a `creator` object the sticky header renders. Most
@@ -57,6 +62,15 @@ export default function BrandStoreScreen({ navigation, route }) {
     setLoading(true);
     fetchStore().finally(() => setLoading(false));
   }, [fetchStore]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!brandId) return undefined;
+    followerApi.getBusinessSections?.(brandId)
+      .then((res) => { if (alive && res?.success) setBizSections(res.data?.sections || []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [brandId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -339,8 +353,17 @@ export default function BrandStoreScreen({ navigation, route }) {
         ))}
       </View>
 
-      {/* Products tab — grid layout */}
+      {/* Products tab — admin-composed business sections when the admin has
+          composed a page (the generic section engine, same as the food page);
+          otherwise the product-grid fallback so the store is never empty. */}
       {tab === 'products' && (
+        bizSections.length ? (
+          <View style={{ paddingBottom: 8 }}>
+            {bizSections.map((sec, i) => (
+              <SectionItem key={sec.key || i} section={sec} navigation={navigation} />
+            ))}
+          </View>
+        ) : (
         <>
           {/* Phase E — creator-picks strip. Only renders when the buyer
               arrived via a creator link AND that creator has published
@@ -492,6 +515,7 @@ export default function BrandStoreScreen({ navigation, route }) {
             <View style={s.empty}><Text style={s.emptyText}>No products listed yet</Text></View>
           )}
         </>
+        )
       )}
 
       {/* Offers tab — influencer list */}

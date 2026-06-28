@@ -1,0 +1,22 @@
+{
+  "feature": "brandstore-admin-composed",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-28",
+  "mockup_waived": "Reuses the live section engine (SectionItem) + existing brand chrome — no new UI to design; founder waived a fresh mockup.",
+  "notes": "F2 BrandStore rebuild → admin-composed. BrandStoreScreen (non-restaurant) now fetches getBusinessSections(brand_id) and renders the admin's section stack via the generic SectionItem engine (same as food RestaurantDetailScreen + Home); falls back to the product grid when nothing composed. Header/CTAs/cart bar/restaurant dispatch unchanged. Mobile OTA only, no backend. Reusable for creator store + category page next. release.released false.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}
