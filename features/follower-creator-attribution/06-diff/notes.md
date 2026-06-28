@@ -107,6 +107,63 @@ store carrying the tag; adding a pick there is credited via the per-line claim
 - **Native (APK):** `android/app/src/main/AndroidManifest.xml` — App-Links
   intent-filter for `inflx.in` (`/s//b//p//o/`) + the `inflx://` custom scheme.
 
+## Slice 5 — Way-4 window credit (Parts 1 + 2)
+
+**Before:** the 30-day attribution window (`attribution_clicks`) only lowered
+INFLX's platform-fee tier on a later organic buy — it credited the original
+creator **₹0**. And the window opened only on a creator-mediated *purchase*, not
+on a click.
+
+**After (Part 1 — credit):** a PURE organic buy (no store offer) now checks the
+window in `priceOrderForGroup`; if an unexpired click ties this follower+brand to
+a creator with a live commissioned CI, the buy is attributed to that CI (most
+recent window = last-click) — the creator earns commission on the net (no
+discount, since the follower didn't apply the offer). Reuses the normal credit
+path (`writeSubOrder` → `pending_balance` → return-window cron) + Slice-4 ping;
+the order shows in the creator's basket. No schema change.
+
+**After (Part 2 — click opens window):** `recordTouch` (`POST /follower/touch`)
+now resolves the influencer + brand from a deep link's `campaign_id` /
+`campaign_influencer_id`, and `InfluencerStoreScreen` calls it when the follower
+arrives via a tracked link — so a *click* opens the window (anonymous/unauth
+touches fail silently → fall back to purchase-opens-window).
+
+## Delivered (Slice 5 Parts 1+2)
+- `transaction.controller.js` `priceOrderForGroup` — window lookup
+  (attribution_clicks ⨝ live CI) → `record.attributed_ci` + commission_pct; subMeta
+  stamps the attributed CI so the existing credit path pays the creator.
+- `follower.controller.js` `recordTouch` — resolve brand/influencer from cid/iid.
+- `services/api.js` (+`recordTouch`); `InfluencerStoreScreen` touch-on-arrival.
+
+## Verification (Slice 5 Parts 1+2)
+- backend loads; `pnpm qa` (see deploy); mobile jest **25/25** (FollowerWallet
+  baseline excl.). Live-verify: buy via a creator once (opens window) OR click
+  their link (opens window) → later buy that brand organically within 30 days →
+  the creator is credited + pinged.
+
+## Slice 5 Part 3 — Admin-configurable window duration (migration)
+
+**Before:** the attribution window was hardcoded `now() + interval '30 days'` in
+6 write sites.
+**After:** `payment_config.attribution_window_days` (migration 120, default 30) is
+admin-editable on **/admin/settings/payments** ("Creator Attribution Window
+(days)"). All 6 window writes now use `now() + make_interval(days => $N)` from the
+config (validated integer; graceful fallback to 30 if the column is absent, so it
+degrades safely pre-migration).
+
+## Delivered (Part 3)
+- `backend/migrations/120_attribution_window_days.sql` + `scripts/run-120.js`
+  (prod apply; additive `ADD COLUMN IF NOT EXISTS … DEFAULT 30`).
+- `paymentConfig.service.js` — read/fallback/allow-update `attribution_window_days`.
+- `transaction.controller.js` — `attributionWindowDays()` helper; 4 window writes
+  parameterised. `follower.controller.js` — `recordTouch` 2 writes parameterised.
+- `admin.controller.js` `updatePaymentConfig` + `admin/settings/payments/page.js`
+  — the admin number input.
+
+## Verification (Part 3)
+- backend loads; migration applied to local dev DB (= 30); `pnpm qa` (see deploy).
+- **Migration:** apply `run-120.js` to prod FIRST (migrate-first), then deploy.
+
 ## Verification (Slice 3)
 - mobile jest **25/25** (FollowerWallet baseline excl.) incl. 5 parser tests; App
   compiles. JS ships via OTA.

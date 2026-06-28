@@ -32,7 +32,8 @@ async function getConfig() {
               gst_pct, tcs_pct, tcs_active, tcs_active_from_date,
               platform_gstin, platform_business_name, platform_business_address,
               platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
-              tranche_3_release_after_days, tranche_3_release_time_ist
+              tranche_3_release_after_days, tranche_3_release_time_ist,
+              attribution_window_days
        FROM payment_config WHERE id = 1`
     );
     if (rows[0]) {
@@ -62,6 +63,9 @@ async function getConfig() {
         tranche3ReleaseAfterDays: rows[0].tranche_3_release_after_days != null
           ? parseInt(rows[0].tranche_3_release_after_days, 10) : 30,
         tranche3ReleaseTimeIst:   rows[0].tranche_3_release_time_ist || '03:00:00',
+        // Way-4 — creator attribution "cookie" window (migration 120).
+        attributionWindowDays: rows[0].attribution_window_days != null
+          ? parseInt(rows[0].attribution_window_days, 10) : 30,
       };
       _cacheTime = now;
       return _cache;
@@ -96,6 +100,8 @@ async function getConfig() {
     // Wave 1 — T3 release timing (migration 074) safe defaults
     tranche3ReleaseAfterDays: 30,
     tranche3ReleaseTimeIst:   '03:00:00',
+    // Way-4 — attribution window (migration 120) safe default
+    attributionWindowDays: parseInt(env.ATTRIBUTION_WINDOW_DAYS || '30', 10),
   };
 }
 
@@ -114,6 +120,8 @@ async function updateConfig(fields, adminUserId) {
     'platform_state_code', 'invoice_prefix_subscription', 'invoice_prefix_commerce',
     // Wave 1 — T3 release timing (migration 074)
     'tranche_3_release_after_days', 'tranche_3_release_time_ist',
+    // Way-4 — attribution window (migration 120)
+    'attribution_window_days',
   ];
 
   const updates = {};

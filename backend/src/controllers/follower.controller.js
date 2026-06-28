@@ -35,6 +35,7 @@ const categoryTaxonomy = require('../services/categoryTaxonomy.service');
 const brandOffersAdapter = require('../services/brandOffers.adapter');
 const geocoding = require('../services/geocoding.service');
 const places = require('../services/places.service');
+const paymentConfigSvc = require('../services/paymentConfig.service');
 
 // ── Helper: get follower row or throw ────────────────────────────────────────
 
@@ -103,26 +104,47 @@ const recordTouch = asyncHandler(async (req, res) => {
   const follower = await getFollowerByUserId(req.user.sub);
   if (!follower) throw new AppError('NOT_FOUND', 'Follower profile not found. Please register first.', 404);
 
-  let { influencer_id, handle, brand_id } = req.body || {};
-  if (!brand_id) throw new AppError('VALIDATION_ERROR', 'brand_id is required', 422, 'brand_id');
+  let { influencer_id, handle, brand_id, campaign_id, campaign_influencer_id } = req.body || {};
+  // Way-4 "click-opens-window" — a deep link carries the 4 IDs (cid/iid). Resolve
+  // the influencer + brand from the campaign chain so a click (not just a
+  // purchase) opens the window for that campaign's brand.
+  if (campaign_influencer_id && (!brand_id || !influencer_id)) {
+    const { rows } = await db.query(
+      `SELECT ci.influencer_id, c.brand_id
+         FROM campaign_influencers ci
+         JOIN campaign_sets cs ON cs.id = ci.set_id
+         JOIN campaigns c ON c.id = cs.campaign_id
+        WHERE ci.id = $1`, [campaign_influencer_id]
+    );
+    if (rows[0]) { influencer_id = influencer_id || rows[0].influencer_id; brand_id = brand_id || rows[0].brand_id; }
+  }
+  if (!brand_id && campaign_id) {
+    const { rows } = await db.query(`SELECT brand_id FROM campaigns WHERE id = $1`, [campaign_id]);
+    brand_id = rows[0]?.brand_id || null;
+  }
   if (!influencer_id && handle) {
     const { rows } = await db.query(
       `SELECT id FROM influencers WHERE LOWER(instagram_handle) = LOWER($1) LIMIT 1`, [handle]
     );
     influencer_id = rows[0]?.id || null;
   }
-  if (!influencer_id) throw new AppError('VALIDATION_ERROR', 'influencer_id or handle is required', 422, 'influencer_id');
+  if (!brand_id) throw new AppError('VALIDATION_ERROR', 'brand_id (or campaign_id / campaign_influencer_id) is required', 422, 'brand_id');
+  if (!influencer_id) throw new AppError('VALIDATION_ERROR', 'influencer_id, handle, or campaign_influencer_id is required', 422, 'influencer_id');
+
+  // Way-4 — admin-configurable window length (migration 120); falls back to 30.
+  let awDays = 30;
+  try { const n = parseInt((await paymentConfigSvc.getConfig()).attributionWindowDays, 10); if (Number.isFinite(n) && n > 0) awDays = n; } catch (_) { /* default 30 */ }
 
   const upd = await db.query(
-    `UPDATE attribution_clicks SET expires_at = now() + interval '30 days'
+    `UPDATE attribution_clicks SET expires_at = now() + make_interval(days => $4)
       WHERE follower_id = $1 AND influencer_id = $2 AND brand_id = $3 AND expires_at > now()`,
-    [follower.id, influencer_id, brand_id]
+    [follower.id, influencer_id, brand_id, awDays]
   );
   if (upd.rowCount === 0) {
     await db.query(
       `INSERT INTO attribution_clicks (follower_id, influencer_id, brand_id, expires_at)
-       VALUES ($1, $2, $3, now() + interval '30 days')`,
-      [follower.id, influencer_id, brand_id]
+       VALUES ($1, $2, $3, now() + make_interval(days => $4))`,
+      [follower.id, influencer_id, brand_id, awDays]
     );
   }
   return success(res, { touched: true });

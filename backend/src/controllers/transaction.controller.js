@@ -29,6 +29,17 @@ const notificationService = require('../services/notification.service');
 const offerService = require('../services/offer.service');
 const pricingService = require('../services/pricing.service');
 const settlementService = require('../services/settlement.service');
+const paymentConfigSvc = require('../services/paymentConfig.service');
+
+// Way-4 — resolve the admin-configured attribution window length (days) as a
+// validated integer, safe to inline into `interval 'N days'`. Falls back to 30.
+async function attributionWindowDays() {
+  try {
+    const cfg = await paymentConfigSvc.getConfig();
+    const n = parseInt(cfg.attributionWindowDays, 10);
+    return Number.isFinite(n) && n > 0 ? n : 30;
+  } catch (_) { return 30; }
+}
 
 // ── Conversion-flow helpers (Tier-1) ─────────────────────────────────────────
 
@@ -420,11 +431,12 @@ const verifyPayAtStore = asyncHandler(async (req, res) => {
     // record a 30-day attribution window so future direct buys by this follower
     // from this brand fall into Path C and the influencer keeps earning credit.
     if (meta.l3_path === 'influencer_direct' && meta.l3_influencer_id) {
+      const awDays = await attributionWindowDays();
       await client.query(
         `INSERT INTO attribution_clicks
            (follower_id, influencer_id, brand_id, campaign_id, expires_at)
-         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
-        [meta.follower_id, meta.l3_influencer_id, meta.brand_id, meta.campaign_id]
+         VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))`,
+        [meta.follower_id, meta.l3_influencer_id, meta.brand_id, meta.campaign_id, awDays]
       );
     }
   });
@@ -841,11 +853,12 @@ const verifyPrebook = asyncHandler(async (req, res) => {
     // 30-day attribution window so future direct buys by this follower
     // from this brand fall into Path C and the influencer keeps earning.
     if (meta.campaign_influencer_id && influencer?.id) {
+      const awDays = await attributionWindowDays();
       await client.query(
         `INSERT INTO attribution_clicks
            (follower_id, influencer_id, brand_id, campaign_id, expires_at)
-         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
-        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id]
+         VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))`,
+        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id, awDays]
       );
     }
   });
@@ -1054,11 +1067,12 @@ const verifyPrebookDateRange = asyncHandler(async (req, res) => {
     // 30-day attribution window so future direct buys by this follower
     // from this brand fall into Path C and the influencer keeps earning.
     if (meta.campaign_influencer_id && influencer?.id) {
+      const awDays = await attributionWindowDays();
       await client.query(
         `INSERT INTO attribution_clicks
            (follower_id, influencer_id, brand_id, campaign_id, expires_at)
-         VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
-        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id]
+         VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))`,
+        [meta.follower_id, influencer.id, meta.brand_id, meta.campaign_id, awDays]
       );
     }
   });
@@ -1151,6 +1165,34 @@ async function priceOrderForGroup(follower, group) {
       record.ci_offer_type = so.offer_type;
       record.offer_config_json = so.offer_config_json;
       record.brand_offer_id = brand_offer_id;
+    } else {
+      // Way-4 (attribution window): a PURE organic buy (no store offer) — if an
+      // unexpired attribution window ties this follower+brand to a creator who
+      // still has a live commissioned CI, credit that creator (Path C). The most
+      // recent window wins (last-click). The buy carries NO discount; the creator
+      // earns commission on the net. Reuses the normal credit path downstream by
+      // stamping the attributed CI onto the txn.
+      const { rows: aw } = await db.query(
+        `SELECT ci.id AS campaign_influencer_id, ci.set_id, cs.campaign_id, ci.commission_pct
+           FROM attribution_clicks ac
+           JOIN campaign_influencers ci ON ci.influencer_id = ac.influencer_id
+           JOIN campaign_sets cs ON cs.id = ci.set_id
+           JOIN campaigns c ON c.id = cs.campaign_id AND c.brand_id = ac.brand_id
+          WHERE ac.follower_id = $1 AND ac.brand_id = $2 AND ac.expires_at > now()
+            AND ci.status IN ('contracted','active','completed')
+            AND ci.commission_pct IS NOT NULL AND ci.commission_pct > 0
+          ORDER BY ac.expires_at DESC, ci.created_at DESC
+          LIMIT 1`,
+        [follower.id, record.brand_id]
+      );
+      if (aw[0]) {
+        record.attributed_ci = {
+          campaign_influencer_id: aw[0].campaign_influencer_id,
+          campaign_id: aw[0].campaign_id,
+          set_id: aw[0].set_id,
+        };
+        record.commission_pct = parseFloat(aw[0].commission_pct);
+      }
     }
   } else {
     if (!campaign_id || !set_id) {
@@ -1308,14 +1350,19 @@ async function priceOrderForGroup(follower, group) {
     note: i.note,
   }));
 
+  // Way-4: an organic buy attributed via the window carries the resolved CI so
+  // the normal credit/attribution path (writeSubOrder) pays the creator.
+  const attr = record.attributed_ci || null;
+
   const subMeta = {
     type: 'online_order',
-    // Organic orders carry NO creator attribution — keep these explicitly null
-    // so the pending-order meta round-trips cleanly into the verify INSERT.
-    offer_id:              isOrganic ? null : (offer_id || null),
-    campaign_id:           isOrganic ? null : campaign_id,
-    set_id:                isOrganic ? null : set_id,
-    campaign_influencer_id: isOrganic ? null : campaign_influencer_id,
+    // Organic orders carry NO creator attribution (unless window-attributed via
+    // `attr`) — keep these explicitly null so the pending-order meta round-trips
+    // cleanly into the verify INSERT.
+    offer_id:              attr ? null : (isOrganic ? null : (offer_id || null)),
+    campaign_id:           attr ? attr.campaign_id : (isOrganic ? null : campaign_id),
+    set_id:                attr ? attr.set_id : (isOrganic ? null : set_id),
+    campaign_influencer_id: attr ? attr.campaign_influencer_id : (isOrganic ? null : campaign_influencer_id),
     items_total: itemsTotal, discount_amount: discountAmount, net_amount: netAmount,
     influencer_commission: influencerCommission, platform_fee: platformFee, brand_net: brandNet,
     delivery_fee: deliveryFee, address_id, items_json: itemsJson,
@@ -1480,11 +1527,12 @@ async function writeSubOrder(client, prepared, razorpay_payment_id) {
   // attribution window so future direct buys by this follower from this brand
   // fall into Path C and the influencer keeps earning.
   if (sm.campaign_influencer_id && influencer?.id) {
+    const awDays = await attributionWindowDays();
     await client.query(
       `INSERT INTO attribution_clicks
          (follower_id, influencer_id, brand_id, campaign_id, expires_at)
-       VALUES ($1, $2, $3, $4, now() + interval '30 days')`,
-      [sm.follower_id, influencer.id, sm.brand_id, sm.campaign_id]
+       VALUES ($1, $2, $3, $4, now() + make_interval(days => $5))`,
+      [sm.follower_id, influencer.id, sm.brand_id, sm.campaign_id, awDays]
     );
   }
 

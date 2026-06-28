@@ -40,6 +40,21 @@ const discountVal = (o) => Number(o?.discount_value ?? o?.discount?.value ?? 0) 
 
 export default function InfluencerStoreScreen({ route, navigation }) {
   const { handle } = route.params || {};
+
+  // Slice 5 (Way-4) — if the follower arrived via a tracked link (deep link
+  // carrying the 4 IDs), record an attribution touch so a later within-window
+  // buy from that campaign's brand credits this creator. Anonymous/unauth touches
+  // fail silently (they fall back to purchase-opens-window).
+  useEffect(() => {
+    const trk = route.params?.tracking || route.params?.trackingParams || null;
+    if (trk?.campaign_influencer_id || trk?.campaign_id) {
+      followerApi.recordTouch?.({
+        campaign_id: trk.campaign_id || null,
+        campaign_influencer_id: trk.campaign_influencer_id || null,
+        handle,
+      }).catch(() => {});
+    }
+  }, []);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

@@ -607,6 +607,9 @@ export const followerApi = {
   // follower-creator-attribution Slice 2 — resolve a creator coupon code →
   // creator + allocated products (apply discount + attribution without a link).
   resolveCoupon: (code) => api.post('/follower/resolve-coupon', { code }),
+  // Slice 5 (Way-4) — "click opens window": record an attribution touch when a
+  // follower lands in a creator store via a tracked link.
+  recordTouch: (data) => api.post('/follower/touch', data),
   createOrder: (data) => api.post('/follower/orders', data),
   verifyOrder: (data) => api.post('/follower/orders/verify', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),

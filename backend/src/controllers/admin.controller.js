@@ -744,6 +744,8 @@ const updatePaymentConfig = asyncHandler(async (req, res) => {
     platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
     // Wave 1 — T3 release timing (migration 074)
     tranche_3_release_after_days, tranche_3_release_time_ist,
+    // Way-4 — attribution window (migration 120)
+    attribution_window_days,
   } = req.body;
 
   try {
@@ -754,6 +756,7 @@ const updatePaymentConfig = asyncHandler(async (req, res) => {
       platform_gstin, platform_business_name, platform_business_address,
       platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
       tranche_3_release_after_days, tranche_3_release_time_ist,
+      attribution_window_days,
     }, req.user.sub);
   } catch (err) {
     throw new AppError('VALIDATION_ERROR', err.message, 422);

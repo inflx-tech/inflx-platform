@@ -58,6 +58,11 @@ const FIELDS = [
     type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
   },
   {
+    key: 'attribution_window_days', label: 'Creator Attribution Window (days)',
+    note: 'After a follower clicks/buys via a creator, later organic buys from the same brand keep crediting that creator for this many days (e.g. 30 / 15 / 1).',
+    type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
+  },
+  {
     key: 'min_withdrawal_inr', label: 'Minimum Withdrawal (₹)',
     note: 'Minimum amount influencer can withdraw per request.',
     type: 'number', min: 50, max: 10000, step: 50, suffix: '₹',
@@ -74,6 +79,7 @@ function cfgToForm(cfg) {
     tds_pct:            cfg.tdsPct,
     offer_expiry_hours: cfg.offerExpiryHours,
     return_window_days: cfg.returnWindowDays,
+    attribution_window_days: cfg.attributionWindowDays,
     min_withdrawal_inr: cfg.minWithdrawalInr,
     allow_commission_negotiation: cfg.allowCommissionNegotiation !== false,
     // Wave 1 — tax + identity + T3 timing
