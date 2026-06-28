@@ -604,6 +604,9 @@ export const followerApi = {
   //               pickup_date, return_date, duration_days, pickup_type }
   prebookDateRange: (data) => api.post('/follower/prebook-daterange', data),
   prebookDateRangeVerify: (data) => api.post('/follower/prebook-daterange/verify', data),
+  // follower-creator-attribution Slice 2 — resolve a creator coupon code →
+  // creator + allocated products (apply discount + attribution without a link).
+  resolveCoupon: (code) => api.post('/follower/resolve-coupon', { code }),
   createOrder: (data) => api.post('/follower/orders', data),
   verifyOrder: (data) => api.post('/follower/orders/verify', data),
   getOrder: (id) => api.get(`/follower/orders/${id}`),

@@ -34,6 +34,32 @@ The follower still sees ONE flat list + ONE bill.
   item) → one bill → Place Order → Orders shows one order per (brand+creator),
   each creator credited for their items only.
 
-## Next slices
-- **Slice 2** code door (`resolve-coupon` + cart code field). **Slice 3** link
-  door (deep-link). **Slice 4** post-order creator/brand pings.
+## Slice 2 — Code door (`cart-code.html`)
+
+**Before:** a creator could only be credited via their link/store; a code typed at
+checkout did nothing (no UI, no resolution).
+
+**After:** a **"Have a creator code?"** field in the cart. On apply, the code
+resolves to the creator and stamps a `source:'code'` claim on **that creator's
+allocated products for that brand only** — other items stay organic, and a line
+already claimed via link is not overridden. The bill shows the creator's discount;
+the follower still pays once and the per-(brand+creator) split (Slice 1) credits
+the creator.
+
+## Delivered (Slice 2)
+- Backend `follower.controller.js` (+`resolveCoupon`) + `follower.routes.js`
+  (`POST /follower/resolve-coupon`, follower auth): code → creator, validated
+  (contracted/active CI, live campaign, has a shoppable offer), returns
+  `{ campaign_influencer_id, campaign/set/offer ids, brand_id, creator_handle,
+  offer:{type,label,discount_type,value,max_discount}, allocated_product_ids }`.
+  Reuses `followerService.allocatedProductIds`.
+- Mobile `services/api.js` (+`resolveCoupon`); `services/CartContext.js`
+  (`applyCreatorCode`/`clearCreatorCode` — stamp/clear the code claim on allocated
+  lines, re-key line_key); `screens/follower/CartScreen.js` (code field empty →
+  applied chip, error states, bill discount line + savings preview).
+
+## Verification (Slice 2)
+- backend loads; `pnpm qa` (see deploy); mobile jest **20/20** (FollowerWallet
+  baseline excl.). Live-verify: type a creator's code on a cart holding that
+  creator's allocated product → discount + attribution; non-allocated/other-brand
+  items unaffected; Orders shows the creator credited.

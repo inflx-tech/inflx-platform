@@ -29,6 +29,10 @@ const EMPTY_CART = {
   // (storeOffers = what the brand published) and appliedOffer = the one the
   // follower chose (carries brand_offer_id → placeOrder).
   storeOffers: [], appliedOffer: null,
+  // follower-creator-attribution Slice 2 — the creator code applied at checkout
+  // (the resolve-coupon response). Stamps a 'code' claim on the creator's
+  // allocated lines for that brand; cleared via clearCreatorCode.
+  appliedCode: null,
 };
 
 const CartContext = createContext({
@@ -40,6 +44,8 @@ const CartContext = createContext({
   replaceLine: () => {},
   applyOffer: () => {},
   clearOffer: () => {},
+  applyCreatorCode: () => ({ ok: false }),
+  clearCreatorCode: () => {},
   clear: () => {},
 });
 
@@ -216,6 +222,51 @@ export function CartProvider({ children }) {
     setCart(prev => ({ ...prev, appliedOffer: null }));
   }, []);
 
+  // follower-creator-attribution Slice 2 — apply a resolved creator code: stamp a
+  // 'code' claim on the creator's ALLOCATED lines for that brand. A line already
+  // claimed via link is NOT overridden (link wins, last-click). Returns
+  // { ok, matched } so the caller can warn when nothing in the cart matches.
+  const applyCreatorCode = useCallback((resolved) => {
+    if (!resolved?.campaign_influencer_id) return { ok: false, reason: 'invalid' };
+    const allocated = new Set(resolved.allocated_product_ids || []);
+    const eligible = (it) => it.brand_id === resolved.brand_id && allocated.has(it.product_id) && !it.claim;
+    const matched = cart.items.filter(eligible).length;
+    if (!matched) return { ok: false, reason: 'no_match' };
+    setCart(prev => ({
+      ...prev,
+      appliedCode: resolved,
+      items: prev.items.map(it => {
+        if (!eligible(it)) return it;
+        return {
+          ...it,
+          claim: {
+            campaign_influencer_id: resolved.campaign_influencer_id,
+            campaign_id: resolved.campaign_id || null,
+            set_id: resolved.set_id || null,
+            offer_id: resolved.offer_id || null,
+            source: 'code',
+            creator_handle: resolved.creator_handle || null,
+            coupon_code: resolved.coupon_code || null,
+          },
+          // re-key so the now-claimed line groups with its creator (last segment
+          // of line_key is the claiming CI; was '' while organic).
+          line_key: it.line_key.replace(/::[^:]*$/, `::${resolved.campaign_influencer_id}`),
+        };
+      }),
+    }));
+    return { ok: true, matched };
+  }, [cart.items]);
+
+  const clearCreatorCode = useCallback(() => {
+    setCart(prev => ({
+      ...prev,
+      appliedCode: null,
+      items: prev.items.map(it => (it.claim?.source === 'code')
+        ? { ...it, claim: null, line_key: it.line_key.replace(/::[^:]*$/, '::') }
+        : it),
+    }));
+  }, []);
+
   // key = line_key (preferred) OR product_id (back-compat for restaurant callers).
   const updateQty = useCallback((key, qty) => {
     setCart(prev => {
@@ -240,7 +291,7 @@ export function CartProvider({ children }) {
   }, []);
 
   return (
-    <CartContext.Provider value={{ cart, addItem, forceReplaceWith, updateQty, removeItem, replaceLine, applyOffer, clearOffer, clear }}>
+    <CartContext.Provider value={{ cart, addItem, forceReplaceWith, updateQty, removeItem, replaceLine, applyOffer, clearOffer, applyCreatorCode, clearCreatorCode, clear }}>
       {children}
     </CartContext.Provider>
   );

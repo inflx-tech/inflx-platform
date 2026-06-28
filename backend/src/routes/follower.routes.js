@@ -47,6 +47,10 @@ router.get('/stories',    authenticateOptional, ctrl.getStories);    // Influenc
 router.get('/categories', authenticateOptional, ctrl.getCategories); // Super-category browser
 router.get('/verticals',  authenticateOptional, ctrl.getVerticals);  // v2 home: world tabs + category rails
 router.get('/cart-recommendations', authenticateOptional, ctrl.getCartRecommendations); // "You might also like" at checkout
+// Code door (follower-creator-attribution Slice 2): resolve a creator's coupon
+// code → creator + allocated products, so the cart can apply the discount +
+// attribute the sale without arriving via the creator's link.
+router.post('/resolve-coupon', ...followerAuth, ctrl.resolveCoupon);
 // Dish groups (food discovery tiles): list tiles + tap → nearby restaurants serving it.
 router.get('/dish-groups',                authenticateOptional, ctrl.getDishGroups);
 router.get('/dish-groups/:id/restaurants', authenticateOptional, ctrl.getDishGroupRestaurants);

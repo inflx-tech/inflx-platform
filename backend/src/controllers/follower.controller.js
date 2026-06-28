@@ -1659,7 +1659,82 @@ const getCategoryRestaurants = asyncHandler(async (req, res) => {
   return success(res, { category: { name }, restaurants });
 });
 
+// ── POST /follower/resolve-coupon ─────────────────────────────────────────────
+// follower-creator-attribution Slice 2 (the "code door"). Resolves a creator's
+// coupon code → the creator + the products they were allocated, so the cart can
+// apply the discount AND attribute the sale to that creator WITHOUT the follower
+// arriving via the creator's link. Code scope = the creator's allocated products
+// for that brand only (founder-locked). Mirrors validateTracking's guards.
+const resolveCoupon = asyncHandler(async (req, res) => {
+  const code = String(req.body?.code || '').trim();
+  if (!code) throw new AppError('VALIDATION_ERROR', 'code is required', 422, 'code');
+
+  const { rows } = await db.query(
+    `SELECT ci.id AS campaign_influencer_id, ci.status AS ci_status,
+            ci.offer_type, ci.offer_config_json, ci.commission_pct,
+            cs.id AS set_id, cs.products_json,
+            c.id AS campaign_id, c.status AS campaign_status, c.end_date,
+            b.id AS brand_id, b.business_name AS brand_name,
+            inf.instagram_handle AS creator_handle,
+            co.id AS offer_id
+       FROM campaign_influencers ci
+       JOIN campaign_sets cs ON cs.id = ci.set_id
+       JOIN campaigns c      ON c.id  = cs.campaign_id
+       JOIN brands b         ON b.id  = c.brand_id
+       JOIN influencers inf  ON inf.id = ci.influencer_id
+       LEFT JOIN campaign_offers co ON co.set_id = cs.id
+      WHERE LOWER(ci.coupon_code) = LOWER($1)
+      LIMIT 1`,
+    [code]
+  );
+  const r = rows[0];
+  if (!r) throw new AppError('NOT_FOUND', 'That code is not valid.', 404, 'code');
+
+  const UNAVAILABLE = (msg) => new AppError('OFFER_UNAVAILABLE', msg, 409, 'code');
+  if (!['contracted', 'active', 'completed'].includes(r.ci_status)) throw UNAVAILABLE('This creator code is not active.');
+  if (!['published', 'active', 'live'].includes(r.campaign_status)) throw UNAVAILABLE('This creator code is not active.');
+  if (r.end_date && new Date(r.end_date) < new Date()) throw UNAVAILABLE('This creator code has expired.');
+  // Mirror validateTracking: a shoppable code needs a typed offer or a set offer.
+  if (!r.offer_type && !r.offer_id) throw UNAVAILABLE('This code can’t be used for orders.');
+
+  const allocatedIds = followerService.allocatedProductIds(r.offer_config_json || {}, r.products_json);
+
+  // Light preview label only — placeOrder re-prices authoritatively at checkout.
+  const cfg = r.offer_config_json || {};
+  const type = String(r.offer_type || '').toLowerCase();
+  const val = Number(cfg.value ?? cfg.discount_value ?? 0) || 0;
+  let label = 'Creator offer';
+  if (['discount', 'percentage', 'flat'].includes(type)) {
+    const dt = String(cfg.discount_type || cfg.type || (type === 'flat' ? 'flat' : '')).toLowerCase();
+    label = (dt === 'flat' || dt === 'amount') ? `Flat ₹${val} off` : (val ? `${val}% off` : 'Creator discount');
+  } else if (type) {
+    label = type.replace(/_/g, ' ');
+  }
+
+  return success(res, {
+    campaign_influencer_id: r.campaign_influencer_id,
+    campaign_id: r.campaign_id,
+    set_id: r.set_id,
+    offer_id: r.offer_id || null,
+    brand_id: r.brand_id,
+    brand_name: r.brand_name,
+    creator_handle: r.creator_handle,
+    coupon_code: code.toUpperCase(),
+    offer: {
+      type: r.offer_type || null,
+      label,
+      // For a discount-type offer the cart can preview the saving over the
+      // claimed lines; placeOrder remains authoritative.
+      discount_type: String(cfg.discount_type || cfg.type || (type === 'flat' ? 'flat' : '')).toLowerCase() || null,
+      value: val || null,
+      max_discount: Number(cfg.max_discount ?? cfg.cap ?? 0) || null,
+    },
+    allocated_product_ids: allocatedIds,
+  });
+});
+
 module.exports = {
+  resolveCoupon,
   getVerticals,
   getDishGroups,
   getDishGroupRestaurants,

@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, Pressable, Image, StyleSheet, ActivityIndicator,
-  Modal, Alert,
+  Modal, Alert, TextInput,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -59,6 +59,22 @@ function estimateOfferDiscount(offer, subtotal) {
   return Math.min(d, subtotal);
 }
 
+// follower-creator-attribution Slice 2 — preview a creator code's saving over the
+// lines it claimed (discount-type only). placeOrder re-prices authoritatively.
+function estimateCreatorDiscount(code, subtotal) {
+  if (!code?.offer || subtotal <= 0) return 0;
+  const { type, discount_type, value, max_discount } = code.offer;
+  if (!['discount', 'percentage', 'flat'].includes(String(type || '').toLowerCase())) return 0;
+  const v = Number(value) || 0;
+  if (v <= 0) return 0;
+  const dt = String(discount_type || '').toLowerCase();
+  if (dt === 'flat' || dt === 'amount') return Math.min(v, subtotal);
+  let d = Math.round((subtotal * v) / 100);
+  const cap = Number(max_discount) || 0;
+  if (cap > 0) d = Math.min(d, cap);
+  return Math.min(d, subtotal);
+}
+
 function lineSummary(item) {
   const parts = [];
   if (item.variation_name) parts.push(item.variation_name);
@@ -67,7 +83,7 @@ function lineSummary(item) {
 }
 
 export default function CartScreen({ navigation }) {
-  const { cart, updateQty, removeItem, replaceLine, applyOffer, clearOffer, clear } = useCart();
+  const { cart, updateQty, removeItem, replaceLine, applyOffer, clearOffer, applyCreatorCode, clearCreatorCode, clear } = useCart();
   const items = cart.items || [];
 
   // follower-checkout Slice B — the shopping cart (fashion/furniture/beauty) IS
@@ -128,7 +144,45 @@ export default function CartScreen({ navigation }) {
   const storeOffers = cart.storeOffers || [];
   const applied = cart.appliedOffer || null;
   const offerSaving = estimateOfferDiscount(applied, subtotal);
-  const total = Math.max(0, subtotal - offerSaving);
+
+  // Creator code (Slice 2): saving previewed over the lines it claimed.
+  const appliedCode = cart.appliedCode || null;
+  const codeClaimedSubtotal = items.reduce(
+    (s, i) => (i.claim?.source === 'code' ? s + (Number(i.price) || 0) * i.qty : s), 0,
+  );
+  const codeSaving = estimateCreatorDiscount(appliedCode, codeClaimedSubtotal);
+
+  const total = Math.max(0, subtotal - offerSaving - codeSaving);
+
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState('');
+
+  const onApplyCode = useCallback(async () => {
+    const code = codeInput.trim();
+    if (!code) return;
+    setCodeLoading(true); setCodeError('');
+    try {
+      const res = await followerApi.resolveCoupon(code);
+      const data = res?.data || res;
+      if (!data?.campaign_influencer_id) {
+        setCodeError(res?.error?.message || 'That code is not valid.'); return;
+      }
+      const r = applyCreatorCode(data);
+      if (!r.ok) {
+        setCodeError(r.reason === 'no_match'
+          ? `This code is for @${data.creator_handle || 'the creator'}'s items — add one to use it.`
+          : 'Could not apply this code.');
+        return;
+      }
+      setCodeInput(''); setCodeOpen(false);
+    } catch (e) {
+      setCodeError(e.message || 'Could not apply this code.');
+    } finally {
+      setCodeLoading(false);
+    }
+  }, [codeInput, applyCreatorCode]);
 
   // "You might also like" — same-category cross-sell from the cart's items.
   const [recs, setRecs] = useState([]);
@@ -333,9 +387,9 @@ export default function CartScreen({ navigation }) {
         {editLoading ? <ActivityIndicator color={T.pink} /> : null}
       </SafeAreaView>
 
-      {mrpSavings + offerSaving > 0 ? (
+      {mrpSavings + offerSaving + codeSaving > 0 ? (
         <View style={s.savings}>
-          <Text style={s.savingsTxt}>🎉 You're saving ₹{Math.round(mrpSavings + offerSaving)} on this order</Text>
+          <Text style={s.savingsTxt}>🎉 You're saving ₹{Math.round(mrpSavings + offerSaving + codeSaving)} on this order</Text>
         </View>
       ) : null}
 
@@ -416,6 +470,48 @@ export default function CartScreen({ navigation }) {
           </View>
         ) : null}
 
+        {/* ── Creator code (Slice 2) ── */}
+        {isShop ? (
+          <View style={s.block}>
+            {appliedCode ? (
+              <View style={[s.offerRow, s.offerSel]}>
+                <Text style={s.ticket}>🎟️</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.oname}>{appliedCode.coupon_code} · via @{appliedCode.creator_handle}</Text>
+                  <Text style={s.odescOn}>{appliedCode.offer?.label}{codeSaving > 0 ? ` · saving ₹${Math.round(codeSaving)}` : ' · applied'}</Text>
+                </View>
+                <Pressable onPress={clearCreatorCode} hitSlop={8}><Text style={s.removeTxt}>Remove</Text></Pressable>
+              </View>
+            ) : codeOpen ? (
+              <View>
+                <View style={s.codeRow}>
+                  <TextInput
+                    style={s.codeInput}
+                    placeholder="Enter creator code"
+                    placeholderTextColor={T.hint}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    value={codeInput}
+                    onChangeText={(t) => { setCodeInput(t); if (codeError) setCodeError(''); }}
+                    onSubmitEditing={onApplyCode}
+                    returnKeyType="done"
+                  />
+                  <Pressable style={s.codeBtn} onPress={onApplyCode} disabled={codeLoading}>
+                    {codeLoading ? <ActivityIndicator color="#fff" /> : <Text style={s.codeBtnTxt}>Apply</Text>}
+                  </Pressable>
+                </View>
+                {codeError ? <Text style={s.codeErr}>{codeError}</Text> : null}
+              </View>
+            ) : (
+              <Pressable style={s.codeTease} onPress={() => setCodeOpen(true)}>
+                <Text style={s.ticket}>🎟️</Text>
+                <Text style={s.codeTeaseTxt}>Have a creator code?</Text>
+                <Text style={s.chev}>›</Text>
+              </Pressable>
+            )}
+          </View>
+        ) : null}
+
         {/* ── Bill ── */}
         <View style={s.block}>
           <Text style={s.secTitle}>Bill Details</Text>
@@ -425,6 +521,9 @@ export default function CartScreen({ navigation }) {
           ) : null}
           {applied && offerSaving > 0 ? (
             <View style={s.billRow}><Text style={s.billLbl}>Offer · {applied.name}</Text><Text style={s.billDisc}>−₹{Math.round(offerSaving)}</Text></View>
+          ) : null}
+          {appliedCode && codeSaving > 0 ? (
+            <View style={s.billRow}><Text style={s.billLbl}>@{appliedCode.creator_handle} ({appliedCode.coupon_code})</Text><Text style={s.billDisc}>−₹{Math.round(codeSaving)}</Text></View>
           ) : null}
           <View style={s.billRow}><Text style={s.billLbl}>Delivery fee</Text><Text style={s.billVal}>Free</Text></View>
           <View style={s.billTotal}><Text style={s.billTotalLbl}>To Pay</Text><Text style={s.billTotalVal}>₹{Math.round(total)}</Text></View>
@@ -606,6 +705,15 @@ const s = StyleSheet.create({
   odescOn: { fontSize: 11, color: T.veg, marginTop: 1, fontFamily: fonts.sansMedium },
   applyTxt: { fontSize: 12.5, fontFamily: fonts.sansBold, color: T.pink },
   removeTxt: { fontSize: 12.5, fontFamily: fonts.sansBold, color: T.veg },
+
+  // Creator code door (Slice 2)
+  codeTease: { flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 12, paddingHorizontal: 12, borderWidth: 1, borderColor: T.pink, borderStyle: 'dashed', borderRadius: 11 },
+  codeTeaseTxt: { flex: 1, fontSize: 13, fontFamily: fonts.sansBold, color: T.pink },
+  codeRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  codeInput: { flex: 1, borderWidth: 1, borderColor: T.line, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13.5, color: T.ink, fontFamily: fonts.sansBold, letterSpacing: 0.5 },
+  codeBtn: { backgroundColor: T.pink, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 11, alignItems: 'center', justifyContent: 'center', minWidth: 72 },
+  codeBtnTxt: { color: '#fff', fontSize: 13, fontFamily: fonts.sansBold },
+  codeErr: { color: T.pink, fontSize: 11.5, marginTop: 7, fontFamily: fonts.sansMedium },
 
   billRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 9 },
   billLbl: { fontSize: 13, color: T.muted, fontFamily: fonts.sansMedium, flex: 1 },
