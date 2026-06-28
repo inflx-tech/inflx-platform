@@ -218,45 +218,46 @@ export default function CartScreen({ navigation }) {
       return;
     }
 
-    // Group lines by brand. Cart-level offer + creator tracking belong to the
-    // lead brand (cart.brandId); other brands are organic.
-    const byBrand = new Map();
+    // follower-creator-attribution Slice 1 — group lines by (brand + claiming
+    // creator). Each creator-claimed group credits that creator; the organic
+    // group (no claim) is brand+platform only. The follower still pays once.
+    const leadOfferId = applied?.brand_offer_id || null;
+    const groups = new Map();
     for (const i of items) {
       const bid = i.brand_id || cart.brandId;
-      if (!byBrand.has(bid)) byBrand.set(bid, []);
-      byBrand.get(bid).push(i);
+      const ci = i.claim?.campaign_influencer_id || '';
+      const key = `${bid}::${ci}`;
+      if (!groups.has(key)) groups.set(key, { brand_id: bid, claim: i.claim || null, lines: [] });
+      groups.get(key).lines.push(i);
     }
-    const trk = cart.tracking || null;
-    const leadOfferId = applied?.brand_offer_id || null;
+    const groupArr = [...groups.values()];
+
+    const groupPayload = (g) => {
+      const grp = { brand_id: g.brand_id, items: g.lines.map(toOrderItem) };
+      if (g.claim?.campaign_influencer_id) {
+        grp.campaign_id = g.claim.campaign_id;
+        grp.set_id = g.claim.set_id;
+        grp.campaign_influencer_id = g.claim.campaign_influencer_id;
+        grp.offer_id = g.claim.offer_id || null;
+      } else if (g.brand_id === cart.brandId && leadOfferId) {
+        // Organic lead-brand store offer (a brand-direct offer the follower chose).
+        grp.brand_offer_id = leadOfferId;
+      }
+      return grp;
+    };
 
     let payload;
-    if (byBrand.size > 1) {
-      payload = {
-        address_id: selectedAddr,
-        brand_groups: [...byBrand.entries()].map(([bid, lines]) => {
-          const g = { brand_id: bid, items: lines.map(toOrderItem) };
-          if (bid === cart.brandId) {
-            if (leadOfferId) g.brand_offer_id = leadOfferId;
-            if (trk?.campaign_influencer_id) {
-              g.campaign_id = trk.campaign_id;
-              g.set_id = trk.set_id;
-              g.campaign_influencer_id = trk.campaign_influencer_id;
-              g.offer_id = trk.offer_id || null;
-            }
-          }
-          return g;
-        }),
-      };
+    if (groupArr.length > 1) {
+      payload = { address_id: selectedAddr, brand_groups: groupArr.map(groupPayload) };
     } else {
-      const bid = cart.brandId || items[0]?.brand_id || null;
-      const isOrganic = !trk?.campaign_influencer_id;
-      payload = isOrganic
-        ? { items: items.map(toOrderItem), address_id: selectedAddr, brand_id: bid, brand_offer_id: leadOfferId }
-        : {
-            items: items.map(toOrderItem), address_id: selectedAddr,
-            campaign_id: trk.campaign_id, set_id: trk.set_id,
-            campaign_influencer_id: trk.campaign_influencer_id, offer_id: trk.offer_id || null,
-          };
+      const g = groupArr[0];
+      payload = g.claim?.campaign_influencer_id
+        ? {
+            items: g.lines.map(toOrderItem), address_id: selectedAddr,
+            campaign_id: g.claim.campaign_id, set_id: g.claim.set_id,
+            campaign_influencer_id: g.claim.campaign_influencer_id, offer_id: g.claim.offer_id || null,
+          }
+        : { items: g.lines.map(toOrderItem), address_id: selectedAddr, brand_id: g.brand_id, brand_offer_id: leadOfferId };
     }
 
     setPlacing(true);
@@ -354,6 +355,11 @@ export default function CartScreen({ navigation }) {
                 </View>
                 <View style={s.ldet}>
                   <Text style={s.lname} numberOfLines={2}>{item.name}</Text>
+                  {isShop ? (
+                    item.claim?.creator_handle
+                      ? <Text style={s.viaPill}>via @{item.claim.creator_handle}</Text>
+                      : <Text style={s.addedBy}>Added by you</Text>
+                  ) : null}
                   {summary ? <Text style={s.custom} numberOfLines={3}>{summary}</Text> : null}
                   {item.note ? <Text style={s.note} numberOfLines={2}>“{item.note}”</Text> : null}
                   {canEdit ? (
@@ -576,6 +582,8 @@ const s = StyleSheet.create({
   ldet: { flex: 1, minWidth: 0 },
   lname: { fontSize: 14.5, fontFamily: fonts.displayBold, color: T.ink, letterSpacing: -0.2 },
   custom: { fontSize: 11.5, color: T.muted, marginTop: 3, lineHeight: 17, fontFamily: fonts.sansMedium },
+  viaPill: { alignSelf: 'flex-start', marginTop: 4, fontSize: 9.5, color: T.pink, backgroundColor: T.pinkTint, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 20, overflow: 'hidden', fontFamily: fonts.sansBold },
+  addedBy: { marginTop: 4, fontSize: 9.5, color: T.hint, fontFamily: fonts.sansMedium },
   note: { fontSize: 11, color: T.yellowDeep, marginTop: 3, fontStyle: 'italic', fontFamily: fonts.sansMedium },
   edit: { fontSize: 11.5, color: T.pink, fontFamily: fonts.sansBold, marginTop: 6 },
   lright: { alignItems: 'flex-end', justifyContent: 'space-between' },

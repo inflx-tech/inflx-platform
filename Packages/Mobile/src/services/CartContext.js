@@ -81,6 +81,22 @@ function normalizeLine(item) {
 }
 const lineMatches = (i, key) => i.line_key === key || i.product_id === key;
 
+// follower-creator-attribution Slice 1 — the per-line creator CLAIM. Built from
+// the `tracking` carried by a creator-store/link add; organic adds → null.
+// The claim rides on the LINE (not the cart) so a multi-creator cart credits
+// each creator only for the items they drove.
+function buildClaim(tracking, extra) {
+  if (!tracking?.campaign_influencer_id) return null;
+  return {
+    campaign_influencer_id: tracking.campaign_influencer_id,
+    campaign_id: tracking.campaign_id || null,
+    set_id: tracking.set_id || null,
+    offer_id: tracking.offer_id || null,
+    source: tracking.source || 'link',
+    creator_handle: tracking.influencer_handle || tracking.creator_handle || extra?.creatorHandle || null,
+  };
+}
+
 export function CartProvider({ children }) {
   const [cart, setCart] = useState(EMPTY_CART);
   const [hydrated, setHydrated] = useState(false);
@@ -136,9 +152,14 @@ export function CartProvider({ children }) {
     }
 
     // Add normally (merge by line_key + brand so a different size/brand is its own line).
+    const claim = buildClaim(tracking, extra);
     setCart(prev => {
-      const line = { ...normalizeLine(item), brand_id: brandId, brand_name: brandName };
-      const existingIdx = prev.items.findIndex(i => i.line_key === line.line_key && (i.brand_id || brandId) === brandId);
+      const base = normalizeLine(item);
+      // line_key includes the claiming creator so the SAME product via two
+      // different creators (or creator vs organic) stays two distinct lines.
+      const lineKey = `${base.line_key}::${claim?.campaign_influencer_id || ''}`;
+      const line = { ...base, line_key: lineKey, brand_id: brandId, brand_name: brandName, claim };
+      const existingIdx = prev.items.findIndex(i => i.line_key === lineKey && (i.brand_id || brandId) === brandId);
       const items = existingIdx >= 0
         ? prev.items.map((it, i) => i === existingIdx ? { ...it, qty: it.qty + line.qty } : it)
         : [...prev.items, line];
@@ -158,6 +179,8 @@ export function CartProvider({ children }) {
   }, [cart.brandId, cart.brandName, cart.kind, cart.items.length]);
 
   const forceReplaceWith = useCallback((item, brandId, brandName, tracking, extra) => {
+    const claim = buildClaim(tracking, extra);
+    const base = normalizeLine(item);
     setCart({
       ...EMPTY_CART,
       kind: extra?.cartKind || 'food',
@@ -167,7 +190,7 @@ export function CartProvider({ children }) {
       offer: extra?.offer ?? null,
       creatorHandle: extra?.creatorHandle ?? null,
       storeOffers: extra?.storeOffers ?? [],
-      items: [{ ...normalizeLine(item), brand_id: brandId, brand_name: brandName }],
+      items: [{ ...base, line_key: `${base.line_key}::${claim?.campaign_influencer_id || ''}`, brand_id: brandId, brand_name: brandName, claim }],
     });
   }, []);
 
