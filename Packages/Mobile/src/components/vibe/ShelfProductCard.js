@@ -14,7 +14,7 @@ import { fmtDistance } from './palette';
  * Props: product { name, price, image_url }, brand { name, category },
  *        discountValue?, rank?, saved?, onPress, onHeart.
  */
-export default function ShelfProductCard({ product, brand, discountValue, rank, saved, distanceKm, onPress, onHeart }) {
+export default function ShelfProductCard({ product, brand, discountValue, rank, saved, distanceKm, onPress, onHeart, onAdd }) {
   if (!product) return null;
   const cfg = getBusinessAccentLight(brand?.category);
   const dist = fmtDistance(distanceKm);
@@ -35,6 +35,11 @@ export default function ShelfProductCard({ product, brand, discountValue, rank, 
         {pct > 0 && (
           <View style={styles.badge}><Text style={styles.badgeTxt}>{pct}% OFF</Text></View>
         )}
+        {onAdd ? (
+          <TouchableOpacity style={styles.add} onPress={onAdd} hitSlop={8} activeOpacity={0.8}>
+            <Text style={styles.addTxt}>＋</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>{product.name}</Text>
@@ -74,6 +79,13 @@ const styles = StyleSheet.create({
     backgroundColor: C.offer, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3,
   },
   badgeTxt: { fontSize: 9.5, fontWeight: '800', color: '#fff', fontFamily: fonts.monoBold },
+  add: {
+    position: 'absolute', right: 9, bottom: 9, width: 30, height: 30, borderRadius: 15,
+    backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: C.line,
+    shadowColor: '#000', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 2 }, shadowRadius: 5, elevation: 3,
+  },
+  addTxt: { fontSize: 19, fontWeight: '800', color: C.offer, marginTop: -2 },
   body: { padding: 11 },
   name: { fontSize: 12, fontWeight: '800', color: C.ink, fontFamily: fonts.displayBold },
   brand: { fontSize: 11, color: C.muted, fontWeight: '600', marginTop: 1, fontFamily: fonts.monoMedium },

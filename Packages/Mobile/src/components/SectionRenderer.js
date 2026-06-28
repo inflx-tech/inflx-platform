@@ -381,6 +381,10 @@ function renderSection(section, navigation, canFollow, context = {}) {
                   discountValue={item.discount_value}
                   distanceKm={item.distance_km}
                   onPress={() => goToProduct(navigation, item)}
+                  // ＋ on every shop product card (consistency) → opens the PDP to
+                  // pick variant + add (section payload carries no variant data, so
+                  // we can't silently add a size-less fashion item).
+                  onAdd={() => goToProduct(navigation, item)}
                 />
               )
             ))}

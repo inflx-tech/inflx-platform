@@ -382,7 +382,11 @@ export default function ProductDetailScreen({ navigation, route }) {
       variant_sku: variantSku,
       variant_label: variantLabel,
     };
-    const extra = { offer: offerFull, creatorHandle: influencer?.instagram_handle || store?.instagram_handle || null };
+    // cartKind: 'shop' — the product PDP is the SHOPPING path (fashion/furniture/
+    // beauty); dining uses RestaurantDetail. Shop carts are multi-brand (Amazon-
+    // style), so adding from the product page must NOT trigger the food-only
+    // "replace cart?" prompt — matching the ＋ quick-add in the category browser.
+    const extra = { offer: offerFull, creatorHandle: influencer?.instagram_handle || store?.instagram_handle || null, cartKind: 'shop' };
     const res = addItem(item, brand?.id, brand?.name, txTracking, extra);
     if (res?.requiresConfirmation) {
       Alert.alert(

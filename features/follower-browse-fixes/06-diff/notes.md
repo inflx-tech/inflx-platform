@@ -56,3 +56,16 @@ flex column). Founder gave two reference screenshots (Myntra/Flipkart). Rebuilt:
 ## Verification
 - Backend load ok; `pnpm qa` GREEN 79; mobile babel-compile clean; jest 20/20.
 - Capture after Render + OTA + founder re-test. (VIBRATE = next APK.)
+
+## Follow-up fixes (2026-06-28, founder E2E testing)
+- **Cross-brand "replace cart?" popup on the product page (bug):** the ＋ quick-add
+  passed `cartKind:'shop'` (multi-brand, no prompt) but `ProductDetailScreen.addToCart`
+  passed `extra` WITHOUT `cartKind` → defaulted to `food` → wrongly showed the
+  single-brand replace prompt. Fixed: PDP add now passes `cartKind:'shop'` (the
+  product page is the shopping path; dining uses RestaurantDetail). `ProductDetailScreen.js`.
+- **＋ on every product card (consistency):** the section/"Top Trending" shop card
+  (`ShelfProductCard`) had no ＋ (only food's `FoodDishCard` did). Added a ＋ button
+  (`onAdd`) to `ShelfProductCard`; `SectionRenderer` wires it for shop products →
+  opens the PDP to pick variant + add (section payload carries no variant data, so a
+  size-less fashion item can't be added silently). `ShelfProductCard.js`, `SectionRenderer.js`.
+- Verified: babel-clean (3 files), jest 25/25 (FollowerWallet baseline excl.). Mobile OTA only.
