@@ -63,3 +63,25 @@ the creator.
   baseline excl.). Live-verify: type a creator's code on a cart holding that
   creator's allocated product → discount + attribution; non-allocated/other-brand
   items unaffected; Orders shows the creator credited.
+
+## Slice 4 — Post-order notify (backend only)
+
+**Before:** on an online order, only the follower got `order.confirmed`. The
+creator was credited silently (no "₹X earned" ping — that fired only on
+pay-at-store) and the brand got nothing (had to poll the fulfilment page).
+
+**After:** `verifyOrder` (per-sub loop) now also notifies, all at once:
+- **Creator(s)** — `commission.sale` "₹X earned", aggregated per distinct creator
+  across their sub-orders (reuses the pay-at-store pattern; FCM, no SMS).
+- **Brand(s)** — `order.placed` "New order received", deduped per distinct brand.
+- Follower `order.confirmed` + follow-creator prompt unchanged.
+
+## Delivered (Slice 4)
+- `transaction.controller.js` — `prepareSubOrder` returns the brand `user_id`;
+  `writeSubOrder` returns `commissionAmount`/`couponCode`/`brandUserId`;
+  `verifyOrder` sends the creator + brand pings. No schema, no mobile change.
+
+## Verification (Slice 4)
+- backend loads; `pnpm qa` green (see deploy). Backend-only → no OTA. Live-verify:
+  place a creator-attributed order → creator gets "₹X earned", brand gets "New
+  order received", follower gets "Order confirmed".

@@ -1418,7 +1418,8 @@ async function prepareSubOrder(sm) {
 
   const influencer = await getInfluencerByCiId(sm.campaign_influencer_id);
   const { rows: brandRows } = await db.query(
-    `SELECT b.business_name, u.phone AS brand_phone FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
+    `SELECT b.business_name, u.id AS brand_user_id, u.phone AS brand_phone
+       FROM brands b JOIN users u ON u.id = b.user_id WHERE b.id = $1`,
     [sm.brand_id]
   );
 
@@ -1487,7 +1488,14 @@ async function writeSubOrder(client, prepared, razorpay_payment_id) {
     );
   }
 
-  return { transactionId, orderRowId, brandPhone: brandRows[0]?.brand_phone, brandName: brandRows[0]?.business_name, influencer, estimatedDelivery };
+  return {
+    transactionId, orderRowId,
+    brandPhone: brandRows[0]?.brand_phone,
+    brandName: brandRows[0]?.business_name,
+    brandUserId: brandRows[0]?.brand_user_id,
+    influencer, estimatedDelivery,
+    commissionAmount, couponCode,
+  };
 }
 
 const verifyOrder = asyncHandler(async (req, res) => {
@@ -1540,6 +1548,44 @@ const verifyOrder = asyncHandler(async (req, res) => {
     sendSms: true,
     phone: follower.phone,
   }).catch(e => console.error('[NOTIFY] order.confirmed failed:', e.message));
+
+  // follower-creator-attribution Slice 4 — tell the CREATOR(s) they earned, and
+  // the BRAND(s) they got an order. Aggregate per distinct creator (a cart can
+  // carry several of a creator's items) and dedupe brands (creator + organic
+  // sub-orders can share a brand).
+  const byCreator = new Map();
+  for (const w of written) {
+    if (w.influencer?.id && w.commissionAmount > 0) {
+      const e = byCreator.get(w.influencer.id) || { influencer: w.influencer, amount: 0, coupon: w.couponCode };
+      e.amount += w.commissionAmount;
+      byCreator.set(w.influencer.id, e);
+    }
+  }
+  for (const { influencer, amount, coupon } of byCreator.values()) {
+    const rupees = amount.toFixed(2);
+    notificationService.send({
+      userId: influencer.user_id,
+      type: 'commission.sale',
+      title: `₹${rupees} earned!`,
+      body: `₹${rupees} earned — a follower bought via ${coupon || 'your store'}`,
+      fcmToken: influencer.fcm_token,
+      sendSms: false,
+    }).catch(e => console.error('[NOTIFY] commission.sale failed:', e.message));
+  }
+
+  const brandSeen = new Set();
+  for (const w of written) {
+    if (w.brandUserId && !brandSeen.has(w.brandUserId)) {
+      brandSeen.add(w.brandUserId);
+      notificationService.send({
+        userId: w.brandUserId,
+        type: 'order.placed',
+        title: 'New order received',
+        body: 'You have a new order on INFLX. Open Orders to pack & ship.',
+        sendSms: false,
+      }).catch(e => console.error('[NOTIFY] order.placed failed:', e.message));
+    }
+  }
 
   // Phase Salon-3 — follow-creator prompt, once per distinct influencer across
   // the split (a multi-brand cart can carry more than one creator allocation).
