@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Pressable, Image, StyleSheet, ActivityIndicator,
   Modal, Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { toing as T, fonts } from '../../theme/tokens';
 import { useCart } from '../../services/CartContext';
@@ -11,14 +12,14 @@ import { processPayment } from '../../services/payment';
 import CustomiseSheet from '../../components/food/CustomiseSheet';
 
 // follower-checkout Slice B — payment methods in the cart's payment selector.
-// UI only (mock payment); the first is the default. Real Razorpay multi-method
-// is the separate money task (Program B P10).
+// The first is the default. `rzp` preselects the method in Razorpay's checkout
+// (it opens focused on that tab); Razorpay still owns the final method UI.
 const PAY_METHODS = [
-  { key: 'phonepe', icon: '📱', label: 'PhonePe UPI', sub: 'UPI' },
-  { key: 'gpay', icon: '📱', label: 'Google Pay', sub: 'UPI' },
-  { key: 'upi', icon: '🏦', label: 'Other UPI', sub: 'Enter any UPI ID' },
-  { key: 'card', icon: '💳', label: 'Credit / Debit Card', sub: 'Visa · Mastercard · RuPay' },
-  { key: 'netbanking', icon: '🏛️', label: 'Netbanking', sub: 'All major banks' },
+  { key: 'phonepe', icon: '📱', label: 'PhonePe UPI', sub: 'UPI', rzp: 'upi' },
+  { key: 'gpay', icon: '📱', label: 'Google Pay', sub: 'UPI', rzp: 'upi' },
+  { key: 'upi', icon: '🏦', label: 'Other UPI', sub: 'Enter any UPI ID', rzp: 'upi' },
+  { key: 'card', icon: '💳', label: 'Credit / Debit Card', sub: 'Visa · Mastercard · RuPay', rzp: 'card' },
+  { key: 'netbanking', icon: '🏛️', label: 'Netbanking', sub: 'All major banks', rzp: 'netbanking' },
 ];
 
 function addrLine(a) {
@@ -101,6 +102,17 @@ export default function CartScreen({ navigation }) {
   }, []);
 
   useEffect(() => { if (isShop) loadAddresses(); }, [isShop, loadAddresses]);
+
+  // The follower's own phone, prefilled into Razorpay so it skips its
+  // contact-collection ("enter phone number") step — we already have it.
+  const [userPhone, setUserPhone] = useState('');
+  useEffect(() => {
+    if (!isShop) return;
+    AsyncStorage.getItem('inflx_user').then((raw) => {
+      if (!raw) return;
+      try { const u = JSON.parse(raw); if (u?.phone) setUserPhone(u.phone); } catch { /* ignore */ }
+    }).catch(() => {});
+  }, [isShop]);
 
   const addrObj = addresses.find((a) => a.id === selectedAddr) || null;
 
@@ -259,6 +271,9 @@ export default function CartScreen({ navigation }) {
         keyId: res.data?.razorpay_key_id,
         description: `Order via ${payMethod.label}`,
         brandName: cart.brandName,
+        // Skip Razorpay's phone step (we have the number) + open it focused on
+        // the method the follower picked in our payment row.
+        prefill: { contact: userPhone || '', method: payMethod.rzp },
       });
       if (!payResult) { Alert.alert('Payment cancelled', 'You can try again anytime.'); return; }
 

@@ -41,8 +41,15 @@ export async function processPayment({ amount, orderId, keyId, description, bran
       name: brandName || 'INFLX',
       prefill: {
         email: prefill?.email || '',
+        // Passing a known contact makes Razorpay SKIP its contact-collection
+        // step (the "enter phone number" screen) — we already have the
+        // follower's number, so don't ask again.
         contact: prefill?.contact || '',
         name: prefill?.name || '',
+        // Preselect the method the follower picked in our payment row so
+        // Razorpay opens focused on it (e.g. 'upi' lands on the UPI tab).
+        // Razorpay Standard Checkout still owns the final method UI.
+        ...(prefill?.method ? { method: prefill.method } : {}),
       },
       theme: { color: '#F59E0B' },
     };

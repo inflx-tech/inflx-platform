@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { creatorVibe as C, fonts, fmtRupees } from '../../theme/tokens';
 import { followerApi } from '../../services/api';
 import { processPayment } from '../../services/payment';
@@ -36,6 +37,16 @@ export default function OnlineOrderScreen({ navigation, route }) {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddr, setAddr] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // The follower's own phone, prefilled into Razorpay so it skips its
+  // contact-collection ("enter phone number") step — we already have it.
+  const [userPhone, setUserPhone] = useState('');
+  useEffect(() => {
+    AsyncStorage.getItem('inflx_user').then((raw) => {
+      if (!raw) return;
+      try { const u = JSON.parse(raw); if (u?.phone) setUserPhone(u.phone); } catch { /* ignore */ }
+    }).catch(() => {});
+  }, []);
 
   function loadAddresses(preferId) {
     return followerApi.getAddresses?.().then(res => {
@@ -110,6 +121,8 @@ export default function OnlineOrderScreen({ navigation, route }) {
         keyId: res.data?.razorpay_key_id,
         description: `Order from ${store?.name || 'store'}`,
         brandName: store?.name,
+        // Skip Razorpay's contact step — we already have the follower's number.
+        prefill: { contact: userPhone || '' },
       });
       if (!payResult) { Alert.alert('Payment Cancelled', 'You can try again anytime.'); return; }
 

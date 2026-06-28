@@ -52,3 +52,20 @@ backend **splits the cart per brand** into one order each while the follower see
   pre-existing baseline transform-fail).
 - Single-brand path byte-identical (food/creator unaffected); multi-brand split
   to be founder-verified on the live [FTW] world after Render + OTA.
+
+## Slice B follow-up — Razorpay prefill (founder live-test, 2026-06-27)
+
+Founder finding: prod uses **real Razorpay** (not the mock we assumed); its
+checkout was (a) showing a contact-collection step even though we have the
+follower's phone, and (b) showing its own method chooser after our in-app
+payment row — a redundant double-pick.
+
+Fix (mobile only, no backend): `processPayment` now forwards `prefill.contact`
+(→ Razorpay **skips** its "enter phone number" step) and `prefill.method`
+(→ Razorpay opens **focused** on the chosen method's tab). `CartScreen`
+(shop) reads the follower's phone from `inflx_user` and maps the selected
+payment row → Razorpay method (`upi`/`card`/`netbanking`); `OnlineOrderScreen`
+(food/creator) passes the contact too. NOTE: fully bypassing Razorpay's chooser
+to launch ONE app (PhonePe) directly is **not supported by Razorpay Standard
+Checkout** — that needs the UPI-Intent/custom-checkout flow (Razorpay-side,
+deferred). jest 20/20 (FollowerWallet baseline excl.).
