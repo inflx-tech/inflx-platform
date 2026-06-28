@@ -63,6 +63,16 @@ const FIELDS = [
     type: 'number', min: 0, max: 90, step: 1, suffix: 'd',
   },
   {
+    key: 'delivery_ref_km', label: 'Delivery ETA — reference distance (km)',
+    note: 'Delivery estimate scales with store↔customer distance. e.g. set 100 km here + 2 days below = "100 km takes 2 days"; the system measures the real distance and scales.',
+    type: 'number', min: 1, max: 5000, step: 10, suffix: 'km',
+  },
+  {
+    key: 'delivery_ref_days', label: 'Delivery ETA — days per reference distance',
+    note: 'Days for the reference distance above. ETA = ceil(distance ÷ ref km × this). Falls back to this value when coordinates are missing.',
+    type: 'number', min: 1, max: 60, step: 1, suffix: 'd',
+  },
+  {
     key: 'min_withdrawal_inr', label: 'Minimum Withdrawal (₹)',
     note: 'Minimum amount influencer can withdraw per request.',
     type: 'number', min: 50, max: 10000, step: 50, suffix: '₹',
@@ -80,6 +90,8 @@ function cfgToForm(cfg) {
     offer_expiry_hours: cfg.offerExpiryHours,
     return_window_days: cfg.returnWindowDays,
     attribution_window_days: cfg.attributionWindowDays,
+    delivery_ref_km: cfg.deliveryRefKm,
+    delivery_ref_days: cfg.deliveryRefDays,
     min_withdrawal_inr: cfg.minWithdrawalInr,
     allow_commission_negotiation: cfg.allowCommissionNegotiation !== false,
     // Wave 1 — tax + identity + T3 timing

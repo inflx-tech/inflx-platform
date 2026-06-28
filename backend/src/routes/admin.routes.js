@@ -26,6 +26,7 @@ router.get('/capabilities', authenticate, requireAnyAdminRole, ctrl.getCapabilit
 
 // Order Fulfillment Engine Unit 3 — platform-wide order oversight.
 router.get('/orders',             authenticate, requireCapability('orders'), adminOrdersCtrl.listOrders);
+router.get('/commerce-summary',   authenticate, requireCapability('orders'), adminOrdersCtrl.getCommerceSummary);
 router.patch('/orders/:id/status', authenticate, requireCapability('orders'), adminOrdersCtrl.updateStatus);
 
 // All admin routes require a valid admin JWT

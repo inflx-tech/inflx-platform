@@ -93,6 +93,16 @@ export default function OrderDetailScreen({ navigation, route }) {
     try { return typeof order.items_json === 'string' ? JSON.parse(order.items_json) : (order.items_json || []); }
     catch { return []; }
   })();
+  // stakeholder-sale-info S-D — friendly ETA (no Intl dependency).
+  const fmtEta = (d) => {
+    if (!d) return '';
+    const dt = new Date(d); if (isNaN(dt.getTime())) return String(d);
+    const wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${wd[dt.getDay()]}, ${dt.getDate()} ${mo[dt.getMonth()]}`;
+  };
+  const gross = Number(order.gross_amount || 0);
+  const savings = Number(order.discount_amount || 0);
 
   return (
     <ScrollView style={styles.container}>
@@ -139,6 +149,11 @@ export default function OrderDetailScreen({ navigation, route }) {
               </View>
             );
           })}
+          {order.estimated_delivery_date && order.order_status !== 'delivered' ? (
+            <View style={styles.etaBox}>
+              <Text style={styles.etaTxt}>📦 Estimated delivery by {fmtEta(order.estimated_delivery_date)}</Text>
+            </View>
+          ) : null}
         </View>
       )}
 
@@ -169,8 +184,14 @@ export default function OrderDetailScreen({ navigation, route }) {
             <Text style={styles.itemDetail}>{item.qty || 1}× {fmtRupees(item.price || 0)}</Text>
           </View>
         ))}
+        {savings > 0 ? (
+          <>
+            <View style={styles.sumRow}><Text style={styles.sumL}>Item total</Text><Text style={styles.sumV}>{fmtRupees(gross || order.net_amount || 0)}</Text></View>
+            <View style={styles.sumRow}><Text style={styles.sumL}>Savings</Text><Text style={styles.sumDisc}>−{fmtRupees(savings)}</Text></View>
+          </>
+        ) : null}
         <View style={[styles.itemRow, styles.totalRow]}>
-          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalLabel}>{savings > 0 ? 'Paid' : 'Total'}</Text>
           <Text style={styles.totalVal}>{fmtRupees(order.net_amount || 0)}</Text>
         </View>
       </View>
@@ -310,6 +331,13 @@ const styles = StyleSheet.create({
   totalVal: { fontSize: 14, fontWeight: '800', color: colors.navy },
   addrText: { fontSize: 13, color: colors.t2, lineHeight: 20 },
   viaCreator: { fontSize: 12, color: Cv.goldDeep, fontWeight: '700', marginTop: 6 },
+  // stakeholder-sale-info S-D — ETA + savings breakdown
+  etaBox: { marginTop: 4, backgroundColor: Cv.soft, borderRadius: 10, paddingVertical: 9, paddingHorizontal: 12 },
+  etaTxt: { fontSize: 12.5, fontWeight: '700', color: Cv.ink },
+  sumRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
+  sumL: { fontSize: 12.5, color: colors.t2 },
+  sumV: { fontSize: 12.5, color: colors.t1, fontWeight: '600' },
+  sumDisc: { fontSize: 12.5, color: '#159B6E', fontWeight: '700' },
   // vertical timeline
   tnode: { flexDirection: 'row', gap: 12 },
   tcol: { alignItems: 'center', width: 38 },

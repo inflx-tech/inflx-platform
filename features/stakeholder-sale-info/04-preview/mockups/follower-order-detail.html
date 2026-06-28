@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Follower — order detail (ETA + gross→savings→paid)</title>
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:#E9EAEE;padding:18px}
+  .ph{width:392px;margin:0 auto;background:#F4F5F7;border-radius:16px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.12)}
+  .hd{background:#fff;display:flex;align-items:center;gap:12px;padding:13px 14px}
+  .hd .t{font-size:16px;font-weight:700}
+  .card{background:#fff;margin:9px 9px 0;border-radius:12px;padding:13px}
+  .ref{font-size:11px;color:#6B7280}
+  .badge{display:inline-block;margin-top:6px;font-size:11px;font-weight:700;color:#159B6E;background:#E7F6EE;padding:3px 10px;border-radius:20px}
+  .eta{margin-top:10px;font-size:12.5px;font-weight:700;color:#1A1D1F}
+  .eta span{color:#159B6E}
+  .secT{font-size:11px;font-weight:700;color:#6B7280;letter-spacing:.5px;text-transform:uppercase;margin-bottom:9px}
+  .item{display:flex;gap:10px;padding:8px 0;border-top:.5px solid #ECECEF}.item:first-of-type{border-top:none}
+  .ith{width:42px;height:48px;border-radius:8px;background:#F1F1F4;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .inm{font-size:12.5px;font-weight:600}.ivar{font-size:10.5px;color:#6B7280;margin-top:2px}
+  .ip{font-size:12.5px;font-weight:600;margin-left:auto}
+  .br{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12.5px}.br .l{color:#6B7280}.br .d{color:#159B6E;font-weight:600}
+  .btot{display:flex;justify-content:space-between;border-top:1px solid #ECECEF;padding-top:8px;margin-top:2px;font-weight:700}
+</style></head><body>
+<div class="ph">
+  <div class="hd"><span style="font-size:18px">←</span><span class="t">Order details</span></div>
+  <div class="card">
+    <div class="ref">Order #A1B2C3D4 · via @sana_styles</div>
+    <div class="badge">📦 Shipped</div>
+    <div class="eta">Estimated delivery <span>by Sat, 30 Jun</span></div>
+  </div>
+  <div class="card">
+    <div class="secT">Items</div>
+    <div class="item"><div class="ith">👖</div><div><div class="inm">Slim Fit Jeans</div><div class="ivar">Black · M · Qty 1</div></div><div class="ip">₹1,374</div></div>
+    <div class="item"><div class="ith">👕</div><div><div class="inm">Cotton T-Shirt</div><div class="ivar">Navy · L · Qty 1</div></div><div class="ip">₹699</div></div>
+  </div>
+  <div class="card">
+    <div class="secT">Payment summary</div>
+    <div class="br"><span class="l">Item total</span><span>₹2,073</span></div>
+    <div class="br"><span class="l">Savings (offer + MRP)</span><span class="d">−₹137</span></div>
+    <div class="br"><span class="l">Delivery</span><span style="color:#159B6E;font-weight:600">Free</span></div>
+    <div class="btot"><span>Paid</span><span>₹1,936</span></div>
+  </div>
+  <div style="height:12px"></div>
+</div>
+</body></html>

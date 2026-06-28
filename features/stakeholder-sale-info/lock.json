@@ -1,0 +1,22 @@
+{
+  "feature": "stakeholder-sale-info",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-28",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-28",
+  "tier_chip": "out (no l3_path migration; creator handle + fee amount convey creator-vs-organic)",
+  "notes": "Per-login sale-info breakdown after an online-order sale. Audit 2026-06-28: follower complete (minor ETA), brand breakdown+rollup exist (gap=settlement timing), admin weakest (missing per-order discount/gross/brand-net + commerce rollup + settlement), creator feed missing commission% + release date + pending/confirmed (exists only in deep campaign view; Way-4 window sales DO appear in feed). 4 slices: S-A admin (enrich listOrders SELECT + GET /admin/commerce-summary + rollup/detail UI), S-B brand (settlement status + payout-by-date), S-C creator (getMyTransactions += commission_pct/return_window_ends_at/commission_confirmed_at → feed chip), S-D follower (ETA + gross/savings display). Shared enabler (optional, founder migrate-go): persist l3_path on follower_transactions to show fee tier. ETA (founder-locked 2026-06-28, NO hardcoding): ADMIN sets ONE rule — delivery_ref_km + delivery_ref_days (e.g. 100km=2days) on /admin/settings/payments; system measures haversine(brand↔address) and scales days = max(1, ceil(distance/ref_km*ref_days)); coords-missing → ref_days. Computed in prepareSubOrder, replaces hardcoded now+2d. Migration: payment_config.delivery_ref_km + delivery_ref_days. (Superseded the earlier per-category base + fixed-tier idea.) Mockups first (admin rollup+detail, creator feed, brand settlement, follower ETA), lock before code.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

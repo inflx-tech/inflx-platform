@@ -21,9 +21,17 @@ function trackUrl(courier, awb) {
   return `https://www.google.com/search?q=${encodeURIComponent(`${courier || ''} ${awb} tracking`)}`;
 }
 const fmtD = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—';
+const SETTLE_PILL = { settled: 'bg-emerald-100 text-emerald-700', reversed: 'bg-red-100 text-red-700' };
+const settleLabel = (o) => {
+  const s = o.brand_settlement_status || 'pending';
+  if (s === 'settled') return `Settled · ${fmtD(o.brand_settled_at)}`;
+  if (s === 'reversed') return 'Reversed';
+  return o.return_window_ends_at ? `Held · ${fmtD(o.return_window_ends_at)}` : 'Held';
+};
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
   const [q, setQ] = useState('');
@@ -45,6 +53,12 @@ export default function AdminOrdersPage() {
   }, [filter, q]);
 
   useEffect(() => { load(); }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    adminApi.getCommerceSummary(30).then(res => {
+      if (res.success || res.data) setSummary(res.data?.summary || null);
+    }).catch(() => {});
+  }, []);
 
   async function apply(o) {
     const d = draft[o.id] || {};
@@ -73,6 +87,23 @@ export default function AdminOrdersPage() {
     <div className="p-6 max-w-5xl">
       <h1 className="text-xl font-bold text-gray-900">📦 Orders &amp; Fulfillment</h1>
       <p className="text-xs text-gray-500 mt-1 mb-4">Platform-wide oversight. Override status, cancel, and track every online order. Refunds + commission reversal run through Returns.</p>
+
+      {summary && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
+          {[
+            { l: 'Online orders (30d)', v: summary.online_order_count ?? 0, money: false },
+            { l: 'GMV (net paid)', v: summary.gmv, money: true },
+            { l: 'Platform fees', v: summary.platform_fees, money: true, cls: 'text-emerald-700' },
+            { l: 'Creator commission', v: summary.influencer_commission, money: true, cls: 'text-pink-700' },
+            { l: 'Pending settlement', v: summary.pending_settlement, money: true, cls: 'text-amber-700' },
+          ].map((c, i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-xl px-3 py-2.5">
+              <div className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">{c.l}</div>
+              <div className={`text-lg font-extrabold mt-1 ${c.cls || 'text-gray-900'}`}>{c.money ? fmtMoney(c.v ?? 0) : (c.v ?? 0)}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2 mb-3">
         {FILTERS.map(f => (
@@ -113,11 +144,26 @@ export default function AdminOrdersPage() {
 
                 {isOpen && (
                   <div className="bg-gray-50 px-4 py-4 border-t border-gray-100">
-                    <div className="grid grid-cols-4 gap-3 mb-4">
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                       <div><div className="text-[9px] font-bold text-gray-400 uppercase">Ship to</div><div className="text-xs font-semibold mt-0.5">{o.delivery_address || '—'}</div></div>
                       <div><div className="text-[9px] font-bold text-gray-400 uppercase">Courier / AWB</div><div className="text-xs font-semibold mt-0.5">{o.courier_name ? `${o.courier_name} · ${o.tracking_number || '—'}` : '—'}{tUrl ? <> · <a href={tUrl} target="_blank" rel="noreferrer" className="text-blue-600">Track ↗</a></> : null}</div></div>
-                      <div><div className="text-[9px] font-bold text-gray-400 uppercase">Commission</div><div className="text-xs font-semibold mt-0.5">{fmtMoney(o.influencer_commission ?? 0)} · {o.commission_confirmed_at ? 'released' : (o.tx_status === 'refunded' ? 'reversed' : 'held')}</div></div>
-                      <div><div className="text-[9px] font-bold text-gray-400 uppercase">Platform fee</div><div className="text-xs font-semibold mt-0.5">{fmtMoney(o.platform_fee ?? 0)}</div></div>
+                    </div>
+
+                    <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3">
+                      <div className="text-[10px] font-bold text-gray-400 uppercase mb-2">Money breakdown</div>
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                        <div><div className="text-[9px] text-gray-400 uppercase">Items total</div><div className="text-xs font-semibold mt-0.5">{fmtMoney(o.gross_amount ?? 0)}</div></div>
+                        <div><div className="text-[9px] text-gray-400 uppercase">Discount</div><div className="text-xs font-semibold mt-0.5 text-emerald-700">−{fmtMoney(o.discount_amount ?? 0)}</div></div>
+                        <div><div className="text-[9px] text-gray-400 uppercase">Net paid</div><div className="text-xs font-semibold mt-0.5">{fmtMoney(o.net_amount ?? 0)}</div></div>
+                        <div><div className="text-[9px] text-gray-400 uppercase">Commission</div><div className="text-xs font-semibold mt-0.5">−{fmtMoney(o.influencer_commission ?? 0)} · {o.commission_confirmed_at ? 'released' : (o.tx_status === 'refunded' ? 'reversed' : 'held')}</div></div>
+                        <div><div className="text-[9px] text-gray-400 uppercase">Platform fee</div><div className="text-xs font-semibold mt-0.5">−{fmtMoney(o.platform_fee ?? 0)}</div></div>
+                        <div><div className="text-[9px] text-gray-400 uppercase">Brand net</div><div className="text-xs font-extrabold mt-0.5 text-[#1f2d4d]">{fmtMoney(o.brand_net ?? 0)}</div></div>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="text-gray-400">Settlement:</span>
+                        <span className={`font-mono text-[9px] font-extrabold px-2 py-1 rounded-full uppercase ${SETTLE_PILL[o.brand_settlement_status] || 'bg-amber-100 text-amber-800'}`}>{settleLabel(o)}</span>
+                        {o.offer_source ? <span className="text-gray-400">· source: {o.offer_source}</span> : null}
+                      </div>
                     </div>
 
                     {o.order_status !== 'cancelled' && (

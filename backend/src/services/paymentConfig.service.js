@@ -33,7 +33,7 @@ async function getConfig() {
               platform_gstin, platform_business_name, platform_business_address,
               platform_state_code, invoice_prefix_subscription, invoice_prefix_commerce,
               tranche_3_release_after_days, tranche_3_release_time_ist,
-              attribution_window_days
+              attribution_window_days, delivery_ref_km, delivery_ref_days
        FROM payment_config WHERE id = 1`
     );
     if (rows[0]) {
@@ -66,6 +66,9 @@ async function getConfig() {
         // Way-4 — creator attribution "cookie" window (migration 120).
         attributionWindowDays: rows[0].attribution_window_days != null
           ? parseInt(rows[0].attribution_window_days, 10) : 30,
+        // Delivery ETA rule (migration 121): ref distance + days; scaled by store↔address distance.
+        deliveryRefKm:   rows[0].delivery_ref_km != null ? parseInt(rows[0].delivery_ref_km, 10) : 100,
+        deliveryRefDays: rows[0].delivery_ref_days != null ? parseInt(rows[0].delivery_ref_days, 10) : 2,
       };
       _cacheTime = now;
       return _cache;
@@ -102,6 +105,9 @@ async function getConfig() {
     tranche3ReleaseTimeIst:   '03:00:00',
     // Way-4 — attribution window (migration 120) safe default
     attributionWindowDays: parseInt(env.ATTRIBUTION_WINDOW_DAYS || '30', 10),
+    // Delivery ETA rule (migration 121) safe defaults
+    deliveryRefKm:   100,
+    deliveryRefDays: 2,
   };
 }
 
@@ -122,6 +128,8 @@ async function updateConfig(fields, adminUserId) {
     'tranche_3_release_after_days', 'tranche_3_release_time_ist',
     // Way-4 — attribution window (migration 120)
     'attribution_window_days',
+    // Delivery ETA rule (migration 121)
+    'delivery_ref_km', 'delivery_ref_days',
   ];
 
   const updates = {};

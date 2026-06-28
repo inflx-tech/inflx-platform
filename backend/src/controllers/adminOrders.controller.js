@@ -51,6 +51,8 @@ const listOrders = asyncHandler(async (req, res) => {
             fo.created_at, fo.packed_at, fo.dispatched_at, fo.out_for_delivery_at,
             fo.delivered_at, fo.cancelled_at, fo.items_json,
             ft.net_amount, ft.influencer_commission, ft.platform_fee,
+            ft.gross_amount, ft.discount_amount, ft.brand_net, ft.offer_source,
+            ft.brand_settlement_status, ft.brand_settled_at,
             ft.commission_confirmed_at, ft.status AS tx_status, ft.return_window_ends_at,
             b.business_name AS brand_name,
             u_f.name AS follower_name, u_f.phone AS follower_phone,
@@ -119,4 +121,27 @@ const updateStatus = asyncHandler(async (req, res) => {
   return success(res, { order: rows[0] });
 });
 
-module.exports = { listOrders, updateStatus };
+// GET /admin/commerce-summary?days=30 — online-order rollup for the admin orders
+// page (stakeholder-sale-info S-A): count · GMV · fees · commission · brand net ·
+// pending settlement (brand_net not yet settled).
+const getCommerceSummary = asyncHandler(async (req, res) => {
+  const days = Math.min(365, Math.max(1, parseInt(req.query.days || '30', 10)));
+  const { rows } = await db.query(
+    `SELECT
+       COUNT(*)::int                              AS online_order_count,
+       COALESCE(SUM(ft.net_amount), 0)            AS gmv,
+       COALESCE(SUM(ft.platform_fee), 0)          AS platform_fees,
+       COALESCE(SUM(ft.influencer_commission), 0) AS influencer_commission,
+       COALESCE(SUM(ft.brand_net), 0)             AS brand_net,
+       COALESCE(SUM(CASE WHEN ft.brand_settlement_status IS DISTINCT FROM 'settled'
+                         THEN ft.brand_net ELSE 0 END), 0) AS pending_settlement
+       FROM follower_transactions ft
+      WHERE ft.transaction_type = 'online_order'
+        AND ft.status = 'completed'
+        AND ft.created_at >= now() - make_interval(days => $1)`,
+    [days]
+  );
+  return success(res, { days, summary: rows[0] });
+});
+
+module.exports = { listOrders, updateStatus, getCommerceSummary };

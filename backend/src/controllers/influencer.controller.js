@@ -1353,6 +1353,7 @@ const getMyTransactions = asyncHandler(async (req, res) => {
     `SELECT
        ft.id, ft.transaction_type, ft.status, ft.gross_amount, ft.net_amount,
        ft.influencer_commission, ft.coupon_code_used, ft.created_at,
+       ci.commission_pct, ft.return_window_ends_at, ft.commission_confirmed_at,
        b.business_name AS brand_name, b.category AS brand_category,
        c.name AS campaign_name,
        u_f.name AS follower_name,

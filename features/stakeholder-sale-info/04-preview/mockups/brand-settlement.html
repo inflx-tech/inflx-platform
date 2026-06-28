@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Brand — order breakdown + settlement timing</title>
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  body{margin:0;background:#F4F5F7;color:#1A1D1F;padding:20px}
+  .wrap{max-width:760px;margin:0 auto}
+  h2{font-size:16px;margin:0 0 4px}
+  .sub{color:#6B7280;font-size:12px;margin-bottom:16px}
+  .roll{display:flex;gap:10px;margin-bottom:18px}
+  .rc{flex:1;background:#fff;border:1px solid #E6E7EB;border-radius:10px;padding:12px 14px}
+  .rc .l{font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:.5px}
+  .rc .v{font-size:18px;font-weight:800;margin-top:6px}
+  .rc .v.gold{color:#B7791F}.rc .v.green{color:#159B6E}
+  .card{background:#fff;border:1px solid #E6E7EB;border-radius:12px;padding:14px;margin-bottom:10px}
+  .top{display:flex;justify-content:space-between;align-items:center}
+  .nm{font-size:13px;font-weight:700}.meta{font-size:11px;color:#6B7280;margin-top:2px}
+  .chip{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px}
+  .chip.held{background:#FCEFD2;color:#B7791F}.chip.set{background:#E7F6EE;color:#159B6E}
+  .brk{display:grid;grid-template-columns:1fr auto;gap:6px 0;font-size:12.5px;margin-top:12px;border-top:1px solid #ECECEF;padding-top:11px}
+  .brk .k{color:#6B7280}.brk .v{text-align:right}.brk .disc{color:#159B6E}
+  .brk .tot{border-top:1px solid #ECECEF;padding-top:7px;font-weight:800}
+  .pay{margin-top:10px;font-size:11.5px;color:#6B7280}
+</style></head><body>
+<div class="wrap">
+  <h2>Orders &amp; Revenue</h2>
+  <div class="sub">Existing breakdown + rollup — NEW: settlement status &amp; "paid by" date (commerce payout is held until the return window closes).</div>
+
+  <div class="roll">
+    <div class="rc"><div class="l">Total revenue</div><div class="v">₹84,200</div></div>
+    <div class="rc"><div class="l">Your net</div><div class="v gold">₹71,540</div></div>
+    <div class="rc"><div class="l">Held (not yet paid)</div><div class="v">₹22,180</div></div>
+    <div class="rc"><div class="l">Settled</div><div class="v green">₹49,360</div></div>
+  </div>
+
+  <div class="card">
+    <div class="top">
+      <div><div class="nm">Slim Fit Jeans · Aveen</div><div class="meta">Order #A1B2C3D4 · via @sana_styles · 28 Jun</div></div>
+      <span class="chip held">Held</span>
+    </div>
+    <div class="brk">
+      <div class="k">Items total</div><div class="v">₹2,073</div>
+      <div class="k">Discount</div><div class="v disc">−₹137</div>
+      <div class="k">Customer paid</div><div class="v">₹1,936</div>
+      <div class="k">Creator commission</div><div class="v">−₹232</div>
+      <div class="k">Platform fee</div><div class="v">−₹97</div>
+      <div class="k tot">Your net</div><div class="v tot">₹1,607</div>
+    </div>
+    <div class="pay">💰 <b>Payout by 28 Jul</b> — held until the return window closes, then auto-settled.</div>
+  </div>
+
+  <div class="card">
+    <div class="top">
+      <div><div class="nm">Running Shoes · Priya</div><div class="meta">Order #E5F6G7H8 · organic · 20 Jun</div></div>
+      <span class="chip set">Settled · 25 Jun</span>
+    </div>
+    <div class="pay">💰 Paid ₹2,249 on 25 Jun.</div>
+  </div>
+</div>
+</body></html>

@@ -41,6 +41,41 @@ async function attributionWindowDays() {
   } catch (_) { return 30; }
 }
 
+// stakeholder-sale-info S-D — admin-owned, distance-scaled delivery ETA. Admin
+// sets one rule (delivery_ref_km + delivery_ref_days, e.g. 100km = 2 days); the
+// system measures store↔address distance and scales:
+//   days = max(1, ceil(distance_km / ref_km × ref_days)); coords missing → ref_days.
+// Replaces the old hardcoded "order + 2 days".
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R = 6371, toRad = (x) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1), dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+async function computeEtaDate(brandId, addressId) {
+  let refKm = 100, refDays = 2;
+  try {
+    const cfg = await paymentConfigSvc.getConfig();
+    refKm = parseInt(cfg.deliveryRefKm, 10) || 100;
+    refDays = parseInt(cfg.deliveryRefDays, 10) || 2;
+  } catch (_) { /* defaults */ }
+  let days = refDays;
+  try {
+    const { rows } = await db.query(
+      `SELECT b.lat AS b_lat, b.lng AS b_lng, a.lat AS a_lat, a.lng AS a_lng
+         FROM brands b LEFT JOIN follower_addresses a ON a.id = $2
+        WHERE b.id = $1`,
+      [brandId, addressId || null]
+    );
+    const r = rows[0];
+    if (r && r.b_lat != null && r.b_lng != null && r.a_lat != null && r.a_lng != null) {
+      const km = haversineKm(+r.b_lat, +r.b_lng, +r.a_lat, +r.a_lng);
+      days = Math.max(1, Math.ceil((km / refKm) * refDays) || refDays);
+    }
+  } catch (_) { /* fallback to refDays */ }
+  return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
+
 // ── Conversion-flow helpers (Tier-1) ─────────────────────────────────────────
 
 /**
@@ -1470,7 +1505,8 @@ async function prepareSubOrder(sm) {
     [sm.brand_id]
   );
 
-  const estimatedDelivery = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // stakeholder-sale-info S-D — admin-owned, distance-scaled ETA (was now+2d).
+  const estimatedDelivery = await computeEtaDate(sm.brand_id, sm.address_id);
 
   // Phase Salon-3 Q3 / Tier-1 — denormalize the first cart item's product +
   // variant onto the row for single-JOIN analytics (full per-item attribution

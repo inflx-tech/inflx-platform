@@ -21,6 +21,13 @@ const TYPE_CONFIG = {
   redirect_click: { label: 'CLICK',   emoji: '🔗', toneBg: P.yellowPale,  toneFg: P.yellowText },
 };
 
+// stakeholder-sale-info S-C — short date for the commission-release chip.
+const fmtShort = (d) => {
+  const dt = new Date(d); if (isNaN(dt.getTime())) return '';
+  const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${dt.getDate()} ${mo[dt.getMonth()]}`;
+};
+
 export default function TransactionFeedScreen({ navigation }) {
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -90,6 +97,9 @@ export default function TransactionFeedScreen({ navigation }) {
         contentContainerStyle={{ padding: 14, paddingBottom: 100 }}
         renderItem={({ item: tx }) => {
           const cfg = TYPE_CONFIG[tx.transaction_type] || { label: (tx.transaction_type || '').toUpperCase(), emoji: '•', toneBg: P.bg2, toneFg: P.muted };
+          const pct = Number(tx.commission_pct) > 0 ? `${Math.round(Number(tx.commission_pct))}%` : null;
+          const hasComm = Number(tx.influencer_commission) > 0;
+          const released = !!tx.commission_confirmed_at;
           return (
             <View style={s.txCard}>
               <View style={s.txRow}>
@@ -107,9 +117,16 @@ export default function TransactionFeedScreen({ navigation }) {
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text style={s.txAmount}>+{fmtMoney(tx.influencer_commission)}</Text>
-                  <Text style={s.txNet}>SALE: {fmtMoney(tx.net_amount)}</Text>
+                  <Text style={s.txNet}>SALE {fmtMoney(tx.net_amount)}{pct ? ` · ${pct}` : ''}</Text>
                 </View>
               </View>
+              {hasComm && (
+                <View style={s.txExtra}>
+                  {released
+                    ? <Text style={[s.chip, s.chipRel]}>✓ Released to wallet</Text>
+                    : <Text style={[s.chip, s.chipPend]}>⏳ Pending{tx.return_window_ends_at ? ` · releases ${fmtShort(tx.return_window_ends_at)}` : ''}</Text>}
+                </View>
+              )}
               {tx.booking_ref && (
                 <View style={s.txExtra}>
                   <Text style={s.txExtraText}>REF: {tx.booking_ref} · {tx.booking_date} {tx.booking_time}</Text>
@@ -175,6 +192,10 @@ const s = StyleSheet.create({
   txNet: { fontSize: 9.5, color: P.muted2, marginTop: 2, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
   txExtra: { marginTop: 7, paddingTop: 7, borderTopWidth: 1, borderTopColor: P.borderSoft },
   txExtraText: { fontSize: 9.5, color: P.muted, fontWeight: '700', letterSpacing: 0.2, fontFamily: fonts.monoMedium },
+  // stakeholder-sale-info S-C — commission release status chip
+  chip: { alignSelf: 'flex-start', fontSize: 9.5, fontWeight: '800', paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20, overflow: 'hidden', fontFamily: fonts.monoBold },
+  chipPend: { backgroundColor: P.yellowPale, color: P.yellowText },
+  chipRel: { backgroundColor: P.successPale, color: P.successText },
 
   empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 28 },
   emptyTitle: { fontSize: 14, fontWeight: '800', color: P.ink, marginBottom: 4, fontFamily: fonts.displayBold },

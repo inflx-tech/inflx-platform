@@ -202,6 +202,7 @@ export default function TransactionsPage() {
           <div className="hero-v yel mono">{fmtMoney(summary?.total_brand_net ?? 0)}</div>
           <div className="hero-l">Your Net</div>
           <div className="hero-s">after commission + platform fee</div>
+          <div className="hero-s">{fmtMoney(summary?.held_brand_net ?? 0)} held · {fmtMoney(summary?.settled_brand_net ?? 0)} settled</div>
         </div>
         <div className="hero-cell">
           <div className="hero-v mono">{fmtMoney(summary?.total_commission ?? 0)}</div>
@@ -284,6 +285,7 @@ export default function TransactionsPage() {
                       <div className="kv"><span className="kv-l">Your Net</span><span className="kv-v bold">{fmtMoney(tx.brand_net ?? 0)}</span></div>
                       <div className="kv"><span className="kv-l">Influencer Commission</span><span className="kv-v">{fmtMoney(tx.influencer_commission ?? 0)}</span></div>
                       <div className="kv"><span className="kv-l">Platform Fee</span><span className="kv-v muted">{fmtMoney(tx.platform_fee ?? 0)}</span></div>
+                      <div className="kv"><span className="kv-l">Payout</span><span className="kv-v">{tx.brand_settlement_status === 'settled' ? `Settled · ${fmtDate(tx.brand_settled_at)}` : tx.brand_settlement_status === 'reversed' ? 'Reversed' : (tx.return_window_ends_at ? `Held · by ${fmtDate(tx.return_window_ends_at)}` : 'Held')}</span></div>
                       <div className="kv"><span className="kv-l">Coupon Used</span><span className="kv-v">{tx.coupon_code_used || '—'}</span></div>
                       <div className="kv"><span className="kv-l">Payment ID</span><span className="kv-v muted">{tx.razorpay_payment_id ? tx.razorpay_payment_id.substring(0, 16) : '—'}</span></div>
                     </div>
