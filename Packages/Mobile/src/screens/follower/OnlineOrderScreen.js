@@ -120,7 +120,9 @@ export default function OnlineOrderScreen({ navigation, route }) {
         orderId: res.data?.razorpay_order_id,
         keyId: res.data?.razorpay_key_id,
         description: `Order from ${store?.name || 'store'}`,
-        brandName: store?.name,
+        // Razorpay merchant title = OURS (INFLX collects the payment), not the
+        // individual store name.
+        brandName: 'INFLX',
         // Skip Razorpay's contact step — we already have the follower's number.
         prefill: { contact: userPhone || '' },
       });

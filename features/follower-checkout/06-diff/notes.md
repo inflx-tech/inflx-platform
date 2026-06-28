@@ -69,3 +69,9 @@ payment row → Razorpay method (`upi`/`card`/`netbanking`); `OnlineOrderScreen`
 to launch ONE app (PhonePe) directly is **not supported by Razorpay Standard
 Checkout** — that needs the UPI-Intent/custom-checkout flow (Razorpay-side,
 deferred). jest 20/20 (FollowerWallet baseline excl.).
+
+Follow-up 2 (same live-test): the Razorpay sheet's **merchant title** was leaking
+the lead brand's name (e.g. "Urban Stitch") — wrong for a multi-brand cart where
+the follower pays INFLX once. `processPayment({ brandName })` now passes
+**'INFLX'** from both CartScreen (shop) and OnlineOrderScreen (food/creator);
+INFLX is the collecting merchant regardless of vertical.

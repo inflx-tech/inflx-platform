@@ -270,7 +270,10 @@ export default function CartScreen({ navigation }) {
         orderId: res.data?.razorpay_order_id,
         keyId: res.data?.razorpay_key_id,
         description: `Order via ${payMethod.label}`,
-        brandName: cart.brandName,
+        // The Razorpay merchant title must be OURS, not an individual store —
+        // the follower pays INFLX once and we split per brand. (Was leaking the
+        // lead brand's name, e.g. "Urban Stitch", in a multi-brand cart.)
+        brandName: 'INFLX',
         // Skip Razorpay's phone step (we have the number) + open it focused on
         // the method the follower picked in our payment row.
         prefill: { contact: userPhone || '', method: payMethod.rzp },
