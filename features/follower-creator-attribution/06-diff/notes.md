@@ -85,3 +85,32 @@ pay-at-store) and the brand got nothing (had to poll the fulfilment page).
 - backend loads; `pnpm qa` green (see deploy). Backend-only → no OTA. Live-verify:
   place a creator-attributed order → creator gets "₹X earned", brand gets "New
   order received", follower gets "Order confirmed".
+
+## Slice 3 — Link door (Way 1: the creator's social link)
+
+**Before:** a creator's `inflx.in/s/{handle}?cid&sid&oid&iid` link opened a
+browser/web fallback — the app had no deep-link handler, so the tag was lost on
+entry and Way 1 was dead on the installed app.
+
+**After:** the app catches the link (cold start + warm) and opens the creator's
+store carrying the tag; adding a pick there is credited via the per-line claim
+(Slice 1). Also handles `/b/` (brand store) and `/p/` (product); `/o/` deferred.
+
+## Delivered (Slice 3)
+- `src/navigation/navRef.js` — navigation ref + `navigateWhenReady` (handles a
+  cold-start link firing before the tree mounts).
+- `src/utils/deepLink.js` — `parseDeepLink` (host/scheme strip → type + id +
+  4-id tracking) + `handleDeepLink` (routes to InfluencerStore/BrandStore/
+  ProductDetail). `src/utils/__tests__/deepLink.test.js` (5 tests).
+- `App.js` — `NavigationContainer ref`; `Linking.getInitialURL` + `'url'` listener
+  (follower flavor only).
+- **Native (APK):** `android/app/src/main/AndroidManifest.xml` — App-Links
+  intent-filter for `inflx.in` (`/s//b//p//o/`) + the `inflx://` custom scheme.
+
+## Verification (Slice 3)
+- mobile jest **25/25** (FollowerWallet baseline excl.) incl. 5 parser tests; App
+  compiles. JS ships via OTA.
+- **APK + infra dependency (flagged):** the manifest intent-filter activates only
+  on the **next APK**; and https App-Links open the app directly only once a
+  `/.well-known/assetlinks.json` is hosted on inflx.in (otherwise Android shows an
+  "open with" chooser). The `inflx://` scheme works without that.

@@ -1,7 +1,9 @@
 import React, { useEffect, useState, createContext } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, ActivityIndicator, Platform } from 'react-native';
+import { View, ActivityIndicator, Platform, Linking } from 'react-native';
+import { navigationRef } from './src/navigation/navRef';
+import { handleDeepLink } from './src/utils/deepLink';
 import { OneSignal, LogLevel } from 'react-native-onesignal';
 import { colors } from './src/theme/tokens';
 import { ONESIGNAL_APP_ID } from './src/config/api';
@@ -62,6 +64,18 @@ export default function App() {
         }
       }
     });
+  }, []);
+
+  // ── Deep links (follower-creator-attribution Slice 3, "link door") ───────
+  // A creator's inflx.in/s/{handle}?cid&sid&oid&iid link opens the app into
+  // their store carrying the tag (Way 1). Handles cold start (getInitialURL)
+  // + warm (the 'url' event). Follower flavor only; other flavors have no
+  // matching routes so navigateWhenReady is a no-op.
+  useEffect(() => {
+    if (APP_ROLE !== 'follower') return undefined;
+    Linking.getInitialURL().then((url) => { if (url) handleDeepLink(url); }).catch(() => {});
+    const sub = Linking.addEventListener('url', (e) => handleDeepLink(e?.url));
+    return () => { try { sub.remove(); } catch (_) { /* older RN */ } };
   }, []);
 
   // ── OTA update check ───────────────────────────────────────────────────
@@ -132,7 +146,7 @@ export default function App() {
           <FoodOrderProvider>
             {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
             {!showSplash && (
-              <NavigationContainer>
+              <NavigationContainer ref={navigationRef}>
                 {role === 'brand' ? <BrandNavigator /> :
                  role === 'influencer' ? <InfluencerNavigator /> :
                  role === 'agency' ? <AgencyNavigator /> :
