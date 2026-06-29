@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { sectionApi, adminApi, uploadAdminStockImage } from '../../../lib/api';
+import { sectionApi, adminApi, pageApi, uploadAdminStockImage } from '../../../lib/api';
 
 /**
  * App Sections — Admin Section Manager v2 (Creator Vibe).
@@ -29,6 +29,9 @@ const SCOPES = [
   { key: 'category',         label: 'Home' },
   { key: 'creator_category', label: 'Creator Store' },
   { key: 'business',         label: 'Business page' },
+  // Custom page (App Builder E) — a GLOBAL admin-created page. Its "world" picker
+  // is a dropdown of pages instead of the fixed verticals; scope_value = page key.
+  { key: 'page',             label: 'Custom page' },
 ];
 
 // Per-world scope values = the live follower worlds (follower_categories keys).
@@ -234,6 +237,7 @@ export default function SectionsPage() {
   // Manage Worlds (absorbed Home Builder) — the follower worlds (tabs).
   const [worlds, setWorlds] = useState([]);
   const [showWorlds, setShowWorlds] = useState(false);
+  const [pages, setPages] = useState([]);   // custom pages (App Builder E)
   // Catalogue tree for the current world (fashion/furniture) — feeds the
   // "Category rail (pick from catalogue)" node picker.
   const [catTree, setCatTree] = useState([]);
@@ -244,13 +248,20 @@ export default function SectionsPage() {
     });
   }, []);
 
+  // Custom pages (App Builder E) — for the "Custom page" scope's page picker +
+  // the destination chooser's "A page" dropdown.
+  const loadPages = useCallback(() => {
+    pageApi.list().then(res => { if (res.success) setPages(res.data?.pages || []); });
+  }, []);
+
   // Section Library (3c) options for the placement picker + the worlds list.
   useEffect(() => {
     adminApi.listSectionLibrary().then(res => {
       if (res.success) setLibrarySections((res.data?.sections || []).filter(s => s.status === 'active'));
     });
     loadWorlds();
-  }, [loadWorlds]);
+    loadPages();
+  }, [loadWorlds, loadPages]);
 
   // Manage Worlds actions (reuse the home-verticals API).
   const worldToggle = async (w) => { await adminApi.updateHomeVertical(w.id, { enabled: !w.enabled }); loadWorlds(); };
@@ -262,6 +273,18 @@ export default function SectionsPage() {
     await adminApi.updateHomeVertical(b.id, { sort_order: a.sort_order });
     loadWorlds();
   };
+
+  // Deep-link from Custom Pages "Compose →" (?scope=page&page=<key>): pre-select
+  // the Custom-page scope + the page. Runs once on mount.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('scope') === 'page') {
+      setScreen('page');
+      const pk = q.get('page');
+      if (pk) setScopeValue(pk);
+    }
+  }, []);
 
   const load = useCallback(async (scr, sType, sVal) => {
     setLoading(true); setMsg(null); setExpanded(null);
@@ -478,8 +501,18 @@ export default function SectionsPage() {
         ))}
       </div>
 
-      {/* 2 · World */}
-      <div className="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">2 · World</div>
+      {/* 2 · World (or Page, for the Custom-page scope) */}
+      <div className="text-[10.5px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">2 · {screen === 'page' ? 'Page' : 'World'}</div>
+      {screen === 'page' ? (
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <select value={scopeValue} onChange={e => setScopeValue(e.target.value)}
+            className="text-xs border border-gray-300 rounded-lg px-2.5 py-1.5 bg-white font-semibold text-gray-700">
+            <option value="">— pick a page —</option>
+            {pages.map(p => <option key={p.id} value={p.key}>{p.label}{p.enabled === false ? ' (hidden)' : ''}</option>)}
+          </select>
+          <a href="/admin/custom-pages" className="text-[11px] font-semibold text-amber-700">＋ Manage pages</a>
+        </div>
+      ) : (
       <div className="flex flex-wrap items-center gap-2 mb-2">
         {CATEGORIES.map(c => {
           const w = worlds.find(x => x.key === c);
@@ -497,6 +530,7 @@ export default function SectionsPage() {
         <button onClick={() => setShowWorlds(v => !v)}
           className="ml-1 text-[11px] font-semibold text-amber-700">⚙ Manage worlds</button>
       </div>
+      )}
 
       {/* Manage Worlds (absorbed Home Builder) — order, show/hide, rename */}
       {showWorlds && (
@@ -591,6 +625,42 @@ export default function SectionsPage() {
                         </select>
                       </label>
                     )}
+                    {/* On tap, go to… (App Builder D — admin-chosen section-level destination) */}
+                    <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-2.5">
+                      <div className="text-[11px] font-bold text-amber-800 mb-1.5">On tap, go to…</div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {[{ v: '', l: 'Default' }, { v: 'grid', l: 'Product grid' }, { v: 'category', l: 'Category browser' }, { v: 'page', l: 'A page' }].map(o => {
+                          const on = ((cfg.tap_destination || {}).type || '') === o.v;
+                          return (
+                            <button key={o.v || 'default'} type="button"
+                              onClick={() => patchConfig(id, 'tap_destination', o.v ? { ...(cfg.tap_destination || {}), type: o.v } : null)}
+                              className={`text-[11px] font-semibold rounded-lg px-2 py-1.5 border text-left ${on ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-600 border-gray-300'}`}>
+                              {o.l}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {(cfg.tap_destination || {}).type === 'category' && (
+                        <label className="block mt-2 text-[11px] font-semibold text-gray-600">Which category?
+                          <select value={(cfg.tap_destination || {}).vertical || ''} onChange={e => patchNested(id, 'tap_destination', 'vertical', e.target.value)}
+                            className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                            <option value="">— pick a world —</option>
+                            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </label>
+                      )}
+                      {(cfg.tap_destination || {}).type === 'page' && (
+                        <label className="block mt-2 text-[11px] font-semibold text-gray-600">Which page?
+                          <select value={(cfg.tap_destination || {}).page_key || ''} onChange={e => patchNested(id, 'tap_destination', 'page_key', e.target.value)}
+                            className="mt-0.5 w-full text-xs border border-gray-300 rounded px-2 py-1 bg-white">
+                            <option value="">— pick a page —</option>
+                            {pages.filter(p => p.enabled !== false).map(p => <option key={p.id} value={p.key}>{p.label}</option>)}
+                          </select>
+                        </label>
+                      )}
+                      <div className="text-[10px] text-gray-400 mt-1.5">“Default” keeps today’s behaviour (this shelf’s See-all). Individual cards always open their own detail.</div>
+                    </div>
+
                     {/* Template Catalog #1 — image tiles: per-tile image + label + wired group. */}
                     {s.shelf_type === 'tiles' && (
                       <div className="flex flex-col gap-2">

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E — Custom pages manager + App Builder scope tab</title>
+<style>
+  :root{
+    --amber:#b45309; --tan:#fdf6ec; --tan-line:#ead9c2; --ink:#26201a;
+    --t2:#6b5b48; --t3:#9b8a74; --line:#e4ddd3; --card:#fff; --ok:#15803d;
+  }
+  *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  body{margin:0;background:var(--tan);color:var(--ink);padding:28px;}
+  .wrap{max-width:620px;margin:0 auto;}
+  h1{font-size:15px;margin:0 0 4px;}
+  .sub{font-size:11px;color:var(--t3);margin:0 0 16px;}
+  .bar{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .bar h2{font-size:13px;margin:0;flex:1;}
+  .btn{font-size:12px;font-weight:800;border-radius:9px;padding:8px 13px;border:0;cursor:pointer;}
+  .btn.primary{background:var(--amber);color:#fff;}
+  .btn.ghost{background:#fff;border:1px solid #d8cdbd;color:var(--t2);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:22px;}
+  .row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--line);}
+  .row:last-child{border-bottom:0;}
+  .nm{font-weight:800;font-size:13px;}
+  .key{font-size:10.5px;color:var(--t3);font-family:ui-monospace,monospace;}
+  .grow{flex:1;}
+  .toggle{width:38px;height:22px;border-radius:999px;background:var(--ok);position:relative;}
+  .toggle.off{background:#cdbfa8;}
+  .toggle::after{content:"";position:absolute;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;}
+  .toggle::after{right:2px;} .toggle.off::after{right:auto;left:2px;}
+  .act{font-size:11.5px;font-weight:800;color:var(--amber);cursor:pointer;}
+  .act.muted{color:var(--t3);}
+  /* App Builder scope tabs */
+  .scopes{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+  .tab{font-size:11.5px;font-weight:800;border:1px solid #d8cdbd;border-radius:9px;padding:7px 12px;background:#fff;color:var(--t2);}
+  .tab.on{background:var(--amber);color:#fff;border-color:var(--amber);}
+  .picker{display:flex;align-items:center;gap:9px;background:#fff4e6;border:1px solid #f3d9b5;border-radius:10px;padding:10px 12px;margin-bottom:12px;}
+  .picker label{font-size:11px;font-weight:800;color:var(--amber);}
+  .picker select{font-size:12px;border:1px solid #e3c79b;border-radius:8px;padding:6px 9px;background:#fff;}
+  .empty{border:1px dashed var(--tan-line);border-radius:12px;background:#fff;padding:26px;text-align:center;color:var(--t3);font-size:12px;}
+  /* modal */
+  .modal{margin-top:8px;border:1px solid var(--tan-line);border-radius:14px;background:#fff;padding:16px;box-shadow:0 8px 30px rgba(120,80,20,.08);}
+  .modal h3{font-size:13px;margin:0 0 12px;}
+  .fld{margin-bottom:11px;}
+  .fld .l{font-size:10.5px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.02em;display:block;margin-bottom:5px;}
+  .fld input{width:100%;font-size:12.5px;border:1px solid #d8cdbd;border-radius:8px;padding:8px 9px;}
+  .fld .help{font-size:10px;color:var(--t3);margin-top:4px;}
+  .mbtns{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+  .tag{font-size:9.5px;font-weight:800;color:#fff;background:var(--amber);border-radius:999px;padding:2px 8px;margin-left:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>E — Custom pages</h1>
+  <p class="sub">Global themed pages. Create one here, compose its sections in the App Builder, then point any section’s tap at it.</p>
+
+  <!-- Manager -->
+  <div class="bar">
+    <h2>/admin/custom-pages</h2>
+    <button class="btn ghost">↻ Refresh</button>
+    <button class="btn primary">＋ New page</button>
+  </div>
+  <div class="card">
+    <div class="row">
+      <div><div class="nm">Summer Sale</div><div class="key">summer_sale</div></div>
+      <span class="grow"></span>
+      <span class="toggle" title="enabled"></span>
+      <span class="act">Compose →</span>
+      <span class="act muted">Rename</span>
+      <span class="act muted">Delete</span>
+    </div>
+    <div class="row">
+      <div><div class="nm">New Arrivals</div><div class="key">new_arrivals</div></div>
+      <span class="grow"></span>
+      <span class="toggle" title="enabled"></span>
+      <span class="act">Compose →</span>
+      <span class="act muted">Rename</span>
+      <span class="act muted">Delete</span>
+    </div>
+    <div class="row">
+      <div><div class="nm">Festive Picks</div><div class="key">festive_picks</div></div>
+      <span class="grow"></span>
+      <span class="toggle off" title="disabled"></span>
+      <span class="act">Compose →</span>
+      <span class="act muted">Rename</span>
+      <span class="act muted">Delete</span>
+    </div>
+  </div>
+
+  <!-- New-page modal -->
+  <div class="bar"><h2>＋ New page<span class="tag">modal</span></h2></div>
+  <div class="modal">
+    <h3>Create a page</h3>
+    <div class="fld"><span class="l">Label</span><input value="Summer Sale" /><div class="help">Shown to admins in lists.</div></div>
+    <div class="fld"><span class="l">Key</span><input value="summer_sale" /><div class="help">Auto-derived, editable, must be unique.</div></div>
+    <div class="fld"><span class="l">Hero title (shown to followers)</span><input value="☀️ Summer Sale — up to 60% off" /></div>
+    <div class="fld"><span class="l">Subtitle (optional)</span><input value="Hand-picked deals from your creators" /></div>
+    <div class="mbtns"><button class="btn ghost">Cancel</button><button class="btn primary">Create page</button></div>
+  </div>
+
+  <!-- App Builder scope tab -->
+  <div class="bar"><h2>/admin/sections — scope tabs</h2></div>
+  <div class="scopes">
+    <span class="tab">Home</span>
+    <span class="tab">Creator Store</span>
+    <span class="tab">Business page</span>
+    <span class="tab on">Custom page</span>
+  </div>
+  <div class="picker">
+    <label>Page:</label>
+    <select><option>Summer Sale</option><option>New Arrivals</option><option>Festive Picks</option></select>
+    <span class="grow"></span>
+    <button class="btn primary" style="padding:6px 12px">Publish</button>
+  </div>
+  <div class="empty">No sections yet on <b>Summer Sale</b>.<br/>Use “＋ Add Section” to compose this page — same presets, rules and config as Home.</div>
+</div>
+</body>
+</html>

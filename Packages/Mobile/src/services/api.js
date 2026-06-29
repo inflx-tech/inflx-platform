@@ -463,6 +463,14 @@ export const followerApi = {
     const qs = p.length ? `?${p.join('&')}` : '';
     return api.get(`/follower/section/offers${qs}`);
   },
+  // App Builder E — an admin-created GLOBAL custom page rendered as a section
+  // stack. Returns { page:{label,title,subtitle}|null, sections:[…] }.
+  getPageSections: (pageKey, loc = null) => {
+    const p = [];
+    if (loc?.latitude) p.push(`lat=${loc.latitude}`, `lng=${loc.longitude}`);
+    const qs = p.length ? `?${p.join('&')}` : '';
+    return api.get(`/follower/page/${encodeURIComponent(pageKey)}/sections${qs}`);
+  },
   // Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
   getSectionResults: (opts = {}) => {
     const p = [];

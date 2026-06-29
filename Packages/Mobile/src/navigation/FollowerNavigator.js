@@ -61,6 +61,7 @@ import CreatorCategoryScreen from '../screens/follower/CreatorCategoryScreen';
 import SectionResultsScreen from '../screens/follower/SectionResultsScreen';
 // listing-category-browser (Type-1) — sidebar + product grid + facet filters
 import CategoryBrowserScreen from '../screens/follower/CategoryBrowserScreen';
+import FollowerPageScreen from '../screens/follower/FollowerPageScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -90,6 +91,8 @@ const SHARED_SCREENS = (Stack) => (
     <Stack.Screen name="SectionResults" component={SectionResultsScreen} />
     {/* listing-category-browser (Type-1): tap a category → sidebar + grid + filters */}
     <Stack.Screen name="CategoryBrowser" component={CategoryBrowserScreen} />
+    {/* App Builder E — an admin-created GLOBAL custom page (tap-destination ③) */}
+    <Stack.Screen name="FollowerPage" component={FollowerPageScreen} />
     {/* Food World 3C-1 — dish-group craving → nearby restaurants result */}
     <Stack.Screen name="DishGroupResult" component={DishGroupResultScreen} />
     <Stack.Screen name="BookingConfirmed" component={BookingConfirmedScreen} />

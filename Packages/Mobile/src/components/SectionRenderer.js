@@ -222,19 +222,36 @@ function renderSection(section, navigation, canFollow, context = {}) {
   // Universal "View all" → the shared Results screen, re-running THIS shelf's rule with the
   // same surface context (creator/category/brand/city stack). Only for list-bearing shelves.
   const ctx = context || {};
-  const seeAll = () => navigation.navigate('SectionResults', {
-    title: section.title,
-    rule: section.rule,
-    // banner_gateway is a presentation, not a data type — its rule is library_products
-    // (a product list), so Results must render the product grid.
-    item_type: section.type === 'banner_gateway' ? 'products' : section.type,
-    library_section_id: section.config?.library_section_id || null,
-    category_key: ctx.superCategory || null,
-    creator_handle: ctx.creatorHandle || null,
-    brand_id: ctx.brandId || null,
-    lat: ctx.lat ?? null,
-    lng: ctx.lng ?? null,
-  });
+  // App Builder D — admin-chosen section-level tap destination (config.tap_destination).
+  // 'category' → the left-rail browser · 'page' → a custom page · 'grid'/'default'/absent
+  // → the shared Results product grid (today's behaviour). Individual cards keep their
+  // own detail navigation regardless.
+  const dest = section.config?.tap_destination || null;
+  const seeAll = () => {
+    if (dest && dest.type === 'category') {
+      return navigation.navigate('CategoryBrowser', {
+        nodeId: dest.node_id || null,
+        vertical: dest.vertical || ctx.superCategory || null,
+        title: section.title,
+      });
+    }
+    if (dest && dest.type === 'page' && dest.page_key) {
+      return navigation.navigate('FollowerPage', { pageKey: dest.page_key, title: section.title });
+    }
+    return navigation.navigate('SectionResults', {
+      title: section.title,
+      rule: section.rule,
+      // banner_gateway is a presentation, not a data type — its rule is library_products
+      // (a product list), so Results must render the product grid.
+      item_type: section.type === 'banner_gateway' ? 'products' : section.type,
+      library_section_id: section.config?.library_section_id || null,
+      category_key: ctx.superCategory || null,
+      creator_handle: ctx.creatorHandle || null,
+      brand_id: ctx.brandId || null,
+      lat: ctx.lat ?? null,
+      lng: ctx.lng ?? null,
+    });
+  };
 
   if (section.type === 'controls') return <ChipRow section={section} />;
 

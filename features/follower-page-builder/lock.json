@@ -1,0 +1,21 @@
+{
+  "feature": "follower-page-builder",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-29",
+  "notes": "Closes the founder's last two 'fully built' gaps: (D) admin per-section tap-destination chooser + (E) admin-created GLOBAL custom pages as the 3rd destination. Locked 2026-06-29 ('go and deploy'): custom page = global themed section-stack; v1 reach = via section tap only; destination unset = today's type-based routing (zero regression); a custom page is a new scope (screen='page', scope_value=<key>) reusing the entire section_config + sectionEngine + /admin/sections composer. Migration = follower_pages table + additive screen CHECK widening ('page'). Backend admin CRUD /admin/pages + follower read /follower/page/:key/sections. Admin: /admin/custom-pages manager + 'Custom page' scope tab + 'On tap, go to...' control. Mobile (OTA, no APK): new FollowerPageScreen + getPageSections + SectionRenderer destination check. Founder waived a follower-side mockup (reuses live SectionRenderer engine, same as brandstore-admin-composed).",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

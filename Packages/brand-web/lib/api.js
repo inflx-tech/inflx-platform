@@ -121,6 +121,15 @@ export const sectionApi = {
   deleteSection: (id) => api.delete(`/admin/sections/id/${id}`),
 };
 
+// Custom-page registry admin API (App Builder — /admin/pages/*)
+// A page = a GLOBAL themed section-stack used as a section's tap-destination ③.
+export const pageApi = {
+  list: () => api.get('/admin/pages'),
+  create: (payload) => api.post('/admin/pages', payload),
+  update: (id, payload) => api.patch(`/admin/pages/${id}`, payload),
+  remove: (id) => api.delete(`/admin/pages/${id}`),
+};
+
 // Drill-down listing engine (contract: listing-drilldown-taxonomy-engine).
 // Tree + per-leaf facets (public read) + drill-once batch-add (brand).
 export const listingApi = {

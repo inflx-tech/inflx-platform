@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>D — Section tap-destination chooser</title>
+<style>
+  :root{
+    --amber:#b45309; --amber-700:#a8590f; --tan:#fdf6ec; --tan-line:#ead9c2;
+    --ink:#26201a; --t2:#6b5b48; --t3:#9b8a74; --line:#e4ddd3; --card:#fff;
+    --ok:#15803d; --okbg:#ecfdf3;
+  }
+  *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  body{margin:0;background:var(--tan);color:var(--ink);padding:28px;}
+  .wrap{max-width:560px;margin:0 auto;}
+  h1{font-size:15px;margin:0 0 4px;}
+  .sub{font-size:11px;color:var(--t3);margin:0 0 18px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .cardhd{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid var(--line);}
+  .cardhd .gear{width:26px;height:26px;border-radius:8px;background:var(--tan);border:1px solid var(--tan-line);display:flex;align-items:center;justify-content:center;font-size:13px;}
+  .ttl{font-weight:800;font-size:13.5px;flex:1;}
+  .pill{font-size:10px;font-weight:800;color:var(--amber);background:#fff4e6;border:1px solid #f3d9b5;border-radius:999px;padding:3px 9px;}
+  .toggle{width:38px;height:22px;border-radius:999px;background:var(--ok);position:relative;}
+  .toggle::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff;}
+  .body{padding:14px;}
+  .lbl{font-size:10.5px;font-weight:800;color:var(--t2);letter-spacing:.02em;text-transform:uppercase;margin:0 0 6px;}
+  .field{margin-bottom:14px;}
+  select,input{width:100%;font-size:12.5px;border:1px solid #d8cdbd;border-radius:8px;padding:8px 9px;background:#fff;color:var(--ink);}
+  .preview{border:1px dashed var(--tan-line);border-radius:10px;background:var(--tan);padding:10px;display:flex;gap:8px;margin-bottom:14px;}
+  .pbox{height:42px;border-radius:7px;background:#fff;border:1px solid var(--tan-line);flex:1;}
+  .divider{height:1px;background:var(--line);margin:4px 0 14px;}
+  .dest{border:1.5px solid #f0c98f;border-radius:10px;background:#fffdf8;padding:12px;}
+  .dest .lbl{color:var(--amber);}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+  .opt{font-size:12px;font-weight:700;border:1.5px solid #e3d6c2;border-radius:9px;padding:9px 10px;background:#fff;color:var(--t2);display:flex;align-items:center;gap:7px;cursor:pointer;}
+  .opt .dot{width:13px;height:13px;border-radius:50%;border:2px solid #cdbfa8;}
+  .opt.on{border-color:var(--amber);background:#fff4e6;color:var(--amber);}
+  .opt.on .dot{border-color:var(--amber);background:var(--amber);box-shadow:inset 0 0 0 2px #fff;}
+  .sub-picker{background:#fff;border:1px solid #ead9c2;border-radius:9px;padding:10px;}
+  .hint{font-size:10.5px;color:var(--t3);margin-top:7px;line-height:1.4;}
+  .note{font-size:10.5px;color:var(--t3);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>App Builder · Home › section config</h1>
+  <p class="sub">Editing the <b>“Trending near you”</b> shelf. The new control is the “On tap, go to…” block.</p>
+
+  <div class="card">
+    <div class="cardhd">
+      <span class="gear">⚙</span>
+      <span class="ttl">Trending near you</span>
+      <span class="pill">products</span>
+      <span class="toggle" title="enabled"></span>
+    </div>
+    <div class="body">
+
+      <div class="field">
+        <p class="lbl">Template</p>
+        <div class="preview"><span class="pbox"></span><span class="pbox"></span><span class="pbox"></span></div>
+      </div>
+
+      <div class="field">
+        <p class="lbl">What fills it?</p>
+        <select><option>Live products, ranked by engagement</option></select>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ── NEW: D — tap destination ───────────────────────────── -->
+      <div class="dest">
+        <p class="lbl">On tap, go to…</p>
+        <div class="opts">
+          <span class="opt"><span class="dot"></span>Default</span>
+          <span class="opt"><span class="dot"></span>Product grid</span>
+          <span class="opt"><span class="dot"></span>Category browser</span>
+          <span class="opt on"><span class="dot"></span>A page</span>
+        </div>
+        <div class="sub-picker">
+          <p class="lbl" style="color:var(--t2)">Which page?</p>
+          <select>
+            <option>Summer Sale</option>
+            <option>New Arrivals</option>
+            <option>Festive Picks</option>
+          </select>
+        </div>
+        <p class="hint">“Default” keeps today’s behaviour (this shelf’s See-all opens the product grid). Choosing <b>A page</b> sends the section tap to that custom page’s own section stack.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="note">When “Category browser” is selected the sub-picker becomes a category-node picker instead of a page dropdown. “Default” / “Product grid” show no sub-picker.</p>
+</div>
+</body>
+</html>

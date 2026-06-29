@@ -1366,6 +1366,27 @@ const getCreatorCategorySections = asyncHandler(async (req, res) => {
   return success(res, data);
 });
 
+// GET /v1/follower/page/:key/sections
+// App Builder — an admin-created GLOBAL custom page as an admin-composed section
+// stack (the 3rd tap-destination ③). Resolves the page registry row by key
+// (title/subtitle + enabled gate), then renders its stack via the same engine.
+// Disabled / unknown key → { page:null, sections:[] } (200, never 500) so a stale
+// tap_destination reference degrades to a friendly empty state on mobile.
+const getPageSections = asyncHandler(async (req, res) => {
+  const { followerId, city, lat, lng } = await resolveFollowerContext(req);
+  const key = req.params.key;
+  const { rows } = await db.query(
+    `SELECT key, label, title, subtitle FROM follower_pages WHERE key = $1 AND enabled = true`,
+    [key]
+  );
+  if (!rows[0]) return success(res, { page: null, sections: [] });
+  const data = await sectionEngine.buildSections({
+    screen: 'page', scopeType: 'vertical', scopeValue: key,
+    categoryKey: key, city, followerId, lat, lng,
+  });
+  return success(res, { page: rows[0], sections: data.sections });
+});
+
 // GET /v1/follower/products/:product_id — full single-product detail for the PDP.
 // A shelf/Results tap passes only the card fields (id/name/price/image); this returns
 // the listing detail the brand entered: description, facets (schema attributes),
@@ -1797,4 +1818,5 @@ module.exports = {
   getOffersSections,
   getCreatorSections,
   getCreatorCategorySections,
+  getPageSections,
 };

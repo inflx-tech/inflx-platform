@@ -70,6 +70,8 @@ router.get('/business/:brand_id/sections',           authenticateOptional, ctrl.
 router.get('/section/offers',                        authenticateOptional, ctrl.getOffersSections);
 router.get('/section/creator/:handle',               authenticateOptional, ctrl.getCreatorSections);
 router.get('/section/creator/:handle/category/:cat', authenticateOptional, ctrl.getCreatorCategorySections);
+// App Builder — an admin-created GLOBAL custom page rendered as a section stack.
+router.get('/page/:key/sections',                    authenticateOptional, ctrl.getPageSections);
 // Shared "View all" full list for one shelf's rule (merch-engine-results-view-all).
 router.get('/section-results',                        authenticateOptional, ctrl.getSectionResults);
 
