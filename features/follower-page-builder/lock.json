@@ -12,7 +12,9 @@
   "mockup_locked_at": "2026-06-29",
   "notes": "Closes the founder's last two 'fully built' gaps: (D) admin per-section tap-destination chooser + (E) admin-created GLOBAL custom pages as the 3rd destination. Locked 2026-06-29 ('go and deploy'): custom page = global themed section-stack; v1 reach = via section tap only; destination unset = today's type-based routing (zero regression); a custom page is a new scope (screen='page', scope_value=<key>) reusing the entire section_config + sectionEngine + /admin/sections composer. Migration = follower_pages table + additive screen CHECK widening ('page'). Backend admin CRUD /admin/pages + follower read /follower/page/:key/sections. Admin: /admin/custom-pages manager + 'Custom page' scope tab + 'On tap, go to...' control. Mobile (OTA, no APK): new FollowerPageScreen + getPageSections + SectionRenderer destination check. Founder waived a follower-side mockup (reuses live SectionRenderer engine, same as brandstore-admin-composed).",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
+    "deployed_at": "2026-06-29",
+    "deployed_evidence": "Migration 122 applied to prod; backend live on Render (GET /follower/page/__nonexistent__/sections → {page:null,sections:[]} verified); admin on Vercel; follower OTA v174 published. pnpm qa GREEN 79; mobile babel clean + jest 25/25.",
     "released": false,
     "released_by": null,
     "released_at": null,
