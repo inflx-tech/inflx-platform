@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { campaignApi, brandApi, influencerApi, creatorInvitationApi, fmtNum } from '../../../../lib/api';
+import { campaignApi, brandApi, influencerApi, influencerGroupApi, creatorInvitationApi, fmtNum } from '../../../../lib/api';
 import GalleryPicker from '../../gallery/components/GalleryPicker';
 import { QuotaWallModal, useQuotaWall } from '../../../../components/QuotaWallModal';
 
@@ -49,15 +49,11 @@ const OFFER_KEY_TO_LABEL = { discount: 'Discount', volume: 'Volume discount', bo
 const LANGUAGES = ['English','Hindi','Telugu','Tamil','Kannada','Malayalam','Marathi','Bengali','Gujarati','Punjabi','Urdu'];
 const GENDERS = [{key:'male',label:'Male'},{key:'female',label:'Female'},{key:'non_binary',label:'Non-binary'}];
 
-// ─── Influencer groups localStorage (preserved verbatim) ────────────────────
-const GROUPS_KEY = 'inflx_influencer_groups';
-function loadGroups() {
-  if (typeof window === 'undefined') return [];
-  try { return JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); } catch { return []; }
-}
-function saveGroups(groups) {
-  if (typeof window !== 'undefined') localStorage.setItem(GROUPS_KEY, JSON.stringify(groups));
-}
+// ─── Influencer groups — F-5: server-persisted (was browser localStorage) ────
+// Groups now live in influencer_groups / influencer_group_members and are
+// fetched via influencerGroupApi. Each server group carries the same shape the
+// wizard needs: { id, name, member_count, influencer_ids[], members[] } where
+// members[] = { id, full_name, instagram_handle }.
 
 // ─── Helpers (preserved verbatim) ────────────────────────────────────────────
 const needsBudget = g => g === 'engagement' || g === 'hybrid';
@@ -548,7 +544,7 @@ function NewCampaignPageInner() {
   const [browseFiltersOpen, setBrowseFiltersOpen] = useState(false);
   const [browseSelected, setBrowseSelected] = useState([]);
   const browseTimer = useRef(null);
-  const [infGroups, setInfGroups] = useState(() => loadGroups());
+  const [infGroups, setInfGroups] = useState([]);
   const [groupModalOpen, setGroupModalOpen] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupSearchQ, setGroupSearchQ] = useState('');
@@ -565,6 +561,8 @@ function NewCampaignPageInner() {
     brandApi.getProducts().then(res => { if (res.ok) setProducts((res.data?.products || []).filter(p => p.is_active !== false && p.pushed_to_store !== false)); }).catch(() => {});
     // Offer Engine: load the brand's active saved offers for the in-wizard picker.
     brandApi.getOffers({ status: 'active' }).then(res => { if (res.success || res.ok) setLibOffers(res.data?.offers || []); }).catch(() => {});
+    // F-5: load the brand's server-persisted influencer groups.
+    refreshInfGroups();
   }, []);
 
   // Draft hydration (verbatim from OLD — adapts ?id=<campaignId>)
@@ -847,8 +845,15 @@ function NewCampaignPageInner() {
     setBrowseSelected([]);
   };
 
-  // Groups
-  const updateGroupsState = (newGroups) => { setInfGroups(newGroups); saveGroups(newGroups); };
+  // Groups — F-5: server-persisted (was browser localStorage).
+  // Every server group carries { id, name, member_count, influencer_ids[],
+  // members[] } where members[] = { id, full_name, instagram_handle }.
+  const refreshInfGroups = async () => {
+    try {
+      const res = await influencerGroupApi.list();
+      if (res.success || res.ok) setInfGroups(res.data?.groups || []);
+    } catch {}
+  };
   const openGroupModal = () => {
     setGroupName(''); setGroupSearchQ(''); setGroupSearchResults([]); setGroupSelectedIds([]);
     setGroupModalOpen(true);
@@ -870,25 +875,29 @@ function NewCampaignPageInner() {
     }, 300);
   };
   const toggleGroupSelect = (id) => setGroupSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  const saveNewGroup = () => {
+  const saveNewGroup = async () => {
     if (!groupName.trim() || groupSelectedIds.length === 0) return;
-    const newGroup = {
-      id: Date.now().toString(),
+    const res = await influencerGroupApi.create({
       name: groupName.trim(),
       influencer_ids: groupSelectedIds,
-      influencers: groupSearchResults.filter(r => groupSelectedIds.includes(r.id)).map(r => ({
-        id: r.id, full_name: r.full_name, instagram_handle: r.instagram_handle,
-      })),
-    };
-    updateGroupsState([...infGroups, newGroup]);
-    setGroupModalOpen(false);
+    });
+    if (res.success || res.ok) {
+      await refreshInfGroups();
+      setGroupModalOpen(false);
+    }
   };
-  const deleteGroup = (groupId) => updateGroupsState(infGroups.filter(g => g.id !== groupId));
+  const deleteGroup = async (groupId) => {
+    const res = await influencerGroupApi.remove(groupId);
+    if (res.success || res.ok) await refreshInfGroups();
+  };
+  // Expand a saved server group into the set — same result as before: add every
+  // member not already used, mapped to a fresh set-influencer row. Uses the
+  // group's members[] ({ id, full_name, instagram_handle }) from the server.
   const addGroupToSet = (si, groupId) => {
     const group = infGroups.find(g => g.id === groupId);
     if (!group) return;
     const usedIds = allUsedIds();
-    const newInfs = group.influencers.filter(inf => !usedIds.includes(inf.id)).map(inf => ({
+    const newInfs = (group.members || []).filter(inf => !usedIds.includes(inf.id)).map(inf => ({
       ...mkInf(), influencer_id: inf.id,
       name: inf.full_name || '',
       handle: inf.instagram_handle ? `@${inf.instagram_handle}` : '',

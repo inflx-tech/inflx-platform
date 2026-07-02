@@ -66,6 +66,9 @@ const productAddonsRoutes   = require('./productAddons.routes');
 // Offer Engine — brand-side reusable offer library (Sub-contract A)
 const brandOfferRoutes      = require('./brandOffer.routes');
 
+// F-5 — server-persisted influencer groups (brand-scoped saved groups)
+const influencerGroupRoutes = require('./influencerGroup.routes');
+
 // Fashion-2 — creator-curated lookbooks (outfit collections)
 const lookbooksRoutes       = require('./lookbooks.routes');
 
@@ -196,6 +199,9 @@ router.use('/brands/me', returnsRoutes.brandRouter);   // GET /brands/me/returns
 
 // ── Offer Engine — brand-side reusable offer library (Sub-contract A) ────────
 router.use('/brands/me', brandOfferRoutes);
+
+// ── F-5 — server-persisted influencer groups (brand-scoped) ──────────────────
+router.use('/brands/me', influencerGroupRoutes);
 router.use('/follower',  returnsRoutes.followerRouter);
 router.use('/admin',     returnsRoutes.adminRouter);
 

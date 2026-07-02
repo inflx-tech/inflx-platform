@@ -346,6 +346,20 @@ export const influencerApi = {
   analytics: (params) => api.get(`/influencers/analytics${params ? '?' + new URLSearchParams(params) : ''}`),
 };
 
+// ─── Influencer groups (F-5) — server-persisted, brand-scoped ───────────────
+// Replaces the old browser-localStorage groups in the campaign wizard. Each
+// group response carries { id, name, member_count, influencer_ids[], members[] }
+// where members[] = { id, full_name, instagram_handle } — the shape the wizard's
+// addGroupToSet() expands into a set.
+export const influencerGroupApi = {
+  list:         ()             => api.get('/brands/me/influencer-groups'),
+  create:       (data)         => api.post('/brands/me/influencer-groups', data),           // { name, influencer_ids? }
+  rename:       (id, name)     => api.patch(`/brands/me/influencer-groups/${id}`, { name }),
+  remove:       (id)           => api.delete(`/brands/me/influencer-groups/${id}`),
+  addMembers:   (id, ids)      => api.post(`/brands/me/influencer-groups/${id}/members`, { influencer_ids: ids }),
+  removeMember: (id, infId)    => api.delete(`/brands/me/influencer-groups/${id}/members/${infId}`),
+};
+
 export const creatorInvitationApi = {
   create: (body) => api.post('/brands/me/creator-invitations', body),
   list: (status) => api.get(`/brands/me/creator-invitations${status ? `?status=${status}` : ''}`),

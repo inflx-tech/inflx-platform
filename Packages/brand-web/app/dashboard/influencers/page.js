@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { influencerApi, brandApi, creatorInvitationApi, proposalApi, fmtNum, fmtRupees } from '../../../lib/api';
+import { influencerApi, brandApi, creatorInvitationApi, proposalApi, influencerGroupApi, fmtNum, fmtRupees } from '../../../lib/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -214,6 +214,31 @@ const CSS = `
 
 .inf .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--white);padding:12px 16px;border-radius:12px;font-size:13px;font-weight:600;z-index:50;box-shadow:0 10px 25px rgba(0,0,0,.15)}
 .inf .toast.err{background:var(--danger);color:var(--white)}
+
+/* Groups sub-tab (F-5) */
+.inf .grp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:14px}
+.inf .grp-card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .15s;text-align:left;font-family:inherit;width:100%;display:flex;flex-direction:column;gap:8px}
+.inf .grp-card:hover{border-color:var(--ink)}
+.inf .grp-card-name{font-family:'Outfit',sans-serif;font-size:15px;font-weight:700;color:var(--ink)}
+.inf .grp-card-ct{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:var(--muted-2)}
+.inf .grp-card-ct b{color:var(--ink)}
+.inf .grp-mems{display:flex;flex-wrap:wrap;gap:4px}
+.inf .grp-mem-pill{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--bg2);color:var(--muted)}
+.inf .grp-detail-hd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.inf .grp-name-edit{display:flex;align-items:center;gap:8px}
+.inf .grp-name-edit input{padding:8px 12px;border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;font-family:'Outfit',sans-serif;outline:none;color:var(--ink);background:var(--white)}
+.inf .grp-name-edit input:focus{border-color:var(--yellow);box-shadow:0 0 0 3px var(--yellow-pale)}
+.inf .grp-mem-row{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.inf .grp-mem-row .av{width:32px;height:32px;font-size:11px;border-radius:8px}
+.inf .grp-mem-row .nm{flex:1;min-width:0}
+.inf .grp-mem-row .nm .n{font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;color:var(--ink)}
+.inf .grp-mem-row .nm .h{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted-2)}
+.inf .grp-mem-row .rm{padding:5px 10px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;border:1px solid var(--border);background:var(--white);color:var(--danger-text)}
+.inf .grp-mem-row .rm:hover{border-color:var(--danger);background:var(--danger-pale)}
+.inf .grp-pick-row{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px;cursor:pointer}
+.inf .grp-pick-row.sel{border-color:var(--ink);background:var(--yellow-50)}
+.inf .grp-pick-row .chk{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--muted-3);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink);flex-shrink:0}
+.inf .grp-pick-row.sel .chk{background:var(--yellow);border-color:var(--yellow)}
 `;
 
 // ─── Row Card (compact single-line) ─────────────────────────────────────────
@@ -365,15 +390,25 @@ export default function InfluencersPage() {
   const [inviteTarget, setInviteTarget] = useState(null);
   const [toast,        setToast]        = useState(null);
 
-  // Sub-tabs: Discover (creator search, existing) + Proposals (folded inbox, E-2).
-  const [subTab, setSubTab] = useState('discover'); // 'discover' | 'proposals'
+  // Sub-tabs: Discover (creator search) + Proposals (folded inbox, E-2) +
+  // Groups (F-5 server-persisted influencer groups).
+  const [subTab, setSubTab] = useState('discover'); // 'discover' | 'proposals' | 'groups'
   const [proposalCount, setProposalCount] = useState(0);
+  const [groupCount, setGroupCount] = useState(0);
 
-  // Honor ?tab=proposals deep-link (from the old /dashboard/proposals redirect).
+  // Honor ?tab=proposals|groups deep-link (from the old /dashboard/proposals redirect).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const t = new URLSearchParams(window.location.search).get('tab');
     if (t === 'proposals') setSubTab('proposals');
+    else if (t === 'groups') setSubTab('groups');
+  }, []);
+
+  // Group count for the sub-tab badge.
+  useEffect(() => {
+    influencerGroupApi.list().then(res => {
+      if (res.success || res.ok) setGroupCount((res.data?.groups || []).length);
+    }).catch(() => {});
   }, []);
 
   // Pending-proposal count for the sub-tab badge (independent of approval gate).
@@ -473,8 +508,22 @@ export default function InfluencersPage() {
       <button className={`subtab${subTab === 'proposals' ? ' act' : ''}`} onClick={() => setSubTab('proposals')}>
         Proposals{proposalCount > 0 && <span className="subtab-ct">{proposalCount}</span>}
       </button>
+      <button className={`subtab${subTab === 'groups' ? ' act' : ''}`} onClick={() => setSubTab('groups')}>
+        Groups{groupCount > 0 && <span className="subtab-ct">{groupCount}</span>}
+      </button>
     </div>
   );
+
+  // Groups sub-tab — server-persisted influencer groups (not behind approval gate).
+  if (subTab === 'groups') {
+    return (
+      <div className="inf">
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        {subTabBar}
+        <GroupsManager onCountChange={setGroupCount} />
+      </div>
+    );
+  }
 
   // Proposals sub-tab — folded inbox (not behind the approval gate).
   if (subTab === 'proposals') {
@@ -1334,6 +1383,270 @@ function PrpProposalDetailModal({ proposal, onClose, onChanged }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GROUPS MANAGER — F-5 server-persisted influencer groups (Groups sub-tab).
+   Reuses the parent's .inf CSS scope + the module-level initials() helper.
+   List → create (name + multi-select picker) → open (rename / add / remove /
+   delete). All persistence via influencerGroupApi (brand-scoped backend).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function GroupMemberPicker({ existingIds, selectedIds, onToggle }) {
+  const [q, setQ]             = useState('');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const timer = useRef(null);
+
+  const search = (val) => {
+    setQ(val);
+    clearTimeout(timer.current);
+    if (!val.trim()) { setResults([]); return; }
+    setLoading(true);
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await influencerApi.search({ q: val, limit: '30' });
+        if (res.success || res.ok) {
+          const raw = res.data?.creators || res.data?.influencers || [];
+          // Only onboarded creators can be group members (need a real influencer id).
+          setResults(raw.filter(c => !(c.source === 'scraped' && !c.linked_influencer_id)));
+        }
+      } catch {}
+      setLoading(false);
+    }, 300);
+  };
+
+  return (
+    <div>
+      <input className="qin" style={{ width: '100%', marginBottom: 10 }} value={q}
+        onChange={e => search(e.target.value)} placeholder="Search by name or @handle…" />
+      {loading && <div style={{ fontSize: 11, color: 'var(--muted-2)', marginBottom: 8 }}>Searching…</div>}
+      {results.map(c => {
+        const id = c.linked_influencer_id || c.row_id;
+        const already = existingIds.includes(id);
+        const sel = selectedIds.includes(id);
+        return (
+          <div key={c.row_id} className={`grp-pick-row${sel ? ' sel' : ''}`}
+            onClick={() => { if (!already) onToggle(id, c); }}
+            style={already ? { opacity: .5, cursor: 'not-allowed' } : {}}>
+            <div className="chk">{already ? '·' : (sel ? '✓' : '')}</div>
+            <div className="av" style={{ width: 32, height: 32, fontSize: 11, borderRadius: 8 }}>
+              {initials(c.ig_handle, c.full_name)}
+            </div>
+            <div className="nm" style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Outfit',sans-serif", fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>
+                {c.full_name || c.ig_handle}
+              </div>
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: 'var(--muted-2)' }}>
+                @{c.ig_handle}{c.city ? ` · ${c.city}` : ''}{already ? ' · already in group' : ''}
+              </div>
+            </div>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: 'var(--muted-2)' }}>
+              {fmtNum(c.followers_count)}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function GroupsManager({ onCountChange }) {
+  const [groups, setGroups]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [openId, setOpenId]   = useState(null);          // group being viewed
+  const [creating, setCreating] = useState(false);        // create modal open
+  const [toast, setToast]     = useState(null);
+
+  // Create-modal state
+  const [newName, setNewName]         = useState('');
+  const [newPicked, setNewPicked]     = useState([]);     // [{ id, ... }]
+  const [busy, setBusy]               = useState(false);
+
+  // Detail-view state
+  const [renameVal, setRenameVal]     = useState('');
+  const [adding, setAdding]           = useState(false);  // add-members panel
+  const [addPicked, setAddPicked]     = useState([]);
+
+  const flash = (text, kind) => { setToast({ text, kind }); setTimeout(() => setToast(null), 3500); };
+
+  async function load() {
+    setLoading(true);
+    const res = await influencerGroupApi.list();
+    setLoading(false);
+    if (res.success || res.ok) {
+      const g = res.data?.groups || [];
+      setGroups(g);
+      onCountChange?.(g.length);
+    }
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const openGroup = groups.find(g => g.id === openId) || null;
+
+  // ── Create ────────────────────────────────────────────────────────────────
+  const openCreate = () => { setNewName(''); setNewPicked([]); setCreating(true); };
+  const submitCreate = async () => {
+    if (!newName.trim()) return;
+    setBusy(true);
+    const res = await influencerGroupApi.create({ name: newName.trim(), influencer_ids: newPicked.map(p => p.id) });
+    setBusy(false);
+    if (res.success || res.ok) { setCreating(false); flash('✓ Group created'); await load(); }
+    else flash(res?.error?.message || 'Failed to create group', 'err');
+  };
+
+  // ── Rename ────────────────────────────────────────────────────────────────
+  const submitRename = async () => {
+    if (!renameVal.trim() || renameVal.trim() === openGroup?.name) return;
+    const res = await influencerGroupApi.rename(openId, renameVal.trim());
+    if (res.success || res.ok) { flash('✓ Renamed'); await load(); }
+    else flash(res?.error?.message || 'Rename failed', 'err');
+  };
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  const doDelete = async (id) => {
+    const res = await influencerGroupApi.remove(id);
+    if (res.success || res.ok) { setOpenId(null); flash('✓ Group deleted'); await load(); }
+    else flash(res?.error?.message || 'Delete failed', 'err');
+  };
+
+  // ── Members ───────────────────────────────────────────────────────────────
+  const submitAddMembers = async () => {
+    if (addPicked.length === 0) return;
+    setBusy(true);
+    const res = await influencerGroupApi.addMembers(openId, addPicked.map(p => p.id));
+    setBusy(false);
+    if (res.success || res.ok) { setAdding(false); setAddPicked([]); flash('✓ Members added'); await load(); }
+    else flash(res?.error?.message || 'Failed to add members', 'err');
+  };
+  const removeMember = async (infId) => {
+    const res = await influencerGroupApi.removeMember(openId, infId);
+    if (res.success || res.ok) { flash('✓ Member removed'); await load(); }
+    else flash(res?.error?.message || 'Failed to remove member', 'err');
+  };
+
+  if (loading) return <div className="spinner" />;
+
+  // ── DETAIL VIEW ────────────────────────────────────────────────────────────
+  if (openGroup) {
+    const existingIds = (openGroup.members || []).map(m => m.id);
+    return (
+      <div>
+        <button className="btn-ghost" onClick={() => { setOpenId(null); setAdding(false); }} style={{ marginBottom: 14 }}>← All groups</button>
+
+        <div className="grp-detail-hd">
+          <div className="grp-name-edit">
+            <input value={renameVal || openGroup.name} onChange={e => setRenameVal(e.target.value)} />
+            <button className="btn-ink" onClick={submitRename}>Rename</button>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-ghost" onClick={() => { setAdding(a => !a); setAddPicked([]); }}>{adding ? 'Close' : '+ Add members'}</button>
+            <button className="btn-ghost" style={{ color: 'var(--danger-text)' }} onClick={() => doDelete(openGroup.id)}>Delete group</button>
+          </div>
+        </div>
+
+        {adding && (
+          <div className="sbar" style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, fontWeight: 800, color: 'var(--muted-2)', textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 10 }}>Add members</div>
+            <GroupMemberPicker existingIds={existingIds} selectedIds={addPicked.map(p => p.id)}
+              onToggle={(id, c) => setAddPicked(prev => prev.find(p => p.id === id) ? prev.filter(p => p.id !== id) : [...prev, { id }])} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10 }}>
+              <button className="btn-ink" onClick={submitAddMembers} disabled={busy || addPicked.length === 0}>
+                {busy ? 'Adding…' : `Add ${addPicked.length || ''} member${addPicked.length === 1 ? '' : 's'}`}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="cnt-chip">{openGroup.member_count} member{openGroup.member_count === 1 ? '' : 's'}</div>
+        <div style={{ marginTop: 10 }}>
+          {(openGroup.members || []).length === 0 ? (
+            <div className="empty"><div className="ic-ic">👥</div><div className="h">No members yet</div><div className="t">Add influencers to this group with “+ Add members”.</div></div>
+          ) : (openGroup.members || []).map(m => (
+            <div key={m.id} className="grp-mem-row">
+              <div className="av">{initials(m.instagram_handle, m.full_name)}</div>
+              <div className="nm">
+                <div className="n">{m.full_name || m.instagram_handle || '—'}</div>
+                <div className="h">{m.instagram_handle ? `@${m.instagram_handle}` : ''}</div>
+              </div>
+              <button className="rm" onClick={() => removeMember(m.id)}>Remove</button>
+            </div>
+          ))}
+        </div>
+
+        {toast && <div className={`toast${toast.kind === 'err' ? ' err' : ''}`}>{toast.text}</div>}
+      </div>
+    );
+  }
+
+  // ── LIST VIEW ───────────────────────────────────────────────────────────────
+  return (
+    <div>
+      <div className="hdr">
+        <div className="hdr-l">
+          <span className="cnt-chip">{groups.length} group{groups.length === 1 ? '' : 's'}</span>
+          <h1>Influencer Groups</h1>
+          <div className="rule" />
+          <div className="sub">Save named groups of influencers here, then assign a whole group to a campaign set in one tap.</div>
+        </div>
+        <button className="btn-ink" onClick={openCreate}>+ New group</button>
+      </div>
+
+      {groups.length === 0 ? (
+        <div className="empty">
+          <div className="ic-ic">👥</div>
+          <div className="h">No groups yet</div>
+          <div className="t">Create your first group of influencers — you’ll be able to add the whole group to a campaign at once.</div>
+          <button className="btn-ink" onClick={openCreate}>+ Create a group</button>
+        </div>
+      ) : (
+        <div className="grp-grid">
+          {groups.map(g => (
+            <button key={g.id} className="grp-card" onClick={() => { setOpenId(g.id); setRenameVal(g.name); setAdding(false); }}>
+              <div className="grp-card-name">{g.name}</div>
+              <div className="grp-card-ct"><b>{g.member_count}</b> member{g.member_count === 1 ? '' : 's'}</div>
+              <div className="grp-mems">
+                {(g.members || []).slice(0, 4).map(m => (
+                  <span key={m.id} className="grp-mem-pill">{m.instagram_handle ? `@${m.instagram_handle}` : (m.full_name || '—')}</span>
+                ))}
+                {g.member_count > 4 && <span className="grp-mem-pill">+{g.member_count - 4}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Create modal */}
+      {creating && (
+        <div className="modal-bg" onClick={() => setCreating(false)}>
+          <div className="modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-h">
+              <div><h3>Create influencer group</h3><p>Name it, then search and pick the influencers to include.</p></div>
+              <button className="modal-x" onClick={() => setCreating(false)}>×</button>
+            </div>
+            <div className="modal-f">
+              <div>
+                <div className="modal-f-l">Group name</div>
+                <input value={newName} onChange={e => setNewName(e.target.value)} maxLength={120} placeholder="e.g. Food bloggers Hyderabad" />
+              </div>
+              <div>
+                <div className="modal-f-l">Add influencers (optional)</div>
+                <GroupMemberPicker existingIds={[]} selectedIds={newPicked.map(p => p.id)}
+                  onToggle={(id) => setNewPicked(prev => prev.find(p => p.id === id) ? prev.filter(p => p.id !== id) : [...prev, { id }])} />
+              </div>
+              {newPicked.length > 0 && <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink)' }}>{newPicked.length} selected</div>}
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="cancel" onClick={() => setCreating(false)}>Cancel</button>
+              <button type="button" className="submit" onClick={submitCreate} disabled={busy || !newName.trim()}>{busy ? 'Creating…' : 'Create group'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <div className={`toast${toast.kind === 'err' ? ' err' : ''}`}>{toast.text}</div>}
     </div>
   );
 }

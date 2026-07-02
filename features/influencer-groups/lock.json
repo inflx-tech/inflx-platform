@@ -1,0 +1,20 @@
+{
+  "feature": "influencer-groups",
+  "spec_version": "1.0.0",
+  "status": "approved",
+  "approved": true,
+  "approved_by": "aveen (founder) — in-session: 'Yes — manage in Influencers tab'",
+  "approved_at": "2026-06-20",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "aveen (founder) — approved Groups-in-Influencers-tab structure in-session; standard admin/list UI, no new mockup",
+  "mockup_locked_at": "2026-06-20",
+  "notes": "F-5 server-persisted influencer groups: brand-scoped CRUD + members (migration 123), Groups sub-tab in Influencers, campaign wizard swapped localStorage->server (add-group-to-set preserved). Security reviewed (no cross-brand access); useRef import crash found + fixed; pnpm qa GREEN. Follow-ups: size cap, wizard live-refresh.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null
+  }
+}
