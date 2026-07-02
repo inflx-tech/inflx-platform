@@ -16,20 +16,85 @@
  * Props: section { title, config }, onTile(tile).
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { toing as T, fonts } from '../../theme/tokens';
 
 export default function TileSection({ section, onTile }) {
   const cfg = section?.config || {};
+  // Optional countdown timer (any Frame style). Hook runs before any early return.
+  const timer = cfg.timer && cfg.timer.ends_at ? cfg.timer : null;
+  const cd = useCountdown(timer ? timer.ends_at : null);
+
   const tiles = Array.isArray(cfg.tiles) ? cfg.tiles.filter((t) => t && (t.image_url || t.label)) : [];
   if (tiles.length === 0) return null;
+  if (timer && cd.expired) return null;   // frame disappears when the countdown ends
   const style = cfg.style || 'carousel';
 
-  if (style === 'banner') return <BannerStyle section={section} tiles={tiles} onTile={onTile} />;
-  if (style === 'grid') return <GridStyle section={section} tiles={tiles} onTile={onTile} />;
-  if (style === 'featured') return <FeaturedStyle section={section} tiles={tiles} onTile={onTile} />;
-  return <CarouselStyle section={section} tiles={tiles} onTile={onTile} />;
+  const body =
+    style === 'banner' ? <BannerStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'mosaic' ? <MosaicStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'grid' ? <GridStyle section={section} tiles={tiles} onTile={onTile} />
+    : style === 'featured' ? <FeaturedStyle section={section} tiles={tiles} onTile={onTile} />
+    : <CarouselStyle section={section} tiles={tiles} onTile={onTile} />;
+
+  if (!timer) return body;
+  return <View>{<CountdownBar text={cd.text} label={timer.label} />}{body}</View>;
+}
+
+// Client-side countdown. Returns { text, expired }; ticks each second while mounted.
+// Blank / invalid ends_at → { text:null, expired:false } (no timer).
+function useCountdown(endsAt) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!endsAt) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  if (!endsAt) return { text: null, expired: false };
+  const end = new Date(endsAt).getTime();
+  if (!Number.isFinite(end)) return { text: null, expired: false };
+  let diff = Math.floor((end - now) / 1000);
+  if (diff <= 0) return { text: '0:00:00', expired: true };
+  const pad = (n) => String(n).padStart(2, '0');
+  const d = Math.floor(diff / 86400); diff -= d * 86400;
+  const h = Math.floor(diff / 3600); diff -= h * 3600;
+  const m = Math.floor(diff / 60); const sec = diff - m * 60;
+  const text = d > 0 ? `${d}d ${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(h)}:${pad(m)}:${pad(sec)}`;
+  return { text, expired: false };
+}
+
+function CountdownBar({ text, label }) {
+  if (!text) return null;
+  return (
+    <View style={s.cdBar}>
+      <Text style={s.cdTxt}>⏳ {label || 'Ends in'}  {text}</Text>
+    </View>
+  );
+}
+
+// Mosaic — mixed-size image tiles. size:'large' → full-width hero; else 2-up.
+function MosaicStyle({ section, tiles, onTile }) {
+  return (
+    <View style={s.wrap}>
+      <Header section={section} />
+      <View style={s.mosaic}>
+        {tiles.map((t, i) => {
+          const large = t.size === 'large';
+          return (
+            <View key={i} style={[s.mCell, large ? s.mCellLarge : s.mCellSmall]}>
+              <TouchableOpacity style={[s.mInner, { height: large ? 150 : 112 }]} activeOpacity={0.85} onPress={() => onTile?.(t)}>
+                {t.image_url ? <Image source={{ uri: t.image_url }} style={s.fill} resizeMode="cover" /> : <Fallback t={t} />}
+                {t.badge ? <View style={s.badge}><Text style={s.badgeTxt}>{t.badge}</Text></View> : null}
+                {t.label ? <View style={s.mScrim} /> : null}
+                {t.label ? <Text style={s.mLabel} numberOfLines={1}>{t.label}</Text> : null}
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
 }
 
 function Header({ section }) {
@@ -163,6 +228,19 @@ const s = StyleSheet.create({
   gTile: { width: '25%', alignItems: 'center', paddingHorizontal: 4, marginBottom: 14 },
   gImg: { width: '100%', aspectRatio: 1, borderRadius: 14, overflow: 'hidden', backgroundColor: T.yellowTint },
   gLabel: { fontSize: 10.5, color: T.ink, fontFamily: fonts.sansSemiBold, marginTop: 5, textAlign: 'center' },
+
+  // countdown bar (any frame style)
+  cdBar: { marginHorizontal: 16, marginTop: 14, backgroundColor: T.pink, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12, alignItems: 'center' },
+  cdTxt: { color: '#fff', fontSize: 12.5, fontFamily: fonts.monoBold, letterSpacing: 0.5 },
+
+  // mosaic — mixed-size tiles (large full-width, small 2-up); percentage cells + 4px gutter
+  mosaic: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingTop: 12 },
+  mCell: { padding: 4 },
+  mCellLarge: { width: '100%' },
+  mCellSmall: { width: '50%' },
+  mInner: { borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: T.line, position: 'relative', justifyContent: 'flex-end' },
+  mScrim: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 46, backgroundColor: 'rgba(0,0,0,0.34)' },
+  mLabel: { position: 'absolute', left: 10, right: 10, bottom: 9, color: '#fff', fontSize: 14, fontFamily: fonts.displayBold },
 
   // banner
   banner: { marginHorizontal: 14, borderRadius: 16, overflow: 'hidden', minHeight: 150 },

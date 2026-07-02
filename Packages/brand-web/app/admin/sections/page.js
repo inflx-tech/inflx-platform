@@ -124,6 +124,7 @@ function TemplatePreview({ s }) {
   let inner;
   if (cfg.kind === 'menu') inner = <div className="space-y-1"><div className={`${g} h-2.5 w-1/3`} /><div className={`${g} h-5`} /><div className={`${g} h-5`} /></div>;
   else if (s.shelf_type === 'creators' || s.shelf_type === 'category_rail') inner = <div className="flex gap-2">{[0,1,2,3].map(i => <span key={i} className="w-7 h-7 rounded-full bg-gray-200" />)}</div>;
+  else if (s.shelf_type === 'tiles' && cfg.style === 'mosaic') inner = <div className="space-y-1.5"><div className={`${g} h-10`} /><div className="flex gap-1.5"><span className={`${g} h-8 flex-1`} /><span className={`${g} h-8 flex-1`} /></div></div>;
   else if (s.shelf_type === 'tiles' && cfg.style === 'banner') inner = <div className={`${g} h-12`} />;
   else if (s.shelf_type === 'tiles' || s.shelf_type === 'nav_tiles') inner = <div className="flex gap-1.5">{[0,1,2,3].map(i => <span key={i} className="w-9 h-9 rounded-lg bg-gray-200" />)}</div>;
   else if (s.shelf_type === 'banner_gateway') inner = <div className={`${g} h-12`} />;
@@ -672,8 +673,22 @@ export default function SectionsPage() {
                             <option value="featured">Featured carousel</option>
                             <option value="grid">Tile grid (shop by concern)</option>
                             <option value="banner">Themed banner + sub-tiles</option>
+                            <option value="mosaic">Mosaic (mixed-size tiles)</option>
                           </select>
                         </label>
+                        {/* Countdown timer (optional) — works on any Frame style */}
+                        <div className="rounded-md border border-pink-200 bg-pink-50/50 p-2 flex flex-col gap-1.5">
+                          <div className="text-[11px] font-bold text-pink-700">⏳ Countdown timer (optional)</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <input type="datetime-local" value={(cfg.timer || {}).ends_at || ''}
+                              onChange={e => patchNested(id, 'timer', 'ends_at', e.target.value)}
+                              className="text-xs border border-gray-300 rounded px-2 py-1" />
+                            <input value={(cfg.timer || {}).label || ''} onChange={e => patchNested(id, 'timer', 'label', e.target.value)}
+                              placeholder="Ends in" className="w-28 text-xs border border-gray-300 rounded px-2 py-1" />
+                            {(cfg.timer || {}).ends_at ? <button type="button" onClick={() => patchConfig(id, 'timer', null)} className="text-[11px] font-semibold text-gray-400">clear</button> : null}
+                          </div>
+                          <div className="text-[10px] text-gray-400">When it hits zero, the frame disappears from the app.</div>
+                        </div>
                         {/* Banner background (banner style only) */}
                         {cfg.style === 'banner' && (
                           <label className="text-[11px] font-semibold text-gray-600">Banner background
@@ -711,6 +726,16 @@ export default function SectionsPage() {
                                 className="flex-1 text-xs border border-gray-300 rounded px-2 py-1" />
                               <button onClick={() => removeTile(id, ti)} className="text-gray-300 hover:text-red-500" aria-label="remove banner">✕</button>
                             </div>
+                            {/* Tile size — mosaic only (large = full-width hero, small = 2-up) */}
+                            {cfg.style === 'mosaic' && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-semibold text-gray-500">Size</span>
+                                {[['small', 'Small'], ['large', 'Large']].map(([v, l]) => (
+                                  <button key={v} type="button" onClick={() => updateTile(id, ti, { size: v })}
+                                    className={`text-[10px] font-bold rounded px-2.5 py-0.5 border ${(t.size || 'small') === v ? 'bg-amber-700 text-white border-amber-700' : 'bg-white text-gray-500 border-gray-300'}`}>{l}</button>
+                                ))}
+                              </div>
+                            )}
                             {/* Rule — create here OR use a saved one (Section Library folded in). */}
                             <div className="flex gap-1.5">
                               {[['create', 'Create a rule'], ['saved', 'Use a saved rule']].map(([m, lbl]) => (

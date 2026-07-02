@@ -1,0 +1,21 @@
+{
+  "feature": "follower-frame-timer-mosaic",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-06-29",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-06-29",
+  "notes": "Extends the App Builder Frame tool (shelf_type='tiles') with two deferred P3 looks: a MOSAIC tile layout (per-tile size large/small; large=full-width hero, small=2-up) + an optional COUNTDOWN TIMER (config_json.timer={ends_at,label}; frame hides when it hits zero). Founder 'pls start building' 2026-06-29. Additive: admin (brand-web sections/page.js — mosaic layout option + per-tile size toggle + timer block + mosaic preview) + mobile (TileSection.js — MosaicStyle + useCountdown + CountdownBar). NO backend, NO migration (config_json flows through sectionEngine untouched). Per-tile 3-way destination + server-side expiry gate OUT of v1. Deploy = Vercel admin + follower OTA, no APK. release.released false.",
+  "release": {
+    "qa_all_green": false,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

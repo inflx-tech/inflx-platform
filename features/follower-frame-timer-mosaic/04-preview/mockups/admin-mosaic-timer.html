@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Admin — Mosaic + Timer frame</title>
+<style>
+  :root{--amber:#b45309;--tan:#fdf6ec;--line:#e4ddd3;--ink:#26201a;--t2:#6b5b48;--t3:#9b8a74;--pink:#E11D6B;}
+  *{box-sizing:border-box;font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;}
+  body{margin:0;background:var(--tan);color:var(--ink);padding:26px;}
+  .wrap{max-width:520px;margin:0 auto;}
+  h1{font-size:14px;margin:0 0 12px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .lbl{font-size:10.5px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:.02em;margin:0 0 5px;}
+  select,input{width:100%;font-size:12.5px;border:1px solid #d8cdbd;border-radius:8px;padding:8px 9px;background:#fff;}
+  .field{margin-bottom:13px;}
+  .timer{border:1px solid #f4b8d0;background:#fdeaf1;border-radius:10px;padding:10px;margin-bottom:13px;}
+  .timer .lbl{color:var(--pink);}
+  .row{display:flex;gap:8px;align-items:center;}
+  .row input[type=datetime-local]{flex:1;}
+  .row .lab{width:120px;}
+  .tile{border:1px solid var(--line);background:#faf7f2;border-radius:10px;padding:10px;margin-bottom:9px;}
+  .thead{display:flex;gap:9px;align-items:center;}
+  .pic{width:44px;height:44px;border-radius:9px;background:#eee;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:#bbb;}
+  .size{display:flex;gap:6px;margin-top:8px;}
+  .chip{font-size:10px;font-weight:800;border:1.5px solid #e3d6c2;border-radius:7px;padding:4px 10px;background:#fff;color:var(--t2);}
+  .chip.on{background:var(--amber);color:#fff;border-color:var(--amber);}
+  .add{margin-top:4px;font-size:11px;font-weight:800;color:var(--amber);border:1px solid #e3c79b;border-radius:8px;padding:6px 10px;background:#fff;display:inline-block;}
+  .note{font-size:10px;color:var(--t3);margin-top:6px;}
+</style></head><body>
+<div class="wrap">
+  <h1>App Builder · Home › fashion › Frame config</h1>
+  <div class="card">
+    <div class="field">
+      <p class="lbl">Layout</p>
+      <select><option>Image tiles (spotlight)</option><option>Featured carousel</option><option>Tile grid (shop by concern)</option><option>Themed banner + sub-tiles</option><option selected>Mosaic (mixed-size tiles)</option></select>
+    </div>
+
+    <div class="timer">
+      <p class="lbl">⏳ Countdown timer (optional)</p>
+      <div class="row">
+        <input type="datetime-local" value="2026-07-10T18:30"/>
+        <input class="lab" value="Sale ends in"/>
+        <span style="font-size:10.5px;color:var(--t3)">clear</span>
+      </div>
+      <div class="note">When it hits zero, the frame disappears from the app.</div>
+    </div>
+
+    <p class="lbl">Banners — image + rule + size</p>
+    <div class="tile">
+      <div class="thead"><span class="pic">＋</span><input value="Festive Edit — up to 60%"/><span style="color:#ccc">✕</span></div>
+      <div class="size"><span class="chip">Small</span><span class="chip on">Large</span></div>
+    </div>
+    <div class="tile">
+      <div class="thead"><span class="pic">＋</span><input value="Under ₹999"/><span style="color:#ccc">✕</span></div>
+      <div class="size"><span class="chip on">Small</span><span class="chip">Large</span></div>
+    </div>
+    <div class="tile">
+      <div class="thead"><span class="pic">＋</span><input value="New in Denim"/><span style="color:#ccc">✕</span></div>
+      <div class="size"><span class="chip on">Small</span><span class="chip">Large</span></div>
+    </div>
+    <span class="add">+ Add banner</span>
+    <div class="note">Size shows only in Mosaic layout. Large = full-width hero, Small = 2-up.</div>
+  </div>
+</div>
+</body></html>
