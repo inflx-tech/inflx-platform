@@ -12,7 +12,9 @@
   "mockup_locked_at": "2026-07-02",
   "notes": "AJIO-style themed scrollable Frame style. New Frame layout 'themed_rail' = themed shell (white / color / uploaded image + scrim) + header (aligned title + optional BOXED countdown) + horizontal scroll rail of tiles sized medium|large. Founder 'ok pls build it' 2026-07-02 (mockup reviewed live via visualize + saved to 04-preview). Correction confirmed: the two AJIO frames share ONE recipe; three knobs differ — frame background, timer on/off, tile size. Additive: admin (sections/page.js — themed_rail option + Frame panel: bg color/image, title align, tile size) + mobile (TileSection.js — ThemedRailStyle + boxed countdown; useCountdown extended with dd/hh/mm/ss). NO backend, NO migration (config_json rides sectionEngine passthrough). Reuses existing image uploader + timer + per-tile rule editor. Per-tile 3-way destination + server expiry OUT. Deploy = Vercel admin + follower OTA, no APK. release.released false.",
   "release": {
-    "qa_all_green": false,
+    "qa_all_green": true,
+    "deployed_at": "2026-07-02",
+    "deployed_evidence": "commit 34ed2d7 → Vercel admin (themed_rail layout + Frame panel) + follower OTA v176 (ThemedRailStyle + boxed CountdownBoxed in TileSection). No backend/migration. pnpm qa GREEN 79; mobile babel clean + jest 25/25 (TileSection green); admin parses clean.",
     "released": false,
     "released_by": null,
     "released_at": null,
