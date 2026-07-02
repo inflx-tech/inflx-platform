@@ -142,6 +142,7 @@ function BrowseListings({ vlabel, onAdd }) {
       </div>
       <span className={'pill ' + (p.is_active ? 'live' : 'hid')}>{p.is_active ? 'Live' : 'Hidden'}</span>
       <div className="pact">
+        <button onClick={() => { window.location.href = `/dashboard/products/listing?edit=${p.id}`; }}>Edit</button>
         <button disabled={busy === p.id} onClick={() => doToggle(p)}>{p.is_active ? 'Hide' : 'Show'}</button>
         {p.is_active && <button className="danger" disabled={busy === p.id} onClick={() => doRemove(p)}>Remove</button>}
       </div>
@@ -214,7 +215,7 @@ function BrowseListings({ vlabel, onAdd }) {
 }
 
 export default function DrilldownListingPage() {
-  const [view, setView] = useState('browse');   // 'browse' (My listings) | 'add' (wizard)
+  const [view, setView] = useState(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit')) ? 'add' : 'browse');   // 'browse' (My listings) | 'add' (wizard)
   const [vertical, setVertical] = useState('fashion');
   const [tree, setTree] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -241,6 +242,10 @@ export default function DrilldownListingPage() {
   const [ok, setOk] = useState('');
   const [brandOpts, setBrandOpts] = useState([]);
   const [counts, setCounts] = useState({});
+  // Edit mode (contract: listing-product-edit) — ?edit=<id> loads one product into
+  // the stepper; the final action saves via PATCH instead of batching.
+  const [editMode] = useState(() => (typeof window !== 'undefined') && new URLSearchParams(window.location.search).has('edit'));
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -262,6 +267,40 @@ export default function DrilldownListingPage() {
     const r = await listingApi.getBrands(v, q);
     if (r.ok) setBrandOpts(r.data.brands || []);
   }
+
+  // Load the product being edited into the stepper's own state (leaf + facets +
+  // pre-filled draft), so the whole add form is reused verbatim for editing.
+  useEffect(() => {
+    if (!editMode) return;
+    const id = new URLSearchParams(window.location.search).get('edit');
+    if (!id) return;
+    (async () => {
+      const r = await brandApi.get(`/brands/me/listing-products/${id}`);
+      if (!r.success) { setErr(r.error?.message || 'Failed to load product'); return; }
+      const { product, node, facets: fdefs } = r.data;
+      let vj = {};
+      try { vj = typeof product.variants_json === 'string' ? JSON.parse(product.variants_json || '{}') : (product.variants_json || {}); } catch { vj = {}; }
+      const variantsMap = {};
+      for (const cv of (vj.colors || [])) {
+        variantsMap[cv.color] = { images: arr(cv.images), stock: Object.fromEntries(arr(cv.sizes).map(s => [s.size, s.stock ?? ''])) };
+      }
+      const pf = (product.facets && typeof product.facets === 'object') ? { ...product.facets } : {};
+      const brandVal = pf.brand || '';
+      const coverImgs = arr(pf._images).length ? arr(pf._images)
+        : (arr(vj.cover_images).length ? arr(vj.cover_images) : (product.image_url ? [product.image_url] : []));
+      delete pf.brand; delete pf._images;
+      setView('add');
+      setLeaf(node);
+      setFacets(fdefs || []);
+      setDraft({
+        name: product.name || '', price: product.price ?? '', mrp: product.mrp ?? '',
+        brand: brandVal, sku: product.sku || '', stock: product.stock ?? '',
+        description: product.description || '',
+        images: coverImgs, facets: pf, variants: variantsMap,
+      });
+      setStep(1); setMode('one'); setEditingId(id);
+    })();
+  }, [editMode]);
 
   const drillInto = useCallback(async (node) => {
     setOk('');
@@ -496,6 +535,31 @@ export default function DrilldownListingPage() {
     } else setErr(r.error?.message || 'Save failed');
   };
 
+  // Edit-mode save — same validated item shape, PATCHed to the one product.
+  const saveEdit = async () => {
+    const e = draftErrors();
+    if (e.length) { setErr('Required: ' + e.join(', ')); return; }
+    setErr(''); setSaving(true);
+    const variants = selectedColors.map(color => ({
+      color,
+      images: arr(draft.variants[color]?.images),
+      sizes: selectedVariants.map(val => ({ size: val, stock: draft.variants[color]?.stock?.[val] ?? null })),
+    }));
+    const payload = {
+      name: draft.name.trim(), price: Number(draft.price),
+      mrp: (draft.mrp === '' || draft.mrp == null) ? undefined : Number(draft.mrp),
+      brand: draft.brand.trim() || null,
+      stock: draft.stock === '' ? null : Number(draft.stock),
+      description: draft.description.trim() || null,
+      images: draft.images, facets: draft.facets,
+      variants: variants.length ? variants : undefined,
+    };
+    const r = await brandApi.patch(`/brands/me/listing-products/${editingId}`, payload);
+    setSaving(false);
+    if (r.success) { window.location.href = '/dashboard/products/listing'; }
+    else setErr(r.error?.message || 'Save failed');
+  };
+
   // ── Excel bulk add ──────────────────────────────────────────────────────
   async function handleImport(file) {
     if (!file) return;
@@ -541,31 +605,38 @@ export default function DrilldownListingPage() {
     <div className="lst" style={{ padding: 24, maxWidth: 960, margin: '0 auto' }}>
       <style>{CSS}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
-        <h1>{view === 'browse' ? `My ${vlabel} listings` : `Add products — ${vlabel}`}</h1>
+        <h1>{editingId ? `Edit ${vlabel} product` : view === 'browse' ? `My ${vlabel} listings` : `Add products — ${vlabel}`}</h1>
         <a href="/dashboard/products?setup=1" className="setuplink">⚙ Store setup</a>
       </div>
       <div className="rule" />
-      <div className="sub">{view === 'browse'
+      <div className="sub">{editingId
+        ? 'Update photos, price, description, colours/sizes and other details — then save.'
+        : view === 'browse'
         ? 'Browse everything you listed, organised by the same categories you listed under.'
         : 'Drill to the exact item-type once, then add every product of that type — photo, brand, price, variants (each colour gets its own pics + stock). SKU is generated automatically.'}</div>
 
-      <div className="tabs">
-        <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>My listings</span>
-        <span className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</span>
-      </div>
+      {!editMode && (
+        <div className="tabs">
+          <span className={'tab' + (view === 'browse' ? ' on' : '')} onClick={() => setView('browse')}>My listings</span>
+          <span className={'tab' + (view === 'add' ? ' on' : '')} onClick={() => setView('add')}>Add products</span>
+        </div>
+      )}
 
-      {view === 'browse' && <BrowseListings vlabel={vlabel} onAdd={() => setView('add')} />}
+      {!editMode && view === 'browse' && <BrowseListings vlabel={vlabel} onAdd={() => setView('add')} />}
 
       {view === 'add' && (<>
-      <div className="crumb">
-        <a onClick={() => jumpTo(-1)}>{vlabel}</a>
-        {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jumpTo(i)}>{c.name}</a>}</span>)}
-      </div>
+      {editMode && !leaf && !err && <div className="sub" style={{ marginTop: 8 }}>Loading product…</div>}
+      {!editMode && (
+        <div className="crumb">
+          <a onClick={() => jumpTo(-1)}>{vlabel}</a>
+          {crumb.map((c, i) => <span key={i}>›  {i === crumb.length - 1 && leaf ? <b>{c.name}</b> : <a onClick={() => jumpTo(i)}>{c.name}</a>}</span>)}
+        </div>
+      )}
 
       {err && <div className="err">{err}</div>}
       {ok && <div className="ok">{ok}</div>}
 
-      {!leaf && (
+      {!editMode && !leaf && (
         <div className="grid">
           {level.map(n => (
             <div key={n.id} className={'node' + (n.is_leaf ? ' leaf' : '')} onClick={() => drillInto(n)}>
@@ -584,14 +655,16 @@ export default function DrilldownListingPage() {
 
       {leaf && (
         <div className="panel">
-          <div className="phead">Add {leaf.name}{counts[leaf.id] ? <span className="done">· {counts[leaf.id]} already added</span> : null}</div>
+          <div className="phead">{editingId ? 'Edit' : 'Add'} {leaf.name}{!editingId && counts[leaf.id] ? <span className="done">· {counts[leaf.id]} already added</span> : null}</div>
           <div className="sub" style={{ marginBottom: 4 }}>{leaf.segment}{leaf.category && leaf.category !== leaf.segment ? ` › ${leaf.category}` : ''} › {leaf.name}</div>
 
-          {/* Entry mode — one-by-one (stepper) or bulk Excel */}
-          <div className="bulktabs">
-            <span className={'btab' + (mode === 'one' ? ' on' : '')} onClick={() => setMode('one')}>Add one-by-one</span>
-            <span className={'btab' + (mode === 'bulk' ? ' on' : '')} onClick={() => setMode('bulk')}>Bulk add (Excel)</span>
-          </div>
+          {/* Entry mode — one-by-one (stepper) or bulk Excel. Hidden in edit mode. */}
+          {!editingId && (
+            <div className="bulktabs">
+              <span className={'btab' + (mode === 'one' ? ' on' : '')} onClick={() => setMode('one')}>Add one-by-one</span>
+              <span className={'btab' + (mode === 'bulk' ? ' on' : '')} onClick={() => setMode('bulk')}>Bulk add (Excel)</span>
+            </div>
+          )}
 
           {mode === 'one' && (<>
           {/* Progress header — steps derive from facet_role (② hidden when no variants) */}
@@ -739,14 +812,18 @@ export default function DrilldownListingPage() {
           <div className="nav">
             {step > 1
               ? <button className="btn ghost" onClick={goBack}>‹ Back</button>
-              : <button className="btn ghost" onClick={() => jumpTo(crumb.length - 1)}>‹ Pick another type</button>}
+              : (editingId
+                  ? <button className="btn ghost" onClick={() => { window.location.href = '/dashboard/products/listing'; }}>‹ Cancel</button>
+                  : <button className="btn ghost" onClick={() => jumpTo(crumb.length - 1)}>‹ Pick another type</button>)}
             {step < 4
               ? <button className={'btn ink' + (stepBlocked.length ? ' dis' : '')} onClick={goNext}>Next ›</button>
-              : <button className="btn yellow" onClick={addItem}>+ Add this item</button>}
+              : (editingId
+                  ? <button className="btn yellow" disabled={saving} onClick={saveEdit}>{saving ? 'Saving…' : 'Save changes'}</button>
+                  : <button className="btn yellow" onClick={addItem}>+ Add this item</button>)}
           </div>
           {step < 4 && stepBlocked.length > 0 && <div className="hint">Still needed: {stepBlocked.join(', ')}</div>}
 
-          {items.length > 0 && (
+          {!editingId && items.length > 0 && (
             <>
               <div className="sec">Staged under {leaf.name} ({items.length})</div>
               {items.map((it, i) => (

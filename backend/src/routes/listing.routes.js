@@ -37,5 +37,8 @@ brandRouter.post('/products/batch', ctrl.batchCreate);
 // contract: listing-fashion-inventory-browse — brand's own inventory browse
 brandRouter.get('/listing-tree', ctrl.getMyListingTree);
 brandRouter.get('/listing-nodes/:id/products', ctrl.getMyNodeProducts);
+// contract: listing-product-edit — view + edit one drill-down product
+brandRouter.get('/listing-products/:id', ctrl.getListingProduct);
+brandRouter.patch('/listing-products/:id', ctrl.updateListingProduct);
 
 module.exports = { publicRouter, brandRouter };

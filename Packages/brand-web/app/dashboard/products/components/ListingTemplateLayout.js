@@ -580,7 +580,7 @@ function FleetView({ products, FleetRow, labelSingular, labelPlural, icon, onRem
   );
 }
 
-function DefaultFleetRow({ product, icon, onRemove, onTogglePush }) {
+function DefaultFleetRow({ product, icon, onRemove, onTogglePush, onEdit }) {
   const pushed = product.pushed_to_store !== false;
   return (
     <div className={`bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4 ${pushed ? '' : 'opacity-60'}`}>
@@ -610,6 +610,10 @@ function DefaultFleetRow({ product, icon, onRemove, onTogglePush }) {
             <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${pushed ? 'translate-x-5' : 'translate-x-0.5'}`} />
           </button>
         </div>
+      )}
+      {onEdit && (
+        <button onClick={onEdit}
+          className="text-gray-500 hover:text-gray-900 text-xs font-semibold ml-2">Edit</button>
       )}
       <button onClick={onRemove}
         className="text-red-400 hover:text-red-600 text-xs font-semibold ml-2">Remove</button>
@@ -665,7 +669,7 @@ function DrilldownFleetView({ flatProducts, icon, labelPlural, onRemove, onToggl
 
   const q = search.trim().toLowerCase();
   const results = q ? (flatProducts || []).filter(p => (p.name || '').toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)) : [];
-  const rowEl = (p) => <DefaultFleetRow key={p.id} product={p} icon={icon} onRemove={() => removeRow(p.id)} onTogglePush={toggleRow} />;
+  const rowEl = (p) => <DefaultFleetRow key={p.id} product={p} icon={icon} onRemove={() => removeRow(p.id)} onTogglePush={toggleRow} onEdit={() => { window.location.href = `/dashboard/products/listing?edit=${p.id}`; }} />;
 
   if (loading) return <div className="text-center text-sm text-gray-400 py-10">Loading your inventory…</div>;
 

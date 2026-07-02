@@ -1,0 +1,22 @@
+{
+  "feature": "listing-product-edit",
+  "spec_version": "1.0.0",
+  "status": "locked",
+  "approved": true,
+  "approved_by": "founder",
+  "approved_at": "2026-07-02",
+  "preview_reviewed": true,
+  "impact_reviewed": true,
+  "mockup_locked": true,
+  "mockup_locked_by": "founder",
+  "mockup_locked_at": "2026-07-02",
+  "notes": "Edit surface for drill-down products (fashion/furniture) — photos, price, description, stock, facets, per-colour/size variants. Founder requested 2026-07-02 ('after listing can't upload new images or edit things'). Reuses the add stepper in ?edit mode + a new validated PATCH that mirrors the create path. UI-governed (brand-web) + backend. No migration; generic product PATCH untouched. release.released stays false until founder gives explicit deploy go.",
+  "verification": "pnpm qa GREEN, gate 0 (2026-07-02). node --check + JSX parse clean. Edit not exercised end-to-end in CI (no fashion products in test DB) — verify on prod with seeded Charvitha products.",
+  "release": {
+    "qa_all_green": true,
+    "released": false,
+    "released_by": null,
+    "released_at": null,
+    "maestro_green": false
+  }
+}

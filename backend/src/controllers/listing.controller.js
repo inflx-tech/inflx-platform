@@ -639,4 +639,92 @@ const getMyNodeProducts = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts, getMyListingTree, getMyNodeProducts };
+// ── GET /brands/me/listing-products/:id ───────────────────────────────────────
+// Contract: listing-product-edit. One drill-down product with everything the edit
+// form needs — its facet values, variants, cover images, plus the leaf node + its
+// facet schema. Brand-scoped.
+const getListingProduct = asyncHandler(async (req, res) => {
+  const { rows: brows } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
+  const brand = brows[0];
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const { rows } = await db.query(
+    `SELECT id, name, price, mrp, description, sku, stock, image_url,
+            variants_json, facets, category_node_id, is_active, pushed_to_store
+       FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    [req.params.id, brand.id]);
+  const product = rows[0];
+  if (!product) throw new AppError('NOT_FOUND', 'Product not found', 404);
+  if (!product.category_node_id) throw new AppError('VALIDATION_ERROR', 'This product is not a drill-down listing', 422);
+
+  const node = await taxonomy.getNode(product.category_node_id);
+  const facetDefs = node ? await taxonomy.getNodeFacets(node) : [];
+  return success(res, {
+    product,
+    node: node ? {
+      id: node.id, vertical: node.vertical, segment: node.segment, category: node.category,
+      name: node.name, is_leaf: node.is_leaf, size_system: node.size_system,
+      size_required: taxonomy.sizeRequired(node),
+    } : null,
+    facets: (facetDefs || []).filter((f) => f.facet_key !== 'images' && f.facet_key !== 'price'),
+  });
+});
+
+// ── PATCH /brands/me/listing-products/:id ─────────────────────────────────────
+// Contract: listing-product-edit. Update a drill-down product using the SAME item
+// shape + validation as create (taxonomy.validateItem), and rebuild variants_json/
+// cover/facets exactly like insertProducts so an edit can never bypass the schema
+// or diverge from the add path. Leaf + SKU are preserved. Brand-scoped.
+const updateListingProduct = asyncHandler(async (req, res) => {
+  const { rows: brows } = await db.query(`SELECT id FROM brands WHERE user_id = $1`, [req.user.sub]);
+  const brand = brows[0];
+  if (!brand) throw new AppError('NOT_FOUND', 'Brand profile not found', 404);
+
+  const { rows: prows } = await db.query(
+    `SELECT id, sku, mrp, category_node_id FROM brand_products WHERE id = $1 AND brand_id = $2`,
+    [req.params.id, brand.id]);
+  const existing = prows[0];
+  if (!existing) throw new AppError('NOT_FOUND', 'Product not found', 404);
+  if (!existing.category_node_id) throw new AppError('VALIDATION_ERROR', 'This product is not a drill-down listing', 422);
+
+  const node = await taxonomy.getNode(existing.category_node_id);
+  if (!node) throw new AppError('NOT_FOUND', 'Category node not found', 404);
+  const facetDefs = await taxonomy.getNodeFacets(node);
+
+  const it = req.body || {};
+  const errs = taxonomy.validateItem(node, facetDefs, it);
+  if (errs.length) throw new AppError('VALIDATION_ERROR', `${errs.length} problem(s): ${errs.join('; ')}`, 422, JSON.stringify([{ index: 0, errors: errs }]));
+
+  // Rebuild facets/cover/brand exactly like insertProducts (line-for-line parity).
+  const facets = (it.facets && typeof it.facets === 'object') ? { ...it.facets } : {};
+  delete facets._images; delete facets.brand;
+  const cover = Array.isArray(it.images) ? it.images.filter(Boolean) : [];
+  if (cover.length) facets._images = cover;
+  if (it.brand && String(it.brand).trim()) {
+    facets.brand = String(it.brand).trim();
+    await db.query(
+      `INSERT INTO listing_brands (vertical, name, source, status, usage_count)
+       VALUES ($1, $2, 'custom', 'active', 1)
+       ON CONFLICT (vertical, lower(name)) DO UPDATE SET usage_count = listing_brands.usage_count + 1`,
+      [node.vertical, facets.brand]).catch(() => {});
+  }
+  const variantsJson = buildVariants(it, existing.sku);
+  const image = coverImage(it);
+  const mrp = (it.mrp != null && it.mrp !== '') ? Number(it.mrp) : existing.mrp;
+
+  await db.query(
+    `UPDATE brand_products
+        SET name = $1, price = $2, mrp = $3, description = $4, stock = $5,
+            image_url = $6, variants_json = $7::jsonb, facets = $8::jsonb, updated_at = now()
+      WHERE id = $9 AND brand_id = $10`,
+    [String(it.name).trim(), Number(it.price), mrp, it.description || null,
+     it.stock != null && it.stock !== '' ? parseInt(it.stock, 10) : null,
+     image, JSON.stringify(variantsJson), JSON.stringify(facets), existing.id, brand.id]);
+
+  const { rows } = await db.query(
+    `SELECT id, name, price, mrp, description, sku, stock, image_url, variants_json, facets, category_node_id
+       FROM brand_products WHERE id = $1`, [existing.id]);
+  return success(res, { product: rows[0] });
+});
+
+module.exports = { getTree, getNodeFacets, getBrands, batchCreate, downloadTemplate, importProducts, ingestImage, setProductCoverPhotos, getNodeChildren, getNodeProducts, getMyListingTree, getMyNodeProducts, getListingProduct, updateListingProduct };
